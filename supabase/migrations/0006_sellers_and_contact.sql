@@ -1,4 +1,4 @@
--- 0005: sellers + contact_messages
+-- 0006: sellers + contact_messages
 -- Mirrors DB.sellers and DB.contact today. No venue/seat dependency.
 
 create table if not exists sellers (

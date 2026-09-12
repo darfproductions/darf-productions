@@ -1,6 +1,6 @@
--- 0004: profiles
+-- 0005: profiles
 -- Thin profile on top of Supabase auth.users. `rol` lives here, server-side,
--- and is deliberately NOT writable by the owning user via RLS (see 0008) —
+-- and is deliberately NOT writable by the owning user via RLS (see 0010) —
 -- this is what closes the "edit localStorage to become staff" hole in the
 -- current system.
 

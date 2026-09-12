@@ -1,10 +1,15 @@
--- 0003: seats
+-- 0004: seats
+-- Physical seat map, scoped to the PRODUCTION (the venue's seats don't
+-- change between performances of the same production) — not to a
+-- performance. Availability/selling of a seat is scoped per-performance
+-- instead, via `tickets.performance_id` (0007) and `blocked_seats` (0008).
+--
 -- Deliberately created EMPTY. No rows, no hardcoded rows/sections/capacity.
 -- Real seat maps get loaded later, per production, once the venue plan is
 -- confirmed — via a separate, reviewed seed migration (not part of this file).
 -- Nothing downstream (orders, tickets, availability) requires this table to
--- have any rows: an order/ticket can exist with seat_id = null (general
--- admission) until real seats are seeded.
+-- have any rows: a ticket can exist with seat_id = null (general admission)
+-- until real seats are seeded.
 
 create table if not exists seats (
   id uuid primary key default gen_random_uuid(),

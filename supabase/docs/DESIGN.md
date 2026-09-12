@@ -1,125 +1,194 @@
-# DARF Productions — Diseño Supabase (v2)
+# DARF Productions — Diseño Supabase (v3)
 
 Estado: **diseño para revisión — nada de esto se ha ejecutado contra Supabase.**
 `localStorage` y `js/app.js` siguen intactos y en producción sin cambios.
 
-Este documento reemplaza la propuesta anterior en el punto donde dependía de
-conocer la numeración física de asientos. Esa numeración sigue sin
-confirmarse (venue pendiente) y **no bloquea** el resto de la arquitectura.
+Este documento reemplaza la v2 en el punto donde una producción implicaba
+una sola puesta en venta. v3 introduce `performances` (funciones) entre
+`productions` y `tickets`, y pasa el modelo de roles de dos a tres.
 
-## Qué cambió respecto a la primera propuesta
+## Qué cambió respecto a v2
 
-- `seats` pasa de "tabla derivada de un grid fijo" a **tabla vacía por
-  diseño**. No se asume ninguna fila/columna/sección en el esquema ni en
-  ningún seed.
-- `productions.capacity` es un campo informativo opcional — nunca se usa
-  para calcular cuántos asientos debe tener una producción. Ya no hay
-  "capacidad fija asumida para Showman" en ningún lado del esquema.
-- La tabla que antes se llamaba `order_seats` pasa a llamarse **`tickets`**
-  y generaliza el concepto: cada ticket es una unidad de admisión con
-  `seat_id` **opcional**. Con `seat_id = null` el ticket es de admisión
-  general (sin butaca asignada) — este es el modo por defecto mientras no
-  haya venue confirmado.
-- Nada en el esquema falla ni se comporta distinto si `seats` tiene 0 filas:
-  las políticas RLS de `seats` (lectura pública) simplemente devuelven un
-  conjunto vacío; los triggers y constraints de `tickets`/`orders` no
-  consultan `seats` salvo cuando un ticket sí trae `seat_id`.
+- **Nueva capa `performances`.** Una producción (p.ej. "Showman") puede
+  tener varias funciones (sábado, domingo...). La disponibilidad y venta de
+  un asiento se decide por **función**, no por producción: el mismo asiento
+  físico se puede vender una vez por función.
+- **Jerarquía conceptual:** `productions → performances → tickets → seats`.
+  `seats` sigue colgando de `productions` (el mapa físico del venue no
+  cambia entre funciones de la misma producción); lo que cambia por función
+  es si ESE asiento está tomado, en ESA función.
+- **`orders.production_id` desaparece.** Una orden ahora referencia
+  `performance_id`; la producción se alcanza siempre vía
+  `performances.production_id` — un solo lugar donde vive ese dato, para
+  que nunca puedan desincronizarse.
+- **`tickets.performance_id` se agrega**, sincronizado por trigger desde la
+  orden padre (el cliente nunca lo escribe). Preferí derivarlo-y-mantenerlo
+  sincronizado en vez de "solo derivarlo en cada lectura" porque así el
+  índice anti-doble-reserva puede vivir como un índice único parcial normal
+  sobre `tickets`, en lugar de una validación cruzada más frágil contra
+  `orders` en cada INSERT.
+- **El índice anti-doble-reserva pasa a ser compuesto:**
+  `(performance_id, seat_id)` en vez de `seat_id` solo. El mismo asiento
+  puede tener un ticket activo en la función del sábado y otro ticket
+  activo distinto en la función del domingo — antes esto no era posible.
+- **`blocked_seats` pasa a tener llave compuesta** `(performance_id,
+  seat_id)` en vez de `seat_id` como llave primaria — un bloqueo es
+  específico de una función, igual que una venta.
+- **Nuevos triggers de integridad cruzada** (`sync_and_validate_ticket()`,
+  `validate_blocked_seat_production()`) impiden que un ticket o un bloqueo
+  mezclen el asiento de una producción con la función de otra producción
+  distinta — un error que ninguna FK por sí sola puede detectar, porque
+  `seats` y `performances` solo comparten `production_id` indirectamente.
+- **Rol nuevo: `admin`.** El enum pasa de `('fan','staff')` a
+  `('fan','staff','admin')`. `admin` es superconjunto de `staff`: todo lo
+  que puede hacer `staff` (aprobar órdenes, bloquear/liberar asientos,
+  escanear boletos, gestionar catálogo/vendedores) lo puede hacer `admin`,
+  pero **solo `admin` puede escribir la fila `profiles` de otro usuario** —
+  en particular, solo `admin` puede cambiar el `rol` de alguien. Esto separa
+  "operar la taquilla" de "otorgar permisos", que es justo el tipo de
+  poder que no se le quiere dar por defecto a todo el staff operativo.
 
 ## Tablas (archivos en `supabase/migrations/`)
 
-| Migración | Tabla(s) | Depende del venue |
+| Migración | Tabla(s) / objetos | Depende del venue |
 |---|---|---|
-| `0001_extensions_and_enums.sql` | tipos `order_status`, `user_role` | No |
+| `0001_extensions_and_enums.sql` | tipos `order_status`, `user_role` (`fan`/`staff`/`admin`) | No |
 | `0002_productions.sql` | `productions` | No |
-| `0003_seats.sql` | `seats` (vacía, sin seed) | Sí — solo el **seed**, no la tabla |
-| `0004_profiles.sql` | `profiles` + trigger de alta automática | No |
-| `0005_sellers_and_contact.sql` | `sellers`, `contact_messages` | No |
-| `0006_orders_and_tickets.sql` | `orders`, `tickets` | No |
-| `0007_blocked_seats.sql` | `blocked_seats` | No (útil solo si hay seats, pero no requiere que existan) |
-| `0008_helper_functions_and_triggers.sql` | `is_staff()`, `current_profile_role()`, código de orden autogenerado, recálculo de `total` | No |
-| `0009_rls_policies.sql` | políticas RLS de todas las tablas | No |
+| `0003_performances.sql` | `performances` (vacía, sin seed) | No — depende de tener fechas, no del venue |
+| `0004_seats.sql` | `seats` (vacía, sin seed) | Sí — solo el **seed**, no la tabla |
+| `0005_profiles.sql` | `profiles` + trigger de alta automática | No |
+| `0006_sellers_and_contact.sql` | `sellers`, `contact_messages` | No |
+| `0007_orders_and_tickets.sql` | `orders`, `tickets` | No |
+| `0008_blocked_seats.sql` | `blocked_seats` | No (útil solo si hay seats, pero no requiere que existan) |
+| `0009_helper_functions_and_triggers.sql` | `is_staff()`, `is_admin()`, `current_profile_role()`, código de orden autogenerado, sincronización/validación de `tickets`/`blocked_seats`, recálculo de `total` | No |
+| `0010_rls_policies.sql` | políticas RLS de todas las tablas | No |
 
 Todas ejecutables hoy, en orden, contra un proyecto Supabase vacío, sin
-tener el venue.
+tener el venue ni ninguna función cargada.
 
-## B. Columnas / tipos — ver los archivos `.sql`, son la fuente de verdad
+## A/B. Tablas y columnas — los archivos `.sql` son la fuente de verdad
 
-No los repito aquí para no arriesgar que el documento y el SQL se
-desincronicen. Resumen de las diferencias clave respecto a la v1:
+No repito columna por columna para no arriesgar que este documento y el SQL
+se desincronicen. Cambios de forma respecto a v2:
 
 ```
-seats
-  ... (igual que v1, section/seat_row/seat_number/seat_label nullable donde aplica)
-  is_active boolean default true   -- nuevo: permite retirar un asiento sin borrarlo
-  -- SIN seed. 0 filas hasta que se corra una migración de seed dedicada.
+performances                        -- nueva
+  id, production_id → productions,
+  starts_at timestamptz not null,   -- fecha/hora de la función
+  venue text,                       -- opcional: solo si la función corre en otro lugar que productions.venue
+  on_sale boolean default false,
+  created_at, updated_at
+  -- SIN seed. 0 filas hasta que staff/admin cree una función real.
 
-tickets                             -- antes "order_seats"
-  id, order_id, seat_id (NULL-able), qr_token, is_active,
-  checked_in_at, checked_in_by, created_at
-  -- seat_id NULL = admisión general. Es el estado por defecto hoy.
+orders
+  ... igual que v2, PERO:
+  performance_id uuid not null references performances(id)   -- reemplaza production_id
+  -- production_id fue ELIMINADO de orders; se alcanza vía performances.production_id
+
+tickets
+  ... igual que v2 (seat_id sigue NULL-able = admisión general), PERO:
+  performance_id uuid not null references performances(id)
+  -- sincronizado por trigger desde orders.performance_id; el cliente no lo escribe
+
+blocked_seats
+  performance_id uuid not null references performances(id),  -- nueva columna
+  seat_id uuid not null references seats(id),
+  primary key (performance_id, seat_id)                       -- antes: seat_id solo
 ```
 
 ## C. Relaciones
 
-`orders.production_id → productions`, `tickets.order_id → orders`,
-`tickets.seat_id → seats` (**nullable**), `blocked_seats.seat_id → seats`,
-`orders.seller_id → sellers`, `orders.buyer_user_id → auth.users`,
-`profiles.id → auth.users` (1:1).
+```
+productions ← performances ← orders ← tickets → seats
+                    ↑                              ↑
+                    └────────── blocked_seats ──────┘
+```
+
+- `performances.production_id → productions`
+- `orders.performance_id → performances` (ya no hay `orders.production_id`)
+- `tickets.order_id → orders`, `tickets.performance_id → performances` (sincronizado, no independiente)
+- `tickets.seat_id → seats` (**nullable** — admisión general)
+- `blocked_seats.(performance_id, seat_id) → performances, seats`
+- `seats.production_id → productions` (el mapa físico sigue siendo por producción, no por función)
+- `orders.seller_id → sellers`, `orders.buyer_user_id → auth.users`, `profiles.id → auth.users` (1:1)
 
 ## D. Estados
 
 - Orden: `pendiente → aprobado | rechazado` (sin cambios).
 - Ticket: `activo` (`is_active=true`, `checked_in_at NULL`) →
-  `usado` (`checked_in_at` set) — y `is_active=false` si la orden padre se
-  rechaza. Ya no existe un "estado de asiento" propio: si el ticket no
-  tiene `seat_id`, no hay estado de asiento que reportar (es admisión
-  general); si lo tiene, su estado se deriva del ticket igual que antes
-  (disponible/pendiente/aprobado/usado/bloqueado).
+  `usado` (`checked_in_at` set) — `is_active=false` si la orden padre se
+  rechaza. El "estado de un asiento" en una función específica sigue
+  derivándose de sus tickets/bloqueos activos **dentro de esa función**;
+  el mismo asiento en otra función es un cálculo independiente.
 
-## E–G. Público / autenticado / staff
+## E–G. Público / autenticado / staff / admin
 
-Sin cambios respecto a la v1: disponibilidad y catálogo son públicos sin
-PII; "mis boletos" requiere ser el dueño (por sesión o por código+teléfono
-vía RPC, a definir en la integración); todo lo administrativo es
-staff-only. `seats` se agrega a la lista de "público, lectura" — es
-metadata de mapa, no PII, y estar vacía no cambia su clasificación.
+- **Público (sin login):** catálogo de producciones, lista de funciones
+  (`performances`, para elegir "sábado vs. domingo" en el checkout), y mapa
+  de asientos (`seats`) — todo sin PII. Estar `seats`/`performances` vacías
+  no cambia esta clasificación, solo el resultado (0 filas).
+- **Autenticado:** ver sus propias órdenes/tickets.
+- **Staff:** todo lo operativo — aprobar/rechazar órdenes, bloquear/liberar
+  asientos por función, escanear/check-in, gestionar catálogo y vendedores,
+  ver perfiles (para atribuir nombres a ventas/check-ins).
+- **Admin (nuevo, exclusivo):** todo lo de staff, **más** la capacidad de
+  escribir la fila `profiles` de cualquier otro usuario — es decir, la
+  única forma de otorgar `staff`/`admin` a una cuenta.
 
-## H. RLS — resumen (detalle en `0009_rls_policies.sql`)
+## H. RLS — resumen (detalle en `0010_rls_policies.sql`)
 
-- `productions`, `seats`: lectura pública, escritura solo staff.
-- `orders`, `tickets`: **sin INSERT/UPDATE de cliente en absoluto** —  todo
+- `productions`, `performances`, `seats`: lectura pública, escritura
+  staff/admin (`is_staff()` cubre ambos roles).
+- `orders`, `tickets`: **sin INSERT/UPDATE de cliente en absoluto** — toda
   mutación pasa por funciones `SECURITY DEFINER` (a diseñar en la
-  integración, no en este paso). Esto es lo que impide que un comprador
-  edite la orden de otro, cambie su propio `total`, o marque un ticket como
-  usado.
-- `tickets`: doble reserva de asiento evitada con índice único parcial
-  (`uq_tickets_active_seat`, solo cuando `seat_id is not null and
-  is_active`) — a nivel base de datos, no de aplicación. Con `seats` vacía
-  este índice simplemente no tiene nada que restringir todavía.
+  integración, no en este paso). Esto impide que un comprador edite la
+  orden de otro, cambie su propio `total`/`performance_id`, o marque un
+  ticket como usado.
+- **Doble reserva evitada por función:** índice único parcial
+  `uq_tickets_active_seat_per_performance` sobre
+  `(performance_id, seat_id)` — el mismo asiento puede tener, como máximo,
+  un ticket activo *por función*; nada le impide tener un ticket activo
+  distinto en otra función. Con `seats`/`performances` vacías, el índice
+  simplemente no tiene nada que restringir todavía.
+- **Integridad cruzada producción↔función↔asiento:** los triggers
+  `sync_and_validate_ticket()` (en `tickets`) y
+  `validate_blocked_seat_production()` (en `blocked_seats`) rechazan con
+  excepción cualquier intento de asociar el asiento de una producción con
+  la función de otra producción distinta.
 - `profiles`: el propio usuario puede leer/editar su fila, **nunca su
-  `rol`** — el `WITH CHECK` de la política reafirma el rol ya almacenado
-  (vía `current_profile_role()`), así que un `UPDATE` que intente incluir
-  `rol:'staff'` desde devtools es rechazado por la base de datos, no por
-  el frontend.
-- `sellers`: sin SELECT público de la tabla completa.
-- `contact_messages`: INSERT público, SELECT/UPDATE/DELETE solo staff.
+  `rol`** — el `WITH CHECK` reafirma el rol ya almacenado
+  (`current_profile_role()`). **Staff puede leer todos los perfiles pero no
+  escribirlos; solo admin puede escribir la fila de otro usuario** — esta es
+  la única asimetría staff/admin en todo el esquema, y es intencional: es
+  el único punto donde otorgar el permiso equivaldría a poder auto-ascender
+  a alguien (incluido uno mismo, indirectamente, pidiéndole a otro staff).
+- `sellers`: gestión staff/admin, sin SELECT público de la tabla completa.
+- `contact_messages`: INSERT público, SELECT/UPDATE/DELETE staff/admin.
 
 ## I. Qué falta para conectar el frontend (fuera de alcance de este paso)
 
 No incluido todavía, a propósito:
 - RPCs de mutación (`create_order`, `approve_order`, `reject_order`,
-  `checkin_by_qr`, `create_staff_ticket`, etc.) — se diseñan cuando se
-  aborde la integración real del cliente, no antes.
+  `checkin_by_qr`, `create_staff_ticket`, etc.) — ahora deben recibir
+  `performance_id` en vez de `production_id`; se diseñan cuando se aborde
+  la integración real del cliente, no antes.
 - Cliente Supabase en `js/app.js` / `index.html`.
-- Seed de `seats` por producción.
+- UI para elegir función (hoy el checkout solo conoce "producción").
+- Seed de `performances` (fechas reales) y de `seats` (numeración real).
 
-## J. Qué falta específicamente para `seats` cuando haya venue
+## J. Qué falta específicamente antes de vender de verdad
 
-1. Confirmar el venue de cada producción (Showman, Mamma Mia!, HSM).
-2. Obtener el plano/numeración real: secciones, filas, asientos por fila.
-3. Escribir una migración de **seed** dedicada (`0010_seed_seats_<produccion>.sql`
-   o similar), separada de este esquema, que inserte filas en `seats`.
-4. Solo entonces tiene sentido decidir si el checkout de esa producción usa
+1. **Funciones:** para cada producción, crear sus filas reales en
+   `performances` (fecha/hora, venue si aplica, `on_sale`). Sin venue
+   confirmado esto ya se puede hacer — una función no requiere saber la
+   numeración de asientos.
+2. **Asientos** (solo si esa producción vende por asiento numerado, no
+   admisión general):
+   - Confirmar el venue de cada producción.
+   - Obtener el plano/numeración real: secciones, filas, asientos por fila.
+   - Escribir una migración de **seed** dedicada (p.ej.
+     `0011_seed_seats_<produccion>.sql`), separada de este esquema.
+3. Solo entonces tiene sentido decidir, por producción, si el checkout usa
    mapa de asientos o sigue en admisión general (`seat_id null`).
 
-Nada de esto bloquea correr `0001`–`0009` hoy.
+Nada de esto bloquea correr `0001`–`0010` hoy.
