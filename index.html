@@ -1,0 +1,1232 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DARF Productions — Teatro Musical</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.min.js" integrity="sha384-JBR+x8blGwjDRO63aHCGiZMD4VNiTR4ZUGA+N6ZKLf3zNt1fK8IBpcgPaMrxqWBp" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.5.1/qrcode.min.js" integrity="sha512-PEhlWBZBrQL7flpJPY8lXx8tIN7HWX912GzGhFTDqA3iWFrakVH3lVHomCoU9BhfKzgxfEk6EG2C3xej+9srOQ==" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js" integrity="sha384-c9d8RFSL+u3exBOJ4Yp3HUJXS4znl9f+z66d1y54ig+ea249SpqR+w1wyvXz/lk+" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <div class="wrap">
+    <div class="brand" onclick="nav('home')">
+      <img src="DARF PRODUCTIONS LOGOS/2.png" alt="DARF Productions" style="height:38px;width:auto;filter:brightness(0) invert(1);flex-shrink:0;object-fit:contain">
+    </div>
+    <button class="hbg" id="hbg" aria-label="Abrir menú de navegación"><span></span><span></span><span></span></button>
+    <ul class="nav-links" id="navLinks">
+      <li><button class="nav-a" id="navHome" onclick="nav('home')">Inicio</button></li>
+      <li><button class="nav-a" id="navCartelera" onclick="nav('cartelera')">Cartelera</button></li>
+      <li class="nav-drop">
+        <button class="nav-a" id="navProdBtn">Producciones ▾</button>
+        <div class="nav-drop-menu" id="navProdMenu">
+          <div class="nav-drop-item" onclick="nav('showman')">
+            <img loading="lazy" src="SHOWMAN VISUALS/1.png" style="width:46px;height:28px;object-fit:contain;flex-shrink:0;mix-blend-mode:lighten;border-radius:3px">
+            Showman &mdash; Próximamente
+          </div>
+          <div class="nav-drop-item" onclick="nav('mm')">
+            <img loading="lazy" src="MAMMA MIA VISUALS/1.png" style="width:46px;height:28px;object-fit:contain;flex-shrink:0;mix-blend-mode:lighten;border-radius:3px">
+            Mamma Mia! &mdash; 2026
+          </div>
+          <div class="nav-drop-item" onclick="nav('hsm')">
+            <img loading="lazy" src="HIGH SCHOOL MUSICAL VISUALS/1.png" style="width:32px;height:20px;object-fit:contain;flex-shrink:0">
+            High School Musical &mdash; 2025
+          </div>
+        </div>
+      </li>
+      <li><button class="nav-a" id="navContacto" onclick="nav('contacto')">Contacto</button></li>
+      <li id="navAuth"><button class="btn btn-r btn-sm" onclick="nav('login')">Iniciar Sesión</button></li>
+    </ul>
+  </div>
+</nav>
+<div class="flash-box" id="flashBox"></div>
+
+<main>
+
+<!-- ══════════ HOME ══════════ -->
+<div class="view active" id="v-home">
+  <section class="hero">
+    <div class="hero-bg-grad"></div>
+    <div class="wrap" style="position:relative;z-index:2">
+      <div class="hero-content">
+        <div class="eyebrow anim a1" style="margin-bottom:18px">DARF Productions</div>
+        <h1 class="h-xl anim a2" style="line-height:1.06">El escenario<br><span class="hero-headline-grad" style="font-style:italic">siempre vivo</span></h1>
+        <p class="sub anim a3" style="max-width:460px;margin-top:16px">Revive la magia, descubre a los artistas y sigue el legado de DARF.</p>
+        <div class="hero-cta anim a4">
+          <button class="btn btn-r btn-lg" onclick="nav('prods')">Ver Producciones</button>
+          <button class="btn btn-o btn-lg" onclick="nav('contacto')">Contacto</button>
+        </div>
+      </div>
+      <!-- Mini cards de producciones -->
+      <div class="hero-prods-preview anim a4">
+        <div class="prod-mini" onclick="nav('showman')">
+          <img class="prod-mini-img" src="SHOWMAN VISUALS/2.png" alt="Showman" style="width:56px;height:56px;object-fit:cover;border-radius:8px;flex-shrink:0">
+          <div class="prod-mini-info">
+            <div class="prod-mini-year">Próximamente</div>
+            <div class="prod-mini-title" style="color:var(--showman-gold)">Showman</div>
+          </div>
+        </div>
+        <div class="prod-mini" onclick="nav('mm')">
+          <img class="prod-mini-img" src="MAMMA MIA VISUALS/5.png" alt="Mamma Mia" style="width:56px;height:56px;object-fit:cover;border-radius:8px;flex-shrink:0">
+          <div class="prod-mini-info">
+            <div class="prod-mini-year">Archivo · 2026</div>
+            <div class="prod-mini-title" style="color:var(--mm-blue)">Mamma Mia!</div>
+          </div>
+        </div>
+        <div class="prod-mini" onclick="nav('hsm')">
+          <img class="prod-mini-img" src="HIGH SCHOOL MUSICAL VISUALS/3.png" alt="HSM" style="width:56px;height:56px;object-fit:cover;border-radius:8px;flex-shrink:0">
+          <div class="prod-mini-info">
+            <div class="prod-mini-year">Archivo · 2025</div>
+            <div class="prod-mini-title" style="color:var(--hsm-red)">High School Musical</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="trust">
+    <div class="wrap">
+      <div class="trust-row">
+        <div class="trust-item"><div class="trust-num">3</div><div class="trust-label">Producciones</div></div>
+        <div class="trust-item"><div class="trust-num">80+</div><div class="trust-label">Artistas</div></div>
+        <div class="trust-item"><div class="trust-num">2</div><div class="trust-label">Temporadas</div></div>
+        <div class="trust-item"><div class="trust-num">∞</div><div class="trust-label">Teatro Musical</div></div>
+      </div>
+    </div>
+  </div>
+
+  <section style="padding:64px 24px 0;border-top:1px solid var(--g3)">
+    <div class="wrap">
+      <div class="eyebrow">Próximamente</div>
+      <h2 style="font-size:clamp(1.6rem,3vw,2.4rem);font-weight:800;color:#fff;margin:8px 0 12px">Cartelera</h2>
+      <p style="color:var(--t2);max-width:500px;margin-bottom:24px;font-size:14px">Nuestra próxima producción ya se prepara para subir a escena.</p>
+      <div onclick="nav('showman')" style="cursor:pointer;max-width:280px;background:var(--showman-blue);border-radius:var(--r8);overflow:hidden;border:2px solid var(--showman-blue-h);margin-bottom:24px">
+        <img loading="lazy" src="SHOWMAN VISUALS/2.png" style="width:100%;aspect-ratio:1;object-fit:cover;display:block">
+        <div style="padding:12px 14px;font-size:13px;font-weight:800;color:#fff;background:var(--showman-blue);text-align:center;text-transform:uppercase;letter-spacing:.03em">Showman · Próximamente</div>
+      </div>
+      <button class="btn" onclick="nav('cartelera')">Ver Cartelera →</button>
+    </div>
+  </section>
+
+  <section style="padding:48px 24px;border-top:1px solid var(--g3)">
+    <div class="wrap">
+      <div class="eyebrow">Historia</div>
+      <h2 style="font-size:clamp(1.6rem,3vw,2.4rem);font-weight:800;color:#fff;margin:8px 0 12px">Archivo de Producciones</h2>
+      <p style="color:var(--t2);max-width:500px;margin-bottom:24px;font-size:14px">Dos temporadas, más de 60 artistas y una comunidad que crece.</p>
+      <div style="display:flex;gap:12px;margin-bottom:24px;flex-wrap:wrap">
+        <div onclick="nav('mm')" style="cursor:pointer;flex:1;min-width:160px;max-width:220px;background:var(--g2);border-radius:var(--r8);overflow:hidden;border:2px solid #d4547a">
+          <img loading="lazy" src="MAMMA MIA VISUALS/5.png" style="width:100%;aspect-ratio:1;object-fit:cover">
+          <div style="padding:10px 12px;font-size:12px;font-weight:700;color:#fff;background:#d4547a">Mamma Mia! · 2026</div>
+        </div>
+        <div onclick="nav('hsm')" style="cursor:pointer;flex:1;min-width:160px;max-width:220px;background:var(--hsm-red);border-radius:var(--r8);overflow:hidden;border:1px solid rgba(255,255,255,.1);position:relative">
+          <img loading="lazy" src="HIGH SCHOOL MUSICAL VISUALS/4.png" style="width:100%;aspect-ratio:1;object-fit:cover;opacity:.45">
+          <div style="position:absolute;top:0;left:0;right:0;bottom:36px;display:flex;align-items:center;justify-content:center;padding:16px">
+            <img loading="lazy" src="HIGH SCHOOL MUSICAL VISUALS/1.png" style="width:85%;object-fit:contain">
+          </div>
+          <div style="padding:10px 12px;font-size:12px;font-weight:700;color:#fff">High School Musical · 2025</div>
+        </div>
+      </div>
+      <button class="btn" style="background:transparent;border:1.5px solid var(--g4);color:var(--t2)" onclick="nav('prods')">Ver Archivo Completo →</button>
+    </div>
+  </section>
+
+  <section style="padding:48px 24px 80px;border-top:1px solid var(--g3)">
+    <div class="wrap">
+      <div class="eyebrow" style="color:var(--morado)">¿Quieres actuar?</div>
+      <h2 style="font-size:clamp(1.6rem,3vw,2.4rem);font-weight:800;color:#fff;margin:8px 0 12px">Audiciones</h2>
+      <p style="color:var(--t2);max-width:500px;margin-bottom:24px;font-size:14px">Convocatorias y casting para nuestras próximas producciones.</p>
+      <button class="btn" style="background:var(--grad-darf)" onclick="nav('casting')">Ver Convocatorias →</button>
+    </div>
+  </section>
+</div>
+
+<!-- ══════════ CARTELERA ══════════ -->
+<div class="view" id="v-cartelera">
+  <div class="obra-hero" style="min-height:45vh;background:linear-gradient(135deg,#0B0B0B 0%,#1C1C1C 100%);display:flex;align-items:center;justify-content:center;text-align:center">
+    <div class="obra-hero-content" style="padding:0 24px">
+      <div class="eyebrow" style="color:var(--rojo);margin-bottom:12px;justify-content:center">DARF Productions</div>
+      <h1 style="font-size:clamp(2rem,5vw,3.5rem);font-weight:900;color:#fff;margin-bottom:16px">Cartelera Actual</h1>
+      <p style="color:var(--t2);font-size:15px;max-width:520px;margin:0 auto">Próximamente en escena.</p>
+    </div>
+  </div>
+  <div class="sec">
+    <div class="wrap">
+      <div class="prods-grid">
+        <div class="prod-select-card" onclick="nav('showman')" style="background:#050810;border-color:rgba(21,101,192,.25)">
+          <div style="height:340px;position:relative;overflow:hidden">
+            <img loading="lazy" src="SHOWMAN VISUALS/2.png" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
+            <div style="position:absolute;bottom:14px;left:14px;z-index:3"><span class="badge badge-showman">Próximamente</span></div>
+          </div>
+          <div class="prod-select-body" style="background:linear-gradient(to bottom,var(--showman-blue) 0%,#05070d 100%)">
+            <div class="prod-select-year" style="color:var(--showman-gold)">Próxima producción DARF</div>
+            <div class="prod-select-title" style="color:#fff">Showman</div>
+            <div class="prod-select-desc" style="color:rgba(255,255,255,.75)">Estamos preparando algo especial. Muy pronto revelaremos sinopsis, elenco y fechas.</div>
+            <button class="btn btn-sm" style="background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.6)" onmouseover="this.style.background='rgba(255,255,255,.15)'" onmouseout="this.style.background='transparent'">Ver Producción →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ PRODS SELECTOR ══════════ -->
+<div class="view" id="v-prods">
+  <div class="obra-hero" style="min-height:40vh;background:linear-gradient(135deg,#0B0B0B,#1a0a2e);display:flex;align-items:center;justify-content:center;text-align:center">
+    <div class="obra-hero-content" style="padding:0 24px">
+      <div class="eyebrow" style="background:var(--grad-darf);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:12px;justify-content:center">Desde 2024</div>
+      <h1 style="font-size:clamp(2rem,5vw,3.2rem);font-weight:900;color:#fff;margin-bottom:16px">Archivo de Producciones</h1>
+      <p style="color:var(--t2);font-size:15px;max-width:540px;margin:0 auto">Cada producción es un capítulo en la historia de DARF. Dos temporadas, decenas de artistas, una sola pasión.</p>
+    </div>
+  </div>
+  <div class="pg">
+    <section class="sec">
+      <div class="wrap">
+        <div class="eyebrow">Archivo completo</div>
+        <h2 class="h-lg" style="margin-top:14px">Nuestras <span class="accent">Producciones</span></h2>
+        <div class="bar"></div>
+        <div class="prods-grid">
+          <div class="prod-select-card" onclick="nav('showman')" style="background:#050810;border-color:rgba(21,101,192,.25)">
+            <div style="height:340px;position:relative;overflow:hidden">
+              <img loading="lazy" src="SHOWMAN VISUALS/2.png" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
+              <div style="position:absolute;bottom:14px;left:14px;z-index:3"><span class="badge badge-showman">Próximamente</span></div>
+            </div>
+            <div class="prod-select-body" style="background:linear-gradient(to bottom,var(--showman-blue) 0%,#05070d 100%)">
+              <div class="prod-select-year" style="color:var(--showman-gold)">Próxima producción DARF</div>
+              <div class="prod-select-title" style="color:#fff">Showman</div>
+              <div class="prod-select-desc" style="color:rgba(255,255,255,.75)">Estamos preparando algo especial. Muy pronto revelaremos sinopsis, elenco y fechas.</div>
+              <button class="btn btn-sm" style="background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.6)" onmouseover="this.style.background='rgba(255,255,255,.15)'" onmouseout="this.style.background='transparent'">Ver Producción →</button>
+            </div>
+          </div>
+          <div class="prod-select-card mm-card" onclick="nav('mm')" style="background:#f8f8f8">
+            <div class="prod-select-thumb-mm" style="position:relative;overflow:hidden;background:#f8f8f8">
+              <img loading="lazy" src="MAMMA MIA VISUALS/4.png" style="position:absolute;left:0;top:0;height:100%;width:55%;object-fit:cover;object-position:top center">
+              <div style="position:absolute;inset:0;background:linear-gradient(to right,transparent 30%,#f8f8f8 55%)"></div>
+              <div style="position:absolute;right:12px;top:50%;transform:translateY(-50%);width:52%;z-index:2">
+                <img loading="lazy" src="MAMMA MIA VISUALS/1.png" style="width:100%;display:block">
+              </div>
+              <div style="position:absolute;bottom:14px;left:14px;z-index:3"><span class="badge badge-gray">Archivo · 2026</span></div>
+            </div>
+            <div class="prod-select-body">
+              <div class="prod-select-year" style="color:var(--mm-blue)">Temporada 2026 · Basada en ABBA</div>
+              <div class="prod-select-title" style="color:var(--mm-blue)">Mamma Mia!</div>
+              <div class="prod-select-desc">Sophie invita a tres posibles padres a su boda, desatando una noche de reencuentros al ritmo de los hits de ABBA.</div>
+              <button class="btn btn-o-mm btn-sm">Ver Producción →</button>
+            </div>
+          </div>
+          <div class="prod-select-card" onclick="nav('hsm')" style="background:#120505;border-color:rgba(198,34,34,.2)">
+            <div class="prod-select-thumb-hsm">
+              <img loading="lazy" src="HIGH SCHOOL MUSICAL VISUALS/4.png" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.45">
+              <img loading="lazy" src="HIGH SCHOOL MUSICAL VISUALS/1.png" style="width:220px;position:relative;z-index:2">
+              <div style="position:absolute;bottom:14px;left:14px;z-index:3"><span class="badge badge-gray">Archivo · 2025</span></div>
+            </div>
+            <div class="prod-select-body" style="background:linear-gradient(to bottom,var(--hsm-red) 0%,#0e0202 100%)">
+              <div class="prod-select-year" style="color:rgba(255,255,255,.7)">Temporada 2025 · Disney</div>
+              <div class="prod-select-title" style="color:#fff">High School Musical</div>
+              <div class="prod-select-desc" style="color:rgba(255,255,255,.75)">Troy y Gabriella rompen las reglas de East High para seguir su pasión por la música.</div>
+              <button class="btn btn-sm" style="background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.6)" onmouseover="this.style.background='rgba(255,255,255,.15)'" onmouseout="this.style.background='transparent'">Ver Producción →</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- ══════════ CASTING ══════════ -->
+<div class="view" id="v-casting">
+  <div class="obra-hero" style="min-height:45vh;background:linear-gradient(135deg,#0a0a1a 0%,#1a0a2e 100%);display:flex;align-items:center;justify-content:center;text-align:center">
+    <div class="obra-hero-content" style="padding:0 24px">
+      <div class="eyebrow" style="color:var(--morado);margin-bottom:12px;justify-content:center">Únete al Elenco</div>
+      <h1 style="font-size:clamp(2rem,5vw,3.5rem);font-weight:900;color:#fff;margin-bottom:16px">Audiciones</h1>
+      <p style="color:var(--t2);font-size:15px;max-width:520px;margin:0 auto">Convocatorias y casting para nuestras próximas producciones.</p>
+    </div>
+  </div>
+  <div class="sec" style="text-align:center;padding:80px 24px">
+    <div style="font-size:48px;margin-bottom:24px">🎤</div>
+    <p style="color:var(--t2);font-size:16px;max-width:480px;margin:0 auto 32px">No hay convocatorias de audición abiertas en este momento. Síguenos en nuestras redes para ser el primero en enterarte.</p>
+    <button class="btn" style="background:var(--grad-darf)" onclick="nav('contacto')">Seguir en Redes</button>
+  </div>
+</div>
+
+<!-- ══════════ MAMMA MIA ══════════ -->
+<div class="view" id="v-mm">
+  <div class="pg section-mm">
+    <section class="obra-hero obra-hero-mm" style="min-height:65vh">
+      <div class="hero-bg-wrap">
+        <!-- Flores como fondo completo -->
+        <img loading="lazy" src="MAMMA MIA VISUALS/6.png" class="hero-bg-full" style="opacity:.75">
+        <!-- Chica a la derecha, borde izquierdo disuelto en las flores -->
+        <img loading="lazy" src="MAMMA MIA VISUALS/4.png" class="mm-hero-chica" style="position:absolute;right:0;bottom:0;height:100%;width:45%;object-fit:cover;object-position:top center;pointer-events:none;z-index:1;-webkit-mask-image:linear-gradient(to right,transparent 0%,black 28%);mask-image:linear-gradient(to right,transparent 0%,black 28%)">
+        <!-- Gradiente más suave para que el logo sea visible -->
+        <div class="hero-overlay-mm"></div>
+      </div>
+      <div class="wrap obra-hero-content hero-content-z3">
+        <span class="badge badge-gray" style="margin-bottom:18px;display:inline-block">📚 Archivo Histórico · 2026</span>
+        <div class="mm-logo-wrap">
+          <div class="mm-logo-glow"></div>
+          <img loading="lazy" src="MAMMA MIA VISUALS/1.png" class="mm-logo-img" alt="Mamma Mia!">
+        </div>
+        <div style="font-size:12px;color:rgba(255,255,255,.5);font-weight:600;letter-spacing:.08em;text-transform:uppercase">The Smash Hit Musical Based on the Songs of ABBA</div>
+      </div>
+    </section>
+
+    <section class="sec">
+      <div class="wrap">
+        <div class="info-grid">
+          <div>
+            <!-- SINOPSIS -->
+            <h2 class="h-md accent-mm">Sinopsis</h2>
+            <div class="bar gold"></div>
+            <p style="font-size:.97rem;line-height:1.95;color:rgba(255,255,255,.87)">En una isla griega bañada por el sol, Sophie está a punto de casarse. Sin embargo, antes de dar el gran paso, decide descubrir la verdad sobre su pasado: quiere saber quién es su padre. Tras encontrar el antiguo diario de su madre, Donna, Sophie invita en secreto a tres hombres que formaron parte de su historia veinte años atrás… convencida de que uno de ellos es su verdadero padre.</p>
+            <p style="font-size:.97rem;line-height:1.95;color:rgba(255,255,255,.87);margin-top:14px">Lo que comienza como una búsqueda íntima se transforma en una reunión inesperada llena de recuerdos, emociones no resueltas y decisiones pendientes. Entre enredos, confesiones y reencuentros, madre e hija deberán enfrentar el pasado para entender su presente.</p>
+            <p style="font-size:.97rem;line-height:1.95;color:rgba(255,255,255,.87);margin-top:14px">Nuestra producción presenta una versión fresca y contemporánea de este clásico musical, acompañada por los inolvidables éxitos de ABBA. Con una propuesta escénica moderna y completamente realizada por alumnos, esta puesta en escena celebra el amor, la identidad y la libertad de elegir nuestro propio camino.</p>
+
+            <!-- CANCIONES -->
+            <h2 class="h-md accent-mm" style="margin-top:44px">Lista de Canciones</h2>
+            <div class="bar gold"></div>
+            <div class="songs-grid">
+              <div>
+                <div class="acto-t gold">Acto I</div>
+                <div class="song-row"><span class="song-n gold">01</span><span>Overture / I Have a Dream</span></div>
+                <div class="song-row"><span class="song-n gold">02</span><span>Honey, Honey</span></div>
+                <div class="song-row"><span class="song-n gold">03</span><span>Money, Money, Money</span></div>
+                <div class="song-row"><span class="song-n gold">04</span><span>Thank You for the Music</span></div>
+                <div class="song-row"><span class="song-n gold">05</span><span>Mamma Mia</span></div>
+                <div class="song-row"><span class="song-n gold">06</span><span>Chiquitita</span></div>
+                <div class="song-row"><span class="song-n gold">07</span><span>Dancing Queen</span></div>
+                <div class="song-row"><span class="song-n gold">08</span><span>Lay All Your Love on Me</span></div>
+                <div class="song-row"><span class="song-n gold">09</span><span>Super Trouper</span></div>
+                <div class="song-row"><span class="song-n gold">10</span><span>Gimme! Gimme! Gimme!</span></div>
+                <div class="song-row"><span class="song-n gold">11</span><span>Voulez-Vous</span></div>
+              </div>
+              <div>
+                <div class="acto-t gold">Acto II</div>
+                <div class="song-row"><span class="song-n gold">01</span><span>One of Us</span></div>
+                <div class="song-row"><span class="song-n gold">02</span><span>SOS</span></div>
+                <div class="song-row"><span class="song-n gold">03</span><span>Does Your Mother Know</span></div>
+                <div class="song-row"><span class="song-n gold">04</span><span>Knowing Me, Knowing You</span></div>
+                <div class="song-row"><span class="song-n gold">05</span><span>Our Last Summer</span></div>
+                <div class="song-row"><span class="song-n gold">06</span><span>Slipping Through My Fingers</span></div>
+                <div class="song-row"><span class="song-n gold">07</span><span>The Winner Takes It All</span></div>
+                <div class="song-row"><span class="song-n gold">08</span><span>Take a Chance on Me</span></div>
+                <div class="song-row"><span class="song-n gold">09</span><span>I Do, I Do, I Do</span></div>
+                <div class="song-row"><span class="song-n gold">10</span><span>I Have a Dream</span></div>
+                <div class="song-row"><span class="song-n gold">11</span><span>Mamma Mia x Dancing Queen Finale</span></div>
+                <div class="song-row"><span class="song-n gold">12</span><span>Waterloo</span></div>
+              </div>
+            </div>
+
+            <!-- MULTIMEDIA -->
+            <h2 class="h-md accent-mm" style="margin-top:44px">Contenido Multimedia</h2>
+            <div class="bar gold"></div>
+            <div class="media-grid" style="margin-bottom:28px">
+              <a class="media-card gold-card" href="#" target="_blank" style="border-color:rgba(215,187,95,.2)">
+                <div class="media-icon">🎬</div>
+                <div><div class="media-info-t">Pro-Shot Oficial</div><div class="media-info-s">Grabación completa · Próximamente</div></div>
+              </a>
+            </div>
+
+            <!-- CARRUSEL MM -->
+            <h2 class="h-md accent-mm">Galería Fotográfica</h2>
+            <div class="bar gold"></div>
+            <div class="carousel-wrap" style="margin-bottom:8px;border-color:rgba(215,187,95,.15)">
+              <div class="carousel-track" id="carMM">
+                <div class="carousel-slide" style="background:linear-gradient(135deg,#0a0800,#1a1200)"><div class="gal-icon" style="font-size:2.5rem;color:rgba(215,187,95,.3)">📸</div><span style="color:rgba(215,187,95,.4)">Foto 01 · Mamma Mia! 2026</span></div>
+                <div class="carousel-slide" style="background:linear-gradient(135deg,#0a0800,#1a1200)"><div class="gal-icon" style="font-size:2.5rem;color:rgba(215,187,95,.3)">📸</div><span style="color:rgba(215,187,95,.4)">Foto 02 · Mamma Mia! 2026</span></div>
+                <div class="carousel-slide" style="background:linear-gradient(135deg,#0a0800,#1a1200)"><div class="gal-icon" style="font-size:2.5rem;color:rgba(215,187,95,.3)">📸</div><span style="color:rgba(215,187,95,.4)">Foto 03 · Mamma Mia! 2026</span></div>
+                <div class="carousel-slide" style="background:linear-gradient(135deg,#0a0800,#1a1200)"><div class="gal-icon" style="font-size:2.5rem;color:rgba(215,187,95,.3)">📸</div><span style="color:rgba(215,187,95,.4)">Foto 04 · Mamma Mia! 2026</span></div>
+                <div class="carousel-slide" style="background:linear-gradient(135deg,#0a0800,#1a1200)"><div class="gal-icon" style="font-size:2.5rem;color:rgba(215,187,95,.3)">📸</div><span style="color:rgba(215,187,95,.4)">Foto 05 · Mamma Mia! 2026</span></div>
+                <div class="carousel-slide" style="background:linear-gradient(135deg,#0a0800,#1a1200)"><div class="gal-icon" style="font-size:2.5rem;color:rgba(215,187,95,.3)">📸</div><span style="color:rgba(215,187,95,.4)">Foto 06 · Mamma Mia! 2026</span></div>
+              </div>
+              <button class="carousel-btn prev" onclick="carMove('carMM',-1)" aria-label="Foto anterior">‹</button>
+              <button class="carousel-btn next" onclick="carMove('carMM',1)" aria-label="Siguiente foto">›</button>
+            </div>
+            <div class="carousel-dots" id="dotsMM"></div>
+
+            <!-- REPARTO -->
+            <h2 class="h-md accent-mm" style="margin-top:44px">Reparto Oficial</h2>
+            <div class="bar gold"></div>
+            <div class="rep-list">
+              <div class="rep-row"><span class="rep-per">Donna Sheridan</span><span class="rep-act">Adriana Alarcón</span></div>
+              <div class="rep-row"><span class="rep-per">Sophie Sheridan</span><span class="rep-act">Camila Cano</span></div>
+              <div class="rep-row"><span class="rep-per">Sam Carmichael</span><span class="rep-act">Patricio González</span></div>
+              <div class="rep-row"><span class="rep-per">Harry Bright</span><span class="rep-act">Alejandro Lámbarri</span></div>
+              <div class="rep-row"><span class="rep-per">Bill Austin</span><span class="rep-act">Emiliano Castellanos</span></div>
+              <div class="rep-row"><span class="rep-per">Tanya Chesman</span><span class="rep-act">Ana Cristina Quiroz</span></div>
+              <div class="rep-row"><span class="rep-per">Rosie Mulligan</span><span class="rep-act">Daniela Altamirano</span></div>
+              <div class="rep-row"><span class="rep-per">Sky Rymand</span><span class="rep-act">Santiago Rodríguez</span></div>
+              <div class="rep-row"><span class="rep-per">Ali</span><span class="rep-act">Mia Castro</span></div>
+              <div class="rep-row"><span class="rep-per">Lisa</span><span class="rep-act">Karla Urusquieta</span></div>
+              <div class="rep-row"><span class="rep-per">Caro</span><span class="rep-act">Maria Haro</span></div>
+              <div class="rep-row"><span class="rep-per">Pepper</span><span class="rep-act">Andrés García</span></div>
+              <div class="rep-row"><span class="rep-per">Eddie</span><span class="rep-act">Diego Matas</span></div>
+              <div class="rep-row"><span class="rep-per">Jane</span><span class="rep-act">Esbeidy Felix</span></div>
+            </div>
+            <div style="margin-top:10px">
+              <div style="font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--dorado);margin-bottom:8px;opacity:.8">Ensamble</div>
+              <div class="ensamble-box" style="border-color:rgba(215,187,95,.15)">Priscila Maciel, Maria Jose Rodriguez, Fernanda Moreno, María José Arias, Antonella Tupa, Valeria Luna, Ana Paola Ulloa, Majo Barragán, Hannah Paola Martínez, Paola García, Valentina Lima, Regina Barragán, Ana Sofía Ulloa, Ana Paola Gonzalez, Michelle Martínez, Mariana Noguez, Ana Paula Berrospe, Isabella Santoscoy, María Fernanda Morales, Emmanuel Nicolas Pinto, Nicolás Medina, Ramón Robles, Emilio Pérez, Raúl Linares, Christian Peña</div>
+            </div>
+
+            <!-- EQUIPO CREATIVO -->
+            <h2 class="h-md accent-mm" style="margin-top:44px">Equipo Creativo</h2>
+            <div class="bar gold"></div>
+            <div class="rep-list">
+              <div class="rep-row"><span class="rep-per">Dirección General</span><span class="rep-act">Diego Romero</span></div>
+              <div class="rep-row"><span class="rep-per">Dirección Vocal</span><span class="rep-act">Ericka Torres</span></div>
+              <div class="rep-row"><span class="rep-per">Dirección Coreográfica</span><span class="rep-act">Jaime Hernández</span></div>
+              <div class="rep-row"><span class="rep-per">Producción Ejecutiva</span><span class="rep-act">Sandra López</span></div>
+              <div class="rep-row"><span class="rep-per">Asistencia Coreográfica</span><span class="rep-act">Ana Paola González</span></div>
+              <div class="rep-row"><span class="rep-per">Instalaciones</span><span class="rep-act">Mariana Hernández</span></div>
+              <div class="rep-row"><span class="rep-per">Maquillaje</span><span class="rep-act">Minerva De Santiago</span></div>
+              <div class="rep-row"><span class="rep-per">Vestuario</span><span class="rep-act">Mia Castro</span></div>
+            </div>
+
+            <!-- EQUIPO PRODUCCIÓN -->
+            <h2 class="h-md accent-mm" style="margin-top:44px">Equipo de Producción</h2>
+            <div class="bar gold"></div>
+            <div class="rep-list">
+              <div class="rep-row"><span class="rep-per">Asistente de Dirección</span><span class="rep-act">Maximiliano Ramírez</span></div>
+              <div class="rep-row"><span class="rep-per">Asistente de Dirección</span><span class="rep-act">Diego Gamboa</span></div>
+              <div class="rep-row"><span class="rep-per">Stage Manager</span><span class="rep-act">Emiliano Villalva</span></div>
+              <div class="rep-row"><span class="rep-per">Stage Coordinator</span><span class="rep-act">Camila Bauer</span></div>
+              <div class="rep-row"><span class="rep-per">Ingeniero Audiovisual</span><span class="rep-act">Juan Pablo Villalva</span></div>
+              <div class="rep-row"><span class="rep-per">Supervisor de Sonido</span><span class="rep-act">Alejandro Martens</span></div>
+              <div class="rep-row"><span class="rep-per">Coord. Elenco y Vestuario</span><span class="rep-act">Valeria De la Torre</span></div>
+              <div class="rep-row"><span class="rep-per">Supervisor de Utilería</span><span class="rep-act">María José Gil</span></div>
+              <div class="rep-row"><span class="rep-per">Asistente de Utilería</span><span class="rep-act">Aitana San Román</span></div>
+              <div class="rep-row"><span class="rep-per">Asistencia en Iluminación</span><span class="rep-act">Jesús Barrios</span></div>
+              <div class="rep-row"><span class="rep-per">Líder de Fotografía</span><span class="rep-act">Juan Pablo Estrada</span></div>
+              <div class="rep-row"><span class="rep-per">Equipo Logístico</span><span class="rep-act">Tamara Garza</span></div>
+              <div class="rep-row"><span class="rep-per">Staff</span><span class="rep-act">Alexa Martens</span></div>
+            </div>
+
+            <!-- AGRADECIMIENTOS -->
+            <h2 class="h-md accent-mm" style="margin-top:44px">Agradecimientos</h2>
+            <div class="bar gold"></div>
+            <ul style="display:flex;flex-direction:column;gap:10px">
+              <li style="font-size:13px;color:var(--t2);display:flex;align-items:center;gap:10px"><span style="color:var(--dorado)">♦</span>Universidad del Valle de México (UVM)</li>
+              <li style="font-size:13px;color:var(--t2);display:flex;align-items:center;gap:10px"><span style="color:var(--dorado)">♦</span>Familias del elenco y equipo creativo</li>
+              <li style="font-size:13px;color:var(--t2);display:flex;align-items:center;gap:10px"><span style="color:var(--dorado)">♦</span>Sponsors y patrocinadores 2026</li>
+            </ul>
+          </div>
+
+          <!-- FICHA MM -->
+          <aside>
+            <div class="ficha mm-gold-gradient" style="border-color:rgba(215,187,95,.2)">
+              <div class="ficha-t gold">Ficha Técnica</div>
+              <div class="ficha-row" style="border-color:#1e1a00"><div class="ficha-l">Producción</div><div class="ficha-v">Mamma Mia!</div></div>
+              <div class="ficha-row" style="border-color:#1e1a00"><div class="ficha-l">Temporada</div><div class="ficha-v">2026</div></div>
+              <div class="ficha-row" style="border-color:#1e1a00"><div class="ficha-l">Fecha</div><div class="ficha-v" style="color:var(--dorado)">22 de Mayo de 2026</div></div>
+              <div class="ficha-row" style="border-color:#1e1a00"><div class="ficha-l">Basada en</div><div class="ficha-v">Música de ABBA</div></div>
+              <div class="ficha-row" style="border-color:#1e1a00"><div class="ficha-l">Duración</div><div class="ficha-v">~2h 20 min (c/intermedio)</div></div>
+              <div class="ficha-row" style="border-color:#1e1a00"><div class="ficha-l">Clasificación</div><div class="ficha-v">Toda la familia</div></div>
+              <div class="ficha-row" style="border-color:transparent"><div class="ficha-l">Estado</div><div class="ficha-v"><span class="badge badge-gray">Archivo histórico</span></div></div>
+              <div style="margin-top:18px;display:flex;flex-direction:column;gap:10px">
+              <div style="background:#fff;border-radius:3px;padding:2px 5px;display:inline-flex;opacity:.6"><img loading="lazy" src="MAMMA MIA VISUALS/1.png" style="height:12px;object-fit:contain" alt="Mamma Mia"></div>
+                <button class="btn btn-a" onclick="nav('fan')" style="width:100%;justify-content:center;font-size:11px">🔒 Contenido exclusivo fans</button>
+                <button class="btn btn-o" onclick="nav('prods')" style="width:100%;justify-content:center;font-size:11px">← Todas las producciones</button>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- ══════════ HIGH SCHOOL MUSICAL ══════════ -->
+<div class="view" id="v-hsm">
+  <div class="pg section-hsm">
+    <!-- HERO HSM -->
+    <section class="obra-hero obra-hero-hsm" style="min-height:60vh">
+      <div class="hero-bg-wrap">
+        <img loading="lazy" src="HIGH SCHOOL MUSICAL VISUALS/4.png" class="hero-bg-full" style="opacity:.55">
+        <div class="hero-overlay-hsm"></div>
+      </div>
+      <div class="wrap obra-hero-content">
+        <span class="badge badge-gray" style="margin-bottom:14px;display:inline-block">📚 Archivo Histórico · 2025</span>
+          <img loading="lazy" src="HIGH SCHOOL MUSICAL VISUALS/1.png" style="max-width:300px;width:100%;margin-bottom:10px" alt="High School Musical">
+        <p style="color:rgba(212,160,23,.8);font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase">Sunhills Valley · DARF Productions · 2025</p>
+      </div>
+    </section>
+
+    <section class="sec">
+      <div class="wrap">
+        <div class="info-grid">
+          <div>
+            <!-- SINOPSIS HSM -->
+            <h2 class="h-md hsm-blue">Sinopsis</h2>
+            <div class="bar" style="background:linear-gradient(90deg,var(--hsm-gold),var(--hsm-gold-h))"></div>
+            <p style="font-size:.97rem;line-height:1.95;color:rgba(255,255,255,.87)">¡Bienvenidos a East High! Las vacaciones terminaron, y en East High todo parece volver a la normalidad… hasta que Troy, el capitán del equipo de baloncesto, y Gabriella, una brillante estudiante nueva, sorprenden a todos al querer audicionar para el musical escolar.</p>
+            <p style="font-size:.97rem;line-height:1.95;color:rgba(255,255,255,.87);margin-top:14px">Mientras los grupos sociales tradicionales luchan por mantener su lugar, Troy y Gabriella se enfrentan a la presión de sus amigos, las intrigas de los reyes del teatro, y sus propios miedos. ¿Podrán romper las reglas del instituto y seguir su pasión sin perderse a sí mismos en el camino?</p>
+            <p style="font-size:.97rem;line-height:1.95;color:rgba(255,255,255,.87);margin-top:14px">Una historia divertida y conmovedora sobre el poder de la autenticidad, la amistad y la música que une a quienes se atreven a brillar, aunque el mundo les diga lo contrario.</p>
+
+            <!-- CANCIONES HSM -->
+            <h2 class="h-md hsm-blue" style="margin-top:44px">Lista de Canciones</h2>
+            <div class="bar" style="background:linear-gradient(90deg,var(--hsm-gold),var(--hsm-gold-h))"></div>
+            <div class="rep-list">
+              <div class="song-row"><span class="song-n blue">01</span><span>Wildcat Cheer</span></div>
+              <div class="song-row"><span class="song-n blue">02</span><span>The Start of Something New</span></div>
+              <div class="song-row"><span class="song-n blue">03</span><span>Getcha Head in the Game</span></div>
+              <div class="song-row"><span class="song-n blue">04</span><span>Auditions</span></div>
+              <div class="song-row"><span class="song-n blue">05</span><span>What I've Been Looking For</span></div>
+              <div class="song-row"><span class="song-n blue">06</span><span>What I've Been Looking For (Reprise)</span></div>
+              <div class="song-row"><span class="song-n blue">07</span><span>Stick To The Status Quo</span></div>
+              <div class="song-row"><span class="song-n blue">08</span><span>Counting on You</span></div>
+              <div class="song-row"><span class="song-n blue">09</span><span>We're All In This Together</span></div>
+              <div class="song-row"><span class="song-n blue">10</span><span>Bop To The Top</span></div>
+              <div class="song-row"><span class="song-n blue">11</span><span>Breaking Free</span></div>
+              <div class="song-row"><span class="song-n blue">12</span><span>We're All In This Together (Finale)</span></div>
+            </div>
+
+            <!-- MULTIMEDIA HSM -->
+            <h2 class="h-md hsm-blue" style="margin-top:44px">Contenido Multimedia</h2>
+            <div class="bar" style="background:linear-gradient(90deg,var(--hsm-gold),var(--hsm-gold-h))"></div>
+            <div class="media-grid" style="margin-bottom:28px">
+              <a class="media-card blue-card" href="https://youtu.be/iuOcAkw44FQ" target="_blank" style="border-color:rgba(198,34,34,.2)">
+                <div class="media-icon">🎬</div>
+                <div><div class="media-info-t">Pro-Shot Oficial</div><div class="media-info-s">Ver grabación completa →</div></div>
+              </a>
+            </div>
+
+            <!-- CARRUSEL HSM -->
+            <h2 class="h-md hsm-blue">Galería Fotográfica</h2>
+            <div class="bar" style="background:linear-gradient(90deg,var(--hsm-gold),var(--hsm-gold-h))"></div>
+            <div class="carousel-wrap" style="margin-bottom:8px;border-color:rgba(198,34,34,.15);background:#120505">
+              <div class="carousel-track" id="carHSM">
+                <div class="carousel-slide" style="background:linear-gradient(135deg,#120505,#1e0808)"><div class="gal-icon" style="font-size:2.5rem;color:rgba(198,34,34,.3)">📸</div><span style="color:rgba(198,34,34,.4)">Foto 01 · High School Musical 2025</span></div>
+                <div class="carousel-slide" style="background:linear-gradient(135deg,#120505,#1e0808)"><div class="gal-icon" style="font-size:2.5rem;color:rgba(198,34,34,.3)">📸</div><span style="color:rgba(198,34,34,.4)">Foto 02 · High School Musical 2025</span></div>
+                <div class="carousel-slide" style="background:linear-gradient(135deg,#120505,#1e0808)"><div class="gal-icon" style="font-size:2.5rem;color:rgba(198,34,34,.3)">📸</div><span style="color:rgba(198,34,34,.4)">Foto 03 · High School Musical 2025</span></div>
+                <div class="carousel-slide" style="background:linear-gradient(135deg,#120505,#1e0808)"><div class="gal-icon" style="font-size:2.5rem;color:rgba(198,34,34,.3)">📸</div><span style="color:rgba(198,34,34,.4)">Foto 04 · High School Musical 2025</span></div>
+                <div class="carousel-slide" style="background:linear-gradient(135deg,#120505,#1e0808)"><div class="gal-icon" style="font-size:2.5rem;color:rgba(198,34,34,.3)">📸</div><span style="color:rgba(198,34,34,.4)">Foto 05 · High School Musical 2025</span></div>
+              </div>
+              <button class="carousel-btn prev" onclick="carMove('carHSM',-1)" style="border-color:var(--hsm-gold)" onmouseover="this.style.background='var(--hsm-gold)'" onmouseout="this.style.background='rgba(0,0,0,.7)'" aria-label="Foto anterior">‹</button>
+              <button class="carousel-btn next" onclick="carMove('carHSM',1)" style="border-color:var(--hsm-gold)" onmouseover="this.style.background='var(--hsm-gold)'" onmouseout="this.style.background='rgba(0,0,0,.7)'" aria-label="Siguiente foto">›</button>
+            </div>
+            <div class="carousel-dots" id="dotsHSM"></div>
+
+            <!-- REPARTO HSM -->
+            <h2 class="h-md hsm-blue" style="margin-top:44px">Reparto Oficial</h2>
+            <div class="bar" style="background:linear-gradient(90deg,var(--hsm-gold),var(--hsm-gold-h))"></div>
+            <div class="rep-list">
+              <div class="rep-row"><span class="rep-per">Troy Bolton</span><span class="rep-act">Patricio González</span></div>
+              <div class="rep-row"><span class="rep-per">Gabriella Montez</span><span class="rep-act">Valentina Lima</span></div>
+              <div class="rep-row"><span class="rep-per">Sharpay Evans</span><span class="rep-act">Mia Castro</span></div>
+              <div class="rep-row"><span class="rep-per">Ryan Evans</span><span class="rep-act">Emmanuel Pinto</span></div>
+              <div class="rep-row"><span class="rep-per">Chad Danforth</span><span class="rep-act">Alejandro Lámbarri</span></div>
+              <div class="rep-row"><span class="rep-per">Taylor McKessie</span><span class="rep-act">Tamara Garza</span></div>
+              <div class="rep-row"><span class="rep-per">Zeke Baylor</span><span class="rep-act">Santiago Rodríguez</span></div>
+              <div class="rep-row"><span class="rep-per">Martha Cox</span><span class="rep-act">Romina Carmona</span></div>
+              <div class="rep-row"><span class="rep-per">Sra. Darbus</span><span class="rep-act">Ericka Torres</span></div>
+              <div class="rep-row"><span class="rep-per">Coach Bolton</span><span class="rep-act">Juan Pablo Estrada</span></div>
+              <div class="rep-row"><span class="rep-per">Kelsi Nielsen</span><span class="rep-act">María José Barragán</span></div>
+              <div class="rep-row"><span class="rep-per">Jackie Scott</span><span class="rep-act">María Fernanda Morales</span></div>
+            </div>
+            <div style="margin-top:10px">
+              <div style="font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--hsm-gold);margin-bottom:8px;opacity:.8">Ensamble</div>
+              <div class="ensamble-box" style="border-color:rgba(198,34,34,.15)">María José Gil, Ana Paola González, Paola García, Ana Sofía Ulloa, Alexa Martens, Mia Insurreta, Natalia Díaz, Ramón Robles, Christian Peña, Kalani Danino, Natalia Ramírez, Emilia Olvera, Fernando Fata, Yara Sosa, Paloma López, Ana Renata Huerta, Fernanda Maturano, María Bonilla</div>
+            </div>
+
+            <!-- EQUIPO CREATIVO HSM -->
+            <h2 class="h-md hsm-blue" style="margin-top:44px">Equipo Creativo</h2>
+            <div class="bar" style="background:linear-gradient(90deg,var(--hsm-gold),var(--hsm-gold-h))"></div>
+            <div class="rep-list">
+              <div class="rep-row"><span class="rep-per">Dirección General</span><span class="rep-act">Diego Romero</span></div>
+              <div class="rep-row"><span class="rep-per">Asistencia de Dirección</span><span class="rep-act">Ericka Torres</span></div>
+              <div class="rep-row"><span class="rep-per">Dirección Coreográfica</span><span class="rep-act">Andrés Santillán</span></div>
+              <div class="rep-row"><span class="rep-per">Producción Ejecutiva</span><span class="rep-act">Sandra López</span></div>
+              <div class="rep-row"><span class="rep-per">Instalaciones</span><span class="rep-act">Mariana Hernández</span></div>
+              <div class="rep-row"><span class="rep-per">Vestuario</span><span class="rep-act">Mia Castro</span></div>
+            </div>
+
+            <!-- EQUIPO PRODUCCIÓN HSM -->
+            <h2 class="h-md hsm-blue" style="margin-top:44px">Equipo de Producción</h2>
+            <div class="bar" style="background:linear-gradient(90deg,var(--hsm-gold),var(--hsm-gold-h))"></div>
+            <div class="rep-list">
+              <div class="rep-row"><span class="rep-per">Stage Manager</span><span class="rep-act">Emiliano Villalva</span></div>
+              <div class="rep-row"><span class="rep-per">Stage Coordinator</span><span class="rep-act">Maria Haro</span></div>
+              <div class="rep-row"><span class="rep-per">Ingeniero Audiovisual</span><span class="rep-act">Juan Pablo Villalva</span></div>
+              <div class="rep-row"><span class="rep-per">Supervisor de Sonido</span><span class="rep-act">Alejandro Martens</span></div>
+              <div class="rep-row"><span class="rep-per">Coord. Elenco y Vestuario</span><span class="rep-act">Valeria De la Torre</span></div>
+            </div>
+            <div style="margin-top:10px">
+              <div style="font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--hsm-gold);margin-bottom:8px;opacity:.8">Staff</div>
+              <div class="ensamble-box" style="border-color:rgba(198,34,34,.15)">Raul Linares, Karla Urus, Maximiliano Ramirez, Jesus Barrios, Isabella Inzunza, María José Sanchez, Antonella Tupa, Camila Bauer, Fernanda Moreno, María José Arias, Mariana Noguez, Valeria Luna, Enrique Burguette, Bruno Jimenez, Daniel Talavera, Patricio Rodriguez, Andrea Icazbalzeta, Marcelo Calderon</div>
+            </div>
+          </div>
+
+          <!-- FICHA HSM -->
+          <aside>
+            <div class="ficha" style="background:#120505;border-color:rgba(198,34,34,.2)">
+              <div class="ficha-t blue">Ficha Técnica</div>
+              <div class="ficha-row" style="border-color:#0d0d2a"><div class="ficha-l">Producción</div><div class="ficha-v">High School Musical</div></div>
+              <div class="ficha-row" style="border-color:#0d0d2a"><div class="ficha-l">Temporada</div><div class="ficha-v">2025</div></div>
+              <div class="ficha-row" style="border-color:#0d0d2a"><div class="ficha-l">Fecha</div><div class="ficha-v" style="color:var(--hsm-gold)">30 de Junio de 2025</div></div>
+              <div class="ficha-row" style="border-color:#0d0d2a"><div class="ficha-l">Basada en</div><div class="ficha-v">Disney's HSM</div></div>
+              <div class="ficha-row" style="border-color:#0d0d2a"><div class="ficha-l">Colectivo</div><div class="ficha-v">Sunhills Valley (SHV)</div></div>
+              <div class="ficha-row" style="border-color:transparent"><div class="ficha-l">Estado</div><div class="ficha-v"><span class="badge badge-gray">Archivo histórico</span></div></div>
+              <div style="margin-top:18px;display:flex;flex-direction:column;gap:10px">
+                <button class="btn btn-a" onclick="nav('fan')" style="width:100%;justify-content:center;font-size:11px;background:var(--hsm-red)">🔒 Ensayos exclusivos fans</button>
+                <button class="btn btn-o" onclick="nav('prods')" style="width:100%;justify-content:center;font-size:11px">← Todas las producciones</button>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- ══════════ SHOWMAN ══════════ -->
+<div class="view" id="v-showman">
+  <div class="pg section-showman">
+    <section class="obra-hero obra-hero-showman" style="min-height:65vh">
+      <div class="hero-bg-wrap">
+        <img loading="lazy" src="SHOWMAN VISUALS/4.png" class="hero-bg-full" style="opacity:.85;filter:brightness(1.25)">
+        <div class="hero-overlay-showman"></div>
+      </div>
+      <div class="wrap obra-hero-content hero-content-z3">
+        <span class="badge badge-showman" style="margin-bottom:18px;display:inline-block">Próximamente</span>
+        <div style="max-width:560px;margin-bottom:14px">
+          <img loading="lazy" src="SHOWMAN VISUALS/1.png" style="width:100%;display:block" alt="Showman">
+        </div>
+        <div style="font-size:12px;color:rgba(255,255,255,.6);font-weight:600;letter-spacing:.08em;text-transform:uppercase">Próxima producción DARF</div>
+      </div>
+    </section>
+
+    <div id="showmanSaleBanner" style="background:var(--showman-blue);border-bottom:1px solid var(--showman-blue-h);padding:14px 24px;text-align:center;display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap">
+      <span id="showmanSaleBannerText" style="color:var(--showman-gold);font-size:13px;font-weight:700;letter-spacing:.03em">🎟️ Boletos a la venta muy pronto.</span>
+    </div>
+
+    <section class="sec">
+      <div class="wrap">
+        <div class="info-grid">
+          <div>
+            <!-- SINOPSIS -->
+            <h2 class="h-md accent-showman">Sinopsis</h2>
+            <div class="bar" style="background:linear-gradient(90deg,var(--showman-blue),var(--showman-gold))"></div>
+
+            <!-- CANCIONES -->
+            <h2 class="h-md accent-showman" style="margin-top:44px">Lista de Canciones</h2>
+            <div class="bar" style="background:linear-gradient(90deg,var(--showman-blue),var(--showman-gold))"></div>
+
+            <!-- MULTIMEDIA -->
+            <h2 class="h-md accent-showman" style="margin-top:44px">Contenido Multimedia</h2>
+            <div class="bar" style="background:linear-gradient(90deg,var(--showman-blue),var(--showman-gold))"></div>
+
+            <!-- GALERÍA -->
+            <h2 class="h-md accent-showman" style="margin-top:44px">Galería Fotográfica</h2>
+            <div class="bar" style="background:linear-gradient(90deg,var(--showman-blue),var(--showman-gold))"></div>
+
+            <!-- ELENCO -->
+            <h2 class="h-md accent-showman" style="margin-top:44px">Elenco</h2>
+            <div class="bar" style="background:linear-gradient(90deg,var(--showman-blue),var(--showman-gold))"></div>
+
+            <!-- EQUIPO CREATIVO -->
+            <h2 class="h-md accent-showman" style="margin-top:44px">Equipo Creativo</h2>
+            <div class="bar" style="background:linear-gradient(90deg,var(--showman-blue),var(--showman-gold))"></div>
+            <div class="rep-list">
+              <div class="rep-row"><span class="rep-per">Dirección Artística y Escénica</span><span class="rep-act">Diego Romero</span></div>
+              <div class="rep-row"><span class="rep-per">Dirección Vocal</span><span class="rep-act">Ana Fer Ramírez</span></div>
+              <div class="rep-row"><span class="rep-per">Dirección Coreográfica</span><span class="rep-act">Regina Cedillo</span></div>
+              <div class="rep-row"><span class="rep-per">Dirección Circense</span><span class="rep-act">Valeria Luna</span></div>
+              <div class="rep-row"><span class="rep-per">Dirección Circense</span><span class="rep-act">Camila Cedillo</span></div>
+              <div class="rep-row"><span class="rep-per">Co-dirección Escénica</span><span class="rep-act">Patricio González</span></div>
+              <div class="rep-row"><span class="rep-per">Co-dirección Coreográfica</span><span class="rep-act">María José Arias</span></div>
+              <div class="rep-row"><span class="rep-per">Co-dirección Vocal</span><span class="rep-act">Adriana Alarcón</span></div>
+            </div>
+
+            <!-- EQUIPO PRODUCCIÓN -->
+            <h2 class="h-md accent-showman" style="margin-top:44px">Equipo de Producción</h2>
+            <div class="bar" style="background:linear-gradient(90deg,var(--showman-blue),var(--showman-gold))"></div>
+            <div class="rep-list">
+              <div class="rep-row"><span class="rep-per">Jefe de Producción</span><span class="rep-act">Juan Pablo Villalva</span></div>
+              <div class="rep-row"><span class="rep-per">Gerente de Producción</span><span class="rep-act">Valentina Lima</span></div>
+              <div class="rep-row"><span class="rep-per">Stage Manager</span><span class="rep-act">Emiliano Villalva</span></div>
+              <div class="rep-row"><span class="rep-per">Dirección Visual</span><span class="rep-act">Mia Castro</span></div>
+              <div class="rep-row"><span class="rep-per">Assistant Stage Manager</span><span class="rep-act">Camila Bauer</span></div>
+            </div>
+
+            <!-- CREW -->
+            <h2 class="h-md accent-showman" style="margin-top:44px">Crew</h2>
+            <div class="bar" style="background:linear-gradient(90deg,var(--showman-blue),var(--showman-gold))"></div>
+          </div>
+
+          <!-- FICHA SHOWMAN -->
+          <aside>
+            <div class="ficha" style="background:#050810;border-color:rgba(21,101,192,.25)">
+              <div class="ficha-t" style="color:var(--showman-gold)">Ficha Técnica</div>
+              <div class="ficha-row" style="border-color:#0d1a2a"><div class="ficha-l">Producción</div><div class="ficha-v">Showman</div></div>
+              <div class="ficha-row" style="border-color:transparent"><div class="ficha-l">Estado</div><div class="ficha-v"><span class="badge badge-showman">Próximamente</span></div></div>
+              <div style="margin-top:18px;display:flex;flex-direction:column;gap:10px">
+                <button class="btn btn-o" onclick="nav('prods')" style="width:100%;justify-content:center;font-size:11px">← Todas las producciones</button>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- ══════════ LOGIN ══════════ -->
+<div class="view" id="v-login">
+  <div class="login-pg">
+    <div class="login-card">
+      <div class="login-logo-wrap">
+        <img loading="lazy" src="DARF PRODUCTIONS LOGOS/1.png" style="width:180px;margin:0 auto 18px;display:block;filter:brightness(0) invert(1)" alt="DARF Productions">
+        <div style="font-size:12px;color:var(--t2);margin-top:4px;text-align:center">Área Privada</div>
+      </div>
+      <!-- Tabs -->
+      <div style="display:flex;gap:0;margin-bottom:24px;border:1px solid var(--g3);border-radius:var(--r8);overflow:hidden">
+        <button id="ltab-correo" onclick="AuthService.showLoginTab('correo')" style="flex:1;padding:10px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;background:var(--rojo);color:#fff;border:none;cursor:pointer;font-family:var(--font);transition:all .2s">Correo</button>
+        <button id="ltab-registro" onclick="AuthService.showLoginTab('registro')" style="flex:1;padding:10px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;background:var(--g2);color:var(--t2);border:none;cursor:pointer;font-family:var(--font);transition:all .2s">Registro</button>
+        <button id="ltab-verificar" onclick="AuthService.showLoginTab('verificar')" style="flex:1;padding:10px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;background:var(--g2);color:var(--t2);border:none;cursor:pointer;font-family:var(--font);transition:all .2s">Verificar</button>
+      </div>
+      <!-- Panel: Correo/Contraseña -->
+      <div id="lpanel-correo">
+        <div class="form-g"><label class="form-l" for="lu">Correo</label><input type="email" id="lu" class="form-c" placeholder="usuario@darf.mx"></div>
+        <div class="form-g"><label class="form-l" for="lp">Contraseña</label>
+          <div class="pass-wrap"><input type="password" id="lp" class="form-c" placeholder="••••••••"><button type="button" class="pass-eye" onclick="togglePass(this,'lp')">👁</button></div>
+        </div>
+        <button class="btn btn-r" onclick="AuthService.doLogin()" style="width:100%;justify-content:center">Entrar</button>
+        <div class="auth-divider">o</div>
+        <button class="btn btn-google is-disabled" onclick="AuthService.loginGoogle()"><span class="btn-google-icon">🌐</span> Continuar con Google</button>
+        <div class="google-hint">Disponible en cuanto conectemos Supabase</div>
+        <div style="text-align:center;margin-top:16px"><span onclick="AuthService.showLoginTab('registro')" style="font-size:12px;color:var(--t2);cursor:pointer;text-decoration:underline">¿No tienes cuenta? Regístrate</span></div>
+      </div>
+      <!-- Panel: Registro -->
+      <div id="lpanel-registro" style="display:none">
+        <div style="text-align:center;margin-bottom:18px"><span style="font-size:14px;font-weight:700;color:#fff">Crear Cuenta Nueva</span></div>
+        <div class="form-g"><label class="form-l" for="rn">Nombre completo</label><input type="text" id="rn" class="form-c" placeholder="Tu nombre"></div>
+        <div class="form-g"><label class="form-l" for="re">Correo electrónico</label><input type="email" id="re" class="form-c" placeholder="tu@correo.com"></div>
+        <div class="form-g"><label class="form-l" for="rp">Contraseña</label>
+          <div class="pass-wrap"><input type="password" id="rp" class="form-c" placeholder="Mínimo 8 caracteres, con letras y números"><button type="button" class="pass-eye" onclick="togglePass(this,'rp')">👁</button></div>
+        </div>
+        <button class="btn btn-r" onclick="AuthService.doRegister()" style="width:100%;justify-content:center">Crear Cuenta</button>
+        <div class="auth-divider">o</div>
+        <button class="btn btn-google is-disabled" onclick="AuthService.loginGoogle()"><span class="btn-google-icon">🌐</span> Continuar con Google</button>
+        <div class="google-hint">Disponible en cuanto conectemos Supabase</div>
+        <div style="text-align:center;margin-top:16px"><span onclick="AuthService.showLoginTab('correo')" style="font-size:12px;color:var(--t2);cursor:pointer">← Ya tengo cuenta</span></div>
+      </div>
+      <!-- Panel: Verificar correo -->
+      <div id="lpanel-verificar" style="display:none">
+        <div style="text-align:center;margin-bottom:18px"><span style="font-size:14px;font-weight:700;color:#fff">Verifica tu correo</span></div>
+        <p style="font-size:12px;color:var(--t2);text-align:center;margin-bottom:16px">Enviamos un código a <strong id="verifyEmailLabel" style="color:#fff">—</strong></p>
+        <div id="verifyCodeHint" style="font-size:11px;color:var(--t3);text-align:center;margin-bottom:16px;background:var(--g2);border-radius:var(--r8);padding:10px"></div>
+        <div class="form-g"><label class="form-l" for="vcode">Código de 6 dígitos</label><input type="text" id="vcode" class="form-c" placeholder="123456" maxlength="6" style="text-align:center;letter-spacing:.2em;font-size:16px"></div>
+        <button class="btn btn-r" onclick="AuthService.doVerifyEmail()" style="width:100%;justify-content:center">Verificar Correo</button>
+        <div style="text-align:center;margin-top:14px"><span onclick="AuthService.doResendCode()" style="font-size:12px;color:var(--t2);cursor:pointer;text-decoration:underline">Reenviar código</span></div>
+      </div>
+      <div style="text-align:center;margin-top:14px"><span onclick="nav('home')" style="font-size:12px;color:var(--t2);cursor:pointer">← Regresar al sitio</span></div>
+    </div>
+    <div style="max-width:400px;margin:20px auto 0;background:var(--g2);border:1px solid var(--g3);border-radius:var(--r8);padding:16px 18px">
+      <div style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--t2);margin-bottom:10px">🧪 Cuentas de prueba (temporal)</div>
+      <div style="font-size:12px;color:var(--t2);line-height:1.7">
+        <strong style="color:#fff">Fan:</strong> fan@darf.mx · Fan12345<br>
+        <strong style="color:#fff">Staff:</strong> staff@darf.mx · Staff12345
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ DASHBOARD FAN ══════════ -->
+<div class="view" id="v-fan">
+
+  <!-- PANTALLA PRINCIPAL: menú streaming -->
+  <div id="fan-home" class="dash-pg">
+    <div class="wrap">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;margin-bottom:32px">
+        <div>
+          <span class="badge badge-r" style="margin-bottom:8px;display:inline-block">🔒 ZONA EXCLUSIVA FANS</span>
+          <h1 class="h-lg">Zona <span class="accent">Fans DARF</span></h1>
+          <p class="sub">Elige una producción para ver su contenido exclusivo.</p>
+        </div>
+        <button class="btn btn-o btn-sm" onclick="AuthService.doLogout()">← Cerrar Sesión</button>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:24px;margin-bottom:48px">
+        <div onclick="fanNav('mm')" class="fan-zone-card fan-zone-card-mm">
+          <img loading="lazy" src="MAMMA MIA VISUALS/6.png" class="hero-bg-full" style="opacity:.35">
+          <img loading="lazy" src="MAMMA MIA VISUALS/4.png" class="fan-zone-card-silhouette">
+          <div class="fan-zone-card-overlay-mm"></div>
+          <div class="fan-zone-card-body">
+            <span class="badge badge-gray" style="margin-bottom:12px;width:fit-content">Exclusivo Fans · 2026</span>
+            <div style="position:relative;margin-bottom:12px">
+              <div class="fan-zone-card-glow"></div>
+              <img loading="lazy" src="MAMMA MIA VISUALS/1.png" class="fan-zone-logo-mm">
+            </div>
+            <p style="font-size:13px;color:rgba(255,255,255,.7);margin-bottom:16px;line-height:1.6">Ensayos, documental y contenido exclusivo de Mamma Mia!</p>
+            <button class="btn btn-sm fan-zone-btn-mm">▶ Entrar a la Fan Zone →</button>
+          </div>
+        </div>
+        <div onclick="fanNav('hsm')" class="fan-zone-card fan-zone-card-hsm">
+          <img loading="lazy" src="HIGH SCHOOL MUSICAL VISUALS/4.png" class="hero-bg-full" style="opacity:.3">
+          <div class="fan-zone-card-overlay-hsm"></div>
+          <div class="fan-zone-card-body">
+            <span class="badge badge-gray" style="margin-bottom:12px;width:fit-content">Exclusivo Fans · 2025</span>
+            <img loading="lazy" src="HIGH SCHOOL MUSICAL VISUALS/1.png" style="width:220px;margin-bottom:12px">
+            <p style="font-size:13px;color:rgba(255,255,255,.7);margin-bottom:16px;line-height:1.6">Ensayos, videos exclusivos y contenido detrás del escenario.</p>
+            <button class="btn btn-sm fan-zone-btn-hsm">▶ Entrar a la Fan Zone →</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="background:var(--g2);border:1px solid #252525;border-radius:var(--r16);padding:32px;margin-bottom:32px">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+          <span style="font-size:1.8rem">⭐</span>
+          <div><div class="h-sm">Club Fan DARF</div><div style="font-size:13px;color:var(--t2)">Beneficios exclusivos por tu lealtad al teatro</div></div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px">
+          <div style="background:var(--g3);border-radius:var(--r8);padding:16px;text-align:center"><div style="font-size:1.4rem;margin-bottom:6px">🎬</div><div style="font-size:13px;font-weight:700;margin-bottom:4px">Contenido Exclusivo</div><div style="font-size:12px;color:var(--t2)">Ensayos y making of</div></div>
+          <div style="background:var(--g3);border-radius:var(--r8);padding:16px;text-align:center"><div style="font-size:1.4rem;margin-bottom:6px">📸</div><div style="font-size:13px;font-weight:700;margin-bottom:4px">Meet &amp; Greet</div><div style="font-size:12px;color:var(--t2)">Fotos con el elenco</div></div>
+          <div style="background:var(--g3);border-radius:var(--r8);padding:16px;text-align:center"><div style="font-size:1.4rem;margin-bottom:6px">🎟️</div><div style="font-size:13px;font-weight:700;margin-bottom:4px">Acceso Anticipado</div><div style="font-size:12px;color:var(--t2)">Nuevas producciones</div></div>
+          <div style="background:var(--g3);border-radius:var(--r8);padding:16px;text-align:center"><div style="font-size:1.4rem;margin-bottom:6px">📧</div><div style="font-size:13px;font-weight:700;margin-bottom:4px">Newsletter VIP</div><div style="font-size:12px;color:var(--t2)">Casting avant-première</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUB-PÁGINA: MM FAN ZONE -->
+  <div id="fan-mm" style="display:none">
+    <section class="fan-sub-hero fan-sub-hero-mm">
+      <img loading="lazy" src="MAMMA MIA VISUALS/6.png" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.6">
+      <img loading="lazy" src="MAMMA MIA VISUALS/4.png" style="position:absolute;right:0;bottom:0;height:100%;width:42%;object-fit:cover;object-position:top center;-webkit-mask-image:linear-gradient(to right,transparent 0%,black 22%);mask-image:linear-gradient(to right,transparent 0%,black 22%)">
+      <div class="fan-sub-hero-overlay-mm"></div>
+      <div class="wrap fan-sub-hero-content">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+          <span class="badge badge-r">🔒 Exclusivo Fans</span>
+          <button onclick="fanNav('home')" style="background:none;border:1px solid rgba(255,255,255,.3);color:rgba(255,255,255,.7);font-size:12px;padding:5px 14px;border-radius:100px;cursor:pointer;font-family:var(--font)">← Volver</button>
+        </div>
+        <div class="fan-mm-logo-wrap">
+          <div class="fan-mm-logo-glow"></div>
+          <img loading="lazy" src="MAMMA MIA VISUALS/1.png" class="fan-mm-logo-img">
+        </div>
+        <p style="font-size:13px;color:rgba(255,255,255,.65);max-width:420px">Contenido exclusivo de ensayos, videos y el proceso creativo de Mamma Mia! 2026.</p>
+      </div>
+    </section>
+
+    <div style="background:linear-gradient(180deg,#000814 0%,#000510 40%,var(--negro) 100%)">
+      <div class="wrap" style="padding:48px 24px">
+        <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(21,101,192,.15);border:1px solid rgba(21,101,192,.3);border-radius:100px;padding:6px 16px;margin-bottom:32px">
+          <span style="width:7px;height:7px;background:var(--mm-blue);border-radius:50%;display:inline-block"></span>
+          <span style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--mm-blue)">Contenido Exclusivo Fans</span>
+        </div>
+        <h2 class="h-md accent-mm" style="margin-bottom:8px">🎬 Videos Exclusivos</h2>
+        <div class="bar gold" style="margin-bottom:24px"></div>
+        <div class="vid-grid" style="margin-bottom:48px">
+          <div class="vid-wrap" style="background:#0a0800;border-color:rgba(215,187,95,.15)"><div class="vid-thumb"><div class="vid-inner"><div class="vid-play">▶</div><div style="font-size:12px;color:rgba(215,187,95,.4)">Dancing Queen · Ensayo</div></div></div><div class="vid-cap">💃 Ensayo Dancing Queen</div></div>
+          <div class="vid-wrap" data-vid="AmpXXSkcjEY" onclick="playVid(this)" style="background:#0a0800;border-color:rgba(215,187,95,.3);cursor:pointer"><div class="vid-thumb" style="background-image:url(https://img.youtube.com/vi/AmpXXSkcjEY/hqdefault.jpg);background-size:cover;background-position:center"><div class="vid-inner"><div class="vid-play">▶</div><div style="font-size:12px;color:rgba(215,187,95,.7)">Voulez-Vous · Ensayo</div></div></div><div class="vid-cap">🎵 Voulez-Vous</div></div>
+          <div class="vid-wrap" data-vid="bZpsuknEFAY" onclick="playVid(this)" style="background:#0a0800;border-color:rgba(215,187,95,.3);cursor:pointer"><div class="vid-thumb" style="background-image:url(https://img.youtube.com/vi/bZpsuknEFAY/hqdefault.jpg);background-size:cover;background-position:center"><div class="vid-inner"><div class="vid-play">▶</div><div style="font-size:12px;color:rgba(215,187,95,.7)">Chiquitita · Ensayo</div></div></div><div class="vid-cap">🎵 Chiquitita</div></div>
+          <div class="vid-wrap" style="background:#0a0800;border-color:rgba(215,187,95,.15)"><div class="vid-thumb"><div class="vid-inner"><div class="vid-play">▶</div><div style="font-size:12px;color:rgba(215,187,95,.4)">Entrevistas al Elenco</div></div></div><div class="vid-cap">🎤 Entrevistas</div></div>
+        </div>
+        <h2 class="h-md accent-mm" style="margin-bottom:8px">📸 Galería de Ensayos</h2>
+        <div class="bar gold" style="margin-bottom:24px"></div>
+        <div class="gal-grid" style="margin-bottom:48px">
+          <div class="gal-item" style="background:linear-gradient(135deg,#0a0800,#1a1200)"><div class="gal-icon" style="color:rgba(215,187,95,.3)">📸</div><div class="gal-lbl" style="color:rgba(215,187,95,.3)">Ensayo 01</div></div>
+          <div class="gal-item" style="background:linear-gradient(135deg,#0a0800,#1a1200)"><div class="gal-icon" style="color:rgba(215,187,95,.3)">📸</div><div class="gal-lbl" style="color:rgba(215,187,95,.3)">Ensayo 02</div></div>
+          <div class="gal-item" style="background:linear-gradient(135deg,#0a0800,#1a1200)"><div class="gal-icon" style="color:rgba(215,187,95,.3)">📸</div><div class="gal-lbl" style="color:rgba(215,187,95,.3)">Ensayo 03</div></div>
+          <div class="gal-item" style="background:linear-gradient(135deg,#0a0800,#1a1200)"><div class="gal-icon" style="color:rgba(215,187,95,.3)">📸</div><div class="gal-lbl" style="color:rgba(215,187,95,.3)">Ensayo 04</div></div>
+          <div class="gal-item" style="background:linear-gradient(135deg,#0a0800,#1a1200)"><div class="gal-icon" style="color:rgba(215,187,95,.3)">📸</div><div class="gal-lbl" style="color:rgba(215,187,95,.3)">Ensayo 05</div></div>
+          <div class="gal-item" style="background:linear-gradient(135deg,#0a0800,#1a1200)"><div class="gal-icon" style="color:rgba(215,187,95,.3)">📸</div><div class="gal-lbl" style="color:rgba(215,187,95,.3)">Ensayo 06</div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:16px;margin-bottom:32px">
+          <div style="flex:1;height:1px;background:rgba(21,101,192,.2)"></div>
+          <span style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--mm-blue);white-space:nowrap">📖 Información de la Producción</span>
+          <div style="flex:1;height:1px;background:rgba(21,101,192,.2)"></div>
+        </div>
+        <div style="background:rgba(21,101,192,.06);border:1px solid rgba(21,101,192,.18);border-radius:var(--r12);padding:28px">
+          <h2 class="h-md accent-mm" style="margin-bottom:8px">Sinopsis</h2>
+          <div class="bar gold" style="margin-bottom:18px"></div>
+          <p style="font-size:.95rem;line-height:1.95;color:rgba(255,255,255,.85)">En una isla griega bañada por el sol, Sophie está a punto de casarse. Antes de dar el gran paso, decide descubrir la verdad sobre su pasado. Tras encontrar el diario de su madre Donna, Sophie invita en secreto a tres hombres que formaron parte de su historia veinte años atrás. Una noche de reencuentros, confesiones y los hits de ABBA. · DARF Productions · 2026</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUB-PÁGINA: HSM FAN ZONE -->
+  <div id="fan-hsm" style="display:none">
+    <section class="fan-sub-hero fan-sub-hero-hsm">
+      <img loading="lazy" src="HIGH SCHOOL MUSICAL VISUALS/4.png" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.4">
+      <div class="fan-sub-hero-overlay-hsm"></div>
+      <div class="wrap fan-sub-hero-content">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+          <span class="badge badge-r">🔒 Exclusivo Fans</span>
+          <button onclick="fanNav('home')" style="background:none;border:1px solid rgba(255,255,255,.3);color:rgba(255,255,255,.7);font-size:12px;padding:5px 14px;border-radius:100px;cursor:pointer;font-family:var(--font)">← Volver</button>
+        </div>
+        <img loading="lazy" src="HIGH SCHOOL MUSICAL VISUALS/1.png" style="max-width:340px;width:100%;display:block;margin-bottom:14px">
+        <p style="font-size:13px;color:rgba(255,255,255,.65);max-width:420px">Contenido exclusivo de ensayos, videos y el proceso creativo de High School Musical 2025.</p>
+      </div>
+    </section>
+    <div style="background:linear-gradient(180deg,#120505 0%,#0e0404 40%,var(--negro) 100%)">
+      <div class="wrap" style="padding:48px 24px">
+        <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(212,160,23,.12);border:1px solid rgba(212,160,23,.3);border-radius:100px;padding:6px 16px;margin-bottom:32px">
+          <span style="width:7px;height:7px;background:var(--hsm-gold);border-radius:50%;display:inline-block"></span>
+          <span style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--hsm-gold)">Contenido Exclusivo Fans</span>
+        </div>
+        <h2 class="h-md hsm-blue" style="margin-bottom:8px">🎬 Videos Exclusivos</h2>
+        <div class="bar" style="background:linear-gradient(90deg,var(--hsm-gold),var(--hsm-gold-h));margin-bottom:24px"></div>
+        <div class="vid-grid" style="margin-bottom:48px">
+          <div class="vid-wrap" data-vid="iuOcAkw44FQ" onclick="playVid(this)" style="background:#120505;border-color:rgba(212,160,23,.45);grid-column:1/-1;border-width:2px;box-shadow:0 0 24px rgba(212,160,23,.15);cursor:pointer"><div class="vid-thumb" style="background-image:url(https://img.youtube.com/vi/iuOcAkw44FQ/hqdefault.jpg);background-size:cover;background-position:center"><div class="vid-inner"><div class="vid-play" style="border-color:var(--hsm-gold);width:64px;height:64px;font-size:1.5rem">▶</div><div style="font-size:12px;color:var(--hsm-gold);margin-top:8px;font-weight:700;letter-spacing:.06em">PRO-SHOT COMPLETO</div></div></div><div class="vid-cap" style="color:var(--hsm-gold)">⭐ Versión Extendida del Pro-Shot Oficial · High School Musical 2025</div></div>
+          <div class="vid-wrap" data-vid="5N4Qme6y_1M" onclick="playVid(this)" style="background:#120505;border-color:rgba(212,160,23,.35);cursor:pointer"><div class="vid-thumb" style="background-image:url(https://img.youtube.com/vi/5N4Qme6y_1M/hqdefault.jpg);background-size:cover;background-position:center"><div class="vid-inner"><div class="vid-play" style="border-color:var(--hsm-gold)">▶</div><div style="font-size:12px;color:rgba(212,160,23,.7)">Breaking Free · Ensayo</div></div></div><div class="vid-cap">🎵 Breaking Free</div></div>
+          <div class="vid-wrap" data-vid="-T9mwOxqag0" onclick="playVid(this)" style="background:#120505;border-color:rgba(212,160,23,.35);cursor:pointer"><div class="vid-thumb" style="background-image:url(https://img.youtube.com/vi/-T9mwOxqag0/hqdefault.jpg);background-size:cover;background-position:center"><div class="vid-inner"><div class="vid-play" style="border-color:var(--hsm-gold)">▶</div><div style="font-size:12px;color:rgba(212,160,23,.7)">We're All In This Together · Ensayo</div></div></div><div class="vid-cap">🎭 We're All In This Together</div></div>
+        </div>
+        <h2 class="h-md hsm-blue" style="margin-bottom:8px">📸 Galería de Ensayos</h2>
+        <div class="bar" style="background:linear-gradient(90deg,var(--hsm-gold),var(--hsm-gold-h));margin-bottom:24px"></div>
+        <div class="gal-grid" style="margin-bottom:48px">
+          <div class="gal-item" style="background:linear-gradient(135deg,#120505,#1e0808)"><div class="gal-icon" style="color:rgba(212,160,23,.3)">📸</div><div class="gal-lbl" style="color:rgba(212,160,23,.3)">Ensayo 01</div></div>
+          <div class="gal-item" style="background:linear-gradient(135deg,#120505,#1e0808)"><div class="gal-icon" style="color:rgba(212,160,23,.3)">📸</div><div class="gal-lbl" style="color:rgba(212,160,23,.3)">Ensayo 02</div></div>
+          <div class="gal-item" style="background:linear-gradient(135deg,#120505,#1e0808)"><div class="gal-icon" style="color:rgba(212,160,23,.3)">📸</div><div class="gal-lbl" style="color:rgba(212,160,23,.3)">Ensayo 03</div></div>
+          <div class="gal-item" style="background:linear-gradient(135deg,#120505,#1e0808)"><div class="gal-icon" style="color:rgba(212,160,23,.3)">📸</div><div class="gal-lbl" style="color:rgba(212,160,23,.3)">Ensayo 04</div></div>
+          <div class="gal-item" style="background:linear-gradient(135deg,#120505,#1e0808)"><div class="gal-icon" style="color:rgba(212,160,23,.3)">📸</div><div class="gal-lbl" style="color:rgba(212,160,23,.3)">Ensayo 05</div></div>
+          <div class="gal-item" style="background:linear-gradient(135deg,#120505,#1e0808)"><div class="gal-icon" style="color:rgba(212,160,23,.3)">📸</div><div class="gal-lbl" style="color:rgba(212,160,23,.3)">Ensayo 06</div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:16px;margin-bottom:32px">
+          <div style="flex:1;height:1px;background:rgba(212,160,23,.2)"></div>
+          <span style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--hsm-gold);white-space:nowrap">📖 Información de la Producción</span>
+          <div style="flex:1;height:1px;background:rgba(212,160,23,.2)"></div>
+        </div>
+        <div style="background:rgba(212,160,23,.06);border:1px solid rgba(212,160,23,.18);border-radius:var(--r12);padding:28px">
+          <h2 class="h-md hsm-blue" style="margin-bottom:8px">Sinopsis</h2>
+          <div class="bar" style="background:linear-gradient(90deg,var(--hsm-gold),var(--hsm-gold-h));margin-bottom:18px"></div>
+          <p style="font-size:.95rem;line-height:1.95;color:rgba(255,255,255,.85)">Troy y Gabriella rompen las reglas de East High para seguir su pasión por la música. Con un elenco lleno de energía y los clásicos de Disney, High School Musical fue la producción debut de DARF Productions. ¡El show debe continuar! · DARF Productions · 2025</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ══════════ PANEL STAFF ══════════ -->
+<div class="view" id="v-staff">
+  <div class="staff-pg">
+    <div class="wrap">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:14px;margin-bottom:26px">
+        <div>
+          <span class="badge badge-a" style="margin-bottom:8px;display:inline-block">⚙️ MODO STAFF</span>
+          <h1 class="h-lg">Panel de <span class="accent">Administración</span></h1>
+          <p class="sub">Gestiona archivos, enlaces y solicitudes.</p>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn btn-o btn-sm" onclick="nav('fan')">🎭 Ver Zona Fans</button>
+          <button class="btn btn-o btn-sm" onclick="AuthService.doLogout()">Cerrar Sesión</button>
+        </div>
+      </div>
+      <div class="adm-sec">
+        <div class="adm-hdr"><span>📊</span> Ventas de Cartelera</div>
+        <div class="adm-body">
+          <div id="salesBarsWrap"></div>
+          <div style="margin-top:16px;padding-top:16px;border-top:1px solid #252525;font-size:12px;color:var(--t3)">El interruptor de venta de Showman está en la sección Boletaje, dentro de su tarjeta.</div>
+        </div>
+      </div>
+      <div class="adm-sec">
+        <div class="adm-hdr"><span>🎟️</span> Boletaje</div>
+        <div class="adm-body">
+          <div id="boletajeProdList"></div>
+        </div>
+      </div>
+      <div class="adm-sec">
+        <div class="adm-hdr"><span>📱</span> Control de Accesos</div>
+        <div class="adm-body" style="text-align:center">
+          <div class="qr-scanner-wrap">
+            <div class="qr-scanner-frame" id="qrFrame">
+              <div id="qrReaderBox"></div>
+              <span class="qr-scanner-text" id="qrFrameText">Esperando<br>código QR...</span>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:12px">
+            <button class="btn btn-o btn-sm" onclick="startQrScanner()">📷 Iniciar Cámara</button>
+            <button class="btn btn-o btn-sm" onclick="stopQrScanner()">Detener Cámara</button>
+            <button class="btn btn-a btn-sm" onclick="simulateQrScan()">Simular Escaneo Válido</button>
+          </div>
+          <div class="qr-manual-row">
+            <input type="text" id="qrManualInput" class="form-c" placeholder="Pegar código de boleto manualmente">
+            <button class="btn btn-o btn-sm" onclick="manualCheckIn()">Validar</button>
+          </div>
+        </div>
+      </div>
+      <div class="adm-sec">
+        <div class="adm-hdr"><span>✉️</span> Mensajes de Contacto</div>
+        <div class="adm-body">
+          <div id="contactInbox"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ CONTACTO ══════════ -->
+<div class="view" id="v-contacto">
+  <div class="contacto-pg">
+    <div class="wrap" style="max-width:680px">
+
+      <!-- HEADER -->
+      <div style="text-align:center;margin-bottom:40px">
+        <div class="eyebrow" style="justify-content:center">Estamos aquí</div>
+        <h2 class="h-lg" style="margin-top:14px">Contáctanos</h2>
+        <div class="bar c"></div>
+        <p class="sub" style="max-width:460px;margin:0 auto">Escríbenos por el canal que prefieras. Respondemos a dudas, colaboraciones, prensa y más.</p>
+      </div>
+
+      <!-- LINKS RÁPIDOS ESTILO LINKTREE -->
+      <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:40px">
+        <a href="https://www.youtube.com/@DARFProd" target="_blank" class="linktree-btn linktree-btn-yt">
+          <div class="linktree-btn-icon" style="background:rgba(255,255,255,.2)">▶</div>
+          <div style="flex:1">
+            <div class="linktree-btn-label">YouTube</div>
+            <div class="linktree-btn-sub" style="color:rgba(255,255,255,.75)">@DARFProd · Videos y Pro-Shots</div>
+          </div>
+          <span class="linktree-btn-arrow" style="opacity:.8">↗</span>
+        </a>
+
+        <a href="https://instagram.com/darfproductions" target="_blank" class="linktree-btn linktree-btn-ig">
+          <div class="linktree-btn-icon" style="background:rgba(255,255,255,.2)">📸</div>
+          <div style="flex:1">
+            <div class="linktree-btn-label">Instagram</div>
+            <div class="linktree-btn-sub" style="color:rgba(255,255,255,.8)">@darfproductions · Fotos y Reels</div>
+          </div>
+          <span class="linktree-btn-arrow" style="opacity:.8">↗</span>
+        </a>
+
+        <a href="https://www.tiktok.com/@darf.productions" target="_blank" class="linktree-btn linktree-btn-tt">
+          <div class="linktree-btn-icon" style="background:rgba(255,255,255,.08)">🎵</div>
+          <div style="flex:1">
+            <div class="linktree-btn-label">TikTok</div>
+            <div class="linktree-btn-sub" style="color:rgba(255,255,255,.6)">@darf.productions · Videos cortos</div>
+          </div>
+          <span class="linktree-btn-arrow" style="opacity:.6">↗</span>
+        </a>
+
+        <a href="https://wa.me/4465220560" target="_blank" class="linktree-btn linktree-btn-wa">
+          <div class="linktree-btn-icon" style="background:rgba(37,211,102,.15)">💬</div>
+          <div style="flex:1">
+            <div class="linktree-btn-label" style="color:var(--blanco)">WhatsApp</div>
+            <div class="linktree-btn-sub" style="color:var(--t2)">+52 446 522 0560 · Atención directa</div>
+          </div>
+          <span class="linktree-btn-arrow" style="color:var(--t2)">→</span>
+        </a>
+
+        <a href="mailto:contact@darfproductions.com" class="linktree-btn linktree-btn-email">
+          <div class="linktree-btn-icon" style="background:rgba(229,68,90,.15)">✉️</div>
+          <div style="flex:1">
+            <div class="linktree-btn-label" style="color:var(--blanco)">Correo Electrónico</div>
+            <div class="linktree-btn-sub" style="color:var(--t2)">contact@darfproductions.com</div>
+          </div>
+          <span class="linktree-btn-arrow" style="color:var(--t2)">→</span>
+        </a>
+      </div>
+
+      <!-- FORMULARIO DE CONTACTO -->
+      <div style="background:var(--g2);border:1px solid #2a2a2a;border-radius:var(--r16);padding:32px">
+        <h3 class="h-sm" style="margin-bottom:6px">Envíanos un mensaje</h3>
+        <p style="font-size:13px;color:var(--t2);margin-bottom:24px">Cuéntanos de qué se trata y te responderemos pronto.</p>
+        <div class="form-g"><label class="form-l" for="cn">Nombre completo</label><input type="text" id="cn" class="form-c" placeholder="Tu nombre"></div>
+        <div class="form-g"><label class="form-l" for="ce">Correo electrónico</label><input type="email" id="ce" class="form-c" placeholder="tu@correo.com"></div>
+        <div class="form-g"><label class="form-l" for="ctel">Teléfono</label><input type="tel" id="ctel" class="form-c" placeholder="Tu número de teléfono"></div>
+        <div class="form-g"><label class="form-l" for="cas">Asunto</label><select id="cas" class="form-c"><option value="" disabled selected>Selecciona un asunto</option><option>Información general</option><option>Patrocinio / Colaboración</option><option>Prensa / Medios</option><option>Casting</option><option>Otro</option></select></div>
+        <div class="form-g"><label class="form-l" for="cm">Mensaje</label><textarea id="cm" class="form-c" rows="5" placeholder="Escribe tu mensaje aquí..."></textarea></div>
+        <button class="btn btn-r" onclick="submitContactForm()" style="width:100%;justify-content:center">Enviar Mensaje</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ PORTAL CUENTA ══════════ -->
+<div class="view" id="v-cuenta">
+  <div class="dash-pg">
+    <div class="wrap">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:14px;margin-bottom:26px">
+        <div>
+          <span class="badge badge-r" style="margin-bottom:8px;display:inline-block" id="cuentaBadge">👤 MI CUENTA</span>
+          <h1 class="h-lg">Mi <span class="accent">Cuenta</span></h1>
+          <p class="sub" id="cuentaSub">Gestiona tus boletos, historial y perfil.</p>
+        </div>
+        <button class="btn btn-o btn-sm" onclick="AuthService.doLogout()">← Cerrar Sesión</button>
+      </div>
+      <!-- Tabs de cuenta -->
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:32px;padding-bottom:16px;border-bottom:1px solid var(--g3)">
+        <button id="ctab-boletos" onclick="cuentaTab('boletos')" style="padding:9px 18px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;background:var(--rojo);color:#fff;border:none;border-radius:var(--r4);cursor:pointer;font-family:var(--font);transition:all .2s">🎟 Mis Boletos</button>
+        <button id="ctab-transacciones" onclick="cuentaTab('transacciones')" style="padding:9px 18px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;background:var(--g2);color:var(--t2);border:none;border-radius:var(--r4);cursor:pointer;font-family:var(--font);transition:all .2s">💳 Transacciones</button>
+        <button id="ctab-eventos" onclick="cuentaTab('eventos')" style="padding:9px 18px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;background:var(--g2);color:var(--t2);border:none;border-radius:var(--r4);cursor:pointer;font-family:var(--font);transition:all .2s">🎭 Eventos</button>
+        <button id="ctab-perfil" onclick="cuentaTab('perfil')" style="padding:9px 18px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;background:var(--g2);color:var(--t2);border:none;border-radius:var(--r4);cursor:pointer;font-family:var(--font);transition:all .2s">⚙️ Perfil</button>
+      </div>
+      <!-- Panel: Boletos -->
+      <div id="cp-boletos">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:24px">
+          <span style="font-size:1.2rem">🎟</span>
+          <h2 class="h-sm" style="color:#fff">Mis Boletos</h2>
+        </div>
+        <div id="cp-boletos-list"></div>
+        <div style="margin-top:20px">
+          <button class="btn btn-r btn-sm" onclick="nav('cartelera')">+ Comprar más boletos</button>
+        </div>
+      </div>
+      <!-- Panel: Transacciones -->
+      <div id="cp-transacciones" style="display:none">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:24px">
+          <span style="font-size:1.2rem">💳</span>
+          <h2 class="h-sm" style="color:#fff">Historial de Transacciones</h2>
+        </div>
+        <div style="background:var(--g2);border:1px solid var(--g3);border-radius:var(--r12);overflow:hidden">
+          <table class="res-table">
+            <thead><tr><th>Fecha</th><th>Concepto</th><th>Monto</th><th>Estado</th></tr></thead>
+            <tbody><tr><td colspan="4" style="text-align:center;color:var(--t3);padding:36px 14px;font-size:13px">Sin transacciones registradas</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+      <!-- Panel: Eventos -->
+      <div id="cp-eventos" style="display:none">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:24px">
+          <span style="font-size:1.2rem">🎭</span>
+          <h2 class="h-sm" style="color:#fff">Eventos Asistidos</h2>
+        </div>
+        <div style="background:var(--g2);border:1px solid var(--g3);border-radius:var(--r12);padding:48px 24px;text-align:center">
+          <div style="font-size:3rem;margin-bottom:16px">🎪</div>
+          <div style="font-size:15px;font-weight:700;color:#fff;margin-bottom:8px">Historial vacío</div>
+          <p style="font-size:13px;color:var(--t2);max-width:340px;margin:0 auto">Las producciones a las que asistas quedarán guardadas aquí como recuerdo.</p>
+        </div>
+      </div>
+      <!-- Panel: Perfil -->
+      <div id="cp-perfil" style="display:none">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:24px">
+          <span style="font-size:1.2rem">⚙️</span>
+          <h2 class="h-sm" style="color:#fff">Perfil</h2>
+        </div>
+        <div style="background:var(--g2);border:1px solid var(--g3);border-radius:var(--r12);padding:28px">
+          <div class="form-g"><label class="form-l">Nombre</label><input type="text" id="pf-nombre" class="form-c" placeholder="Tu nombre" readonly style="cursor:default;opacity:.7"></div>
+          <div class="form-g"><label class="form-l">Correo</label><input type="email" id="pf-correo" class="form-c" placeholder="tu@correo.com" readonly style="cursor:default;opacity:.7"></div>
+          <div class="form-g"><label class="form-l">Rol</label><input type="text" id="pf-rol" class="form-c" readonly style="cursor:default;opacity:.7"></div>
+          <div style="border-top:1px solid var(--g3);margin-top:20px;padding-top:20px">
+            <div style="font-size:12px;font-weight:700;color:var(--t2);margin-bottom:12px;text-transform:uppercase;letter-spacing:.08em">Cambiar Contraseña</div>
+            <div class="form-g"><label class="form-l">Nueva contraseña</label>
+              <div class="pass-wrap"><input type="password" id="pf-pass" class="form-c" placeholder="••••••••"><button type="button" class="pass-eye" onclick="togglePass(this,'pf-pass')">👁</button></div>
+            </div>
+            <button class="btn btn-o btn-sm" onclick="AuthService.updatePass()">Guardar Cambio</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ CHECKOUT ══════════ -->
+<div class="view" id="v-checkout">
+  <div class="pg">
+    <div class="wrap" style="padding-top:32px;padding-bottom:72px">
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:28px;flex-wrap:wrap">
+        <button class="btn btn-o btn-sm" onclick="nav('showman')">← Volver</button>
+        <div>
+          <div class="eyebrow">Selecciona tus lugares</div>
+          <h1 class="h-lg" style="margin-top:4px">Comprar <span class="accent">Boletos</span></h1>
+        </div>
+      </div>
+      <div id="checkoutNotOnSale" style="display:none;text-align:center;padding:60px 24px;background:var(--g2);border-radius:var(--r16)">
+        <div style="font-size:2.5rem;margin-bottom:16px">🎭</div>
+        <div style="font-size:16px;font-weight:700;color:#fff;margin-bottom:8px">Los boletos aún no están a la venta</div>
+        <p style="font-size:13px;color:var(--t2);max-width:400px;margin:0 auto">En cuanto se active la venta de la próxima producción, podrás elegir tus asientos aquí.</p>
+      </div>
+      <div class="checkout-layout">
+        <div class="checkout-stage">
+          <div class="stage-screen">— Escenario —</div>
+          <div class="seat-map" id="seatMap"></div>
+          <div class="seat-legend">
+            <span class="legend-item"><span class="legend-seat" style="background:#1565C0"></span>Disponible</span>
+            <span class="legend-item"><span class="legend-seat" style="background:#EC4899"></span>Seleccionado</span>
+            <span class="legend-item"><span class="legend-seat" style="background:#D4A017"></span>Pendiente</span>
+            <span class="legend-item"><span class="legend-seat" style="background:#E5445A"></span>Ocupado</span>
+            <span class="legend-item"><span class="legend-seat" style="background:#22c55e"></span>Usado</span>
+            <span class="legend-item"><span class="legend-seat" style="background:#7a7a7a"></span>Bloqueado</span>
+          </div>
+        </div>
+        <div class="checkout-cart">
+          <div class="eyebrow" style="margin-bottom:6px">Resumen</div>
+          <div class="cart-show-name" id="cartShowName">—</div>
+          <div class="cart-date" id="cartShowDate">—</div>
+          <div class="cart-items-wrap">
+            <div id="cartItems"><span style="font-size:13px;color:var(--t3)">Ningún asiento seleccionado</span></div>
+          </div>
+          <div class="cart-total-row">
+            <span class="cart-total-label">Total a pagar</span>
+            <span class="cart-total-price" id="cartTotalPrice">$0.00 MXN</span>
+          </div>
+          <div class="form-g" style="margin-top:16px"><label class="form-l" for="buyerPhone">Teléfono (obligatorio)</label><input type="tel" id="buyerPhone" class="form-c" placeholder="Tu número de teléfono"></div>
+          <div class="form-g" style="margin-top:10px"><label class="form-l" for="buyerSellerCode">Código de vendedor (opcional)</label><input type="text" id="buyerSellerCode" class="form-c" placeholder="Código de registro"></div>
+          <button class="btn btn-r" style="width:100%;justify-content:center" onclick="proceedToPayment()">Proceder al Pago →</button>
+          <div style="text-align:center;margin-top:12px;font-size:11px;color:var(--t3)" id="cartPricePerSeat">Precio por boleto: —</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<!-- CHATBOT DARFY -->
+<div class="chat-bubble">
+  <div class="chat-win" id="chatWin">
+    <div class="chat-hdr">
+      <div class="chat-av" style="font-size:14px;font-weight:900">DA</div>
+      <div><div class="chat-name">DARFY</div><div class="chat-status">● En línea ✨</div></div>
+    </div>
+    <div class="chat-msgs" id="chatMsgs">
+      <div class="msg b"><div class="msg-bbl">¡Hola! Soy DARFY, el asistente de DARF Productions ✨ ¿Qué quieres saber sobre nuestras producciones? 🎭</div></div>
+    </div>
+    <div class="chat-in"><input type="text" class="chat-input" id="chatInput" placeholder="Pregúntame lo que quieras..."><button class="chat-send" onclick="sendChat()">➤</button></div>
+  </div>
+  <button class="chat-toggle" onclick="toggleChat()"><span>🎭</span> DARFY</button>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="wrap">
+    <div class="foot-grid">
+      <div>
+        <div class="foot-brand" style="margin-bottom:12px"><img loading="lazy" src="DARF PRODUCTIONS LOGOS/1.png" alt="DARF Productions" style="height:42px;width:auto;object-fit:contain"></div>
+        <p class="foot-desc">Productora de teatro musical comprometida con la excelencia artística, el talento joven y las experiencias escénicas que transforman al público. Querétaro, México.</p>
+        <div style="display:flex;gap:14px;align-items:center;margin-top:18px;opacity:.4">
+          <div style="background:#fff;border-radius:3px;padding:2px 5px;display:inline-flex"><img loading="lazy" src="MAMMA MIA VISUALS/1.png" style="height:12px;object-fit:contain" alt="MM"></div>
+          <img loading="lazy" src="HIGH SCHOOL MUSICAL VISUALS/1.png" style="height:16px;opacity:.85" alt="HSM">
+        </div>
+      </div>
+      <div>
+        <div class="foot-col-t">Navegación</div>
+        <div class="foot-links">
+          <span class="foot-lnk" onclick="nav('home')">Inicio</span>
+          <span class="foot-lnk" onclick="nav('prods')">Producciones</span>
+          <span class="foot-lnk" onclick="nav('showman')" style="padding-left:10px;font-size:12px;color:rgba(215,163,18,.7)">↳ Showman · Próximamente</span>
+          <span class="foot-lnk" onclick="nav('mm')" style="padding-left:10px;font-size:12px;color:rgba(21,101,192,.6)">↳ Mamma Mia! 2026</span>
+          <span class="foot-lnk" onclick="nav('hsm')" style="padding-left:10px;font-size:12px;color:rgba(198,34,34,.5)">↳ High School Musical 2025</span>
+          <span class="foot-lnk" onclick="nav('contacto')">Contacto</span>
+          <span class="foot-lnk" onclick="nav('login')">Área Privada</span>
+          <span class="foot-lnk" onclick="nav('casting')">Casting</span>
+        </div>
+      </div>
+      <div>
+        <div class="foot-col-t">Contacto</div>
+        <div class="foot-links">
+          <span class="foot-lnk">📍 Querétaro, México</span>
+          <a class="foot-lnk" href="https://wa.me/4465220560" target="_blank">💬 WhatsApp</a>
+          <a class="foot-lnk" href="mailto:contact@darfproductions.com">✉️ contact@darfproductions.com</a>
+          <a class="foot-lnk" href="https://instagram.com/darfproductions" target="_blank">📱 @darfproductions</a>
+        </div>
+      </div>
+    </div>
+    <div class="foot-bot">
+      <span>© 2026 DARF Productions. Todos los derechos reservados.</span>
+      <span>Hecho con 🎭 en Querétaro, México</span>
+    </div>
+  </div>
+</footer>
+
+<script src="js/app.js" defer></script>
+</body>
+</html>
