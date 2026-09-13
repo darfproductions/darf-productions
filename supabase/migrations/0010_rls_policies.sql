@@ -4,8 +4,10 @@
 -- bypass it.
 --
 -- Role model: 'staff' has read-only internal visibility (panel data, orders,
--- tickets, profiles, sellers, blocked_seats) plus check-in and
--- contact-message triage (read + mark-read). 'admin' is a strict superset:
+-- tickets, profiles, sellers, blocked_seats) plus two narrow exceptions —
+-- check-in and marking a contact message read — both of which staff
+-- performs via a SECURITY DEFINER RPC that touches only the one column it
+-- needs, NEVER a table-level UPDATE policy. 'admin' is a strict superset:
 -- everything staff can do, PLUS all write access — approving/rejecting
 -- orders, blocking/releasing seats, managing productions/performances/seats/
 -- sellers, deleting contact messages, and granting/revoking roles.
@@ -66,12 +68,15 @@ create policy "orders_admin_write" on orders
 -- direct table writes by a buyer or staff member.
 
 -- tickets: owner can read their own tickets (via their order), staff has
--- read-only visibility, admin has full write ("Gestionar tickets").
--- Check-in is the one staff-writable exception: it's an operational scan
--- action, not ticket management, and races between two scanners must be
--- resolved by the authoritative check-in RPC (later step), not by this
--- policy — so staff gets UPDATE restricted to the check-in columns only via
--- that RPC path, not a blanket table policy.
+-- read-only visibility, admin has full write ("Gestionar tickets"). There
+-- is deliberately NO staff UPDATE policy on this table — check-in is an
+-- operational action, not ticket management, but it still must NOT be a
+-- blanket UPDATE: two scanners racing the same QR must not both succeed,
+-- and staff must not be able to rewrite order_id/seat_id/qr_token. Check-in
+-- goes through a future SECURITY DEFINER RPC (e.g. checkin_by_qr(), not
+-- built yet — see DESIGN.md) that atomically checks + sets
+-- checked_in_at/checked_in_by and nothing else, the same
+-- narrow-RPC-over-blanket-UPDATE pattern used for contact_messages below.
 create policy "tickets_owner_read" on tickets
   for select using (
     exists (select 1 from orders o where o.id = tickets.order_id and o.buyer_user_id = auth.uid())
@@ -102,14 +107,15 @@ create policy "sellers_admin_write" on sellers
   for all using (is_admin()) with check (is_admin());
 
 -- contact_messages: public can INSERT (the contact form). Staff can read
--- and mark messages as read (day-to-day triage) but cannot delete history;
--- deleting is admin-only.
+-- (day-to-day triage) but has NO update/delete policy at all — marking a
+-- message read goes through mark_contact_message_read() (0009), a
+-- SECURITY DEFINER function that only ever sets `leido`. A blanket UPDATE
+-- policy here would let staff rewrite nombre/correo/telefono/mensaje too,
+-- not just the read flag. Deleting is admin-only.
 create policy "contact_messages_public_insert" on contact_messages
   for insert with check (true);
 create policy "contact_messages_staff_read" on contact_messages
   for select using (is_staff());
-create policy "contact_messages_staff_mark_read" on contact_messages
-  for update using (is_staff()) with check (is_staff());
 create policy "contact_messages_admin_delete" on contact_messages
   for delete using (is_admin());
 

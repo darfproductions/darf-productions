@@ -69,10 +69,16 @@ modifica catálogo, boletería o cuentas es **exclusivo de `admin`**.
 Puede:
 - Leer `orders`, `tickets`, `profiles` (todas las filas — para atribuir
   nombres a ventas/check-ins), `sellers`, `blocked_seats`.
-- Check-in de tickets (RPC autoritativa futura — no vía UPDATE directo a la
-  tabla, para que dos escáneres compitiendo por el mismo QR no puedan los
-  dos "ganar"; ver `0007_orders_and_tickets.sql`).
-- Leer y marcar como leído (`leido`) `contact_messages`.
+- Check-in de tickets — **RPC autoritativa futura, no implementada aún**
+  (p.ej. `checkin_by_qr()`), nunca un `UPDATE` directo a `tickets`: no hay
+  ninguna policy de `UPDATE` para staff en esa tabla, precisamente para que
+  dos escáneres compitiendo por el mismo QR no puedan los dos "ganar" y
+  para que staff no pueda tocar ninguna otra columna del ticket; ver
+  `0010_rls_policies.sql`.
+- Leer `contact_messages` y marcarlos como leídos — vía
+  `mark_contact_message_read(target_id)` (0009), una función
+  `SECURITY DEFINER` que solo puede cambiar `leido`, nunca vía `UPDATE`
+  directo (no existe esa policy).
 
 NO puede (a nivel RLS, no solo de UI):
 - Aprobar/rechazar órdenes.
@@ -80,7 +86,8 @@ NO puede (a nivel RLS, no solo de UI):
 - Modificar `productions` ni `performances`.
 - Gestionar boletería (crear/editar/desactivar `sellers`, crear tickets de
   taquilla).
-- Eliminar `contact_messages`.
+- Eliminar `contact_messages`, ni modificar ningún campo suyo distinto de
+  `leido`.
 - Crear/promover/revocar usuarios ni cambiar `rol` de nadie (incluido el
   suyo).
 - Escribir la fila `profiles` de otro usuario.
@@ -98,12 +105,15 @@ Todo lo de staff, **más**:
 
 `is_staff()` sigue siendo true para AMBOS roles (`staff`, `admin`) — sigue
 existiendo porque staff y admin comparten la misma superficie de LECTURA;
-lo que cambió es que `is_staff()` **ya no gatea ninguna escritura** salvo
-check-in y marcar-mensaje-leído (ver `0009_helper_functions_and_triggers.sql`
-y `0010_rls_policies.sql`). `is_admin()` gatea toda escritura de gestión,
-incluyendo la de `profiles.rol` — la única vía para otorgar/revocar
-staff/admin, así que un staff nunca puede autoascenderse ni ascender a
-otros.
+lo que cambió es que `is_staff()` **ya no gatea ninguna policy de escritura
+sobre tablas**. Las dos únicas escrituras de staff (marcar mensaje leído
+hoy; check-in cuando se implemente) ocurren dentro de funciones
+`SECURITY DEFINER` de una sola columna que verifican `is_staff()` en su
+cuerpo — no vía una policy `USING (is_staff())` en la tabla misma (ver
+`0009_helper_functions_and_triggers.sql` y `0010_rls_policies.sql`).
+`is_admin()` gatea toda escritura de gestión a nivel de policy, incluyendo
+la de `profiles.rol` — la única vía para otorgar/revocar staff/admin, así
+que un staff nunca puede autoascenderse ni ascender a otros.
 
 ## Tablas (archivos en `supabase/migrations/`)
 
@@ -203,11 +213,18 @@ productions ← performances ← orders ← tickets → seats
   estas tablas.
 - `orders`, `tickets`: lectura para el propietario (`buyer_user_id`) y para
   staff (`orders_staff_read`, `tickets_staff_read`); **ninguna escritura de
-  cliente ni de staff** — toda mutación (crear, aprobar, rechazar, check-in)
-  pasa por admin directo o por funciones `SECURITY DEFINER` (a diseñar en
-  la integración). Esto impide que un comprador edite la orden de otro,
-  cambie su propio `total`/`performance_id`, o marque un ticket como usado
-  — y que staff apruebe/rechace o anule tickets sin pasar por admin/RPC.
+  cliente ni de staff** — toda mutación (crear, aprobar, rechazar) pasa por
+  admin directo o por funciones `SECURITY DEFINER` (a diseñar en la
+  integración). Esto impide que un comprador edite la orden de otro, cambie
+  su propio `total`/`performance_id`, o marque un ticket como usado — y que
+  staff apruebe/rechace o anule tickets sin pasar por admin/RPC.
+  **Check-in no tiene ninguna policy de `UPDATE` para staff** — ni siquiera
+  restringida a columnas, porque RLS por sí sola no puede limitar un
+  `UPDATE` a columnas específicas. Cuando se construya (fase posterior, no
+  incluida aquí), será una RPC `SECURITY DEFINER` (p.ej. `checkin_by_qr()`)
+  que solo puede tocar `checked_in_at`/`checked_in_by` de forma atómica —
+  mismo patrón que `mark_contact_message_read()` (0009) para
+  `contact_messages`.
 - **Doble reserva evitada por función:** índice único parcial
   `uq_tickets_active_seat_per_performance` sobre
   `(performance_id, seat_id)` — el mismo asiento puede tener, como máximo,
@@ -230,9 +247,16 @@ productions ← performances ← orders ← tickets → seats
   alguien (incluido uno mismo, indirectamente, pidiéndole a otro staff).
 - `sellers`: lectura staff (`sellers_staff_read`), escritura **admin-only**
   (`sellers_admin_write`) — sin SELECT público de la tabla completa.
-- `contact_messages`: INSERT público; SELECT y marcar-leído por staff
-  (`contact_messages_staff_read`, `contact_messages_staff_mark_read`);
-  DELETE **admin-only** (`contact_messages_admin_delete`).
+- `contact_messages`: INSERT público; SELECT por staff
+  (`contact_messages_staff_read`); DELETE **admin-only**
+  (`contact_messages_admin_delete`). **Sin policy de `UPDATE` para staff en
+  absoluto** — un `UPDATE ... USING (is_staff())` habría dejado a staff
+  reescribir `nombre`/`correo`/`telefono`/`mensaje`/`created_at`, no solo
+  `leido`. Marcar como leído es la función `SECURITY DEFINER`
+  `mark_contact_message_read(target_id)` (0009): verifica `is_staff()`
+  internamente y ejecuta un `UPDATE ... SET leido = true` de una sola
+  columna — es imposible, por construcción, que cambie cualquier otro
+  campo.
 
 ## I. Qué falta para conectar el frontend (fuera de alcance de este paso)
 

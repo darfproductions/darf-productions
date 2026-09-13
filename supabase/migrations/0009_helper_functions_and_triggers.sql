@@ -55,6 +55,28 @@ as $$
   select rol from profiles where id = auth.uid();
 $$;
 
+-- Lets staff mark a contact message as read WITHOUT granting UPDATE on the
+-- table itself. There is deliberately no RLS UPDATE policy for staff on
+-- contact_messages (see 0010) — a blanket UPDATE policy would let staff
+-- rewrite nombre/correo/telefono/mensaje/created_at too, not just `leido`.
+-- SECURITY DEFINER + an explicit single-column UPDATE is what makes "staff
+-- can only flip `leido`" true at the database level, not just by
+-- frontend convention.
+create or replace function mark_contact_message_read(target_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not is_staff() then
+    raise exception 'not authorized';
+  end if;
+
+  update contact_messages set leido = true where id = target_id;
+end;
+$$;
+
 -- Server-generated order codes. The client never supplies order_code —
 -- this trigger overwrites whatever (if anything) was passed on insert.
 create or replace function generate_order_code()
