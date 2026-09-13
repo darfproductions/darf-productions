@@ -1,11 +1,15 @@
-# DARF Productions — Diseño Supabase (v3)
+# DARF Productions — Diseño Supabase (v4)
 
 Estado: **diseño para revisión — nada de esto se ha ejecutado contra Supabase.**
 `localStorage` y `js/app.js` siguen intactos y en producción sin cambios.
 
-Este documento reemplaza la v2 en el punto donde una producción implicaba
-una sola puesta en venta. v3 introduce `performances` (funciones) entre
-`productions` y `tickets`, y pasa el modelo de roles de dos a tres.
+v3 reemplazó la v2 en el punto donde una producción implicaba una sola
+puesta en venta, introduciendo `performances` (funciones) entre
+`productions` y `tickets`, y pasando el modelo de roles de dos a tres.
+v4 no cambia ninguna tabla ni el modelo de performances — **redefine y
+endurece qué puede escribir cada rol** (ver sección E–G, la matriz de
+permisos), separando "operar/ver" (staff) de "administrar" (admin) de forma
+mucho más estricta que en v3.
 
 ## Qué cambió respecto a v2
 
@@ -40,13 +44,66 @@ una sola puesta en venta. v3 introduce `performances` (funciones) entre
   distinta — un error que ninguna FK por sí sola puede detectar, porque
   `seats` y `performances` solo comparten `production_id` indirectamente.
 - **Rol nuevo: `admin`.** El enum pasa de `('fan','staff')` a
-  `('fan','staff','admin')`. `admin` es superconjunto de `staff`: todo lo
-  que puede hacer `staff` (aprobar órdenes, bloquear/liberar asientos,
-  escanear boletos, gestionar catálogo/vendedores) lo puede hacer `admin`,
-  pero **solo `admin` puede escribir la fila `profiles` de otro usuario** —
-  en particular, solo `admin` puede cambiar el `rol` de alguien. Esto separa
-  "operar la taquilla" de "otorgar permisos", que es justo el tipo de
-  poder que no se le quiere dar por defecto a todo el staff operativo.
+  `('fan','staff','admin')`.
+
+## v4 — Matriz de permisos (staff vs. admin, endurecida)
+
+**staff ya NO es superconjunto operativo de admin-lite.** A partir de v4,
+`staff` es de **solo lectura interna** más un puñado de acciones puntuales
+sin riesgo de integridad (check-in, marcar mensaje como leído). Todo lo que
+modifica catálogo, boletería o cuentas es **exclusivo de `admin`**.
+
+### FAN
+
+- Su perfil y datos personales (`profiles`, propia fila).
+- Su historial de órdenes/tickets (`orders`/`tickets`, propias filas vía
+  `buyer_user_id`).
+- Solicitud/compra de boletos (vía RPC futura, no tabla directa).
+- Sin acceso a nada de Staff ni Admin.
+- (Producciones/funciones privadas con autorización: fuera de alcance de
+  este paso — no hay hoy una columna que distinga producción pública vs.
+  privada; se diseñará cuando exista ese requisito real.)
+
+### STAFF — solo lectura interna + check-in + triage de contacto
+
+Puede:
+- Leer `orders`, `tickets`, `profiles` (todas las filas — para atribuir
+  nombres a ventas/check-ins), `sellers`, `blocked_seats`.
+- Check-in de tickets (RPC autoritativa futura — no vía UPDATE directo a la
+  tabla, para que dos escáneres compitiendo por el mismo QR no puedan los
+  dos "ganar"; ver `0007_orders_and_tickets.sql`).
+- Leer y marcar como leído (`leido`) `contact_messages`.
+
+NO puede (a nivel RLS, no solo de UI):
+- Aprobar/rechazar órdenes.
+- Bloquear/desbloquear asientos.
+- Modificar `productions` ni `performances`.
+- Gestionar boletería (crear/editar/desactivar `sellers`, crear tickets de
+  taquilla).
+- Eliminar `contact_messages`.
+- Crear/promover/revocar usuarios ni cambiar `rol` de nadie (incluido el
+  suyo).
+- Escribir la fila `profiles` de otro usuario.
+
+### ADMIN — control administrativo completo
+
+Todo lo de staff, **más**:
+- Gestionar usuarios y roles: escribir `profiles.rol` de cualquier usuario
+  (promover fan→staff, revocar staff→fan, gestionar cuentas admin).
+- Gestionar `productions`, `performances`, `seats`.
+- Gestionar boletería: `sellers` (crear/editar/desactivar), `orders`
+  (aprobar/rechazar), `tickets` (crear, anular).
+- Bloquear/desbloquear asientos (`blocked_seats`).
+- Eliminar `contact_messages`.
+
+`is_staff()` sigue siendo true para AMBOS roles (`staff`, `admin`) — sigue
+existiendo porque staff y admin comparten la misma superficie de LECTURA;
+lo que cambió es que `is_staff()` **ya no gatea ninguna escritura** salvo
+check-in y marcar-mensaje-leído (ver `0009_helper_functions_and_triggers.sql`
+y `0010_rls_policies.sql`). `is_admin()` gatea toda escritura de gestión,
+incluyendo la de `profiles.rol` — la única vía para otorgar/revocar
+staff/admin, así que un staff nunca puede autoascenderse ni ascender a
+otros.
 
 ## Tablas (archivos en `supabase/migrations/`)
 
@@ -128,22 +185,29 @@ productions ← performances ← orders ← tickets → seats
   de asientos (`seats`) — todo sin PII. Estar `seats`/`performances` vacías
   no cambia esta clasificación, solo el resultado (0 filas).
 - **Autenticado:** ver sus propias órdenes/tickets.
-- **Staff:** todo lo operativo — aprobar/rechazar órdenes, bloquear/liberar
-  asientos por función, escanear/check-in, gestionar catálogo y vendedores,
-  ver perfiles (para atribuir nombres a ventas/check-ins).
-- **Admin (nuevo, exclusivo):** todo lo de staff, **más** la capacidad de
-  escribir la fila `profiles` de cualquier otro usuario — es decir, la
-  única forma de otorgar `staff`/`admin` a una cuenta.
+- **Staff:** solo lectura interna (`orders`, `tickets`, `profiles`,
+  `sellers`, `blocked_seats`) + check-in + marcar `contact_messages` como
+  leído. Ninguna escritura de gestión — ver matriz completa en la sección
+  "v4 — Matriz de permisos" más arriba.
+- **Admin (exclusivo):** todo lo de staff, **más** toda escritura de
+  gestión — `productions`, `performances`, `seats`, `orders`, `tickets`,
+  `blocked_seats`, `sellers`, eliminar `contact_messages`, y la capacidad de
+  escribir la fila `profiles` de cualquier otro usuario (única forma de
+  otorgar/revocar `staff`/`admin`).
 
 ## H. RLS — resumen (detalle en `0010_rls_policies.sql`)
 
 - `productions`, `performances`, `seats`: lectura pública, escritura
-  staff/admin (`is_staff()` cubre ambos roles).
-- `orders`, `tickets`: **sin INSERT/UPDATE de cliente en absoluto** — toda
-  mutación pasa por funciones `SECURITY DEFINER` (a diseñar en la
-  integración, no en este paso). Esto impide que un comprador edite la
-  orden de otro, cambie su propio `total`/`performance_id`, o marque un
-  ticket como usado.
+  **admin-only** (`productions_admin_write`, `performances_admin_write`,
+  `seats_admin_write`). Staff no tiene ninguna policy de escritura sobre
+  estas tablas.
+- `orders`, `tickets`: lectura para el propietario (`buyer_user_id`) y para
+  staff (`orders_staff_read`, `tickets_staff_read`); **ninguna escritura de
+  cliente ni de staff** — toda mutación (crear, aprobar, rechazar, check-in)
+  pasa por admin directo o por funciones `SECURITY DEFINER` (a diseñar en
+  la integración). Esto impide que un comprador edite la orden de otro,
+  cambie su propio `total`/`performance_id`, o marque un ticket como usado
+  — y que staff apruebe/rechace o anule tickets sin pasar por admin/RPC.
 - **Doble reserva evitada por función:** índice único parcial
   `uq_tickets_active_seat_per_performance` sobre
   `(performance_id, seat_id)` — el mismo asiento puede tener, como máximo,
@@ -155,15 +219,20 @@ productions ← performances ← orders ← tickets → seats
   `validate_blocked_seat_production()` (en `blocked_seats`) rechazan con
   excepción cualquier intento de asociar el asiento de una producción con
   la función de otra producción distinta.
+- `blocked_seats`: lectura staff (`blocked_seats_staff_read`), escritura
+  **admin-only** (`blocked_seats_admin_write`).
 - `profiles`: el propio usuario puede leer/editar su fila, **nunca su
   `rol`** — el `WITH CHECK` reafirma el rol ya almacenado
   (`current_profile_role()`). **Staff puede leer todos los perfiles pero no
   escribirlos; solo admin puede escribir la fila de otro usuario** — esta es
-  la única asimetría staff/admin en todo el esquema, y es intencional: es
-  el único punto donde otorgar el permiso equivaldría a poder auto-ascender
-  a alguien (incluido uno mismo, indirectamente, pidiéndole a otro staff).
-- `sellers`: gestión staff/admin, sin SELECT público de la tabla completa.
-- `contact_messages`: INSERT público, SELECT/UPDATE/DELETE staff/admin.
+  la asimetría staff/admin de mayor riesgo en todo el esquema: es el único
+  punto donde otorgar el permiso equivaldría a poder auto-ascender a
+  alguien (incluido uno mismo, indirectamente, pidiéndole a otro staff).
+- `sellers`: lectura staff (`sellers_staff_read`), escritura **admin-only**
+  (`sellers_admin_write`) — sin SELECT público de la tabla completa.
+- `contact_messages`: INSERT público; SELECT y marcar-leído por staff
+  (`contact_messages_staff_read`, `contact_messages_staff_mark_read`);
+  DELETE **admin-only** (`contact_messages_admin_delete`).
 
 ## I. Qué falta para conectar el frontend (fuera de alcance de este paso)
 
@@ -192,3 +261,32 @@ No incluido todavía, a propósito:
    mapa de asientos o sigue en admisión general (`seat_id null`).
 
 Nada de esto bloquea correr `0001`–`0010` hoy.
+
+## K. Preparado para (fase posterior, no implementado todavía)
+
+El esquema actual ya soporta, sin cambios adicionales de tablas, lo
+siguiente — queda documentado como trabajo futuro, no como parte de este
+paso:
+
+- **Panel Admin de gestión de cuentas:** listar `profiles` (staff ya puede
+  leerlas todas vía `profiles_staff_read`) y escribir `rol` vía
+  `profiles_admin_write`. No requiere columnas nuevas.
+- **Creación/invitación de Staff:** hoy no existe un flujo de invitación —
+  la única vía es que un admin cree el `auth.users` (o el usuario se
+  registre como `fan` vía `handle_new_user()`) y luego un admin promueva
+  `rol='staff'` escribiendo `profiles` vía `profiles_admin_write`. Un flujo
+  de invitación por correo (tabla `invitations` + Edge Function) es una
+  fase separada, no incluida aquí.
+- **Revocación de Staff:** ya soportado hoy — un admin hace
+  `update profiles set rol='fan' where id = ...`, cubierto por la misma
+  policy `profiles_admin_write`. No requiere ninguna tabla nueva.
+- **Registro de actividad administrativa (audit log):** **no implementado
+  en este paso.** Ninguna tabla `audit_log` existe todavía. Cuando se
+  aborde, el diseño previsto es una tabla `audit_log (id, actor_id,
+  action, target_table, target_id, before, after, created_at)` poblada por
+  triggers `AFTER` sobre las tablas sensibles a escritura admin
+  (`profiles`, `orders`, `tickets`, `blocked_seats`, `sellers`,
+  `productions`, `performances`) — o por las RPCs `SECURITY DEFINER`
+  cuando se diseñen, para no duplicar lógica entre trigger y RPC. Queda
+  fuera de alcance de esta migración; se documenta aquí solo para que la
+  fase de RLS actual (v4) no cierre esa puerta.

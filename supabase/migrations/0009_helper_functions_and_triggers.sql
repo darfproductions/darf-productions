@@ -4,10 +4,13 @@
 -- how the client calls into Supabase (RPC vs. direct table access) is an
 -- integration decision for a later, separate step.
 
--- 'staff' has the operational permissions (approve orders, block/release
--- seats, scan tickets); 'admin' has everything 'staff' has plus full
--- administrative control. is_staff() therefore returns true for BOTH roles
--- — use is_admin() where a check must exclude staff and be admin-only.
+-- 'staff' is limited to read-only visibility (panel, orders, tickets,
+-- profiles, sellers, blocked_seats) plus check-in and contact-message
+-- triage; 'admin' has everything 'staff' has plus all write access to
+-- orders/tickets/blocked_seats/productions/performances/seats/sellers and
+-- role management. is_staff() therefore returns true for BOTH roles — use
+-- is_admin() where a check must exclude staff and be admin-only. See the
+-- permissions matrix in supabase/docs/DESIGN.md.
 -- SECURITY DEFINER so it reads `profiles` directly, bypassing that table's
 -- own RLS — calling it from within a profiles policy therefore cannot
 -- recurse into RLS again.
