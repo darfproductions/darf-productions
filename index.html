@@ -719,12 +719,9 @@
       </div>
       <!-- Panel: Verificar correo -->
       <div id="lpanel-verificar" style="display:none">
-        <div style="text-align:center;margin-bottom:18px"><span style="font-size:14px;font-weight:700;color:#fff">Verifica tu correo</span></div>
-        <p style="font-size:12px;color:var(--t2);text-align:center;margin-bottom:16px">Enviamos un código a <strong id="verifyEmailLabel" style="color:#fff">—</strong></p>
-        <div id="verifyCodeHint" style="font-size:11px;color:var(--t3);text-align:center;margin-bottom:16px;background:var(--g2);border-radius:var(--r8);padding:10px"></div>
-        <div class="form-g"><label class="form-l" for="vcode">Código de 6 dígitos</label><input type="text" id="vcode" class="form-c" placeholder="123456" maxlength="6" style="text-align:center;letter-spacing:.2em;font-size:16px"></div>
-        <button class="btn btn-r" onclick="AuthService.doVerifyEmail()" style="width:100%;justify-content:center">Verificar Correo</button>
-        <div style="text-align:center;margin-top:14px"><span onclick="AuthService.doResendCode()" style="font-size:12px;color:var(--t2);cursor:pointer;text-decoration:underline">Reenviar código</span></div>
+        <div style="text-align:center;margin-bottom:18px"><span style="font-size:14px;font-weight:700;color:#fff">Revisa tu correo</span></div>
+        <p style="font-size:12px;color:var(--t2);text-align:center;margin-bottom:16px">Enviamos un enlace de confirmación a <strong id="verifyEmailLabel" style="color:#fff">—</strong>. Ábrelo desde el mismo dispositivo para activar tu cuenta y luego inicia sesión.</p>
+        <div style="text-align:center;margin-top:14px"><span onclick="AuthService.doResendVerification()" style="font-size:12px;color:var(--t2);cursor:pointer;text-decoration:underline">Reenviar correo</span></div>
       </div>
       <div style="text-align:center;margin-top:14px"><span onclick="nav('home')" style="font-size:12px;color:var(--t2);cursor:pointer">← Regresar al sitio</span></div>
     </div>

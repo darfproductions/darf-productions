@@ -19,7 +19,7 @@ function togglePass(btn, inputId){
 
 // ─── DB LOCAL (mock funcional, listo para reemplazar por Supabase) ──
 const DB = (function(){
-  const KEYS = {users:'darf_users', session:'darf_session', orders:'darf_orders', productions:'darf_productions', contact:'darf_contact', blocked:'darf_blocked', sellers:'darf_sellers'};
+  const KEYS = {orders:'darf_orders', productions:'darf_productions', contact:'darf_contact', blocked:'darf_blocked', sellers:'darf_sellers'};
   const listeners = {};
 
   function read(key, fallback){
@@ -75,15 +75,6 @@ const DB = (function(){
   function setProductionOnSale(id, onSale){
     const p = getProductions();
     if(p[id]){ p[id].onSale = !!onSale; write(KEYS.productions, p); }
-  }
-
-  function getUsers(){ return read(KEYS.users, {}); }
-  function saveUsers(u){ write(KEYS.users, u); }
-  function getUserByEmail(email){ return getUsers()[(email||'').toLowerCase()]||null; }
-  function upsertUser(email, data){
-    const users = getUsers();
-    users[email.toLowerCase()] = data;
-    saveUsers(users);
   }
 
   function getOrders(){ return read(KEYS.orders, []); }
@@ -250,7 +241,6 @@ const DB = (function(){
   return {
     KEYS, subscribe,
     seedProductions, getProductions, getProduction, setProductionOnSale,
-    getUsers, saveUsers, getUserByEmail, upsertUser,
     getOrders, createOrder, updateOrder, approveOrder, rejectOrder,
     getPendingOrders, getPendingOrdersFor, getOrdersForUser, getOrdersForProduction,
     getSeatsTaken, getApprovedCount, checkInByQr,
@@ -261,26 +251,13 @@ const DB = (function(){
 })();
 DB.seedProductions();
 
-// ─── AUTH SERVICE (localStorage real: hash + verificación de correo) ──
+// ─── AUTH SERVICE (Supabase Auth: sesión real + rol leído de `profiles`) ──
 const AuthService = (function(){
   const session = {usuario:null, rol:null, nombre:null, userId:null};
   let pendingVerifyEmail = null;
 
   const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   function passwordOk(p){ return typeof p==='string' && p.length>=8 && /[A-Za-z]/.test(p) && /[0-9]/.test(p); }
-
-  function randomHex(bytes){
-    const arr = new Uint8Array(bytes);
-    (window.crypto||window.msCrypto).getRandomValues(arr);
-    return Array.from(arr).map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
-  }
-  async function hashPassword(password, saltHex){
-    const enc = new TextEncoder();
-    const data = enc.encode(saltHex+':'+password);
-    const digest = await crypto.subtle.digest('SHA-256', data);
-    return Array.from(new Uint8Array(digest)).map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
-  }
-  function genCode(){ return String(Math.floor(100000+Math.random()*900000)); }
 
   function showLoginTab(tab){
     var tabs=['correo','registro','verificar'];
@@ -290,14 +267,36 @@ const AuthService = (function(){
     });
   }
 
-  function showVerifyPanel(email, code){
+  function showVerifyPanel(email){
     pendingVerifyEmail = email;
-    var codeBox = document.getElementById('verifyCodeHint');
-    if(codeBox) codeBox.textContent = 'Código de prueba (simulado, sin envío real de correo aún): '+code;
     var emailEl = document.getElementById('verifyEmailLabel');
     if(emailEl) emailEl.textContent = email;
-    var input = document.getElementById('vcode'); if(input) input.value='';
     showLoginTab('verificar');
+  }
+
+  // El rol vive en `profiles.rol` (server-side, no editable por el propio
+  // usuario vía RLS — ver 0005/0010). Nunca se confía un rol que no venga
+  // de esta consulta: editar localStorage ya no puede otorgar acceso staff.
+  async function fetchProfile(userId){
+    if(!sb) return null;
+    const { data, error } = await sb.from('profiles').select('rol,nombre').eq('id', userId).single();
+    if(error) return null;
+    return data;
+  }
+
+  async function applySession(user){
+    if(!user){ clearSession(); return; }
+    const profile = await fetchProfile(user.id);
+    session.usuario = user.email;
+    session.userId = user.id;
+    session.rol = profile ? profile.rol : 'fan';
+    session.nombre = (profile && profile.nombre) || (user.user_metadata && user.user_metadata.nombre) || '';
+    updateNavAuth();
+  }
+
+  function clearSession(){
+    session.usuario=null; session.rol=null; session.nombre=null; session.userId=null;
+    updateNavAuth();
   }
 
   async function doRegister(){
@@ -307,93 +306,60 @@ const AuthService = (function(){
     if(!name||!email||!pass){flash('Completa todos los campos.','d');return;}
     if(!EMAIL_RE.test(email)){flash('Ese correo no parece válido.','d');return;}
     if(!passwordOk(pass)){flash('La contraseña debe tener al menos 8 caracteres, con letras y números.','d');return;}
-    if(DB.getUserByEmail(email)){flash('Ese correo ya está registrado.','d');return;}
-    const salt = randomHex(16);
-    const hash = await hashPassword(pass, salt);
-    const code = genCode();
-    DB.upsertUser(email, {
-      nombre:name, email:email, salt:salt, hash:hash, rol:'fan',
-      emailVerified:false, verificationCode:code, createdAt:Date.now()
+    if(!sb){flash('No hay conexión con el servidor. Intenta más tarde.','d');return;}
+    const { error } = await sb.auth.signUp({
+      email: email, password: pass, options:{ data:{ nombre:name } }
     });
-    flash('¡Cuenta creada! Verifica tu correo para continuar.','s');
-    showVerifyPanel(email, code);
+    if(error){ flash(error.message,'d'); return; }
+    flash('¡Cuenta creada! Revisa tu correo para confirmar tu cuenta.','s');
+    showVerifyPanel(email);
   }
 
-  function doVerifyEmail(){
-    var code=(document.getElementById('vcode').value||'').trim();
-    if(!pendingVerifyEmail){flash('No hay una verificación en curso. Inicia el registro de nuevo.','d');return;}
-    var user = DB.getUserByEmail(pendingVerifyEmail);
-    if(!user){flash('No se encontró la cuenta.','d');return;}
-    if(!code||code!==user.verificationCode){flash('Código incorrecto.','d');return;}
-    user.emailVerified=true; delete user.verificationCode;
-    DB.upsertUser(pendingVerifyEmail, user);
-    flash('¡Correo verificado! Ya puedes iniciar sesión.','s');
-    var luEl=document.getElementById('lu'); if(luEl) luEl.value=pendingVerifyEmail;
-    pendingVerifyEmail=null;
-    showLoginTab('correo');
-  }
-
-  function doResendCode(){
+  function doResendVerification(){
     if(!pendingVerifyEmail){flash('No hay una verificación en curso.','d');return;}
-    var user = DB.getUserByEmail(pendingVerifyEmail);
-    if(!user){flash('No se encontró la cuenta.','d');return;}
-    var code=genCode();
-    user.verificationCode=code;
-    DB.upsertUser(pendingVerifyEmail, user);
-    showVerifyPanel(pendingVerifyEmail, code);
-    flash('Código reenviado (simulado).','i');
+    if(!sb){flash('No hay conexión con el servidor. Intenta más tarde.','d');return;}
+    sb.auth.resend({ type:'signup', email: pendingVerifyEmail }).then(function(res){
+      if(res.error){ flash(res.error.message,'d'); return; }
+      flash('Correo de confirmación reenviado.','i');
+    });
   }
 
   async function doLogin(){
     const u=(document.getElementById('lu').value||'').trim().toLowerCase();
     const p=(document.getElementById('lp').value||'').trim();
     if(!u||!p){flash('Escribe tu correo y contraseña.','d');return;}
-    const user=DB.getUserByEmail(u);
-    if(!user){flash('Correo o contraseña incorrectos.','d');return;}
-    if(!user.emailVerified){
-      flash('Confirma tu correo antes de iniciar sesión.','d');
-      showVerifyPanel(user.email, user.verificationCode||genCode());
+    if(!sb){flash('No hay conexión con el servidor. Intenta más tarde.','d');return;}
+    const { data, error } = await sb.auth.signInWithPassword({ email:u, password:p });
+    if(error){
+      if(/confirm/i.test(error.message)){
+        flash('Confirma tu correo antes de iniciar sesión — revisa tu bandeja.','d');
+        showVerifyPanel(u);
+      } else {
+        flash('Correo o contraseña incorrectos.','d');
+      }
       return;
     }
-    const hash = await hashPassword(p, user.salt);
-    if(hash!==user.hash){flash('Correo o contraseña incorrectos.','d');return;}
-    setSession(user.email, user.rol, user.nombre);
-    flash('¡Bienvenido, '+user.nombre+'! 🎭','s');
-    nav(user.rol==='staff'?'staff':'fan');
+    await applySession(data.user);
+    flash('¡Bienvenido, '+(session.nombre||session.usuario)+'! 🎭','s');
+    nav(session.rol==='fan'?'fan':'staff');
   }
 
-  function setSession(email, rol, nombre){
-    session.usuario=email; session.rol=rol; session.nombre=nombre; session.userId=email;
-    localStorage.setItem(DB.KEYS.session, JSON.stringify({email:email, rol:rol, nombre:nombre}));
-    updateNavAuth();
-  }
-
-  function restoreSession(){
-    try{
-      const raw = localStorage.getItem(DB.KEYS.session);
-      if(!raw) return;
-      const s = JSON.parse(raw);
-      const user = DB.getUserByEmail(s.email);
-      if(user && user.emailVerified){ setSession(user.email, user.rol, user.nombre); }
-      else{ localStorage.removeItem(DB.KEYS.session); }
-    }catch(e){}
-  }
-
-  function doLogout(){
-    session.usuario=null;session.rol=null;session.nombre=null;session.userId=null;
-    localStorage.removeItem(DB.KEYS.session);
-    updateNavAuth();flash('Sesión cerrada. ¡Hasta pronto!','i');nav('home');
+  async function doLogout(){
+    if(sb) await sb.auth.signOut();
+    clearSession();
+    flash('Sesión cerrada. ¡Hasta pronto!','i');
+    nav('home');
   }
 
   function loginGoogle(){
-    flash('Inicio con Google estará disponible en cuanto conectemos Supabase. Por ahora, usa correo y contraseña.','i');
+    flash('Inicio con Google estará disponible próximamente. Por ahora, usa correo y contraseña.','i');
   }
 
   function updateNavAuth(){
     var el=document.getElementById('navAuth');
     clearEl(el);
     if(session.usuario){
-      if(session.rol==='staff'){
+      if(session.rol==='staff'||session.rol==='admin'){
         var staffBtn=document.createElement('button');
         staffBtn.className='btn btn-o btn-sm';
         staffBtn.textContent='⚙️ Panel Staff';
@@ -443,31 +409,25 @@ const AuthService = (function(){
   async function updatePass(){
     var np=(document.getElementById('pf-pass').value||'').trim();
     if(!passwordOk(np)){flash('La contraseña debe tener al menos 8 caracteres, con letras y números.','d');return;}
-    var user=DB.getUserByEmail(session.usuario);
-    if(!user){flash('No se encontró tu cuenta.','d');return;}
-    var salt = randomHex(16);
-    user.salt=salt; user.hash=await hashPassword(np, salt);
-    DB.upsertUser(session.usuario, user);
+    if(!sb){flash('No hay conexión con el servidor. Intenta más tarde.','d');return;}
+    const { error } = await sb.auth.updateUser({ password: np });
+    if(error){ flash(error.message,'d'); return; }
     document.getElementById('pf-pass').value='';
     flash('Contraseña actualizada.','s');
   }
 
-  async function seedDemoUsers(){
-    var demos=[
-      {email:'fan@darf.mx', pass:'Fan12345', nombre:'Fan Demo', rol:'fan'},
-      {email:'staff@darf.mx', pass:'Staff12345', nombre:'Staff Demo', rol:'staff'}
-    ];
-    for(var i=0;i<demos.length;i++){
-      var d=demos[i];
-      if(DB.getUserByEmail(d.email)) continue;
-      var salt=randomHex(16);
-      var hash=await hashPassword(d.pass, salt);
-      DB.upsertUser(d.email, {nombre:d.nombre, email:d.email, salt:salt, hash:hash, rol:d.rol, emailVerified:true, createdAt:Date.now()});
-    }
+  async function restoreSession(){
+    if(!sb) return;
+    const { data } = await sb.auth.getSession();
+    if(data && data.session && data.session.user){ await applySession(data.session.user); }
+    sb.auth.onAuthStateChange(function(event, sessionObj){
+      if(event==='SIGNED_OUT'){ clearSession(); }
+      else if(sessionObj && sessionObj.user){ applySession(sessionObj.user); }
+    });
   }
 
-  return {session, showLoginTab, doLogin, doLogout, doRegister, doVerifyEmail, doResendCode,
-    loginGoogle, updateNavAuth, updatePass, restoreSession, seedDemoUsers};
+  return {session, showLoginTab, doLogin, doLogout, doRegister, doResendVerification,
+    loginGoogle, updateNavAuth, updatePass, restoreSession};
 })();
 
 // ─── CARRUSELES ───────────────────────────────────────
@@ -497,7 +457,7 @@ const VIEWS_MAP={home:'v-home',cartelera:'v-cartelera',prods:'v-prods',mm:'v-mm'
 const NAV_KEY_MAP={home:'navHome',cartelera:'navCartelera',prods:'navProdBtn',mm:'navProdBtn',hsm:'navProdBtn',showman:'navProdBtn',contacto:'navContacto'};
 function nav(key, skipPush){
   if((key==='fan'||key==='staff'||key==='cuenta')&&!AuthService.session.usuario){nav('login');return;}
-  if(key==='staff'&&AuthService.session.rol!=='staff'){nav('fan');return;}
+  if(key==='staff'&&AuthService.session.rol!=='staff'&&AuthService.session.rol!=='admin'){nav('fan');return;}
   Object.values(VIEWS_MAP).forEach(id=>{const el=document.getElementById(id);if(el)el.classList.remove('active');});
   const target=document.getElementById(VIEWS_MAP[key]);
   if(target){target.classList.add('active');window.scrollTo({top:0,behavior:'smooth'});}
@@ -565,7 +525,8 @@ function cuentaTab(tab){
   });
   if(tab==='perfil'){
     var n=document.getElementById('pf-nombre');var c=document.getElementById('pf-correo');var r=document.getElementById('pf-rol');
-    if(n)n.value=AuthService.session.nombre||'';if(c)c.value=AuthService.session.usuario||'';if(r)r.value=AuthService.session.rol==='staff'?'Staff':'Fan';
+    var ROL_LABELS={fan:'Fan',staff:'Staff',admin:'Admin'};
+    if(n)n.value=AuthService.session.nombre||'';if(c)c.value=AuthService.session.usuario||'';if(r)r.value=ROL_LABELS[AuthService.session.rol]||'Fan';
   }
   if(tab==='boletos'){ renderMisBoletos(); }
 }
@@ -1446,7 +1407,6 @@ function simulateQrScan(){
 }
 
 // ─── URL DIRECTA ──────────────────────────────────────
-AuthService.seedDemoUsers();
 AuthService.restoreSession();
 (function(){var p=new URLSearchParams(window.location.search).get('v');if(p&&VIEWS_MAP[p])nav(p);})();
 window.addEventListener('popstate', function(){
