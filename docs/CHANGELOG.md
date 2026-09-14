@@ -47,6 +47,14 @@ sin tocar la boletería de Showman, que permanece oculta hasta tener venue.
   ($150, Teatro UVM Juriquilla, `on_sale=false`), High School Musical ($50,
   Teatro Universidad Humanitas Querétaro, `on_sale=false`). No se tocó
   `seats`/`price_categories`/`performance_price_categories` — siguen vacías.
+- **Paso 8 — panel staff: buzón de contacto + vendedores:** `DB` swap
+  completo de `contact_messages` y `sellers` de `localStorage` a Supabase.
+  Formulario público de contacto → `INSERT` (RLS pública); buzón del panel
+  staff → `SELECT` (RLS staff); eliminar mensaje → `DELETE` (RLS admin-only).
+  Alta de vendedor → `INSERT` en `sellers` (RLS admin-only, un `staff` sin
+  rol admin verá el error de RLS al intentarlo — comportamiento esperado,
+  no una regresión). Ambas cachés se recargan al abrir el panel staff (sin
+  Realtime todavía, como estaba previsto para Fase 1).
 
 **Decisiones de Johann que enmarcan Fase 1:**
 - Compra invitado-primero, cuentas demo eliminadas por completo, 3 roles

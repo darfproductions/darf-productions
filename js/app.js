@@ -203,43 +203,66 @@ const DB = (function(){
     return {ok:true, order};
   }
 
-  function getSellers(){ return read(KEYS.sellers, []); }
-  function saveSellers(list){ write(KEYS.sellers, list); }
+  let sellersCache = [];
+  async function loadSellers(){
+    if(!sb) return sellersCache;
+    const { data, error } = await sb.from('sellers').select().order('created_at');
+    if(error) return sellersCache;
+    sellersCache = data;
+    notify(KEYS.sellers);
+    return sellersCache;
+  }
+  function getSellers(){ return sellersCache; }
   function normCode(codigo){ return (codigo||'').trim().toUpperCase(); }
   function getSellerByCode(codigo){
     const norm = normCode(codigo);
     if(!norm) return null;
-    return getSellers().find(function(s){ return s.codigo===norm; }) || null;
+    return sellersCache.find(function(s){ return s.codigo===norm; }) || null;
   }
-  function addSeller(nombre, codigo){
+  async function addSeller(nombre, codigo){
     nombre = (nombre||'').trim();
     const norm = normCode(codigo);
     if(!nombre) return {ok:false, error:'Escribe el nombre del vendedor.'};
     if(!norm) return {ok:false, error:'Escribe un código.'};
     if(getSellerByCode(norm)) return {ok:false, error:'Ese código ya está en uso.'};
-    const list = getSellers();
-    const s = {id:uid(), nombre:nombre, codigo:norm};
-    list.push(s);
-    saveSellers(list);
-    return {ok:true, seller:s};
+    if(!sb) return {ok:false, error:'No hay conexión con el servidor.'};
+    const { data, error } = await sb.from('sellers').insert({nombre:nombre, codigo:norm}).select().single();
+    if(error) return {ok:false, error: error.message};
+    await loadSellers();
+    return {ok:true, seller:data};
   }
-  function deleteSeller(id){
-    const list = getSellers().filter(function(s){ return s.id!==id; });
-    saveSellers(list);
+  async function deleteSeller(id){
+    if(!sb) return false;
+    const { error } = await sb.from('sellers').delete().eq('id', id);
+    if(error) return false;
+    await loadSellers();
+    return true;
   }
 
-  function getContactMessages(){ return read(KEYS.contact, []); }
-  function saveContactMessages(list){ write(KEYS.contact, list); }
-  function createContactMessage(msg){
-    const list = getContactMessages();
-    const m = Object.assign({id:uid(), createdAt:Date.now(), leido:false}, msg);
-    list.push(m);
-    saveContactMessages(list);
-    return m;
+  let contactMessagesCache = [];
+  async function loadContactMessages(){
+    if(!sb) return contactMessagesCache;
+    const { data, error } = await sb.from('contact_messages').select().order('created_at');
+    if(error) return contactMessagesCache;
+    contactMessagesCache = data;
+    notify(KEYS.contact);
+    return contactMessagesCache;
   }
-  function deleteContactMessage(id){
-    const list = getContactMessages().filter(function(m){ return m.id!==id; });
-    saveContactMessages(list);
+  function getContactMessages(){ return contactMessagesCache; }
+  async function createContactMessage(msg){
+    if(!sb) return false;
+    const { error } = await sb.from('contact_messages').insert({
+      nombre: msg.nombre, correo: msg.correo, telefono: msg.telefono||null,
+      asunto: msg.asunto||null, mensaje: msg.mensaje
+    });
+    return !error;
+  }
+  async function deleteContactMessage(id){
+    if(!sb) return false;
+    const { error } = await sb.from('contact_messages').delete().eq('id', id);
+    if(error) return false;
+    await loadContactMessages();
+    return true;
   }
 
   return {
@@ -248,9 +271,9 @@ const DB = (function(){
     getOrders, createOrder, updateOrder, approveOrder, rejectOrder,
     getPendingOrders, getPendingOrdersFor, getOrdersForUser, getOrdersForProduction,
     getSeatsTaken, getApprovedCount, checkInByQr,
-    getContactMessages, createContactMessage, deleteContactMessage,
+    loadContactMessages, getContactMessages, createContactMessage, deleteContactMessage,
     getBlockedSeats, blockSeats, releaseSeats, releaseSeatsFromOrders,
-    getSellers, getSellerByCode, addSeller, deleteSeller
+    loadSellers, getSellers, getSellerByCode, addSeller, deleteSeller
   };
 })();
 DB.loadProductions();
@@ -846,7 +869,7 @@ DB.subscribe(DB.KEYS.orders, function(){ if(document.getElementById('v-cuenta').
 
 // ─── CONTACTO → BUZÓN STAFF ───────────────────────────
 const CONTACT_EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-function submitContactForm(){
+async function submitContactForm(){
   var nombre=(document.getElementById('cn').value||'').trim();
   var correo=(document.getElementById('ce').value||'').trim();
   var telefono=(document.getElementById('ctel').value||'').trim();
@@ -854,7 +877,8 @@ function submitContactForm(){
   var mensaje=(document.getElementById('cm').value||'').trim();
   if(!nombre||!correo){flash('Escribe tu nombre y correo.','d');return;}
   if(!CONTACT_EMAIL_RE.test(correo)){flash('Ese correo no parece válido.','d');return;}
-  DB.createContactMessage({nombre:nombre, correo:correo, telefono:telefono, asunto:asunto, mensaje:mensaje});
+  var ok = await DB.createContactMessage({nombre:nombre, correo:correo, telefono:telefono, asunto:asunto, mensaje:mensaje});
+  if(!ok){flash('No se pudo enviar el mensaje. Intenta más tarde.','d');return;}
   document.getElementById('cn').value='';
   document.getElementById('ce').value='';
   document.getElementById('ctel').value='';
@@ -877,10 +901,14 @@ function renderContactInbox(){
     var hdr=document.createElement('div');hdr.className='contact-inbox-hdr';
     var left=document.createElement('div');
     var name=document.createElement('div');name.className='contact-inbox-name';name.textContent=m.nombre+' — '+(m.asunto||'Sin asunto');
-    var meta=document.createElement('div');meta.className='contact-inbox-meta';meta.textContent=m.correo+(m.telefono?(' · '+m.telefono):'')+' · '+new Date(m.createdAt).toLocaleString();
+    var meta=document.createElement('div');meta.className='contact-inbox-meta';meta.textContent=m.correo+(m.telefono?(' · '+m.telefono):'')+' · '+new Date(m.created_at).toLocaleString();
     left.appendChild(name);left.appendChild(meta);
     var delBtn=document.createElement('button');delBtn.className='btn btn-o btn-sm';delBtn.textContent='Eliminar';
-    delBtn.onclick=function(){ DB.deleteContactMessage(m.id); flash('Mensaje eliminado.','i'); renderContactInbox(); };
+    delBtn.onclick=async function(){
+      var ok = await DB.deleteContactMessage(m.id);
+      if(!ok){ flash('No se pudo eliminar el mensaje.','d'); return; }
+      flash('Mensaje eliminado.','i'); renderContactInbox();
+    };
     hdr.appendChild(left);hdr.appendChild(delBtn);
     var msgTxt=document.createElement('div');msgTxt.className='contact-inbox-msg';msgTxt.textContent=m.mensaje||'—';
     card.appendChild(hdr);card.appendChild(msgTxt);
@@ -899,8 +927,11 @@ const TICKET_BG={showman:'#0C1830', mm:'#1565C0', hsm:'#C62222'};
 const staffAccExpanded={};
 const staffDbOpen={};
 const staffLastGenerated={};
-function renderStaff(){
+async function renderStaff(){
   renderSalesBars();
+  renderBoletajeProductions();
+  renderContactInbox();
+  await Promise.all([DB.loadSellers(), DB.loadContactMessages()]);
   renderBoletajeProductions();
   renderContactInbox();
 }
@@ -1270,10 +1301,10 @@ function renderTicketsDatabase(productionId){
   box.appendChild(table);
 }
 
-function addSellerFromStaff(productionId){
+async function addSellerFromStaff(productionId){
   var nameEl=document.getElementById('sellerName-'+productionId);
   var codeEl=document.getElementById('sellerCode-'+productionId);
-  var res = DB.addSeller(nameEl.value, codeEl.value);
+  var res = await DB.addSeller(nameEl.value, codeEl.value);
   if(!res.ok){ flash(res.error,'d'); return; }
   nameEl.value='';
   codeEl.value='';
