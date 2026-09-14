@@ -1,15 +1,29 @@
-# DARF Productions — Diseño Supabase (v4)
+# DARF Productions — Diseño Supabase (v5)
 
-Estado: **diseño para revisión — nada de esto se ha ejecutado contra Supabase.**
-`localStorage` y `js/app.js` siguen intactos y en producción sin cambios.
+Estado: **el esquema `0001`–`0015` está EJECUTADO y VERIFICADO en el proyecto
+Supabase real, y ahora también reflejado en GitHub (ver
+`docs/CHANGELOG.md`).** El frontend (`index.html`/`js/app.js`) sigue siendo
+100% `localStorage` — no hay ningún cliente Supabase conectado todavía; ver
+`docs/ARCHITECTURE.md` para el plan de integración por fases.
+
+**Venta de boletos: EN PAUSA.** `seats`, `price_categories` y
+`performance_price_categories` están vacías a propósito — no se inventa el
+mapa del teatro. Showman venderá boletos numerados y queda como *esqueleto*
+hasta que exista el venue real y su mapa de asientos. Ninguna producción
+futura se asume numerada por defecto: cada producción nueva elegirá admisión
+general o por asiento cuando se cree.
 
 v3 reemplazó la v2 en el punto donde una producción implicaba una sola
 puesta en venta, introduciendo `performances` (funciones) entre
 `productions` y `tickets`, y pasando el modelo de roles de dos a tres.
-v4 no cambia ninguna tabla ni el modelo de performances — **redefine y
-endurece qué puede escribir cada rol** (ver sección E–G, la matriz de
+v4 no cambió ninguna tabla ni el modelo de performances — **redefinió y
+endureció qué puede escribir cada rol** (ver sección E–G, la matriz de
 permisos), separando "operar/ver" (staff) de "administrar" (admin) de forma
 mucho más estricta que en v3.
+v5 agrega el modelo de precios (`price_categories` +
+`performance_price_categories`), el snapshot histórico `tickets.unit_price`,
+y las RPCs `SECURITY DEFINER` de venta/gestión de órdenes — ver "v5 — qué
+cambió respecto a v4" más abajo.
 
 ## Qué cambió respecto a v2
 
@@ -46,6 +60,68 @@ mucho más estricta que en v3.
 - **Rol nuevo: `admin`.** El enum pasa de `('fan','staff')` a
   `('fan','staff','admin')`.
 
+## v5 — Qué cambió respecto a v4
+
+- **Precio deja de ser plano por producción.** El modelo pasa a ser
+  `producción → categoría de precio → función → precio`:
+  - `price_categories` — categorías nombradas por producción (p.ej. "Piso",
+    "Balcón"), gestionadas exclusivamente por admin.
+  - `performance_price_categories` — el precio de una categoría **para una
+    función específica**; la misma categoría puede costar distinto entre la
+    función del sábado y la del domingo.
+  - `seats.price_category_id` — cada asiento pertenece a una categoría
+    (nullable; un asiento sin categoría no es vendible por
+    `create_seated_ticket_order`).
+  - Dos triggers de integridad (`validate_seat_price_category()`,
+    `validate_performance_price_category()`) impiden mezclar una categoría de
+    una producción con asientos/funciones de otra.
+- **`tickets.unit_price` — snapshot histórico del precio.** Se congela al
+  momento de crear el ticket; cambiar el precio de una categoría a futuro
+  nunca altera un ticket ya emitido. `NOT NULL`, `>= 0`.
+  `recompute_order_total()` (0011) se reescribió para sumar `unit_price` en
+  vez de `productions.price × cantidad` — ver Hallazgo #3 más abajo, la
+  versión de 0009 queda como código muerto al reejecutar el esquema completo.
+- **RPCs `SECURITY DEFINER` de venta y gestión de órdenes** (antes solo
+  documentadas como pendientes, ahora implementadas):
+  - `create_ticket_order(...)` (0011) — admisión general (sin asiento),
+    invitado o autenticado. **Actualmente con `execute` revocado** de
+    `anon`/`authenticated` (0015) — no es la vía de venta activa.
+  - `create_seated_ticket_order(...)` (0015) — **la RPC de venta activa.**
+    Recibe función + lista de `seat_id`; bloquea cada asiento (`for update`)
+    para serializar reservas concurrentes; valida existencia, producción,
+    actividad, no-bloqueado, sin-ticket-activo, categoría de precio y precio
+    para esa función; calcula el total en servidor; inserta orden + tickets
+    con `unit_price` congelado. Máximo 20 asientos por orden.
+  - `approve_order(target_order_id)` / `reject_order(target_order_id)`
+    (0013) — transicionan una orden `pendiente` a `aprobado`/`rechazado`;
+    rechazar desactiva los tickets de la orden. **Ver Hallazgo #6 (RIESGO
+    ABIERTO) inmediatamente abajo — su autorización no coincide con la
+    matriz de permisos.**
+  - `mark_contact_message_read(target_id)` (0009) — sin cambios respecto a
+    v4.
+- **`orders.expires_at`** (0012) — columna agregada, **sin uso todavía**;
+  reservada para un futuro job que libere órdenes pendientes no pagadas. No
+  hay ningún trigger ni cron que la lea aún.
+- **Visibilidad de tickets para el comprador** (0011): `tickets_owner_read`
+  ahora exige `orders.status = 'aprobado'` — un comprador ya no puede ver los
+  tickets de su propia orden mientras está `pendiente` o si fue `rechazado`.
+
+### Hallazgo #6 (RIESGO ABIERTO — decisión tomada, corrección pendiente)
+
+`approve_order()`/`reject_order()` (0013) autorizan con `is_staff()` (true
+para `staff` Y `admin`), pero la policy `orders_admin_write` (0010) y esta
+misma matriz de permisos dicen que aprobar/rechazar órdenes es **exclusivo de
+admin**. Es una contradicción real entre lo documentado y lo ejecutado: hoy,
+`staff` SÍ puede aprobar/rechazar órdenes vía RPC, aunque no puede tocar la
+tabla `orders` directamente.
+
+**Decisión del usuario:** admin-only es la regla correcta; el comportamiento
+actual de las RPCs es un bug. **Corrección planeada para una migración
+futura `0016`** (cambiar `is_staff()` → `is_admin()` en ambas funciones) —
+no se edita `0013` retroactivamente porque ya fue ejecutada contra Supabase.
+Hasta que `0016` se aplique, **staff conserva esta capacidad en la práctica**,
+fuera de lo que dice esta matriz.
+
 ## v4 — Matriz de permisos (staff vs. admin, endurecida)
 
 **staff ya NO es superconjunto operativo de admin-lite.** A partir de v4,
@@ -81,7 +157,8 @@ Puede:
   directo (no existe esa policy).
 
 NO puede (a nivel RLS, no solo de UI):
-- Aprobar/rechazar órdenes.
+- Aprobar/rechazar órdenes — **esta es la regla; ver Hallazgo #6: hoy lo
+  puede hacer vía RPC por un bug pendiente de corregir en `0016`.**
 - Bloquear/desbloquear asientos.
 - Modificar `productions` ni `performances`.
 - Gestionar boletería (crear/editar/desactivar `sellers`, crear tickets de
@@ -127,11 +204,39 @@ que un staff nunca puede autoascenderse ni ascender a otros.
 | `0006_sellers_and_contact.sql` | `sellers`, `contact_messages` | No |
 | `0007_orders_and_tickets.sql` | `orders`, `tickets` | No |
 | `0008_blocked_seats.sql` | `blocked_seats` | No (útil solo si hay seats, pero no requiere que existan) |
-| `0009_helper_functions_and_triggers.sql` | `is_staff()`, `is_admin()`, `current_profile_role()`, código de orden autogenerado, sincronización/validación de `tickets`/`blocked_seats`, recálculo de `total` | No |
-| `0010_rls_policies.sql` | políticas RLS de todas las tablas | No |
+| `0009_helper_functions_and_triggers.sql` | `is_staff()`, `is_admin()`, `current_profile_role()`, código de orden autogenerado, sincronización/validación de `tickets`/`blocked_seats`, recálculo de `total` (versión superada por 0011, ver Hallazgo #3), grants/revokes de ejecución | No |
+| `0010_rls_policies.sql` | políticas RLS de todas las tablas + grants de ejecución de helper functions (ver Hallazgo #4) | No |
+| `0011_ticketing_rpcs.sql` | `tickets.unit_price`, `recompute_order_total()` (versión final, por `unit_price`), `tickets_owner_read` (solo `aprobado`), `create_ticket_order()` (admisión general, hoy revocada) | No |
+| `0012_order_expiration.sql` | `orders.expires_at` (scaffold sin uso) | No |
+| `0013_manual_order_management.sql` | `orders.rejected_at`, `approve_order()`, `reject_order()` (ver Hallazgo #6) | No |
+| `0014_ticket_pricing.sql` | `price_categories`, `performance_price_categories`, `seats.price_category_id`, triggers de validación de categoría | No |
+| `0015_seat_reservation.sql` | `create_seated_ticket_order()` (RPC de venta activa), revoca `create_ticket_order()` | Sí — la RPC no tiene inventario que reservar hasta que existan `seats`/`price_categories` reales |
 
-Todas ejecutables hoy, en orden, contra un proyecto Supabase vacío, sin
-tener el venue ni ninguna función cargada.
+Todas ejecutadas ya contra el proyecto Supabase real, en orden. `0001`–`0013`
+no dependen del venue; `0014` tampoco (son categorías abstractas, no un
+mapa); `0015` define la RPC de venta pero esa RPC no tiene nada que vender
+hasta que `seats` y `price_categories` tengan filas reales — ver "Venta de
+boletos: EN PAUSA" al inicio de este documento.
+
+### Deuda técnica conocida (no se corrige editando migraciones históricas)
+
+- **Hallazgo #3 — `recompute_order_total()` duplicada.** `0009` la define
+  usando `productions.price × cantidad`; `0011` la redefine (`create or
+  replace`) usando `sum(unit_price)`. Al reejecutar el esquema completo en
+  orden, la versión de `0011` es la que queda vigente — la de `0009` es
+  código muerto desde el momento en que `0011` corre. No rompe nada, pero es
+  confuso de leer sin este apunte. Limpieza planeada: en una futura `0016`,
+  simplificar `0009` para no redefinir una función que se va a reemplazar
+  dos migraciones después (o dejar un comentario explícito en `0009` mismo).
+- **Hallazgo #4 — grants contradictorios sobre `is_staff()`/`is_admin()`/
+  `current_profile_role()`.** `0009` las revoca de `public` y las otorga
+  solo a `authenticated`; `0010` las otorga también a `anon`. Como `0010`
+  corre después, `anon` **sí** puede ejecutarlas hoy. Es inofensivo (son
+  `SECURITY DEFINER`, `stable`, sin efectos secundarios, y devuelven `false`/
+  `NULL` para un caller sin sesión), pero es incoherente con la intención
+  documentada en `0009`. Limpieza planeada: unificar el grant en una futura
+  `0016`, decidiendo explícitamente si `anon` debe poder ejecutarlas
+  directamente (hoy no tiene necesidad real de hacerlo fuera de RLS).
 
 ## A/B. Tablas y columnas — los archivos `.sql` son la fuente de verdad
 
@@ -211,13 +316,16 @@ productions ← performances ← orders ← tickets → seats
   **admin-only** (`productions_admin_write`, `performances_admin_write`,
   `seats_admin_write`). Staff no tiene ninguna policy de escritura sobre
   estas tablas.
-- `orders`, `tickets`: lectura para el propietario (`buyer_user_id`) y para
-  staff (`orders_staff_read`, `tickets_staff_read`); **ninguna escritura de
-  cliente ni de staff** — toda mutación (crear, aprobar, rechazar) pasa por
-  admin directo o por funciones `SECURITY DEFINER` (a diseñar en la
-  integración). Esto impide que un comprador edite la orden de otro, cambie
-  su propio `total`/`performance_id`, o marque un ticket como usado — y que
-  staff apruebe/rechace o anule tickets sin pasar por admin/RPC.
+- `orders`, `tickets`: lectura para el propietario (`buyer_user_id`, y solo
+  de órdenes `aprobado` en el caso de `tickets` — ver v5) y para staff
+  (`orders_staff_read`, `tickets_staff_read`); **ninguna escritura directa de
+  tabla para cliente ni para staff** — toda mutación pasa por RPC
+  `SECURITY DEFINER`: crear orden (`create_ticket_order`/
+  `create_seated_ticket_order`), aprobar/rechazar (`approve_order`/
+  `reject_order`, 0013 — **ver Hallazgo #6**, autorizan con `is_staff()` en
+  vez de `is_admin()`, contradiciendo `orders_admin_write` a nivel de tabla).
+  `orders_admin_write`/`tickets_admin_write` siguen existiendo para permitir
+  a admin una intervención directa de emergencia sin pasar por RPC.
   **Check-in no tiene ninguna policy de `UPDATE` para staff** — ni siquiera
   restringida a columnas, porque RLS por sí sola no puede limitar un
   `UPDATE` a columnas específicas. Cuando se construya (fase posterior, no
@@ -258,16 +366,26 @@ productions ← performances ← orders ← tickets → seats
   columna — es imposible, por construcción, que cambie cualquier otro
   campo.
 
-## I. Qué falta para conectar el frontend (fuera de alcance de este paso)
+## I. Qué falta para conectar el frontend (fuera de alcance de esta fase)
 
-No incluido todavía, a propósito:
-- RPCs de mutación (`create_order`, `approve_order`, `reject_order`,
-  `checkin_by_qr`, `create_staff_ticket`, etc.) — ahora deben recibir
-  `performance_id` en vez de `production_id`; se diseñan cuando se aborde
-  la integración real del cliente, no antes.
-- Cliente Supabase en `js/app.js` / `index.html`.
-- UI para elegir función (hoy el checkout solo conoce "producción").
-- Seed de `performances` (fechas reales) y de `seats` (numeración real).
+Ya implementado en Supabase (no falta en la DB, falta conectarlo):
+`create_ticket_order`, `create_seated_ticket_order`, `approve_order`,
+`reject_order`, `mark_contact_message_read`.
+
+Todavía no existe en ningún lado, a propósito:
+- `checkin_by_qr()` (o equivalente) — check-in atómico de un ticket vía QR,
+  mismo patrón de RPC de una sola columna que `mark_contact_message_read`.
+  Diseñado en la sección H, no construido (Hallazgo #5).
+- RPC de bloqueo/liberación de asientos para staff (hoy `blocked_seats` es
+  admin-only por policy; si se quiere que staff bloquee asientos sin ser
+  admin, hace falta una RPC narrow análoga a las anteriores).
+- Cliente Supabase en `js/app.js` / `index.html` — el frontend sigue siendo
+  100% `localStorage`, la librería `@supabase/supabase-js` está cargada por
+  CDN pero nunca se usa.
+- UI para elegir función y para mostrar categorías/precios por función (hoy
+  el checkout de `js/app.js` solo conoce una "producción" con precio plano).
+- Seed real de `performances` (fechas), `seats` (numeración real del venue),
+  `price_categories` y `performance_price_categories` (precios reales).
 
 ## J. Qué falta específicamente antes de vender de verdad
 
@@ -275,16 +393,27 @@ No incluido todavía, a propósito:
    `performances` (fecha/hora, venue si aplica, `on_sale`). Sin venue
    confirmado esto ya se puede hacer — una función no requiere saber la
    numeración de asientos.
-2. **Asientos** (solo si esa producción vende por asiento numerado, no
-   admisión general):
-   - Confirmar el venue de cada producción.
+2. **Asientos + precios** (para producciones que venden por asiento
+   numerado, como Showman):
+   - Confirmar el venue.
    - Obtener el plano/numeración real: secciones, filas, asientos por fila.
    - Escribir una migración de **seed** dedicada (p.ej.
-     `0011_seed_seats_<produccion>.sql`), separada de este esquema.
-3. Solo entonces tiene sentido decidir, por producción, si el checkout usa
-   mapa de asientos o sigue en admisión general (`seat_id null`).
+     `0017_seed_seats_showman.sql`, después de que `0016` limpie la deuda
+     técnica), separada de este esquema.
+   - Crear las `price_categories` reales de esa producción y sus precios
+     por función en `performance_price_categories`.
+3. Para producciones futuras que elijan admisión general en vez de asiento
+   numerado: no requieren seed de `seats`/`price_categories` — pero
+   `create_ticket_order` está **revocado** hoy (0015); habría que
+   re-otorgarle `execute` a `anon`/`authenticated` cuando exista al menos una
+   producción de admisión general real (no antes, para no abrir una vía de
+   compra que no corresponde a ningún producto real).
+4. Solo entonces tiene sentido activar el checkout del frontend contra estas
+   RPCs, por producción, según su modalidad de venta.
 
-Nada de esto bloquea correr `0001`–`0010` hoy.
+Nada de esto bloquea correr `0001`–`0015` hoy; el esquema completo ya está
+ejecutado y verificado — lo que falta es dato real (venue/precios) y el
+cliente frontend, no más tablas ni RPCs base.
 
 ## K. Preparado para (fase posterior, no implementado todavía)
 
