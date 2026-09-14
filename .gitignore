@@ -4,3 +4,11 @@ node_modules/
 .claude/settings.local.json
 DARF_Productions.html
 LINKS.rtf
+
+# Supabase CLI local/secret artifacts — never commit tokens or temp state.
+# supabase/config.toml IS committed (project config, no secrets).
+.env
+.env.*
+.supabase/
+supabase/.temp/
+supabase/.branches/
