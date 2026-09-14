@@ -29,6 +29,7 @@ están vacías a propósito (sin venue real todavía) — ver
 | 0013 | `manual_order_management.sql` | `orders.rejected_at`, `approve_order()`, `reject_order()` (ver Hallazgo #6) |
 | 0014 | `ticket_pricing.sql` | `price_categories`, `performance_price_categories`, `seats.price_category_id` |
 | 0015 | `seat_reservation.sql` | `create_seated_ticket_order()` (RPC de venta activa), revoca `create_ticket_order()` |
+| 0016 | `security_hardening.sql` | `approve_order`/`reject_order` → `is_admin()`; revoca `EXECUTE` de `PUBLIC` sobre esas dos y sobre los triggers de validación de precio de `0014` (ver Hallazgos #6/#7/#8, resueltos) |
 
 Todas ejecutables en orden contra un proyecto Supabase vacío. Regla del
 proyecto: **nunca editar una migración ya ejecutada** — un cambio futuro se
@@ -130,8 +131,8 @@ producción → categoría de precio → asiento → precio para ESA función �
 | `generate_order_code()` / `set_order_code()` | interno (trigger) | Genera `order_code` único al insertar una orden | nadie directamente — solo vía trigger |
 | `create_ticket_order(performance_id, nombre, telefono, cantidad)` | público (invitado o autenticado) | Crea orden + N tickets de admisión general (`seat_id null`), precio server-side desde `productions.price` | **nadie hoy** — `execute` revocado por 0015 |
 | `create_seated_ticket_order(performance_id, nombre, telefono, seat_ids[])` | público (invitado o autenticado) | Crea orden + un ticket por asiento, bloqueando cada asiento (`for update`) para reservas concurrentes seguras; valida producción/actividad/bloqueo/duplicado/categoría/precio; precio server-side desde `performance_price_categories`; máx. 20 asientos | `anon`, `authenticated` — **RPC de venta activa** (sin inventario real todavía) |
-| `approve_order(target_order_id)` | staff (verificado dentro de la función) | `pendiente → aprobado` | `authenticated` — **ver Hallazgo #6: debería ser admin-only** |
-| `reject_order(target_order_id)` | staff (verificado dentro de la función) | `pendiente → rechazado` + desactiva sus tickets | `authenticated` — **ver Hallazgo #6** |
+| `approve_order(target_order_id)` | admin (verificado dentro de la función, desde `0016`) | `pendiente → aprobado` | `authenticated` (grant de `PUBLIC` revocado en `0016`, ver Hallazgo #6/#7 resueltos) |
+| `reject_order(target_order_id)` | admin (verificado dentro de la función, desde `0016`) | `pendiente → rechazado` + desactiva sus tickets | `authenticated` (grant de `PUBLIC` revocado en `0016`, ver Hallazgo #6/#7 resueltos) |
 
 No existen todavía (documentadas como pendientes, no construidas):
 - `checkin_by_qr()` — check-in atómico de un ticket vía QR (Hallazgo #5).
@@ -176,43 +177,40 @@ excepción documentada en Hallazgo #6.
   recalcula `orders.total` desde `sum(tickets.unit_price)` de tickets
   activos. **Definida dos veces** (0009 y 0011) — ver Hallazgo #3.
 
-## Hallazgos abiertos (deuda técnica, corrección planeada en `0016`)
+## Hallazgos resueltos (en `0016`)
+
+- **#6 — `approve_order`/`reject_order` autorizaban con `is_staff()`, no
+  `is_admin()`.** Contradecía `orders_admin_write` (0010) y la matriz de
+  permisos documentada. **Resuelto en `0016`:** ambas funciones ahora
+  autorizan con `is_admin()`.
+- **#7 — `EXECUTE` otorgado a `PUBLIC` en `approve_order`/`reject_order`.**
+  Verificado en vivo (y confirmado por el advisor de seguridad de Supabase)
+  que además del grant a `authenticated`, ambas funciones tenían `EXECUTE`
+  otorgado al pseudo-rol `PUBLIC`. **Resuelto en `0016`:** revocado de
+  `PUBLIC`, conservado el grant a `authenticated`. Verificado post-aplicación
+  con `get_advisors` — ya no aparecen en `anon_security_definer_function_executable`.
+- **#8 — `EXECUTE` público en los triggers de validación de 0014.**
+  `validate_seat_price_category()` y `validate_performance_price_category()`
+  tenían `EXECUTE` otorgado a `PUBLIC` (categoría de advisor
+  `anon_security_definer_function_executable`). **Resuelto en `0016`:**
+  revocado de `PUBLIC`, consistente con el resto de las funciones de trigger.
+
+## Hallazgos abiertos (deuda técnica)
 
 - **#3 — `recompute_order_total()` duplicada.** 0009 usa
   `productions.price × cantidad`; 0011 la redefine con `sum(unit_price)`. Al
   reejecutar el esquema completo, la de 0011 es la vigente; la de 0009 queda
-  como código muerto. No rompe nada, es solo ruido a limpiar.
+  como código muerto. No rompe nada, es solo ruido a limpiar. Documentado en
+  `0016`, sin cambio de SQL.
 - **#4 — Grants contradictorios de `is_staff()`/`is_admin()`/
   `current_profile_role()`.** 0009 revoca de `public` y otorga solo a
   `authenticated`; 0010 otorga también a `anon`. Gana 0010 (corre después) —
-  `anon` sí puede ejecutarlas hoy. Inofensivo (son de solo lectura, sin
-  efectos secundarios) pero incoherente con el comentario de 0009.
+  `anon` sí puede ejecutarlas hoy. **Decisión del usuario:** intencional,
+  dejar así (son de solo lectura, sin efectos secundarios, y RLS las
+  necesita para lectores anónimos). Documentado en `0016`, sin cambio de SQL.
 - **#5 — No existe RPC de check-in/QR.** Documentado el patrón a seguir
   (RPC de una sola columna, no `UPDATE` en bloque) en `supabase/docs/
-  DESIGN.md`, no construido todavía.
-- **#6 — `approve_order`/`reject_order` autorizan con `is_staff()`, no
-  `is_admin()`.** Contradice `orders_admin_write` (0010) y la matriz de
-  permisos documentada, que hacen aprobar/rechazar exclusivo de admin.
-  **Decisión del usuario:** admin-only es la regla correcta; corregir en una
-  futura `0016` cambiando ambas funciones a `is_admin()`. Hasta entonces,
-  staff conserva esta capacidad en la práctica.
-- **#7 — `EXECUTE` otorgado a `PUBLIC` en `approve_order`/`reject_order`.**
-  Verificado en vivo contra el proyecto real: además del grant a
-  `authenticated` (documentado en #6), ambas funciones tienen `EXECUTE`
-  otorgado al pseudo-rol `PUBLIC`. No amplía el acceso real hoy (`anon`/
-  `authenticated` ya heredan de `public`; el advisor de seguridad de Supabase
-  confirma que solo `authenticated` puede invocarlas vía REST) pero es un
-  grant de más que conviene revocar al mismo tiempo que se corrija #6.
-- **#8 — `EXECUTE` público en los triggers de validación de 0014.**
-  `validate_seat_price_category()` y `validate_performance_price_category()`
-  tienen `EXECUTE` otorgado a `PUBLIC` (confirmado vía advisor de seguridad
-  de Supabase — categoría `anon_security_definer_function_executable`).
-  Son funciones de trigger, no pensadas para invocarse como RPC directa, y el
-  resto de las funciones de trigger (`sync_and_validate_ticket`,
-  `validate_blocked_seat_production`, `recompute_order_total`, etc.) están
-  correctamente restringidas a `postgres`/`service_role`. Revocar `EXECUTE`
-  de `public` sobre estas dos en la futura `0016`, para consistencia con el
-  patrón del resto de los triggers.
+  DESIGN.md`, no construido todavía — planeado para Fase 4.
 
-Ninguno de estos hallazgos se corrige editando `0009`–`0015` retroactivamente
-— la corrección, cuando se haga, será una migración `0016` nueva.
+Ningún hallazgo se corrige editando `0009`–`0015` retroactivamente — las
+correcciones viven en migraciones nuevas (`0016` en adelante).

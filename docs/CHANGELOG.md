@@ -5,6 +5,36 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-09-13 — Fase 1 (en curso): fundación Supabase en frontend + hardening
+
+**Contexto:** con Fase 0 cerrada y GitHub como historia autoritativa, Johann
+entregó un to-do maestro de 17 secciones para organizar el trabajo restante.
+Una auditoría completa del frontend (`index.html`, `js/app.js`) confirmó que
+la app seguía siendo 100% prototipo `localStorage` — el cliente Supabase
+nunca se instanciaba a pesar de cargar el SDK — con varios hoyos de
+seguridad reales (credenciales de staff en texto plano en la página, rol de
+usuario confiado desde `localStorage` editable). Fase 1 ataca esa fundación
+sin tocar la boletería de Showman, que permanece oculta hasta tener venue.
+
+**Hecho en esta fase (hasta ahora):**
+- **Paso 1:** creado `js/config.js` (URL + publishable key, público por
+  diseño, commiteado) e instanciado el cliente Supabase real en `js/app.js`,
+  reemplazando el stub comentado. Sin cambio de comportamiento todavía.
+- **Paso 2 — migración `0016_security_hardening.sql`** (aplicada tras
+  aprobación explícita de Johann, verificada con `get_advisors` antes/
+  después): corrige los Hallazgos **#6** (`approve_order`/`reject_order`
+  ahora autorizan con `is_admin()`, no `is_staff()`) y **#7/#8** (revocado
+  `EXECUTE` de `PUBLIC` sobre esas dos funciones y sobre los triggers de
+  validación de precio de `0014`). Hallazgos #3 y #4 quedaron documentados
+  sin cambio de SQL (decisiones ya tomadas: código muerto inofensivo y
+  grant a `anon` intencional, respectivamente).
+
+**Decisiones de Johann que enmarcan Fase 1:**
+- Compra invitado-primero, cuentas demo eliminadas por completo, 3 roles
+  con panel diferenciado, config vía `js/config.js` commiteado, verificación
+  de correo por enlace (no código), primer admin por promoción manual
+  aprobada explícitamente.
+
 ## 2026-09-13 — Fase 0: coherencia repo↔DB + documentación
 
 **Contexto:** el esquema Supabase (`0001`–`0015`) ya había sido diseñado,
