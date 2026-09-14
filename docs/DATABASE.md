@@ -5,10 +5,11 @@ resume esa fuente para no tener que leer 15 archivos cada vez; si algo aquí y
 el SQL se contradicen, **el SQL gana** — avisar para corregir este documento.
 Para la matriz de permisos completa por rol, ver `supabase/docs/DESIGN.md`.
 
-Estado: esquema `0001`–`0015` ejecutado y verificado contra el proyecto
-Supabase real. `seats`, `price_categories` y `performance_price_categories`
-están vacías a propósito (sin venue real todavía) — ver
-`docs/ARCHITECTURE.md`.
+Estado: esquema `0001`–`0016` ejecutado y verificado contra el proyecto
+Supabase real. `productions` tiene sus 3 filas reales (seed revisado y
+aprobado durante Fase 1, ver `docs/CHANGELOG.md`). `seats`,
+`price_categories` y `performance_price_categories` siguen vacías a
+propósito (sin venue real todavía) — ver `docs/ARCHITECTURE.md`.
 
 ## Inventario de migraciones
 

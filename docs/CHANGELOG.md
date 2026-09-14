@@ -28,6 +28,25 @@ sin tocar la boletería de Showman, que permanece oculta hasta tener venue.
   validación de precio de `0014`). Hallazgos #3 y #4 quedaron documentados
   sin cambio de SQL (decisiones ya tomadas: código muerto inofensivo y
   grant a `anon` intencional, respectivamente).
+- **Pasos 3+4 — Auth real + rol server-trusted:** `AuthService` reescrito
+  contra `sb.auth` (`signUp`/`signInWithPassword`/`signOut`/`updateUser`/
+  `resend`/`getSession`/`onAuthStateChange`); verificación de correo por
+  enlace en vez de código. El rol ya no se lee de `localStorage` — se lee
+  siempre de `profiles.rol` vía `fetchProfile()` tras cada login/restauración
+  de sesión.
+- **Paso 5:** eliminado el recuadro de credenciales demo en `index.html` y
+  la función `seedDemoUsers` (ya sin uso desde el rewrite de Auth).
+- **Paso 6 — Google OAuth:** `loginGoogle()` ahora llama
+  `sb.auth.signInWithOAuth({provider:'google'})`; provider configurado por
+  Johann en el dashboard de Supabase.
+- **Paso 7 — catálogo desde Supabase (con seed aprobado):** `DB.getProductions`/
+  `getProduction` ahora leen de la tabla `productions` vía
+  `sb.from('productions').select()` (antes: objeto hardcodeado en
+  `js/app.js`). Insertadas las 3 filas reales tras aprobación explícita de
+  Johann: Showman ($250, venue por confirmar, `on_sale=false`), Mamma Mia!
+  ($150, Teatro UVM Juriquilla, `on_sale=false`), High School Musical ($50,
+  Teatro Universidad Humanitas Querétaro, `on_sale=false`). No se tocó
+  `seats`/`price_categories`/`performance_price_categories` — siguen vacías.
 
 **Decisiones de Johann que enmarcan Fase 1:**
 - Compra invitado-primero, cuentas demo eliminadas por completo, 3 roles

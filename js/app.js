@@ -53,28 +53,32 @@ const DB = (function(){
     return code;
   }
 
-  function seedProductions(){
-    let p = read(KEYS.productions, null);
-    if(!p){
-      p = {
-        showman:{id:'showman',nombre:'Showman',venue:'',fecha:'',price:350,capacity:500,onSale:true,attendeesHistoric:0},
-        mm:{id:'mm',nombre:'Mamma Mia!',venue:'Teatro UVM',fecha:'2026',price:350,capacity:514,onSale:false,attendeesHistoric:514},
-        hsm:{id:'hsm',nombre:'High School Musical',venue:'Teatro UVM',fecha:'2025',price:350,capacity:268,onSale:false,attendeesHistoric:268}
+  let productionsCache = {};
+  async function loadProductions(){
+    if(!sb) return productionsCache;
+    const { data, error } = await sb.from('productions').select();
+    if(error) return productionsCache;
+    const p = {};
+    data.forEach(function(row){
+      p[row.id] = {
+        id: row.id, nombre: row.nombre, venue: row.venue, fecha: row.fecha,
+        price: Number(row.price), capacity: row.capacity,
+        onSale: row.on_sale, attendeesHistoric: row.attendees_historic
       };
-      write(KEYS.productions, p);
-    } else if(p.showman && p.showman.venue==='Teatro UVM'){
-      // Corrige instalaciones existentes: el lugar de Showman todavía está por confirmar (TBD),
-      // no es Teatro UVM (eso es solo de Mamma Mia/HSM).
-      p.showman.venue='';
-      write(KEYS.productions, p);
-    }
-    return p;
+    });
+    productionsCache = p;
+    notify(KEYS.productions);
+    return productionsCache;
   }
-  function getProductions(){ return read(KEYS.productions, {}); }
-  function getProduction(id){ return getProductions()[id]||null; }
-  function setProductionOnSale(id, onSale){
-    const p = getProductions();
-    if(p[id]){ p[id].onSale = !!onSale; write(KEYS.productions, p); }
+  function getProductions(){ return productionsCache; }
+  function getProduction(id){ return productionsCache[id]||null; }
+  async function setProductionOnSale(id, onSale){
+    if(!sb) return false;
+    const { error } = await sb.from('productions').update({on_sale: !!onSale}).eq('id', id);
+    if(error) return false;
+    if(productionsCache[id]) productionsCache[id].onSale = !!onSale;
+    notify(KEYS.productions);
+    return true;
   }
 
   function getOrders(){ return read(KEYS.orders, []); }
@@ -240,7 +244,7 @@ const DB = (function(){
 
   return {
     KEYS, subscribe,
-    seedProductions, getProductions, getProduction, setProductionOnSale,
+    loadProductions, getProductions, getProduction, setProductionOnSale,
     getOrders, createOrder, updateOrder, approveOrder, rejectOrder,
     getPendingOrders, getPendingOrdersFor, getOrdersForUser, getOrdersForProduction,
     getSeatsTaken, getApprovedCount, checkInByQr,
@@ -249,7 +253,7 @@ const DB = (function(){
     getSellers, getSellerByCode, addSeller, deleteSeller
   };
 })();
-DB.seedProductions();
+DB.loadProductions();
 
 // ─── AUTH SERVICE (Supabase Auth: sesión real + rol leído de `profiles`) ──
 const AuthService = (function(){
@@ -904,9 +908,9 @@ function renderSalesBars(){
   var wrap = document.getElementById('salesBarsWrap');
   if(!wrap) return;
   var prods = DB.getProductions();
+  if(!prods.showman || !prods.mm || !prods.hsm) return;
   var showmanApproved = DB.getApprovedCount(SHOWMAN_ID);
-  var showmanCap = prods.showman ? prods.showman.capacity : 500;
-  var SCALE = Math.max(showmanCap, prods.mm.attendeesHistoric, prods.hsm.attendeesHistoric, 600);
+  var SCALE = Math.max(prods.showman.capacity, prods.mm.attendeesHistoric, prods.hsm.attendeesHistoric, 600);
   var rows = [
     {label:'Showman — en vivo', n:showmanApproved, cls:null, color:'var(--showman-gold)', live:true},
     {label:'Mamma Mia! 2026', n:prods.mm.attendeesHistoric, cls:null, color:'var(--mm-blue)'},
@@ -1091,8 +1095,9 @@ function renderSalesControl(productionId){
   });
 }
 
-function toggleShowmanOnSale(checked){
-  DB.setProductionOnSale(SHOWMAN_ID, checked);
+async function toggleShowmanOnSale(checked){
+  const ok = await DB.setProductionOnSale(SHOWMAN_ID, checked);
+  if(!ok){ flash('No se pudo actualizar el estado de venta.','d'); return; }
   flash(checked?'Venta de Showman activada.':'Venta de Showman desactivada.', 'i');
   // DB.setProductionOnSale ya disparó renderBoletajeProductions() vía la suscripción a productions.
 }
@@ -1120,6 +1125,7 @@ function renderBoletajeProductions(){
 }
 function buildBoletajeProdCard(productionId){
   var prod=DB.getProduction(productionId);
+  if(!prod) return document.createElement('div');
   var open=!!staffAccExpanded[productionId];
   var card=document.createElement('div');
   card.className='prod-acc-card'+(open?' open':'');

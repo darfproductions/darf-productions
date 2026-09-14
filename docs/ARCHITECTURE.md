@@ -33,17 +33,17 @@ negocio. `localStorage` (cuando el frontend se conecte) queda reservado
 exclusivamente para preferencias de UI y cache de sesión — nunca para
 inventario, precios, órdenes ni tickets.
 
-## Estado real de cada pieza (2026-09-13)
+## Estado real de cada pieza (2026-09-13, actualizado durante Fase 1)
 
 | Pieza | Estado |
 |---|---|
-| GitHub | Autoritativo desde esta fase — `main` refleja el esquema `0001`–`0015` ejecutado en Supabase (ver Hallazgo Crítico #1 en el historial de este proyecto, ya resuelto). |
+| GitHub | Autoritativo desde esta fase — `main` refleja el esquema `0001`–`0016` ejecutado en Supabase (ver Hallazgo Crítico #1 en el historial de este proyecto, ya resuelto). |
 | Vercel | No configurado todavía. |
 | GoDaddy | No configurado todavía. |
-| Frontend (`index.html`/`js/app.js`) | **100% `localStorage`.** Sin cliente Supabase — la librería `@supabase/supabase-js` está cargada por CDN en `index.html` pero nunca se instancia ni se usa. Catálogo de 3 producciones hardcodeado, rejilla de 48 asientos fija reutilizada para cualquier producción, precio plano, auth propia (SHA-256+salt), verificación de email simulada, usuarios demo, login de Google deshabilitado (stub). |
-| Supabase — esquema | Ejecutado y verificado (`0001`–`0015`). Modelo: `productions → performances → (seats / price_categories) → tickets/orders`. Ver `docs/DATABASE.md`. |
-| Supabase — datos reales | `seats`, `price_categories`, `performance_price_categories` están **vacías a propósito** — no existe el venue real ni su mapa de asientos todavía. |
-| Supabase — conectado al frontend | **Nada.** Cero llamadas reales hoy. |
+| Frontend (`index.html`/`js/app.js`) | **En migración (Fase 1).** Cliente Supabase real instanciado vía `js/config.js`. Auth real (`sb.auth`: email/contraseña con verificación por enlace, Google OAuth) — rol siempre leído de `profiles.rol`, ya no confiado de `localStorage`. Catálogo de producciones (`DB.getProductions`/`getProduction`) leído de la tabla `productions` en Supabase, no hardcodeado. Sin credenciales demo. Pendiente de Fase 1: panel staff (`contact_messages`, `sellers`) y confirmación de gating de Showman (Pasos 8–9). Rejilla de asientos y checkout siguen sobre `localStorage` — bloqueados hasta que exista el venue real. |
+| Supabase — esquema | Ejecutado y verificado (`0001`–`0016`). Modelo: `productions → performances → (seats / price_categories) → tickets/orders`. Ver `docs/DATABASE.md`. |
+| Supabase — datos reales | `productions` tiene las 3 filas reales (Showman, Mamma Mia!, High School Musical) con precio y venue reales, `on_sale=false` en las tres. `seats`, `price_categories`, `performance_price_categories` están **vacías a propósito** — no existe el venue real de Showman ni su mapa de asientos todavía. |
+| Supabase — conectado al frontend | Auth (email + Google) y lectura del catálogo (`productions`). El resto (`orders`, `tickets`, `contact_messages`, `sellers`, asientos) sigue en `localStorage`. |
 | WhatsApp | Enlaces estáticos ya presentes en `index.html` (`:1008`, `:1217`), sin integración con el flujo de compra real (ese flujo no existe todavía). |
 
 ## Por qué la venta está en pausa
