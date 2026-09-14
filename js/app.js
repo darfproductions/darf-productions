@@ -1,10 +1,12 @@
-// ─── SUPABASE (activar cuando Johann conecte el backend) ──
-// const supabaseUrl = 'REEMPLAZAR_CON_TU_URL';
-// const supabaseKey = 'REEMPLAZAR_CON_TU_KEY';
-// const sb = window.supabase ? window.supabase.createClient(supabaseUrl, supabaseKey) : null;
-// Cuando se conecte Supabase, el módulo DB de abajo se reemplaza por llamadas a `sb`
-// sin tener que tocar el resto de la app (AuthService, checkout, staff, etc. ya
-// están escritos contra la interfaz de DB, no contra localStorage directamente).
+// ─── SUPABASE ───────────────────────────────────────────────────────────
+// URL + publishable key viven en js/config.js (públicas por diseño, se
+// commitean). El módulo DB de abajo se está reemplazando gradualmente por
+// llamadas a `sb` — AuthService, checkout, staff, etc. ya están escritos
+// contra la interfaz de DB, no contra localStorage directamente, así que el
+// swap se hace método por método sin tocar el resto de la app.
+const sb = (window.supabase && window.DARF_CONFIG)
+  ? window.supabase.createClient(window.DARF_CONFIG.SUPABASE_URL, window.DARF_CONFIG.SUPABASE_ANON_KEY)
+  : null;
 
 function clearEl(el){ if(el){ while(el.firstChild) el.removeChild(el.firstChild); } }
 
