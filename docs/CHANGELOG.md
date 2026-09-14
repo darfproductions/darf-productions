@@ -55,6 +55,17 @@ sin tocar la boletería de Showman, que permanece oculta hasta tener venue.
   rol admin verá el error de RLS al intentarlo — comportamiento esperado,
   no una regresión). Ambas cachés se recargan al abrir el panel staff (sin
   Realtime todavía, como estaba previsto para Fase 1).
+- **Paso 9 — confirmar boletería de Showman oculta:** verificación (sin
+  cambio de código): `currentOnSaleProduction()` depende de
+  `productions.on_sale` (Supabase, `false` en la fila real; el único camino
+  de escritura, `toggleShowmanOnSale`, está protegido por
+  `productions_admin_write`, admin-only). `renderShowmanBanner` solo crea el
+  botón "Comprar Boletos" cuando hay producción en venta; `renderCheckout`
+  oculta el mapa de asientos y muestra el aviso "aún no están a la venta"
+  cuando no la hay; `proceedToPayment` retorna de inmediato si no hay
+  producción en venta. Ninguna ruta de UI llega al mapa de asientos ni al
+  pago mientras `on_sale=false`. `seats`/`price_categories`/
+  `performance_price_categories` confirmadas en 0 filas. **Fase 1 completa.**
 
 **Decisiones de Johann que enmarcan Fase 1:**
 - Compra invitado-primero, cuentas demo eliminadas por completo, 3 roles
