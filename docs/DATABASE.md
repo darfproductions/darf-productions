@@ -196,7 +196,23 @@ excepción documentada en Hallazgo #6.
   **Decisión del usuario:** admin-only es la regla correcta; corregir en una
   futura `0016` cambiando ambas funciones a `is_admin()`. Hasta entonces,
   staff conserva esta capacidad en la práctica.
+- **#7 — `EXECUTE` otorgado a `PUBLIC` en `approve_order`/`reject_order`.**
+  Verificado en vivo contra el proyecto real: además del grant a
+  `authenticated` (documentado en #6), ambas funciones tienen `EXECUTE`
+  otorgado al pseudo-rol `PUBLIC`. No amplía el acceso real hoy (`anon`/
+  `authenticated` ya heredan de `public`; el advisor de seguridad de Supabase
+  confirma que solo `authenticated` puede invocarlas vía REST) pero es un
+  grant de más que conviene revocar al mismo tiempo que se corrija #6.
+- **#8 — `EXECUTE` público en los triggers de validación de 0014.**
+  `validate_seat_price_category()` y `validate_performance_price_category()`
+  tienen `EXECUTE` otorgado a `PUBLIC` (confirmado vía advisor de seguridad
+  de Supabase — categoría `anon_security_definer_function_executable`).
+  Son funciones de trigger, no pensadas para invocarse como RPC directa, y el
+  resto de las funciones de trigger (`sync_and_validate_ticket`,
+  `validate_blocked_seat_production`, `recompute_order_total`, etc.) están
+  correctamente restringidas a `postgres`/`service_role`. Revocar `EXECUTE`
+  de `public` sobre estas dos en la futura `0016`, para consistencia con el
+  patrón del resto de los triggers.
 
-Ninguno de estos cuatro hallazgos se corrige editando `0009`–`0013`
-retroactivamente — la corrección, cuando se haga, será una migración `0016`
-nueva.
+Ninguno de estos hallazgos se corrige editando `0009`–`0015` retroactivamente
+— la corrección, cuando se haga, será una migración `0016` nueva.
