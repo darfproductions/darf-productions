@@ -139,3 +139,47 @@ create policy "profiles_staff_read" on profiles
   for select using (is_staff());
 create policy "profiles_admin_write" on profiles
   for all using (is_admin()) with check (is_admin());
+-- ============================================================
+-- FUNCTION EXECUTION PRIVILEGES
+-- ============================================================
+
+-- These helper functions are referenced by RLS policies.
+-- They must therefore be executable by the roles whose queries
+-- can cause those policies to be evaluated.
+grant execute on function is_staff()
+to anon, authenticated;
+
+grant execute on function is_admin()
+to anon, authenticated;
+
+grant execute on function current_profile_role()
+to anon, authenticated;
+
+
+-- This is the only operational SECURITY DEFINER function that
+-- authenticated users may invoke directly.
+-- It performs its own is_staff() authorization check and only
+-- updates the `leido` column.
+grant execute on function mark_contact_message_read(uuid)
+to authenticated;
+
+
+-- Internal trigger/helper functions must NOT be directly callable
+-- by anon or authenticated users.
+revoke execute on function mark_contact_message_read(uuid)
+from anon;
+
+revoke execute on function generate_order_code()
+from anon, authenticated;
+
+revoke execute on function set_order_code()
+from anon, authenticated;
+
+revoke execute on function sync_and_validate_ticket()
+from anon, authenticated;
+
+revoke execute on function validate_blocked_seat_production()
+from anon, authenticated;
+
+revoke execute on function recompute_order_total()
+from anon, authenticated;
