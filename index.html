@@ -909,6 +909,23 @@
           <button class="btn btn-o btn-sm" onclick="AuthService.doLogout()">Cerrar Sesión</button>
         </div>
       </div>
+      <div class="adm-sec" id="admProdSec" style="display:none">
+        <div class="adm-hdr"><span>🎬</span> Gestión de Producciones</div>
+        <div class="adm-body">
+          <div id="adminProdList"></div>
+          <div style="margin-top:20px;padding-top:16px;border-top:1px solid #252525">
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px;color:var(--t2)">Nueva Producción</div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+              <input type="text" id="newProdNombre" class="form-c" placeholder="Nombre" style="flex:1;min-width:160px">
+              <input type="text" id="newProdVenue" class="form-c" placeholder="Venue" style="flex:1;min-width:160px">
+              <input type="text" id="newProdFecha" class="form-c" placeholder="Fecha (ej. 2027)" style="flex:1;min-width:120px">
+              <input type="number" id="newProdPrice" class="form-c" placeholder="Precio" style="flex:1;min-width:100px">
+              <input type="number" id="newProdCapacity" class="form-c" placeholder="Capacidad (opcional)" style="flex:1;min-width:140px">
+              <button class="btn btn-a btn-sm" onclick="createProductionFromAdmin()">➕ Crear</button>
+            </div>
+          </div>
+        </div>
+      </div>
       <div class="adm-sec">
         <div class="adm-hdr"><span>📊</span> Ventas de Cartelera</div>
         <div class="adm-body">

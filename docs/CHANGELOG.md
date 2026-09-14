@@ -67,6 +67,31 @@ sin tocar la boletería de Showman, que permanece oculta hasta tener venue.
   pago mientras `on_sale=false`. `seats`/`price_categories`/
   `performance_price_categories` confirmadas en 0 filas. **Fase 1 completa.**
 
+## 2026-09-13 — Fase 2 (en curso): gestión admin de producciones y funciones
+
+**Contexto:** con Fase 1 cerrada, Fase 2 conecta el resto del catálogo al
+panel administrativo — crear/editar producciones y sus funciones
+(`performances`), sin depender todavía del venue real de Showman (crear una
+función no requiere numeración de asientos).
+
+**Hecho en esta fase (hasta ahora):**
+- **`DB` (js/app.js):** `createProduction`/`updateProduction` (INSERT/UPDATE
+  contra `productions`, protegidos por `productions_admin_write`); cache +
+  `loadPerformances`/`getPerformances`/`getPerformancesForProduction` +
+  `createPerformance`/`updatePerformance` (contra `performances`, protegidos
+  por `performances_admin_write`) — ambas policies ya existían desde `0010`,
+  sin migración nueva.
+- **UI:** nueva sección "Gestión de Producciones" en el panel staff
+  (`index.html` `#admProdSec`), oculta client-side salvo `rol==='admin'` (RLS
+  es la autoridad real). Edición inline de producciones existentes y de sus
+  funciones; formularios para crear una producción nueva y agregar funciones
+  a una producción existente.
+- **Fuera de alcance de esta ronda, por decisión de Johann:** sin borrado (de
+  producciones ni de funciones) — cualquier corrección se hace vía SQL
+  aprobado, como en fases anteriores; sin página pública de marketing para
+  producciones creadas desde el panel — el diseño de esa plantilla se hace
+  cuando exista una producción real que la necesite.
+
 **Decisiones de Johann que enmarcan Fase 1:**
 - Compra invitado-primero, cuentas demo eliminadas por completo, 3 roles
   con panel diferenciado, config vía `js/config.js` commiteado, verificación

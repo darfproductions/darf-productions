@@ -19,7 +19,7 @@ function togglePass(btn, inputId){
 
 // ─── DB LOCAL (mock funcional, listo para reemplazar por Supabase) ──
 const DB = (function(){
-  const KEYS = {orders:'darf_orders', productions:'darf_productions', contact:'darf_contact', blocked:'darf_blocked', sellers:'darf_sellers'};
+  const KEYS = {orders:'darf_orders', productions:'darf_productions', performances:'darf_performances', contact:'darf_contact', blocked:'darf_blocked', sellers:'darf_sellers'};
   const listeners = {};
 
   function read(key, fallback){
@@ -78,6 +78,69 @@ const DB = (function(){
     if(error) return false;
     if(productionsCache[id]) productionsCache[id].onSale = !!onSale;
     notify(KEYS.productions);
+    return true;
+  }
+  function slugify(nombre){
+    return (nombre||'').toLowerCase().trim()
+      .replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,40) || 'prod';
+  }
+  async function createProduction(fields){
+    if(!sb) return {ok:false, error:'No hay conexión con el servidor.'};
+    if(!fields.nombre) return {ok:false, error:'Escribe el nombre de la producción.'};
+    var base = slugify(fields.nombre);
+    var id = base;
+    var n = 2;
+    while(productionsCache[id]){ id = base+'-'+n; n++; }
+    const { error } = await sb.from('productions').insert({
+      id: id, nombre: fields.nombre, venue: fields.venue||null, fecha: fields.fecha||null,
+      price: Number(fields.price)||0, capacity: fields.capacity?Number(fields.capacity):null
+    });
+    if(error) return {ok:false, error: error.message};
+    await loadProductions();
+    return {ok:true, id: id};
+  }
+  async function updateProduction(id, patch){
+    if(!sb) return false;
+    const { error } = await sb.from('productions').update({
+      nombre: patch.nombre, venue: patch.venue||null, fecha: patch.fecha||null,
+      price: Number(patch.price)||0, capacity: patch.capacity?Number(patch.capacity):null
+    }).eq('id', id);
+    if(error) return false;
+    await loadProductions();
+    return true;
+  }
+
+  let performancesCache = [];
+  async function loadPerformances(){
+    if(!sb) return performancesCache;
+    const { data, error } = await sb.from('performances').select().order('starts_at');
+    if(error) return performancesCache;
+    performancesCache = data;
+    notify(KEYS.performances);
+    return performancesCache;
+  }
+  function getPerformances(){ return performancesCache; }
+  function getPerformancesForProduction(productionId){
+    return performancesCache.filter(function(p){ return p.production_id===productionId; });
+  }
+  async function createPerformance(productionId, fields){
+    if(!sb) return {ok:false, error:'No hay conexión con el servidor.'};
+    if(!fields.startsAt) return {ok:false, error:'Escribe la fecha y hora de la función.'};
+    const { error } = await sb.from('performances').insert({
+      production_id: productionId, starts_at: fields.startsAt, venue: fields.venue||null,
+      on_sale: !!fields.onSale
+    });
+    if(error) return {ok:false, error: error.message};
+    await loadPerformances();
+    return {ok:true};
+  }
+  async function updatePerformance(id, patch){
+    if(!sb) return false;
+    const { error } = await sb.from('performances').update({
+      starts_at: patch.startsAt, venue: patch.venue||null, on_sale: !!patch.onSale
+    }).eq('id', id);
+    if(error) return false;
+    await loadPerformances();
     return true;
   }
 
@@ -267,7 +330,8 @@ const DB = (function(){
 
   return {
     KEYS, subscribe,
-    loadProductions, getProductions, getProduction, setProductionOnSale,
+    loadProductions, getProductions, getProduction, setProductionOnSale, createProduction, updateProduction,
+    loadPerformances, getPerformances, getPerformancesForProduction, createPerformance, updatePerformance,
     getOrders, createOrder, updateOrder, approveOrder, rejectOrder,
     getPendingOrders, getPendingOrdersFor, getOrdersForUser, getOrdersForProduction,
     getSeatsTaken, getApprovedCount, checkInByQr,
@@ -277,6 +341,7 @@ const DB = (function(){
   };
 })();
 DB.loadProductions();
+DB.loadPerformances();
 
 // ─── AUTH SERVICE (Supabase Auth: sesión real + rol leído de `profiles`) ──
 const AuthService = (function(){
@@ -931,9 +996,121 @@ async function renderStaff(){
   renderSalesBars();
   renderBoletajeProductions();
   renderContactInbox();
-  await Promise.all([DB.loadSellers(), DB.loadContactMessages()]);
+  renderAdminProductions();
+  await Promise.all([DB.loadSellers(), DB.loadContactMessages(), DB.loadPerformances()]);
   renderBoletajeProductions();
   renderContactInbox();
+  renderAdminProductions();
+}
+
+// ─── PANEL ADMIN: gestión de producciones y funciones ─
+function toDatetimeLocalValue(iso){
+  if(!iso) return '';
+  var d = new Date(iso);
+  if(isNaN(d.getTime())) return '';
+  var pad=function(n){return String(n).padStart(2,'0');};
+  return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes());
+}
+function renderAdminProductions(){
+  var sec = document.getElementById('admProdSec');
+  if(!sec) return;
+  var isAdmin = AuthService.session.rol==='admin';
+  sec.style.display = isAdmin?'':'none';
+  if(!isAdmin) return;
+  var box = document.getElementById('adminProdList');
+  if(!box) return;
+  clearEl(box);
+  var prods = DB.getProductions();
+  Object.keys(prods).forEach(function(id){
+    box.appendChild(buildAdminProdCard(prods[id]));
+  });
+}
+DB.subscribe(DB.KEYS.productions, function(){ if(document.getElementById('v-staff').classList.contains('active')) renderAdminProductions(); });
+DB.subscribe(DB.KEYS.performances, function(){ if(document.getElementById('v-staff').classList.contains('active')) renderAdminProductions(); });
+
+function buildAdminProdCard(prod){
+  var card=document.createElement('div');card.style.cssText='background:var(--g2);border:1px solid var(--g3);border-radius:var(--r8);padding:16px;margin-bottom:14px';
+
+  var row=document.createElement('div');row.style.cssText='display:flex;gap:10px;flex-wrap:wrap;align-items:center';
+  var idLabel=document.createElement('div');idLabel.style.cssText='font-size:11px;color:var(--t3);min-width:70px';idLabel.textContent=prod.id;
+  var nombreI=document.createElement('input');nombreI.type='text';nombreI.className='form-c';nombreI.value=prod.nombre||'';nombreI.placeholder='Nombre';nombreI.style.cssText='flex:1;min-width:140px';
+  var venueI=document.createElement('input');venueI.type='text';venueI.className='form-c';venueI.value=prod.venue||'';venueI.placeholder='Venue';venueI.style.cssText='flex:1;min-width:140px';
+  var fechaI=document.createElement('input');fechaI.type='text';fechaI.className='form-c';fechaI.value=prod.fecha||'';fechaI.placeholder='Fecha';fechaI.style.cssText='flex:1;min-width:100px';
+  var priceI=document.createElement('input');priceI.type='number';priceI.className='form-c';priceI.value=prod.price||0;priceI.placeholder='Precio';priceI.style.cssText='flex:1;min-width:90px';
+  var capI=document.createElement('input');capI.type='number';capI.className='form-c';capI.value=prod.capacity||'';capI.placeholder='Capacidad';capI.style.cssText='flex:1;min-width:100px';
+  var saveBtn=document.createElement('button');saveBtn.className='btn btn-a btn-sm';saveBtn.textContent='Guardar';
+  saveBtn.onclick=async function(){
+    var ok = await DB.updateProduction(prod.id, {
+      nombre: nombreI.value, venue: venueI.value, fecha: fechaI.value,
+      price: priceI.value, capacity: capI.value
+    });
+    if(!ok){ flash('No se pudo actualizar la producción.','d'); return; }
+    flash('Producción actualizada: '+nombreI.value,'s');
+  };
+  row.appendChild(idLabel);row.appendChild(nombreI);row.appendChild(venueI);row.appendChild(fechaI);row.appendChild(priceI);row.appendChild(capI);row.appendChild(saveBtn);
+  card.appendChild(row);
+
+  var perfWrap=document.createElement('div');perfWrap.style.cssText='margin-top:14px;padding-top:14px;border-top:1px solid #252525';
+  var perfTitle=document.createElement('div');perfTitle.style.cssText='font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px;color:var(--t2)';perfTitle.textContent='Funciones';
+  perfWrap.appendChild(perfTitle);
+  var perfs = DB.getPerformancesForProduction(prod.id);
+  perfs.forEach(function(perf){
+    var prow=document.createElement('div');prow.style.cssText='display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:8px';
+    var dtI=document.createElement('input');dtI.type='datetime-local';dtI.className='form-c';dtI.value=toDatetimeLocalValue(perf.starts_at);dtI.style.cssText='flex:1;min-width:180px';
+    var pvenueI=document.createElement('input');pvenueI.type='text';pvenueI.className='form-c';pvenueI.value=perf.venue||'';pvenueI.placeholder='Venue (opcional)';pvenueI.style.cssText='flex:1;min-width:140px';
+    var label=document.createElement('label');label.style.cssText='display:flex;align-items:center;gap:6px;font-size:12px;color:var(--t2);cursor:pointer';
+    var onSaleChk=document.createElement('input');onSaleChk.type='checkbox';onSaleChk.checked=!!perf.on_sale;
+    label.appendChild(onSaleChk);label.appendChild(document.createTextNode('En venta'));
+    var psaveBtn=document.createElement('button');psaveBtn.className='btn btn-o btn-sm';psaveBtn.textContent='Guardar';
+    psaveBtn.onclick=async function(){
+      var iso = dtI.value ? new Date(dtI.value).toISOString() : null;
+      if(!iso){ flash('Escribe la fecha y hora de la función.','d'); return; }
+      var ok = await DB.updatePerformance(perf.id, {startsAt: iso, venue: pvenueI.value, onSale: onSaleChk.checked});
+      if(!ok){ flash('No se pudo actualizar la función.','d'); return; }
+      flash('Función actualizada.','s');
+    };
+    prow.appendChild(dtI);prow.appendChild(pvenueI);prow.appendChild(label);prow.appendChild(psaveBtn);
+    perfWrap.appendChild(prow);
+  });
+  if(!perfs.length){
+    var empty=document.createElement('div');empty.className='empty-note';empty.textContent='Sin funciones todavía.';
+    perfWrap.appendChild(empty);
+  }
+
+  var newRow=document.createElement('div');newRow.style.cssText='display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px';
+  var newDtI=document.createElement('input');newDtI.type='datetime-local';newDtI.className='form-c';newDtI.style.cssText='flex:1;min-width:180px';
+  var newVenueI=document.createElement('input');newVenueI.type='text';newVenueI.className='form-c';newVenueI.placeholder='Venue (opcional)';newVenueI.style.cssText='flex:1;min-width:140px';
+  var newLabel=document.createElement('label');newLabel.style.cssText='display:flex;align-items:center;gap:6px;font-size:12px;color:var(--t2);cursor:pointer';
+  var newOnSaleChk=document.createElement('input');newOnSaleChk.type='checkbox';
+  newLabel.appendChild(newOnSaleChk);newLabel.appendChild(document.createTextNode('En venta'));
+  var addBtn=document.createElement('button');addBtn.className='btn btn-a btn-sm';addBtn.textContent='➕ Nueva función';
+  addBtn.onclick=async function(){
+    var iso = newDtI.value ? new Date(newDtI.value).toISOString() : null;
+    if(!iso){ flash('Escribe la fecha y hora de la función.','d'); return; }
+    var res = await DB.createPerformance(prod.id, {startsAt: iso, venue: newVenueI.value, onSale: newOnSaleChk.checked});
+    if(!res.ok){ flash(res.error,'d'); return; }
+    newDtI.value='';newVenueI.value='';newOnSaleChk.checked=false;
+    flash('Función agregada.','s');
+  };
+  newRow.appendChild(newDtI);newRow.appendChild(newVenueI);newRow.appendChild(newLabel);newRow.appendChild(addBtn);
+  perfWrap.appendChild(newRow);
+  card.appendChild(perfWrap);
+
+  return card;
+}
+async function createProductionFromAdmin(){
+  var nombreEl=document.getElementById('newProdNombre');
+  var venueEl=document.getElementById('newProdVenue');
+  var fechaEl=document.getElementById('newProdFecha');
+  var priceEl=document.getElementById('newProdPrice');
+  var capEl=document.getElementById('newProdCapacity');
+  var res = await DB.createProduction({
+    nombre: nombreEl.value, venue: venueEl.value, fecha: fechaEl.value,
+    price: priceEl.value, capacity: capEl.value
+  });
+  if(!res.ok){ flash(res.error,'d'); return; }
+  nombreEl.value='';venueEl.value='';fechaEl.value='';priceEl.value='';capEl.value='';
+  flash('Producción creada: '+res.id,'s');
 }
 function renderSalesBars(){
   var wrap = document.getElementById('salesBarsWrap');
