@@ -351,8 +351,13 @@ const AuthService = (function(){
     nav('home');
   }
 
-  function loginGoogle(){
-    flash('Inicio con Google estará disponible próximamente. Por ahora, usa correo y contraseña.','i');
+  async function loginGoogle(){
+    if(!sb){flash('No hay conexión con el servidor. Intenta más tarde.','d');return;}
+    const { error } = await sb.auth.signInWithOAuth({
+      provider:'google',
+      options:{ redirectTo: window.location.origin + window.location.pathname }
+    });
+    if(error){ flash(error.message,'d'); }
   }
 
   function updateNavAuth(){
