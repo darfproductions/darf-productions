@@ -350,6 +350,7 @@ const AuthService = (function(){
 
   const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   function passwordOk(p){ return typeof p==='string' && p.length>=8 && /[A-Za-z]/.test(p) && /[0-9]/.test(p); }
+  function siteUrl(){ return window.location.origin + window.location.pathname; }
 
   function showLoginTab(tab){
     var tabs=['correo','registro','verificar'];
@@ -399,10 +400,25 @@ const AuthService = (function(){
     if(!EMAIL_RE.test(email)){flash('Ese correo no parece válido.','d');return;}
     if(!passwordOk(pass)){flash('La contraseña debe tener al menos 8 caracteres, con letras y números.','d');return;}
     if(!sb){flash('No hay conexión con el servidor. Intenta más tarde.','d');return;}
-    const { error } = await sb.auth.signUp({
-      email: email, password: pass, options:{ data:{ nombre:name } }
+    const { data, error } = await sb.auth.signUp({
+      email: email, password: pass,
+      options:{ data:{ nombre:name }, emailRedirectTo: siteUrl() }
     });
     if(error){ flash(error.message,'d'); return; }
+    // Supabase no devuelve error si el correo ya existe (anti-enumeración):
+    // regresa un usuario sin identities.
+    if(data.user && data.user.identities && data.user.identities.length===0){
+      flash('Ese correo ya tiene cuenta. Inicia sesión.','d');
+      showLoginTab('correo');
+      return;
+    }
+    // Con "Confirm email" desactivado en Supabase llega sesión directa.
+    if(data.session){
+      await applySession(data.user);
+      flash('¡Cuenta creada! Bienvenido, '+(session.nombre||session.usuario)+' 🎭','s');
+      nav('fan');
+      return;
+    }
     flash('¡Cuenta creada! Revisa tu correo para confirmar tu cuenta.','s');
     showVerifyPanel(email);
   }
@@ -410,7 +426,7 @@ const AuthService = (function(){
   function doResendVerification(){
     if(!pendingVerifyEmail){flash('No hay una verificación en curso.','d');return;}
     if(!sb){flash('No hay conexión con el servidor. Intenta más tarde.','d');return;}
-    sb.auth.resend({ type:'signup', email: pendingVerifyEmail }).then(function(res){
+    sb.auth.resend({ type:'signup', email: pendingVerifyEmail, options:{ emailRedirectTo: siteUrl() } }).then(function(res){
       if(res.error){ flash(res.error.message,'d'); return; }
       flash('Correo de confirmación reenviado.','i');
     });
