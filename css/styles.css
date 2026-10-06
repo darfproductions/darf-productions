@@ -92,7 +92,7 @@ main{flex:1}
 .pg{padding-top:var(--nav-h)}
 
 /* FLASH */
-.flash-box{position:fixed;top:calc(var(--nav-h)+10px);right:16px;z-index:2000;display:flex;flex-direction:column;gap:8px;max-width:340px;pointer-events:none}
+.flash-box{position:fixed;top:calc(var(--nav-h) + 10px);right:16px;z-index:2000;display:flex;flex-direction:column;gap:8px;max-width:min(340px,calc(100vw - 32px));pointer-events:none}
 .flash{padding:12px 18px;border-radius:var(--r4);font-size:13px;font-weight:600;animation:fadeUp .3s ease;display:flex;align-items:center;gap:8px}
 .flash-s{background:#1B5E20;border:1px solid #2E7D32}
 .flash-d{background:#B71C1C;border:1px solid #C62828}
@@ -106,7 +106,7 @@ main{flex:1}
 .view{display:none}.view.active{display:block}
 
 /* HOME HERO */
-.hero{min-height:100vh;position:relative;display:flex;align-items:center;overflow:hidden;background:var(--negro)}
+.hero{min-height:100vh;min-height:100svh;position:relative;display:flex;align-items:center;overflow:hidden;background:var(--negro)}
 .hero-bg-grad{position:absolute;inset:0;background:radial-gradient(ellipse at 15% 55%,rgba(123,47,190,.4) 0,transparent 55%),radial-gradient(ellipse at 75% 20%,rgba(229,68,90,.3) 0,transparent 50%),radial-gradient(ellipse at 90% 80%,rgba(26,35,126,.35) 0,transparent 45%)}
 .hero-headline-grad{background:var(--grad-darf);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .hero-content{position:relative;z-index:2;max-width:680px}
@@ -215,8 +215,8 @@ main{flex:1}
 .vid-cap{padding:12px 14px;font-size:12px;font-weight:600;color:var(--t2)}
 
 /* LOGIN */
-.login-pg{min-height:100vh;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 30% 30%,rgba(123,47,190,.3) 0,transparent 60%),radial-gradient(ellipse at 70% 70%,rgba(229,68,90,.18) 0,transparent 50%),var(--negro)}
-.login-card{width:100%;max-width:400px;background:var(--g2);border:1px solid #2a2a2a;border-radius:var(--r16);padding:40px;animation:fadeIn .4s ease}
+.login-pg{min-height:100vh;min-height:100svh;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 30% 30%,rgba(123,47,190,.3) 0,transparent 60%),radial-gradient(ellipse at 70% 70%,rgba(229,68,90,.18) 0,transparent 50%),var(--negro)}
+.login-card{width:100%;max-width:400px;background:var(--g2);border:1px solid #2a2a2a;border-radius:var(--r16);padding:clamp(22px,6vw,40px);animation:fadeIn .4s ease}
 .login-logo-wrap{text-align:center;margin-bottom:28px}
 .demo-box{margin-top:18px;padding-top:18px;border-top:1px solid #252525;font-size:12px;color:var(--t2)}
 .demo-box code{background:var(--g3);padding:1px 6px;border-radius:3px;font-size:11px;color:var(--blanco)}
@@ -284,7 +284,7 @@ textarea.form-c{resize:vertical;min-height:110px}
 .chat-bubble{position:fixed;bottom:28px;right:28px;z-index:900}
 .chat-toggle{min-width:64px;height:46px;padding:0 18px;background:var(--grad-darf);border-radius:100px;display:flex;align-items:center;justify-content:center;gap:7px;cursor:pointer;box-shadow:0 4px 22px rgba(123,47,190,.5);border:none;color:#fff;transition:all .22s;font-size:.78rem;font-family:var(--font);font-weight:800;letter-spacing:.07em;text-transform:uppercase}
 .chat-toggle:hover{transform:scale(1.06);box-shadow:0 6px 28px rgba(229,68,90,.55)}
-.chat-win{position:absolute;bottom:58px;right:0;width:330px;background:var(--g2);border:1px solid rgba(255,255,255,.08);border-radius:var(--r16);overflow:hidden;box-shadow:0 12px 48px rgba(0,0,0,.85);display:none;flex-direction:column;max-height:480px}
+.chat-win{position:absolute;bottom:58px;right:0;width:330px;max-width:calc(100vw - 56px);background:var(--g2);border:1px solid rgba(255,255,255,.08);border-radius:var(--r16);overflow:hidden;box-shadow:0 12px 48px rgba(0,0,0,.85);display:none;flex-direction:column;max-height:480px}
 .chat-win.open{display:flex;animation:fadeUp .3s ease}
 .chat-hdr{background:linear-gradient(135deg,#12051e,#1a0a28);padding:14px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(123,47,190,.3)}
 .chat-av{width:36px;height:36px;background:var(--grad-darf);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:900;font-family:var(--font);color:#fff;flex-shrink:0}
