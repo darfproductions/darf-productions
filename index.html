@@ -25,23 +25,7 @@
     <ul class="nav-links" id="navLinks">
       <li><button class="nav-a" id="navHome" onclick="nav('home')">Inicio</button></li>
       <li><button class="nav-a" id="navCartelera" onclick="nav('cartelera')">Cartelera</button></li>
-      <li class="nav-drop">
-        <button class="nav-a" id="navProdBtn">Producciones ▾</button>
-        <div class="nav-drop-menu" id="navProdMenu">
-          <div class="nav-drop-item" onclick="nav('showman')">
-            <img loading="lazy" src="SHOWMAN VISUALS/1.png" style="width:46px;height:28px;object-fit:contain;flex-shrink:0;mix-blend-mode:lighten;border-radius:3px">
-            Showman &mdash; Próximamente
-          </div>
-          <div class="nav-drop-item" onclick="nav('mm')">
-            <img loading="lazy" src="MAMMA MIA VISUALS/1.png" style="width:46px;height:28px;object-fit:contain;flex-shrink:0;mix-blend-mode:lighten;border-radius:3px">
-            Mamma Mia! &mdash; 2026
-          </div>
-          <div class="nav-drop-item" onclick="nav('hsm')">
-            <img loading="lazy" src="HIGH SCHOOL MUSICAL VISUALS/1.png" style="width:32px;height:20px;object-fit:contain;flex-shrink:0">
-            High School Musical &mdash; 2025
-          </div>
-        </div>
-      </li>
+      <li><button class="nav-a" id="navProdBtn" onclick="nav('prods')">Producciones</button></li>
       <li><button class="nav-a" id="navContacto" onclick="nav('contacto')">Contacto</button></li>
       <li id="navAuth"><button class="btn btn-r btn-sm" onclick="nav('login')">Iniciar Sesión</button></li>
     </ul>
