@@ -1055,23 +1055,12 @@ DB.subscribe(DB.KEYS.performances, function(){ if(document.getElementById('v-sta
 function buildAdminProdCard(prod){
   var card=document.createElement('div');card.style.cssText='background:var(--g2);border:1px solid var(--g3);border-radius:var(--r8);padding:16px;margin-bottom:14px';
 
-  var row=document.createElement('div');row.style.cssText='display:flex;gap:10px;flex-wrap:wrap;align-items:center';
-  var idLabel=document.createElement('div');idLabel.style.cssText='font-size:11px;color:var(--t3);min-width:70px';idLabel.textContent=prod.id;
-  var nombreI=document.createElement('input');nombreI.type='text';nombreI.className='form-c';nombreI.value=prod.nombre||'';nombreI.placeholder='Nombre';nombreI.style.cssText='flex:1;min-width:140px';
-  var venueI=document.createElement('input');venueI.type='text';venueI.className='form-c';venueI.value=prod.venue||'';venueI.placeholder='Venue';venueI.style.cssText='flex:1;min-width:140px';
-  var fechaI=document.createElement('input');fechaI.type='text';fechaI.className='form-c';fechaI.value=prod.fecha||'';fechaI.placeholder='Fecha';fechaI.style.cssText='flex:1;min-width:100px';
-  var priceI=document.createElement('input');priceI.type='number';priceI.className='form-c';priceI.value=prod.price||0;priceI.placeholder='Precio';priceI.style.cssText='flex:1;min-width:90px';
-  var capI=document.createElement('input');capI.type='number';capI.className='form-c';capI.value=prod.capacity||'';capI.placeholder='Capacidad';capI.style.cssText='flex:1;min-width:100px';
-  var saveBtn=document.createElement('button');saveBtn.className='btn btn-a btn-sm';saveBtn.textContent='Guardar';
-  saveBtn.onclick=async function(){
-    var ok = await DB.updateProduction(prod.id, {
-      nombre: nombreI.value, venue: venueI.value, fecha: fechaI.value,
-      price: priceI.value, capacity: capI.value
-    });
-    if(!ok){ flash('No se pudo actualizar la producción.','d'); return; }
-    flash('Producción actualizada: '+nombreI.value,'s');
-  };
-  row.appendChild(idLabel);row.appendChild(nombreI);row.appendChild(venueI);row.appendChild(fechaI);row.appendChild(priceI);row.appendChild(capI);row.appendChild(saveBtn);
+  // Datos de la producción: fijos, se definen por código (migración/seed), no se editan aquí.
+  var row=document.createElement('div');row.style.cssText='display:flex;gap:6px 18px;flex-wrap:wrap;align-items:baseline';
+  var nameEl=document.createElement('div');nameEl.style.cssText='font-size:15px;font-weight:800;color:#fff';nameEl.textContent=prod.nombre||prod.id;
+  var metaEl=document.createElement('div');metaEl.style.cssText='font-size:12px;color:var(--t3)';
+  metaEl.textContent=[prod.id, prod.fecha, prod.venue, prod.price?('$'+prod.price):null].filter(Boolean).join(' · ');
+  row.appendChild(nameEl);row.appendChild(metaEl);
   card.appendChild(row);
 
   var concRow=document.createElement('div');concRow.style.cssText='margin-top:12px';
@@ -1092,7 +1081,6 @@ function buildAdminProdCard(prod){
   perfs.forEach(function(perf){
     var prow=document.createElement('div');prow.style.cssText='display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:8px';
     var dtI=document.createElement('input');dtI.type='datetime-local';dtI.className='form-c';dtI.value=toDatetimeLocalValue(perf.starts_at);dtI.style.cssText='flex:1;min-width:180px';
-    var pvenueI=document.createElement('input');pvenueI.type='text';pvenueI.className='form-c';pvenueI.value=perf.venue||'';pvenueI.placeholder='Venue (opcional)';pvenueI.style.cssText='flex:1;min-width:140px';
     var label=document.createElement('label');label.style.cssText='display:flex;align-items:center;gap:6px;font-size:12px;color:var(--t2);cursor:pointer';
     var onSaleChk=document.createElement('input');onSaleChk.type='checkbox';onSaleChk.checked=!!perf.on_sale;
     label.appendChild(onSaleChk);label.appendChild(document.createTextNode('En venta'));
@@ -1100,11 +1088,11 @@ function buildAdminProdCard(prod){
     psaveBtn.onclick=async function(){
       var iso = dtI.value ? new Date(dtI.value).toISOString() : null;
       if(!iso){ flash('Escribe la fecha y hora de la función.','d'); return; }
-      var ok = await DB.updatePerformance(perf.id, {startsAt: iso, venue: pvenueI.value, onSale: onSaleChk.checked});
+      var ok = await DB.updatePerformance(perf.id, {startsAt: iso, venue: perf.venue, onSale: onSaleChk.checked});
       if(!ok){ flash('No se pudo actualizar la función.','d'); return; }
       flash('Función actualizada.','s');
     };
-    prow.appendChild(dtI);prow.appendChild(pvenueI);prow.appendChild(label);prow.appendChild(psaveBtn);
+    prow.appendChild(dtI);prow.appendChild(label);prow.appendChild(psaveBtn);
     perfWrap.appendChild(prow);
   });
   if(!perfs.length){
@@ -1114,7 +1102,6 @@ function buildAdminProdCard(prod){
 
   var newRow=document.createElement('div');newRow.style.cssText='display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px';
   var newDtI=document.createElement('input');newDtI.type='datetime-local';newDtI.className='form-c';newDtI.style.cssText='flex:1;min-width:180px';
-  var newVenueI=document.createElement('input');newVenueI.type='text';newVenueI.className='form-c';newVenueI.placeholder='Venue (opcional)';newVenueI.style.cssText='flex:1;min-width:140px';
   var newLabel=document.createElement('label');newLabel.style.cssText='display:flex;align-items:center;gap:6px;font-size:12px;color:var(--t2);cursor:pointer';
   var newOnSaleChk=document.createElement('input');newOnSaleChk.type='checkbox';
   newLabel.appendChild(newOnSaleChk);newLabel.appendChild(document.createTextNode('En venta'));
@@ -1122,30 +1109,16 @@ function buildAdminProdCard(prod){
   addBtn.onclick=async function(){
     var iso = newDtI.value ? new Date(newDtI.value).toISOString() : null;
     if(!iso){ flash('Escribe la fecha y hora de la función.','d'); return; }
-    var res = await DB.createPerformance(prod.id, {startsAt: iso, venue: newVenueI.value, onSale: newOnSaleChk.checked});
+    var res = await DB.createPerformance(prod.id, {startsAt: iso, venue: null, onSale: newOnSaleChk.checked});
     if(!res.ok){ flash(res.error,'d'); return; }
-    newDtI.value='';newVenueI.value='';newOnSaleChk.checked=false;
+    newDtI.value='';newOnSaleChk.checked=false;
     flash('Función agregada.','s');
   };
-  newRow.appendChild(newDtI);newRow.appendChild(newVenueI);newRow.appendChild(newLabel);newRow.appendChild(addBtn);
+  newRow.appendChild(newDtI);newRow.appendChild(newLabel);newRow.appendChild(addBtn);
   perfWrap.appendChild(newRow);
   card.appendChild(perfWrap);
 
   return card;
-}
-async function createProductionFromAdmin(){
-  var nombreEl=document.getElementById('newProdNombre');
-  var venueEl=document.getElementById('newProdVenue');
-  var fechaEl=document.getElementById('newProdFecha');
-  var priceEl=document.getElementById('newProdPrice');
-  var capEl=document.getElementById('newProdCapacity');
-  var res = await DB.createProduction({
-    nombre: nombreEl.value, venue: venueEl.value, fecha: fechaEl.value,
-    price: priceEl.value, capacity: capEl.value
-  });
-  if(!res.ok){ flash(res.error,'d'); return; }
-  nombreEl.value='';venueEl.value='';fechaEl.value='';priceEl.value='';capEl.value='';
-  flash('Producción creada: '+res.id,'s');
 }
 function renderSalesBars(){
   var wrap = document.getElementById('salesBarsWrap');
@@ -1350,24 +1323,46 @@ function toggleBoletajeAcc(productionId){
   staffAccExpanded[productionId]=!staffAccExpanded[productionId];
   renderBoletajeProductions();
 }
+var boletajeSel={prod:null,perf:null};
+function fmtPerfDate(iso){
+  try{return new Date(iso).toLocaleString('es-MX',{weekday:'short',day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});}catch(e){return iso;}
+}
 function renderBoletajeProductions(){
   // El Boletaje del prototipo (mapa fijo + localStorage) está deshabilitado hasta
   // que exista el mapa real del venue (importador de asientos + categorías de precio).
+  // Ya se elige producción y función; el contenido por función llega con el mapa real.
   var list=document.getElementById('boletajeProdList');
   if(!list) return;
   clearEl(list);
-  var note=document.createElement('div');
-  note.style.cssText='font-size:13px;color:var(--t2);line-height:1.6';
-  note.textContent='La venta de boletos numerados está deshabilitada hasta que se cargue el mapa de asientos real del teatro. Mientras tanto, las funciones y su estado "En venta" se administran en Gestión de Producciones.';
-  list.appendChild(note);
   var prods=DB.getProductions();
-  Object.keys(prods).filter(function(id){return !prods[id].concluded;}).forEach(function(id){
-    var row=document.createElement('div');
-    row.style.cssText='display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:10px 0;border-top:1px solid #252525;margin-top:10px;font-size:13px';
-    var n=document.createElement('span');n.textContent=prods[id].nombre;
-    var st=document.createElement('span');st.style.color='var(--t3)';st.textContent='Mapa de asientos: pendiente';
-    row.appendChild(n);row.appendChild(st);list.appendChild(row);
-  });
+  var ids=Object.keys(prods).filter(function(id){return !prods[id].concluded;});
+  if(!ids.length){
+    var none=document.createElement('div');none.className='empty-note';none.textContent='No hay producciones activas.';
+    list.appendChild(none);return;
+  }
+  if(!boletajeSel.prod||ids.indexOf(boletajeSel.prod)<0) boletajeSel.prod=ids[0];
+  var perfs=DB.getPerformancesForProduction(boletajeSel.prod);
+  if(!perfs.some(function(p){return p.id===boletajeSel.perf;})) boletajeSel.perf=perfs.length?perfs[0].id:null;
+
+  var row=document.createElement('div');row.style.cssText='display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px';
+  var prodSel=document.createElement('select');prodSel.className='form-c';prodSel.style.cssText='flex:1;min-width:200px';prodSel.setAttribute('aria-label','Producción');
+  ids.forEach(function(id){var o=document.createElement('option');o.value=id;o.textContent=prods[id].nombre;if(id===boletajeSel.prod)o.selected=true;prodSel.appendChild(o);});
+  prodSel.onchange=function(){boletajeSel.prod=prodSel.value;boletajeSel.perf=null;renderBoletajeProductions();};
+  var perfSel=document.createElement('select');perfSel.className='form-c';perfSel.style.cssText='flex:1;min-width:240px';perfSel.setAttribute('aria-label','Función');
+  if(!perfs.length){var o0=document.createElement('option');o0.textContent='Sin funciones';perfSel.appendChild(o0);perfSel.disabled=true;}
+  perfs.forEach(function(pf){var o=document.createElement('option');o.value=pf.id;o.textContent=fmtPerfDate(pf.starts_at)+(pf.on_sale?' · en venta':'');if(pf.id===boletajeSel.perf)o.selected=true;perfSel.appendChild(o);});
+  perfSel.onchange=function(){boletajeSel.perf=perfSel.value;renderBoletajeProductions();};
+  row.appendChild(prodSel);row.appendChild(perfSel);list.appendChild(row);
+
+  var cur=perfs.filter(function(p){return p.id===boletajeSel.perf;})[0];
+  var box=document.createElement('div');box.style.cssText='background:var(--g2);border:1px solid var(--g3);border-radius:var(--r8);padding:16px;font-size:13px;color:var(--t2);line-height:1.6';
+  var title=document.createElement('div');title.style.cssText='font-weight:800;color:#fff;margin-bottom:6px';
+  title.textContent=prods[boletajeSel.prod].nombre+(cur?' — '+fmtPerfDate(cur.starts_at):'');
+  var msg=document.createElement('div');
+  msg.textContent=cur
+    ?'Asientos y precios de esta función: pendientes del mapa real del teatro. La venta numerada está deshabilitada hasta cargarlo.'
+    :'Esta producción aún no tiene funciones. Créalas en Gestión de Producciones.';
+  box.appendChild(title);box.appendChild(msg);list.appendChild(box);
 }
 function buildBoletajeProdCard(productionId){
   var prod=DB.getProduction(productionId);
@@ -1472,6 +1467,7 @@ function buildBoletajeProdCard(productionId){
 }
 DB.subscribe(DB.KEYS.orders, function(){ if(document.getElementById('v-staff').classList.contains('active')) renderBoletajeProductions(); });
 DB.subscribe(DB.KEYS.productions, function(){ if(document.getElementById('v-staff').classList.contains('active')) renderBoletajeProductions(); });
+DB.subscribe(DB.KEYS.performances, function(){ if(document.getElementById('v-staff').classList.contains('active')) renderBoletajeProductions(); });
 DB.subscribe(DB.KEYS.blocked, function(){ if(document.getElementById('v-staff').classList.contains('active')) renderBoletajeProductions(); });
 DB.subscribe(DB.KEYS.blocked, function(){ if(document.getElementById('v-checkout').classList.contains('active')) renderCheckout(); });
 
