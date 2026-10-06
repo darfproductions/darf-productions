@@ -67,7 +67,38 @@ sin tocar la boletería de Showman, que permanece oculta hasta tener venue.
   pago mientras `on_sale=false`. `seats`/`price_categories`/
   `performance_price_categories` confirmadas en 0 filas. **Fase 1 completa.**
 
-## 2026-09-13 — Fase 2 (en curso): gestión admin de producciones y funciones
+## 2026-10-05 — Auth en producción + responsive
+
+**Contexto:** Johann probó el sitio publicado: la cuenta nueva no aparecía en
+Supabase y una contraseña incorrecta daba acceso. Causa verificada: Vercel
+seguía sirviendo el prototipo `localStorage` (los commits de Fase 1 y 2 no
+estaban en `origin/main`). Tras el push (`f50409f..12d61b2`), el registro real
+quedó verificado por Johann: usuario en `auth.users`, fila en `profiles` por el
+trigger `handle_new_user`, confirmación por enlace y sesión iniciada. El primer
+admin se promovió con un `UPDATE profiles` aprobado explícitamente, y la
+sección "Gestión de Producciones" (Fase 2) funcionó con esa cuenta.
+
+**Hecho:**
+- **Auth:** `signUp`/`resend` pasan `emailRedirectTo` (el enlace vuelve al
+  sitio); se detecta correo ya registrado (`identities` vacío) y el caso de
+  sesión directa si "Confirm email" estuviera desactivado.
+- **Responsive (sin verificar en navegador real):** navbar pasa a hamburguesa
+  bajo 1180px (antes 680px: con 4 enlaces + 4 botones de staff los botones se
+  cortaban); `#navAuth` con `flex-wrap`/`gap`; el toggle del submenú en JS usa
+  la misma media query; `calc()` inválido del aviso flotante corregido;
+  `100svh` para hero y login; chat y tarjeta de login fluidos; breakpoint de
+  480px; inputs a 16px bajo 768px (evita zoom de iOS).
+
+**Pendiente de Johann:** Google OAuth (lo está arreglando), y revisar el
+responsive en dispositivos reales a 320/375/768/1024/1280px.
+
+**Decisiones de Johann que enmarcan Fase 1:**
+- Compra invitado-primero, cuentas demo eliminadas por completo, 3 roles
+  con panel diferenciado, config vía `js/config.js` commiteado, verificación
+  de correo por enlace (no código), primer admin por promoción manual
+  aprobada explícitamente.
+
+## 2026-09-13 — Fase 2: gestión admin de producciones y funciones
 
 **Contexto:** con Fase 1 cerrada, Fase 2 conecta el resto del catálogo al
 panel administrativo — crear/editar producciones y sus funciones
@@ -91,12 +122,6 @@ función no requiere numeración de asientos).
   aprobado, como en fases anteriores; sin página pública de marketing para
   producciones creadas desde el panel — el diseño de esa plantilla se hace
   cuando exista una producción real que la necesite.
-
-**Decisiones de Johann que enmarcan Fase 1:**
-- Compra invitado-primero, cuentas demo eliminadas por completo, 3 roles
-  con panel diferenciado, config vía `js/config.js` commiteado, verificación
-  de correo por enlace (no código), primer admin por promoción manual
-  aprobada explícitamente.
 
 ## 2026-09-13 — Fase 0: coherencia repo↔DB + documentación
 
