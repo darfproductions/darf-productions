@@ -31,6 +31,15 @@ propósito (sin venue real todavía) — ver `docs/ARCHITECTURE.md`.
 | 0014 | `ticket_pricing.sql` | `price_categories`, `performance_price_categories`, `seats.price_category_id` |
 | 0015 | `seat_reservation.sql` | `create_seated_ticket_order()` (RPC de venta activa), revoca `create_ticket_order()` |
 | 0016 | `security_hardening.sql` | `approve_order`/`reject_order` → `is_admin()`; revoca `EXECUTE` de `PUBLIC` sobre esas dos y sobre los triggers de validación de precio de `0014` (ver Hallazgos #6/#7/#8, resueltos) |
+| 0017 | `production_concluded.sql` | `productions.concluded` (una producción concluida no puede estar en venta) |
+| 0018 | `showman_categories_and_seats.sql` | 4 categorías de precio y 725 asientos reales de Showman (Teatro de la Ciudad) |
+| 0019 | `performances_date_tbd.sql` | `performances.starts_at` nullable; una función sin fecha no puede estar en venta |
+| 0020 | `showman_functions_and_prices.sql` | Venue de Showman, 2 funciones sin fecha y 8 precios por función |
+| 0021 | `seat_map_rpcs.sql` | `seats.lado` (izquierda/central/derecha) + RPCs `admin_create_seated_order`, `admin_cancel_ticket`, `check_in_ticket` (aplicada en Supabase como `seat_map_rpcs`) |
+| 0022 | `admin_delete_performance.sql` | RPC `admin_delete_performance` (solo admin; rechaza funciones con boletos activos; borra órdenes/boletos cancelados de la función) — aplicada |
+| 0023 | `public_checkout.sql` | `get_taken_seats` (ids de asientos tomados, sin datos de compradores) y `create_seated_ticket_order` v2 (sesión obligatoria, solo `performances.on_sale`, vendedor opcional, tope de 3 pendientes) — aplicada |
+| 0024 | `showman_general_zone.sql` | Filas R–X de Showman pasan de Preferente a la categoría General ($250, zona verde, etiquetas `General-<fila>-<n>`); J–Q siguen Preferente $300 — **pendiente de aplicar** |
+| 0025 | `performance_default_prices.sql` | Trigger `trg_copy_prices_to_new_performance`: una función nueva hereda los precios de la función más reciente de su producción — **pendiente de aplicar** |
 
 Todas ejecutables en orden contra un proyecto Supabase vacío. Regla del
 proyecto: **nunca editar una migración ya ejecutada** — un cambio futuro se
@@ -132,13 +141,16 @@ producción → categoría de precio → asiento → precio para ESA función �
 | `generate_order_code()` / `set_order_code()` | interno (trigger) | Genera `order_code` único al insertar una orden | nadie directamente — solo vía trigger |
 | `create_ticket_order(performance_id, nombre, telefono, cantidad)` | público (invitado o autenticado) | Crea orden + N tickets de admisión general (`seat_id null`), precio server-side desde `productions.price` | **nadie hoy** — `execute` revocado por 0015 |
 | `create_seated_ticket_order(performance_id, nombre, telefono, seat_ids[])` | público (invitado o autenticado) | Crea orden + un ticket por asiento, bloqueando cada asiento (`for update`) para reservas concurrentes seguras; valida producción/actividad/bloqueo/duplicado/categoría/precio; precio server-side desde `performance_price_categories`; máx. 20 asientos | `anon`, `authenticated` — **RPC de venta activa** (sin inventario real todavía) |
+| `admin_create_seated_order(performance_id, nombre, telefono, seat_ids[], seller_codigo?)` | admin (verificado dentro, `is_admin()`) | Venta en taquilla: crea orden `aprobado` + un ticket por asiento, bloqueando cada asiento (`for update`); **no exige `on_sale`**; rechaza asientos bloqueados u ocupados; precio server-side; devuelve orden, total y QR por asiento | `authenticated` (`anon` sin `EXECUTE`) |
+| `admin_cancel_ticket(ticket_id)` | admin | Pone `tickets.is_active = false` (libera el asiento; el trigger recalcula el total de la orden; no borra filas) | `authenticated` |
+| `check_in_ticket(qr_token text)` | staff o admin (`is_staff()`) | Check-in atómico; devuelve `ok` / `ya_usado` / `no_encontrado` / `cancelado`. Recibe `text` para que un QR mal formado dé `no_encontrado` | `authenticated` |
 | `approve_order(target_order_id)` | admin (verificado dentro de la función, desde `0016`) | `pendiente → aprobado` | `authenticated` (grant de `PUBLIC` revocado en `0016`, ver Hallazgo #6/#7 resueltos) |
 | `reject_order(target_order_id)` | admin (verificado dentro de la función, desde `0016`) | `pendiente → rechazado` + desactiva sus tickets | `authenticated` (grant de `PUBLIC` revocado en `0016`, ver Hallazgo #6/#7 resueltos) |
 
 No existen todavía (documentadas como pendientes, no construidas):
-- `checkin_by_qr()` — check-in atómico de un ticket vía QR (Hallazgo #5).
-- RPC de bloqueo/liberación de asientos para staff (hoy `blocked_seats` es
-  admin-only a nivel de policy).
+- Bloquear/liberar asientos sigue siendo escritura directa a `blocked_seats`
+  (policy admin-only); no hay RPC y no hace falta. El check-in ya existe
+  (`check_in_ticket`, 0021).
 
 ## RLS por tabla (resumen — detalle línea por línea en `0010`/`0011`/`0013`/`0014`)
 

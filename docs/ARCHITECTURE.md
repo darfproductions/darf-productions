@@ -84,6 +84,25 @@ No se fuerza login para comprar. Un usuario registrado obtiene historial de
 órdenes/tickets y (a futuro) beneficios; un invitado obtiene exactamente lo
 necesario para completar una compra por WhatsApp.
 
+## Mapa de asientos del panel de staff (Boletaje)
+
+Por producción + función, el panel carga `seats` (por producción), `blocked_seats`
+y `tickets` activos con su orden (por función) y `performance_price_categories`, y
+pinta un mapa HTML por filas con tres bloques (`seats.lado`). Los estados se derivan
+(pendiente / comprado / usado / bloqueado / disponible); el rol del navegador solo
+decide qué botones se muestran: la autorización real es RLS/RPC.
+
+| Acción | Quién | Mecanismo |
+|---|---|---|
+| Ver mapa y compradores | staff, admin | Lectura directa (RLS) |
+| Bloquear / liberar bloqueo | admin | Escritura directa a `blocked_seats` (policy admin-only) |
+| Generar boleto | admin | RPC `admin_create_seated_order` |
+| Liberar un asiento vendido | admin | RPC `admin_cancel_ticket` (con confirmación) |
+| Validar QR | staff, admin | RPC `check_in_ticket` |
+
+Vendedores (alta/baja) se gestionan en un bloque aparte bajo el mapa, solo admin.
+El checkout público de compradores sigue fuera de alcance.
+
 ## Pago
 
 Sin pasarela de pago por ahora. El flujo previsto: el comprador completa sus

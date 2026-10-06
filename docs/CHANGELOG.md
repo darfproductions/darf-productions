@@ -5,6 +5,52 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-10-06 — Zona General en Showman (migración 0024, pendiente de aplicar) y validación QR
+
+- **Decisión de Johann:** filas J–Q siguen como Preferente a $300; filas R–X
+  pasan a **General** a $250 c/u (227 asientos; Preferente queda en 242). Reemplaza
+  la decisión del 2026-10-05 de que no existiera zona General.
+- La migración `0024` crea la categoría, reasigna asientos (categoría, zona
+  `Zona Verde` y etiqueta `General-…`) y agrega el precio a cada función. Se
+  detiene si hubiera boletos en esas filas. Las pruebas 0021–0023 usan ahora
+  asientos `Preferente-K-…`.
+- El mapa muestra la zona General (verde lima) en la leyenda y en los asientos.
+- Migración `0025` (pendiente): una función creada desde el panel hereda los
+  precios de la función más reciente; antes nacía sin precios y no se podía comprar.
+- Control de Accesos: el marco del escáner queda centrado y cuadrado, el
+  estado ("Esperando…", nombre/asiento, "Ya utilizado") ya no se desplaza, y el
+  área de lectura de la cámara se ajusta al marco.
+
+## 2026-10-06 — Checkout público real (migración 0023, pendiente de aplicar)
+
+- "En venta" de una función (con fecha) activa el botón "Comprar Boletos" en la
+  página de Showman. Ya no depende de `productions.on_sale`.
+- Checkout con los 725 asientos reales, precios por zona y selector de función;
+  crea una orden `pendiente` con `create_seated_ticket_order` (requiere sesión).
+  Las órdenes pendientes **apartan** sus asientos hasta que un admin las aprueba o
+  rechaza. Máximo 3 pendientes por usuario. Código de vendedor opcional.
+- `get_taken_seats(performance)`: lectura pública de ids de asientos no
+  disponibles (sin datos de compradores).
+- Staff: lista "Solicitudes pendientes" con Aprobar/Rechazar (admin) en Boletaje.
+- Mis Boletos lee de Supabase (QR = `tickets.qr_token`); pendientes con botón de
+  pago por WhatsApp.
+- Ventas de Cartelera: conteo de Showman desde Supabase.
+- Código del prototipo localStorage de órdenes (`DB.createOrder`, etc.) quedó sin uso.
+
+## 2026-10-05 — Panel de staff: concluidas, eliminar función, bases de datos
+
+- Gestión de Producciones: las producciones concluidas se agrupan en una carpeta
+  colapsable "Producciones concluidas" al final.
+- Eliminar función: botón por función y RPC `admin_delete_performance`
+  (migración 0022, **pendiente de aplicar**). Solo admin; se rechaza si hay boletos
+  activos. Los boletos cancelados y sus órdenes se borran con la función porque
+  `orders`/`tickets` → `performances` no tienen cascade.
+- Nueva sección "Bases de Datos" (solo lectura, Supabase): compradores (boletos con
+  orden, teléfono, asiento, estado, vendedor, búsqueda) y estadísticas por zona
+  (capacidad, vendidos, ingresos, disponibles, bloqueados) por función o todas.
+  Reemplaza la "base de datos de boletos" del prototipo localStorage, retirada
+  con el mapa interactivo.
+
 ## 2026-09-13 — Fase 1 (en curso): fundación Supabase en frontend + hardening
 
 **Contexto:** con Fase 0 cerrada y GitHub como historia autoritativa, Johann
@@ -66,6 +112,28 @@ sin tocar la boletería de Showman, que permanece oculta hasta tener venue.
   producción en venta. Ninguna ruta de UI llega al mapa de asientos ni al
   pago mientras `on_sale=false`. `seats`/`price_categories`/
   `performance_price_categories` confirmadas en 0 filas. **Fase 1 completa.**
+
+## 2026-10-05 — Mapa interactivo de staff (0021)
+
+**Qué:** el Boletaje del panel de staff muestra el mapa real de 725 asientos de
+Showman por función. Admin: bloquear, liberar (también asientos vendidos, con
+confirmación), generar boleto y cancelar. Staff: ver el mapa y validar QR.
+
+**Base de datos (migración 0021, aplicada como `seat_map_rpcs`):** `seats.lado`
+(poblado desde los cortes por fila) y tres RPCs `security definer` con el rol
+validado dentro: `admin_create_seated_order` (no depende de `on_sale`),
+`admin_cancel_ticket` y `check_in_ticket(text)`. Validada antes de aplicar con una
+transacción que simula anon/fan/staff/admin y termina en rollback
+(`supabase/tests/0021_seat_map_rpcs_test.sql`).
+
+**Frontend:** el check-in pasa de `localStorage` a la RPC. Se retiró el mapa
+prototipo 6×8 y su código (`localStorage`), incluido el botón "Simular Escaneo".
+La gestión de Vendedores (que quedó inalcanzable al deshabilitar el Boletaje
+prototipo) se restauró en un bloque bajo el mapa. `DB.createPerformance` ya no exige
+fecha (coherente con 0019).
+
+**Fuera de alcance / pendiente:** checkout público, tiempo real, boleto visual
+(QR dibujado/PDF/Wallet), códigos de descuento.
 
 ## 2026-10-05 — Mapa de Showman y pendientes futuros
 
