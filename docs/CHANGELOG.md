@@ -67,6 +67,18 @@ sin tocar la boletería de Showman, que permanece oculta hasta tener venue.
   pago mientras `on_sale=false`. `seats`/`price_categories`/
   `performance_price_categories` confirmadas en 0 filas. **Fase 1 completa.**
 
+## 2026-10-05 — Mapa de Showman y pendientes futuros
+
+**Decisiones de Johann (Teatro de la Ciudad):** zonas Roja/Exclusivo (50, $400), Azul/VIP (200, $350), Rosa/Preferente (469,
+$300) y Marrón/Discapacitados ($300, solo 6 espacios habilitados de los 10 de
+la fila J). No existen la zona Naranja/Especial (filas Y–DD) ni General.
+Migraciones `0018` (categorías + 725 asientos), `0019` (funciones con fecha por
+definir) y `0020` (venue, 2 funciones y precios) preparadas, **no ejecutadas**.
+
+**Pendiente futuro (sin número asignado):** capacidad por categoría para
+boletos sin asiento (admisión general). Hoy no hace falta: Showman no vende
+General. Se retoma cuando una producción lo necesite.
+
 ## 2026-10-05 — Auth en producción + responsive
 
 **Contexto:** Johann probó el sitio publicado: la cuenta nueva no aparecía en
