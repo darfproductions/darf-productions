@@ -668,7 +668,7 @@ function flash(msg,type){
 
 // ─── HAMBURGUESA ──────────────────────────────────────
 document.getElementById('hbg').addEventListener('click',function(){document.getElementById('navLinks').classList.toggle('open');});
-document.getElementById('navProdBtn').addEventListener('click',function(e){if(window.innerWidth<680){e.stopPropagation();document.getElementById('navProdMenu').classList.toggle('mob-open');}});
+document.getElementById('navProdBtn').addEventListener('click',function(e){if(window.matchMedia('(max-width:1180px)').matches){e.stopPropagation();document.getElementById('navProdMenu').classList.toggle('mob-open');}});
 
 // ─── CHATBOT DARFY (mock local) ───────────────────────
 const DARFY_REPLIES=[
