@@ -1087,7 +1087,7 @@ function buildAdminProdCard(prod){
     var psaveBtn=document.createElement('button');psaveBtn.className='btn btn-o btn-sm';psaveBtn.textContent='Guardar';
     psaveBtn.onclick=async function(){
       var iso = dtI.value ? new Date(dtI.value).toISOString() : null;
-      if(!iso){ flash('Escribe la fecha y hora de la función.','d'); return; }
+      if(!iso && onSaleChk.checked){ flash('Una función sin fecha no puede ponerse en venta.','d'); return; }
       var ok = await DB.updatePerformance(perf.id, {startsAt: iso, venue: perf.venue, onSale: onSaleChk.checked});
       if(!ok){ flash('No se pudo actualizar la función.','d'); return; }
       flash('Función actualizada.','s');
@@ -1108,7 +1108,7 @@ function buildAdminProdCard(prod){
   var addBtn=document.createElement('button');addBtn.className='btn btn-a btn-sm';addBtn.textContent='➕ Nueva función';
   addBtn.onclick=async function(){
     var iso = newDtI.value ? new Date(newDtI.value).toISOString() : null;
-    if(!iso){ flash('Escribe la fecha y hora de la función.','d'); return; }
+    if(!iso && newOnSaleChk.checked){ flash('Una función sin fecha no puede ponerse en venta.','d'); return; }
     var res = await DB.createPerformance(prod.id, {startsAt: iso, venue: null, onSale: newOnSaleChk.checked});
     if(!res.ok){ flash(res.error,'d'); return; }
     newDtI.value='';newOnSaleChk.checked=false;
@@ -1325,6 +1325,7 @@ function toggleBoletajeAcc(productionId){
 }
 var boletajeSel={prod:null,perf:null};
 function fmtPerfDate(iso){
+  if(!iso) return 'Fecha por definir';
   try{return new Date(iso).toLocaleString('es-MX',{weekday:'short',day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});}catch(e){return iso;}
 }
 function renderBoletajeProductions(){
