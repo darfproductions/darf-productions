@@ -486,15 +486,21 @@ footer{background:var(--negro);border-top:1px solid #1a1a1a;padding:56px 0 26px}
 
 /* QR SCANNER */
 .qr-scanner-wrap{display:flex;justify-content:center;margin-bottom:16px}
-.qr-scanner-frame{width:160px;height:160px;background:#060606;border:1px solid var(--g3);border-radius:var(--r8);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.qr-scanner-frame{width:100%;max-width:300px;aspect-ratio:1/1;background:#060606;border:1px solid var(--g3);border-radius:var(--r8);position:relative;overflow:hidden}
 .qr-scanner-frame::before,.qr-scanner-frame::after{content:'';position:absolute;width:28px;height:28px;border-color:#22c55e;border-style:solid;z-index:2;pointer-events:none}
 .qr-scanner-frame::before{top:8px;left:8px;border-width:3px 0 0 3px}
 .qr-scanner-frame::after{bottom:8px;right:8px;border-width:0 3px 3px 0}
-.qr-scanner-frame #qrReaderBox{width:100%;height:100%}
+.qr-scanner-frame #qrReaderBox{position:absolute;inset:0;width:100%;height:100%}
 .qr-scanner-frame #qrReaderBox video{width:100% !important;height:100% !important;object-fit:cover}
-.qr-scanner-text{font-size:11px;color:var(--t3);text-align:center;padding:0 16px}
-.qr-manual-row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:14px}
-.qr-manual-row input{flex:1;min-width:160px;max-width:260px}
+.qr-scanner-text{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);z-index:3;font-size:13px;line-height:1.4;color:var(--t3);text-align:center;padding:0 24px;pointer-events:none}
+.qr-scanner-text.ok{color:#22c55e;font-weight:700}
+.qr-scanner-text.bad{color:#f87171;font-weight:700}
+.qr-scanner-frame.is-live .qr-scanner-text{top:auto;bottom:0;transform:none;padding:10px 12px;background:rgba(0,0,0,.72);color:#fff}
+.qr-scanner-frame.is-live .qr-scanner-text.ok{color:#22c55e}
+.qr-scanner-frame.is-live .qr-scanner-text.bad{color:#f87171}
+.qr-scanner-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:12px}
+.qr-manual-row{display:flex;gap:8px;justify-content:center;align-items:stretch;flex-wrap:wrap;margin-top:14px}
+.qr-manual-row input{flex:1;min-width:160px;max-width:260px;width:auto}
 
 /* BOLETAJE / ORDERS */
 .order-card{background:var(--g3);border:1px solid #2a2a2a;border-radius:var(--r8);padding:14px 16px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap}
@@ -510,22 +516,35 @@ footer{background:var(--negro);border-top:1px solid #1a1a1a;padding:56px 0 26px}
 
 .boletaje-grid{display:grid;grid-template-columns:1fr 300px;gap:24px;align-items:start}
 @media(max-width:900px){.boletaje-grid{grid-template-columns:1fr}}
-.staff-seatmap{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;margin-bottom:14px}
-.staff-seat{aspect-ratio:1;border-radius:var(--r4);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;cursor:pointer;transition:all .15s;border:1.5px solid transparent;user-select:none}
-.staff-seat.disp{background:rgba(21,101,192,.15);border-color:#1565C0;color:#5b9bdb}
-.staff-seat.disp:hover{background:rgba(21,101,192,.3);transform:scale(1.1)}
-.staff-seat.pend{background:rgba(212,160,23,.18);border-color:#D4A017;color:#D4A017}
-.staff-seat.pend:hover{background:rgba(212,160,23,.32);transform:scale(1.1)}
-.staff-seat.ap{background:rgba(229,68,90,.18);border-color:#E5445A;color:#E5445A}
-.staff-seat.ap:hover{background:rgba(229,68,90,.32);transform:scale(1.1)}
-.staff-seat.usado{background:rgba(34,197,94,.18);border-color:#22c55e;color:#22c55e}
-.staff-seat.usado:hover{background:rgba(34,197,94,.32);transform:scale(1.1)}
-.staff-seat.bloq{background:rgba(122,122,122,.2);border-color:#7a7a7a;color:#aaa}
-.staff-seat.bloq:hover{background:rgba(122,122,122,.35);transform:scale(1.1)}
-/* .sel va al final para ganar sobre cualquier estado base (disp/pend/ap/usado/bloq):
-   el staff puede seleccionar un asiento sin importar su estado actual, y mientras está
-   seleccionado se ve siempre rosa, distinguible del amarillo de "pendiente". */
-.staff-seat.sel{background:#EC4899;border-color:#EC4899;color:#fff;transform:scale(1.08)}
+/* ─── Mapa interactivo de staff (Boletaje) ─── */
+.smap-wrap{overflow-x:auto;padding-bottom:12px;margin-bottom:12px}
+.smap{display:inline-block;min-width:100%;text-align:center}
+.smap-stage{margin:0 auto 14px;max-width:420px;padding:6px 0;border-radius:var(--r4);background:var(--g2);border:1px solid var(--g3);font-size:11px;letter-spacing:.2em;color:var(--t3);text-transform:uppercase}
+.smap-row{display:flex;align-items:center;justify-content:center;gap:0;margin-bottom:3px;white-space:nowrap}
+.smap-row-label{width:22px;font-size:10px;font-weight:700;color:var(--t3);flex-shrink:0}
+.smap-block{display:flex;gap:3px}
+.smap-aisle{width:18px;flex-shrink:0}
+.smap-seat{width:22px;height:22px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;border:1.5px solid transparent;user-select:none;border-left-width:4px;box-sizing:border-box}
+.smap.is-admin .smap-seat{cursor:pointer}
+.smap-seat.z-exclusivo{border-left-color:#8B5CF6}
+.smap-seat.z-vip{border-left-color:#14B8A6}
+.smap-seat.z-preferente{border-left-color:#F97316}
+.smap-seat.z-general{border-left-color:#84CC16}
+.smap-seat.z-discapacitados{border-left-color:#A0724A}
+.smap-seat.disp{background:rgba(21,101,192,.15);color:#5b9bdb}
+.smap-seat.pend{background:rgba(212,160,23,.18);color:#D4A017}
+.smap-seat.ap{background:rgba(229,68,90,.18);color:#E5445A}
+.smap-seat.usado{background:rgba(34,197,94,.18);color:#22c55e}
+.smap-seat.bloq{background:rgba(122,122,122,.2);color:#aaa}
+.smap-seat.sel{background:#EC4899;color:#fff;outline:2px solid #EC4899}
+.smap-counts{display:flex;gap:16px;flex-wrap:wrap;margin:10px 0;font-size:13px;color:var(--t2)}
+.smap-counts b{color:#fff}
+.smap-legends{display:flex;gap:24px;flex-wrap:wrap;justify-content:center;margin:8px 0;font-size:12px;color:var(--t2)}
+.smap-legend-item{display:flex;align-items:center;gap:6px}
+.smap-sw{width:14px;height:14px;border-radius:3px;flex-shrink:0}
+.smap-panel{background:var(--g2);border:1px solid var(--g3);border-radius:var(--r8);padding:14px;margin-top:10px}
+.smap-panel .form-c{margin-bottom:8px}
+.smap-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 .sales-control-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:20px}
 .sales-control-box{background:var(--g3);border-radius:var(--r8);padding:14px;text-align:center}
 .sales-control-v{font-size:18px;font-weight:800}
@@ -621,3 +640,11 @@ footer{background:var(--negro);border-top:1px solid #1a1a1a;padding:56px 0 26px}
 .ticket-dropdown-hdr{display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;font-weight:700;color:#fff;padding:6px 14px;border-radius:100px;border:1px solid var(--g4)}
 .ticket-dropdown-chevron{font-size:11px;color:var(--t2);transition:transform .2s}
 .ticket-dropdown-body{display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
+
+/* Carpetas colapsables del panel de staff (producciones concluidas, bases de datos) */
+.adm-folder{background:var(--g2);border:1px solid var(--g3);border-radius:var(--r8);padding:0 16px;margin-bottom:12px}
+.adm-folder>summary{cursor:pointer;padding:14px 0;font-size:13px;font-weight:700;color:var(--t2);list-style:none}
+.adm-folder>summary::-webkit-details-marker{display:none}
+.adm-folder[open]>summary{color:#fff}
+.adm-folder[open]{padding-bottom:16px}
+.tickets-db-table tr.db-total td{font-weight:800;color:#fff;border-top:1px solid var(--g3)}

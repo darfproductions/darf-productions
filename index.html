@@ -903,13 +903,21 @@
         <div class="adm-hdr"><span>📊</span> Ventas de Cartelera</div>
         <div class="adm-body">
           <div id="salesBarsWrap"></div>
-          <div style="margin-top:16px;padding-top:16px;border-top:1px solid #252525;font-size:12px;color:var(--t3)">La venta por función se activa en Gestión de Producciones. La venta numerada está deshabilitada hasta cargar el mapa real del teatro.</div>
+          <div style="margin-top:16px;padding-top:16px;border-top:1px solid #252525;font-size:12px;color:var(--t3)">La venta por función se activa en Gestión de Producciones. El mapa de asientos y la venta en taquilla están en Boletaje.</div>
         </div>
       </div>
       <div class="adm-sec">
         <div class="adm-hdr"><span>🎟️</span> Boletaje</div>
         <div class="adm-body">
+          <div id="pendingOrders" style="margin-bottom:22px"></div>
           <div id="boletajeProdList"></div>
+          <div id="sellersPanel" style="margin-top:20px"></div>
+        </div>
+      </div>
+      <div class="adm-sec">
+        <div class="adm-hdr"><span>🗄️</span> Bases de Datos</div>
+        <div class="adm-body">
+          <div id="dbPanels"></div>
         </div>
       </div>
       <div class="adm-sec">
@@ -918,16 +926,15 @@
           <div class="qr-scanner-wrap">
             <div class="qr-scanner-frame" id="qrFrame">
               <div id="qrReaderBox"></div>
-              <span class="qr-scanner-text" id="qrFrameText">Esperando<br>código QR...</span>
+              <span class="qr-scanner-text" id="qrFrameText">Esperando código QR…</span>
             </div>
           </div>
-          <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:12px">
+          <div class="qr-scanner-btns">
             <button class="btn btn-o btn-sm" onclick="startQrScanner()">📷 Iniciar Cámara</button>
             <button class="btn btn-o btn-sm" onclick="stopQrScanner()">Detener Cámara</button>
-            <button class="btn btn-a btn-sm" onclick="simulateQrScan()">Simular Escaneo Válido</button>
           </div>
           <div class="qr-manual-row">
-            <input type="text" id="qrManualInput" class="form-c" placeholder="Pegar código de boleto manualmente">
+            <input type="text" id="qrManualInput" class="form-c" placeholder="Código del boleto" aria-label="Código del boleto">
             <button class="btn btn-o btn-sm" onclick="manualCheckIn()">Validar</button>
           </div>
         </div>
@@ -1115,16 +1122,8 @@
       </div>
       <div class="checkout-layout">
         <div class="checkout-stage">
-          <div class="stage-screen">— Escenario —</div>
-          <div class="seat-map" id="seatMap"></div>
-          <div class="seat-legend">
-            <span class="legend-item"><span class="legend-seat" style="background:#1565C0"></span>Disponible</span>
-            <span class="legend-item"><span class="legend-seat" style="background:#EC4899"></span>Seleccionado</span>
-            <span class="legend-item"><span class="legend-seat" style="background:#D4A017"></span>Pendiente</span>
-            <span class="legend-item"><span class="legend-seat" style="background:#E5445A"></span>Ocupado</span>
-            <span class="legend-item"><span class="legend-seat" style="background:#22c55e"></span>Usado</span>
-            <span class="legend-item"><span class="legend-seat" style="background:#7a7a7a"></span>Bloqueado</span>
-          </div>
+          <div class="form-g" style="margin-bottom:14px"><label class="form-l" for="ckPerfSel">Función</label><select id="ckPerfSel" class="form-c"></select></div>
+          <div id="ckMapRoot"></div>
         </div>
         <div class="checkout-cart">
           <div class="eyebrow" style="margin-bottom:6px">Resumen</div>

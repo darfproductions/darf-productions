@@ -134,7 +134,6 @@ const DB = (function(){
   }
   async function createPerformance(productionId, fields){
     if(!sb) return {ok:false, error:'No hay conexión con el servidor.'};
-    if(!fields.startsAt) return {ok:false, error:'Escribe la fecha y hora de la función.'};
     const { error } = await sb.from('performances').insert({
       production_id: productionId, starts_at: fields.startsAt, venue: fields.venue||null,
       on_sale: !!fields.onSale
@@ -151,6 +150,14 @@ const DB = (function(){
     if(error) return false;
     await loadPerformances();
     return true;
+  }
+
+  async function deletePerformance(id){
+    if(!sb) return {ok:false, error:'No hay conexión con el servidor.'};
+    const { error } = await sb.rpc('admin_delete_performance', { target_performance_id: id });
+    if(error) return {ok:false, error: error.message};
+    await loadPerformances();
+    return {ok:true};
   }
 
   function getOrders(){ return read(KEYS.orders, []); }
@@ -206,13 +213,6 @@ const DB = (function(){
     const all = read(KEYS.blocked, {});
     return all[productionId] || {};
   }
-  function blockSeats(productionId, seats){
-    const all = read(KEYS.blocked, {});
-    const cur = Object.assign({}, all[productionId]||{});
-    (seats||[]).forEach(function(s){ cur[s]=true; });
-    all[productionId]=cur;
-    write(KEYS.blocked, all);
-  }
   function releaseSeats(productionId, seats){
     const all = read(KEYS.blocked, {});
     const cur = Object.assign({}, all[productionId]||{});
@@ -220,59 +220,12 @@ const DB = (function(){
     all[productionId]=cur;
     write(KEYS.blocked, all);
   }
-  function releaseSeatsFromOrders(productionId, seats){
-    // "Liberar" en el panel de staff también debe soltar asientos ocupados (pendiente/aprobado),
-    // no solo los del mapa de bloqueados — si no, un asiento rojo (aprobado) se queda "liberado"
-    // en apariencia pero sigue tomado porque su estado real vive en la orden, no en `blocked`.
-    const set = {}; (seats||[]).forEach(function(s){ set[s]=true; });
-    const orders = getOrders();
-    let changed = false;
-    orders.forEach(function(o){
-      if(o.productionId!==productionId) return;
-      if(o.status!=='pendiente' && o.status!=='aprobado') return;
-      const remaining = (o.seats||[]).filter(function(s){ return !set[s]; });
-      if(remaining.length===(o.seats||[]).length) return;
-      changed = true;
-      o.seats = remaining;
-      if(o.seatQrs){ Object.keys(set).forEach(function(s){ delete o.seatQrs[s]; }); }
-      if(o.checkedInSeats){ Object.keys(set).forEach(function(s){ delete o.checkedInSeats[s]; }); }
-      const prod = getProduction(productionId);
-      if(prod) o.total = remaining.length * prod.price;
-      if(remaining.length===0) o.status='rechazado';
-    });
-    if(changed) saveOrders(orders);
-  }
   function getApprovedCount(productionId){
     let n=0;
     getOrders().forEach(function(o){
       if(o.productionId===productionId && o.status==='aprobado') n += (o.seats||[]).length;
     });
     return n;
-  }
-  function checkInByQr(code){
-    const orders = getOrders();
-    const order = orders.find(function(o){
-      return o.qrCode===code || (o.seatQrs && Object.values(o.seatQrs).indexOf(code)>-1);
-    });
-    if(!order) return {ok:false, reason:'no-encontrado'};
-    if(order.status!=='aprobado') return {ok:false, reason:'no-aprobado', order};
-    var seat = null;
-    if(order.seatQrs){
-      Object.keys(order.seatQrs).forEach(function(s){ if(order.seatQrs[s]===code) seat=s; });
-    }
-    var checkedInSeats = order.checkedInSeats || {};
-    if(seat){
-      if(checkedInSeats[seat]) return {ok:false, reason:'ya-usado', order, seat};
-      checkedInSeats = Object.assign({}, checkedInSeats);
-      checkedInSeats[seat]=true;
-      var allSeatsUsed = (order.seats||[]).every(function(s){ return checkedInSeats[s]; });
-      updateOrder(order.id, {checkedInSeats: checkedInSeats, checkedIn: allSeatsUsed});
-      return {ok:true, order, seat};
-    }
-    // fallback: código legacy de orden completa (sin seatQrs)
-    if(order.checkedIn) return {ok:false, reason:'ya-usado', order};
-    updateOrder(order.id, {checkedIn:true});
-    return {ok:true, order};
   }
 
   let sellersCache = [];
@@ -340,12 +293,12 @@ const DB = (function(){
   return {
     KEYS, subscribe,
     loadProductions, getProductions, getProduction, setProductionOnSale, setProductionConcluded, createProduction, updateProduction,
-    loadPerformances, getPerformances, getPerformancesForProduction, createPerformance, updatePerformance,
+    loadPerformances, getPerformances, getPerformancesForProduction, createPerformance, updatePerformance, deletePerformance,
     getOrders, createOrder, updateOrder, approveOrder, rejectOrder,
     getPendingOrders, getPendingOrdersFor, getOrdersForUser, getOrdersForProduction,
-    getSeatsTaken, getApprovedCount, checkInByQr,
+    getSeatsTaken, getApprovedCount,
     loadContactMessages, getContactMessages, createContactMessage, deleteContactMessage,
-    getBlockedSeats, blockSeats, releaseSeats, releaseSeatsFromOrders,
+    getBlockedSeats, releaseSeats,
     loadSellers, getSellers, getSellerByCode, addSeller, deleteSeller
   };
 })();
@@ -586,7 +539,7 @@ function nav(key, skipPush){
   if(key==='fan'){setTimeout(()=>fanNav('home'),0);}
   if(key==='staff'){setTimeout(renderStaff,0);}
   if(key==='showman'){setTimeout(renderShowmanBanner,0);}
-  if(key==='checkout'){setTimeout(renderCheckout,0);}
+  if(key==='checkout'){setTimeout(function(){ ckState.loadedPerf=null; renderCheckout(); },0);} // recarga siempre: los asientos tomados cambian
   if(key==='cuenta'){setTimeout(()=>cuentaTab('boletos'),0);}
   document.querySelectorAll('.nav-a').forEach(el=>el.classList.remove('active'));
   const activeBtn=document.getElementById(NAV_KEY_MAP[key]);
@@ -650,7 +603,7 @@ function cuentaTab(tab){
     var ROL_LABELS={fan:'Fan',staff:'Staff',admin:'Admin'};
     if(n)n.value=AuthService.session.nombre||'';if(c)c.value=AuthService.session.usuario||'';if(r)r.value=ROL_LABELS[AuthService.session.rol]||'Fan';
   }
-  if(tab==='boletos'){ renderMisBoletos(); }
+  if(tab==='boletos'){ loadMyOrders(); }
 }
 
 document.getElementById('lp').addEventListener('keydown',e=>{if(e.key==='Enter')AuthService.doLogin();});
@@ -729,10 +682,16 @@ function qrDataUrl(text, cb){
 }
 function money(n){ return '$'+Number(n).toFixed(2)+' MXN'; }
 
-// ─── CHECKOUT PÚBLICO (dinámico, producción en venta) ──
+// ─── CHECKOUT PÚBLICO (Supabase; se activa con "En venta" de la función) ──
+var ckState={perf:null,loadedPerf:null,seats:[],taken:{},prices:{},selected:{},loading:false,error:null};
+var CK_STATES=[['disp','Disponible','#1565C0'],['sel','Seleccionado','#EC4899'],['bloq','No disponible','#7a7a7a']];
+function onSalePerfs(){
+  return DB.getPerformancesForProduction(SHOWMAN_ID).filter(function(p){return p.on_sale && p.starts_at;})
+    .sort(function(a,b){return a.starts_at<b.starts_at?-1:a.starts_at>b.starts_at?1:0;});
+}
 function currentOnSaleProduction(){
-  var prods = DB.getProductions();
-  return prods[SHOWMAN_ID] && prods[SHOWMAN_ID].onSale ? prods[SHOWMAN_ID] : null;
+  var prod = DB.getProductions()[SHOWMAN_ID];
+  return prod && !prod.concluded && onSalePerfs().length ? prod : null;
 }
 function renderShowmanBanner(){
   var banner = document.getElementById('showmanSaleBanner');
@@ -757,6 +716,62 @@ function renderShowmanBanner(){
   }
 }
 DB.subscribe(DB.KEYS.productions, function(){ if(document.getElementById('v-showman').classList.contains('active')) renderShowmanBanner(); });
+DB.subscribe(DB.KEYS.performances, function(){
+  if(document.getElementById('v-showman').classList.contains('active')) renderShowmanBanner();
+  if(document.getElementById('v-checkout').classList.contains('active')) renderCheckout();
+});
+
+async function ckLoad(){
+  var perfId=ckState.perf;
+  ckState.loadedPerf=perfId;ckState.loading=true;ckState.error=null;
+  renderCkMap();
+  if(!sb||!perfId){ckState.loading=false;ckState.error='Sin conexión con el servidor.';renderCkMap();return;}
+  var r=await Promise.all([
+    sb.from('seats').select('id,seat_label,seat_row,seat_number,section,lado,price_category_id,is_active').eq('production_id',SHOWMAN_ID).limit(2000),
+    sb.rpc('get_taken_seats',{target_performance_id:perfId}),
+    sb.from('performance_price_categories').select('price_category_id,price,price_categories(nombre)').eq('performance_id',perfId)
+  ]);
+  if(ckState.perf!==perfId) return; // el comprador cambió de función mientras cargaba
+  ckState.loading=false;
+  var err=r[0].error||r[1].error||r[2].error;
+  if(err){ckState.error='No se pudo cargar el mapa: '+err.message;ckState.seats=[];renderCkMap();return;}
+  ckState.seats=(r[0].data||[]).filter(function(x){return x.is_active;});
+  ckState.taken={};(r[1].data||[]).forEach(function(id){ckState.taken[id]=true;});
+  ckState.prices={};(r[2].data||[]).forEach(function(x){ckState.prices[x.price_category_id]={price:Number(x.price),nombre:x.price_categories?x.price_categories.nombre:''};});
+  // Quitar de la selección lo que otro comprador ya tomó.
+  Object.keys(ckState.selected).forEach(function(id){ if(ckState.taken[id]) delete ckState.selected[id]; });
+  renderCkMap();
+}
+function ckCat(seat){ var p=ckState.prices[seat.price_category_id]; return p?p.nombre:''; }
+function ckSelectedSeats(){ return ckState.seats.filter(function(x){return ckState.selected[x.id];}); }
+function ckToggle(seat){
+  if(ckState.taken[seat.id]) return;
+  if(ckState.selected[seat.id]) delete ckState.selected[seat.id];
+  else {
+    if(ckSelectedSeats().length>=20){flash('Máximo 20 asientos por solicitud.','d');return;}
+    ckState.selected[seat.id]=true;
+  }
+  renderCkMap();
+}
+function renderCkMap(){
+  var root=document.getElementById('ckMapRoot');
+  if(!root) return;
+  clearEl(root);
+  if(ckState.loading){var l=document.createElement('div');l.className='empty-note';l.textContent='Cargando asientos…';root.appendChild(l);updateCart();return;}
+  if(ckState.error){var e=document.createElement('div');e.className='empty-note';e.textContent=ckState.error;root.appendChild(e);updateCart();return;}
+  if(!ckState.seats.length){var n=document.createElement('div');n.className='empty-note';n.textContent='No hay asientos disponibles para esta función.';root.appendChild(n);updateCart();return;}
+  root.appendChild(smapBuildMap(ckState.seats,{
+    catName:ckCat,
+    stateOf:function(seat){return ckState.selected[seat.id]?'sel':(ckState.taken[seat.id]?'bloq':'disp');},
+    titleOf:function(seat){
+      var p=ckState.prices[seat.price_category_id];
+      return seat.seat_label+(p?' — '+p.nombre+' · $'+p.price:'')+(ckState.taken[seat.id]?' — No disponible':'');
+    },
+    onClick:ckToggle
+  }));
+  smapLegendEls(CK_STATES).forEach(function(el){root.appendChild(el);});
+  updateCart();
+}
 function renderCheckout(){
   var prod = currentOnSaleProduction();
   var wrap = document.querySelector('#v-checkout .checkout-layout');
@@ -764,117 +779,135 @@ function renderCheckout(){
   if(!prod){
     if(wrap) wrap.style.display='none';
     if(notice) notice.style.display='block';
+    ckState.perf=null;ckState.loadedPerf=null;
     return;
   }
   if(wrap) wrap.style.display='';
   if(notice) notice.style.display='none';
 
+  var perfs=onSalePerfs();
+  if(!perfs.some(function(x){return x.id===ckState.perf;})){ckState.perf=perfs[0].id;ckState.selected={};}
+  var sel=document.getElementById('ckPerfSel');
+  if(sel){
+    clearEl(sel);
+    perfs.forEach(function(pf){var o=document.createElement('option');o.value=pf.id;o.textContent=fmtPerfDate(pf.starts_at);if(pf.id===ckState.perf)o.selected=true;sel.appendChild(o);});
+    sel.onchange=function(){ckState.perf=sel.value;ckState.selected={};renderCheckout();};
+  }
+  var cur=perfs.filter(function(x){return x.id===ckState.perf;})[0];
   document.getElementById('cartShowName').textContent = prod.nombre;
-  document.getElementById('cartShowDate').textContent = prod.venue||'';
-  document.getElementById('cartPricePerSeat').textContent = 'Precio por boleto: '+money(prod.price);
-
-  var taken = DB.getSeatsTaken(prod.id);
-  var map = document.getElementById('seatMap');
-  var selected = Array.from(map.querySelectorAll('.seat.selected')).map(function(s){return s.dataset.seat;});
-  clearEl(map);
-  allSeatIds().forEach(function(seatId){
-    // Mismos lineamientos de color que el mapa de staff (staffSeatStateClass): el comprador
-    // ve el mismo significado de colores, solo que aquí ningún asiento tomado es seleccionable.
-    var stateClass = staffSeatStateClass(taken[seatId]);
-    var div=document.createElement('div');
-    div.dataset.seat=seatId;
-    div.textContent=seatId;
-    if(stateClass==='disp'){
-      var isSel = selected.indexOf(seatId)>-1;
-      div.className='seat disp'+(isSel?' selected':'');
-      div.onclick=function(){ selectSeat(this); };
-    } else {
-      div.className='seat '+stateClass;
-    }
-    map.appendChild(div);
-  });
-  updateCart();
+  document.getElementById('cartShowDate').textContent = fmtPerfDate(cur.starts_at)+(cur.venue||prod.venue?' · '+(cur.venue||prod.venue):'');
+  if(ckState.loadedPerf!==ckState.perf) ckLoad(); else renderCkMap();
 }
-DB.subscribe(DB.KEYS.orders, function(){ if(document.getElementById('v-checkout').classList.contains('active')) renderCheckout(); });
-DB.subscribe(DB.KEYS.productions, function(){ if(document.getElementById('v-checkout').classList.contains('active')) renderCheckout(); });
 
-function selectSeat(el){
-  if(!el.classList.contains('disp'))return;
-  el.classList.toggle('selected');
-  updateCart();
-}
 function updateCart(){
-  var prod = currentOnSaleProduction();
-  var seats=document.querySelectorAll('#seatMap .seat.selected');
-  var price= prod?prod.price:0;
-  var total=(seats.length*price).toFixed(2);
-  var list=Array.from(seats).map(function(s){return s.dataset.seat;}).join(', ');
+  var seats=ckSelectedSeats();
+  var total=0;
   var items=document.getElementById('cartItems');
   if(items){
     clearEl(items);
     if(seats.length>0){
-      var row=document.createElement('div');row.className='cart-item';
-      var label=document.createElement('span');label.textContent='Asientos: ';label.style.cssText='font-size:13px;color:var(--t2)';
-      var val=document.createElement('span');val.textContent=list;val.style.cssText='font-size:13px;font-weight:700;color:#fff';
-      row.appendChild(label);row.appendChild(val);items.appendChild(row);
+      seats.forEach(function(seat){
+        var p=ckState.prices[seat.price_category_id];
+        total+=p?p.price:0;
+        var row=document.createElement('div');row.className='cart-item';
+        var label=document.createElement('span');label.textContent=seat.seat_label;label.style.cssText='font-size:13px;color:var(--t2)';
+        var val=document.createElement('span');val.textContent=p?'$'+p.price:'—';val.style.cssText='font-size:13px;font-weight:700;color:#fff';
+        row.appendChild(label);row.appendChild(val);items.appendChild(row);
+      });
     } else {
       var empty=document.createElement('span');empty.style.cssText='font-size:13px;color:var(--t3)';empty.textContent='Ningún asiento seleccionado';
       items.appendChild(empty);
     }
   }
   var totalEl=document.getElementById('cartTotalPrice');
-  if(totalEl)totalEl.textContent='$'+total+' MXN';
+  if(totalEl)totalEl.textContent='$'+total.toFixed(2)+' MXN';
+  var hint=document.getElementById('cartPricePerSeat');
+  if(hint)hint.textContent=seats.length?seats.length+(seats.length===1?' boleto':' boletos'):'Elige tus asientos en el mapa';
 }
-function proceedToPayment(){
+function waPayUrl(orderCode, seatLabels, total, phone, prodName){
+  var msg = 'Hola, quiero pagar mi solicitud de boletos para '+prodName+
+    ' — Código de orden: '+orderCode+
+    ' — Asientos: '+seatLabels.join(', ')+' — Total: '+money(total)+
+    (phone?' — Teléfono: '+phone:'')+
+    '. Mi solicitud ya quedó guardada en mi cuenta DARF, en espera de aprobación.';
+  return 'https://wa.me/4465220560?text='+encodeURIComponent(msg);
+}
+var ckBusy=false;
+async function proceedToPayment(){
+  if(ckBusy) return;
   var prod = currentOnSaleProduction();
   if(!prod){flash('Los boletos aún no están a la venta.','d');return;}
-  if(!AuthService.session.usuario){nav('login');return;}
-  var seats=Array.from(document.querySelectorAll('#seatMap .seat.selected')).map(function(s){return s.dataset.seat;});
+  if(!AuthService.session.usuario){flash('Inicia sesión para comprar tus boletos.','i');nav('login');return;}
+  var seats=ckSelectedSeats();
   if(!seats.length){flash('Selecciona al menos un asiento.','d');return;}
   var phoneEl=document.getElementById('buyerPhone');
   var phone=(phoneEl&&phoneEl.value||'').trim();
   if(!phone){flash('Escribe tu número de teléfono.','d');return;}
   var sellerEl=document.getElementById('buyerSellerCode');
-  var sellerCodeRaw=(sellerEl&&sellerEl.value||'').trim();
-  var vendedorCodigo=null;
-  if(sellerCodeRaw){
-    var seller=DB.getSellerByCode(sellerCodeRaw);
-    if(!seller){flash('El código de vendedor no existe. Verifícalo o déjalo en blanco.','d');return;}
-    vendedorCodigo=seller.codigo;
-  }
-  var total = seats.length*prod.price;
-  var order = DB.createOrder({
-    userId: AuthService.session.usuario,
-    buyerNombre: AuthService.session.nombre,
-    productionId: prod.id,
-    seats: seats,
-    total: total,
-    telefono: phone,
-    vendedorCodigo: vendedorCodigo
+  var sellerCode=(sellerEl&&sellerEl.value||'').trim();
+  // Se abre la pestaña de WhatsApp dentro del clic (evita el bloqueador de ventanas) y se llena al terminar.
+  var wa=window.open('about:blank','_blank');
+  ckBusy=true;
+  var r=await sb.rpc('create_seated_ticket_order',{
+    target_performance_id:ckState.perf,
+    target_buyer_nombre:AuthService.session.nombre||AuthService.session.usuario,
+    target_buyer_telefono:phone,
+    target_seat_ids:seats.map(function(x){return x.id;}),
+    target_seller_codigo:sellerCode||null
   });
-  var msg = 'Hola, quiero pagar mi solicitud de boletos para '+prod.nombre+
-    ' — Código de orden: '+order.codigoOrden+
-    ' — Asientos: '+seats.join(', ')+' — Total: '+money(total)+
-    ' — Teléfono: '+phone+
-    '. Mi solicitud ya quedó guardada en mi cuenta DARF, en espera de aprobación.';
-  flash('Solicitud guardada. Te redirigimos a WhatsApp para el pago…','s');
-  window.open('https://wa.me/4465220560?text='+encodeURIComponent(msg), '_blank');
+  ckBusy=false;
+  if(r.error){
+    if(wa) wa.close();
+    flash(r.error.message,'d');
+    await ckLoad();
+    return;
+  }
+  var d=r.data;
+  var url=waPayUrl(d.order_code,d.seats||[],d.total,phone,prod.nombre);
+  if(wa) wa.location.href=url;
+  flash('Solicitud guardada. '+(wa?'Te redirigimos a WhatsApp para el pago…':'Págala por WhatsApp desde Mis Boletos.'),'s');
   if(phoneEl) phoneEl.value='';
   if(sellerEl) sellerEl.value='';
+  ckState.selected={};
   nav('cuenta');
 }
 
-// ─── MIS BOLETOS (cuenta del fan) ─────────────────────
+// ─── MIS BOLETOS (cuenta del fan, Supabase) ───────────
 const misBoletosOpen={};
+var myOrders={list:[],loading:false,error:null};
 function toggleMisBoletos(orderId){
   misBoletosOpen[orderId]=!misBoletosOpen[orderId];
   renderMisBoletos();
 }
+async function loadMyOrders(){
+  if(!sb||!AuthService.session.userId){myOrders.list=[];myOrders.loading=false;renderMisBoletos();return;}
+  myOrders.loading=true;myOrders.error=null;renderMisBoletos();
+  var r=await sb.from('orders')
+    .select('id,order_code,status,total,buyer_telefono,created_at,performances(starts_at,production_id),tickets(id,is_active,qr_token,checked_in_at,seats(seat_label))')
+    .eq('buyer_user_id',AuthService.session.userId).order('created_at',{ascending:false});
+  myOrders.loading=false;
+  if(r.error){myOrders.error='No se pudieron cargar tus boletos: '+r.error.message;myOrders.list=[];}
+  else myOrders.list=r.data||[];
+  renderMisBoletos();
+}
+function misQrItem(o,t){
+  var seat=(t.seats&&t.seats.seat_label)||'—';
+  var one=document.createElement('div');one.style.cssText='display:flex;flex-direction:column;align-items:center;gap:4px';
+  var img=document.createElement('img');img.className='qr-img';img.alt='QR '+seat;
+  qrDataUrl(t.qr_token, function(url){ if(url) img.src=url; });
+  var codeLbl=document.createElement('div');codeLbl.className='ticket-code';codeLbl.textContent='Asiento '+seat+(t.checked_in_at?' · usado':'');
+  var verBtn=document.createElement('button');verBtn.className='btn btn-o btn-sm';verBtn.textContent='Ver boleto →';verBtn.style.marginTop='2px';
+  verBtn.onclick=function(){ showAccessModal(o.performances?o.performances.production_id:SHOWMAN_ID, {buyerNombre:AuthService.session.nombre}, seat, t.qr_token, o.performances?o.performances.starts_at:null); };
+  one.appendChild(img);one.appendChild(codeLbl);one.appendChild(verBtn);
+  return one;
+}
 function renderMisBoletos(){
   var box=document.getElementById('cp-boletos-list');
   if(!box) return;
-  var orders = AuthService.session.usuario ? DB.getOrdersForUser(AuthService.session.usuario) : [];
   clearEl(box);
+  if(myOrders.loading){var ld=document.createElement('div');ld.className='empty-note';ld.textContent='Cargando tus boletos…';box.appendChild(ld);return;}
+  if(myOrders.error){var er=document.createElement('div');er.className='empty-note';er.textContent=myOrders.error;box.appendChild(er);return;}
+  var orders=myOrders.list;
   if(!orders.length){
     var empty=document.createElement('div');
     empty.className='empty-note';
@@ -882,79 +915,52 @@ function renderMisBoletos(){
     box.appendChild(empty);
     return;
   }
-  orders.slice().reverse().forEach(function(o){
-    var prod = DB.getProduction(o.productionId) || {nombre:o.productionId};
+  orders.forEach(function(o){
+    var pid=o.performances?o.performances.production_id:SHOWMAN_ID;
+    var prod = DB.getProduction(pid) || {nombre:pid};
+    var active=(o.tickets||[]).filter(function(t){return t.is_active;});
+    var labels=active.map(function(t){return (t.seats&&t.seats.seat_label)||'—';});
     var card=document.createElement('div');
     card.className='ticket-card';
     var main=document.createElement('div');main.className='ticket-main';
     var info=document.createElement('div');
     var show=document.createElement('div');show.className='ticket-show';show.textContent=prod.nombre;
-    var d0=document.createElement('div');d0.className='ticket-detail';d0.textContent='Código de orden: '+(o.codigoOrden||'—');
-    var d1=document.createElement('div');d1.className='ticket-detail';d1.textContent=(prod.venue||'')+' · Asientos: '+(o.seats||[]).join(', ');
+    var d0=document.createElement('div');d0.className='ticket-detail';d0.textContent='Código de orden: '+(o.order_code||'—');
+    var d1=document.createElement('div');d1.className='ticket-detail';d1.textContent=(o.performances?fmtPerfDate(o.performances.starts_at):'')+' · Asientos: '+(labels.join(', ')||'—');
     var d2=document.createElement('div');d2.className='ticket-detail';d2.textContent='Total: '+money(o.total);
-    var pill=document.createElement('span');pill.className='status-pill status-'+o.status;pill.textContent=o.status;
+    var cancelled=o.status==='aprobado'&&!active.length;
+    var pill=document.createElement('span');pill.className='status-pill status-'+o.status;pill.textContent=cancelled?'cancelado':o.status;
     info.appendChild(show);info.appendChild(d0);info.appendChild(d1);info.appendChild(d2);
     var pillWrap=document.createElement('div');pillWrap.style.marginTop='6px';pillWrap.appendChild(pill);info.appendChild(pillWrap);
     main.appendChild(info);
     var qrBlock=document.createElement('div');qrBlock.className='ticket-qr-block';
-    if(o.status==='aprobado' && o.seatQrs && (o.seats||[]).length>1){
+    if(o.status==='aprobado' && active.length>1){
       var open=!!misBoletosOpen[o.id];
       var dd=document.createElement('div');dd.className='ticket-dropdown';
       var ddHdr=document.createElement('div');ddHdr.className='ticket-dropdown-hdr';
-      var ddLabel=document.createElement('span');ddLabel.textContent=(o.seats||[]).length+' boletos';
+      var ddLabel=document.createElement('span');ddLabel.textContent=active.length+' boletos';
       var ddChev=document.createElement('span');ddChev.className='ticket-dropdown-chevron';ddChev.textContent='▾';
       ddHdr.appendChild(ddLabel);ddHdr.appendChild(ddChev);
       ddHdr.onclick=function(){ toggleMisBoletos(o.id); };
       var ddBody=document.createElement('div');ddBody.className='ticket-dropdown-body';ddBody.style.display=open?'flex':'none';
-      if(open){
-        (o.seats||[]).forEach(function(seatId){
-          var code = o.seatQrs[seatId];
-          if(!code) return;
-          var one=document.createElement('div');one.style.cssText='display:flex;flex-direction:column;align-items:center;gap:4px';
-          var img=document.createElement('img');img.className='qr-img';img.alt='QR '+seatId;
-          qrDataUrl(code, function(url){ if(url) img.src=url; });
-          var codeLbl=document.createElement('div');codeLbl.className='ticket-code';codeLbl.textContent='Asiento '+seatId;
-          var verBtn=document.createElement('button');verBtn.className='btn btn-o btn-sm';verBtn.textContent='Ver boleto →';verBtn.style.marginTop='2px';
-          verBtn.onclick=function(){ showAccessModal(o.productionId, o, seatId, code); };
-          one.appendChild(img);one.appendChild(codeLbl);one.appendChild(verBtn);
-          ddBody.appendChild(one);
-        });
-      }
+      if(open) active.forEach(function(t){ ddBody.appendChild(misQrItem(o,t)); });
       dd.appendChild(ddHdr);dd.appendChild(ddBody);
       qrBlock.appendChild(dd);
-    } else if(o.status==='aprobado' && o.seatQrs){
-      (o.seats||[]).forEach(function(seatId){
-        var code = o.seatQrs[seatId];
-        if(!code) return;
-        var one=document.createElement('div');one.style.cssText='display:flex;flex-direction:column;align-items:center;gap:4px';
-        var img=document.createElement('img');img.className='qr-img';img.alt='QR '+seatId;
-        qrDataUrl(code, function(url){ if(url) img.src=url; });
-        var codeLbl=document.createElement('div');codeLbl.className='ticket-code';codeLbl.textContent='Asiento '+seatId;
-        var verBtn=document.createElement('button');verBtn.className='btn btn-o btn-sm';verBtn.textContent='Ver boleto →';verBtn.style.marginTop='2px';
-        verBtn.onclick=function(){ showAccessModal(o.productionId, o, seatId, code); };
-        one.appendChild(img);one.appendChild(codeLbl);one.appendChild(verBtn);
-        qrBlock.appendChild(one);
-      });
-    } else if(o.status==='aprobado' && o.qrCode){
-      var img2=document.createElement('img');img2.className='qr-img';img2.alt='QR boleto';
-      qrDataUrl(o.qrCode, function(url){ if(url) img2.src=url; });
-      var code2=document.createElement('div');code2.className='ticket-code';code2.textContent=o.qrCode.slice(0,10).toUpperCase();
-      var verBtn2=document.createElement('button');verBtn2.className='btn btn-o btn-sm';verBtn2.textContent='Ver boleto →';verBtn2.style.marginTop='2px';
-      var soleSeat=(o.seats||[])[0]||'—';
-      verBtn2.onclick=function(){ showAccessModal(o.productionId, o, soleSeat, o.qrCode); };
-      qrBlock.appendChild(img2);qrBlock.appendChild(code2);qrBlock.appendChild(verBtn2);
+    } else if(o.status==='aprobado' && active.length===1){
+      qrBlock.appendChild(misQrItem(o,active[0]));
     } else if(o.status==='pendiente'){
-      var wait=document.createElement('div');wait.style.cssText='font-size:11px;color:var(--t2);text-align:center;max-width:100px';wait.textContent='En espera de aprobación';
-      qrBlock.appendChild(wait);
+      var wait=document.createElement('div');wait.style.cssText='font-size:11px;color:var(--t2);text-align:center;max-width:140px';wait.textContent='En espera de pago y aprobación';
+      var payBtn=document.createElement('button');payBtn.className='btn btn-o btn-sm';payBtn.style.marginTop='6px';payBtn.textContent='Pagar por WhatsApp';
+      payBtn.onclick=function(){ window.open(waPayUrl(o.order_code,labels,o.total,o.buyer_telefono,prod.nombre),'_blank'); };
+      qrBlock.appendChild(wait);qrBlock.appendChild(payBtn);
     } else {
-      var rej=document.createElement('div');rej.style.cssText='font-size:11px;color:var(--rojo);text-align:center;max-width:100px';rej.textContent='Solicitud rechazada';
+      var rej=document.createElement('div');rej.style.cssText='font-size:11px;color:var(--rojo);text-align:center;max-width:100px';rej.textContent=cancelled?'Boleto cancelado':'Solicitud rechazada';
       qrBlock.appendChild(rej);
     }
     card.appendChild(main);card.appendChild(qrBlock);
     box.appendChild(card);
   });
 }
-DB.subscribe(DB.KEYS.orders, function(){ if(document.getElementById('v-cuenta').classList.contains('active')) renderMisBoletos(); });
 
 // ─── CONTACTO → BUZÓN STAFF ───────────────────────────
 const CONTACT_EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -1013,16 +1019,40 @@ const DARF_LOGO='DARF PRODUCTIONS LOGOS/2.png';
 // sobre un fondo del color de identidad de esa producción.
 const TICKET_LOGOS={showman:'SHOWMAN VISUALS/1.png', mm:'MAMMA MIA VISUALS/1.png', hsm:'HIGH SCHOOL MUSICAL VISUALS/1.png'};
 const TICKET_BG={showman:'#0C1830', mm:'#1565C0', hsm:'#C62222'};
-const staffAccExpanded={};
-const staffDbOpen={};
-const staffLastGenerated={};
+function renderSellersPanel(){
+  var box=document.getElementById('sellersPanel');
+  if(!box) return;
+  clearEl(box);
+  if(AuthService.session.rol!=='admin') return;
+  var h=document.createElement('div');h.style.cssText='font-weight:800;color:#fff;margin-bottom:8px';h.textContent='Vendedores';box.appendChild(h);
+  var list=DB.getSellers();
+  if(!list.length){var n=document.createElement('div');n.className='empty-note';n.textContent='No hay vendedores registrados.';box.appendChild(n);}
+  list.forEach(function(s){
+    var row=document.createElement('div');row.style.cssText='display:flex;gap:10px;align-items:center;font-size:13px;color:var(--t2);margin-bottom:4px';
+    row.textContent=s.nombre+' — '+s.codigo+' ';
+    var del=document.createElement('button');del.className='btn btn-o btn-sm';del.textContent='Eliminar';
+    del.onclick=async function(){ if(!confirm('¿Eliminar a '+s.nombre+'?')) return; var ok=await DB.deleteSeller(s.id); if(!ok) flash('No se pudo eliminar al vendedor.','d'); renderSellersPanel(); };
+    row.appendChild(del);box.appendChild(row);
+  });
+  var form=document.createElement('div');form.style.cssText='display:flex;gap:8px;flex-wrap:wrap;margin-top:8px';
+  var nom=document.createElement('input');nom.className='form-c';nom.placeholder='Nombre';
+  var cod=document.createElement('input');cod.className='form-c';cod.placeholder='Código';
+  var add=document.createElement('button');add.className='btn btn-a btn-sm';add.textContent='Agregar';
+  add.onclick=async function(){ var r=await DB.addSeller(nom.value,cod.value); if(!r.ok) flash(r.error,'d'); else flash('Vendedor agregado.','s'); renderSellersPanel(); };
+  form.appendChild(nom);form.appendChild(cod);form.appendChild(add);box.appendChild(form);
+}
+
 async function renderStaff(){
   renderSalesBars();
   renderBoletajeProductions();
+  renderSellersPanel();
   renderContactInbox();
   renderAdminProductions();
   await Promise.all([DB.loadSellers(), DB.loadContactMessages(), DB.loadPerformances()]);
+  dbState.key=null; renderDataPanels();
+  loadPendingOrders(); loadShowmanSold();
   renderBoletajeProductions();
+  renderSellersPanel();
   renderContactInbox();
   renderAdminProductions();
 }
@@ -1045,10 +1075,24 @@ function renderAdminProductions(){
   if(!box) return;
   clearEl(box);
   var prods = DB.getProductions();
+  var concluded = [];
   Object.keys(prods).forEach(function(id){
-    box.appendChild(buildAdminProdCard(prods[id]));
+    if(prods[id].concluded) concluded.push(prods[id]);
+    else box.appendChild(buildAdminProdCard(prods[id]));
   });
+  if(concluded.length){
+    var folder = document.createElement('details');
+    folder.className = 'adm-folder';
+    folder.open = admConcludedOpen;
+    folder.ontoggle = function(){ admConcludedOpen = folder.open; };
+    var sum = document.createElement('summary');
+    sum.textContent = '📁 Producciones concluidas (' + concluded.length + ')';
+    folder.appendChild(sum);
+    concluded.forEach(function(prod){ folder.appendChild(buildAdminProdCard(prod)); });
+    box.appendChild(folder);
+  }
 }
+var admConcludedOpen = false;
 DB.subscribe(DB.KEYS.productions, function(){ if(document.getElementById('v-staff').classList.contains('active')) renderAdminProductions(); });
 DB.subscribe(DB.KEYS.performances, function(){ if(document.getElementById('v-staff').classList.contains('active')) renderAdminProductions(); });
 
@@ -1092,7 +1136,14 @@ function buildAdminProdCard(prod){
       if(!ok){ flash('No se pudo actualizar la función.','d'); return; }
       flash('Función actualizada.','s');
     };
-    prow.appendChild(dtI);prow.appendChild(label);prow.appendChild(psaveBtn);
+    var pdelBtn=document.createElement('button');pdelBtn.className='btn btn-o btn-sm';pdelBtn.textContent='🗑 Eliminar';
+    pdelBtn.onclick=async function(){
+      if(!confirm('¿Eliminar la función '+fmtPerfDate(perf.starts_at)+'? Solo se puede si no tiene boletos activos (cancela antes los que haya). También se borra su historial de boletos cancelados. No se puede deshacer.')) return;
+      var res = await DB.deletePerformance(perf.id);
+      if(!res.ok){ flash(res.error,'d'); return; }
+      flash('Función eliminada.','s');
+    };
+    prow.appendChild(dtI);prow.appendChild(label);prow.appendChild(psaveBtn);prow.appendChild(pdelBtn);
     perfWrap.appendChild(prow);
   });
   if(!perfs.length){
@@ -1125,7 +1176,7 @@ function renderSalesBars(){
   if(!wrap) return;
   var prods = DB.getProductions();
   if(!prods.showman || !prods.mm || !prods.hsm) return;
-  var showmanApproved = DB.getApprovedCount(SHOWMAN_ID);
+  var showmanApproved = showmanSold;
   var SCALE = Math.max(prods.showman.capacity, prods.mm.attendeesHistoric, prods.hsm.attendeesHistoric, 600);
   var rows = [
     {label:'Showman — en vivo', n:showmanApproved, cls:null, color:'var(--showman-gold)', live:true},
@@ -1156,161 +1207,6 @@ function staffSeatStateClass(state){
   if(state==='bloqueado') return 'bloq';
   return 'disp';
 }
-function renderStaffSeatMap(productionId){
-  var map = document.getElementById('staffSeatMap-'+productionId);
-  if(!map) return;
-  var taken = DB.getSeatsTaken(productionId);
-  var selected = Array.from(map.querySelectorAll('.staff-seat.sel')).map(function(s){return s.dataset.seat;});
-  clearEl(map);
-  allSeatIds().forEach(function(seatId){
-    var stateClass = staffSeatStateClass(taken[seatId]);
-    var isSel = selected.indexOf(seatId)>-1;
-    var div=document.createElement('div');
-    div.dataset.seat=seatId;
-    div.textContent=seatId;
-    // El staff debe poder seleccionar cualquier asiento (disponible, pendiente, comprado,
-    // usado o bloqueado) para poder bloquearlo/liberarlo/generar su boleto — por eso todos
-    // los estados quedan clicables, no solo disp/bloq como antes.
-    div.className='staff-seat '+stateClass+(isSel?' sel':'');
-    div.onclick=function(){ div.classList.toggle('sel'); };
-    map.appendChild(div);
-  });
-}
-
-function getSelectedStaffSeats(productionId){
-  return Array.from(document.querySelectorAll('#staffSeatMap-'+productionId+' .staff-seat.sel')).map(function(s){return s.dataset.seat;});
-}
-function clearStaffSelection(productionId){
-  // Los asientos seleccionados que están a punto de cambiar de estado (bloquear/liberar/generar)
-  // deben soltar la clase "sel" ANTES del write a DB: el write dispara el rebuild síncrono de
-  // renderStaffSeatMap, que toma una foto de ".sel" del mapa actual — si no la limpiamos aquí,
-  // el asiento se repinta rosa (seleccionado) en vez de con su nuevo color de estado real.
-  var map = document.getElementById('staffSeatMap-'+productionId);
-  if(!map) return;
-  Array.from(map.querySelectorAll('.staff-seat.sel')).forEach(function(el){ el.classList.remove('sel'); });
-}
-function blockSelectedSeats(productionId){
-  var seats = getSelectedStaffSeats(productionId);
-  if(!seats.length){flash('Selecciona al menos un asiento.','d');return;}
-  clearStaffSelection(productionId);
-  DB.blockSeats(productionId, seats);
-  flash('Asientos bloqueados: '+seats.join(', '),'i');
-}
-function releaseSelectedSeats(productionId){
-  var seats = getSelectedStaffSeats(productionId);
-  if(!seats.length){flash('Selecciona al menos un asiento.','d');return;}
-  clearStaffSelection(productionId);
-  DB.releaseSeats(productionId, seats);
-  DB.releaseSeatsFromOrders(productionId, seats);
-  flash('Asientos liberados: '+seats.join(', '),'i');
-}
-function createStaffTicket(productionId){
-  var nameEl=document.getElementById('staffBuyerName-'+productionId);
-  var phoneEl=document.getElementById('staffBuyerPhone-'+productionId);
-  var sellerEl=document.getElementById('staffSellerCode-'+productionId);
-  var name=(nameEl.value||'').trim();
-  var phone=(phoneEl.value||'').trim();
-  var sellerCodeRaw=(sellerEl&&sellerEl.value||'').trim();
-  if(!name){flash('Escribe el nombre del comprador.','d');return;}
-  if(!phone){flash('Escribe el teléfono del comprador.','d');return;}
-  var vendedorCodigo=null;
-  if(sellerCodeRaw){
-    var seller=DB.getSellerByCode(sellerCodeRaw);
-    if(!seller){flash('El código de vendedor no existe. Verifícalo o déjalo en blanco.','d');return;}
-    vendedorCodigo=seller.codigo;
-  }
-  var seats = getSelectedStaffSeats(productionId);
-  if(!seats.length){flash('Selecciona al menos un asiento.','d');return;}
-  var prod = DB.getProduction(productionId);
-  clearStaffSelection(productionId);
-  var order = DB.createOrder({
-    userId: null, buyerNombre: name, telefono: phone, productionId: productionId,
-    seats: seats, total: seats.length*prod.price, vendedorCodigo: vendedorCodigo
-  });
-  var approved = DB.approveOrder(order.id);
-  nameEl.value='';
-  phoneEl.value='';
-  if(sellerEl) sellerEl.value='';
-  flash('Boleto generado y aprobado para '+name+' — asientos '+seats.join(', '),'s');
-  // Guardar el último lote generado en estado persistente (como staffAccExpanded/staffDbOpen):
-  // si otra generación u orden dispara un nuevo rebuild completo de la tarjeta antes de que este
-  // QR se termine de pintar, renderBoletajeProductions lo vuelve a pintar en vez de perderlo.
-  staffLastGenerated[productionId] = approved;
-  renderGeneratedTickets(productionId, approved);
-}
-
-function renderGeneratedTickets(productionId, order){
-  var box=document.getElementById('staffGeneratedTickets-'+productionId);
-  if(!box || !order || !order.seatQrs) return;
-  clearEl(box);
-  (order.seats||[]).forEach(function(seatId){
-    var code = order.seatQrs[seatId];
-    if(!code) return;
-    var card=document.createElement('div');card.className='gen-qr-card';
-    var img=document.createElement('img');img.alt='QR '+seatId;
-    qrDataUrl(code, function(url){ if(url) img.src=url; });
-    var name=document.createElement('div');name.className='gen-qr-name';name.textContent=order.buyerNombre||'Comprador';
-    var seat=document.createElement('div');seat.className='gen-qr-seat';seat.textContent='Asiento '+seatId;
-    card.appendChild(img);card.appendChild(name);card.appendChild(seat);
-    box.appendChild(card);
-  });
-}
-
-function renderPendingOrders(productionId){
-  var box=document.getElementById('pendingOrdersList-'+productionId);
-  if(!box) return;
-  var pending = DB.getPendingOrdersFor(productionId);
-  clearEl(box);
-  if(!pending.length){
-    var empty=document.createElement('div');empty.className='empty-note';empty.textContent='Sin solicitudes pendientes.';
-    box.appendChild(empty);
-    return;
-  }
-  pending.forEach(function(o){
-    var prod = DB.getProduction(o.productionId)||{nombre:o.productionId};
-    var card=document.createElement('div');card.className='order-card';
-    var info=document.createElement('div');info.className='order-card-info';
-    var title=document.createElement('div');title.className='order-card-title';title.textContent=(o.buyerNombre||o.userId||'Sin nombre')+' — '+prod.nombre;
-    var meta=document.createElement('div');meta.className='order-card-meta';meta.textContent='Código: '+(o.codigoOrden||'—')+' · Asientos: '+(o.seats||[]).join(', ')+' · Total: '+money(o.total);
-    info.appendChild(title);info.appendChild(meta);
-    var actions=document.createElement('div');actions.className='order-card-actions';
-    var approveBtn=document.createElement('button');approveBtn.className='btn btn-a btn-sm';approveBtn.textContent='Aprobar';
-    approveBtn.onclick=function(){
-      var approved = DB.approveOrder(o.id);
-      flash('Orden aprobada.','s');
-      staffLastGenerated[productionId] = approved;
-      renderGeneratedTickets(productionId, approved);
-    };
-    var rejectBtn=document.createElement('button');rejectBtn.className='btn btn-o btn-sm';rejectBtn.textContent='Rechazar';
-    rejectBtn.onclick=function(){ DB.rejectOrder(o.id); flash('Orden rechazada.','i'); };
-    actions.appendChild(approveBtn);actions.appendChild(rejectBtn);
-    card.appendChild(info);card.appendChild(actions);
-    box.appendChild(card);
-  });
-}
-
-function renderSalesControl(productionId){
-  var box=document.getElementById('salesControlBoxes-'+productionId);
-  if(!box) return;
-  var orders = DB.getOrdersForProduction(productionId);
-  var approved = orders.filter(function(o){ return o.status==='aprobado'; });
-  var pending = orders.filter(function(o){ return o.status==='pendiente'; });
-  var ingresos = approved.reduce(function(sum,o){ return sum+o.total; },0);
-  var seatsVendidos = approved.reduce(function(sum,o){ return sum+(o.seats||[]).length; },0);
-  var boxes=[
-    {v:seatsVendidos, l:'Boletos vendidos'},
-    {v:pending.length, l:'Solicitudes pendientes'},
-    {v:money(ingresos), l:'Ingresos confirmados'}
-  ];
-  clearEl(box);
-  boxes.forEach(function(b){
-    var d=document.createElement('div');d.className='sales-control-box';
-    var v=document.createElement('div');v.className='sales-control-v';v.textContent=b.v;
-    var l=document.createElement('div');l.className='sales-control-l';l.textContent=b.l;
-    d.appendChild(v);d.appendChild(l);box.appendChild(d);
-  });
-}
-
 async function toggleShowmanOnSale(checked){
   const ok = await DB.setProductionOnSale(SHOWMAN_ID, checked);
   if(!ok){ flash('No se pudo actualizar el estado de venta.','d'); return; }
@@ -1318,20 +1214,478 @@ async function toggleShowmanOnSale(checked){
   // DB.setProductionOnSale ya disparó renderBoletajeProductions() vía la suscripción a productions.
 }
 
-// ─── BOLETAJE: acordeón por producción ────────────────
-function toggleBoletajeAcc(productionId){
-  staffAccExpanded[productionId]=!staffAccExpanded[productionId];
-  renderBoletajeProductions();
+// ─── SEAT MAP (Supabase) ───────────────────────────────
+var smapState={perf:null,prod:null,seats:[],blocked:{},tickets:{},prices:{},loading:false,error:null,selected:{}};
+
+async function smapLoad(prodId,perfId){
+  if(!sb||!perfId){smapState.seats=[];smapState.error=null;renderSeatMap();return;}
+  smapState.loading=true;smapState.error=null;
+  smapState.prod=prodId;smapState.perf=perfId;
+  smapState.selected={};
+  renderSeatMap();
+  var seatsRes=await sb.from('seats').select('id,seat_label,seat_row,seat_number,section,lado,price_category_id,is_active').eq('production_id',prodId).limit(2000);
+  var blockedRes=await sb.from('blocked_seats').select('seat_id').eq('performance_id',perfId).limit(2000);
+  var ticketsRes=await sb.from('tickets').select('id,seat_id,checked_in_at,orders(status,buyer_nombre,order_code)').eq('performance_id',perfId).eq('is_active',true).not('seat_id','is',null).limit(2000);
+  var pricesRes=await sb.from('performance_price_categories').select('price_category_id,price,price_categories(nombre)').eq('performance_id',perfId);
+  // Si el usuario cambió de función mientras cargaba, descartar este resultado.
+  if(smapState.perf!==perfId) return;
+  smapState.loading=false;
+  var err=seatsRes.error||blockedRes.error||ticketsRes.error||pricesRes.error;
+  if(err){smapState.error='No se pudo cargar el mapa: '+err.message;smapState.seats=[];renderSeatMap();return;}
+  smapState.seats=seatsRes.data||[];
+  smapState.blocked={};(blockedRes.data||[]).forEach(function(b){smapState.blocked[b.seat_id]=true;});
+  smapState.tickets={};(ticketsRes.data||[]).forEach(function(t){
+    smapState.tickets[t.seat_id]={ticket_id:t.id,status:t.orders?t.orders.status:null,checked_in_at:t.checked_in_at,buyer_nombre:t.orders?t.orders.buyer_nombre:'',order_code:t.orders?t.orders.order_code:''};
+  });
+  smapState.prices={};(pricesRes.data||[]).forEach(function(p){
+    smapState.prices[p.price_category_id]={price:Number(p.price),nombre:p.price_categories?p.price_categories.nombre:''};
+  });
+  renderSeatMap();
 }
+
+function smapSeatState(seat){
+  var t=smapState.tickets[seat.id];
+  if(t){
+    if(t.checked_in_at) return 'usado';
+    if(t.status==='aprobado') return 'ap';
+    return 'pend';
+  }
+  if(smapState.blocked[seat.id]) return 'bloq';
+  return 'disp';
+}
+
+function smapCounts(){
+  var c={total:0,vendidos:0,bloqueados:0,disponibles:0};
+  smapState.seats.forEach(function(s){
+    if(!s.is_active) return;
+    c.total++;
+    var st=smapSeatState(s);
+    if(st==='disp') c.disponibles++;
+    else if(st==='bloq') c.bloqueados++;
+    else c.vendidos++;
+  });
+  return c;
+}
+
+function smapIsAdmin(){return AuthService.session.rol==='admin';}
+
+async function smapBlock(seatIds){
+  if(!smapIsAdmin()) return {ok:false,error:'Solo un admin puede bloquear asientos.'};
+  var rows=seatIds.map(function(id){return {performance_id:smapState.perf,seat_id:id};});
+  var r=await sb.from('blocked_seats').upsert(rows,{onConflict:'performance_id,seat_id',ignoreDuplicates:true});
+  return r.error?{ok:false,error:r.error.message}:{ok:true};
+}
+async function smapRelease(seatIds){
+  if(!smapIsAdmin()) return {ok:false,error:'Solo un admin puede liberar asientos.'};
+  var r=await sb.from('blocked_seats').delete().eq('performance_id',smapState.perf).in('seat_id',seatIds);
+  return r.error?{ok:false,error:r.error.message}:{ok:true};
+}
+async function smapSell(seatIds,nombre,tel,seller){
+  var r=await sb.rpc('admin_create_seated_order',{target_performance_id:smapState.perf,target_buyer_nombre:nombre,target_buyer_telefono:tel,target_seat_ids:seatIds,target_seller_codigo:seller||null});
+  return r.error?{ok:false,error:r.error.message}:{ok:true,data:r.data};
+}
+async function smapCancelTicket(ticketId){
+  var r=await sb.rpc('admin_cancel_ticket',{target_ticket_id:ticketId});
+  return r.error?{ok:false,error:r.error.message}:{ok:true,data:r.data};
+}
+
+var SMAP_ZONES={'Exclusivo':'z-exclusivo','VIP':'z-vip','Preferente':'z-preferente','General':'z-general','Discapacitados':'z-discapacitados'};
+var SMAP_STATE_LABELS=[['disp','Disponible','#1565C0'],['sel','Seleccionado','#EC4899'],['pend','Pendiente','#D4A017'],['ap','Comprado','#E5445A'],['usado','Usado','#22c55e'],['bloq','Bloqueado','#7a7a7a']];
+var SMAP_ZONE_LABELS=[['Exclusivo','#8B5CF6'],['VIP','#14B8A6'],['Preferente','#F97316'],['General','#84CC16'],['Discapacitados','#A0724A']];
+
+function smapCategoryName(seat){
+  var p=smapState.prices[seat.price_category_id];
+  return p?p.nombre:'';
+}
+function smapTooltip(seat){
+  var parts=[seat.seat_label];
+  var p=smapState.prices[seat.price_category_id];
+  if(p) parts.push(p.nombre+' · $'+p.price);
+  var t=smapState.tickets[seat.id];
+  if(t) parts.push((t.checked_in_at?'Usado':(t.status==='aprobado'?'Comprado':'Pendiente'))+(t.buyer_nombre?': '+t.buyer_nombre:''));
+  else if(smapState.blocked[seat.id]) parts.push('Bloqueado');
+  return parts.join(' — ');
+}
+
+function smapBlockEl(seats,ctx){
+  var b=document.createElement('div');b.className='smap-block';
+  seats.forEach(function(s){
+    var d=document.createElement('div');
+    d.className='smap-seat '+(SMAP_ZONES[ctx.catName(s)]||'')+' '+ctx.stateOf(s);
+    d.textContent=s.seat_number;
+    d.title=ctx.titleOf(s);
+    if(ctx.onClick) d.onclick=function(){ctx.onClick(s);};
+    b.appendChild(d);
+  });
+  return b;
+}
+
+// Mapa por filas (A cerca del escenario → X al fondo), compartido por staff y checkout público.
+// ctx: {stateOf(seat)→clase, titleOf(seat), catName(seat), onClick(seat)|null}
+function smapBuildMap(seats,ctx){
+  var rows={};
+  seats.forEach(function(s){(rows[s.seat_row]=rows[s.seat_row]||[]).push(s);});
+  var order=Object.keys(rows).sort();
+  var wrap=document.createElement('div');wrap.className='smap-wrap';
+  var map=document.createElement('div');map.className='smap'+(ctx.onClick?' is-admin':'');
+  var stage=document.createElement('div');stage.className='smap-stage';stage.textContent='Escenario';map.appendChild(stage);
+  order.forEach(function(rname){
+    var list=rows[rname].slice().sort(function(a,b){return a.seat_number-b.seat_number;});
+    var row=document.createElement('div');row.className='smap-row';
+    var lab=document.createElement('div');lab.className='smap-row-label';lab.textContent=rname;row.appendChild(lab);
+    // Fila J mezcla Discapacitados (izq/der) y Preferente (central): se agrupa por `lado`, no por zona.
+    ['izquierda','central','derecha'].forEach(function(lado,i){
+      var part=list.filter(function(s){return s.lado===lado;});
+      if(i>0){var a=document.createElement('div');a.className='smap-aisle';row.appendChild(a);}
+      row.appendChild(smapBlockEl(part,ctx));
+    });
+    var lab2=document.createElement('div');lab2.className='smap-row-label';lab2.textContent=rname;row.appendChild(lab2);
+    map.appendChild(row);
+  });
+  wrap.appendChild(map);
+  return wrap;
+}
+
+// states: [[clase,etiqueta,color],…]; zonas: SMAP_ZONE_LABELS
+function smapLegendEls(states){
+  var l1=document.createElement('div');l1.className='smap-legends';
+  states.forEach(function(x){var it=document.createElement('span');it.className='smap-legend-item';var sw=document.createElement('span');sw.className='smap-sw';sw.style.background=x[2];it.appendChild(sw);it.appendChild(document.createTextNode(x[1]));l1.appendChild(it);});
+  var l2=document.createElement('div');l2.className='smap-legends';
+  SMAP_ZONE_LABELS.forEach(function(x){var it=document.createElement('span');it.className='smap-legend-item';var sw=document.createElement('span');sw.className='smap-sw';sw.style.background=x[1];it.appendChild(sw);it.appendChild(document.createTextNode('Zona '+x[0]));l2.appendChild(it);});
+  return [l1,l2];
+}
+
+function renderSeatMap(){
+  var root=document.getElementById('smapRoot');
+  if(!root) return;
+  clearEl(root);
+  if(smapState.loading){var l=document.createElement('div');l.className='empty-note';l.textContent='Cargando mapa…';root.appendChild(l);return;}
+  if(smapState.error){var e=document.createElement('div');e.className='empty-note';e.textContent=smapState.error;root.appendChild(e);return;}
+  if(!smapState.seats.length){var n=document.createElement('div');n.className='empty-note';n.textContent='Esta función no tiene asientos cargados.';root.appendChild(n);return;}
+
+  // Contadores + Actualizar
+  var c=smapCounts();
+  var bar=document.createElement('div');bar.className='smap-counts';
+  [['Total',c.total],['Vendidos',c.vendidos],['Bloqueados',c.bloqueados],['Disponibles',c.disponibles]].forEach(function(x){
+    var s=document.createElement('span');s.textContent=x[0]+': ';var b=document.createElement('b');b.textContent=x[1];s.appendChild(b);bar.appendChild(s);
+  });
+  var rf=document.createElement('button');rf.className='btn btn-o btn-sm';rf.textContent='Actualizar';
+  rf.onclick=function(){smapLoad(smapState.prod,smapState.perf);};
+  bar.appendChild(rf);root.appendChild(bar);
+
+  root.appendChild(smapBuildMap(smapState.seats,{
+    catName:smapCategoryName,
+    stateOf:function(seat){return smapState.selected[seat.id]?'sel':smapSeatState(seat);},
+    titleOf:smapTooltip,
+    onClick:smapIsAdmin()?function(seat){smapToggle(seat.id);}:null
+  }));
+  smapLegendEls(SMAP_STATE_LABELS).forEach(function(el){root.appendChild(el);});
+
+  renderSeatPanel();
+}
+
+function smapToggle(seatId){
+  if(!smapIsAdmin()) return;
+  if(smapState.selected[seatId]) delete smapState.selected[seatId]; else smapState.selected[seatId]=true;
+  renderSeatMap();
+}
+
+function smapSelectedSeats(){
+  return smapState.seats.filter(function(s){return smapState.selected[s.id];});
+}
+
+async function smapAfterAction(res,okMsg){
+  if(res.ok) flash(okMsg,'s'); else flash(res.error,'d');
+  await smapLoad(smapState.prod,smapState.perf);
+}
+
+async function smapDoBlock(){
+  var sel=smapSelectedSeats();
+  if(sel.some(function(s){return smapState.tickets[s.id];})){flash('Algunos asientos están vendidos: cancela primero el boleto.','d');return;}
+  var res=await smapBlock(sel.map(function(s){return s.id;}));
+  await smapAfterAction(res,'Asientos bloqueados.');
+}
+
+async function smapDoRelease(){
+  var sel=smapSelectedSeats();
+  var sold=sel.filter(function(s){return smapState.tickets[s.id];});
+  var blockedOnly=sel.filter(function(s){return !smapState.tickets[s.id] && smapState.blocked[s.id];});
+  if(sold.length){
+    var names=sold.map(function(s){return s.seat_label+' ('+(smapState.tickets[s.id].buyer_nombre||'sin nombre')+')';}).join(', ');
+    if(!confirm('Estos asientos están vendidos: '+names+'.\n¿Cancelar los boletos y liberar los asientos?')) return;
+    for(var i=0;i<sold.length;i++){
+      var r=await smapCancelTicket(smapState.tickets[sold[i].id].ticket_id);
+      if(!r.ok){await smapAfterAction(r,'');return;}
+    }
+  }
+  if(blockedOnly.length){
+    var r2=await smapRelease(blockedOnly.map(function(s){return s.id;}));
+    if(!r2.ok){await smapAfterAction(r2,'');return;}
+  }
+  await smapAfterAction({ok:true},'Asientos liberados.');
+}
+
+async function smapDoSell(){
+  var sel=smapSelectedSeats();
+  if(sel.some(function(s){return smapSeatState(s)!=='disp';})){flash('Solo puedes generar boleto de asientos disponibles.','d');return;}
+  var fm=smapState.form||{};
+  var nombre=(fm.nombre||'').trim();
+  var tel=(fm.tel||'').trim();
+  var seller=(fm.seller||'').trim();
+  if(!nombre||!tel){flash('Nombre y teléfono del comprador son obligatorios.','d');return;}
+  var res=await smapSell(sel.map(function(s){return s.id;}),nombre,tel,seller);
+  if(res.ok){
+    smapLastSale=res.data;
+    smapState.form={nombre:'',tel:'',seller:''};
+    flash('Boleto generado: '+res.data.order_code+' · $'+res.data.total,'s');
+  } else flash(res.error,'d');
+  await smapLoad(smapState.prod,smapState.perf);
+}
+var smapLastSale=null;
+
+function renderSeatPanel(){
+  var root=document.getElementById('smapRoot');
+  if(!root||!smapIsAdmin()) return;
+  var sel=smapSelectedSeats();
+  if(smapLastSale){
+    var done=document.createElement('div');done.className='smap-panel';
+    var h=document.createElement('div');h.style.cssText='font-weight:800;color:#fff;margin-bottom:6px';
+    h.textContent='Orden '+smapLastSale.order_code+' · Total $'+smapLastSale.total;done.appendChild(h);
+    (smapLastSale.tickets||[]).forEach(function(t){
+      var l=document.createElement('div');l.style.cssText='font-size:12px;color:var(--t2)';
+      l.textContent=t.seat_label+' — QR: '+t.qr_token;done.appendChild(l);
+    });
+    var x=document.createElement('button');x.className='btn btn-o btn-sm';x.style.marginTop='8px';x.textContent='Cerrar';
+    x.onclick=function(){smapLastSale=null;renderSeatMap();};done.appendChild(x);
+    root.appendChild(done);
+  }
+  if(!sel.length) return;
+  var p=document.createElement('div');p.className='smap-panel';
+  var total=0;sel.forEach(function(s){var pr=smapState.prices[s.price_category_id];if(pr)total+=pr.price;});
+  var info=document.createElement('div');info.style.cssText='font-size:13px;color:var(--t2);margin-bottom:8px';
+  info.textContent=sel.length+' asiento(s): '+sel.map(function(s){return s.seat_label;}).join(', ')+' · Total informativo $'+total;
+  p.appendChild(info);
+  smapState.form=smapState.form||{nombre:'',tel:'',seller:''};
+  [['nombre','Nombre del comprador'],['tel','Teléfono del comprador'],['seller','Código de vendedor (opcional)']].forEach(function(f){
+    var i=document.createElement('input');i.type='text';i.className='form-c';i.placeholder=f[1];
+    i.value=smapState.form[f[0]]||'';
+    i.oninput=function(){smapState.form[f[0]]=i.value;};
+    p.appendChild(i);
+  });
+  var acts=document.createElement('div');acts.className='smap-actions';
+  [['Bloquear','btn btn-o btn-sm',smapDoBlock],['Liberar','btn btn-o btn-sm',smapDoRelease],['Generar Boleto','btn btn-a btn-sm',smapDoSell]].forEach(function(b){
+    var el=document.createElement('button');el.className=b[1];el.textContent=b[0];el.onclick=b[2];acts.appendChild(el);
+  });
+  var cl=document.createElement('button');cl.className='btn btn-o btn-sm';cl.textContent='Limpiar selección';
+  cl.onclick=function(){smapState.selected={};renderSeatMap();};acts.appendChild(cl);
+  p.appendChild(acts);root.appendChild(p);
+}
+
+// ── BASES DE DATOS: compradores y estadísticas (Supabase, solo lectura) ──
+var dbSel={prod:null,perf:'all'};
+var dbState={key:null,loading:false,error:null,tickets:[],seats:[],blocked:[],search:''};
+var dbOpen={buyers:false,stats:false};
+function fmtMoney(n){ return '$'+Number(n||0).toLocaleString('es-MX',{minimumFractionDigits:0,maximumFractionDigits:2}); }
+async function dbLoad(){
+  var perfs=DB.getPerformancesForProduction(dbSel.prod);
+  var ids=dbSel.perf==='all'?perfs.map(function(p){return p.id;}):[dbSel.perf];
+  var key=dbSel.prod+'|'+dbSel.perf;
+  dbState.key=key;dbState.loading=true;dbState.error=null;renderDataPanels();
+  if(!sb||!ids.length){dbState.tickets=[];dbState.seats=[];dbState.blocked=[];dbState.loading=false;renderDataPanels();return;}
+  var r=await Promise.all([
+    sb.from('tickets').select('id,is_active,checked_in_at,unit_price,performance_id,seat_id,seats(seat_label,section),orders(order_code,status,buyer_nombre,buyer_telefono,created_at,sellers(nombre,codigo))').in('performance_id',ids),
+    sb.from('seats').select('id,section,is_active,price_categories(nombre)').eq('production_id',dbSel.prod).limit(2000),
+    sb.from('blocked_seats').select('performance_id,seat_id').in('performance_id',ids)
+  ]);
+  if(dbState.key!==key) return; // la selección cambió mientras cargaba
+  dbState.loading=false;
+  var err=r[0].error||r[1].error||r[2].error;
+  if(err){dbState.error='No se pudieron cargar los datos: '+err.message;dbState.tickets=[];dbState.seats=[];dbState.blocked=[];}
+  else{dbState.tickets=r[0].data||[];dbState.seats=r[1].data||[];dbState.blocked=r[2].data||[];}
+  renderDataPanels();
+}
+function dbTicketState(t){
+  if(!t.is_active) return 'Cancelado';
+  if(t.orders&&t.orders.status==='rechazado') return 'Rechazado';
+  if(t.checked_in_at) return 'Usado';
+  return t.orders&&t.orders.status==='pendiente'?'Pendiente':'Vigente';
+}
+function dbBuildTable(headers,rows,totalRow){
+  var table=document.createElement('table');table.className='tickets-db-table';
+  var thead=document.createElement('thead');var trh=document.createElement('tr');
+  headers.forEach(function(h){var th=document.createElement('th');th.textContent=h;trh.appendChild(th);});
+  thead.appendChild(trh);table.appendChild(thead);
+  var tbody=document.createElement('tbody');
+  rows.concat(totalRow?[totalRow]:[]).forEach(function(r,i){
+    var tr=document.createElement('tr');
+    if(totalRow&&i===rows.length) tr.className='db-total';
+    r.forEach(function(v){var td=document.createElement('td');td.textContent=v;tr.appendChild(td);});
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+  return table;
+}
+function dbRenderBuyers(box){
+  var perfs=DB.getPerformancesForProduction(dbSel.prod);
+  var perfDate={};perfs.forEach(function(p){perfDate[p.id]=fmtPerfDate(p.starts_at);});
+  var list=dbState.tickets.slice().sort(function(a,b){
+    var da=a.orders?a.orders.created_at:'',db=b.orders?b.orders.created_at:'';
+    return da<db?1:da>db?-1:0;
+  });
+  var q=dbState.search.trim().toLowerCase();
+  var rows=list.map(function(t){
+    var o=t.orders||{},s=t.seats||{},sl=o.sellers;
+    return [o.order_code||'—',o.buyer_nombre||'—',o.buyer_telefono||'—',s.seat_label||'—',s.section||'—',
+      fmtMoney(t.unit_price),dbTicketState(t),sl?sl.nombre:'—',perfDate[t.performance_id]||'—'];
+  }).filter(function(r){return !q||r.join(' ').toLowerCase().indexOf(q)>-1;});
+  var bar=document.createElement('div');bar.style.cssText='display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px';
+  var inp=document.createElement('input');inp.type='text';inp.className='form-c';inp.placeholder='Buscar por nombre, teléfono, orden o asiento';inp.value=dbState.search;inp.style.cssText='flex:1;min-width:220px';
+  inp.oninput=function(){dbState.search=inp.value;var pos=inp.selectionStart;renderDataPanels();var n=document.getElementById('dbBuyersSearch');if(n){n.focus();n.setSelectionRange(pos,pos);}};
+  inp.id='dbBuyersSearch';
+  var cnt=document.createElement('span');cnt.style.cssText='font-size:12px;color:var(--t3)';cnt.textContent=rows.length+' de '+list.length+' boletos';
+  bar.appendChild(inp);bar.appendChild(cnt);box.appendChild(bar);
+  if(!rows.length){var e=document.createElement('div');e.className='empty-note';e.textContent=list.length?'Sin resultados para la búsqueda.':'Todavía no hay boletos generados.';box.appendChild(e);return;}
+  box.appendChild(dbBuildTable(['Orden','Comprador','Teléfono','Asiento','Zona','Precio','Estado','Vendido por','Función'],rows));
+}
+function dbRenderStats(box){
+  var perfs=DB.getPerformancesForProduction(dbSel.prod);
+  var nPerf=dbSel.perf==='all'?perfs.length:1;
+  var secOf={},cat={},order=[],bySec={};
+  dbState.seats.forEach(function(s){
+    secOf[s.id]=s.section;
+    if(!bySec[s.section]){bySec[s.section]={cap:0,sold:0,rev:0,blk:0};order.push(s.section);cat[s.section]=s.price_categories?s.price_categories.nombre:'';}
+    if(s.is_active) bySec[s.section].cap+=nPerf;
+  });
+  var soldKey={};
+  dbState.tickets.forEach(function(t){
+    if(!t.is_active||(t.orders&&t.orders.status==='rechazado')) return;
+    var sec=t.seats&&t.seats.section;if(!bySec[sec]) return;
+    soldKey[t.performance_id+'|'+t.seat_id]=1;
+    bySec[sec].sold++;bySec[sec].rev+=Number(t.unit_price)||0;
+  });
+  dbState.blocked.forEach(function(b){
+    var sec=secOf[b.seat_id];
+    if(sec&&!soldKey[b.performance_id+'|'+b.seat_id]) bySec[sec].blk++;
+  });
+  var tot={cap:0,sold:0,rev:0,blk:0};
+  var rows=order.map(function(sec){
+    var d=bySec[sec];
+    ['cap','sold','rev','blk'].forEach(function(k){tot[k]+=d[k];});
+    return [sec+(cat[sec]?' · '+cat[sec]:''),d.cap,d.sold,fmtMoney(d.rev),Math.max(0,d.cap-d.sold-d.blk),d.blk];
+  });
+  if(!rows.length){var e=document.createElement('div');e.className='empty-note';e.textContent='Esta producción no tiene asientos configurados.';box.appendChild(e);return;}
+  box.appendChild(dbBuildTable(['Zona','Capacidad','Boletos vendidos','Ingresos','Boletos disponibles','Bloqueados'],rows,
+    ['TOTAL',tot.cap,tot.sold,fmtMoney(tot.rev),Math.max(0,tot.cap-tot.sold-tot.blk),tot.blk]));
+  var hint=document.createElement('div');hint.style.cssText='font-size:12px;color:var(--t3);margin-top:8px';
+  hint.textContent='Vendidos = boletos activos (incluye usados); no cuenta cancelados. Disponibles = capacidad − vendidos − bloqueados.'+(dbSel.perf==='all'?' Vista de todas las funciones sumadas.':'');
+  box.appendChild(hint);
+}
+function dbPanel(root,key,title,fill){
+  var d=document.createElement('details');d.className='adm-folder';d.open=dbOpen[key];
+  d.ontoggle=function(){dbOpen[key]=d.open;};
+  var sm=document.createElement('summary');sm.textContent=title;d.appendChild(sm);
+  var body=document.createElement('div');body.style.cssText='margin-top:12px';
+  if(dbState.loading){var l=document.createElement('div');l.className='empty-note';l.textContent='Cargando…';body.appendChild(l);}
+  else if(dbState.error){var e=document.createElement('div');e.className='empty-note';e.textContent=dbState.error;body.appendChild(e);}
+  else fill(body);
+  d.appendChild(body);root.appendChild(d);
+}
+function renderDataPanels(){
+  var root=document.getElementById('dbPanels');
+  if(!root) return;
+  clearEl(root);
+  var prods=DB.getProductions();var ids=Object.keys(prods);
+  if(!ids.length){var n=document.createElement('div');n.className='empty-note';n.textContent='No hay producciones.';root.appendChild(n);return;}
+  if(!dbSel.prod||ids.indexOf(dbSel.prod)<0){
+    dbSel.prod=ids.filter(function(i){return !prods[i].concluded;})[0]||ids[0];dbSel.perf='all';
+  }
+  var perfs=DB.getPerformancesForProduction(dbSel.prod);
+  if(dbSel.perf!=='all'&&!perfs.some(function(p){return p.id===dbSel.perf;})){ dbSel.perf='all'; dbState.key=null; }
+  var row=document.createElement('div');row.style.cssText='display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px';
+  var ps=document.createElement('select');ps.className='form-c';ps.style.cssText='flex:1;min-width:200px';ps.setAttribute('aria-label','Producción');
+  ids.forEach(function(id){var o=document.createElement('option');o.value=id;o.textContent=prods[id].nombre+(prods[id].concluded?' (concluida)':'');if(id===dbSel.prod)o.selected=true;ps.appendChild(o);});
+  ps.onchange=function(){dbSel.prod=ps.value;dbSel.perf='all';dbLoad();};
+  var fs=document.createElement('select');fs.className='form-c';fs.style.cssText='flex:1;min-width:240px';fs.setAttribute('aria-label','Función');
+  var oa=document.createElement('option');oa.value='all';oa.textContent='Todas las funciones';fs.appendChild(oa);
+  perfs.forEach(function(pf){var o=document.createElement('option');o.value=pf.id;o.textContent=fmtPerfDate(pf.starts_at);if(pf.id===dbSel.perf)o.selected=true;fs.appendChild(o);});
+  if(dbSel.perf==='all') oa.selected=true;
+  fs.onchange=function(){dbSel.perf=fs.value;dbLoad();};
+  var rb=document.createElement('button');rb.className='btn btn-o btn-sm';rb.textContent='↻ Actualizar';rb.onclick=function(){dbLoad();};
+  row.appendChild(ps);row.appendChild(fs);row.appendChild(rb);root.appendChild(row);
+  dbPanel(root,'buyers','📋 Base de datos de compradores',dbRenderBuyers.bind(null));
+  dbPanel(root,'stats','📈 Estadísticas de venta',dbRenderStats.bind(null));
+  if(dbState.key===null) dbLoad();
+}
+DB.subscribe(DB.KEYS.performances, function(){ if(document.getElementById('v-staff').classList.contains('active')) renderDataPanels(); });
+
+// ── SOLICITUDES PENDIENTES (apartan asientos hasta aprobar/rechazar) ──
+var pendingState={list:[],loading:false,error:null};
+async function loadPendingOrders(){
+  var box=document.getElementById('pendingOrders');
+  if(!box||!sb) return;
+  pendingState.loading=true;pendingState.error=null;renderPendingOrders();
+  var r=await sb.from('orders')
+    .select('id,order_code,buyer_nombre,buyer_telefono,total,created_at,performance_id,sellers(nombre),tickets(is_active,seats(seat_label))')
+    .eq('status','pendiente').order('created_at');
+  pendingState.loading=false;
+  if(r.error){pendingState.error='No se pudieron cargar las solicitudes: '+r.error.message;pendingState.list=[];}
+  else pendingState.list=r.data||[];
+  renderPendingOrders();
+}
+async function pendingAct(order,fn,okMsg){
+  var r=await sb.rpc(fn,{target_order_id:order.id});
+  if(r.error) flash(r.error.message,'d'); else flash(okMsg+' '+order.order_code,'s');
+  await loadPendingOrders();
+  if(smapState.perf) smapLoad(smapState.prod,smapState.perf);
+}
+function renderPendingOrders(){
+  var box=document.getElementById('pendingOrders');
+  if(!box) return;
+  clearEl(box);
+  var title=document.createElement('div');title.style.cssText='font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px;color:var(--t2)';
+  title.textContent='Solicitudes pendientes'+(pendingState.list.length?' ('+pendingState.list.length+')':'');
+  box.appendChild(title);
+  if(pendingState.loading){var l=document.createElement('div');l.className='empty-note';l.textContent='Cargando…';box.appendChild(l);return;}
+  if(pendingState.error){var e=document.createElement('div');e.className='empty-note';e.textContent=pendingState.error;box.appendChild(e);return;}
+  if(!pendingState.list.length){var n=document.createElement('div');n.className='empty-note';n.textContent='No hay solicitudes pendientes.';box.appendChild(n);return;}
+  var isAdmin=AuthService.session.rol==='admin';
+  pendingState.list.forEach(function(o){
+    var perf=DB.getPerformances().filter(function(p){return p.id===o.performance_id;})[0];
+    var labels=(o.tickets||[]).filter(function(t){return t.is_active;}).map(function(t){return t.seats?t.seats.seat_label:'—';});
+    var row=document.createElement('div');row.style.cssText='display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between;background:var(--g2);border:1px solid var(--g3);border-radius:var(--r8);padding:12px 14px;margin-bottom:8px';
+    var info=document.createElement('div');info.style.cssText='font-size:13px;color:var(--t2);line-height:1.5';
+    var l1=document.createElement('div');l1.style.cssText='color:#fff;font-weight:700';l1.textContent=o.order_code+' · '+o.buyer_nombre+' · '+o.buyer_telefono;
+    var l2=document.createElement('div');l2.textContent=(perf?fmtPerfDate(perf.starts_at):'')+' · '+(labels.join(', ')||'sin asientos')+' · '+money(o.total)+(o.sellers?' · Vendedor: '+o.sellers.nombre:'');
+    info.appendChild(l1);info.appendChild(l2);row.appendChild(info);
+    if(isAdmin){
+      var acts=document.createElement('div');acts.style.cssText='display:flex;gap:8px';
+      var ok=document.createElement('button');ok.className='btn btn-a btn-sm';ok.textContent='Aprobar';
+      ok.onclick=function(){ pendingAct(o,'approve_order','Solicitud aprobada:'); };
+      var no=document.createElement('button');no.className='btn btn-o btn-sm';no.textContent='Rechazar';
+      no.onclick=function(){ if(confirm('¿Rechazar la solicitud '+o.order_code+'? Se liberan sus asientos.')) pendingAct(o,'reject_order','Solicitud rechazada:'); };
+      acts.appendChild(ok);acts.appendChild(no);row.appendChild(acts);
+    }
+    box.appendChild(row);
+  });
+}
+
+// Conteo "en vivo" de Showman para Ventas de Cartelera (boletos activos, aprobados o apartados).
+var showmanSold=0;
+async function loadShowmanSold(){
+  if(!sb) return;
+  var ids=DB.getPerformancesForProduction(SHOWMAN_ID).map(function(p){return p.id;});
+  if(!ids.length){showmanSold=0;renderSalesBars();return;}
+  var r=await sb.from('tickets').select('id',{count:'exact',head:true}).in('performance_id',ids).eq('is_active',true);
+  if(!r.error){showmanSold=r.count||0;renderSalesBars();}
+}
+
 var boletajeSel={prod:null,perf:null};
 function fmtPerfDate(iso){
   if(!iso) return 'Fecha por definir';
   try{return new Date(iso).toLocaleString('es-MX',{weekday:'short',day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});}catch(e){return iso;}
 }
 function renderBoletajeProductions(){
-  // El Boletaje del prototipo (mapa fijo + localStorage) está deshabilitado hasta
-  // que exista el mapa real del venue (importador de asientos + categorías de precio).
-  // Ya se elige producción y función; el contenido por función llega con el mapa real.
+  // Selector de producción + función y mapa real de asientos (Supabase) de la función elegida.
   var list=document.getElementById('boletajeProdList');
   if(!list) return;
   clearEl(list);
@@ -1355,212 +1709,25 @@ function renderBoletajeProductions(){
   perfSel.onchange=function(){boletajeSel.perf=perfSel.value;renderBoletajeProductions();};
   row.appendChild(prodSel);row.appendChild(perfSel);list.appendChild(row);
 
-  var cur=perfs.filter(function(p){return p.id===boletajeSel.perf;})[0];
-  var box=document.createElement('div');box.style.cssText='background:var(--g2);border:1px solid var(--g3);border-radius:var(--r8);padding:16px;font-size:13px;color:var(--t2);line-height:1.6';
-  var title=document.createElement('div');title.style.cssText='font-weight:800;color:#fff;margin-bottom:6px';
-  title.textContent=prods[boletajeSel.prod].nombre+(cur?' — '+fmtPerfDate(cur.starts_at):'');
-  var msg=document.createElement('div');
-  msg.textContent=cur
-    ?'Asientos y precios de esta función: pendientes del mapa real del teatro. La venta numerada está deshabilitada hasta cargarlo.'
-    :'Esta producción aún no tiene funciones. Créalas en Gestión de Producciones.';
-  box.appendChild(title);box.appendChild(msg);list.appendChild(box);
-}
-function buildBoletajeProdCard(productionId){
-  var prod=DB.getProduction(productionId);
-  if(!prod) return document.createElement('div');
-  var open=!!staffAccExpanded[productionId];
-  var card=document.createElement('div');
-  card.className='prod-acc-card'+(open?' open':'');
-  card.id='boletajeCard-'+productionId;
-
-  var hdr=document.createElement('div');hdr.className='prod-acc-hdr';
-  hdr.onclick=function(){ toggleBoletajeAcc(productionId); };
-  var logo=document.createElement('img');logo.className='prod-acc-logo';logo.src=PROD_LOGOS[productionId]||'';logo.alt=prod.nombre;
-  var info=document.createElement('div');info.className='prod-acc-info';
-  var name=document.createElement('div');name.className='prod-acc-name';name.textContent=prod.nombre;
-  var meta=document.createElement('div');meta.className='prod-acc-meta';meta.textContent=(prod.fecha||'—')+' · '+(prod.venue||'—');
-  info.appendChild(name);info.appendChild(meta);
-
-  var soldSeats=DB.getOrdersForProduction(productionId).filter(function(o){return o.status==='aprobado';}).reduce(function(s,o){return s+(o.seats||[]).length;},0);
-  var totalSeats=allSeatIds().length;
-  var availableSeats=totalSeats-soldSeats;
-  var stats=document.createElement('div');stats.className='prod-acc-stats';
-  [{v:totalSeats, l:'Boletos totales'},{v:soldSeats, l:'Boletos vendidos'},{v:availableSeats, l:'Boletos disponibles'}].forEach(function(s){
-    var st=document.createElement('div');st.className='prod-acc-stat';
-    var v=document.createElement('div');v.className='prod-acc-stat-v';v.textContent=s.v;
-    var l=document.createElement('div');l.className='prod-acc-stat-l';l.textContent=s.l;
-    st.appendChild(v);st.appendChild(l);stats.appendChild(st);
-  });
-  var chev=document.createElement('div');chev.className='prod-acc-chevron';chev.textContent='▾';
-  hdr.appendChild(logo);hdr.appendChild(info);hdr.appendChild(stats);hdr.appendChild(chev);
-
-  var body=document.createElement('div');body.className='prod-acc-body';
-
-  var mapTitle=document.createElement('div');mapTitle.style.cssText='font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px;color:var(--t2)';mapTitle.textContent='Mapa de Asientos en Vivo';
-  var map=document.createElement('div');map.className='staff-seatmap';map.id='staffSeatMap-'+productionId;
-  var legend=document.createElement('div');legend.className='seat-legend';legend.style.marginTop='10px';
-  [['background:#1565C0','Disponible'],['background:#EC4899','Seleccionado'],['background:#E5445A','Comprado/Ocupado'],['background:#22c55e','Usado'],['background:#7a7a7a','Bloqueado'],['background:#D4A017','Pendiente']].forEach(function(pair){
-    var item=document.createElement('span');item.className='legend-item';
-    var sq=document.createElement('span');sq.className='legend-seat';sq.style.cssText=pair[0];
-    item.appendChild(sq);item.appendChild(document.createTextNode(pair[1]));
-    legend.appendChild(item);
-  });
-
-  if(productionId===SHOWMAN_ID){
-    var toggleWrap=document.createElement('div');toggleWrap.style.cssText='margin-top:16px;padding-top:16px;border-top:1px solid #252525;display:flex;align-items:center;gap:10px';
-    var label=document.createElement('label');label.style.cssText='display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--t2)';
-    var chk=document.createElement('input');chk.type='checkbox';chk.checked=!!prod.onSale;
-    chk.onchange=function(){ toggleShowmanOnSale(chk.checked); };
-    label.appendChild(chk);label.appendChild(document.createTextNode('Activar venta de boletos de Showman'));
-    toggleWrap.appendChild(label);
-    body.appendChild(toggleWrap);
+  var root=document.createElement('div');root.id='smapRoot';list.appendChild(root);
+  if(boletajeSel.prod && boletajeSel.perf){
+    if(smapState.perf!==boletajeSel.perf) smapLoad(boletajeSel.prod,boletajeSel.perf); else renderSeatMap();
+  } else {
+    var none2=document.createElement('div');none2.className='empty-note';
+    none2.textContent='Esta producción aún no tiene funciones. Créalas en Gestión de Producciones.';
+    root.appendChild(none2);
   }
-
-  var genWrap=document.createElement('div');genWrap.style.cssText='margin-top:20px;padding-top:16px;border-top:1px solid #252525';
-  var genTitle=document.createElement('div');genTitle.style.cssText='font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px;color:var(--t2)';genTitle.textContent='Acciones sobre Asientos Seleccionados';
-  var genRow=document.createElement('div');genRow.style.cssText='display:flex;gap:10px;flex-wrap:wrap;align-items:center';
-  var nameInput=document.createElement('input');nameInput.type='text';nameInput.id='staffBuyerName-'+productionId;nameInput.className='form-c';nameInput.placeholder='Nombre del comprador (para generar boleto)';nameInput.style.cssText='flex:1;min-width:200px';
-  var phoneInput=document.createElement('input');phoneInput.type='tel';phoneInput.id='staffBuyerPhone-'+productionId;phoneInput.className='form-c';phoneInput.placeholder='Teléfono del comprador';phoneInput.style.cssText='flex:1;min-width:160px';
-  var sellerInput=document.createElement('input');sellerInput.type='text';sellerInput.id='staffSellerCode-'+productionId;sellerInput.className='form-c';sellerInput.placeholder='Código de vendedor (opcional)';sellerInput.style.cssText='flex:1;min-width:160px';
-  var blockBtn=document.createElement('button');blockBtn.className='btn btn-o btn-sm';blockBtn.textContent='🔒 Bloquear';
-  blockBtn.onclick=function(){ blockSelectedSeats(productionId); };
-  var genBtn=document.createElement('button');genBtn.className='btn btn-a btn-sm';genBtn.textContent='Generar Boleto';
-  genBtn.onclick=function(){ createStaffTicket(productionId); };
-  var releaseBtn=document.createElement('button');releaseBtn.className='btn btn-o btn-sm';releaseBtn.textContent='🔓 Liberar';
-  releaseBtn.onclick=function(){ releaseSelectedSeats(productionId); };
-  genRow.appendChild(nameInput);genRow.appendChild(phoneInput);genRow.appendChild(sellerInput);genRow.appendChild(blockBtn);genRow.appendChild(genBtn);genRow.appendChild(releaseBtn);
-  var genHint=document.createElement('div');genHint.style.cssText='font-size:12px;color:var(--t3);margin-top:8px';genHint.textContent='Selecciona asientos en el mapa de arriba: Bloquear los aparta sin vender, Generar Boleto los vende (requiere nombre), Liberar quita un bloqueo.';
-  var genTickets=document.createElement('div');genTickets.className='gen-qr-grid';genTickets.id='staffGeneratedTickets-'+productionId;
-  genWrap.appendChild(genTitle);genWrap.appendChild(genRow);genWrap.appendChild(genHint);genWrap.appendChild(genTickets);
-
-  var pendWrap=document.createElement('div');pendWrap.style.cssText='margin-top:20px;padding-top:16px;border-top:1px solid #252525';
-  var pendTitle=document.createElement('div');pendTitle.style.cssText='font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px;color:var(--t2)';pendTitle.textContent='Solicitudes Pendientes';
-  var pendList=document.createElement('div');pendList.id='pendingOrdersList-'+productionId;
-  pendWrap.appendChild(pendTitle);pendWrap.appendChild(pendList);
-
-  var ctrlWrap=document.createElement('div');ctrlWrap.style.cssText='margin-top:20px;padding-top:16px;border-top:1px solid #252525';
-  var ctrlTitle=document.createElement('div');ctrlTitle.style.cssText='font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px;color:var(--t2)';ctrlTitle.textContent='Control de Ventas';
-  var ctrlBoxes=document.createElement('div');ctrlBoxes.className='sales-control-grid';ctrlBoxes.id='salesControlBoxes-'+productionId;
-  ctrlWrap.appendChild(ctrlTitle);ctrlWrap.appendChild(ctrlBoxes);
-
-  var dbWrap=document.createElement('div');dbWrap.style.cssText='margin-top:20px;padding-top:16px;border-top:1px solid #252525';
-  var dbBtn=document.createElement('button');dbBtn.className='btn btn-o btn-sm';dbBtn.textContent='📋 Ver base de datos de boletos';
-  dbBtn.onclick=function(){ staffDbOpen[productionId]=!staffDbOpen[productionId]; if(staffDbOpen[productionId]) renderTicketsDatabase(productionId); var t=document.getElementById('ticketsDb-'+productionId); if(t) t.style.display=staffDbOpen[productionId]?'block':'none'; };
-  var dbTable=document.createElement('div');dbTable.id='ticketsDb-'+productionId;dbTable.style.cssText='margin-top:14px;display:'+(staffDbOpen[productionId]?'block':'none');
-  dbWrap.appendChild(dbBtn);dbWrap.appendChild(dbTable);
-
-  var sellWrap=document.createElement('div');sellWrap.style.cssText='margin-top:20px;padding-top:16px;border-top:1px solid #252525';
-  var sellTitle=document.createElement('div');sellTitle.style.cssText='font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px;color:var(--t2)';sellTitle.textContent='Vendedores / Códigos de Registro';
-  var sellForm=document.createElement('div');sellForm.style.cssText='display:flex;gap:10px;flex-wrap:wrap;align-items:center';
-  var sellNameInput=document.createElement('input');sellNameInput.type='text';sellNameInput.id='sellerName-'+productionId;sellNameInput.className='form-c';sellNameInput.placeholder='Nombre del vendedor';sellNameInput.style.cssText='flex:1;min-width:180px';
-  var sellCodeInput=document.createElement('input');sellCodeInput.type='text';sellCodeInput.id='sellerCode-'+productionId;sellCodeInput.className='form-c';sellCodeInput.placeholder='Código de registro';sellCodeInput.style.cssText='flex:1;min-width:140px';
-  var sellAddBtn=document.createElement('button');sellAddBtn.className='btn btn-a btn-sm';sellAddBtn.textContent='➕ Agregar';
-  sellAddBtn.onclick=function(){ addSellerFromStaff(productionId); };
-  sellForm.appendChild(sellNameInput);sellForm.appendChild(sellCodeInput);sellForm.appendChild(sellAddBtn);
-  var sellTable=document.createElement('div');sellTable.id='sellersTable-'+productionId;sellTable.style.cssText='margin-top:14px';
-  sellWrap.appendChild(sellTitle);sellWrap.appendChild(sellForm);sellWrap.appendChild(sellTable);
-
-  body.appendChild(mapTitle);body.appendChild(map);body.appendChild(legend);
-  body.appendChild(genWrap);body.appendChild(pendWrap);body.appendChild(ctrlWrap);body.appendChild(dbWrap);body.appendChild(sellWrap);
-
-  card.appendChild(hdr);card.appendChild(body);
-  return card;
 }
-DB.subscribe(DB.KEYS.orders, function(){ if(document.getElementById('v-staff').classList.contains('active')) renderBoletajeProductions(); });
 DB.subscribe(DB.KEYS.productions, function(){ if(document.getElementById('v-staff').classList.contains('active')) renderBoletajeProductions(); });
 DB.subscribe(DB.KEYS.performances, function(){ if(document.getElementById('v-staff').classList.contains('active')) renderBoletajeProductions(); });
-DB.subscribe(DB.KEYS.blocked, function(){ if(document.getElementById('v-staff').classList.contains('active')) renderBoletajeProductions(); });
-DB.subscribe(DB.KEYS.blocked, function(){ if(document.getElementById('v-checkout').classList.contains('active')) renderCheckout(); });
 
-function renderTicketsDatabase(productionId){
-  var box=document.getElementById('ticketsDb-'+productionId);
-  if(!box) return;
-  clearEl(box);
-  var orders = DB.getOrdersForProduction(productionId).filter(function(o){ return o.status==='aprobado'; });
-  var rows=[];
-  orders.forEach(function(o){
-    var seller = o.vendedorCodigo ? DB.getSellerByCode(o.vendedorCodigo) : null;
-    var vendidoPor = seller ? seller.nombre : 'NA';
-    (o.seats||[]).forEach(function(seatId){
-      var code = (o.seatQrs && o.seatQrs[seatId]) || o.qrCode || '—';
-      var usado = o.checkedInSeats && o.checkedInSeats[seatId];
-      rows.push({code:code, ordenCodigo:o.codigoOrden||'—', nombre:o.buyerNombre||'—', cuenta:o.userId||'Taquilla', tel:o.telefono||'—', seat:seatId, estado:usado?'Usado':'Vigente', vendidoPor:vendidoPor, order:o, productionId:productionId});
-    });
-  });
-  if(!rows.length){
-    var empty=document.createElement('div');empty.className='empty-note';empty.textContent='Sin boletos aprobados todavía.';
-    box.appendChild(empty);
-    return;
-  }
-  var table=document.createElement('table');table.className='tickets-db-table';
-  var thead=document.createElement('thead');
-  var trh=document.createElement('tr');
-  ['Código de orden','Código QR','Comprador','Cuenta','Teléfono','Asiento','Estado','Vendido por','Acceso'].forEach(function(h){ var th=document.createElement('th');th.textContent=h;trh.appendChild(th); });
-  thead.appendChild(trh);
-  var tbody=document.createElement('tbody');
-  rows.forEach(function(r){
-    var tr=document.createElement('tr');
-    [r.ordenCodigo, r.code.slice(0,10).toUpperCase(), r.nombre, r.cuenta, r.tel, r.seat, r.estado, r.vendidoPor].forEach(function(v){
-      var td=document.createElement('td');td.textContent=v;tr.appendChild(td);
-    });
-    var tdBtn=document.createElement('td');
-    var accBtn=document.createElement('button');accBtn.className='btn btn-o btn-sm';accBtn.textContent='Ver boleto';
-    accBtn.onclick=function(){ showAccessModal(r.productionId, r.order, r.seat, r.code); };
-    tdBtn.appendChild(accBtn);tr.appendChild(tdBtn);
-    tbody.appendChild(tr);
-  });
-  table.appendChild(thead);table.appendChild(tbody);
-  box.appendChild(table);
-}
-
-async function addSellerFromStaff(productionId){
-  var nameEl=document.getElementById('sellerName-'+productionId);
-  var codeEl=document.getElementById('sellerCode-'+productionId);
-  var res = await DB.addSeller(nameEl.value, codeEl.value);
-  if(!res.ok){ flash(res.error,'d'); return; }
-  nameEl.value='';
-  codeEl.value='';
-  flash('Vendedor agregado: '+res.seller.nombre+' ('+res.seller.codigo+')','s');
-  renderSellersTable(productionId);
-}
-function renderSellersTable(productionId){
-  var box=document.getElementById('sellersTable-'+productionId);
-  if(!box) return;
-  clearEl(box);
-  var sellers = DB.getSellers();
-  if(!sellers.length){
-    var empty=document.createElement('div');empty.className='empty-note';empty.textContent='Todavía no hay vendedores registrados.';
-    box.appendChild(empty);
-    return;
-  }
-  // "Boletos vendidos" solo cuenta asientos de órdenes aprobadas de esta producción,
-  // por decisión de Johann (evita que solicitudes pendientes/rechazadas infle el conteo.
-  var approved = DB.getOrdersForProduction(productionId).filter(function(o){ return o.status==='aprobado'; });
-  var table=document.createElement('table');table.className='tickets-db-table';
-  var thead=document.createElement('thead');
-  var trh=document.createElement('tr');
-  ['Vendedor','Código','Boletos vendidos'].forEach(function(h){ var th=document.createElement('th');th.textContent=h;trh.appendChild(th); });
-  thead.appendChild(trh);
-  var tbody=document.createElement('tbody');
-  sellers.forEach(function(s){
-    var count=0;
-    approved.forEach(function(o){ if(o.vendedorCodigo===s.codigo) count += (o.seats||[]).length; });
-    var tr=document.createElement('tr');
-    [s.nombre, s.codigo, count].forEach(function(v){
-      var td=document.createElement('td');td.textContent=v;tr.appendChild(td);
-    });
-    tbody.appendChild(tr);
-  });
-  table.appendChild(thead);table.appendChild(tbody);
-  box.appendChild(table);
-}
-DB.subscribe(DB.KEYS.sellers, function(){ if(document.getElementById('v-staff').classList.contains('active')) renderBoletajeProductions(); });
+DB.subscribe(DB.KEYS.sellers, function(){ if(document.getElementById('v-staff').classList.contains('active')) renderSellersPanel(); });
 
 function closeAccessModal(){
   var m=document.getElementById('accessModal');
   if(m) m.remove();
 }
-function showAccessModal(productionId, order, seat, code){
+function showAccessModal(productionId, order, seat, code, startsAt){
   closeAccessModal();
   var prod = DB.getProduction(productionId) || {};
   var backdrop=document.createElement('div');backdrop.className='access-modal-backdrop';backdrop.id='accessModal';
@@ -1578,7 +1745,7 @@ function showAccessModal(productionId, order, seat, code){
   var img=document.createElement('img');img.className='access-modal-qr';img.alt='QR '+seat;
   qrDataUrl(code, function(url){ if(url) img.src=url; });
   var detail=document.createElement('div');detail.className='access-modal-detail';
-  detail.textContent=(prod.fecha||'—')+' · '+(prod.venue||'—')+' · '+(prod.hora||'—')+' · Asiento '+seat;
+  detail.textContent=(startsAt?fmtPerfDate(startsAt):(prod.fecha||'—'))+' · '+(prod.venue||'—')+' · Asiento '+seat;
   modal.appendChild(closeBtn);modal.appendChild(darfLogo);modal.appendChild(logo);modal.appendChild(nombre);modal.appendChild(img);modal.appendChild(detail);
   backdrop.appendChild(modal);
   document.body.appendChild(backdrop);
@@ -1592,10 +1759,12 @@ function startQrScanner(){
   qrScannerInstance = new Html5Qrcode('qrReaderBox');
   qrScannerInstance.start(
     {facingMode:'environment'},
-    {fps:10, qrbox:200},
+    {fps:10, qrbox:function(w,h){var m=Math.floor(Math.min(w,h)*0.7);return {width:m,height:m};}},
     function(decodedText){ handleQrResult(decodedText); },
     function(){ /* frame sin QR, ignorar */ }
-  ).catch(function(err){
+  ).then(function(){
+    var fr=document.getElementById('qrFrame'); if(fr) fr.classList.add('is-live');
+  }).catch(function(err){
     flash('No se pudo acceder a la cámara: '+err+'. Usa la validación manual.','d');
     qrScannerInstance=null;
   });
@@ -1604,6 +1773,7 @@ function stopQrScanner(){
   if(qrScannerInstance){
     qrScannerInstance.stop().then(function(){ qrScannerInstance.clear(); qrScannerInstance=null; }).catch(function(){ qrScannerInstance=null; });
   }
+  var fr=document.getElementById('qrFrame'); if(fr) fr.classList.remove('is-live');
 }
 function manualCheckIn(){
   var input=document.getElementById('qrManualInput');
@@ -1612,52 +1782,32 @@ function manualCheckIn(){
   handleQrResult(code);
   input.value='';
 }
-function handleQrResult(code){
-  var res = DB.checkInByQr(code);
+async function handleQrResult(code){
   var f=document.getElementById('qrFrameText');
-  if(res.ok){
-    var nombre=res.order.buyerNombre||res.order.userId||'Comprador';
-    var seatTxt=res.seat?('Asiento '+res.seat):('Asientos '+(res.order.seats||[]).join(', '));
-    flash('✅ ACCESO — '+nombre+' · '+seatTxt,'s');
-    if(f){clearEl(f);
-      var l1=document.createElement('div');l1.textContent='✅ '+nombre;
-      var l2=document.createElement('div');l2.textContent=seatTxt;
-      f.appendChild(l1);f.appendChild(l2);
+  var show=function(txt,kind){ if(f){ clearEl(f); f.className='qr-scanner-text'+(kind?' '+kind:''); f.textContent=txt; } };
+  if(!sb){flash('No hay conexión con el servidor.','d');return;}
+  var r=await sb.rpc('check_in_ticket',{target_qr_token:String(code||'')});
+  if(r.error){flash(r.error.message,'d');show('❌ Error','bad');return;}
+  var d=r.data||{};
+  var who=d.buyer_nombre||'Comprador';
+  var seat=d.seat_label?('Asiento '+d.seat_label):'';
+  if(d.result==='ok'){
+    flash('ACCESO — '+who+(seat?' · '+seat:''),'s');
+    if(f){
+      clearEl(f); f.className='qr-scanner-text ok';
+      var l1=document.createElement('div');l1.textContent='✅ '+who;
+      f.appendChild(l1);
+      if(seat){var l2=document.createElement('div');l2.textContent=seat;f.appendChild(l2);}
     }
-  } else if(res.reason==='ya-usado'){
-    flash('⚠️ Este boleto ya fue utilizado.'+(res.seat?(' (Asiento '+res.seat+')'):''),'d');
-    if(f)f.textContent='⚠️ Ya utilizado';
-  } else if(res.reason==='no-aprobado'){
-    flash('❌ Este boleto no está aprobado.','d');
-    if(f)f.textContent='❌ No aprobado';
+    if(document.getElementById('smapRoot') && smapState.perf) smapLoad(smapState.prod,smapState.perf);
+  } else if(d.result==='ya_usado'){
+    flash('Este boleto ya fue utilizado.'+(seat?' ('+seat+')':''),'d');show('⚠️ Ya utilizado','bad');
+  } else if(d.result==='cancelado'){
+    flash('Este boleto fue cancelado.','d');show('❌ Cancelado','bad');
   } else {
-    flash('❌ Código no reconocido.','d');
-    if(f)f.textContent='❌ No reconocido';
+    flash('Código no reconocido.','d');show('❌ No reconocido','bad');
   }
-  if(res.order){
-    var pid=res.order.productionId;
-    renderSalesControl(pid);
-    if(staffDbOpen[pid]) renderTicketsDatabase(pid);
-    if(staffAccExpanded[pid]){ clearStaffSelection(pid); renderStaffSeatMap(pid); }
-  }
-  setTimeout(function(){ if(f)f.textContent='Esperando código QR...'; },3000);
-}
-function simulateQrScan(){
-  var orders = DB.getOrders().filter(function(o){ return o.status==='aprobado'; });
-  var code=null;
-  orders.some(function(o){
-    var checked=o.checkedInSeats||{};
-    if(o.seatQrs){
-      return Object.keys(o.seatQrs).some(function(s){
-        if(!checked[s]){ code=o.seatQrs[s]; return true; }
-        return false;
-      });
-    }
-    if(!o.checkedIn){ code=o.qrCode; return true; }
-    return false;
-  });
-  if(!code){flash('No hay boletos aprobados sin usar para simular.','i');return;}
-  handleQrResult(code);
+  setTimeout(function(){ show('Esperando código QR…'); },3000);
 }
 
 // ─── URL DIRECTA ──────────────────────────────────────
