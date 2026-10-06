@@ -63,7 +63,7 @@ const DB = (function(){
       p[row.id] = {
         id: row.id, nombre: row.nombre, venue: row.venue, fecha: row.fecha,
         price: Number(row.price), capacity: row.capacity,
-        onSale: row.on_sale, attendeesHistoric: row.attendees_historic
+        onSale: row.on_sale, concluded: !!row.concluded, attendeesHistoric: row.attendees_historic
       };
     });
     productionsCache = p;
@@ -78,6 +78,15 @@ const DB = (function(){
     if(error) return false;
     if(productionsCache[id]) productionsCache[id].onSale = !!onSale;
     notify(KEYS.productions);
+    return true;
+  }
+  async function setProductionConcluded(id, concluded){
+    if(!sb) return false;
+    // Una producción concluida no puede seguir en venta (check en 0017).
+    const patch = concluded ? {concluded:true, on_sale:false} : {concluded:false};
+    const { error } = await sb.from('productions').update(patch).eq('id', id);
+    if(error) return false;
+    await loadProductions();
     return true;
   }
   function slugify(nombre){
@@ -330,7 +339,7 @@ const DB = (function(){
 
   return {
     KEYS, subscribe,
-    loadProductions, getProductions, getProduction, setProductionOnSale, createProduction, updateProduction,
+    loadProductions, getProductions, getProduction, setProductionOnSale, setProductionConcluded, createProduction, updateProduction,
     loadPerformances, getPerformances, getPerformancesForProduction, createPerformance, updatePerformance,
     getOrders, createOrder, updateOrder, approveOrder, rejectOrder,
     getPendingOrders, getPendingOrdersFor, getOrdersForUser, getOrdersForProduction,
@@ -1065,6 +1074,17 @@ function buildAdminProdCard(prod){
   row.appendChild(idLabel);row.appendChild(nombreI);row.appendChild(venueI);row.appendChild(fechaI);row.appendChild(priceI);row.appendChild(capI);row.appendChild(saveBtn);
   card.appendChild(row);
 
+  var concRow=document.createElement('div');concRow.style.cssText='margin-top:12px';
+  var concLabel=document.createElement('label');concLabel.style.cssText='display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--t2)';
+  var concChk=document.createElement('input');concChk.type='checkbox';concChk.checked=!!prod.concluded;
+  concChk.onchange=async function(){
+    var ok = await DB.setProductionConcluded(prod.id, concChk.checked);
+    if(!ok){ concChk.checked=!concChk.checked; flash('No se pudo cambiar el estado. ¿Ya se aplicó la migración 0017?','d'); return; }
+    flash(concChk.checked?'Producción marcada como concluida: '+prod.nombre:'Producción reactivada: '+prod.nombre,'i');
+  };
+  concLabel.appendChild(concChk);concLabel.appendChild(document.createTextNode('Producción concluida (se oculta de Cartelera y del panel de venta)'));
+  concRow.appendChild(concLabel);card.appendChild(concRow);
+
   var perfWrap=document.createElement('div');perfWrap.style.cssText='margin-top:14px;padding-top:14px;border-top:1px solid #252525';
   var perfTitle=document.createElement('div');perfTitle.style.cssText='font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px;color:var(--t2)';perfTitle.textContent='Funciones';
   perfWrap.appendChild(perfTitle);
@@ -1331,19 +1351,22 @@ function toggleBoletajeAcc(productionId){
   renderBoletajeProductions();
 }
 function renderBoletajeProductions(){
+  // El Boletaje del prototipo (mapa fijo + localStorage) está deshabilitado hasta
+  // que exista el mapa real del venue (importador de asientos + categorías de precio).
   var list=document.getElementById('boletajeProdList');
   if(!list) return;
-  var ids=[SHOWMAN_ID];
   clearEl(list);
-  ids.forEach(function(id){
-    list.appendChild(buildBoletajeProdCard(id));
-  });
-  ids.forEach(function(id){
-    if(staffAccExpanded[id]){
-      renderStaffSeatMap(id); renderPendingOrders(id); renderSalesControl(id); renderSellersTable(id);
-      if(staffDbOpen[id]) renderTicketsDatabase(id);
-      if(staffLastGenerated[id]) renderGeneratedTickets(id, staffLastGenerated[id]);
-    }
+  var note=document.createElement('div');
+  note.style.cssText='font-size:13px;color:var(--t2);line-height:1.6';
+  note.textContent='La venta de boletos numerados está deshabilitada hasta que se cargue el mapa de asientos real del teatro. Mientras tanto, las funciones y su estado "En venta" se administran en Gestión de Producciones.';
+  list.appendChild(note);
+  var prods=DB.getProductions();
+  Object.keys(prods).filter(function(id){return !prods[id].concluded;}).forEach(function(id){
+    var row=document.createElement('div');
+    row.style.cssText='display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:10px 0;border-top:1px solid #252525;margin-top:10px;font-size:13px';
+    var n=document.createElement('span');n.textContent=prods[id].nombre;
+    var st=document.createElement('span');st.style.color='var(--t3)';st.textContent='Mapa de asientos: pendiente';
+    row.appendChild(n);row.appendChild(st);list.appendChild(row);
   });
 }
 function buildBoletajeProdCard(productionId){
@@ -1647,3 +1670,11 @@ window.addEventListener('popstate', function(){
   var p=new URLSearchParams(window.location.search).get('v');
   nav((p&&VIEWS_MAP[p])?p:'home', true);
 });
+
+// ─── PRODUCCIONES CONCLUIDAS: ocultar de Cartelera ────
+function applyConcludedVisibility(){
+  var prods=DB.getProductions();
+  var card=document.getElementById('cartCard-showman');
+  if(card) card.style.display=(prods[SHOWMAN_ID]&&prods[SHOWMAN_ID].concluded)?'none':'';
+}
+DB.subscribe(DB.KEYS.productions, applyConcludedVisibility);
