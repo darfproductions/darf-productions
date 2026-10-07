@@ -151,6 +151,19 @@ y escapa el contenido en el HTML. Secretos (solo como *Edge Function secrets*, n
 el repo): `RESEND_API_KEY`, `NOTIFY_EMAIL`, `WEBHOOK_SECRET`. Sin dominio verificado en
 Resend, el remitente es `onboarding@resend.dev` y solo entrega al dueño de la cuenta.
 
+## Códigos de descuento, galería y boleto en PDF
+
+- **Descuentos:** viven en `discount_codes` (+ tablas puente de zonas y funciones), accesibles solo
+  para admin. El comprador valida con `preview_discount_code` y compra con
+  `create_seated_ticket_order(…, target_discount_code)`; el servidor recalcula todo.
+- **Galería:** bucket público `gallery` en Supabase Storage + `gallery_photos`. Ruta
+  `<production_id>/<kind>/<uuid>.jpg`. Solo admin escribe; `loadGallery()` rellena los carruseles.
+- **PDF:** `downloadTicketPdf()` en `js/app.js` (jsPDF 2.5.1 por jsDelivr con SRI); se genera en
+  el navegador a partir de los datos y `qr_token` que el fan ya puede leer.
+- **Wallet (pendiente):** requiere (a) Apple Developer Program (USD 99/año) y un certificado
+  *Pass Type ID*, con una Edge Function que firme el `.pkpass` (certificado como secreto), y
+  (b) cuenta de emisor de Google Wallet API (gratis, con aprobación) y un JWT "Save to Google Wallet".
+
 ## Seguridad — reglas que no cambian
 
 - La `anon`/`public` key de Supabase puede vivir en el frontend (arquitectura

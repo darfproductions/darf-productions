@@ -185,6 +185,8 @@ main{flex:1}
 .carousel-wrap{position:relative;overflow:hidden;border-radius:var(--r12);border:1px solid #252525;background:var(--g2)}
 .carousel-track{display:flex;transition:transform .4s ease}
 .carousel-slide{flex:0 0 100%;aspect-ratio:16/7;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;color:var(--t3);font-size:13px;background:var(--g2);text-align:center;padding:20px}
+.carousel-slide.gallery-slide{padding:0;display:block}
+.carousel-slide img,.gal-item img{width:100%;height:100%;object-fit:cover;display:block}
 .carousel-btn{position:absolute;top:50%;transform:translateY(-50%);background:rgba(0,0,0,.7);border:1px solid #333;color:var(--blanco);width:38px;height:38px;border-radius:50%;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:all .2s;z-index:5}
 .carousel-btn:hover{background:var(--rojo)}
 .carousel-btn.prev{left:10px}
@@ -256,6 +258,12 @@ textarea.form-c{resize:vertical;min-height:110px}
 .adm-sec{background:var(--g2);border:1px solid #252525;border-radius:var(--r12);margin-bottom:18px;overflow:hidden}
 .adm-hdr{display:flex;align-items:center;gap:10px;padding:15px 20px;border-bottom:1px solid #252525;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em}
 .adm-body{padding:20px}
+.adm-hdr[aria-expanded]{cursor:pointer;user-select:none}
+.adm-hdr[aria-expanded]:hover{background:rgba(255,255,255,.03)}
+.adm-hdr::after{content:'▾';margin-left:auto;color:var(--t3);transition:transform .2s}
+.adm-sec.collapsed .adm-hdr::after{transform:rotate(-90deg)}
+.adm-sec.collapsed .adm-hdr{border-bottom-color:transparent}
+.adm-sec.collapsed .adm-body{display:none}
 .upload-zone{border:1.5px dashed #333;border-radius:var(--r12);padding:32px;text-align:center;cursor:pointer;transition:all .25s}
 .upload-zone:hover{border-color:var(--rojo);background:rgba(211,47,47,.04)}
 .res-table{width:100%;border-collapse:collapse;font-size:13px;display:block;overflow-x:auto}
@@ -395,6 +403,10 @@ footer{background:var(--negro);border-top:1px solid #1a1a1a;padding:56px 0 26px}
 .fan-zone-card-body{position:relative;z-index:2;padding:32px 28px;height:100%;display:flex;flex-direction:column;justify-content:flex-end}
 .fan-zone-card-glow{position:absolute;top:55%;left:38%;transform:translate(-50%,-50%);width:380px;height:220px;background:radial-gradient(ellipse at center,rgba(255,255,255,.35) 0%,transparent 68%);pointer-events:none;z-index:0}
 .fan-zone-logo-mm{width:280px;mix-blend-mode:lighten;position:relative;z-index:1}
+.fan-zone-card-showman{background:linear-gradient(135deg,#050b18,#0C1830);border:1px solid rgba(215,163,18,.25)}
+.fan-zone-card-showman:hover{transform:translateY(-6px);box-shadow:0 24px 60px rgba(215,163,18,.3)}
+.fan-zone-card-overlay-showman{position:absolute;inset:0;background:linear-gradient(to right,rgba(5,11,24,.92) 0%,rgba(5,11,24,.55) 60%,transparent 100%),linear-gradient(to top,rgba(5,11,24,.8) 0%,transparent 50%)}
+.fan-zone-btn-showman{background:var(--showman-gold);color:#0C1830;border:none;width:fit-content;font-weight:800}
 .fan-zone-btn-mm{background:var(--mm-blue);color:#fff;border:none;width:fit-content}
 .fan-zone-btn-hsm{background:var(--hsm-red);color:#fff;border:none;width:fit-content}
 
@@ -407,6 +419,8 @@ footer{background:var(--negro);border-top:1px solid #1a1a1a;padding:56px 0 26px}
 .fan-sub-hero{position:relative;min-height:55vh;display:flex;align-items:flex-end;overflow:hidden}
 .fan-sub-hero-mm{background:#000814}
 .fan-sub-hero-hsm{background:#120505}
+.fan-sub-hero-showman{background:#050b18}
+.fan-sub-hero-overlay-showman{position:absolute;inset:0;background:linear-gradient(to right,rgba(5,11,24,.95) 0%,rgba(5,11,24,.7) 45%,rgba(5,11,24,.15) 100%),linear-gradient(to top,rgba(5,11,24,.9) 0%,transparent 45%)}
 .fan-sub-hero-overlay-mm{position:absolute;inset:0;background:linear-gradient(to right,rgba(0,8,20,.95) 0%,rgba(0,8,20,.7) 45%,rgba(0,8,20,.1) 100%),linear-gradient(to top,rgba(0,8,20,.9) 0%,transparent 45%)}
 .fan-sub-hero-overlay-hsm{position:absolute;inset:0;background:linear-gradient(to right,rgba(18,5,5,.95) 0%,rgba(18,5,5,.7) 45%,rgba(18,5,5,.15) 100%),linear-gradient(to top,rgba(18,5,5,.9) 0%,transparent 45%)}
 .fan-sub-hero-content{position:relative;z-index:2;padding-bottom:40px;padding-top:calc(var(--nav-h) + 40px)}
@@ -655,3 +669,4 @@ footer{background:var(--negro);border-top:1px solid #1a1a1a;padding:56px 0 26px}
 .adm-folder[open]>summary{color:#fff}
 .adm-folder[open]{padding-bottom:16px}
 .tickets-db-table tr.db-total td{font-weight:800;color:#fff;border-top:1px solid var(--g3)}
+.fan-zone-badge{margin-bottom:auto;width:fit-content}

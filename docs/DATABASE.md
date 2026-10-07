@@ -40,7 +40,9 @@ propósito (sin venue real todavía) — ver `docs/ARCHITECTURE.md`.
 | 0023 | `public_checkout.sql` | `get_taken_seats` (ids de asientos tomados, sin datos de compradores) y `create_seated_ticket_order` v2 (sesión obligatoria, solo `performances.on_sale`, vendedor opcional, tope de 3 pendientes) — aplicada |
 | 0024 | `showman_general_zone.sql` | Filas R–X de Showman pasan de Preferente a la categoría General ($250, zona verde, etiquetas `General-<fila>-<n>`); J–Q siguen Preferente $300 — **pendiente de aplicar** |
 | 0025 | `performance_default_prices.sql` | Trigger `trg_copy_prices_to_new_performance`: una función nueva hereda los precios de la función más reciente de su producción — **pendiente de aplicar** |
-| 0026 | `public_prices_and_zone_names.sql` | Política `performance_prices_public_read` por función en venta (no por `productions.on_sale`); renombra zonas de Showman: Exclusivo→VIP, VIP→Preferente A, Preferente→Preferente B (categorías y prefijos de `seat_label`) — **pendiente de aplicar** |
+| 0026 | `public_prices_and_zone_names.sql` | Política `performance_prices_public_read` por función en venta (no por `productions.on_sale`); renombra zonas de Showman: Exclusivo→VIP, VIP→Preferente A, Preferente→Preferente B (categorías y prefijos de `seat_label`) — aplicada |
+| 0027 | `discount_codes.sql` | Tablas `discount_codes`, `discount_code_categories`, `discount_code_performances` (solo admin por RLS); `orders.discount_code_id/discount_codigo/discount_amount`; RPCs `admin_save/delete/list_discount_code(s)`, `preview_discount_code`, `_resolve_discount_code` (interna) y `create_seated_ticket_order` v3 (6.º argumento `target_discount_code`) — aplicada |
+| 0028 | `gallery.sql` | Bucket público `gallery` (5 MB; jpeg/png/webp; escritura solo admin) y tabla `gallery_photos(production_id, kind galeria/ensayos, path, sort_order)` con lectura pública — aplicada |
 
 Todas ejecutables en orden contra un proyecto Supabase vacío. Regla del
 proyecto: **nunca editar una migración ya ejecutada** — un cambio futuro se

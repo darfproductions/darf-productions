@@ -11,6 +11,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.min.js" integrity="sha384-JBR+x8blGwjDRO63aHCGiZMD4VNiTR4ZUGA+N6ZKLf3zNt1fK8IBpcgPaMrxqWBp" crossorigin="anonymous"></script>
 <script src="js/config.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.5.1/qrcode.min.js" integrity="sha512-PEhlWBZBrQL7flpJPY8lXx8tIN7HWX912GzGhFTDqA3iWFrakVH3lVHomCoU9BhfKzgxfEk6EG2C3xej+9srOQ==" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js" integrity="sha384-JcnsjUPPylna1s1fvi1u12X5qjY5OL56iySh75FdtrwhO/SWXgMjoVqcKyIIWOLk" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js" integrity="sha384-c9d8RFSL+u3exBOJ4Yp3HUJXS4znl9f+z66d1y54ig+ea249SpqR+w1wyvXz/lk+" crossorigin="anonymous"></script>
 </head>
 <body>
@@ -54,7 +55,7 @@
         <div class="prod-mini" onclick="nav('showman')">
           <img class="prod-mini-img" src="SHOWMAN VISUALS/2.png" alt="Showman" style="width:56px;height:56px;object-fit:cover;border-radius:8px;flex-shrink:0">
           <div class="prod-mini-info">
-            <div class="prod-mini-year">Próximamente</div>
+            <div class="prod-mini-year">2027</div>
             <div class="prod-mini-title" style="color:var(--showman-gold)">Showman</div>
           </div>
         </div>
@@ -94,7 +95,7 @@
       <p style="color:var(--t2);max-width:500px;margin-bottom:24px;font-size:14px">Nuestra próxima producción ya se prepara para subir a escena.</p>
       <div onclick="nav('showman')" style="cursor:pointer;max-width:280px;background:var(--showman-blue);border-radius:var(--r8);overflow:hidden;border:2px solid var(--showman-blue-h);margin-bottom:24px">
         <img loading="lazy" src="SHOWMAN VISUALS/2.png" style="width:100%;aspect-ratio:1;object-fit:cover;display:block">
-        <div style="padding:12px 14px;font-size:13px;font-weight:800;color:#fff;background:var(--showman-blue);text-align:center;text-transform:uppercase;letter-spacing:.03em">Showman · Próximamente</div>
+        <div style="padding:12px 14px;font-size:13px;font-weight:800;color:#fff;background:var(--showman-blue);text-align:center;text-transform:uppercase;letter-spacing:.03em">Showman · 2027</div>
       </div>
       <button class="btn" onclick="nav('cartelera')">Ver Cartelera →</button>
     </div>
@@ -147,7 +148,7 @@
         <div class="prod-select-card" id="cartCard-showman" onclick="nav('showman')" style="background:#050810;border-color:rgba(21,101,192,.25)">
           <div style="height:340px;position:relative;overflow:hidden">
             <img loading="lazy" src="SHOWMAN VISUALS/2.png" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
-            <div style="position:absolute;bottom:14px;left:14px;z-index:3"><span class="badge badge-showman">Próximamente</span></div>
+            <div style="position:absolute;bottom:14px;left:14px;z-index:3"><span class="badge badge-showman">2027</span></div>
           </div>
           <div class="prod-select-body" style="background:linear-gradient(to bottom,var(--showman-blue) 0%,#05070d 100%)">
             <div class="prod-select-year" style="color:var(--showman-gold)">Próxima producción DARF</div>
@@ -180,7 +181,7 @@
           <div class="prod-select-card" onclick="nav('showman')" style="background:#050810;border-color:rgba(21,101,192,.25)">
             <div style="height:340px;position:relative;overflow:hidden">
               <img loading="lazy" src="SHOWMAN VISUALS/2.png" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
-              <div style="position:absolute;bottom:14px;left:14px;z-index:3"><span class="badge badge-showman">Próximamente</span></div>
+              <div style="position:absolute;bottom:14px;left:14px;z-index:3"><span class="badge badge-showman">2027</span></div>
             </div>
             <div class="prod-select-body" style="background:linear-gradient(to bottom,var(--showman-blue) 0%,#05070d 100%)">
               <div class="prod-select-year" style="color:var(--showman-gold)">Próxima producción DARF</div>
@@ -312,9 +313,9 @@
             <h2 class="h-md accent-mm" style="margin-top:44px">Contenido Multimedia</h2>
             <div class="bar gold"></div>
             <div class="media-grid" style="margin-bottom:28px">
-              <a class="media-card gold-card" href="#" target="_blank" style="border-color:rgba(215,187,95,.2)">
+              <a class="media-card gold-card" href="https://youtu.be/lOfGNDV1qa8" target="_blank" rel="noopener" style="border-color:rgba(215,187,95,.2)">
                 <div class="media-icon">🎬</div>
-                <div><div class="media-info-t">Pro-Shot Oficial</div><div class="media-info-s">Grabación completa · Próximamente</div></div>
+                <div><div class="media-info-t">Pro-Shot Oficial</div><div class="media-info-s">Ver grabación completa →</div></div>
               </a>
             </div>
 
@@ -475,7 +476,7 @@
             <h2 class="h-md hsm-blue" style="margin-top:44px">Contenido Multimedia</h2>
             <div class="bar" style="background:linear-gradient(90deg,var(--hsm-gold),var(--hsm-gold-h))"></div>
             <div class="media-grid" style="margin-bottom:28px">
-              <a class="media-card blue-card" href="https://youtu.be/iuOcAkw44FQ" target="_blank" style="border-color:rgba(198,34,34,.2)">
+              <a class="media-card blue-card" href="https://youtu.be/2t8v1NjM-zQ" target="_blank" rel="noopener" style="border-color:rgba(198,34,34,.2)">
                 <div class="media-icon">🎬</div>
                 <div><div class="media-info-t">Pro-Shot Oficial</div><div class="media-info-s">Ver grabación completa →</div></div>
               </a>
@@ -578,7 +579,7 @@
         <div class="hero-overlay-showman"></div>
       </div>
       <div class="wrap obra-hero-content hero-content-z3">
-        <span class="badge badge-showman" style="margin-bottom:18px;display:inline-block">Próximamente</span>
+        <span class="badge badge-showman" style="margin-bottom:18px;display:inline-block">2027</span>
         <div style="max-width:560px;margin-bottom:14px">
           <img loading="lazy" src="SHOWMAN VISUALS/1.png" style="width:100%;display:block" alt="Showman">
         </div>
@@ -609,6 +610,12 @@
             <!-- GALERÍA -->
             <h2 class="h-md accent-showman" style="margin-top:44px">Galería Fotográfica</h2>
             <div class="bar" style="background:linear-gradient(90deg,var(--showman-blue),var(--showman-gold))"></div>
+            <div class="carousel-wrap" id="carShowmanWrap" style="margin-bottom:8px;display:none">
+              <div class="carousel-track" id="carShowman"></div>
+              <button class="carousel-btn prev" onclick="carMove('carShowman',-1)" aria-label="Foto anterior">‹</button>
+              <button class="carousel-btn next" onclick="carMove('carShowman',1)" aria-label="Siguiente foto">›</button>
+            </div>
+            <div class="carousel-dots" id="dotsShowman"></div>
 
             <!-- ELENCO -->
             <h2 class="h-md accent-showman" style="margin-top:44px">Elenco</h2>
@@ -649,7 +656,7 @@
             <div class="ficha" style="background:#050810;border-color:rgba(21,101,192,.25)">
               <div class="ficha-t" style="color:var(--showman-gold)">Ficha Técnica</div>
               <div class="ficha-row" style="border-color:#0d1a2a"><div class="ficha-l">Producción</div><div class="ficha-v">Showman</div></div>
-              <div class="ficha-row" style="border-color:transparent"><div class="ficha-l">Estado</div><div class="ficha-v"><span class="badge badge-showman">Próximamente</span></div></div>
+              <div class="ficha-row" style="border-color:transparent"><div class="ficha-l">Estado</div><div class="ficha-v"><span class="badge badge-showman">2027</span></div></div>
               <div style="margin-top:18px;display:flex;flex-direction:column;gap:10px">
                 <button class="btn btn-o" onclick="nav('prods')" style="width:100%;justify-content:center;font-size:11px">← Todas las producciones</button>
               </div>
@@ -726,12 +733,22 @@
       </div>
 
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:24px;margin-bottom:48px">
+        <div onclick="fanNav('showman')" class="fan-zone-card fan-zone-card-showman">
+          <img loading="lazy" src="SHOWMAN VISUALS/4.png" class="hero-bg-full" style="opacity:.45">
+          <div class="fan-zone-card-overlay-showman"></div>
+          <div class="fan-zone-card-body">
+            <span class="badge badge-gray fan-zone-badge">Exclusivo Fans · 2027</span>
+            <img loading="lazy" src="SHOWMAN VISUALS/1.png" style="width:220px;margin-bottom:12px">
+            <p style="font-size:13px;color:rgba(255,255,255,.7);margin-bottom:16px;line-height:1.6">Ensayos, fotos y contenido detrás del escenario de Showman.</p>
+            <button class="btn btn-sm fan-zone-btn-showman">▶ Entrar a la Fan Zone →</button>
+          </div>
+        </div>
         <div onclick="fanNav('mm')" class="fan-zone-card fan-zone-card-mm">
           <img loading="lazy" src="MAMMA MIA VISUALS/6.png" class="hero-bg-full" style="opacity:.35">
           <img loading="lazy" src="MAMMA MIA VISUALS/4.png" class="fan-zone-card-silhouette">
           <div class="fan-zone-card-overlay-mm"></div>
           <div class="fan-zone-card-body">
-            <span class="badge badge-gray" style="margin-bottom:12px;width:fit-content">Exclusivo Fans · 2026</span>
+            <span class="badge badge-gray fan-zone-badge">Exclusivo Fans · 2026</span>
             <div style="position:relative;margin-bottom:12px">
               <div class="fan-zone-card-glow"></div>
               <img loading="lazy" src="MAMMA MIA VISUALS/1.png" class="fan-zone-logo-mm">
@@ -744,7 +761,7 @@
           <img loading="lazy" src="HIGH SCHOOL MUSICAL VISUALS/4.png" class="hero-bg-full" style="opacity:.3">
           <div class="fan-zone-card-overlay-hsm"></div>
           <div class="fan-zone-card-body">
-            <span class="badge badge-gray" style="margin-bottom:12px;width:fit-content">Exclusivo Fans · 2025</span>
+            <span class="badge badge-gray fan-zone-badge">Exclusivo Fans · 2025</span>
             <img loading="lazy" src="HIGH SCHOOL MUSICAL VISUALS/1.png" style="width:220px;margin-bottom:12px">
             <p style="font-size:13px;color:rgba(255,255,255,.7);margin-bottom:16px;line-height:1.6">Ensayos, videos exclusivos y contenido detrás del escenario.</p>
             <button class="btn btn-sm fan-zone-btn-hsm">▶ Entrar a la Fan Zone →</button>
@@ -763,6 +780,41 @@
           <div style="background:var(--g3);border-radius:var(--r8);padding:16px;text-align:center"><div style="font-size:1.4rem;margin-bottom:6px">🎟️</div><div style="font-size:13px;font-weight:700;margin-bottom:4px">Acceso Anticipado</div><div style="font-size:12px;color:var(--t2)">Nuevas producciones</div></div>
           <div style="background:var(--g3);border-radius:var(--r8);padding:16px;text-align:center"><div style="font-size:1.4rem;margin-bottom:6px">📧</div><div style="font-size:13px;font-weight:700;margin-bottom:4px">Newsletter VIP</div><div style="font-size:12px;color:var(--t2)">Casting avant-première</div></div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUB-PÁGINA: SHOWMAN FAN ZONE -->
+  <div id="fan-showman" style="display:none">
+    <section class="fan-sub-hero fan-sub-hero-showman">
+      <img loading="lazy" src="SHOWMAN VISUALS/4.png" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.55">
+      <div class="fan-sub-hero-overlay-showman"></div>
+      <div class="wrap fan-sub-hero-content">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+          <span class="badge badge-r">🔒 Exclusivo Fans</span>
+          <button onclick="fanNav('home')" style="background:none;border:1px solid rgba(255,255,255,.3);color:rgba(255,255,255,.7);font-size:12px;padding:5px 14px;border-radius:100px;cursor:pointer;font-family:var(--font)">← Volver</button>
+        </div>
+        <img loading="lazy" src="SHOWMAN VISUALS/1.png" style="max-width:340px;width:100%;display:block;margin-bottom:14px">
+        <p style="font-size:13px;color:rgba(255,255,255,.65);max-width:420px">Contenido exclusivo de ensayos, videos y el proceso creativo de Showman 2027.</p>
+      </div>
+    </section>
+    <div style="background:linear-gradient(180deg,#050b18 0%,#030812 40%,var(--negro) 100%)">
+      <div class="wrap" style="padding:48px 24px">
+        <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(215,163,18,.12);border:1px solid rgba(215,163,18,.3);border-radius:100px;padding:6px 16px;margin-bottom:32px">
+          <span style="width:7px;height:7px;background:var(--showman-gold);border-radius:50%;display:inline-block"></span>
+          <span style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--showman-gold)">Contenido Exclusivo Fans</span>
+        </div>
+        <h2 class="h-md accent-showman" style="margin-bottom:8px">🎬 Videos Exclusivos</h2>
+        <div class="bar" style="background:linear-gradient(90deg,var(--showman-blue),var(--showman-gold));margin-bottom:24px"></div>
+        <div class="empty-note" style="margin-bottom:48px">Los videos exclusivos de Showman se publicarán muy pronto.</div>
+        <h2 class="h-md accent-showman" style="margin-bottom:8px">📸 Galería de Ensayos</h2>
+        <div class="bar" style="background:linear-gradient(90deg,var(--showman-blue),var(--showman-gold));margin-bottom:24px"></div>
+        <div class="carousel-wrap" style="margin-bottom:8px;border-color:rgba(215,163,18,.15)">
+          <div class="carousel-track" id="carEnsShowman"><div class="carousel-slide" style="background:linear-gradient(135deg,#050b18,#0C1830)"><div class="gal-icon" style="font-size:2.5rem;color:rgba(215,163,18,.35)">📸</div><span style="color:rgba(215,163,18,.45)">Fotos de ensayo · 2027</span></div></div>
+          <button class="carousel-btn prev" onclick="carMove('carEnsShowman',-1)" aria-label="Foto anterior">‹</button>
+          <button class="carousel-btn next" onclick="carMove('carEnsShowman',1)" aria-label="Siguiente foto">›</button>
+        </div>
+        <div class="carousel-dots" id="dotsEnsShowman" style="margin-bottom:40px"></div>
       </div>
     </div>
   </div>
@@ -795,21 +847,23 @@
         <h2 class="h-md accent-mm" style="margin-bottom:8px">🎬 Videos Exclusivos</h2>
         <div class="bar gold" style="margin-bottom:24px"></div>
         <div class="vid-grid" style="margin-bottom:48px">
-          <div class="vid-wrap" style="background:#0a0800;border-color:rgba(215,187,95,.15)"><div class="vid-thumb"><div class="vid-inner"><div class="vid-play">▶</div><div style="font-size:12px;color:rgba(215,187,95,.4)">Dancing Queen · Ensayo</div></div></div><div class="vid-cap">💃 Ensayo Dancing Queen</div></div>
-          <div class="vid-wrap" data-vid="AmpXXSkcjEY" onclick="playVid(this)" style="background:#0a0800;border-color:rgba(215,187,95,.3);cursor:pointer"><div class="vid-thumb" style="background-image:url(https://img.youtube.com/vi/AmpXXSkcjEY/hqdefault.jpg);background-size:cover;background-position:center"><div class="vid-inner"><div class="vid-play">▶</div><div style="font-size:12px;color:rgba(215,187,95,.7)">Voulez-Vous · Ensayo</div></div></div><div class="vid-cap">🎵 Voulez-Vous</div></div>
-          <div class="vid-wrap" data-vid="bZpsuknEFAY" onclick="playVid(this)" style="background:#0a0800;border-color:rgba(215,187,95,.3);cursor:pointer"><div class="vid-thumb" style="background-image:url(https://img.youtube.com/vi/bZpsuknEFAY/hqdefault.jpg);background-size:cover;background-position:center"><div class="vid-inner"><div class="vid-play">▶</div><div style="font-size:12px;color:rgba(215,187,95,.7)">Chiquitita · Ensayo</div></div></div><div class="vid-cap">🎵 Chiquitita</div></div>
-          <div class="vid-wrap" style="background:#0a0800;border-color:rgba(215,187,95,.15)"><div class="vid-thumb"><div class="vid-inner"><div class="vid-play">▶</div><div style="font-size:12px;color:rgba(215,187,95,.4)">Entrevistas al Elenco</div></div></div><div class="vid-cap">🎤 Entrevistas</div></div>
+          <div class="vid-wrap" data-vid="CK3TjWGxQlo" onclick="playVid(this)" style="background:#0a0800;border-color:rgba(215,187,95,.3);cursor:pointer"><div class="vid-thumb" style="background-image:url(https://img.youtube.com/vi/CK3TjWGxQlo/hqdefault.jpg);background-size:cover;background-position:center"><div class="vid-inner"><div class="vid-play">▶</div><div style="font-size:12px;color:rgba(215,187,95,.7)">Dancing Queen · Ensayo</div></div></div><div class="vid-cap">🎵 Dancing Queen</div></div>
+          <div class="vid-wrap" data-vid="mQ-vKGXXsIY" onclick="playVid(this)" style="background:#0a0800;border-color:rgba(215,187,95,.3);cursor:pointer"><div class="vid-thumb" style="background-image:url(https://img.youtube.com/vi/mQ-vKGXXsIY/hqdefault.jpg);background-size:cover;background-position:center"><div class="vid-inner"><div class="vid-play">▶</div><div style="font-size:12px;color:rgba(215,187,95,.7)">Chiquitita · Ensayo</div></div></div><div class="vid-cap">🎵 Chiquitita</div></div>
+          <div class="vid-wrap" data-vid="fFQ-HSlO9uc" onclick="playVid(this)" style="background:#0a0800;border-color:rgba(215,187,95,.3);cursor:pointer"><div class="vid-thumb" style="background-image:url(https://img.youtube.com/vi/fFQ-HSlO9uc/hqdefault.jpg);background-size:cover;background-position:center"><div class="vid-inner"><div class="vid-play">▶</div><div style="font-size:12px;color:rgba(215,187,95,.7)">Escena 3 (Mamma Mia) · Ensayo</div></div></div><div class="vid-cap">🎵 Escena 3 (Mamma Mia)</div></div>
+          <div class="vid-wrap" data-vid="M2SDeiTrOIs" onclick="playVid(this)" style="background:#0a0800;border-color:rgba(215,187,95,.3);cursor:pointer"><div class="vid-thumb" style="background-image:url(https://img.youtube.com/vi/M2SDeiTrOIs/hqdefault.jpg);background-size:cover;background-position:center"><div class="vid-inner"><div class="vid-play">▶</div><div style="font-size:12px;color:rgba(215,187,95,.7)">Escena 4 (Chiquitita &amp; Dancing Queen) · Ensayo</div></div></div><div class="vid-cap">🎵 Escena 4 (Chiquitita &amp; Dancing Queen)</div></div>
+          <div class="vid-wrap" data-vid="M2SDeiTrOIs" onclick="playVid(this)" style="background:#0a0800;border-color:rgba(215,187,95,.3);cursor:pointer"><div class="vid-thumb" style="background-image:url(https://img.youtube.com/vi/M2SDeiTrOIs/hqdefault.jpg);background-size:cover;background-position:center"><div class="vid-inner"><div class="vid-play">▶</div><div style="font-size:12px;color:rgba(215,187,95,.7)">Does Your Mother Know · Ensayo</div></div></div><div class="vid-cap">🎵 Does Your Mother Know</div></div>
+          <div class="vid-wrap" data-vid="M2SDeiTrOIs" onclick="playVid(this)" style="background:#0a0800;border-color:rgba(215,187,95,.3);cursor:pointer"><div class="vid-thumb" style="background-image:url(https://img.youtube.com/vi/M2SDeiTrOIs/hqdefault.jpg);background-size:cover;background-position:center"><div class="vid-inner"><div class="vid-play">▶</div><div style="font-size:12px;color:rgba(215,187,95,.7)">Mamma Mia x Dancing Queen · Ensayo</div></div></div><div class="vid-cap">🎵 Mamma Mia x Dancing Queen</div></div>
+          <div class="vid-wrap" data-vid="bDIISKQgaaA" onclick="playVid(this)" style="background:#0a0800;border-color:rgba(215,187,95,.3);cursor:pointer"><div class="vid-thumb" style="background-image:url(https://img.youtube.com/vi/bDIISKQgaaA/hqdefault.jpg);background-size:cover;background-position:center"><div class="vid-inner"><div class="vid-play">▶</div><div style="font-size:12px;color:rgba(215,187,95,.7)">Money, Money, Money · Ensayo</div></div></div><div class="vid-cap">🎵 Money, Money, Money</div></div>
+          <div class="vid-wrap" data-vid="q_1K4QICzZo" onclick="playVid(this)" style="background:#0a0800;border-color:rgba(215,187,95,.3);cursor:pointer"><div class="vid-thumb" style="background-image:url(https://img.youtube.com/vi/q_1K4QICzZo/hqdefault.jpg);background-size:cover;background-position:center"><div class="vid-inner"><div class="vid-play">▶</div><div style="font-size:12px;color:rgba(215,187,95,.7)">One of Us x SOS · Ensayo</div></div></div><div class="vid-cap">🎵 One of Us x SOS</div></div>
         </div>
         <h2 class="h-md accent-mm" style="margin-bottom:8px">📸 Galería de Ensayos</h2>
         <div class="bar gold" style="margin-bottom:24px"></div>
-        <div class="gal-grid" style="margin-bottom:48px">
-          <div class="gal-item" style="background:linear-gradient(135deg,#0a0800,#1a1200)"><div class="gal-icon" style="color:rgba(215,187,95,.3)">📸</div><div class="gal-lbl" style="color:rgba(215,187,95,.3)">Ensayo 01</div></div>
-          <div class="gal-item" style="background:linear-gradient(135deg,#0a0800,#1a1200)"><div class="gal-icon" style="color:rgba(215,187,95,.3)">📸</div><div class="gal-lbl" style="color:rgba(215,187,95,.3)">Ensayo 02</div></div>
-          <div class="gal-item" style="background:linear-gradient(135deg,#0a0800,#1a1200)"><div class="gal-icon" style="color:rgba(215,187,95,.3)">📸</div><div class="gal-lbl" style="color:rgba(215,187,95,.3)">Ensayo 03</div></div>
-          <div class="gal-item" style="background:linear-gradient(135deg,#0a0800,#1a1200)"><div class="gal-icon" style="color:rgba(215,187,95,.3)">📸</div><div class="gal-lbl" style="color:rgba(215,187,95,.3)">Ensayo 04</div></div>
-          <div class="gal-item" style="background:linear-gradient(135deg,#0a0800,#1a1200)"><div class="gal-icon" style="color:rgba(215,187,95,.3)">📸</div><div class="gal-lbl" style="color:rgba(215,187,95,.3)">Ensayo 05</div></div>
-          <div class="gal-item" style="background:linear-gradient(135deg,#0a0800,#1a1200)"><div class="gal-icon" style="color:rgba(215,187,95,.3)">📸</div><div class="gal-lbl" style="color:rgba(215,187,95,.3)">Ensayo 06</div></div>
+        <div class="carousel-wrap" style="margin-bottom:8px;border-color:rgba(215,187,95,.15)">
+          <div class="carousel-track" id="carEnsMM"><div class="carousel-slide" style="background:linear-gradient(135deg,#0a0800,#1a1200)"><div class="gal-icon" style="font-size:2.5rem;color:rgba(215,187,95,.35)">📸</div><span style="color:rgba(215,187,95,.35)">Ensayo 01</span></div><div class="carousel-slide" style="background:linear-gradient(135deg,#0a0800,#1a1200)"><div class="gal-icon" style="font-size:2.5rem;color:rgba(215,187,95,.35)">📸</div><span style="color:rgba(215,187,95,.35)">Ensayo 02</span></div><div class="carousel-slide" style="background:linear-gradient(135deg,#0a0800,#1a1200)"><div class="gal-icon" style="font-size:2.5rem;color:rgba(215,187,95,.35)">📸</div><span style="color:rgba(215,187,95,.35)">Ensayo 03</span></div><div class="carousel-slide" style="background:linear-gradient(135deg,#0a0800,#1a1200)"><div class="gal-icon" style="font-size:2.5rem;color:rgba(215,187,95,.35)">📸</div><span style="color:rgba(215,187,95,.35)">Ensayo 04</span></div><div class="carousel-slide" style="background:linear-gradient(135deg,#0a0800,#1a1200)"><div class="gal-icon" style="font-size:2.5rem;color:rgba(215,187,95,.35)">📸</div><span style="color:rgba(215,187,95,.35)">Ensayo 05</span></div><div class="carousel-slide" style="background:linear-gradient(135deg,#0a0800,#1a1200)"><div class="gal-icon" style="font-size:2.5rem;color:rgba(215,187,95,.35)">📸</div><span style="color:rgba(215,187,95,.35)">Ensayo 06</span></div></div>
+          <button class="carousel-btn prev" onclick="carMove('carEnsMM',-1)" aria-label="Foto anterior">‹</button>
+          <button class="carousel-btn next" onclick="carMove('carEnsMM',1)" aria-label="Siguiente foto">›</button>
         </div>
+        <div class="carousel-dots" id="dotsEnsMM" style="margin-bottom:40px"></div>
         <div style="display:flex;align-items:center;gap:16px;margin-bottom:32px">
           <div style="flex:1;height:1px;background:rgba(21,101,192,.2)"></div>
           <span style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--mm-blue);white-space:nowrap">📖 Información de la Producción</span>
@@ -847,20 +901,19 @@
         <h2 class="h-md hsm-blue" style="margin-bottom:8px">🎬 Videos Exclusivos</h2>
         <div class="bar" style="background:linear-gradient(90deg,var(--hsm-gold),var(--hsm-gold-h));margin-bottom:24px"></div>
         <div class="vid-grid" style="margin-bottom:48px">
-          <div class="vid-wrap" data-vid="iuOcAkw44FQ" onclick="playVid(this)" style="background:#120505;border-color:rgba(212,160,23,.45);grid-column:1/-1;border-width:2px;box-shadow:0 0 24px rgba(212,160,23,.15);cursor:pointer"><div class="vid-thumb" style="background-image:url(https://img.youtube.com/vi/iuOcAkw44FQ/hqdefault.jpg);background-size:cover;background-position:center"><div class="vid-inner"><div class="vid-play" style="border-color:var(--hsm-gold);width:64px;height:64px;font-size:1.5rem">▶</div><div style="font-size:12px;color:var(--hsm-gold);margin-top:8px;font-weight:700;letter-spacing:.06em">PRO-SHOT COMPLETO</div></div></div><div class="vid-cap" style="color:var(--hsm-gold)">⭐ Versión Extendida del Pro-Shot Oficial · High School Musical 2025</div></div>
-          <div class="vid-wrap" data-vid="5N4Qme6y_1M" onclick="playVid(this)" style="background:#120505;border-color:rgba(212,160,23,.35);cursor:pointer"><div class="vid-thumb" style="background-image:url(https://img.youtube.com/vi/5N4Qme6y_1M/hqdefault.jpg);background-size:cover;background-position:center"><div class="vid-inner"><div class="vid-play" style="border-color:var(--hsm-gold)">▶</div><div style="font-size:12px;color:rgba(212,160,23,.7)">Breaking Free · Ensayo</div></div></div><div class="vid-cap">🎵 Breaking Free</div></div>
-          <div class="vid-wrap" data-vid="-T9mwOxqag0" onclick="playVid(this)" style="background:#120505;border-color:rgba(212,160,23,.35);cursor:pointer"><div class="vid-thumb" style="background-image:url(https://img.youtube.com/vi/-T9mwOxqag0/hqdefault.jpg);background-size:cover;background-position:center"><div class="vid-inner"><div class="vid-play" style="border-color:var(--hsm-gold)">▶</div><div style="font-size:12px;color:rgba(212,160,23,.7)">We're All In This Together · Ensayo</div></div></div><div class="vid-cap">🎭 We're All In This Together</div></div>
+          <div class="vid-wrap" data-vid="p3a3nKx-rig" onclick="playVid(this)" style="background:#120505;border-color:rgba(212,160,23,.35);cursor:pointer"><div class="vid-thumb" style="background-image:url(https://img.youtube.com/vi/p3a3nKx-rig/hqdefault.jpg);background-size:cover;background-position:center"><div class="vid-inner"><div class="vid-play" style="border-color:var(--hsm-gold)">▶</div><div style="font-size:12px;color:rgba(212,160,23,.7)">Breaking Free · Ensayo</div></div></div><div class="vid-cap">🎵 Breaking Free</div></div>
+          <div class="vid-wrap" data-vid="EQwbeFQpRkc" onclick="playVid(this)" style="background:#120505;border-color:rgba(212,160,23,.35);cursor:pointer"><div class="vid-thumb" style="background-image:url(https://img.youtube.com/vi/EQwbeFQpRkc/hqdefault.jpg);background-size:cover;background-position:center"><div class="vid-inner"><div class="vid-play" style="border-color:var(--hsm-gold)">▶</div><div style="font-size:12px;color:rgba(212,160,23,.7)">Stick to the Status Quo · Ensayo</div></div></div><div class="vid-cap">🎵 Stick to the Status Quo</div></div>
+          <div class="vid-wrap" data-vid="CohmdbLSVHY" onclick="playVid(this)" style="background:#120505;border-color:rgba(212,160,23,.35);cursor:pointer"><div class="vid-thumb" style="background-image:url(https://img.youtube.com/vi/CohmdbLSVHY/hqdefault.jpg);background-size:cover;background-position:center"><div class="vid-inner"><div class="vid-play" style="border-color:var(--hsm-gold)">▶</div><div style="font-size:12px;color:rgba(212,160,23,.7)">We’re All In This Together · Ensayo</div></div></div><div class="vid-cap">🎵 We’re All In This Together</div></div>
+          <div class="vid-wrap" data-vid="zS0-c8bCMLA" onclick="playVid(this)" style="background:#120505;border-color:rgba(212,160,23,.35);cursor:pointer"><div class="vid-thumb" style="background-image:url(https://img.youtube.com/vi/zS0-c8bCMLA/hqdefault.jpg);background-size:cover;background-position:center"><div class="vid-inner"><div class="vid-play" style="border-color:var(--hsm-gold)">▶</div><div style="font-size:12px;color:rgba(212,160,23,.7)">Ovaciones · Ensayo</div></div></div><div class="vid-cap">🎵 Ovaciones</div></div>
         </div>
         <h2 class="h-md hsm-blue" style="margin-bottom:8px">📸 Galería de Ensayos</h2>
         <div class="bar" style="background:linear-gradient(90deg,var(--hsm-gold),var(--hsm-gold-h));margin-bottom:24px"></div>
-        <div class="gal-grid" style="margin-bottom:48px">
-          <div class="gal-item" style="background:linear-gradient(135deg,#120505,#1e0808)"><div class="gal-icon" style="color:rgba(212,160,23,.3)">📸</div><div class="gal-lbl" style="color:rgba(212,160,23,.3)">Ensayo 01</div></div>
-          <div class="gal-item" style="background:linear-gradient(135deg,#120505,#1e0808)"><div class="gal-icon" style="color:rgba(212,160,23,.3)">📸</div><div class="gal-lbl" style="color:rgba(212,160,23,.3)">Ensayo 02</div></div>
-          <div class="gal-item" style="background:linear-gradient(135deg,#120505,#1e0808)"><div class="gal-icon" style="color:rgba(212,160,23,.3)">📸</div><div class="gal-lbl" style="color:rgba(212,160,23,.3)">Ensayo 03</div></div>
-          <div class="gal-item" style="background:linear-gradient(135deg,#120505,#1e0808)"><div class="gal-icon" style="color:rgba(212,160,23,.3)">📸</div><div class="gal-lbl" style="color:rgba(212,160,23,.3)">Ensayo 04</div></div>
-          <div class="gal-item" style="background:linear-gradient(135deg,#120505,#1e0808)"><div class="gal-icon" style="color:rgba(212,160,23,.3)">📸</div><div class="gal-lbl" style="color:rgba(212,160,23,.3)">Ensayo 05</div></div>
-          <div class="gal-item" style="background:linear-gradient(135deg,#120505,#1e0808)"><div class="gal-icon" style="color:rgba(212,160,23,.3)">📸</div><div class="gal-lbl" style="color:rgba(212,160,23,.3)">Ensayo 06</div></div>
+        <div class="carousel-wrap" style="margin-bottom:8px;border-color:rgba(212,160,23,.15)">
+          <div class="carousel-track" id="carEnsHSM"><div class="carousel-slide" style="background:linear-gradient(135deg,#120505,#1e0808)"><div class="gal-icon" style="font-size:2.5rem;color:rgba(212,160,23,.35)">📸</div><span style="color:rgba(212,160,23,.35)">Ensayo 01</span></div><div class="carousel-slide" style="background:linear-gradient(135deg,#120505,#1e0808)"><div class="gal-icon" style="font-size:2.5rem;color:rgba(212,160,23,.35)">📸</div><span style="color:rgba(212,160,23,.35)">Ensayo 02</span></div><div class="carousel-slide" style="background:linear-gradient(135deg,#120505,#1e0808)"><div class="gal-icon" style="font-size:2.5rem;color:rgba(212,160,23,.35)">📸</div><span style="color:rgba(212,160,23,.35)">Ensayo 03</span></div><div class="carousel-slide" style="background:linear-gradient(135deg,#120505,#1e0808)"><div class="gal-icon" style="font-size:2.5rem;color:rgba(212,160,23,.35)">📸</div><span style="color:rgba(212,160,23,.35)">Ensayo 04</span></div><div class="carousel-slide" style="background:linear-gradient(135deg,#120505,#1e0808)"><div class="gal-icon" style="font-size:2.5rem;color:rgba(212,160,23,.35)">📸</div><span style="color:rgba(212,160,23,.35)">Ensayo 05</span></div><div class="carousel-slide" style="background:linear-gradient(135deg,#120505,#1e0808)"><div class="gal-icon" style="font-size:2.5rem;color:rgba(212,160,23,.35)">📸</div><span style="color:rgba(212,160,23,.35)">Ensayo 06</span></div></div>
+          <button class="carousel-btn prev" onclick="carMove('carEnsHSM',-1)" aria-label="Foto anterior">‹</button>
+          <button class="carousel-btn next" onclick="carMove('carEnsHSM',1)" aria-label="Siguiente foto">›</button>
         </div>
+        <div class="carousel-dots" id="dotsEnsHSM" style="margin-bottom:40px"></div>
         <div style="display:flex;align-items:center;gap:16px;margin-bottom:32px">
           <div style="flex:1;height:1px;background:rgba(212,160,23,.2)"></div>
           <span style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--hsm-gold);white-space:nowrap">📖 Información de la Producción</span>
@@ -894,20 +947,20 @@
         </div>
       </div>
       <div class="adm-sec" id="admProdSec" style="display:none">
-        <div class="adm-hdr"><span>🎬</span> Gestión de Producciones</div>
+        <div class="adm-hdr" role="button" tabindex="0" aria-expanded="true"><span>🎬</span> Gestión de Producciones</div>
         <div class="adm-body">
           <div id="adminProdList"></div>
         </div>
       </div>
       <div class="adm-sec">
-        <div class="adm-hdr"><span>📊</span> Ventas de Cartelera</div>
+        <div class="adm-hdr" role="button" tabindex="0" aria-expanded="true"><span>📊</span> Ventas de Cartelera</div>
         <div class="adm-body">
           <div id="salesBarsWrap"></div>
           <div style="margin-top:16px;padding-top:16px;border-top:1px solid #252525;font-size:12px;color:var(--t3)">La venta por función se activa en Gestión de Producciones. El mapa de asientos y la venta en taquilla están en Boletaje.</div>
         </div>
       </div>
       <div class="adm-sec">
-        <div class="adm-hdr"><span>🎟️</span> Boletaje</div>
+        <div class="adm-hdr" role="button" tabindex="0" aria-expanded="true"><span>🎟️</span> Boletaje</div>
         <div class="adm-body">
           <div id="pendingOrders" style="margin-bottom:22px"></div>
           <div id="boletajeProdList"></div>
@@ -915,13 +968,13 @@
         </div>
       </div>
       <div class="adm-sec">
-        <div class="adm-hdr"><span>🗄️</span> Bases de Datos</div>
+        <div class="adm-hdr" role="button" tabindex="0" aria-expanded="true"><span>🗄️</span> Bases de Datos</div>
         <div class="adm-body">
           <div id="dbPanels"></div>
         </div>
       </div>
       <div class="adm-sec">
-        <div class="adm-hdr"><span>📱</span> Control de Accesos</div>
+        <div class="adm-hdr" role="button" tabindex="0" aria-expanded="true"><span>📱</span> Control de Accesos</div>
         <div class="adm-body" style="text-align:center">
           <div class="qr-scanner-wrap">
             <div class="qr-scanner-frame" id="qrFrame">
@@ -940,7 +993,7 @@
         </div>
       </div>
       <div class="adm-sec">
-        <div class="adm-hdr"><span>✉️</span> Mensajes de Contacto</div>
+        <div class="adm-hdr" role="button" tabindex="0" aria-expanded="true"><span>✉️</span> Mensajes de Contacto</div>
         <div class="adm-body">
           <div id="contactInbox"></div>
         </div>
@@ -1134,12 +1187,16 @@
           <div class="cart-items-wrap">
             <div id="cartItems"><span style="font-size:13px;color:var(--t3)">Ningún asiento seleccionado</span></div>
           </div>
+          <div id="cartDiscountRow" class="cart-item" style="display:none"><span id="cartDiscountLbl" style="font-size:13px;color:var(--ok,#4caf50)"></span><span id="cartDiscountVal" style="font-size:13px;font-weight:700;color:var(--ok,#4caf50)"></span></div>
           <div class="cart-total-row">
             <span class="cart-total-label">Total a pagar</span>
             <span class="cart-total-price" id="cartTotalPrice">$0.00 MXN</span>
           </div>
           <div class="form-g" style="margin-top:16px"><label class="form-l" for="buyerPhone">Teléfono (obligatorio)</label><input type="tel" id="buyerPhone" class="form-c" placeholder="Tu número de teléfono"></div>
           <div class="form-g" style="margin-top:10px"><label class="form-l" for="buyerSellerCode">Código de vendedor (opcional)</label><input type="text" id="buyerSellerCode" class="form-c" placeholder="Código de registro"></div>
+          <div class="form-g" style="margin-top:10px"><label class="form-l" for="buyerDiscountCode">Código de descuento (opcional)</label>
+            <div style="display:flex;gap:8px"><input type="text" id="buyerDiscountCode" class="form-c" placeholder="Tu código" autocapitalize="characters" style="flex:1"><button type="button" class="btn btn-o btn-sm" id="btnApplyDiscount" onclick="applyDiscountCode()">Aplicar</button></div>
+            <div id="discountMsg" style="font-size:12px;margin-top:6px;color:var(--t3)"></div></div>
           <button class="btn btn-r" style="width:100%;justify-content:center" onclick="proceedToPayment()">Proceder al Pago →</button>
           <div style="text-align:center;margin-top:12px;font-size:11px;color:var(--t3)" id="cartPricePerSeat">Precio por boleto: —</div>
         </div>
@@ -1182,7 +1239,7 @@
         <div class="foot-links">
           <span class="foot-lnk" onclick="nav('home')">Inicio</span>
           <span class="foot-lnk" onclick="nav('prods')">Producciones</span>
-          <span class="foot-lnk" onclick="nav('showman')" style="padding-left:10px;font-size:12px;color:rgba(215,163,18,.7)">↳ Showman · Próximamente</span>
+          <span class="foot-lnk" onclick="nav('showman')" style="padding-left:10px;font-size:12px;color:rgba(215,163,18,.7)">↳ Showman · 2027</span>
           <span class="foot-lnk" onclick="nav('mm')" style="padding-left:10px;font-size:12px;color:rgba(21,101,192,.6)">↳ Mamma Mia! 2026</span>
           <span class="foot-lnk" onclick="nav('hsm')" style="padding-left:10px;font-size:12px;color:rgba(198,34,34,.5)">↳ High School Musical 2025</span>
           <span class="foot-lnk" onclick="nav('contacto')">Contacto</span>

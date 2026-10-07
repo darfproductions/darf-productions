@@ -290,8 +290,31 @@ const DB = (function(){
     return true;
   }
 
+  async function listDiscountCodes(productionId){
+    if(!sb) return {ok:false, error:'No hay conexión con el servidor.'};
+    const { data, error } = await sb.rpc('admin_list_discount_codes', { target_production_id: productionId });
+    if(error) return {ok:false, error:error.message};
+    return {ok:true, list:data||[]};
+  }
+  async function saveDiscountCode(prodId, f){
+    if(!sb) return {ok:false, error:'No hay conexión con el servidor.'};
+    const { error } = await sb.rpc('admin_save_discount_code', {
+      target_id: f.id||null, target_production_id: prodId, target_codigo: f.codigo, target_percent: f.percent,
+      target_valid_from: f.validFrom, target_valid_until: f.validUntil,
+      target_max_uses_total: f.maxUses, target_max_tickets_per_order: f.maxTickets,
+      target_is_active: f.isActive, target_category_ids: f.categoryIds, target_performance_ids: f.performanceIds
+    });
+    return error ? {ok:false, error:error.message} : {ok:true};
+  }
+  async function deleteDiscountCode(id){
+    if(!sb) return {ok:false, error:'No hay conexión con el servidor.'};
+    const { data, error } = await sb.rpc('admin_delete_discount_code', { target_id: id });
+    return error ? {ok:false, error:error.message} : {ok:true, deleted:data.deleted};
+  }
+
   return {
     KEYS, subscribe,
+    listDiscountCodes, saveDiscountCode, deleteDiscountCode,
     loadProductions, getProductions, getProduction, setProductionOnSale, setProductionConcluded, createProduction, updateProduction,
     loadPerformances, getPerformances, getPerformancesForProduction, createPerformance, updatePerformance, deletePerformance,
     getOrders, createOrder, updateOrder, approveOrder, rejectOrder,
@@ -529,7 +552,7 @@ function carInit(id){
   if(!track)return;
   const n=track.children.length;
   carState[id]={idx:0,n};
-  const suffix=id==='carMM'?'MM':'HSM';
+  const suffix=id.slice(3);
   const dotsEl=document.getElementById('dots'+suffix);
   if(dotsEl){clearEl(dotsEl);for(let i=0;i<n;i++){const d=document.createElement('div');d.className='dot'+(i===0?' on':'');d.onclick=()=>carGo(id,i);dotsEl.appendChild(d);}}
 }
@@ -537,12 +560,53 @@ function carGo(id,idx){
   const track=document.getElementById(id);const s=carState[id];if(!track||!s)return;
   s.idx=Math.max(0,Math.min(idx,s.n-1));
   track.style.transform=`translateX(-${s.idx*100}%)`;
-  const suffix=id==='carMM'?'MM':'HSM';
+  const suffix=id.slice(3);
   const dotsEl=document.getElementById('dots'+suffix);
   if(dotsEl)dotsEl.querySelectorAll('.dot').forEach((d,i)=>d.classList.toggle('on',i===s.idx));
 }
 function carMove(id,dir){const s=carState[id];if(!s)return;carGo(id,(s.idx+dir+s.n)%s.n);}
-carInit('carMM');carInit('carHSM');
+carInit('carMM');carInit('carHSM');carInit('carEnsMM');carInit('carEnsHSM');carInit('carEnsShowman');
+
+// ─── GALERÍA (fotos subidas desde el panel, Supabase Storage) ───
+// pid + tipo de galería → carrusel. hideIfEmpty: sin fotos se oculta el carrusel (los demás conservan sus recuadros de ejemplo).
+var GALLERY_CARS=[
+  {pid:'mm',kind:'galeria',car:'carMM'},{pid:'hsm',kind:'galeria',car:'carHSM'},{pid:'showman',kind:'galeria',car:'carShowman',hideIfEmpty:true},
+  {pid:'mm',kind:'ensayos',car:'carEnsMM'},{pid:'hsm',kind:'ensayos',car:'carEnsHSM'},{pid:'showman',kind:'ensayos',car:'carEnsShowman'}
+];
+function galleryUrl(path){return sb.storage.from('gallery').getPublicUrl(path).data.publicUrl;}
+async function loadGallery(){
+  if(!sb) return;
+  var r=await sb.from('gallery_photos').select('production_id,kind,path,sort_order').order('sort_order').order('created_at');
+  if(r.error||!r.data) return; // sin conexión o sin migración: se quedan los recuadros de ejemplo
+  var by={};r.data.forEach(function(x){var k=x.production_id+'|'+x.kind;(by[k]=by[k]||[]).push(x);});
+  GALLERY_CARS.forEach(function(g){
+    var track=document.getElementById(g.car),list=by[g.pid+'|'+g.kind];
+    if(!track) return;
+    if(list&&list.length){
+      clearEl(track);
+      list.forEach(function(x){
+        var sl=document.createElement('div');sl.className='carousel-slide gallery-slide';
+        var im=document.createElement('img');im.src=galleryUrl(x.path);im.loading='lazy';im.alt='Foto de la galería';
+        sl.appendChild(im);track.appendChild(sl);
+      });
+      carInit(g.car);carGo(g.car,0);
+    }
+    if(g.hideIfEmpty){var w=document.getElementById(g.car+'Wrap');if(w) w.style.display=(list&&list.length)?'':'none';}
+  });
+}
+loadGallery();
+
+// ─── PANEL DE STAFF: secciones plegables ───────────────
+document.querySelectorAll('#v-staff .adm-hdr').forEach(function(h){
+  function toggle(){var sec=h.parentNode,c=sec.classList.toggle('collapsed');h.setAttribute('aria-expanded',c?'false':'true');}
+  h.onclick=toggle;
+  h.onkeydown=function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();toggle();}};
+});
+
+function collapseStaffSections(){
+  document.querySelectorAll('#v-staff .adm-hdr').forEach(function(h){h.parentNode.classList.add('collapsed');h.setAttribute('aria-expanded','false');});
+}
+collapseStaffSections();
 
 // ─── NAVEGACIÓN SPA ───────────────────────────────────
 const VIEWS_MAP={home:'v-home',cartelera:'v-cartelera',prods:'v-prods',mm:'v-mm',hsm:'v-hsm',showman:'v-showman',login:'v-login',fan:'v-fan',staff:'v-staff',contacto:'v-contacto',casting:'v-casting',cuenta:'v-cuenta',checkout:'v-checkout'};
@@ -554,7 +618,7 @@ function nav(key, skipPush){
   const target=document.getElementById(VIEWS_MAP[key]);
   if(target){target.classList.add('active');window.scrollTo({top:0,behavior:'smooth'});}
   if(key==='fan'){setTimeout(()=>fanNav('home'),0);}
-  if(key==='staff'){setTimeout(renderStaff,0);}
+  if(key==='staff'){collapseStaffSections();setTimeout(renderStaff,0);}
   if(key==='showman'){setTimeout(renderShowmanBanner,0);}
   if(key==='checkout'){setTimeout(function(){ ckState.loadedPerf=null; renderCheckout(); },0);} // recarga siempre: los asientos tomados cambian
   if(key==='cuenta'){setTimeout(()=>cuentaTab('boletos'),0);}
@@ -602,7 +666,7 @@ window.addEventListener('scroll',()=>{document.querySelector('.navbar').classLis
 
 // ─── FAN ZONE ─────────────────────────────────────────
 function fanNav(sub){
-  const panels=['fan-home','fan-mm','fan-hsm'];
+  const panels=['fan-home','fan-showman','fan-mm','fan-hsm'];
   panels.forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
   const target=document.getElementById('fan-'+sub);
   if(target){target.style.display='block';window.scrollTo({top:0,behavior:'smooth'});}
@@ -699,10 +763,73 @@ function qrDataUrl(text, cb){
   if(!window.QRCode){ cb(null); return; }
   QRCode.toDataURL(text, {width:160,margin:1}, function(err,url){ cb(err?null:url); });
 }
+
+// ─── BOLETO EN PDF (jsPDF, se genera en el navegador) ─────────
+function loadImgData(src, invert){
+  return new Promise(function(resolve){
+    var im=new Image();
+    im.onload=function(){
+      var k=Math.min(1,600/Math.max(im.naturalWidth,im.naturalHeight)); // logos grandes inflan el PDF
+      var c=document.createElement('canvas');c.width=Math.round(im.naturalWidth*k);c.height=Math.round(im.naturalHeight*k);
+      var cx=c.getContext('2d');
+      if(invert) cx.filter='invert(1) brightness(2)'; // mismo tratamiento que el logo del modal
+      cx.drawImage(im,0,0,c.width,c.height);
+      resolve({data:c.toDataURL('image/png'),w:c.width,h:c.height});
+    };
+    im.onerror=function(){ resolve(null); };
+    im.src=src;
+  });
+}
+function hexToRgb(h){var m=/^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(h||'');return m?[parseInt(m[1],16),parseInt(m[2],16),parseInt(m[3],16)]:[20,20,20];}
+// items: [{productionId, buyer, startsAt, seat, token, orderCode}]  → una página (100×180 mm) por boleto
+async function downloadTicketPdf(items, filename){
+  if(!window.jspdf){ flash('El generador de PDF no cargó. Revisa tu conexión e intenta de nuevo.','d'); return; }
+  if(!window.QRCode){ flash('El generador de QR no cargó.','d'); return; }
+  if(!items.length) return;
+  var W=100,H=180;
+  var doc=new window.jspdf.jsPDF({unit:'mm',format:[W,H],orientation:'portrait',compress:true});
+  var darf=await loadImgData(DARF_LOGO,true);
+  var logoCache={};
+  for(var i=0;i<items.length;i++){
+    var it=items[i], prod=DB.getProduction(it.productionId)||{};
+    if(i>0) doc.addPage([W,H],'portrait');
+    var rgb=hexToRgb(TICKET_BG[it.productionId]||'#141414');
+    doc.setFillColor(rgb[0],rgb[1],rgb[2]);doc.rect(0,0,W,H,'F');
+    var y=8;
+    function put(img,maxW,maxH){
+      if(!img) return;
+      var k=Math.min(maxW/img.w,maxH/img.h),w=img.w*k,h=img.h*k;
+      doc.addImage(img.data,'PNG',(W-w)/2,y,w,h);y+=h+4;
+    }
+    put(darf,22,10);
+    if(TICKET_LOGOS[it.productionId]&&!(it.productionId in logoCache)) logoCache[it.productionId]=await loadImgData(TICKET_LOGOS[it.productionId]);
+    put(logoCache[it.productionId],70,34);
+    doc.setTextColor(255,255,255);doc.setFont('helvetica','bold');doc.setFontSize(13);
+    doc.text(String(it.buyer||'Comprador'),W/2,y+4,{align:'center',maxWidth:W-12});y+=12;
+    var qr=await new Promise(function(res){QRCode.toDataURL(it.token,{width:600,margin:1},function(e,u){res(e?null:u);});});
+    var q=56;
+    if(qr){doc.setFillColor(255,255,255);doc.roundedRect((W-q-4)/2,y,q+4,q+4,2,2,'F');doc.addImage(qr,'PNG',(W-q)/2,y+2,q,q);}
+    y+=q+10;
+    doc.setFont('helvetica','bold');doc.setFontSize(14);doc.text('Asiento '+it.seat,W/2,y,{align:'center'});y+=7;
+    doc.setFont('helvetica','normal');doc.setFontSize(9);
+    doc.text(String(it.startsAt?fmtPerfDate(it.startsAt):(prod.fecha||'Fecha por definir')),W/2,y,{align:'center',maxWidth:W-12});y+=5;
+    doc.text(String(prod.venue||''),W/2,y,{align:'center',maxWidth:W-12});y+=5;
+    doc.setFontSize(8);doc.setTextColor(200,200,200);
+    if(it.orderCode) doc.text('Orden '+it.orderCode,W/2,H-8,{align:'center'});
+  }
+  doc.save(filename||'boletos-DARF.pdf');
+}
+function pdfItemsForOrder(o){
+  var pid=o.performances?o.performances.production_id:SHOWMAN_ID;
+  return (o.tickets||[]).filter(function(t){return t.is_active;}).map(function(t){
+    return {productionId:pid,buyer:AuthService.session.nombre||AuthService.session.usuario,startsAt:o.performances?o.performances.starts_at:null,
+            seat:(t.seats&&t.seats.seat_label)||'-',token:t.qr_token,orderCode:o.order_code};
+  });
+}
 function money(n){ return '$'+Number(n).toFixed(2)+' MXN'; }
 
 // ─── CHECKOUT PÚBLICO (Supabase; se activa con "En venta" de la función) ──
-var ckState={perf:null,loadedPerf:null,seats:[],taken:{},prices:{},selected:{},loading:false,error:null};
+var ckState={discount:null,perf:null,loadedPerf:null,seats:[],taken:{},prices:{},selected:{},loading:false,error:null};
 var CK_STATES=[['sel','Seleccionado','#EC4899'],['bloq','No disponible','#7a7a7a']];
 function onSalePerfs(){
   return DB.getPerformancesForProduction(SHOWMAN_ID).filter(function(p){return p.on_sale && p.starts_at;})
@@ -813,7 +940,7 @@ function renderCheckout(){
   if(sel){
     clearEl(sel);
     perfs.forEach(function(pf){var o=document.createElement('option');o.value=pf.id;o.textContent=fmtPerfDate(pf.starts_at);if(pf.id===ckState.perf)o.selected=true;sel.appendChild(o);});
-    sel.onchange=function(){ckState.perf=sel.value;ckState.selected={};renderCheckout();};
+    sel.onchange=function(){ckState.perf=sel.value;ckState.selected={};ckClearDiscount();renderCheckout();};
   }
   var cur=perfs.filter(function(x){return x.id===ckState.perf;})[0];
   document.getElementById('cartShowName').textContent = prod.nombre;
@@ -823,16 +950,47 @@ function renderCheckout(){
   if(ckState.loadedPerf!==ckState.perf) ckLoad(); else renderCkMap();
 }
 
+function ckDiscountFor(seats){
+  var d=ckState.discount;
+  if(!d) return {amount:0,note:''};
+  if(d.max_tickets_per_order && seats.length>d.max_tickets_per_order)
+    return {amount:0,note:'Este código permite máximo '+d.max_tickets_per_order+' boletos por compra'};
+  var amount=0;
+  seats.forEach(function(seat){
+    var p=ckState.prices[seat.price_category_id];if(!p) return;
+    if(!d.category_ids||d.category_ids.indexOf(seat.price_category_id)>=0) amount+=Math.round(p.price*d.percent)/100;
+  });
+  if(!amount&&seats.length) return {amount:0,note:'El código no aplica a los asientos seleccionados'};
+  return {amount:amount,note:''};
+}
+function ckClearDiscount(){
+  ckState.discount=null;
+  var i=document.getElementById('buyerDiscountCode');if(i)i.value='';
+  var m=document.getElementById('discountMsg');if(m){m.textContent='';m.style.color='var(--t3)';}
+}
+async function applyDiscountCode(){
+  var i=document.getElementById('buyerDiscountCode'),m=document.getElementById('discountMsg');
+  var code=(i&&i.value||'').trim();
+  if(ckState.discount){ckClearDiscount();updateCart();return;}
+  if(!code){if(m)m.textContent='Escribe tu código.';return;}
+  if(!AuthService.session.usuario){flash('Inicia sesión para usar un código.','i');nav('login');return;}
+  var r=await sb.rpc('preview_discount_code',{target_performance_id:ckState.perf,target_code:code});
+  if(r.error){ckState.discount=null;if(m){m.textContent=r.error.message;m.style.color='var(--red,#e53935)';}updateCart();return;}
+  ckState.discount=r.data;
+  if(i)i.value=r.data.codigo;
+  if(m){m.style.color='var(--ok,#4caf50)';m.textContent='Código '+r.data.codigo+' aplicado: '+r.data.percent+'% de descuento.';}
+  updateCart();
+}
 function updateCart(){
   var seats=ckSelectedSeats();
-  var total=0;
+  var subtotal=0;
   var items=document.getElementById('cartItems');
   if(items){
     clearEl(items);
     if(seats.length>0){
       seats.forEach(function(seat){
         var p=ckState.prices[seat.price_category_id];
-        total+=p?p.price:0;
+        subtotal+=p?p.price:0;
         var row=document.createElement('div');row.className='cart-item';
         var label=document.createElement('span');label.textContent=seat.seat_label;label.style.cssText='font-size:13px;color:var(--t2)';
         var val=document.createElement('span');val.textContent=p?'$'+p.price:'—';val.style.cssText='font-size:13px;font-weight:700;color:#fff';
@@ -843,15 +1001,28 @@ function updateCart(){
       items.appendChild(empty);
     }
   }
+  var disc=ckDiscountFor(seats);
+  var dRow=document.getElementById('cartDiscountRow');
+  if(dRow){
+    if(ckState.discount&&disc.amount>0){
+      dRow.style.display='flex';
+      document.getElementById('cartDiscountLbl').textContent='Descuento '+ckState.discount.codigo+' (−'+ckState.discount.percent+'%)';
+      document.getElementById('cartDiscountVal').textContent='−$'+disc.amount.toFixed(2);
+    } else dRow.style.display='none';
+  }
+  var msg=document.getElementById('discountMsg');
+  if(msg&&ckState.discount&&disc.note){msg.style.color='var(--red,#e53935)';msg.textContent=disc.note;}
+  else if(msg&&ckState.discount){msg.style.color='var(--ok,#4caf50)';msg.textContent='Código '+ckState.discount.codigo+' aplicado: '+ckState.discount.percent+'% de descuento.';}
+  var btn=document.getElementById('btnApplyDiscount');if(btn)btn.textContent=ckState.discount?'Quitar':'Aplicar';
   var totalEl=document.getElementById('cartTotalPrice');
-  if(totalEl)totalEl.textContent='$'+total.toFixed(2)+' MXN';
+  if(totalEl)totalEl.textContent='$'+(subtotal-disc.amount).toFixed(2)+' MXN';
   var hint=document.getElementById('cartPricePerSeat');
   if(hint)hint.textContent=seats.length?seats.length+(seats.length===1?' boleto':' boletos'):'Elige tus asientos en el mapa';
 }
-function waPayUrl(orderCode, seatLabels, total, phone, prodName){
+function waPayUrl(orderCode, seatLabels, total, phone, prodName, discCode, discAmount){
   var msg = 'Hola, quiero pagar mi solicitud de boletos para '+prodName+
     ' — Código de orden: '+orderCode+
-    ' — Asientos: '+seatLabels.join(', ')+' — Total: '+money(total)+
+    ' — Asientos: '+seatLabels.join(', ')+(discCode?' — Código de descuento: '+discCode+' (−'+money(discAmount)+')':'')+' — Total: '+money(total)+
     (phone?' — Teléfono: '+phone:'')+
     '. Mi solicitud ya quedó guardada en mi cuenta DARF, en espera de aprobación.';
   return 'https://wa.me/4465220560?text='+encodeURIComponent(msg);
@@ -877,7 +1048,8 @@ async function proceedToPayment(){
     target_buyer_nombre:AuthService.session.nombre||AuthService.session.usuario,
     target_buyer_telefono:phone,
     target_seat_ids:seats.map(function(x){return x.id;}),
-    target_seller_codigo:sellerCode||null
+    target_seller_codigo:sellerCode||null,
+    target_discount_code:ckState.discount?ckState.discount.codigo:null
   });
   ckBusy=false;
   if(r.error){
@@ -887,12 +1059,12 @@ async function proceedToPayment(){
     return;
   }
   var d=r.data;
-  var url=waPayUrl(d.order_code,d.seats||[],d.total,phone,prod.nombre);
+  var url=waPayUrl(d.order_code,d.seats||[],d.total,phone,prod.nombre,d.discount_codigo,d.discount_amount);
   if(wa) wa.location.href=url;
   flash('Solicitud guardada. '+(wa?'Te redirigimos a WhatsApp para el pago…':'Págala por WhatsApp desde Mis Boletos.'),'s');
   if(phoneEl) phoneEl.value='';
   if(sellerEl) sellerEl.value='';
-  ckState.selected={};
+  ckState.selected={};ckClearDiscount();
   nav('cuenta');
 }
 
@@ -907,7 +1079,7 @@ async function loadMyOrders(){
   if(!sb||!AuthService.session.userId){myOrders.list=[];myOrders.loading=false;renderMisBoletos();return;}
   myOrders.loading=true;myOrders.error=null;renderMisBoletos();
   var r=await sb.from('orders')
-    .select('id,order_code,status,total,buyer_telefono,created_at,performances(starts_at,production_id),tickets(id,is_active,qr_token,checked_in_at,seats(seat_label))')
+    .select('id,order_code,status,total,discount_amount,discount_codigo,buyer_telefono,created_at,performances(starts_at,production_id),tickets(id,is_active,qr_token,checked_in_at,seats(seat_label))')
     .eq('buyer_user_id',AuthService.session.userId).order('created_at',{ascending:false});
   myOrders.loading=false;
   if(r.error){myOrders.error='No se pudieron cargar tus boletos: '+r.error.message;myOrders.list=[];}
@@ -921,7 +1093,7 @@ function misQrItem(o,t){
   qrDataUrl(t.qr_token, function(url){ if(url) img.src=url; });
   var codeLbl=document.createElement('div');codeLbl.className='ticket-code';codeLbl.textContent='Asiento '+seat+(t.checked_in_at?' · usado':'');
   var verBtn=document.createElement('button');verBtn.className='btn btn-o btn-sm';verBtn.textContent='Ver boleto →';verBtn.style.marginTop='2px';
-  verBtn.onclick=function(){ showAccessModal(o.performances?o.performances.production_id:SHOWMAN_ID, {buyerNombre:AuthService.session.nombre}, seat, t.qr_token, o.performances?o.performances.starts_at:null); };
+  verBtn.onclick=function(){ showAccessModal(o.performances?o.performances.production_id:SHOWMAN_ID, {buyerNombre:AuthService.session.nombre}, seat, t.qr_token, o.performances?o.performances.starts_at:null, o.order_code); };
   one.appendChild(img);one.appendChild(codeLbl);one.appendChild(verBtn);
   return one;
 }
@@ -951,11 +1123,16 @@ function renderMisBoletos(){
     var show=document.createElement('div');show.className='ticket-show';show.textContent=prod.nombre;
     var d0=document.createElement('div');d0.className='ticket-detail';d0.textContent='Código de orden: '+(o.order_code||'—');
     var d1=document.createElement('div');d1.className='ticket-detail';d1.textContent=(o.performances?fmtPerfDate(o.performances.starts_at):'')+' · Asientos: '+(labels.join(', ')||'—');
-    var d2=document.createElement('div');d2.className='ticket-detail';d2.textContent='Total: '+money(o.total);
+    var d2=document.createElement('div');d2.className='ticket-detail';d2.textContent='Total: '+money(o.total)+(Number(o.discount_amount)>0?' (código '+o.discount_codigo+', −'+money(o.discount_amount)+')':'');
     var cancelled=o.status==='aprobado'&&!active.length;
     var pill=document.createElement('span');pill.className='status-pill status-'+o.status;pill.textContent=cancelled?'cancelado':o.status;
     info.appendChild(show);info.appendChild(d0);info.appendChild(d1);info.appendChild(d2);
     var pillWrap=document.createElement('div');pillWrap.style.marginTop='6px';pillWrap.appendChild(pill);info.appendChild(pillWrap);
+    if(o.status==='aprobado'&&active.length){
+      var dl=document.createElement('button');dl.className='btn btn-o btn-sm';dl.style.marginTop='8px';dl.textContent='⬇ Descargar boletos (PDF)';
+      dl.onclick=function(){ downloadTicketPdf(pdfItemsForOrder(o),'DARF-'+(o.order_code||'boletos')+'.pdf'); };
+      info.appendChild(dl);
+    }
     main.appendChild(info);
     var qrBlock=document.createElement('div');qrBlock.className='ticket-qr-block';
     if(o.status==='aprobado' && active.length>1){
@@ -975,7 +1152,7 @@ function renderMisBoletos(){
     } else if(o.status==='pendiente'){
       var wait=document.createElement('div');wait.style.cssText='font-size:11px;color:var(--t2);text-align:center;max-width:140px';wait.textContent='En espera de pago y aprobación';
       var payBtn=document.createElement('button');payBtn.className='btn btn-o btn-sm';payBtn.style.marginTop='6px';payBtn.textContent='Pagar por WhatsApp';
-      payBtn.onclick=function(){ window.open(waPayUrl(o.order_code,labels,o.total,o.buyer_telefono,prod.nombre),'_blank'); };
+      payBtn.onclick=function(){ window.open(waPayUrl(o.order_code,labels,o.total,o.buyer_telefono,prod.nombre,o.discount_codigo,o.discount_amount),'_blank'); };
       qrBlock.appendChild(wait);qrBlock.appendChild(payBtn);
     } else {
       var rej=document.createElement('div');rej.style.cssText='font-size:11px;color:var(--rojo);text-align:center;max-width:100px';rej.textContent=cancelled?'Boleto cancelado':'Solicitud rechazada';
@@ -1192,8 +1369,186 @@ function buildAdminProdCard(prod){
   newRow.appendChild(newDtI);newRow.appendChild(newLabel);newRow.appendChild(addBtn);
   perfWrap.appendChild(newRow);
   card.appendChild(perfWrap);
+  card.appendChild(buildDiscountSection(prod));
+  card.appendChild(buildGallerySection(prod));
 
   return card;
+}
+
+// ─── CÓDIGOS DE DESCUENTO (panel de producciones) ───────────
+function buildDiscountSection(prod){
+  var wrap=document.createElement('div');wrap.style.cssText='margin-top:14px;padding-top:14px;border-top:1px solid #252525';
+  var title=document.createElement('div');title.style.cssText='font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px;color:var(--t2)';title.textContent='Códigos de descuento';
+  var listBox=document.createElement('div');var formBox=document.createElement('div');
+  wrap.appendChild(title);wrap.appendChild(listBox);wrap.appendChild(formBox);
+  var zones=[];
+  function fmtD(iso){return iso?fmtPerfDate(iso):null;}
+  async function refresh(){
+    clearEl(listBox);
+    var r=await DB.listDiscountCodes(prod.id);
+    if(!r.ok){var e=document.createElement('div');e.className='empty-note';e.textContent=r.error;listBox.appendChild(e);return;}
+    if(!r.list.length){var n=document.createElement('div');n.className='empty-note';n.textContent='Sin códigos todavía.';listBox.appendChild(n);}
+    r.list.forEach(function(c){
+      var row=document.createElement('div');row.style.cssText='display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-bottom:8px;font-size:13px;color:var(--t2)';
+      var info=document.createElement('div');
+      var vig=(c.valid_from||c.valid_until)?(' · '+(fmtD(c.valid_from)||'…')+' → '+(fmtD(c.valid_until)||'sin fin')):'';
+      var zn=c.category_ids.length?zones.filter(function(z){return c.category_ids.indexOf(z.id)>=0;}).map(function(z){return z.nombre;}).join(', '):'todas las zonas';
+      var fn=c.performance_ids.length?c.performance_ids.length+' función(es)':'todas las funciones';
+      info.textContent=c.codigo+' · '+Number(c.percent)+'% · '+c.uses+'/'+(c.max_uses_total||'∞')+' usos · máx '+(c.max_tickets_per_order||'∞')+' boletos/compra'+vig+' · '+zn+' · '+fn+(c.is_active?'':' · INACTIVO');
+      info.style.color=c.is_active?'#fff':'var(--t3)';
+      var acts=document.createElement('div');acts.style.cssText='display:flex;gap:8px';
+      var ed=document.createElement('button');ed.className='btn btn-o btn-sm';ed.textContent='Editar';ed.onclick=function(){openForm(c);};
+      var del=document.createElement('button');del.className='btn btn-o btn-sm';del.textContent='🗑 Eliminar';
+      del.onclick=async function(){
+        if(!confirm('¿Eliminar el código '+c.codigo+'? Si ya se usó en alguna orden, solo se desactiva.')) return;
+        var d=await DB.deleteDiscountCode(c.id);
+        if(!d.ok){flash(d.error,'d');return;}
+        flash(d.deleted?'Código eliminado.':'El código ya tiene órdenes: se desactivó.','s');refresh();
+      };
+      acts.appendChild(ed);acts.appendChild(del);row.appendChild(info);row.appendChild(acts);listBox.appendChild(row);
+    });
+    var add=document.createElement('button');add.className='btn btn-a btn-sm';add.textContent='➕ Nuevo código';add.onclick=function(){openForm(null);};
+    listBox.appendChild(add);
+  }
+  function field(lbl,inp){var g=document.createElement('div');g.style.cssText='flex:1;min-width:150px';var l=document.createElement('label');l.className='form-l';l.textContent=lbl;g.appendChild(l);g.appendChild(inp);return g;}
+  function input(type,val,ph){var i=document.createElement('input');i.type=type;i.className='form-c';if(val!=null)i.value=val;if(ph)i.placeholder=ph;return i;}
+  function checks(items,selected,labelOf){
+    var box=document.createElement('div');box.style.cssText='display:flex;flex-wrap:wrap;gap:6px 14px';
+    var inputs=items.map(function(it){
+      var lb=document.createElement('label');lb.style.cssText='display:flex;align-items:center;gap:5px;font-size:12px;color:var(--t2);cursor:pointer';
+      var c=document.createElement('input');c.type='checkbox';c.checked=selected.indexOf(it.id)>=0;
+      lb.appendChild(c);lb.appendChild(document.createTextNode(labelOf(it)));box.appendChild(lb);return {id:it.id,el:c};
+    });
+    box.values=function(){return inputs.filter(function(x){return x.el.checked;}).map(function(x){return x.id;});};
+    return box;
+  }
+  function openForm(c){
+    clearEl(formBox);
+    var f=document.createElement('div');f.style.cssText='background:var(--g1,#111);border:1px solid var(--g3);border-radius:var(--r8);padding:12px;margin-top:10px;display:flex;flex-direction:column;gap:10px';
+    var code=input('text',c?c.codigo:'','EJ. VIP15');var pct=input('number',c?Number(c.percent):'','%');pct.min='1';pct.max='100';pct.step='0.01';
+    var from=input('datetime-local',c?toDatetimeLocalValue(c.valid_from):'');var until=input('datetime-local',c?toDatetimeLocalValue(c.valid_until):'');
+    var uses=input('number',c&&c.max_uses_total?c.max_uses_total:'','Sin límite');uses.min='1';
+    var tix=input('number',c&&c.max_tickets_per_order?c.max_tickets_per_order:'','Sin límite');tix.min='1';
+    var r1=document.createElement('div');r1.style.cssText='display:flex;gap:10px;flex-wrap:wrap';r1.appendChild(field('Código',code));r1.appendChild(field('% de descuento',pct));
+    var r2=document.createElement('div');r2.style.cssText='display:flex;gap:10px;flex-wrap:wrap';r2.appendChild(field('Válido desde (opcional)',from));r2.appendChild(field('Válido hasta (opcional)',until));
+    var r3=document.createElement('div');r3.style.cssText='display:flex;gap:10px;flex-wrap:wrap';r3.appendChild(field('Usos totales (órdenes)',uses));r3.appendChild(field('Máx. boletos por compra',tix));
+    var zl=document.createElement('div');zl.className='form-l';zl.textContent='Zonas donde aplica (ninguna marcada = todas)';
+    var zc=checks(zones,c?c.category_ids:[],function(z){return z.nombre;});
+    var pl=document.createElement('div');pl.className='form-l';pl.textContent='Funciones donde aplica (ninguna marcada = todas)';
+    var pc=checks(DB.getPerformancesForProduction(prod.id),c?c.performance_ids:[],function(p){return fmtPerfDate(p.starts_at);});
+    var al=document.createElement('label');al.style.cssText='display:flex;align-items:center;gap:6px;font-size:13px;color:var(--t2);cursor:pointer';
+    var act=document.createElement('input');act.type='checkbox';act.checked=c?c.is_active:true;al.appendChild(act);al.appendChild(document.createTextNode('Activo'));
+    var btns=document.createElement('div');btns.style.cssText='display:flex;gap:8px';
+    var save=document.createElement('button');save.className='btn btn-a btn-sm';save.textContent='Guardar código';
+    save.onclick=async function(){
+      var res=await DB.saveDiscountCode(prod.id,{
+        id:c?c.id:null,codigo:code.value,percent:Number(pct.value),
+        validFrom:from.value?new Date(from.value).toISOString():null,validUntil:until.value?new Date(until.value).toISOString():null,
+        maxUses:uses.value?parseInt(uses.value,10):null,maxTickets:tix.value?parseInt(tix.value,10):null,
+        isActive:act.checked,categoryIds:zc.values(),performanceIds:pc.values()
+      });
+      if(!res.ok){flash(res.error,'d');return;}
+      flash('Código guardado.','s');clearEl(formBox);refresh();
+    };
+    var cancel=document.createElement('button');cancel.className='btn btn-o btn-sm';cancel.textContent='Cancelar';cancel.onclick=function(){clearEl(formBox);};
+    btns.appendChild(save);btns.appendChild(cancel);
+    [r1,r2,r3,zl,zc,pl,pc,al,btns].forEach(function(n){f.appendChild(n);});
+    formBox.appendChild(f);
+  }
+  (async function(){
+    if(sb){var z=await sb.from('price_categories').select('id,nombre').eq('production_id',prod.id).eq('is_active',true).order('nombre');zones=z.data||[];}
+    refresh();
+  })();
+  return wrap;
+}
+
+// ─── GALERÍA (panel de producciones) ───────────────────────
+function resizeImageToJpeg(file, maxSide){
+  return new Promise(function(resolve, reject){
+    var url=URL.createObjectURL(file), img=new Image();
+    img.onload=function(){
+      var k=Math.min(1, maxSide/Math.max(img.width, img.height));
+      var c=document.createElement('canvas');c.width=Math.round(img.width*k);c.height=Math.round(img.height*k);
+      c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+      URL.revokeObjectURL(url);
+      c.toBlob(function(b){ b?resolve(b):reject(new Error('No se pudo procesar la imagen')); },'image/jpeg',0.85);
+    };
+    img.onerror=function(){ URL.revokeObjectURL(url); reject(new Error('El archivo no es una imagen válida')); };
+    img.src=url;
+  });
+}
+function buildGallerySection(prod){
+  var wrap=document.createElement('div');wrap.style.cssText='margin-top:14px;padding-top:14px;border-top:1px solid #252525';
+  var title=document.createElement('div');title.style.cssText='font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px;color:var(--t2)';title.textContent='Galería de fotos';
+  var bar=document.createElement('div');bar.style.cssText='display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px';
+  var kindSel=document.createElement('select');kindSel.className='form-c';kindSel.style.cssText='flex:0 0 auto;width:auto';
+  [['galeria','Galería Fotográfica'],['ensayos','Galería de Ensayos (Fan Zone)']].forEach(function(o){var op=document.createElement('option');op.value=o[0];op.textContent=o[1];kindSel.appendChild(op);});
+  var file=document.createElement('input');file.type='file';file.accept='image/jpeg,image/png,image/webp';file.multiple=true;file.style.cssText='font-size:12px;color:var(--t2)';
+  var up=document.createElement('button');up.className='btn btn-a btn-sm';up.textContent='⬆ Subir fotos';
+  bar.appendChild(kindSel);bar.appendChild(file);bar.appendChild(up);
+  var grid=document.createElement('div');grid.style.cssText='display:flex;flex-wrap:wrap;gap:10px';
+  wrap.appendChild(title);wrap.appendChild(bar);wrap.appendChild(grid);
+  var photos=[];
+  function pubUrl(path){return sb.storage.from('gallery').getPublicUrl(path).data.publicUrl;}
+  async function reload(){
+    if(!sb) return;
+    var r=await sb.from('gallery_photos').select('id,kind,path,sort_order').eq('production_id',prod.id).order('sort_order').order('created_at');
+    photos=r.data||[];render();
+  }
+  function render(){
+    clearEl(grid);
+    var list=photos.filter(function(x){return x.kind===kindSel.value;});
+    if(!list.length){var e=document.createElement('div');e.className='empty-note';e.textContent='Sin fotos en esta galería (se muestran los recuadros de ejemplo).';grid.appendChild(e);}
+    list.forEach(function(ph,i){
+      var cell=document.createElement('div');cell.style.cssText='width:120px;display:flex;flex-direction:column;gap:4px';
+      var im=document.createElement('img');im.src=pubUrl(ph.path);im.alt='Foto '+(i+1);im.style.cssText='width:120px;height:80px;object-fit:cover;border-radius:6px;border:1px solid var(--g3)';
+      var row=document.createElement('div');row.style.cssText='display:flex;gap:4px;justify-content:space-between';
+      function mk(txt,fn,dis){var b=document.createElement('button');b.className='btn btn-o btn-sm';b.textContent=txt;b.style.padding='2px 8px';b.disabled=!!dis;b.onclick=fn;return b;}
+      row.appendChild(mk('←',function(){move(list,i,-1);},i===0));
+      row.appendChild(mk('→',function(){move(list,i,1);},i===list.length-1));
+      row.appendChild(mk('🗑',function(){remove(ph);}));
+      cell.appendChild(im);cell.appendChild(row);grid.appendChild(cell);
+    });
+  }
+  async function move(list,i,d){
+    var a=list[i],b=list[i+d];if(!a||!b) return;
+    // se renumera toda la lista para evitar empates en sort_order
+    var order=list.slice();order[i]=b;order[i+d]=a;
+    var res=await Promise.all(order.map(function(x,n){return sb.from('gallery_photos').update({sort_order:n}).eq('id',x.id);}));
+    if(res.some(function(r){return r.error;})){flash('No se pudo reordenar.','d');return;}
+    await reload();loadGallery();
+  }
+  async function remove(ph){
+    if(!confirm('¿Borrar esta foto? No se puede deshacer.')) return;
+    var d=await sb.from('gallery_photos').delete().eq('id',ph.id);
+    if(d.error){flash('No se pudo borrar: '+d.error.message,'d');return;}
+    await sb.storage.from('gallery').remove([ph.path]);
+    flash('Foto borrada.','s');await reload();loadGallery();
+  }
+  up.onclick=async function(){
+    var files=[].slice.call(file.files||[]);
+    if(!files.length){flash('Elige una o más fotos.','d');return;}
+    up.disabled=true;var kind=kindSel.value,ok=0,errs=[];
+    var base=photos.filter(function(x){return x.kind===kind;}).length;
+    for(var i=0;i<files.length;i++){
+      try{
+        var blob=await resizeImageToJpeg(files[i],1600);
+        var path=prod.id+'/'+kind+'/'+(crypto.randomUUID?crypto.randomUUID():Date.now()+'-'+i)+'.jpg';
+        var u=await sb.storage.from('gallery').upload(path,blob,{contentType:'image/jpeg',upsert:false});
+        if(u.error) throw new Error(u.error.message);
+        var ins=await sb.from('gallery_photos').insert({production_id:prod.id,kind:kind,path:path,sort_order:base+ok});
+        if(ins.error){await sb.storage.from('gallery').remove([path]);throw new Error(ins.error.message);}
+        ok++;
+      }catch(e){errs.push(files[i].name+': '+e.message);}
+    }
+    up.disabled=false;file.value='';
+    if(ok) flash(ok+' foto(s) subida(s).','s');
+    if(errs.length) flash(errs.join(' · '),'d');
+    await reload();loadGallery();
+  };
+  kindSel.onchange=render;
+  reload();
+  return wrap;
 }
 function renderSalesBars(){
   var wrap = document.getElementById('salesBarsWrap');
@@ -1655,7 +2010,7 @@ async function loadPendingOrders(){
   if(!box||!sb) return;
   pendingState.loading=true;pendingState.error=null;renderPendingOrders();
   var r=await sb.from('orders')
-    .select('id,order_code,buyer_nombre,buyer_telefono,total,created_at,performance_id,sellers(nombre),tickets(is_active,seats(seat_label))')
+    .select('id,order_code,buyer_nombre,buyer_telefono,total,created_at,performance_id,discount_codigo,discount_amount,sellers(nombre),tickets(is_active,seats(seat_label))')
     .eq('status','pendiente').order('created_at');
   pendingState.loading=false;
   if(r.error){pendingState.error='No se pudieron cargar las solicitudes: '+r.error.message;pendingState.list=[];}
@@ -1685,7 +2040,7 @@ function renderPendingOrders(){
     var row=document.createElement('div');row.style.cssText='display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between;background:var(--g2);border:1px solid var(--g3);border-radius:var(--r8);padding:12px 14px;margin-bottom:8px';
     var info=document.createElement('div');info.style.cssText='font-size:13px;color:var(--t2);line-height:1.5';
     var l1=document.createElement('div');l1.style.cssText='color:#fff;font-weight:700';l1.textContent=o.order_code+' · '+o.buyer_nombre+' · '+o.buyer_telefono;
-    var l2=document.createElement('div');l2.textContent=(perf?fmtPerfDate(perf.starts_at):'')+' · '+(labels.join(', ')||'sin asientos')+' · '+money(o.total)+(o.sellers?' · Vendedor: '+o.sellers.nombre:'');
+    var l2=document.createElement('div');l2.textContent=(perf?fmtPerfDate(perf.starts_at):'')+' · '+(labels.join(', ')||'sin asientos')+' · '+money(o.total)+(Number(o.discount_amount)>0?' · Código '+o.discount_codigo+' (−'+money(o.discount_amount)+')':'')+(o.sellers?' · Vendedor: '+o.sellers.nombre:'');
     info.appendChild(l1);info.appendChild(l2);row.appendChild(info);
     if(isAdmin){
       var acts=document.createElement('div');acts.style.cssText='display:flex;gap:8px';
@@ -1757,7 +2112,7 @@ function closeAccessModal(){
   var m=document.getElementById('accessModal');
   if(m) m.remove();
 }
-function showAccessModal(productionId, order, seat, code, startsAt){
+function showAccessModal(productionId, order, seat, code, startsAt, orderCode){
   closeAccessModal();
   var prod = DB.getProduction(productionId) || {};
   var backdrop=document.createElement('div');backdrop.className='access-modal-backdrop';backdrop.id='accessModal';
@@ -1776,7 +2131,9 @@ function showAccessModal(productionId, order, seat, code, startsAt){
   qrDataUrl(code, function(url){ if(url) img.src=url; });
   var detail=document.createElement('div');detail.className='access-modal-detail';
   detail.textContent=(startsAt?fmtPerfDate(startsAt):(prod.fecha||'—'))+' · '+(prod.venue||'—')+' · Asiento '+seat;
-  modal.appendChild(closeBtn);modal.appendChild(darfLogo);modal.appendChild(logo);modal.appendChild(nombre);modal.appendChild(img);modal.appendChild(detail);
+  var pdfBtn=document.createElement('button');pdfBtn.className='btn btn-o btn-sm';pdfBtn.style.marginTop='10px';pdfBtn.textContent='⬇ Descargar PDF';
+  pdfBtn.onclick=function(){ downloadTicketPdf([{productionId:productionId,buyer:order.buyerNombre||order.userId,startsAt:startsAt,seat:seat,token:code,orderCode:orderCode}],'DARF-'+(orderCode||'boleto')+'-'+seat+'.pdf'); };
+  modal.appendChild(closeBtn);modal.appendChild(darfLogo);modal.appendChild(logo);modal.appendChild(nombre);modal.appendChild(img);modal.appendChild(detail);modal.appendChild(pdfBtn);
   backdrop.appendChild(modal);
   document.body.appendChild(backdrop);
 }

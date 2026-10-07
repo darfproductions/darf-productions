@@ -5,6 +5,31 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-10-06 — Códigos de descuento, galería desde el panel y boleto en PDF (migraciones 0027 y 0028)
+
+- **Códigos de descuento** (panel → producción → "Códigos de descuento"): porcentaje, zonas
+  (ninguna = todas), funciones (ninguna = todas), vigencia, usos totales y máximo de boletos
+  por compra. "Uso" = una orden `pendiente` o `aprobado`; rechazar o expirar libera el uso.
+  Si la orden excede el máximo de boletos del código, no se puede usar. El descuento se calcula
+  solo en `create_seated_ticket_order` v3 (el cliente solo envía el texto); `tickets.unit_price`
+  guarda el precio ya descontado y la fila del código se bloquea para no exceder los usos en
+  compras simultáneas. El comprador ve su código en `orders.discount_codigo`; la tabla de
+  códigos solo la lee un admin. Borrar un código ya usado solo lo desactiva.
+- **Checkout:** campo de código con vista previa (`preview_discount_code`), línea de descuento y
+  avisos; Mis Boletos, el mensaje de WhatsApp y las solicitudes pendientes muestran el código.
+- **Galería:** el admin sube fotos por producción (Galería o Ensayos de la Fan Zone); se reducen
+  en el navegador a 1600 px JPEG y se guardan en Storage (`gallery`). Las galerías públicas
+  (Mamma Mia, HSM, y un carrusel nuevo en Showman) las leen; sin fotos quedan los recuadros de ejemplo.
+- **Boleto en PDF:** jsPDF (CDN con SRI) genera una página de 100×180 mm por boleto, con QR,
+  desde el modal del boleto y desde cada orden aprobada en Mis Boletos. **Wallet queda pendiente**
+  (ver ARCHITECTURE).
+- **Videos nuevos:** pro-shots de Mamma Mia y HSM en la sección pública; en la Fan Zone, 4 ensayos
+  de HSM y 8 de Mamma Mia (los tres de "Escena 4", "Does Your Mother Know" y "Mamma Mia x Dancing
+  Queen" apuntan hoy al mismo video, por confirmar).
+- **Fan Zone de Showman:** tarjeta y sub-página nuevas (videos pendientes; galería de ensayos).
+- **Todas las galerías son carruseles** (públicas y de ensayos de la Fan Zone, incluida Showman).
+- **Panel de staff:** las secciones principales se pliegan y despliegan desde su encabezado.
+
 ## 2026-10-06 — Ronda de arreglos tras pruebas en vivo (migración 0026, pendiente de aplicar)
 
 - **Comprador sin precios (colores y total):** la política `performance_prices_public_read`
