@@ -334,7 +334,7 @@ const AuthService = (function(){
   // de esta consulta: editar localStorage ya no puede otorgar acceso staff.
   async function fetchProfile(userId){
     if(!sb) return null;
-    const { data, error } = await sb.from('profiles').select('rol,nombre').eq('id', userId).single();
+    const { data, error } = await sb.from('profiles').select('rol,nombre,telefono').eq('id', userId).single();
     if(error) return null;
     return data;
   }
@@ -346,11 +346,12 @@ const AuthService = (function(){
     session.userId = user.id;
     session.rol = profile ? profile.rol : 'fan';
     session.nombre = (profile && profile.nombre) || (user.user_metadata && user.user_metadata.nombre) || '';
+    session.telefono = (profile && profile.telefono) || '';
     updateNavAuth();
   }
 
   function clearSession(){
-    session.usuario=null; session.rol=null; session.nombre=null; session.userId=null;
+    session.usuario=null; session.rol=null; session.nombre=null; session.userId=null; session.telefono=null;
     updateNavAuth();
   }
 
@@ -491,10 +492,26 @@ const AuthService = (function(){
     flash('Contraseña actualizada.','s');
   }
 
+  async function saveProfile(){
+    if(!sb || !session.userId){flash('Inicia sesión para editar tu perfil.','d');return;}
+    var nombre=(document.getElementById('pf-nombre').value||'').trim();
+    var telefono=(document.getElementById('pf-telefono').value||'').trim();
+    if(!nombre){flash('El nombre no puede estar vacío.','d');return;}
+    if(telefono && !/^[0-9+()\-\s]{7,20}$/.test(telefono)){flash('Teléfono inválido. Usa solo números, espacios, + y -.','d');return;}
+    const { error } = await sb.from('profiles').update({nombre:nombre, telefono:telefono||null}).eq('id', session.userId);
+    if(error){ flash('No se pudo guardar: '+error.message,'d'); return; }
+    session.nombre=nombre; session.telefono=telefono;
+    updateNavAuth();
+    flash('Perfil actualizado.','s');
+  }
+
+  // Siempre resuelve (aunque falle la red) para que el enrutado inicial no se quede colgado.
   async function restoreSession(){
     if(!sb) return;
-    const { data } = await sb.auth.getSession();
-    if(data && data.session && data.session.user){ await applySession(data.session.user); }
+    try{
+      const { data } = await sb.auth.getSession();
+      if(data && data.session && data.session.user){ await applySession(data.session.user); }
+    }catch(e){ console.warn('restoreSession', e); }
     sb.auth.onAuthStateChange(function(event, sessionObj){
       if(event==='SIGNED_OUT'){ clearSession(); }
       else if(sessionObj && sessionObj.user){ applySession(sessionObj.user); }
@@ -502,7 +519,7 @@ const AuthService = (function(){
   }
 
   return {session, showLoginTab, doLogin, doLogout, doRegister, doResendVerification,
-    loginGoogle, updateNavAuth, updatePass, restoreSession};
+    loginGoogle, updateNavAuth, updatePass, saveProfile, restoreSession};
 })();
 
 // ─── CARRUSELES ───────────────────────────────────────
@@ -558,12 +575,12 @@ function playVid(el){
   iframe.src='https://www.youtube-nocookie.com/embed/'+encodeURIComponent(vid)+'?autoplay=1&rel=0&fs=1';
   iframe.setAttribute('allow','autoplay;encrypted-media;fullscreen');
   iframe.setAttribute('allowfullscreen','');
-  iframe.style.cssText='width:100%;height:100%;border:none;display:block';
+  iframe.style.cssText='position:absolute;top:0;left:0;width:100%;height:100%;border:none;display:block';
   var t=setTimeout(function(){
     if(thumb.contains(iframe)){
       clearEl(thumb);
       var fb=document.createElement('div');
-      fb.style.cssText='display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:12px;background:#111';
+      fb.style.cssText='position:absolute;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:#111';
       var msg=document.createElement('div');msg.style.cssText='font-size:13px;color:#aaa;text-align:center;padding:0 16px';msg.textContent='No se puede reproducir aquí.';
       var lnk=document.createElement('a');lnk.href='https://youtu.be/'+vid;lnk.target='_blank';lnk.rel='noopener';
       lnk.style.cssText='background:var(--rojo);color:#fff;padding:10px 20px;border-radius:6px;font-size:12px;font-weight:700;text-decoration:none;letter-spacing:.06em';
@@ -601,6 +618,8 @@ function cuentaTab(tab){
   if(tab==='perfil'){
     var n=document.getElementById('pf-nombre');var c=document.getElementById('pf-correo');var r=document.getElementById('pf-rol');
     var ROL_LABELS={fan:'Fan',staff:'Staff',admin:'Admin'};
+    var tl=document.getElementById('pf-telefono');
+    if(tl)tl.value=AuthService.session.telefono||'';
     if(n)n.value=AuthService.session.nombre||'';if(c)c.value=AuthService.session.usuario||'';if(r)r.value=ROL_LABELS[AuthService.session.rol]||'Fan';
   }
   if(tab==='boletos'){ loadMyOrders(); }
@@ -684,7 +703,7 @@ function money(n){ return '$'+Number(n).toFixed(2)+' MXN'; }
 
 // ─── CHECKOUT PÚBLICO (Supabase; se activa con "En venta" de la función) ──
 var ckState={perf:null,loadedPerf:null,seats:[],taken:{},prices:{},selected:{},loading:false,error:null};
-var CK_STATES=[['disp','Disponible','#1565C0'],['sel','Seleccionado','#EC4899'],['bloq','No disponible','#7a7a7a']];
+var CK_STATES=[['sel','Seleccionado','#EC4899'],['bloq','No disponible','#7a7a7a']];
 function onSalePerfs(){
   return DB.getPerformancesForProduction(SHOWMAN_ID).filter(function(p){return p.on_sale && p.starts_at;})
     .sort(function(a,b){return a.starts_at<b.starts_at?-1:a.starts_at>b.starts_at?1:0;});
@@ -738,6 +757,7 @@ async function ckLoad(){
   ckState.seats=(r[0].data||[]).filter(function(x){return x.is_active;});
   ckState.taken={};(r[1].data||[]).forEach(function(id){ckState.taken[id]=true;});
   ckState.prices={};(r[2].data||[]).forEach(function(x){ckState.prices[x.price_category_id]={price:Number(x.price),nombre:x.price_categories?x.price_categories.nombre:''};});
+  if(!Object.keys(ckState.prices).length){ckState.error='Esta función aún no tiene precios disponibles. Intenta más tarde.';ckState.seats=[];renderCkMap();return;}
   // Quitar de la selección lo que otro comprador ya tomó.
   Object.keys(ckState.selected).forEach(function(id){ if(ckState.taken[id]) delete ckState.selected[id]; });
   renderCkMap();
@@ -761,6 +781,7 @@ function renderCkMap(){
   if(ckState.error){var e=document.createElement('div');e.className='empty-note';e.textContent=ckState.error;root.appendChild(e);updateCart();return;}
   if(!ckState.seats.length){var n=document.createElement('div');n.className='empty-note';n.textContent='No hay asientos disponibles para esta función.';root.appendChild(n);updateCart();return;}
   root.appendChild(smapBuildMap(ckState.seats,{
+    fillZones:true,
     catName:ckCat,
     stateOf:function(seat){return ckState.selected[seat.id]?'sel':(ckState.taken[seat.id]?'bloq':'disp');},
     titleOf:function(seat){
@@ -769,7 +790,8 @@ function renderCkMap(){
     },
     onClick:ckToggle
   }));
-  smapLegendEls(CK_STATES).forEach(function(el){root.appendChild(el);});
+  var priceByZone={};Object.keys(ckState.prices).forEach(function(id){priceByZone[ckState.prices[id].nombre]=ckState.prices[id].price;});
+  smapLegendEls(CK_STATES,function(nombre){return priceByZone[nombre];}).forEach(function(el){root.appendChild(el);});
   updateCart();
 }
 function renderCheckout(){
@@ -796,6 +818,8 @@ function renderCheckout(){
   var cur=perfs.filter(function(x){return x.id===ckState.perf;})[0];
   document.getElementById('cartShowName').textContent = prod.nombre;
   document.getElementById('cartShowDate').textContent = fmtPerfDate(cur.starts_at)+(cur.venue||prod.venue?' · '+(cur.venue||prod.venue):'');
+  var ph=document.getElementById('buyerPhone');
+  if(ph && !ph.value && AuthService.session.telefono) ph.value=AuthService.session.telefono;
   if(ckState.loadedPerf!==ckState.perf) ckLoad(); else renderCkMap();
 }
 
@@ -1289,9 +1313,9 @@ async function smapCancelTicket(ticketId){
   return r.error?{ok:false,error:r.error.message}:{ok:true,data:r.data};
 }
 
-var SMAP_ZONES={'Exclusivo':'z-exclusivo','VIP':'z-vip','Preferente':'z-preferente','General':'z-general','Discapacitados':'z-discapacitados'};
+var SMAP_ZONES={'VIP':'z-vip','Preferente A':'z-prefa','Preferente B':'z-prefb','General':'z-general','Discapacitados':'z-discapacitados'};
 var SMAP_STATE_LABELS=[['disp','Disponible','#1565C0'],['sel','Seleccionado','#EC4899'],['pend','Pendiente','#D4A017'],['ap','Comprado','#E5445A'],['usado','Usado','#22c55e'],['bloq','Bloqueado','#7a7a7a']];
-var SMAP_ZONE_LABELS=[['Exclusivo','#8B5CF6'],['VIP','#14B8A6'],['Preferente','#F97316'],['General','#84CC16'],['Discapacitados','#A0724A']];
+var SMAP_ZONE_LABELS=[['VIP','#8B5CF6'],['Preferente A','#14B8A6'],['Preferente B','#F97316'],['General','#84CC16'],['Discapacitados','#A0724A']];
 
 function smapCategoryName(seat){
   var p=smapState.prices[seat.price_category_id];
@@ -1327,7 +1351,7 @@ function smapBuildMap(seats,ctx){
   seats.forEach(function(s){(rows[s.seat_row]=rows[s.seat_row]||[]).push(s);});
   var order=Object.keys(rows).sort();
   var wrap=document.createElement('div');wrap.className='smap-wrap';
-  var map=document.createElement('div');map.className='smap'+(ctx.onClick?' is-admin':'');
+  var map=document.createElement('div');map.className='smap'+(ctx.onClick?' is-admin':'')+(ctx.fillZones?' is-public':'');
   var stage=document.createElement('div');stage.className='smap-stage';stage.textContent='Escenario';map.appendChild(stage);
   order.forEach(function(rname){
     var list=rows[rname].slice().sort(function(a,b){return a.seat_number-b.seat_number;});
@@ -1347,11 +1371,17 @@ function smapBuildMap(seats,ctx){
 }
 
 // states: [[clase,etiqueta,color],…]; zonas: SMAP_ZONE_LABELS
-function smapLegendEls(states){
+// priceOf(nombre)→precio|undefined (opcional): checkout público muestra "VIP · $400" y oculta zonas sin precio.
+function smapLegendEls(states,priceOf){
   var l1=document.createElement('div');l1.className='smap-legends';
   states.forEach(function(x){var it=document.createElement('span');it.className='smap-legend-item';var sw=document.createElement('span');sw.className='smap-sw';sw.style.background=x[2];it.appendChild(sw);it.appendChild(document.createTextNode(x[1]));l1.appendChild(it);});
   var l2=document.createElement('div');l2.className='smap-legends';
-  SMAP_ZONE_LABELS.forEach(function(x){var it=document.createElement('span');it.className='smap-legend-item';var sw=document.createElement('span');sw.className='smap-sw';sw.style.background=x[1];it.appendChild(sw);it.appendChild(document.createTextNode('Zona '+x[0]));l2.appendChild(it);});
+  SMAP_ZONE_LABELS.forEach(function(x){
+    var price=priceOf?priceOf(x[0]):null;
+    if(priceOf && price==null) return;
+    var it=document.createElement('span');it.className='smap-legend-item';var sw=document.createElement('span');sw.className='smap-sw';sw.style.background=x[1];it.appendChild(sw);
+    it.appendChild(document.createTextNode(priceOf?(x[0]+' · $'+price):('Zona '+x[0])));l2.appendChild(it);
+  });
   return [l1,l2];
 }
 
@@ -1811,8 +1841,10 @@ async function handleQrResult(code){
 }
 
 // ─── URL DIRECTA ──────────────────────────────────────
-AuthService.restoreSession();
-(function(){var p=new URLSearchParams(window.location.search).get('v');if(p&&VIEWS_MAP[p])nav(p);})();
+// El enrutado inicial espera a la sesión: rutas protegidas (cuenta/fan/staff) no deben mandar a login en un refresh.
+AuthService.restoreSession().then(function(){
+  var p=new URLSearchParams(window.location.search).get('v');if(p&&VIEWS_MAP[p])nav(p,true);
+});
 window.addEventListener('popstate', function(){
   var p=new URLSearchParams(window.location.search).get('v');
   nav((p&&VIEWS_MAP[p])?p:'home', true);

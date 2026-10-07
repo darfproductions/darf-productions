@@ -1088,9 +1088,11 @@
           <h2 class="h-sm" style="color:#fff">Perfil</h2>
         </div>
         <div style="background:var(--g2);border:1px solid var(--g3);border-radius:var(--r12);padding:28px">
-          <div class="form-g"><label class="form-l">Nombre</label><input type="text" id="pf-nombre" class="form-c" placeholder="Tu nombre" readonly style="cursor:default;opacity:.7"></div>
+          <div class="form-g"><label class="form-l">Nombre</label><input type="text" id="pf-nombre" class="form-c" placeholder="Tu nombre" maxlength="80"></div>
+          <div class="form-g"><label class="form-l">Teléfono</label><input type="tel" id="pf-telefono" class="form-c" placeholder="55 1234 5678" maxlength="20"></div>
           <div class="form-g"><label class="form-l">Correo</label><input type="email" id="pf-correo" class="form-c" placeholder="tu@correo.com" readonly style="cursor:default;opacity:.7"></div>
           <div class="form-g"><label class="form-l">Rol</label><input type="text" id="pf-rol" class="form-c" readonly style="cursor:default;opacity:.7"></div>
+          <button class="btn btn-r btn-sm" onclick="AuthService.saveProfile()">Guardar perfil</button>
           <div style="border-top:1px solid var(--g3);margin-top:20px;padding-top:20px">
             <div style="font-size:12px;font-weight:700;color:var(--t2);margin-bottom:12px;text-transform:uppercase;letter-spacing:.08em">Cambiar Contraseña</div>
             <div class="form-g"><label class="form-l">Nueva contraseña</label>
