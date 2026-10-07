@@ -40,6 +40,7 @@ propósito (sin venue real todavía) — ver `docs/ARCHITECTURE.md`.
 | 0023 | `public_checkout.sql` | `get_taken_seats` (ids de asientos tomados, sin datos de compradores) y `create_seated_ticket_order` v2 (sesión obligatoria, solo `performances.on_sale`, vendedor opcional, tope de 3 pendientes) — aplicada |
 | 0024 | `showman_general_zone.sql` | Filas R–X de Showman pasan de Preferente a la categoría General ($250, zona verde, etiquetas `General-<fila>-<n>`); J–Q siguen Preferente $300 — **pendiente de aplicar** |
 | 0025 | `performance_default_prices.sql` | Trigger `trg_copy_prices_to_new_performance`: una función nueva hereda los precios de la función más reciente de su producción — **pendiente de aplicar** |
+| 0026 | `public_prices_and_zone_names.sql` | Política `performance_prices_public_read` por función en venta (no por `productions.on_sale`); renombra zonas de Showman: Exclusivo→VIP, VIP→Preferente A, Preferente→Preferente B (categorías y prefijos de `seat_label`) — **pendiente de aplicar** |
 
 Todas ejecutables en orden contra un proyecto Supabase vacío. Regla del
 proyecto: **nunca editar una migración ya ejecutada** — un cambio futuro se

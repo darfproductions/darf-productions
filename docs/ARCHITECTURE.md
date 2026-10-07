@@ -142,6 +142,15 @@ Cambiar el precio de una categoría a futuro nunca altera un ticket ya
 vendido — `unit_price` es un snapshot histórico. Detalle completo en
 `docs/DATABASE.md`.
 
+## Aviso por correo de mensajes de contacto
+
+`contact_messages` (INSERT) → Database Webhook → Edge Function `notify-contact`
+(`supabase/functions/notify-contact/index.ts`, `verify_jwt = false`) → Resend → correo
+a `NOTIFY_EMAIL`. La función valida el header `x-webhook-secret` contra `WEBHOOK_SECRET`
+y escapa el contenido en el HTML. Secretos (solo como *Edge Function secrets*, nunca en
+el repo): `RESEND_API_KEY`, `NOTIFY_EMAIL`, `WEBHOOK_SECRET`. Sin dominio verificado en
+Resend, el remitente es `onboarding@resend.dev` y solo entrega al dueño de la cuenta.
+
 ## Seguridad — reglas que no cambian
 
 - La `anon`/`public` key de Supabase puede vivir en el frontend (arquitectura

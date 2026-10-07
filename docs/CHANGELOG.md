@@ -5,6 +5,28 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-10-06 — Ronda de arreglos tras pruebas en vivo (migración 0026, pendiente de aplicar)
+
+- **Comprador sin precios (colores y total):** la política `performance_prices_public_read`
+  exigía `productions.on_sale = true`, pero Showman vende por función (0023). El fan veía
+  0 precios: mapa sin color de zona y total $0. La migración `0026` la alinea con la regla
+  de venta (función en venta + con fecha + producción no concluida).
+- **Mapa de compra:** los asientos disponibles se rellenan con el color de su zona; la
+  leyenda muestra cada zona con su precio. Si una función no trae precios, se avisa en
+  lugar de mostrar un mapa sin colores.
+- **Zonas renombradas (precios sin cambio):** Exclusivo → **VIP** ($400, A–B),
+  VIP → **Preferente A** ($350, C–I), Preferente → **Preferente B** ($300, J–Q).
+  General ($250) y Discapacitados ($300) igual. Las etiquetas de asiento cambian de
+  prefijo (`VIP-A-1`, `Preferente A-C-1`, `Preferente B-J-1`); `section` no cambia.
+  Las pruebas 0021–0023 usan ahora `Preferente B-K-…`.
+- **Perfil:** el nombre es editable y se puede guardar un teléfono (`profiles.telefono`,
+  RLS de dueño); el teléfono se prellena en el checkout.
+- **Sesión al refrescar:** el enrutado inicial esperaba a la sesión; ahora `restoreSession()`
+  se resuelve antes de navegar, y `?v=cuenta` ya no manda a login.
+- **Videos:** el iframe de YouTube se posiciona de forma absoluta dentro del recuadro 16:9.
+- **Aviso de contactos por correo:** Edge Function `notify-contact` (Resend) invocada por un
+  Database Webhook en `contact_messages`. Requiere secretos y webhook configurados por Johann.
+
 ## 2026-10-06 — Zona General en Showman (migración 0024, pendiente de aplicar) y validación QR
 
 - **Decisión de Johann:** filas J–Q siguen como Preferente a $300; filas R–X
