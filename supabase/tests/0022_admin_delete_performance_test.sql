@@ -11,7 +11,7 @@ update profiles set rol = 'staff' where id = '00000000-0000-0000-0000-0000000000
 create temp table ctx as
 select
   (select id from performances where production_id = 'showman' order by created_at limit 1) as perf_src,
-  (select array_agg(id order by seat_label) from (select id, seat_label from seats where production_id='showman' and seat_label like 'Preferente-K-%' order by seat_number limit 2) q) as seats2;
+  (select array_agg(id order by seat_label) from (select id, seat_label from seats where production_id='showman' and seat_label like 'Preferente B-K-%' order by seat_number limit 2) q) as seats2;
 grant select on ctx to authenticated;
 
 -- Función desechable con precios copiados de una real
@@ -59,7 +59,7 @@ end $$;
 do $$ declare r json; begin
   perform pg_temp.as_user('00000000-0000-0000-0000-0000000000a1');
   insert into blocked_seats (performance_id, seat_id)
-    select (select id from newperf), id from seats where production_id='showman' and seat_label='Preferente-K-10';
+    select (select id from newperf), id from seats where production_id='showman' and seat_label='Preferente B-K-10';
   perform admin_cancel_ticket(current_setting('t.tk1')::uuid);
   perform admin_cancel_ticket(current_setting('t.tk2')::uuid);
   r := admin_delete_performance((select id from newperf));

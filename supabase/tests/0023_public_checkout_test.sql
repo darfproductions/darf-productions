@@ -20,7 +20,7 @@ do $$ declare src uuid; p uuid; p2 uuid; begin
   insert into performance_price_categories (performance_id, price_category_id, price)
     select p2, price_category_id, price from performance_price_categories where performance_id = src;
   insert into ctx values (p, p2,
-    (select array_agg(id order by seat_label) from (select id, seat_label from seats where production_id='showman' and seat_label like 'Preferente-K-%' order by seat_number limit 4) q));
+    (select array_agg(id order by seat_label) from (select id, seat_label from seats where production_id='showman' and seat_label like 'Preferente B-K-%' order by seat_number limit 4) q));
 end $$;
 
 create or replace function pg_temp.as_user(uid text) returns void language plpgsql as $$
@@ -92,7 +92,7 @@ do $$ declare s uuid[]; begin
   perform create_seated_ticket_order((select perf from ctx), 'Ana', '55', array[(select seats4[3] from ctx)]);
   perform create_seated_ticket_order((select perf from ctx), 'Ana', '55', array[(select seats4[4] from ctx)]);
   begin
-    perform create_seated_ticket_order((select perf from ctx), 'Ana', '55', array[(select id from seats where production_id='showman' and seat_label='Preferente-K-10')]);
+    perform create_seated_ticket_order((select perf from ctx), 'Ana', '55', array[(select id from seats where production_id='showman' and seat_label='Preferente B-K-10')]);
     raise exception 'FALLO T5: cuarta pendiente aceptada';
   exception when others then
     if sqlerrm not like '%3 solicitudes pendientes%' then raise exception 'FALLO T5: %', sqlerrm; end if;

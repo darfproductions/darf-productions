@@ -16,7 +16,7 @@ update profiles set rol = 'staff' where id = '00000000-0000-0000-0000-0000000000
 create temp table ctx as
 select
   (select id from performances where production_id = 'showman' order by created_at limit 1) as perf,
-  (select array_agg(id order by seat_number) from (select id, seat_number from seats where production_id='showman' and seat_label like 'Preferente-K-%' order by seat_number limit 3) q) as seats3;
+  (select array_agg(id order by seat_number) from (select id, seat_number from seats where production_id='showman' and seat_label like 'Preferente B-K-%' order by seat_number limit 3) q) as seats3;
 grant select on ctx to authenticated, anon;
 
 create or replace function pg_temp.as_user(uid text) returns void language plpgsql as $$
@@ -69,8 +69,8 @@ end $$;
 -- T4: asiento bloqueado no se vende
 do $$ declare s uuid; begin
   perform pg_temp.as_user('00000000-0000-0000-0000-0000000000a1');
-  select id into s from seats where production_id='showman' and seat_label='Preferente-K-10';
-  if s is null then s := (select id from seats where production_id='showman' and seat_label='Preferente-K-20'); end if;
+  select id into s from seats where production_id='showman' and seat_label='Preferente B-K-10';
+  if s is null then s := (select id from seats where production_id='showman' and seat_label='Preferente B-K-20'); end if;
   insert into blocked_seats (performance_id, seat_id) values ((select perf from ctx), s);
   begin
     perform admin_create_seated_order((select perf from ctx), 'Z', '1', array[s]);
