@@ -80,8 +80,22 @@ de aplicar" — **el estado real en producción no está verificado**.
 | H4 | Vercel: proyecto único `darf-productions` (scope de equipo `darf-productions`) que publica `main` como Production **y genera vistas previas (Preview) de otras ramas**. | **Confirmado** el 2026-10-09: el push de docs a `darf-2.0` (commit `563eeaa`) generó un despliegue `Preview` de `vercel[bot]`. Conector de Vercel: lista el proyecto, pero leer su configuración da 403 porque la autorización no incluye ese scope. | Alto mientras `darf-2.0` tenga la config de producción: cada push a `darf-2.0` publica una preview conectada a la base real. Hoy el código es idéntico a `main` (sin riesgo nuevo), pero **antes de cambiar código en `darf-2.0` hay que aplicar §3.1**. Falta confirmar si las previews están protegidas por Vercel Authentication. |
 | H5 | `js/config.js` contiene la URL de Supabase de producción. | Código. | **Alto** para el desarrollo: cualquier copia del código (local, preview, Pages) habla con la base real. |
 
-**Correcciones recomendadas (requieren decisión y acción de Johann; cambian
-configuración de producción, no la operación de la web):**
+**Estado de las correcciones (2026-10-09):** Johann desactivó "Deploy to
+production" (H2) y despublicó GitHub Pages (H1). H3 queda pendiente para
+revisarlo juntos (hoy los cambios de la 1.0 se suben directo a `main`).
+
+Verificado con el conector de Vercel (solo lectura, 2026-10-09):
+- Proyecto `darf-productions`, sin framework, **sin variables de entorno**
+  (la config de Supabase vive en `js/config.js`).
+- Dominios: `darfproductions.com`, `www.darfproductions.com` y tres `*.vercel.app`.
+- **Vercel Authentication activo** para todos los despliegues excepto los
+  dominios propios: las previews y las URLs `*.vercel.app` solo las ven
+  usuarios con sesión en el equipo de Vercel. Lo público es solo el dominio.
+- Las previews de `darf-2.0` (commits `563eeaa`, `556b5fd`) se construyeron.
+  Riesgo adicional si se usan como DEV dentro del proyecto de producción: un
+  "Promote to Production" accidental pondría código DEV en el dominio real.
+
+**Correcciones recomendadas originalmente:**
 
 1. H2 → desactivar "Deploy to production" en la integración de Supabase
    (las migraciones se siguen aplicando de forma manual y revisada, como
@@ -120,8 +134,22 @@ configuración de producción, no la operación de la web):**
   pruebas, luego en `darf-dev`), no automáticamente en cada push. Evita
   aplicar migraciones a medio hacer y evita dos proyectos ligados al mismo repo.
 
+Proyecto DEV creado por Johann (2026-10-09): organización **"DARF 2.0 DEV"**,
+proyecto **"DARF 2.0 DEV"** (ref `qgywscczyzuqinutuvak`, us-east-1). El
+conector de Supabase de Claude **solo ve esa organización** (verificado con
+`list_organizations`/`list_projects`); la ref es distinta a la de producción.
+Sin migraciones aplicadas.
+
+**Hallazgo H6 — las migraciones no reproducen la base desde cero:** las filas
+de `productions` (`showman`, etc.) se insertaron a mano en producción y no
+están en ninguna migración; `0018` asume que `showman` existe. Aplicar
+`0001`–`0028` en una base vacía falla en `0018`. Para DEV: tras `0017`,
+insertar las 3 producciones con los mismos `id` y nombres marcados
+"(PRUEBA)"; después seguir con `0018`–`0028`.
+
 Configuración de `darf-dev`:
-1. Aplicar `0001`–`0028` en orden (verifica que el repo reproduce el esquema).
+1. Aplicar `0001`–`0017`, sembrar las 3 producciones de prueba, aplicar
+   `0018`–`0028` (verifica que el repo reproduce el esquema).
 2. Seed ficticio: 3 producciones de prueba, funciones de prueba, 725 asientos
    (sin datos personales).
 3. Usuarios de prueba con correos controlados por Johann: Super Admin, admin,
@@ -155,14 +183,13 @@ borrar `darf-2-dev` en Vercel y revertir commits en `darf-2.0`.
 
 ## 4. Conectores de Claude y reglas de uso
 
-- **Vercel:** conectado a la cuenta de Johann el 2026-10-09, pero sin acceso
-  al scope de equipo `darf-productions` (403). **Ojo:** el conector incluye
+- **Vercel:** conectado con acceso al equipo `darf-productions` (2026-10-09). **Ojo:** el conector incluye
   herramientas de escritura (crear o modificar proyectos, variables, dominios,
   despliegues). Regla: Claude solo usa herramientas de lectura sobre el
   proyecto de producción; cualquier escritura (incluido crear `darf-2-dev`)
   requiere aprobación explícita.
-- **Supabase:** pendiente. Autorizarlo **solo** a la organización `DARF DEV`.
-  Si la pantalla de autorización no permite elegir organización, detenerse.
+- **Supabase:** conectado **solo** a la organización "DARF 2.0 DEV".
+  Producción no es accesible por esta vía.
 
 ---
 
@@ -188,12 +215,15 @@ borrar `darf-2-dev` en Vercel y revertir commits en `darf-2.0`.
 - Revisión de GitHub Pages e integración de Supabase (capturas de Johann).
 - Visión y este plan guardados en `docs/`.
 
-**Pendiente de Johann:**
-1. Reautorizar el conector de Vercel incluyendo el scope `darf-productions`.
-2. Crear la organización `DARF DEV` + proyecto `darf-dev` en Supabase y
-   autorizar el conector de Supabase solo a esa organización.
-3. Decidir sobre H1 (GitHub Pages), H2 (Deploy to production) y H3 (proteger `main`).
+**Hecho por Johann:** conectores de Vercel y Supabase (DEV), H1 y H2 corregidos.
+
+**Pendiente de aprobación de Johann (propuesto el 2026-10-09):**
+1. Construir la base DEV (migraciones + producciones de prueba + datos ficticios).
+2. Apuntar `js/config.js` de `darf-2.0` a DEV + banner "ENTORNO DE PRUEBAS"
+   + script de verificación de aislamiento.
+3. Crear el proyecto Vercel DEV separado (`darf-2-dev`, rama `darf-2.0`).
 4. Compartir logo vectorial / manual de marca / fotos originales (para D1).
+5. Más adelante: H3 (proteger `main`).
 
 **Siguiente paso de Claude (tras lo anterior, en sesión nueva):**
 - Revisar la configuración de Vercel (vistas previas, variables, dominios) en
