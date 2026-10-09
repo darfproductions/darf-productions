@@ -159,6 +159,30 @@ Configuración de `darf-dev`:
    Resend). Los correos de Auth solo a direcciones de prueba.
 6. Ninguna copia de datos reales (personas u órdenes) sin autorización.
 
+### 3.2.1. Construcción de la base DEV (2026-10-09)
+
+- **0001–0008 aplicadas en DEV con el conector.** `0005` se aplicó en dos
+  partes (`0005_profiles` + `0005b_profiles_auth_trigger`) sin la línea
+  `drop trigger if exists` (en una base nueva no había nada que borrar).
+- **Limitación del conector:** la herramienta de Supabase exige una
+  confirmación extra para instrucciones `drop …`, que no llega a la sesión de
+  Claude y la deja colgada. 16 migraciones (0009–0028) contienen `drop`.
+- **Solución:** `supabase/dev/bootstrap_dev_0009_0028.sql`, generado
+  mecánicamente por `supabase/dev/build_bootstrap.sh` (migraciones tal cual,
+  sin `begin;`/`commit;` internos, en una sola transacción, con las 3
+  producciones de PRUEBA antes de `0018`). Empieza con una **guardia** que
+  aborta si la base no tiene la marca `darf_env.marker = 'DARF-2.0-DEV'`
+  (creada en DEV con el conector; esquema no expuesto por la API).
+  Johann lo ejecuta en el SQL Editor del proyecto DEV.
+- **Probado en una Postgres 16 local** (con simulación mínima de `auth`,
+  `storage` y los grants por defecto de Supabase): aplica completo; en una
+  base sin la marca aborta sin crear nada.
+- **Pruebas SQL del repo sobre la base reconstruida:** 0021, 0025, 0026,
+  0027, 0028 pasan. **0022 y 0023 fallan por estar desactualizadas:** se
+  escribieron antes del trigger de `0025` (que copia precios a cada función
+  nueva) e insertan precios que ya existen. Con `on conflict do nothing` en
+  esas inserciones pasan completas. Corregirlas queda para la Fase 1.
+
 ### 3.3. Vercel DEV
 
 Proyecto separado `darf-2-dev` conectado al mismo repo, con rama de
