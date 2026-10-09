@@ -190,6 +190,32 @@ producción `darf-2.0` y dominio `*.vercel.app`. El proyecto de producción no
 se modifica. Gracias a §3.1, aunque el proyecto de producción generara una
 preview de `darf-2.0`, esa preview usaría DEV.
 
+### 3.3.1. Estado (2026-10-09)
+
+- **Base DEV completa:** 0009–0028 aplicadas por Johann con el script
+  guardado. Verificado con el conector: 30 migraciones registradas, 15 tablas,
+  3 producciones "(PRUEBA)", 725 asientos, 5 zonas, 2 funciones sin fecha,
+  10 precios, 35 políticas RLS, bucket `gallery`, 0 órdenes, 0 usuarios.
+  Advisor de seguridad: solo avisos esperados (RPCs `SECURITY DEFINER` que
+  validan permisos por dentro; `is_staff/is_admin` para `anon` es decisión ya
+  documentada, Hallazgo #4). Nota para Fase 1: `handle_new_user()` (función de
+  trigger) aparece ejecutable vía RPC; inofensivo (Postgres no deja llamar una
+  función de trigger directamente) pero conviene revocarlo.
+- **Rama `darf-2.0` apunta solo a DEV** (`js/config.js`, `ENV: 'DEV'`) con
+  banner "ENTORNO DE PRUEBAS". `scripts/check-isolation.sh` pasa en DEV y falla
+  con la config anterior (probado).
+- **Proyecto Vercel `darf-2-dev`** creado por Claude con aprobación (mismo
+  repo; *Ignored Build Step* que solo construye `darf-2.0`; Vercel
+  Authentication en **todos** los despliegues; sin dominios propios). El
+  proyecto de producción no se modificó (verificado después).
+- El proyecto de producción sigue generando previews de `darf-2.0`; desde el
+  commit `5accf36` esas previews usan DEV (inofensivo, protegidas por Vercel
+  Authentication). Opcional: desactivarlas en el proyecto de producción.
+- **Prueba en navegador desde el entorno de Claude: no posible** — la política
+  de red del entorno bloquea `cdn.jsdelivr.net`, `cdnjs.cloudflare.com` y
+  `*.supabase.co`. La prueba de aislamiento de extremo a extremo se hace con
+  Johann en la web DEV (ver §3.4).
+
 ### 3.4. Verificación del aislamiento (evidencia requerida)
 
 1. Búsqueda del identificador de producción en `darf-2.0` → 0 resultados.
