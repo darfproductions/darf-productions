@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { PosterFill } from "@/components/PosterArt";
+import { ArtFill } from "@/components/PosterArt";
 import { ProductionCard } from "@/components/ProductionCard";
 import { formatPrice, getHomeData, getTheme } from "@/lib/productions";
 
@@ -40,7 +40,7 @@ export default async function Home() {
           <article className="self-start overflow-hidden rounded-2xl shadow-[0_30px_80px_rgb(68_14_213/0.35)] md:col-span-5 md:col-start-8" style={{ background: currentTheme?.superficie }}>
             <div className="relative aspect-[16/10] overflow-hidden">
               {currentTheme ? (
-                <PosterFill theme={currentTheme} alt={current.nombre} sizes="(min-width: 768px) 40vw, 100vw" />
+                <ArtFill theme={currentTheme} alt={current.nombre} sizes="(min-width: 768px) 40vw, 100vw" />
               ) : (
                 <h2 className="titular absolute inset-x-6 bottom-6 text-4xl">{current.nombre}</h2>
               )}

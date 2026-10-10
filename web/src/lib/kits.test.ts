@@ -7,8 +7,7 @@ describe("kit de producción", () => {
     it(`${id}: colores legibles y piezas obligatorias`, () => {
       expect(themeProblems(t)).toEqual([]);
       expect(t.logo).toBeTruthy();
-      expect(t.cartel).toBeTruthy();
-      expect(["claro", "oscuro"]).toContain(t.modo);
+      expect(t.ambiente).toBeTruthy();
     });
   }
 });

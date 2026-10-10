@@ -12,31 +12,50 @@ para mantener la cohesión y facilitar el proceso. Sin regla, cada obra se ve
 distinta (ej.: logo como título en Showman y HSM, texto en Mamma Mia porque su
 logo azul no se leía sobre fondo oscuro).
 
-## 2. El kit de producción (obligatorio para publicar)
+## 2. El kit de producción — versión 2 (decisiones de Johann, 2026-10-10)
 
-| Pieza | Regla | Validación |
+Cambios respecto a la versión 1: **sin cartel** (cambia de tamaño y trae
+información de más), **modo único oscuro** para todas las obras, **imagen de
+ambiente obligatoria**.
+
+| Pieza | Especificación | Validación |
 |---|---|---|
-| Logo del título | Imagen con fondo transparente; siempre es el título del hero (el nombre en texto va como texto alternativo) | Obligatorio para publicar; el panel mide su contraste contra el fondo |
-| Cartel oficial | Póster vertical o cuadrado; se muestra completo, nunca estirado ni recortado | Obligatorio; proporción entre 1:2 y 1:1 |
-| Modo | `claro` u `oscuro`, según la identidad de la obra | Valor cerrado |
-| Colores | Fondo, superficie, texto y acento (hex) | Texto/fondo y texto/superficie ≥ 4.5:1; acento/fondo ≥ 3:1 |
-| Imagen de ambiente | Opcional; fondo del hero. Si falta: cartel desenfocado | Formato y peso máximo |
-| Frase corta | 1 línea bajo el logo | Obligatoria, máx. 120 caracteres |
+| Logo del título | PNG o WebP con fondo transparente, **versión para fondo oscuro** (claro/luminoso), mínimo 1200 px de ancho, sin márgenes vacíos | Obligatorio para publicar; contraste contra el fondo de la obra |
+| Imagen de ambiente | Horizontal **16:9**, mínimo **1920×1080**, **sin texto ni logos**; lo importante hacia la derecha (a la izquierda va el logo con un degradado) | Obligatoria; proporción ≥ 1.6 |
+| Colores | Fondo (oscuro), superficie, texto y acento, en hex | Texto/fondo y texto/superficie ≥ 4.5:1; acento/fondo ≥ 3:1; fondo oscuro |
+| Frase corta | Una línea bajo el logo | Obligatoria, máx. 120 caracteres |
 
-Lo que **no** cambia por obra: estructura, orden de secciones, tipografía
-(Montserrat), menú y el botón de compra con la luz DARF.
+**Material provisional en DEV (hay que reemplazarlo por el oficial):**
+- Mamma Mia: logo en versión clara **generado** a partir del oficial azul
+  (`mm-logo-oscuro.webp`); ambiente generado a partir de las flores del cartel
+  (papel blanco reemplazado por azul noche).
+- Showman: ambiente recortado del escenario a 16:9, solo 1545 px de ancho
+  (debajo del mínimo).
+- HSM: ambiente recortado del telón a 16:9.
 
-Implementado hoy en `web/src/lib/themes.ts` para las tres obras; las reglas de
-contraste se prueban en CI (`kits.test.ts`): si una obra no cumple, la
-verificación falla. Mamma Mia pasa a **modo claro** (fondo blanco con flores,
-como su identidad real), y su logo azul se lee.
+## 3. La plantilla (fija para todas las obras)
 
-## 3. La plantilla (orden fijo de secciones)
+**Hero (altura fija: 660 px escritorio, 560 px celular):** imagen de ambiente
+a todo lo ancho; degradado con el color de fondo de la obra desde la
+izquierda; contenido abajo a la izquierda: etiqueta ("DARF Productions
+presenta" / "Archivo"), **logo en caja fija** (520×192 px escritorio,
+ancho completo × 128 px celular, alineado abajo a la izquierda, así todos los
+logos se ven del mismo tamaño), frase corta, sede/estado, botones (Comprar
+boletos con la luz DARF si hay función en venta; Fan Zone si hay material).
 
-Hero (logo, cartel, ambiente, frase, sede/estado, botones) → Funciones y
-precios → Sinopsis → Canciones por acto → Videos → Galería → Elenco y ensamble
-→ Equipos (creativo, producción, crew, técnico) → Agradecimientos → Ficha
-técnica. Una sección vacía se oculta sola; el orden no se edita por obra.
+**Tarjeta de obra (cartelera, archivo, portada, Fan Zone):** proporción 16:9,
+ambiente de fondo, logo centrado en caja fija (72 % × 60 %).
+
+**Secciones, en orden fijo:** Funciones y precios → Sinopsis → Canciones por
+acto → Videos → Galería → Elenco y ensamble → Equipos (creativo, producción,
+crew, técnico) → Agradecimientos → Ficha técnica. Una sección vacía se oculta
+sola; el orden no se edita por obra.
+
+Lo que **no** cambia por obra: estructura, medidas, orden, tipografía
+(Montserrat), menú, modo oscuro y el botón de compra con la luz DARF.
+
+Implementado en `web/src/lib/themes.ts` y `web/src/components/PosterArt.tsx`;
+las reglas del kit se prueban en CI (`kits.test.ts`).
 
 ## 4. Modelo de datos propuesto (migración nueva `0029`, solo DEV primero)
 
@@ -45,12 +64,12 @@ Principio: **no se toca la boletería.** `productions.id` (texto: `showman`,
 referencian. `on_sale` y `concluded` siguen existiendo y funcionando igual.
 
 **`productions` (columnas nuevas):** `estado` (`borrador`, `publicada`,
-`archivada`, `cancelada`, `oculta`), `temporada`, `frase`, `sinopsis`, `modo`,
+`archivada`, `cancelada`, `oculta`), `temporada`, `frase`, `sinopsis`,
 `color_fondo`, `color_superficie`, `color_texto`, `color_acento`, `logo_path`,
-`cartel_path`, `ambiente_path`, `publicada_at`.
-- Restricciones: colores con formato hex; `modo` cerrado.
+`ambiente_path`, `publicada_at`.
+- Restricciones: colores con formato hex; fondo oscuro.
 - Trigger: no se puede pasar a `publicada` si falta una pieza obligatoria del kit
-  (logo, cartel, colores, frase) o si los colores no cumplen el contraste
+  (logo, ambiente, colores, frase) o si los colores no cumplen el contraste
   (función SQL de contraste, la misma fórmula que la web).
 - Compatibilidad: `archivada` ⇔ `concluded = true`.
 
@@ -66,7 +85,7 @@ referencian. `on_sale` y `concluded` siguen existiendo y funcionando igual.
   público/fans, orden).
 - `production_facts` (ficha técnica: etiqueta, valor, orden) y
   `production_thanks` (agradecimientos, orden).
-- Storage: bucket `producciones` para logo, cartel y ambiente (lectura
+- Storage: bucket `producciones` para logo y ambiente (lectura
   pública, escritura admin). La galería sigue en `gallery_photos`.
 
 **Permisos (RLS):** lectura pública solo de producciones `publicada` o

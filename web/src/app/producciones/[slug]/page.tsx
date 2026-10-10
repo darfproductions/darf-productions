@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Section } from "@/components/PageHeading";
-import { PosterBackdrop, PosterFull, ProductionLogo } from "@/components/PosterArt";
+import { HeroBackdrop, ProductionLogo } from "@/components/PosterArt";
 import { YouTube, youtubeId } from "@/components/YouTube";
 import { PRODUCTION_CONTENT } from "@/content/producciones";
 import {
@@ -57,33 +57,27 @@ export default async function ProductionPage({ params }: PageProps<"/produccione
   ].filter((s) => s.show);
 
   return (
-    <main style={themeStyle(theme)} className={`min-h-dvh bg-obra-fondo pb-10 text-obra-texto ${theme?.modo === "claro" ? "" : "-mt-[84px] md:-mt-[100px]"}`}>
-      <section className="relative overflow-hidden">
-        {theme && <PosterBackdrop theme={theme} />}
-        <div className={`relative mx-auto grid max-w-[1440px] items-center gap-10 px-5 pb-16 md:px-16 lg:grid-cols-12 ${theme?.modo === "claro" ? "pt-12 md:pt-16" : "pt-32 md:pt-40"}`}>
-          {theme && (
-            <div className="mx-auto w-full max-w-[300px] sm:max-w-[360px] lg:order-2 lg:col-span-4 lg:col-start-9 lg:max-w-none">
-              <PosterFull theme={theme} alt={p.nombre} priority />
-            </div>
-          )}
-          <div className="flex flex-col gap-5 lg:order-1 lg:col-span-7">
-            <p className="text-xs font-bold uppercase tracking-[0.3em] text-obra-acento">
-              {p.concluded ? "Archivo · DARF Productions" : "DARF Productions presenta"}
-            </p>
-            {theme ? <ProductionLogo theme={theme} nombre={p.nombre} priority /> : <h1 className="titular text-5xl md:text-7xl">{p.nombre}</h1>}
-            {theme && <p className="max-w-xl text-xl leading-relaxed opacity-90">{theme.tagline}</p>}
-            <ul className="flex flex-wrap gap-2 text-sm font-semibold">
-              {p.venue && <li className="rounded-full border border-current/30 px-3 py-1.5">{p.venue}</li>}
-              <li className="rounded-full border border-current/30 px-3 py-1.5">{p.concluded ? "Producción concluida" : "En cartelera"}</li>
-            </ul>
-            <div className="flex flex-wrap gap-3">
-              {!p.concluded && performances.some((f) => f.on_sale) && (
-                <a href="#funciones" className="boton-compra rounded-full px-7 py-4 text-sm font-bold uppercase tracking-[0.1em]">Comprar boletos</a>
-              )}
-              {c?.ensayos.length ? (
-                <Link href={`/fan-zone/${p.id}`} className="rounded-full border border-obra-acento px-6 py-4 text-sm font-bold uppercase tracking-[0.1em]">Fan Zone</Link>
-              ) : null}
-            </div>
+    <main style={themeStyle(theme)} className="-mt-[84px] min-h-dvh bg-obra-fondo pb-10 text-obra-texto md:-mt-[100px]">
+      {/* Hero de la plantilla: altura fija, ambiente de fondo, logo en caja fija. */}
+      <section className="relative h-[560px] overflow-hidden md:h-[660px]">
+        {theme && <HeroBackdrop theme={theme} />}
+        <div className="relative mx-auto flex h-full max-w-[1440px] flex-col justify-end gap-5 px-5 pb-14 md:px-16 md:pb-20">
+          <p className="text-xs font-bold uppercase tracking-[0.3em] text-obra-acento">
+            {p.concluded ? "Archivo · DARF Productions" : "DARF Productions presenta"}
+          </p>
+          {theme ? <ProductionLogo theme={theme} nombre={p.nombre} priority /> : <h1 className="titular text-5xl md:text-7xl">{p.nombre}</h1>}
+          {theme && <p className="max-w-xl text-lg leading-relaxed opacity-90 md:text-xl">{theme.tagline}</p>}
+          <ul className="flex flex-wrap gap-2 text-sm font-semibold">
+            {p.venue && <li className="rounded-full border border-current/30 bg-black/20 px-3 py-1.5 backdrop-blur">{p.venue}</li>}
+            <li className="rounded-full border border-current/30 bg-black/20 px-3 py-1.5 backdrop-blur">{p.concluded ? "Producción concluida" : "En cartelera"}</li>
+          </ul>
+          <div className="flex flex-wrap gap-3">
+            {!p.concluded && performances.some((f) => f.on_sale) && (
+              <a href="#funciones" className="boton-compra rounded-full px-7 py-4 text-sm font-bold uppercase tracking-[0.1em]">Comprar boletos</a>
+            )}
+            {c?.ensayos.length ? (
+              <Link href={`/fan-zone/${p.id}`} className="rounded-full border border-obra-acento bg-black/20 px-6 py-4 text-sm font-bold uppercase tracking-[0.1em] backdrop-blur">Fan Zone</Link>
+            ) : null}
           </div>
         </div>
       </section>
