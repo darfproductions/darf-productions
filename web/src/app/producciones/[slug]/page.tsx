@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Section } from "@/components/PageHeading";
-import { PosterBackdrop, PosterFull } from "@/components/PosterArt";
+import { PosterBackdrop, PosterFull, ProductionLogo } from "@/components/PosterArt";
 import { YouTube, youtubeId } from "@/components/YouTube";
 import { PRODUCTION_CONTENT } from "@/content/producciones";
 import {
@@ -27,7 +27,7 @@ function CreditList({ items }: { items: { a: string; b: string }[] }) {
   return (
     <dl className="grid gap-x-6 sm:grid-cols-2">
       {items.map((x, i) => (
-        <div key={i} className="flex justify-between gap-4 border-b border-white/10 py-3">
+        <div key={i} className="flex justify-between gap-4 border-b border-current/15 py-3">
           <dt className="opacity-75">{x.a}</dt>
           <dd className="text-right font-semibold">{x.b}</dd>
         </div>
@@ -57,10 +57,10 @@ export default async function ProductionPage({ params }: PageProps<"/produccione
   ].filter((s) => s.show);
 
   return (
-    <main style={themeStyle(theme)} className="-mt-[84px] min-h-dvh bg-obra-fondo pb-10 text-obra-texto md:-mt-[100px]">
+    <main style={themeStyle(theme)} className={`min-h-dvh bg-obra-fondo pb-10 text-obra-texto ${theme?.modo === "claro" ? "" : "-mt-[84px] md:-mt-[100px]"}`}>
       <section className="relative overflow-hidden">
         {theme && <PosterBackdrop theme={theme} />}
-        <div className="relative mx-auto grid max-w-[1440px] items-center gap-10 px-5 pb-16 pt-32 md:px-16 md:pt-40 lg:grid-cols-12">
+        <div className={`relative mx-auto grid max-w-[1440px] items-center gap-10 px-5 pb-16 md:px-16 lg:grid-cols-12 ${theme?.modo === "claro" ? "pt-12 md:pt-16" : "pt-32 md:pt-40"}`}>
           {theme && (
             <div className="mx-auto w-full max-w-[300px] sm:max-w-[360px] lg:order-2 lg:col-span-4 lg:col-start-9 lg:max-w-none">
               <PosterFull theme={theme} alt={p.nombre} priority />
@@ -70,11 +70,11 @@ export default async function ProductionPage({ params }: PageProps<"/produccione
             <p className="text-xs font-bold uppercase tracking-[0.3em] text-obra-acento">
               {p.concluded ? "Archivo · DARF Productions" : "DARF Productions presenta"}
             </p>
-            <h1 className="titular text-5xl md:text-7xl">{p.nombre}</h1>
+            {theme ? <ProductionLogo theme={theme} nombre={p.nombre} priority /> : <h1 className="titular text-5xl md:text-7xl">{p.nombre}</h1>}
             {theme && <p className="max-w-xl text-xl leading-relaxed opacity-90">{theme.tagline}</p>}
             <ul className="flex flex-wrap gap-2 text-sm font-semibold">
-              {p.venue && <li className="rounded-full border border-white/25 px-3 py-1.5">{p.venue}</li>}
-              <li className="rounded-full border border-white/25 px-3 py-1.5">{p.concluded ? "Producción concluida" : "En cartelera"}</li>
+              {p.venue && <li className="rounded-full border border-current/30 px-3 py-1.5">{p.venue}</li>}
+              <li className="rounded-full border border-current/30 px-3 py-1.5">{p.concluded ? "Producción concluida" : "En cartelera"}</li>
             </ul>
             <div className="flex flex-wrap gap-3">
               {!p.concluded && performances.some((f) => f.on_sale) && (
@@ -89,7 +89,7 @@ export default async function ProductionPage({ params }: PageProps<"/produccione
       </section>
 
       {sections.length > 1 && (
-        <nav aria-label="Secciones de la obra" className="sticky top-0 z-10 border-b border-white/10 bg-obra-fondo/95 backdrop-blur">
+        <nav aria-label="Secciones de la obra" className="sticky top-0 z-10 border-b border-current/15 bg-obra-fondo/95 backdrop-blur">
           <ul className="mx-auto flex max-w-[1440px] gap-1 overflow-x-auto px-5 md:px-16">
             {sections.map((s) => (
               <li key={s.id}><a href={`#${s.id}`} className="block whitespace-nowrap px-3 py-4 text-sm font-semibold opacity-85 hover:opacity-100">{s.label}</a></li>
@@ -115,7 +115,7 @@ export default async function ProductionPage({ params }: PageProps<"/produccione
                       {vendible ? (
                         <Link href={`/comprar/${f.id}`} className="boton-compra rounded-full px-5 py-3 text-xs font-bold uppercase tracking-[0.08em]">Elegir asientos</Link>
                       ) : (
-                        <span className="rounded-full border border-white/25 px-3 py-1.5 text-xs font-bold">{p.concluded ? "Concluida" : "Próximamente"}</span>
+                        <span className="rounded-full border border-current/30 px-3 py-1.5 text-xs font-bold">{p.concluded ? "Concluida" : "Próximamente"}</span>
                       )}
                     </li>
                   );
@@ -147,7 +147,7 @@ export default async function ProductionPage({ params }: PageProps<"/produccione
                     {a.nombre && <p className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-obra-acento">{a.nombre}</p>}
                     <ol className="flex flex-col">
                       {a.canciones.map((s, j) => (
-                        <li key={j} className="flex gap-4 border-b border-white/10 py-2.5">
+                        <li key={j} className="flex gap-4 border-b border-current/15 py-2.5">
                           <span className="w-6 text-sm font-bold text-obra-acento">{String(j + 1).padStart(2, "0")}</span>
                           <span>{s}</span>
                         </li>
@@ -206,7 +206,7 @@ export default async function ProductionPage({ params }: PageProps<"/produccione
               <p className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-obra-acento">Ficha técnica</p>
               <dl>
                 {c.ficha.map((f, i) => (
-                  <div key={i} className="flex justify-between gap-4 border-b border-white/10 py-2.5 text-sm last:border-0">
+                  <div key={i} className="flex justify-between gap-4 border-b border-current/15 py-2.5 text-sm last:border-0">
                     <dt className="opacity-75">{f.etiqueta}</dt>
                     <dd className="text-right font-semibold">{f.valor}</dd>
                   </div>

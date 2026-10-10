@@ -50,9 +50,9 @@ export default async function Home() {
             </div>
             <div className="flex flex-col gap-4 p-6">
               <ul className="flex flex-wrap gap-2 text-xs font-semibold" style={{ color: currentTheme?.texto }}>
-                {current.venue && <li className="rounded-full border border-white/25 px-3 py-1.5">{current.venue}</li>}
-                {enCartelera && current.price > 0 && <li className="rounded-full border border-white/25 px-3 py-1.5">Desde {formatPrice(current.price)}</li>}
-                {!enCartelera && <li className="rounded-full border border-white/25 px-3 py-1.5">Archivo</li>}
+                {current.venue && <li className="rounded-full border border-current/30 px-3 py-1.5">{current.venue}</li>}
+                {enCartelera && current.price > 0 && <li className="rounded-full border border-current/30 px-3 py-1.5">Desde {formatPrice(current.price)}</li>}
+                {!enCartelera && <li className="rounded-full border border-current/30 px-3 py-1.5">Archivo</li>}
               </ul>
               {enCartelera ? (
                 <div className="flex flex-wrap gap-2">

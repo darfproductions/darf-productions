@@ -1,11 +1,6 @@
-import type { StaticImageData } from "next/image";
 import { createClient } from "@/lib/supabase/server";
+export { getTheme, themeProblems, themeStyle, THEMES, type ProductionTheme } from "@/lib/themes";
 import { lastPerformanceDates, pickFeatured, sortForHome, type Featured } from "@/lib/home-rules";
-import showmanTitle from "@/assets/producciones/showman-title.webp";
-import showmanStage from "@/assets/producciones/showman-stage.jpg";
-import mmKey from "@/assets/producciones/mm-key.jpg";
-import hsmTitle from "@/assets/producciones/hsm-title.webp";
-import hsmCurtain from "@/assets/producciones/hsm-curtain.jpg";
 
 // ─── Datos de producciones ────────────────────────────────────────────────
 // Lee de las tablas existentes (productions, performances, precios) con la
@@ -91,64 +86,6 @@ export async function getProduction(id: string) {
     performances: (perfs.data ?? []) as Performance[],
     prices,
   };
-}
-
-// ─── Tema visual por producción (provisional) ────────────────────────────
-// En la Fase 2 esto se guarda en la base y se edita desde el panel. Por ahora
-// vive aquí para las tres producciones existentes.
-
-export type ProductionTheme = {
-  fondo: string;
-  superficie: string;
-  texto: string;
-  acento: string;
-  hero: StaticImageData;
-  titulo?: StaticImageData;
-  tagline: string;
-};
-
-const THEMES: Record<string, ProductionTheme> = {
-  showman: {
-    fondo: "#08101f",
-    superficie: "#0f1c36",
-    texto: "#f7eedb",
-    acento: "#e8be45",
-    hero: showmanStage,
-    titulo: showmanTitle,
-    tagline: "Bienvenidos al espectáculo más grande.",
-  },
-  mm: {
-    fondo: "#0d1530",
-    superficie: "#16224a",
-    texto: "#f5f2fb",
-    acento: "#f28ab2",
-    hero: mmKey,
-    tagline: "Una boda, tres posibles padres y la música de ABBA.",
-  },
-  hsm: {
-    fondo: "#1a0607",
-    superficie: "#2a0c0e",
-    texto: "#fcebd0",
-    acento: "#f2b544",
-    hero: hsmCurtain,
-    titulo: hsmTitle,
-    tagline: "East High, un escenario y el valor de salirse del guion.",
-  },
-};
-
-export function getTheme(id: string): ProductionTheme | null {
-  return THEMES[id] ?? null;
-}
-
-/** Variables CSS que el tema de la obra sobreescribe (ver globals.css). */
-export function themeStyle(theme: ProductionTheme | null): React.CSSProperties {
-  if (!theme) return {};
-  return {
-    "--obra-fondo": theme.fondo,
-    "--obra-superficie": theme.superficie,
-    "--obra-texto": theme.texto,
-    "--obra-acento": theme.acento,
-  } as React.CSSProperties;
 }
 
 export function formatPerformanceDate(iso: string | null): string {

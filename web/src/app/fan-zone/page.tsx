@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { PageHeading } from "@/components/PageHeading";
+import { PosterFill } from "@/components/PosterArt";
 import { PRODUCTION_CONTENT } from "@/content/producciones";
 import { requireSession } from "@/lib/auth";
 import { getHomeData, getTheme } from "@/lib/productions";
@@ -25,8 +25,8 @@ export default async function FanZonePage() {
           return (
             <li key={p.id}>
               <Link href={`/fan-zone/${p.id}`} className="block overflow-hidden rounded-2xl bg-telon">
-                <div className="relative aspect-[16/9]" style={{ background: t?.fondo }}>
-                  {t && <Image src={t.hero} alt="" fill sizes="(min-width: 768px) 30vw, 100vw" className="object-cover" />}
+                <div className="relative aspect-[16/9] overflow-hidden" style={{ background: t?.fondo }}>
+                  {t && <PosterFill theme={t} alt="" sizes="(min-width: 768px) 30vw, 100vw" />}
                 </div>
                 <div className="flex items-center justify-between px-5 py-4">
                   <span className="text-lg font-bold">{p.nombre}</span>
