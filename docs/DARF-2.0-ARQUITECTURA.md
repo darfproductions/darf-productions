@@ -164,3 +164,29 @@ como segunda opción si se prefiere simplicidad sobre ecosistema.
   todos los despliegues. El proyecto `darf-2-dev` sigue sirviendo la 1.0 sobre
   DEV para probar la boletería.
 - Pendiente: pruebas de navegador (Playwright) y pruebas SQL en CI.
+
+## 10. Estructura de la web nueva y equivalencia con la 1.0 (2026-10-10)
+
+Dirección DEV que siempre muestra lo último de `darf-2.0`:
+`https://darf-2-web-dev-git-darf-20-darf-productions.vercel.app`
+(la de "producción" del proyecto, `darf-2-web-dev-darf-productions.vercel.app`,
+quedó fija en la primera publicación porque la rama de producción del proyecto
+es `main`; opcional: cambiarla a `darf-2.0` en Vercel → Settings → Environments).
+
+| Función de la 1.0 | Web nueva | Notas |
+|---|---|---|
+| Portada | ✅ | DARF primero; obra destacada o última del archivo |
+| Cartelera / Archivo de producciones | ✅ `/cartelera`, `/producciones` | |
+| Página de cada obra | ✅ `/producciones/[slug]` | Sinopsis, canciones, videos, elenco, equipos, ficha (contenido transitorio extraído de la 1.0) |
+| Galería de fotos | ⏳ | Lee `gallery_photos` en Fase 2 (en DEV no hay fotos subidas) |
+| Fan Zone | ✅ `/fan-zone`, `/fan-zone/[slug]` | Requiere sesión, como la 1.0; videos de ensayo |
+| Audiciones | ✅ página · ⏳ envío | Registro permanente en vista previa; requiere modelo de datos (Fase 5) |
+| Contacto | ✅ `/contacto` | Guarda en `contact_messages` |
+| Entrar / registro / verificación | ✅ `/entrar`, `/auth/callback` | Correo y contraseña; Google pendiente en DEV |
+| Mi cuenta: perfil | ✅ | Nombre y teléfono |
+| Mis boletos + QR | ✅ | QR de órdenes aprobadas |
+| Boleto en PDF | ⏳ | Pendiente |
+| Compra: mapa, descuento, orden | ✅ `/comprar/[funcion]` | `create_seated_ticket_order`, `preview_discount_code`, `get_taken_seats` |
+| Pago por WhatsApp | ✅ | Solo si `NEXT_PUBLIC_DARF_WHATSAPP` está configurado (vacío en DEV) |
+| Panel staff: aprobar, mapa, taquilla, QR, vendedores, descuentos, galería, bases de datos | ⏳ Fase 3 | Mientras tanto: panel de la 1.0 en `darf-2-dev` (misma base DEV) |
+| DARFY | ⏳ Fase 6 | |
