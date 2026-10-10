@@ -1,6 +1,6 @@
 # DARF 2.0 — Dirección artística (D1)
 
-Estado: **propuestas presentadas, pendiente de elección de Johann** (2026-10-10).
+Estado: **dirección A elegida, en refinamiento (ronda A2)** (2026-10-10).
 
 Lienzo con las propuestas (privado, de Johann):
 https://claude.ai/artifact/VLmNhMNNXfth4ztMkKtNvk
@@ -53,3 +53,21 @@ Mezcla con reglas, no indiscriminada:
 Con la dirección elegida: sistema visual completo (tokens, componentes,
 estados, animaciones) y maquetas de las 11 pantallas de la visión §4.6 en móvil
 y escritorio.
+
+## Ronda 2 (A2) — comentarios de Johann y respuesta
+
+Comentarios: le gusta el camino de A y mucho el panel de administración; no le
+encantan las tipografías de A; preocupa que la portada se vuelva exclusiva de
+la producción principal y pierda identidad DARF.
+
+Decisiones propuestas (tableros A2 en el lienzo):
+- **Portada = DARF, página de obra = la obra.** La portada habla con la voz de
+  DARF; la obra en cartelera aparece en una "ventana de escenario" destacada.
+  Dentro de la página de la obra, ella toma el escenario completo.
+- **Se va:** Bodoni itálica; dorado como color de marca (pasa al tema de
+  Showman); imagen de la obra como fondo de la portada.
+- **Se queda:** sala oscura, reflectores con la luz DARF, botón de compra con
+  la luz DARF, el panel de administración.
+- **Tipografía:** tres caminos (Eco del logo = Archivo Expanded, recomendado;
+  Marquesina = Big Shoulders Display; Una sola familia = Montserrat Black).
+  El esqueleto de `web/` usa el recomendado mientras Johann decide.

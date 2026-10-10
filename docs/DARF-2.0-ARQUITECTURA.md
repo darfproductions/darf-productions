@@ -1,7 +1,7 @@
 # DARF 2.0 — Recomendación de arquitectura (Fase 1, propuesta)
 
-Estado: **propuesta para decisión de Johann** (2026-10-10). Nada de esto está
-instalado ni implementado. Contexto: `docs/DARF-2.0-VISION.md` §14 y
+Estado: **decidido — Next.js** (2026-10-10). Johann aprobó instalar dependencias
+y crear `web/`; el esqueleto ya existe (ver §9). Contexto: `docs/DARF-2.0-VISION.md` §14 y
 `docs/DARF-2.0-FASE-0.md`.
 
 ---
@@ -139,3 +139,20 @@ como segunda opción si se prefiere simplicidad sobre ecosistema.
   en GitHub Actions y el chequeo de aislamiento pasando.
 - Criterio de salida de la Fase 1 (visión §16): estructura documentada y
   pruebas básicas funcionando en DEV.
+
+## 9. Avance de la Fase 1 (2026-10-10)
+
+- `web/` creado con Next.js **16.3.8** (no la 16.4.0, publicada 4 días antes),
+  TypeScript, Tailwind 4, `@supabase/ssr` 0.12.7 y `@supabase/supabase-js`
+  2.117.3 (versiones fijas). Auditoría de dependencias de producción: 0 avisos.
+- Configuración por entorno (`NEXT_PUBLIC_*`, `web/.env.example`), franja de
+  entorno de pruebas, `proxy.ts` que refresca la sesión (en Next 16
+  "middleware" se llama "proxy").
+- Tokens de la dirección A2 en `src/app/globals.css`; temas provisionales por
+  obra en `src/lib/productions.ts`.
+- Rutas: `/` (portada, DARF primero) y `/producciones/[slug]` (plantilla única
+  que lee producción, funciones y precios de la base).
+- GitHub Actions `DARF 2.0 CI` (solo `darf-2.0`): aislamiento, tipos, lint y
+  build. Primera ejecución: **verde**.
+- Pendiente: publicar `web/` en un proyecto Vercel DEV (requiere aprobación),
+  pruebas de navegador (Playwright) y pruebas SQL en CI.
