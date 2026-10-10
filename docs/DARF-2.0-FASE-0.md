@@ -224,6 +224,33 @@ preview de `darf-2.0`, esa preview usaría DEV.
 3. Orden de prueba en DEV → aparece en `darf-dev`.
 4. Johann confirma en el panel de producción que no apareció nada nuevo.
 
+### 3.4.1. Resultado de la prueba de extremo a extremo (2026-10-10)
+
+Hecha por Johann en `https://darf-2-dev-darf-productions.vercel.app`, verificada
+por Claude con el conector (solo DEV):
+
+| Prueba | Resultado |
+|---|---|
+| Banner "ENTORNO DE PRUEBAS" visible | ✅ |
+| Registro con correo + confirmación por enlace (Site URL/Redirect de DEV configurados) | ✅ usuario creado en DEV |
+| Rol admin asignado en DEV | ✅ |
+| Compra pública de 2 asientos (VIP-B-12, VIP-B-13), precio calculado en servidor | ✅ orden `DARF-ADB83A`, $800 |
+| Aprobación desde el panel | ✅ `aprobado` |
+| Mapa de staff refleja la venta | ✅ tras recargar (ver nota) |
+| Mis Boletos + QR + PDF | ✅ |
+| Validación de acceso (QR) en puerta | ✅ ambos boletos con `checked_in_at` |
+
+**Nota de UX para Fase 4:** el mapa de Boletaje se guarda en memoria y solo se
+recarga al cambiar de función o pulsar "Actualizar"; tras una compra puede
+mostrar estado viejo. Debe actualizarse solo.
+
+**Hallazgos de esta prueba (para fases siguientes):**
+- Las páginas públicas de producción no leen la BD (los nombres "(PRUEBA)"
+  solo se ven en panel, carrito y boletos) → Fase 2.
+- El botón de pago abre el WhatsApp **real** de DARF también desde DEV
+  (número en el código) → hacerlo configurable por entorno en Fase 1.
+- Google Login no está configurado en DEV (solo correo).
+
 ### 3.5. Reversión
 
 Producción nunca se toca. Deshacer = borrar `darf-dev` (y su organización),
@@ -265,7 +292,12 @@ borrar `darf-2-dev` en Vercel y revertir commits en `darf-2.0`.
 - Revisión de GitHub Pages e integración de Supabase (capturas de Johann).
 - Visión y este plan guardados en `docs/`.
 
-**Hecho por Johann:** conectores de Vercel y Supabase (DEV), H1 y H2 corregidos.
+**Hecho por Johann:** conectores de Vercel y Supabase (DEV), H1 y H2 corregidos,
+base DEV aplicada, Auth de DEV configurado, prueba de extremo a extremo (§3.4.1).
+
+**Fase 0 — criterio de salida:** cumplido en DEV; pendiente solo la confirmación
+de Johann de que en producción no aparecieron el usuario de prueba ni la orden
+`DARF-ADB83A`.
 
 **Pendiente de aprobación de Johann (propuesto el 2026-10-09):**
 1. Construir la base DEV (migraciones + producciones de prueba + datos ficticios).
