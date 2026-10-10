@@ -1,0 +1,45 @@
+# DARF 2.0 — verificaciones automáticas de la rama de desarrollo.
+# Solo corre en darf-2.0: no afecta a main ni a la web publicada.
+name: DARF 2.0 CI
+
+on:
+  push:
+    branches: [darf-2.0]
+  pull_request:
+    branches: [darf-2.0]
+
+permissions:
+  contents: read
+
+jobs:
+  aislamiento:
+    name: Aislamiento DEV
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: ./scripts/check-isolation.sh
+
+  web:
+    name: Web (tipos, revisión y construcción)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+      # Valores públicos de Supabase DEV (los mismos de web/.env.example).
+      NEXT_PUBLIC_DARF_ENV: DEV
+      NEXT_PUBLIC_SUPABASE_URL: https://qgywscczyzuqinutuvak.supabase.co
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_sNdLJ6lK6-0gAESg6hkQxQ_YSqusOUM
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - run: npx next typegen
+      - run: npx tsc --noEmit
+      - run: npm run lint
+      - run: npm run build
