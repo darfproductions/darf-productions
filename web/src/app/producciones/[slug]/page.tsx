@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Section } from "@/components/PageHeading";
+import { PosterBackdrop, PosterFull } from "@/components/PosterArt";
 import { YouTube, youtubeId } from "@/components/YouTube";
 import { PRODUCTION_CONTENT } from "@/content/producciones";
 import {
@@ -58,30 +58,32 @@ export default async function ProductionPage({ params }: PageProps<"/produccione
 
   return (
     <main style={themeStyle(theme)} className="-mt-[84px] min-h-dvh bg-obra-fondo pb-10 text-obra-texto md:-mt-[100px]">
-      <section className="relative">
-        {theme && (
-          <div className="absolute inset-0">
-            <Image src={theme.hero} alt="" fill priority sizes="100vw" className="object-cover opacity-75" />
-            <div className="absolute inset-0 bg-[linear-gradient(90deg,var(--obra-fondo)_0%,color-mix(in_srgb,var(--obra-fondo)_55%,transparent)_55%,transparent_100%),linear-gradient(180deg,transparent_55%,var(--obra-fondo)_100%)]" />
-          </div>
-        )}
-        <div className="relative mx-auto flex max-w-[1440px] flex-col gap-5 px-5 pb-14 pt-36 md:px-16 md:pt-44">
-          <p className="text-xs font-bold uppercase tracking-[0.3em] text-obra-acento">
-            {p.concluded ? "Archivo · DARF Productions" : "DARF Productions presenta"}
-          </p>
-          {theme?.titulo ? (
-            <Image src={theme.titulo} alt={p.nombre} className="w-full max-w-[520px]" sizes="520px" priority />
-          ) : (
-            <h1 className="titular text-5xl md:text-7xl">{p.nombre}</h1>
+      <section className="relative overflow-hidden">
+        {theme && <PosterBackdrop theme={theme} />}
+        <div className="relative mx-auto grid max-w-[1440px] items-center gap-10 px-5 pb-16 pt-32 md:px-16 md:pt-40 lg:grid-cols-12">
+          {theme && (
+            <div className="mx-auto w-full max-w-[300px] sm:max-w-[360px] lg:order-2 lg:col-span-4 lg:col-start-9 lg:max-w-none">
+              <PosterFull theme={theme} alt={p.nombre} priority />
+            </div>
           )}
-          {theme && <p className="max-w-xl text-xl">{theme.tagline}</p>}
-          <div className="flex flex-wrap gap-3">
-            {!p.concluded && performances.some((f) => f.on_sale) && (
-              <a href="#funciones" className="boton-compra rounded-full px-7 py-4 text-sm font-bold uppercase tracking-[0.1em]">Comprar boletos</a>
-            )}
-            {c?.ensayos.length ? (
-              <Link href={`/fan-zone/${p.id}`} className="rounded-full border border-obra-acento px-6 py-4 text-sm font-bold uppercase tracking-[0.1em]">Fan Zone</Link>
-            ) : null}
+          <div className="flex flex-col gap-5 lg:order-1 lg:col-span-7">
+            <p className="text-xs font-bold uppercase tracking-[0.3em] text-obra-acento">
+              {p.concluded ? "Archivo · DARF Productions" : "DARF Productions presenta"}
+            </p>
+            <h1 className="titular text-5xl md:text-7xl">{p.nombre}</h1>
+            {theme && <p className="max-w-xl text-xl leading-relaxed opacity-90">{theme.tagline}</p>}
+            <ul className="flex flex-wrap gap-2 text-sm font-semibold">
+              {p.venue && <li className="rounded-full border border-white/25 px-3 py-1.5">{p.venue}</li>}
+              <li className="rounded-full border border-white/25 px-3 py-1.5">{p.concluded ? "Producción concluida" : "En cartelera"}</li>
+            </ul>
+            <div className="flex flex-wrap gap-3">
+              {!p.concluded && performances.some((f) => f.on_sale) && (
+                <a href="#funciones" className="boton-compra rounded-full px-7 py-4 text-sm font-bold uppercase tracking-[0.1em]">Comprar boletos</a>
+              )}
+              {c?.ensayos.length ? (
+                <Link href={`/fan-zone/${p.id}`} className="rounded-full border border-obra-acento px-6 py-4 text-sm font-bold uppercase tracking-[0.1em]">Fan Zone</Link>
+              ) : null}
+            </div>
           </div>
         </div>
       </section>

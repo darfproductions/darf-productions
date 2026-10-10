@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { NAV_LINKS } from "@/components/SiteHeader";
+import { SocialIcon } from "@/components/SocialIcon";
+import { CONTACT_CHANNELS } from "@/content/contacto";
 
 export function SiteFooter() {
   return (
@@ -14,10 +16,20 @@ export function SiteFooter() {
         ))}
         <Link href="/cuenta" className="hover:text-white">Mi cuenta</Link>
       </nav>
-      <div className="flex gap-5">
-        <a href="https://www.instagram.com/darfproductions" className="hover:text-white">Instagram</a>
-        <a href="https://www.tiktok.com/@darf.productions" className="hover:text-white">TikTok</a>
-      </div>
+      <ul className="flex gap-3">
+        {CONTACT_CHANNELS.map((c) => (
+          <li key={c.channel}>
+            <a
+              href={c.href}
+              aria-label={`${c.nombre} ${c.handle}`}
+              className="flex h-11 w-11 items-center justify-center rounded-full bg-telon text-texto-2 transition-colors hover:text-white"
+              {...(c.href.startsWith("http") ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+            >
+              <SocialIcon channel={c.channel} size={20} />
+            </a>
+          </li>
+        ))}
+      </ul>
     </footer>
   );
 }
