@@ -70,4 +70,10 @@ Decisiones propuestas (tableros A2 en el lienzo):
   la luz DARF, el panel de administración.
 - **Tipografía:** tres caminos (Eco del logo = Archivo Expanded, recomendado;
   Marquesina = Big Shoulders Display; Una sola familia = Montserrat Black).
-  El esqueleto de `web/` usa el recomendado mientras Johann decide.
+  **Decisión de Johann (2026-10-10): una sola familia, Montserrat**
+  (titulares en Montserrat Black). Aplicado en `web/`.
+- **Portada sin obra en cartelera (pedido de Johann):** el lugar destacado pasa
+  a la producción más reciente del archivo, con la etiqueta "Lo último que
+  presentamos" y botón "Revivir la obra" en lugar de "Comprar boletos".
+  Implementado y probado en `web/src/lib/home-rules.ts`.
+- Johann aprobó la portada A2 ("mucho mejor que la actual").
