@@ -236,13 +236,16 @@ por Claude con el conector (solo DEV):
 | Rol admin asignado en DEV | ✅ |
 | Compra pública de 2 asientos (VIP-B-12, VIP-B-13), precio calculado en servidor | ✅ orden `DARF-ADB83A`, $800 |
 | Aprobación desde el panel | ✅ `aprobado` |
-| Mapa de staff refleja la venta | ✅ tras recargar (ver nota) |
+| Mapa de staff refleja la venta | ✅ (con la función correcta seleccionada) |
 | Mis Boletos + QR + PDF | ✅ |
 | Validación de acceso (QR) en puerta | ✅ ambos boletos con `checked_in_at` |
 
-**Nota de UX para Fase 4:** el mapa de Boletaje se guarda en memoria y solo se
-recarga al cambiar de función o pulsar "Actualizar"; tras una compra puede
-mostrar estado viejo. Debe actualizarse solo.
+**Aclaración:** el mapa de Boletaje sí se actualiza tras aprobar; en la prueba
+estaba seleccionada la otra función. (Idea menor de UX para Fase 4: que el
+selector muestre por defecto la próxima función en venta.)
+
+**Aislamiento confirmado por Johann:** en la base de **producción** no aparece
+la compra `DARF-ADB83A` ni sus boletos.
 
 **Hallazgos de esta prueba (para fases siguientes):**
 - Las páginas públicas de producción no leen la BD (los nombres "(PRUEBA)"
@@ -295,9 +298,10 @@ borrar `darf-2-dev` en Vercel y revertir commits en `darf-2.0`.
 **Hecho por Johann:** conectores de Vercel y Supabase (DEV), H1 y H2 corregidos,
 base DEV aplicada, Auth de DEV configurado, prueba de extremo a extremo (§3.4.1).
 
-**Fase 0 — criterio de salida:** cumplido en DEV; pendiente solo la confirmación
-de Johann de que en producción no aparecieron el usuario de prueba ni la orden
-`DARF-ADB83A`.
+**Fase 0 — CERRADA (2026-10-10):** criterio de salida cumplido. Evidencia: chequeo
+estático (`scripts/check-isolation.sh`), conector de Supabase limitado a la
+organización DEV, compra/aprobación/QR completos en DEV y confirmación de
+Johann de que la orden de prueba no existe en producción.
 
 **Pendiente de aprobación de Johann (propuesto el 2026-10-09):**
 1. Construir la base DEV (migraciones + producciones de prueba + datos ficticios).
