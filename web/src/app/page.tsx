@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { ProductionCard } from "@/components/ProductionCard";
 import { formatPrice, getHomeData, getTheme } from "@/lib/productions";
 
 // Portada: habla con la voz de DARF; la obra destacada es invitada.
@@ -26,10 +27,10 @@ export default async function Home() {
             está en cartelera, revive el archivo y sé parte del elenco.
           </p>
           <div className="flex flex-wrap gap-3">
-            <Link href="#producciones" className="rounded-full bg-texto px-7 py-4 text-sm font-bold uppercase tracking-[0.1em] text-sala">
+            <Link href="/producciones" className="rounded-full bg-texto px-7 py-4 text-sm font-bold uppercase tracking-[0.1em] text-sala">
               Ver producciones
             </Link>
-            <Link href="#fan-zone" className="rounded-full border border-texto/50 px-7 py-4 text-sm font-bold uppercase tracking-[0.1em]">
+            <Link href="/fan-zone" className="rounded-full border border-texto/50 px-7 py-4 text-sm font-bold uppercase tracking-[0.1em]">
               Únete a la Fan Zone
             </Link>
           </div>
@@ -58,7 +59,7 @@ export default async function Home() {
               </ul>
               {enCartelera ? (
                 <div className="flex flex-wrap gap-2">
-                  <Link href={`/producciones/${current.id}`} className="boton-compra flex-1 rounded-full py-4 text-center text-[13px] font-bold uppercase tracking-[0.1em]">
+                  <Link href={`/producciones/${current.id}#funciones`} className="boton-compra flex-1 rounded-full py-4 text-center text-[13px] font-bold uppercase tracking-[0.1em]">
                     Comprar boletos
                   </Link>
                   <Link href={`/producciones/${current.id}`} className="rounded-full border px-5 py-4 text-[13px] font-bold uppercase tracking-[0.1em]" style={{ borderColor: currentTheme?.acento, color: currentTheme?.texto }}>
@@ -78,38 +79,23 @@ export default async function Home() {
       <section id="producciones" className="relative mx-auto mt-20 flex max-w-[1440px] flex-col gap-6 px-5 md:px-16">
         <h2 className="titular text-3xl md:text-4xl">Producciones</h2>
         <ul className="grid gap-5 md:grid-cols-3">
-          {productions.map((p) => {
-            const t = getTheme(p.id);
-            return (
-              <li key={p.id}>
-                <Link href={`/producciones/${p.id}`} className="block overflow-hidden rounded-2xl bg-telon">
-                  <div className="relative aspect-[16/9]" style={{ background: t?.fondo }}>
-                    {t && <Image src={t.hero} alt="" fill sizes="(min-width: 768px) 30vw, 100vw" className="object-cover" />}
-                  </div>
-                  <div className="flex items-center justify-between gap-3 px-5 py-4">
-                    <span className="text-lg font-bold">{p.nombre}</span>
-                    <span className="text-xs font-bold uppercase tracking-[0.14em]" style={{ color: p.concluded ? "var(--texto-3)" : t?.acento }}>
-                      {p.concluded ? "Archivo" : "En cartelera"}
-                    </span>
-                  </div>
-                </Link>
-              </li>
-            );
-          })}
+          {productions.map((p) => <li key={p.id}><ProductionCard p={p} /></li>)}
         </ul>
       </section>
 
       <section className="relative mx-auto mt-8 grid max-w-[1440px] gap-5 px-5 md:grid-cols-2 md:px-16">
-        <div id="fan-zone" className="flex min-h-56 flex-col gap-3 rounded-2xl bg-[linear-gradient(125deg,#440ed5,#810888_60%,#bc033f)] p-8">
+        <Link href="/fan-zone" id="fan-zone" className="flex min-h-56 flex-col gap-3 rounded-2xl bg-[linear-gradient(125deg,#440ed5,#810888_60%,#bc033f)] p-8 transition-transform hover:-translate-y-1">
           <p className="text-xs font-bold uppercase tracking-[0.24em] text-white/85">Fan Zone</p>
           <h2 className="titular text-3xl">Detrás del telón</h2>
           <p className="max-w-md text-white/90">Ensayos, videos y galerías de cada producción.</p>
-        </div>
-        <div id="audiciones" className="flex min-h-56 flex-col gap-3 rounded-2xl bg-telon p-8">
+          <span className="mt-auto font-bold">Entrar →</span>
+        </Link>
+        <Link href="/audiciones" id="audiciones" className="flex min-h-56 flex-col gap-3 rounded-2xl bg-telon p-8 transition-transform hover:-translate-y-1">
           <p className="text-xs font-bold uppercase tracking-[0.24em] text-texto-3">Audiciones</p>
           <h2 className="titular text-3xl">Únete al elenco</h2>
-          <p className="max-w-md text-texto-2">No hay convocatorias abiertas en este momento.</p>
-        </div>
+          <p className="max-w-md text-texto-2">Convocatorias y registro permanente de talento.</p>
+          <span className="mt-auto font-bold">Ver audiciones →</span>
+        </Link>
       </section>
     </main>
   );

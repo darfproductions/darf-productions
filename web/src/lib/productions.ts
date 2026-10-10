@@ -166,3 +166,20 @@ export function formatPerformanceDate(iso: string | null): string {
 export function formatPrice(n: number): string {
   return `$${n.toLocaleString("es-MX", { maximumFractionDigits: 0 })}`;
 }
+
+/** Una función con su producción, para la página de compra. */
+export async function getPerformanceForSale(performanceId: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("performances")
+    .select("id, starts_at, venue, on_sale, production_id, productions(id, nombre, venue, price, on_sale, concluded, created_at)")
+    .eq("id", performanceId)
+    .maybeSingle();
+  if (error || !data) return null;
+  const production = data.productions as unknown as Production | null;
+  if (!production) return null;
+  return {
+    performance: { id: data.id, starts_at: data.starts_at, venue: data.venue, on_sale: data.on_sale } as Performance,
+    production,
+  };
+}
