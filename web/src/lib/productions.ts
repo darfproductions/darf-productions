@@ -1,5 +1,6 @@
 import type { StaticImageData } from "next/image";
 import { createClient } from "@/lib/supabase/server";
+import { lastPerformanceDates, pickFeatured, sortForHome, type Featured } from "@/lib/home-rules";
 import showmanTitle from "@/assets/producciones/showman-title.webp";
 import showmanStage from "@/assets/producciones/showman-stage.jpg";
 import mmKey from "@/assets/producciones/mm-key.jpg";
@@ -17,6 +18,7 @@ export type Production = {
   price: number;
   on_sale: boolean;
   concluded: boolean;
+  created_at: string;
 };
 
 export type Performance = {
@@ -28,15 +30,24 @@ export type Performance = {
 
 export type ZonePrice = { nombre: string; price: number };
 
-export async function getProductions(): Promise<Production[]> {
+const PRODUCTION_COLUMNS = "id, nombre, venue, price, on_sale, concluded, created_at";
+
+export type HomeData = {
+  /** En cartelera primero; luego el archivo, de la más reciente a la más antigua. */
+  productions: Production[];
+  featured: Featured<Production> | null;
+};
+
+export async function getHomeData(): Promise<HomeData> {
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("productions")
-    .select("id, nombre, venue, price, on_sale, concluded")
-    .order("concluded")
-    .order("created_at", { ascending: false });
-  if (error) throw new Error(`No se pudieron cargar las producciones: ${error.message}`);
-  return data ?? [];
+  const [prods, perfs] = await Promise.all([
+    supabase.from("productions").select(PRODUCTION_COLUMNS),
+    supabase.from("performances").select("production_id, starts_at"),
+  ]);
+  if (prods.error) throw new Error(`No se pudieron cargar las producciones: ${prods.error.message}`);
+  const lastDates = lastPerformanceDates(perfs.data ?? []);
+  const productions = sortForHome((prods.data ?? []) as Production[], lastDates);
+  return { productions, featured: pickFeatured(productions) };
 }
 
 export async function getProduction(id: string) {
@@ -44,7 +55,7 @@ export async function getProduction(id: string) {
   const [prod, perfs] = await Promise.all([
     supabase
       .from("productions")
-      .select("id, nombre, venue, price, on_sale, concluded")
+      .select(PRODUCTION_COLUMNS)
       .eq("id", id)
       .maybeSingle(),
     supabase

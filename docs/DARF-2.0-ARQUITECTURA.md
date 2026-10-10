@@ -154,5 +154,13 @@ como segunda opción si se prefiere simplicidad sobre ecosistema.
   que lee producción, funciones y precios de la base).
 - GitHub Actions `DARF 2.0 CI` (solo `darf-2.0`): aislamiento, tipos, lint y
   build. Primera ejecución: **verde**.
-- Pendiente: publicar `web/` en un proyecto Vercel DEV (requiere aprobación),
-  pruebas de navegador (Playwright) y pruebas SQL en CI.
+- Tipografía: **una sola familia, Montserrat** (decisión de Johann); titulares en
+  Montserrat Black.
+- Portada: la obra destacada es la que está en cartelera; si no hay, la más
+  reciente del archivo (por su última función con fecha; si no tiene, por fecha
+  de alta). Reglas puras en `src/lib/home-rules.ts` con pruebas Vitest (5).
+- Proyecto Vercel **`darf-2-web-dev`** (aprobado por Johann): raíz `web/`, solo
+  rama `darf-2.0`, variables solo de Supabase DEV, Vercel Authentication en
+  todos los despliegues. El proyecto `darf-2-dev` sigue sirviendo la 1.0 sobre
+  DEV para probar la boletería.
+- Pendiente: pruebas de navegador (Playwright) y pruebas SQL en CI.

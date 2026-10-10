@@ -1,11 +1,13 @@
 import Image from "next/image";
 import Link from "next/link";
-import { formatPrice, getProductions, getTheme } from "@/lib/productions";
+import { formatPrice, getHomeData, getTheme } from "@/lib/productions";
 
-// Portada: habla con la voz de DARF; la obra en cartelera es invitada destacada.
+// Portada: habla con la voz de DARF; la obra destacada es invitada.
+// Destacada = la obra en cartelera; si no hay, la más reciente del archivo.
 export default async function Home() {
-  const productions = await getProductions();
-  const current = productions.find((p) => !p.concluded) ?? null;
+  const { productions, featured } = await getHomeData();
+  const current = featured?.production ?? null;
+  const enCartelera = featured?.mode === "cartelera";
   const currentTheme = current ? getTheme(current.id) : null;
 
   return (
@@ -45,22 +47,29 @@ export default async function Home() {
                 <h2 className="titular absolute inset-x-6 bottom-6 text-4xl">{current.nombre}</h2>
               )}
               <span className="absolute left-4 top-4 rounded-full bg-texto px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-sala">
-                Ahora en cartelera
+                {enCartelera ? "Ahora en cartelera" : "Lo último que presentamos"}
               </span>
             </div>
             <div className="flex flex-col gap-4 p-6">
               <ul className="flex flex-wrap gap-2 text-xs font-semibold" style={{ color: currentTheme?.texto }}>
                 {current.venue && <li className="rounded-full border border-white/25 px-3 py-1.5">{current.venue}</li>}
-                {current.price > 0 && <li className="rounded-full border border-white/25 px-3 py-1.5">Desde {formatPrice(current.price)}</li>}
+                {enCartelera && current.price > 0 && <li className="rounded-full border border-white/25 px-3 py-1.5">Desde {formatPrice(current.price)}</li>}
+                {!enCartelera && <li className="rounded-full border border-white/25 px-3 py-1.5">Archivo</li>}
               </ul>
-              <div className="flex flex-wrap gap-2">
-                <Link href={`/producciones/${current.id}`} className="boton-compra flex-1 rounded-full py-4 text-center text-[13px] font-bold uppercase tracking-[0.1em]">
-                  Comprar boletos
+              {enCartelera ? (
+                <div className="flex flex-wrap gap-2">
+                  <Link href={`/producciones/${current.id}`} className="boton-compra flex-1 rounded-full py-4 text-center text-[13px] font-bold uppercase tracking-[0.1em]">
+                    Comprar boletos
+                  </Link>
+                  <Link href={`/producciones/${current.id}`} className="rounded-full border px-5 py-4 text-[13px] font-bold uppercase tracking-[0.1em]" style={{ borderColor: currentTheme?.acento, color: currentTheme?.texto }}>
+                    Conocer la obra
+                  </Link>
+                </div>
+              ) : (
+                <Link href={`/producciones/${current.id}`} className="rounded-full border py-4 text-center text-[13px] font-bold uppercase tracking-[0.1em]" style={{ borderColor: currentTheme?.acento, color: currentTheme?.texto }}>
+                  Revivir la obra
                 </Link>
-                <Link href={`/producciones/${current.id}`} className="rounded-full border px-5 py-4 text-[13px] font-bold uppercase tracking-[0.1em]" style={{ borderColor: currentTheme?.acento, color: currentTheme?.texto }}>
-                  Conocer la obra
-                </Link>
-              </div>
+              )}
             </div>
           </article>
         )}
