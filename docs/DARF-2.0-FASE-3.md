@@ -389,6 +389,16 @@ Orden: 1) Elenco y ofertas, 2) Expediente y mensualidades, 3) Ensayos y asistenc
 - **Talento** (solo Director): buscar personas sin importar acentos, unir fichas duplicadas y
   ligar una ficha a su cuenta.
 
+**Bloque 3 — Ensayos y asistencia** (`0043_rehearsals.sql`, pruebas T1–T3):
+- Ensayos por obra (título, fecha, hora de inicio y fin, lugar, notas) citando a todo el
+  elenco, a uno o varios grupos o a personas específicas. Se pueden cancelar y reactivar.
+- Asistencia desde el celular: presente, retardo (minutos), falta o justificada. Resumen y
+  % de asistencia por integrante (también en su expediente).
+- El integrante ve en Mi cuenta solo los ensayos a los que está citado, su asistencia y
+  puede avisar "no podré ir" con motivo; la producción decide si queda justificada.
+- Advertencias automáticas: 1 por cada N retardos y 1 por cada N faltas sin justificar
+  (reglas de la obra en Expedientes), sin repetirse.
+
 ## Cómo se comprueba cada etapa
 
 - Pruebas SQL de permisos por rol (en local y en DEV) y las de boletería sin cambios.

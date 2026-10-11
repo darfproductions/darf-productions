@@ -12,6 +12,7 @@ import {
 import { getMemberData, signDocs } from "@/lib/members";
 import { can } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
+import { porcentaje } from "@/lib/rehearsal-rules";
 import { createClient } from "@/lib/supabase/server";
 import { addIncident, addMeasure, addPayment, markReviewed, removePayment, setDelivered, setScholarship, voidIncident } from "../actions";
 
@@ -33,7 +34,11 @@ export default async function MemberPage({ params }: PageProps<"/panel/produccio
   const { data: roster } = await supabase.rpc("cast_roster", { pid: id });
   const persona = ((roster ?? []) as { user_id: string; nombre: string; email: string; papeles: string[]; tipos: string[] }[]).find((r) => r.user_id === uid);
   if (!persona) notFound();
-  const d = await getMemberData(id, uid);
+  const [d, sumRes] = await Promise.all([
+    getMemberData(id, uid),
+    verExp || can(access, id, "ensayos.gestionar") ? supabase.rpc("attendance_summary", { pid: id }) : Promise.resolve({ data: [] }),
+  ]);
+  const asis = ((sumRes.data ?? []) as { user_id: string; presentes: number; retardos: number; faltas: number; justificadas: number }[]).find((x) => x.user_id === uid);
   const e = edad(d.person?.fecha_nacimiento ?? null);
   const esMenor = e !== null && e < 18;
   const ctx = { uid, esMenor, tipos: persona.tipos };
@@ -96,6 +101,14 @@ export default async function MemberPage({ params }: PageProps<"/panel/produccio
             </ul>
           </Card>
         </>
+      )}
+
+      {asis && (
+        <Card className="flex flex-wrap items-center gap-4 text-sm">
+          <h2 className="titular text-xl">Asistencia a ensayos</h2>
+          <span className="text-lg font-black">{porcentaje(asis) ?? "—"}{porcentaje(asis) !== null ? "%" : ""}</span>
+          <span>Presente {asis.presentes} · Retardos {asis.retardos} · Faltas {asis.faltas} · Justificadas {asis.justificadas}</span>
+        </Card>
       )}
 
       {verDisc && (

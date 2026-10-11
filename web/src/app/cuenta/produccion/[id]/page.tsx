@@ -11,6 +11,8 @@ import {
   mesNombre, pendientesTexto, pesos, semaforo,
 } from "@/lib/member-rules";
 import { getMemberData, signDocs } from "@/lib/members";
+import { ASISTENCIA, fechaEnsayo, type Rehearsal } from "@/lib/rehearsal-rules";
+import { AbsenceForm } from "./AbsenceForm";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Mi producción" };
@@ -26,7 +28,18 @@ export default async function MyProduction({ params }: PageProps<"/cuenta/produc
   const { data } = await supabase.rpc("my_productions");
   const prod = ((data ?? []) as MyProd[]).find((p) => p.production_id === id);
   if (!prod) notFound();
-  const d = await getMemberData(id, session.userId);
+  const [d, reh, asis, avisos] = await Promise.all([
+    getMemberData(id, session.userId),
+    supabase.from("rehearsals").select("*").eq("production_id", id).order("inicia"),
+    supabase.from("rehearsal_attendance").select("rehearsal_id, estado, minutos_tarde").eq("user_id", session.userId),
+    supabase.from("rehearsal_absences").select("rehearsal_id, motivo").eq("user_id", session.userId),
+  ]);
+  const ensayos = (reh.data ?? []) as Rehearsal[];
+  const hoy = new Date().toISOString().slice(0, 10);
+  const proximos = ensayos.filter((r) => r.inicia.slice(0, 10) >= hoy);
+  const pasados = ensayos.filter((r) => r.inicia.slice(0, 10) < hoy).reverse();
+  const asisDe = (rid: string) => ((asis.data ?? []) as { rehearsal_id: string; estado: string; minutos_tarde: number | null }[]).find((a) => a.rehearsal_id === rid);
+  const avisoDe = (rid: string) => ((avisos.data ?? []) as { rehearsal_id: string; motivo: string }[]).find((a) => a.rehearsal_id === rid)?.motivo ?? null;
   const e = edad(d.person?.fecha_nacimiento ?? null);
   const esMenor = e !== null && e < 18;
   const ctx = { uid: session.userId, esMenor, tipos: prod.tipos };
@@ -70,6 +83,38 @@ export default async function MyProduction({ params }: PageProps<"/cuenta/produc
             <p className="text-xs text-texto-3">Si tienes dudas sobre alguna, habla con la producción.</p>
           </section>
         )}
+
+        <section aria-labelledby="ensayos" className="flex flex-col gap-3 rounded-2xl bg-telon p-6">
+          <h2 id="ensayos" className="titular text-2xl">Mis ensayos</h2>
+          {proximos.length === 0 && <p className="text-sm text-texto-2">No tienes ensayos próximos.</p>}
+          <ul className="flex flex-col gap-2">
+            {proximos.map((r) => (
+              <li key={r.id} className={`flex flex-col gap-1 rounded-lg bg-sala px-4 py-3 text-sm ${r.estado === "cancelado" ? "opacity-60" : ""}`}>
+                <p><b>{r.titulo}</b>{r.estado === "cancelado" && <span className="ml-2 font-bold text-[#fecdd3]">Cancelado</span>}</p>
+                <p className="capitalize text-texto-2">{fechaEnsayo(r.inicia, r.termina)}{r.lugar ? ` · ${r.lugar}` : ""}</p>
+                {r.notas && <p className="whitespace-pre-line text-texto-2">{r.notas}</p>}
+                {r.estado !== "cancelado" && <AbsenceForm pid={id} rid={r.id} previo={avisoDe(r.id)} />}
+              </li>
+            ))}
+          </ul>
+          {pasados.length > 0 && (
+            <details className="text-sm">
+              <summary className="cursor-pointer font-bold">Ensayos pasados ({pasados.length})</summary>
+              <ul className="mt-2 flex flex-col gap-1.5">
+                {pasados.map((r) => {
+                  const a = asisDe(r.id);
+                  return (
+                    <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 py-1.5">
+                      <span>{r.titulo} · <span className="capitalize text-texto-3">{fechaEnsayo(r.inicia)}</span></span>
+                      {a ? <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${ASISTENCIA[a.estado]?.cls}`}>{ASISTENCIA[a.estado]?.label}{a.minutos_tarde ? ` · ${a.minutos_tarde} min` : ""}</span>
+                        : <span className="text-xs text-texto-3">{r.estado === "cancelado" ? "Cancelado" : "Sin registro"}</span>}
+                    </li>
+                  );
+                })}
+              </ul>
+            </details>
+          )}
+        </section>
 
         <section aria-labelledby="exp" className="rounded-2xl bg-telon p-6">
           <h2 id="exp" className="titular mb-1 text-2xl">Mi expediente</h2>
