@@ -2,30 +2,29 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Card } from "@/components/panel/ui";
+import type { Criterio } from "@/lib/audition-rules";
 import { requireAudition, signPhotos } from "@/lib/panel-auditions";
 import { createClient } from "@/lib/supabase/server";
 import { ScoreForm } from "./ScoreForm";
 
 export const metadata: Metadata = { title: "Evaluación" };
 
-type Row = { id: string; numero: number; nombre: string; edad: number; foto_path: string | null; roles: string[] | null; estado: string;
-  canto: number | null; baile: number | null; actuacion: number | null; actitud: number | null; notas: string | null };
+type Row = { id: string; numero: number | null; nombre: string; edad: number; foto_path: string | null; roles: string[] | null; estado: string;
+  puntos: Record<string, number>; notas: string | null; enlaces: { titulo: string; url: string }[] };
 
-// Evaluación del juez: solo quienes ya llegaron, en orden de número. Sin datos de contacto.
+// Evaluación del juez, sin datos de contacto. Presencial: quienes ya llegaron, en orden de número.
+// En línea o mixta: todos los inscritos, con sus videos. Criterios propios de la convocatoria.
 export default async function Judging({ params, searchParams }: PageProps<"/panel/audiciones/[aid]/evaluacion">) {
   const { aid } = await params;
   const sp = await searchParams;
-  await requireAudition(aid, ["audiciones.evaluar"], "/evaluacion");
+  const { a } = await requireAudition(aid, ["audiciones.evaluar"], "/evaluacion");
   const ronda = Math.max(1, Number(sp.ronda ?? 1) || 1);
   const supabase = await createClient();
-  const [{ data, error }, vids] = await Promise.all([
-    supabase.rpc("audition_judge_list", { aid, p_ronda: ronda }),
-    supabase.from("audition_videos").select("id, titulo, url, application_id").eq("audition_id", aid).not("application_id", "is", null),
-  ]);
+  const { data, error } = await supabase.rpc("audition_judge_queue", { aid, p_ronda: ronda });
   const rows = (data ?? []) as Row[];
-  const videosDe = (app: string) => (vids.data ?? []).filter((v) => v.application_id === app);
+  const criterios = (a.criterios ?? []) as Criterio[];
   const fotos = await signPhotos(rows.map((r) => r.foto_path));
-  const hechas = rows.filter((r) => r.canto || r.baile || r.actuacion || r.actitud).length;
+  const hechas = rows.filter((r) => Object.keys(r.puntos ?? {}).length > 0).length;
 
   return (
     <>
@@ -36,7 +35,7 @@ export default async function Judging({ params, searchParams }: PageProps<"/pane
         <span className="text-texto-3">· calificaste {hechas} de {rows.length}</span>
       </div>
       {error && <Card>{error.message}</Card>}
-      {rows.length === 0 && <Card>Todavía no hay personas registradas en esta ronda.</Card>}
+      {rows.length === 0 && <Card>{a.modalidad === "presencial" ? "Todavía no hay personas registradas en esta ronda." : "Todavía no hay inscritos en esta ronda."}</Card>}
       <ul className="grid gap-4 xl:grid-cols-2">
         {rows.map((r) => (
           <li key={r.id}>
@@ -46,14 +45,14 @@ export default async function Judging({ params, searchParams }: PageProps<"/pane
                   {r.foto_path && fotos.get(r.foto_path) && <img src={fotos.get(r.foto_path)} alt="" className="h-full w-full object-cover" />}
                 </div>
                 <div>
-                  <p className="text-3xl font-black">Nº {r.numero}</p>
+                  {r.numero && <p className="text-3xl font-black">Nº {r.numero}</p>}
                   <p className="font-bold">{r.nombre}</p>
                   <p className="text-sm text-texto-3">{r.edad} años</p>
                   {r.roles && <p className="text-xs text-texto-2">{r.roles.join(", ")}</p>}
-                  {videosDe(r.id).map((v) => <a key={v.id} href={v.url} target="_blank" rel="noreferrer" className="block text-xs text-violeta-claro underline">{v.titulo} ↗</a>)}
+                  {(r.enlaces ?? []).map((v, i) => <a key={i} href={v.url} target="_blank" rel="noreferrer" className="mt-1 block text-xs text-violeta-claro underline">{v.titulo} ↗</a>)}
                 </div>
               </div>
-              <div className="flex-1"><ScoreForm aid={aid} app={r.id} ronda={ronda} initial={{ canto: r.canto, baile: r.baile, actuacion: r.actuacion, actitud: r.actitud, notas: r.notas }} /></div>
+              <div className="flex-1"><ScoreForm aid={aid} app={r.id} ronda={ronda} criterios={criterios} puntos={r.puntos ?? {}} notas={r.notas} /></div>
             </Card>
           </li>
         ))}

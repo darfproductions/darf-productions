@@ -51,25 +51,37 @@ export type AuditionOptions = {
   elegir_horario: boolean;
   visibilidad: "publica" | "enlace";
   numeracion: "llegada" | "previa";
+  modalidad: "presencial" | "en_linea" | "mixta";
+  solo_invitados: boolean;
 };
 
-/** Plantillas para crear una convocatoria con las opciones ya puestas. */
-export const PLANTILLAS: Record<string, { label: string; descripcion: string; opciones: AuditionOptions }> = {
-  abierta: {
-    label: "Audición abierta",
-    descripcion: "Para todo público: foto, horario a elegir y datos del tutor si es menor.",
-    opciones: { pedir_tutor: true, autorizacion_escuela: false, pedir_foto: true, elegir_horario: true, visibilidad: "publica", numeracion: "llegada" },
-  },
-  escuela: {
-    label: "Audición en escuela",
-    descripcion: "Alumnos de una escuela: sin datos de papás (la escuela ya tiene su autorización), solo con enlace y lista en orden previo.",
-    opciones: { pedir_tutor: false, autorizacion_escuela: true, pedir_foto: false, elegir_horario: false, visibilidad: "enlace", numeracion: "previa" },
-  },
-  bailarines: {
-    label: "Convocatoria de bailarines",
-    descripcion: "Llamado general: foto, horario a elegir y número en orden previo para pasar por grupos.",
-    opciones: { pedir_tutor: true, autorizacion_escuela: false, pedir_foto: true, elegir_horario: true, visibilidad: "publica", numeracion: "previa" },
-  },
+export type Criterio = { k: string; l: string };
+
+export const CRITERIOS_BASE: Criterio[] = [
+  { k: "canto", l: "Canto" },
+  { k: "baile", l: "Baile" },
+  { k: "actuacion", l: "Actuación" },
+  { k: "actitud", l: "Actitud" },
+];
+
+/** "Técnica, Fuerza, Presencia escénica" → criterios con clave (máx. 8, sin repetir). */
+export function criteriosFromText(text: string): Criterio[] {
+  const out: Criterio[] = [];
+  for (const raw of text.split(/[,\n]/)) {
+    const l = raw.trim().slice(0, 40);
+    if (!l) continue;
+    const k = l.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 30);
+    if (!k || out.some((c) => c.k === k)) continue;
+    out.push({ k, l });
+    if (out.length === 8) break;
+  }
+  return out;
+}
+
+export const MODALIDAD: Record<AuditionOptions["modalidad"], string> = {
+  presencial: "Presencial",
+  en_linea: "En línea (por video)",
+  mixta: "Mixta (video + presencial)",
 };
 
 export type DayRow = { checked_in_at: string | null; entered_at: string | null; finished_at: string | null; estado: string };

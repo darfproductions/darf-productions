@@ -306,6 +306,27 @@ decisión es tuya.
 - Base de datos: migración `0037_auditions_v2.sql` (pruebas `0037_auditions_v2_test.sql`,
   T1–T8). En DEV se aplica con `supabase/dev/apply_0037_dev.sql` en el SQL Editor.
 
+## 11. Más tipos de audición (decisiones de Diego, 2026-10-11)
+
+- **Al crear:** arriba Audición abierta, Audición en escuela, Convocatoria cerrada (solo
+  enlace, fuera de escuela) y Personalizada (en blanco o una plantilla guardada). En
+  “Ver más plantillas”: por forma (En línea, Mixta, Particular por invitación) y por perfil
+  (Bailarines, Cantantes, Ensamble, Papeles principales, Acróbatas y aéreo, Convocatoria
+  profesional, Músicos, Equipo técnico y crew). Cada plantilla deja opciones, preguntas,
+  criterios y requisitos (código: `web/src/lib/audition-templates.ts`).
+- **Hombres / mujeres:** no son plantillas; el perfil va en cada personaje y se filtra por
+  personaje en Solicitudes y Resultados (nadie queda fuera de la inscripción).
+- **Forma:** presencial, en línea (sin día presencial; los jueces califican los videos) o
+  mixta (video al inscribirse + día presencial).
+- **Por invitación:** solo los correos invitados se inscriben; siempre “solo con enlace”;
+  el invitado lo ve en Mi cuenta (“Te invitaron a audicionar”).
+- **Criterios propios:** 1 a 8 por convocatoria, cada uno de 1 a 5; por defecto canto,
+  baile, actuación y actitud. Las calificaciones anteriores se copiaron al nuevo formato.
+- **Plantillas propias:** “Guardar como plantilla” en Configuración; las ve quien gestiona
+  audiciones; solo su autor o el Director las borra.
+- Base de datos: `0038_audition_types.sql` (pruebas T1–T5). En DEV:
+  `supabase/dev/apply_0038_dev.sql` en el SQL Editor.
+
 ## Cómo se comprueba cada etapa
 
 - Pruebas SQL de permisos por rol (en local y en DEV) y las de boletería sin cambios.

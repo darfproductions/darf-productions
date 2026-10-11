@@ -2,7 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { PLANTILLAS } from "@/lib/audition-rules";
+import { criteriosFromText } from "@/lib/audition-rules";
+import { EN_BLANCO, PLANTILLAS, type Plantilla } from "@/lib/audition-templates";
 import { getSession } from "@/lib/auth";
 import { localMxToIso } from "@/lib/dates";
 import { createClient } from "@/lib/supabase/server";
@@ -23,14 +24,36 @@ const done = (aid: string, message: string): AudState => {
 const num = (v: FormDataEntryValue | null) => (String(v ?? "").trim() ? Number(v) : null);
 const str = (f: FormData, k: string) => String(f.get(k) ?? "").trim();
 
+/** Crea la convocatoria desde una plantilla (de DARF, en blanco o una guardada) con sus preguntas. */
 export async function createAudition(_p: AudState, f: FormData): Promise<AudState> {
   const pid = str(f, "pid") || null;
   const titulo = str(f, "titulo");
   if (!titulo) return { ok: false, message: "Escribe un título para la convocatoria." };
-  const plantilla = PLANTILLAS[str(f, "plantilla")] ?? PLANTILLAS.abierta;
+  const key = str(f, "plantilla");
   const supabase = await createClient();
-  const { data, error } = await supabase.from("auditions").insert({ production_id: pid, titulo, ...plantilla.opciones }).select("id").single();
+  let t: Plantilla = PLANTILLAS[key] ?? EN_BLANCO;
+  let nombrePlantilla = PLANTILLAS[key] ? PLANTILLAS[key].label : "Personalizada";
+  if (key.startsWith("tpl:")) {
+    const { data: tpl } = await supabase.from("audition_templates").select("*").eq("id", key.slice(4)).maybeSingle();
+    if (!tpl) return { ok: false, message: "No se encontró esa plantilla." };
+    // Solo las opciones conocidas: una plantilla no puede tocar otras columnas (obra, estado…).
+    const guardadas = (tpl.opciones ?? {}) as Record<string, unknown>;
+    const opciones = Object.fromEntries(Object.keys(EN_BLANCO.opciones).map((k) => [k, k in guardadas ? guardadas[k] : EN_BLANCO.opciones[k as keyof typeof EN_BLANCO.opciones]]));
+    t = { ...EN_BLANCO, opciones: opciones as Plantilla["opciones"], criterios: tpl.criterios, preguntas: tpl.preguntas, requisitos: tpl.requisitos ?? undefined };
+    nombrePlantilla = tpl.nombre as string;
+  }
+  const { data, error } = await supabase
+    .from("auditions")
+    .insert({ production_id: pid, titulo, ...t.opciones, criterios: t.criterios, requisitos: t.requisitos ?? null, plantilla: nombrePlantilla })
+    .select("id")
+    .single();
   if (error) return { ok: false, message: pid ? error.message : "Solo el Director puede crear convocatorias generales." };
+  if (t.preguntas.length) {
+    const { error: e2 } = await supabase.from("audition_fields").insert(t.preguntas.map((q, i) => ({
+      audition_id: data.id, etiqueta: String(q.etiqueta), tipo: q.tipo, opciones: q.tipo === "opcion" ? q.opciones ?? null : null, obligatorio: !!q.obligatorio, orden: i + 1,
+    })));
+    if (e2) return { ok: false, message: `La convocatoria se creó, pero no se pudieron copiar las preguntas: ${e2.message}` };
+  }
   if (pid) revalidatePath(`/panel/producciones/${pid}/audiciones`);
   revalidatePath("/panel/audiciones");
   redirect(base(data.id as string));
@@ -66,6 +89,8 @@ export async function saveOptions(_p: AudState, f: FormData): Promise<AudState> 
   const on = (k: string) => f.get(k) === "on";
   const pedir_tutor = on("pedir_tutor");
   const autorizacion_escuela = on("autorizacion_escuela");
+  const solo_invitados = on("solo_invitados");
+  const modalidad = ["en_linea", "mixta"].includes(str(f, "modalidad")) ? str(f, "modalidad") : "presencial";
   if (!pedir_tutor && !autorizacion_escuela) {
     return { ok: false, message: "Si no pides datos del tutor, confirma que la escuela u organización ya tiene la autorización de los padres." };
   }
@@ -78,8 +103,11 @@ export async function saveOptions(_p: AudState, f: FormData): Promise<AudState> 
         autorizacion_escuela: pedir_tutor ? false : autorizacion_escuela,
         pedir_foto: on("pedir_foto"),
         elegir_horario: on("elegir_horario"),
-        visibilidad: str(f, "visibilidad") === "enlace" ? "enlace" : "publica",
+        // Por invitación siempre es "solo con enlace".
+        visibilidad: solo_invitados || str(f, "visibilidad") === "enlace" ? "enlace" : "publica",
         numeracion: str(f, "numeracion") === "previa" ? "previa" : "llegada",
+        modalidad,
+        solo_invitados,
       },
       { count: "exact" },
     )
@@ -87,6 +115,88 @@ export async function saveOptions(_p: AudState, f: FormData): Promise<AudState> 
   if (error) return { ok: false, message: error.message };
   if (!count) return { ok: false, message: "No tienes permiso para editar esta convocatoria." };
   return done(aid, "Opciones guardadas.");
+}
+
+/** Criterios que califican los jueces ("Técnica, Fuerza, Presencia escénica"). */
+export async function saveCriterios(_p: AudState, f: FormData): Promise<AudState> {
+  const aid = str(f, "aid");
+  const criterios = criteriosFromText(str(f, "criterios"));
+  if (!criterios.length) return { ok: false, message: "Escribe al menos un criterio." };
+  const supabase = await createClient();
+  const { error, count } = await supabase.from("auditions").update({ criterios }, { count: "exact" }).eq("id", aid);
+  if (error) return { ok: false, message: error.message };
+  if (!count) return { ok: false, message: "No tienes permiso para editar esta convocatoria." };
+  return done(aid, `Criterios guardados: ${criterios.map((c) => c.l).join(", ")}.`);
+}
+
+// ──────── Invitaciones (convocatoria particular) ────────
+
+export async function addInvites(_p: AudState, f: FormData): Promise<AudState> {
+  const aid = str(f, "aid");
+  const emails = [...new Set(str(f, "emails").split(/[\s,;]+/).map((e) => e.trim().toLowerCase()).filter(Boolean))];
+  const malos = emails.filter((e) => !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e));
+  if (!emails.length) return { ok: false, message: "Escribe al menos un correo." };
+  if (malos.length) return { ok: false, message: `Revisa estos correos: ${malos.join(", ")}` };
+  const supabase = await createClient();
+  let nuevos = 0;
+  for (const email of emails) {
+    const { error } = await supabase.from("audition_invites").insert({ audition_id: aid, email });
+    if (!error) nuevos++;
+    else if (!/duplicate|unique/i.test(error.message)) return { ok: false, message: error.message };
+  }
+  const repetidos = emails.length - nuevos;
+  if (!nuevos) return { ok: true, message: "Esos correos ya estaban invitados." };
+  return done(aid, `${nuevos === 1 ? "1 invitación guardada" : `${nuevos} invitaciones guardadas`}${repetidos ? ` (${repetidos} ya estaban)` : ""}.`);
+}
+
+export async function removeInvite(_p: AudState, f: FormData): Promise<AudState> {
+  const aid = str(f, "aid");
+  const supabase = await createClient();
+  const { error, count } = await supabase.from("audition_invites").delete({ count: "exact" }).eq("id", str(f, "id")).eq("audition_id", aid);
+  if (error) return { ok: false, message: error.message };
+  if (!count) return { ok: false, message: "No tienes permiso." };
+  return done(aid, "Invitación quitada.");
+}
+
+// ──────── Plantillas propias ────────
+
+/** Guarda opciones, criterios, preguntas y requisitos de esta convocatoria como plantilla. */
+export async function saveAsTemplate(_p: AudState, f: FormData): Promise<AudState> {
+  const aid = str(f, "aid");
+  const nombre = str(f, "nombre");
+  if (!nombre) return { ok: false, message: "Ponle nombre a la plantilla." };
+  const session = await getSession();
+  if (!session) return { ok: false, message: "Tu sesión expiró." };
+  const supabase = await createClient();
+  const [{ data: a }, { data: fields }] = await Promise.all([
+    supabase.from("auditions").select("*").eq("id", aid).maybeSingle(),
+    supabase.from("audition_fields").select("etiqueta, tipo, opciones, obligatorio").eq("audition_id", aid).order("orden"),
+  ]);
+  if (!a) return { ok: false, message: "No se encontró la convocatoria." };
+  const opciones = Object.fromEntries(
+    ["pedir_tutor", "autorizacion_escuela", "pedir_foto", "elegir_horario", "visibilidad", "numeracion", "modalidad", "solo_invitados"].map((k) => [k, a[k]]),
+  );
+  const { error } = await supabase.from("audition_templates").insert({
+    nombre,
+    descripcion: str(f, "descripcion") || null,
+    opciones,
+    criterios: a.criterios,
+    preguntas: (fields ?? []).map((q) => ({ etiqueta: q.etiqueta, tipo: q.tipo, opciones: q.opciones ?? undefined, obligatorio: q.obligatorio })),
+    requisitos: a.requisitos,
+    created_by: session.userId,
+  });
+  if (error) return { ok: false, message: error.message };
+  revalidatePath("/panel/audiciones");
+  return { ok: true, message: `Plantilla “${nombre}” guardada. Aparece en Personalizada al crear una convocatoria.` };
+}
+
+export async function deleteTemplate(_p: AudState, f: FormData): Promise<AudState> {
+  const supabase = await createClient();
+  const { error, count } = await supabase.from("audition_templates").delete({ count: "exact" }).eq("id", str(f, "id"));
+  if (error) return { ok: false, message: error.message };
+  if (!count) return { ok: false, message: "Solo quien la creó o el Director puede borrarla." };
+  revalidatePath("/panel/audiciones");
+  return { ok: true, message: "Plantilla borrada." };
 }
 
 export async function setAuditionEstado(_p: AudState, f: FormData): Promise<AudState> {
@@ -280,17 +390,16 @@ export async function saveScore(_p: AudState, f: FormData): Promise<AudState> {
   const session = await getSession();
   if (!session) return { ok: false, message: "Tu sesión expiró." };
   const aid = str(f, "aid");
-  const v = (k: string) => (String(f.get(k) ?? "") ? Number(f.get(k)) : null);
+  // Criterios de la convocatoria (0038): campos "c_<clave>" con valor 1–5.
+  const puntos: Record<string, number> = {};
+  for (const [k, v] of f.entries()) if (k.startsWith("c_") && String(v)) puntos[k.slice(2)] = Number(v);
   const supabase = await createClient();
   const { error } = await supabase.from("audition_scores").upsert(
     {
       application_id: str(f, "app"),
       judge_id: session.userId,
       ronda: Number(f.get("ronda") ?? 1),
-      canto: v("canto"),
-      baile: v("baile"),
-      actuacion: v("actuacion"),
-      actitud: v("actitud"),
+      puntos,
       notas: str(f, "notas") || null,
       updated_at: new Date().toISOString(),
     },

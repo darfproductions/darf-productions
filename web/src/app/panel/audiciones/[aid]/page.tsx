@@ -4,12 +4,12 @@ import { redirect } from "next/navigation";
 import { ActionForm } from "@/components/panel/ActionForm";
 import { CopyLink } from "@/components/panel/CopyLink";
 import { Card, input } from "@/components/panel/ui";
-import { lugares } from "@/lib/audition-rules";
+import { MODALIDAD, lugares, type Criterio } from "@/lib/audition-rules";
 import { formatSlot } from "@/lib/auditions";
 import { isoToLocalMx } from "@/lib/dates";
 import { requireAudition } from "@/lib/panel-auditions";
 import { createClient } from "@/lib/supabase/server";
-import { addAuditionMember, addField, addRole, addSlot, removeAuditionMember, removeItem, saveAudition, saveOptions, setAuditionEstado } from "../actions";
+import { addAuditionMember, addField, addInvites, addRole, addSlot, removeAuditionMember, removeInvite, removeItem, saveAsTemplate, saveAudition, saveCriterios, saveOptions, setAuditionEstado } from "../actions";
 
 export const metadata: Metadata = { title: "Configurar audición" };
 
@@ -31,13 +31,15 @@ export default async function AuditionConfig({ params }: PageProps<"/panel/audic
   // ¿Puede armar el equipo propio? Obra: quien da permisos en ella. General: el Director.
   const armaEquipo = access.isDirector || (!!a.production_id && (access.byProduction[a.production_id] ?? []).includes("permisos.gestionar"));
   const supabase = await createClient();
-  const [roles, slots, fields, team, teamRoles] = await Promise.all([
+  const [roles, slots, fields, team, teamRoles, invites] = await Promise.all([
     supabase.from("audition_roles").select("id, nombre, descripcion").eq("audition_id", aid).order("orden"),
     supabase.rpc("audition_slot_availability", { aid }),
     supabase.from("audition_fields").select("id, etiqueta, tipo, opciones, obligatorio").eq("audition_id", aid).order("orden"),
     supabase.rpc("audition_list_members", { aid }),
     supabase.from("role_permissions").select("role_id, panel_roles(nombre, orden)").like("permission_id", "audiciones.%"),
+    supabase.from("audition_invites").select("id, email, created_at").eq("audition_id", aid).order("created_at"),
   ]);
+  const criterios = (a.criterios ?? []) as Criterio[];
   const opcionesRol = [...new Map(((teamRoles.data ?? []) as unknown as { role_id: string; panel_roles: { nombre: string; orden: number } | null }[])
     .map((r) => [r.role_id, { id: r.role_id, nombre: r.panel_roles?.nombre ?? r.role_id, orden: r.panel_roles?.orden ?? 99 }])).values()]
     .sort((x, y) => x.orden - y.orden);
@@ -90,6 +92,14 @@ export default async function AuditionConfig({ params }: PageProps<"/panel/audic
                 <span>Si no se piden datos del tutor: confirmo que la escuela u organización ya cuenta con la autorización de los padres de los menores.</span></label>
             </fieldset>
             <div className="flex flex-col gap-3">
+              <label className="flex flex-col gap-1.5 text-sm font-semibold">Forma de la audición
+                <select className={input} name="modalidad" defaultValue={a.modalidad}>
+                  {Object.entries(MODALIDAD).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                </select>
+                <span className="text-xs font-normal text-texto-3">En línea: sin día presencial; los jueces califican los videos que manden (pide videos en “Preguntas del formulario”).</span>
+              </label>
+              <label className={check}><input type="checkbox" name="solo_invitados" defaultChecked={a.solo_invitados} className="mt-1" />
+                <span>Solo por invitación: únicamente se inscriben los correos que invites (queda “solo con enlace”).</span></label>
               <label className="flex flex-col gap-1.5 text-sm font-semibold">Quién la ve
                 <select className={input} name="visibilidad" defaultValue={a.visibilidad}>
                   <option value="publica">Todos: aparece en la lista de audiciones</option>
@@ -106,6 +116,33 @@ export default async function AuditionConfig({ params }: PageProps<"/panel/audic
           </div>
         </ActionForm>
       </Card>
+
+      <Card className="flex flex-col gap-3">
+        <h2 className="titular text-xl">Qué califican los jueces</h2>
+        <p className="text-sm text-texto-2">Cada criterio se califica del 1 al 5. Escríbelos separados por coma (máximo 8). Ejemplo para aéreo: Técnica, Fuerza, Flexibilidad, Seguridad, Presencia escénica.</p>
+        <ActionForm action={saveCriterios} hidden={h} submit="Guardar criterios">
+          <input className={input} name="criterios" required defaultValue={criterios.map((c) => c.l).join(", ")} />
+        </ActionForm>
+        <p className="text-xs text-texto-3">Si cambias los criterios cuando ya hay calificaciones, las anteriores se conservan pero los jueces califican con los nuevos.</p>
+      </Card>
+
+      {a.solo_invitados && (
+        <Card className="flex flex-col gap-3">
+          <h2 className="titular text-xl">Invitados ({(invites.data ?? []).length})</h2>
+          <p className="flex flex-wrap items-center gap-2 text-sm text-texto-2">Solo estos correos pueden inscribirse. Cada persona entra con su cuenta DARF (con ese mismo correo) y ve la invitación en Mi cuenta. Mándales el enlace: <CopyLink path={`/audiciones/${aid}`} /></p>
+          <ul className="flex flex-col gap-1.5">
+            {(invites.data ?? []).map((i) => (
+              <li key={i.id} className="flex items-center justify-between gap-2 rounded-lg bg-sala px-3 py-1.5 text-sm">
+                <span className="break-all">{i.email}</span>
+                <ActionForm inline action={removeInvite} hidden={{ ...h, id: i.id as string }} confirm={`¿Quitar la invitación de ${i.email}?`} submit="Quitar" submitClass={ghost} />
+              </li>
+            ))}
+          </ul>
+          <ActionForm action={addInvites} hidden={h} submit="Invitar">
+            <textarea className={`${input} min-h-20`} name="emails" required placeholder="Uno o varios correos, separados por coma o en renglones distintos" />
+          </ActionForm>
+        </Card>
+      )}
 
       <Card className="flex flex-col gap-3">
         <h2 className="titular text-xl">Equipo de esta convocatoria</h2>
@@ -192,6 +229,16 @@ export default async function AuditionConfig({ params }: PageProps<"/panel/audic
             <input className={`${input} sm:col-span-2`} name="opciones" placeholder="Si es de opciones: Soprano, Contralto, Tenor, Barítono" />
           </div>
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="obligatorio" /> Obligatoria</label>
+        </ActionForm>
+      </Card>
+      <Card>
+        <h2 className="titular mb-1 text-xl">Guardar como plantilla</h2>
+        <p className="mb-3 text-sm text-texto-2">Guarda las opciones, preguntas, criterios y requisitos de esta convocatoria para crear otras iguales después.</p>
+        <ActionForm action={saveAsTemplate} hidden={h} submit="Guardar plantilla">
+          <div className="grid gap-2 sm:grid-cols-[1fr_2fr]">
+            <input className={input} name="nombre" required maxLength={60} placeholder="Ej. Aéreo DARF" defaultValue={a.titulo} />
+            <input className={input} name="descripcion" maxLength={300} placeholder="Para qué sirve (opcional)" />
+          </div>
         </ActionForm>
       </Card>
     </>

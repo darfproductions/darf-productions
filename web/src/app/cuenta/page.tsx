@@ -3,7 +3,7 @@ import QRCode from "qrcode";
 import { PageHeading } from "@/components/PageHeading";
 import { requireSession } from "@/lib/auth";
 import { ESTADO_SOLICITUD } from "@/lib/audition-rules";
-import { formatSlot, listMyApplications } from "@/lib/auditions";
+import { formatSlot, listMyApplications, listMyInvites } from "@/lib/auditions";
 import { env } from "@/lib/env";
 import { formatPerformanceDate } from "@/lib/productions";
 import { createClient } from "@/lib/supabase/server";
@@ -54,7 +54,8 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
   }
 
   // Mis audiciones (0036): solo las propias; QR mientras no haya llegado.
-  const audiciones = await listMyApplications(session.userId);
+  const [audiciones, invitaciones] = await Promise.all([listMyApplications(session.userId), listMyInvites()]);
+  const pendientes = invitaciones.filter((i) => !i.inscrito);
   const audQr = new Map<string, string>();
   for (const a of audiciones) {
     if (!a.checked_in_at && !["cancelado", "no_cumple"].includes(a.estado)) audQr.set(a.id, await QRCode.toDataURL(a.qr_token, { margin: 1, width: 200 }));
@@ -128,6 +129,24 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
             <button className="rounded-full border border-white/30 px-6 py-3 text-sm font-bold">Cerrar sesión</button>
           </form>
         </aside>
+
+        {pendientes.length > 0 && (
+          <section aria-labelledby="invitaciones" className="flex flex-col gap-3 lg:col-span-8">
+            <h2 id="invitaciones" className="titular text-2xl">Te invitaron a audicionar</h2>
+            <ul className="flex flex-col gap-3">
+              {pendientes.map((i) => (
+                <li key={i.audition_id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#c4b5fd]/40 bg-telon p-5">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-[0.2em] text-texto-3">{i.obra ?? "Convocatoria DARF"}</p>
+                    <p className="text-lg font-bold">{i.titulo}</p>
+                    {i.inscripcion_cierra && <p className="text-sm capitalize text-texto-2">Inscripción hasta {formatSlot(i.inscripcion_cierra)}</p>}
+                  </div>
+                  <Link href={`/audiciones/${i.audition_id}`} className="boton-compra rounded-full px-5 py-2.5 text-sm font-bold">Inscribirme</Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
         {audiciones.length > 0 && (
           <section aria-labelledby="mis-audiciones" className="flex flex-col gap-4 lg:col-span-8">

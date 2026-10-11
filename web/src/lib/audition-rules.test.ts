@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { PLANTILLAS, ageAt, dayStatus, daySummary, lugares, minutos, score, videoSource } from "./audition-rules";
+import { ageAt, criteriosFromText, dayStatus, daySummary, lugares, minutos, score, videoSource } from "./audition-rules";
+import { EN_BLANCO, PLANTILLAS } from "./audition-templates";
 
 describe("audiciones", () => {
   it("edad cumplida a la fecha de la audición", () => {
@@ -53,6 +54,26 @@ describe("audiciones 2.0", () => {
   it("la plantilla de escuela no pide tutor pero deja constancia de la autorización", () => {
     expect(PLANTILLAS.escuela.opciones.pedir_tutor).toBe(false);
     expect(PLANTILLAS.escuela.opciones.autorizacion_escuela).toBe(true);
-    for (const t of Object.values(PLANTILLAS)) expect(t.opciones.pedir_tutor || t.opciones.autorizacion_escuela).toBe(true);
+  });
+  it("todas las plantillas cumplen las reglas de la base (0037, 0038)", () => {
+    for (const t of [...Object.values(PLANTILLAS), EN_BLANCO]) {
+      expect(t.opciones.pedir_tutor || t.opciones.autorizacion_escuela).toBe(true);
+      expect(!t.opciones.solo_invitados || t.opciones.visibilidad === "enlace").toBe(true);
+      expect(t.criterios.length).toBeGreaterThan(0);
+      expect(t.criterios.length).toBeLessThanOrEqual(8);
+      expect(new Set(t.criterios.map((c) => c.k)).size).toBe(t.criterios.length);
+      for (const c of t.criterios) expect(c.k).toMatch(/^[a-z0-9_]{1,30}$/);
+      for (const q of t.preguntas) if (q.tipo === "opcion") expect((q.opciones ?? []).length).toBeGreaterThanOrEqual(2);
+    }
+  });
+  it("las 3 principales son abierta, escuela y cerrada", () => {
+    expect(Object.entries(PLANTILLAS).filter(([, t]) => t.grupo === "principal").map(([k]) => k)).toEqual(["abierta", "escuela", "cerrada"]);
+  });
+  it("criterios escritos a mano", () => {
+    expect(criteriosFromText("Técnica, Fuerza,\nPresencia escénica, técnica")).toEqual([
+      { k: "tecnica", l: "Técnica" }, { k: "fuerza", l: "Fuerza" }, { k: "presencia_escenica", l: "Presencia escénica" },
+    ]);
+    expect(criteriosFromText("a,b,c,d,e,f,g,h,i,j")).toHaveLength(8);
+    expect(criteriosFromText(" , ")).toEqual([]);
   });
 });

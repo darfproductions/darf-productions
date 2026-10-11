@@ -13,6 +13,8 @@ export type Audition = {
   elegir_horario: boolean;
   visibilidad: "publica" | "enlace";
   numeracion: "llegada" | "previa";
+  modalidad: "presencial" | "en_linea" | "mixta";
+  solo_invitados: boolean;
   titulo: string;
   descripcion: string | null;
   requisitos: string | null;
@@ -27,7 +29,7 @@ export type AuditionField = { id: string; etiqueta: string; tipo: "texto" | "par
 export type AuditionSlot = { id: string; inicia: string; sala: string | null; cupo: number; ocupados: number };
 
 const COLS =
-  "id, production_id, titulo, descripcion, requisitos, sede, estado, inscripcion_cierra, edad_min, edad_max, pedir_tutor, pedir_foto, elegir_horario, visibilidad, numeracion, productions(nombre)";
+  "id, production_id, titulo, descripcion, requisitos, sede, estado, inscripcion_cierra, edad_min, edad_max, pedir_tutor, pedir_foto, elegir_horario, visibilidad, numeracion, modalidad, solo_invitados, productions(nombre)";
 
 export async function listPublicAuditions(): Promise<Audition[]> {
   const supabase = await createClient();
@@ -101,4 +103,20 @@ export async function listMyApplications(userId: string): Promise<MyApplication[
 
 export function formatSlot(iso: string): string {
   return new Intl.DateTimeFormat("es-MX", { weekday: "long", day: "numeric", month: "long", hour: "numeric", minute: "2-digit", timeZone: "America/Mexico_City" }).format(new Date(iso));
+}
+
+export type MyInvite = { audition_id: string; titulo: string; obra: string | null; inscripcion_cierra: string | null; inscrito: boolean };
+
+/** Invitaciones a convocatorias abiertas (0038). Si la base aún no la tiene, no hay ninguna. */
+export async function listMyInvites(): Promise<MyInvite[]> {
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("my_audition_invites");
+  return (data ?? []) as MyInvite[];
+}
+
+/** ¿Me invitaron a esta convocatoria? */
+export async function amInvited(aid: string): Promise<boolean> {
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("audition_am_invited", { aid });
+  return data === true;
 }

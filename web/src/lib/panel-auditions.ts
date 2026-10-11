@@ -1,5 +1,5 @@
 import { notFound, redirect } from "next/navigation";
-import type { AuditionOptions } from "@/lib/audition-rules";
+import type { AuditionOptions, Criterio } from "@/lib/audition-rules";
 import { canAudition, canSeeAudition } from "@/lib/panel-nav";
 import { requirePanel, type PanelAccess } from "@/lib/permissions";
 import { createClient } from "@/lib/supabase/server";
@@ -10,6 +10,7 @@ import { createClient } from "@/lib/supabase/server";
 export type PanelAudition = AuditionOptions & {
   id: string; production_id: string | null; titulo: string; descripcion: string | null; requisitos: string | null; sede: string | null;
   estado: string; inscripcion_cierra: string | null; edad_min: number | null; edad_max: number | null; created_at: string;
+  criterios: Criterio[]; plantilla: string | null;
   productions?: { nombre: string } | null;
 };
 

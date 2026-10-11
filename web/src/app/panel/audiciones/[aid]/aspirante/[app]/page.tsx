@@ -6,6 +6,7 @@ import { Card, input } from "@/components/panel/ui";
 import { ESTADO_SOLICITUD, ageAt, hora, minutos, score, videoSource } from "@/lib/audition-rules";
 import { formatSlot } from "@/lib/auditions";
 import { requireAudition, signPhotos } from "@/lib/panel-auditions";
+import type { Criterio } from "@/lib/audition-rules";
 import { createClient } from "@/lib/supabase/server";
 import { addVideo, removeItem } from "../../../actions";
 
@@ -17,12 +18,13 @@ const FUENTE = { youtube: "YouTube", drive: "Drive", otro: "Enlace" } as const;
 // Es la base de su expediente: si entra al elenco, en la etapa 3E se liga a él.
 export default async function ApplicantPage({ params }: PageProps<"/panel/audiciones/[aid]/aspirante/[app]">) {
   const { aid, app } = await params;
-  await requireAudition(aid, ["audiciones.gestionar"], `/aspirante/${app}`);
+  const { a } = await requireAudition(aid, ["audiciones.gestionar"], `/aspirante/${app}`);
+  const etiqueta = new Map(((a.criterios ?? []) as Criterio[]).map((c) => [c.k, c.l]));
   if (!/^[0-9a-f-]{36}$/.test(app)) notFound();
   const supabase = await createClient();
   const [{ data: x }, scores, videos, roles] = await Promise.all([
     supabase.from("audition_applications").select("*, audition_slots(inicia, sala)").eq("id", app).eq("audition_id", aid).maybeSingle(),
-    supabase.from("audition_scores").select("ronda, canto, baile, actuacion, actitud, notas, judge_id").eq("application_id", app).order("ronda"),
+    supabase.from("audition_scores").select("ronda, puntos, notas, judge_id").eq("application_id", app).order("ronda"),
     supabase.from("audition_videos").select("id, titulo, url, application_id, created_at").eq("audition_id", aid).order("created_at"),
     supabase.from("audition_roles").select("id, nombre").eq("audition_id", aid),
   ]);
@@ -97,7 +99,7 @@ export default async function ApplicantPage({ params }: PageProps<"/panel/audici
           {(scores.data ?? []).map((s, i) => (
             <li key={i} className="rounded-lg bg-sala px-3 py-2">
               <p className="text-xs text-texto-3">{s.ronda === 1 ? "Audición" : `Callback ${s.ronda - 1}`}</p>
-              <p>Canto {score(s.canto)} · Baile {score(s.baile)} · Actuación {score(s.actuacion)} · Actitud {score(s.actitud)}</p>
+              <p>{Object.entries((s.puntos ?? {}) as Record<string, number>).map(([k, v]) => `${etiqueta.get(k) ?? k} ${score(v)}`).join(" · ") || "Sin calificar"}</p>
               {s.notas && <p className="mt-1 text-texto-2">{s.notas}</p>}
             </li>
           ))}
