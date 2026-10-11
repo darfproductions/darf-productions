@@ -1,0 +1,107 @@
+import type { Metadata } from "next";
+import { ConfirmSubmit } from "@/components/panel/ConfirmSubmit";
+import { Card, Notice, PanelTitle, button, buttonGhost, input } from "@/components/panel/ui";
+import { listRoles, type Permission } from "@/lib/panel-data";
+import { requireDirector } from "@/lib/permissions";
+import { createRole, deleteRole, updateRolePermissions } from "./actions";
+
+export const metadata: Metadata = { title: "Roles" };
+
+function PermissionChecks({ permissions, checked }: { permissions: Permission[]; checked: Set<string> }) {
+  const grupos = [...new Set(permissions.map((p) => p.grupo))];
+  return (
+    <div className="grid gap-4 sm:grid-cols-2">
+      {grupos.map((g) => (
+        <fieldset key={g} className="flex flex-col gap-1.5">
+          <legend className="mb-1 text-xs font-bold uppercase tracking-[0.2em] text-texto-3">{g}</legend>
+          {permissions.filter((p) => p.grupo === g).map((p) => (
+            <label key={p.id} className="flex items-start gap-2 text-sm">
+              <input type="checkbox" name="perm" value={p.id} defaultChecked={checked.has(p.id)} className="mt-1" />
+              <span>{p.descripcion}</span>
+            </label>
+          ))}
+        </fieldset>
+      ))}
+    </div>
+  );
+}
+
+// Solo el Director: roles de sistema (fijos) y personalizados (ej. "Vestuario").
+export default async function RolesPage({ searchParams }: PageProps<"/panel/roles">) {
+  await requireDirector("/panel/roles");
+  const sp = await searchParams;
+  const { roles, permissions, grants } = await listRoles();
+  const desc = new Map(permissions.map((p) => [p.id, p.descripcion]));
+  const custom = roles.filter((r) => !r.es_sistema);
+  const system = roles.filter((r) => r.es_sistema);
+
+  return (
+    <>
+      <PanelTitle eyebrow="Director" title="Roles">
+        Los roles de sistema están fijos. Crea roles personalizados (por ejemplo “Vestuario”) y elige qué pueden hacer.
+      </PanelTitle>
+      {typeof sp.error === "string" && <Notice>{sp.error}</Notice>}
+      {typeof sp.ok === "string" && <Notice ok>{sp.ok}</Notice>}
+
+      <Card>
+        <details>
+          <summary className="cursor-pointer text-lg font-bold">+ Crear rol personalizado</summary>
+          <form action={createRole} className="mt-4 flex flex-col gap-4">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="flex flex-col gap-1.5 text-sm font-semibold">Nombre
+                <input className={input} name="nombre" required maxLength={40} placeholder="Vestuario" />
+              </label>
+              <label className="flex flex-col gap-1.5 text-sm font-semibold">Descripción (opcional)
+                <input className={input} name="descripcion" maxLength={120} placeholder="Medidas y materiales del elenco" />
+              </label>
+            </div>
+            <PermissionChecks permissions={permissions} checked={new Set()} />
+            <button className={`${button} self-start`}>Crear rol</button>
+          </form>
+        </details>
+      </Card>
+
+      {custom.length > 0 && (
+        <section className="flex flex-col gap-3">
+          <h2 className="titular text-xl">Personalizados</h2>
+          {custom.map((r) => (
+            <Card key={r.id}>
+              <details>
+                <summary className="cursor-pointer">
+                  <span className="font-bold">{r.nombre}</span>
+                  <span className="ml-2 text-sm text-texto-3">{(grants.get(r.id)?.size ?? 0)} permisos</span>
+                </summary>
+                <form action={updateRolePermissions} className="mt-4 flex flex-col gap-4">
+                  <input type="hidden" name="id" value={r.id} />
+                  <PermissionChecks permissions={permissions} checked={grants.get(r.id) ?? new Set()} />
+                  <button className={`${button} self-start`}>Guardar permisos</button>
+                </form>
+                <form action={deleteRole} className="mt-3">
+                  <input type="hidden" name="id" value={r.id} />
+                  <ConfirmSubmit message={`¿Eliminar el rol "${r.nombre}"?`} className={buttonGhost}>Eliminar rol</ConfirmSubmit>
+                </form>
+              </details>
+            </Card>
+          ))}
+        </section>
+      )}
+
+      <section className="flex flex-col gap-3">
+        <h2 className="titular text-xl">De sistema</h2>
+        <ul className="grid gap-3 md:grid-cols-2">
+          {system.map((r) => (
+            <li key={r.id}>
+              <Card className="h-full">
+                <p className="font-bold">{r.nombre}</p>
+                <p className="text-sm text-texto-3">{r.descripcion}</p>
+                <p className="mt-2 text-sm text-texto-2">
+                  {[...(grants.get(r.id) ?? [])].map((p) => desc.get(p) ?? p).join(" · ") || "Sin permisos administrativos (portal del elenco en la etapa 3E)."}
+                </p>
+              </Card>
+            </li>
+          ))}
+        </ul>
+      </section>
+    </>
+  );
+}

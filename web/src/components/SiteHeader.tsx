@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import logo from "@/assets/marca/darf-logo-light.webp";
 import { getSession } from "@/lib/auth";
+import { canSeePanel } from "@/lib/permissions";
 
 export const NAV_LINKS = [
   { href: "/cartelera", label: "Cartelera" },
@@ -13,7 +14,8 @@ export const NAV_LINKS = [
 
 export async function SiteHeader() {
   const session = await getSession();
-  const isStaff = session?.profile?.rol === "staff" || session?.profile?.rol === "admin";
+  // Panel: staff, Director o quien tenga un rol en alguna obra (0031).
+  const isStaff = await canSeePanel(session);
   const account = session
     ? { href: "/cuenta", label: "Mi cuenta" }
     : { href: "/entrar", label: "Entrar" };

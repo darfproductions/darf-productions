@@ -72,3 +72,13 @@ export function themeStyle(theme: ProductionTheme | null): React.CSSProperties {
     "--obra-acento": theme.acento,
   } as React.CSSProperties;
 }
+
+/** Lo que le falta al kit para poder publicar (misma regla que production_kit_problems). */
+export function kitMissing(k: KitColumns): string[] {
+  const out: string[] = [];
+  if (!k.logo_path) out.push("Falta el logo.");
+  if (!k.ambiente_path) out.push("Falta la imagen de ambiente.");
+  if (!k.frase?.trim()) out.push("Falta la frase corta.");
+  if (!k.color_fondo || !k.color_superficie || !k.color_texto || !k.color_acento) return [...out, "Faltan colores del kit."];
+  return [...out, ...themeProblems({ fondo: k.color_fondo, superficie: k.color_superficie, texto: k.color_texto, acento: k.color_acento })];
+}

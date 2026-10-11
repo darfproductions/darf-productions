@@ -205,3 +205,17 @@ es `main`; opcional: cambiarla a `darf-2.0` en Vercel → Settings → Environme
 - Para producción: antes del lanzamiento, las obras reales deben tener kit
   completo y pasar a `publicada`/`archivada`, porque con 0029 el público solo
   ve obras publicadas (la 1.0 también). Va en el plan de migración final.
+
+## 12. Fase 3 · etapa 3A (2026-10-11)
+
+- Migración **0031** (solo DEV): permisos, roles de sistema (incluye Staff y
+  Maquillaje) y personalizados, `production_members`, `has_perm(obra, permiso)`,
+  bitácora `audit_log`. Pruebas `supabase/tests/0031_panel_roles_test.sql`
+  (T1–T8) en local y DEV. En DEV se corrió sin el paso "quitar miembro" porque
+  el conector pide confirmación ante un `delete`; ese paso pasa en local.
+- Panel nuevo en `web/src/app/panel/`: Inicio, Producciones, espacio de trabajo
+  por obra (Resumen y Permisos; el resto de pestañas muestra su etapa), y para
+  el Director: Usuarios, Roles y Bitácora. Reglas puras en
+  `src/lib/panel-nav.ts` y `src/lib/audit.ts` con pruebas.
+- Pendiente para 3B: que un integrante con rol vea obras en **borrador** (hoy
+  la lectura de `productions` solo deja ver borradores a staff/Director).

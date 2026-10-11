@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isLight, themeFromKit, themeProblems, type KitColumns } from "./themes";
+import { isLight, kitMissing, themeFromKit, themeProblems, type KitColumns } from "./themes";
 
 const kit: KitColumns = {
   color_fondo: "#f8f7f5",
@@ -33,5 +33,15 @@ describe("kit de producción", () => {
   it("distingue fondo claro de oscuro", () => {
     expect(isLight("#f8f7f5")).toBe(true);
     expect(isLight("#08101f")).toBe(false);
+  });
+});
+
+describe("lo que le falta al kit", () => {
+  it("un kit completo y legible no tiene pendientes", () => {
+    expect(kitMissing(kit)).toEqual([]);
+  });
+  it("enumera lo que falta", () => {
+    expect(kitMissing({ ...kit, logo_path: null, frase: " " })).toEqual(["Falta el logo.", "Falta la frase corta."]);
+    expect(kitMissing({ ...kit, color_texto: null })).toEqual(["Faltan colores del kit."]);
   });
 });
