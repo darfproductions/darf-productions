@@ -190,3 +190,18 @@ es `main`; opcional: cambiarla a `darf-2.0` en Vercel → Settings → Environme
 | Pago por WhatsApp | ✅ | Solo si `NEXT_PUBLIC_DARF_WHATSAPP` está configurado (vacío en DEV) |
 | Panel staff: aprobar, mapa, taquilla, QR, vendedores, descuentos, galería, bases de datos | ⏳ Fase 3 | Mientras tanto: panel de la 1.0 en `darf-2-dev` (misma base DEV) |
 | DARFY | ⏳ Fase 6 | |
+
+## 11. Avance de la Fase 2 (2026-10-11)
+
+- Migraciones **0029** (plantilla de producción: estado, kit, ficha, actos,
+  canciones, personas, créditos con foto por obra, videos/ensayos,
+  agradecimientos, bucket `producciones`) y **0030** (número de ensayos)
+  aplicadas **solo en Supabase DEV**. Detalle en `docs/DARF-2.0-PRODUCCIONES.md`.
+- Pruebas SQL `supabase/tests/0029_production_template_test.sql` (T1–T9) pasan en
+  local y en DEV; las de boletería (0021–0028) siguen igual que antes.
+- La web lee todo de la base (`src/lib/productions.ts`,
+  `src/lib/production-content.ts`); se eliminaron `src/content/producciones.ts`
+  y los temas escritos en código.
+- Para producción: antes del lanzamiento, las obras reales deben tener kit
+  completo y pasar a `publicada`/`archivada`, porque con 0029 el público solo
+  ve obras publicadas (la 1.0 también). Va en el plan de migración final.

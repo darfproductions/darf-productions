@@ -1,5 +1,5 @@
 /* eslint-disable @next/next/no-img-element -- retratos desde Storage (Fase 2) */
-import type { Credit } from "@/content/producciones";
+import type { Credit } from "@/lib/production-content";
 
 // Elenco y equipos con fotos sin saturar la página:
 // - Reparto: tarjetas con retrato; se ven las primeras 8, el resto al desplegar.
@@ -54,22 +54,22 @@ export function CastGrid({ reparto }: { reparto: { personaje: string; persona: s
   );
 }
 
-export function Ensemble({ names }: { names: string[] }) {
-  const item = (n: string, i: number) => (
-    <li key={i} className="flex items-center gap-3"><Avatar name={n} size="sm" /><span className="text-sm font-semibold">{n}</span></li>
+export function Ensemble({ items }: { items: { persona: string; foto?: string }[] }) {
+  const item = (n: { persona: string; foto?: string }, i: number) => (
+    <li key={i} className="flex items-center gap-3"><Avatar name={n.persona} foto={n.foto} size="sm" /><span className="text-sm font-semibold">{n.persona}</span></li>
   );
   const grid = "grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3";
   return (
     <div className="flex flex-col gap-3">
       <p className="text-xs font-bold uppercase tracking-[0.2em] text-obra-acento">Ensamble</p>
-      <ul className={grid}>{names.slice(0, 9).map(item)}</ul>
-      {names.length > 9 && (
+      <ul className={grid}>{items.slice(0, 9).map(item)}</ul>
+      {items.length > 9 && (
         <details className="group">
           <summary className={`${MORE} mt-1 inline-block group-open:mb-3`}>
-            <span className="group-open:hidden">Ver todo el ensamble ({names.length})</span>
+            <span className="group-open:hidden">Ver todo el ensamble ({items.length})</span>
             <span className="hidden group-open:inline">Ver menos</span>
           </summary>
-          <ul className={grid}>{names.slice(9).map((n, i) => item(n, i + 9))}</ul>
+          <ul className={grid}>{items.slice(9).map((n, i) => item(n, i + 9))}</ul>
         </details>
       )}
     </div>

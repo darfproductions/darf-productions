@@ -1,12 +1,15 @@
+import { env } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
-export { getTheme, themeProblems, themeStyle, THEMES, type ProductionTheme } from "@/lib/themes";
+import { themeFromKit, type KitColumns, type ProductionTheme } from "@/lib/themes";
+export { themeProblems, themeStyle, type ProductionTheme } from "@/lib/themes";
 import { lastPerformanceDates, pickFeatured, sortForHome, type Featured } from "@/lib/home-rules";
 
 // ─── Datos de producciones ────────────────────────────────────────────────
-// Lee de las tablas existentes (productions, performances, precios) con la
-// sesión del visitante: las reglas RLS deciden qué se ve.
+// Todo sale de la base (plantilla: migración 0029) con la sesión del
+// visitante: las reglas RLS deciden qué se ve. Las páginas públicas además
+// filtran por estado, para que el staff con sesión no vea borradores ahí.
 
-export type Production = {
+export type Production = KitColumns & {
   id: string;
   nombre: string;
   venue: string | null;
@@ -14,7 +17,20 @@ export type Production = {
   on_sale: boolean;
   concluded: boolean;
   created_at: string;
+  estado: string;
 };
+
+const PUBLIC_STATES = ["publicada", "archivada"];
+
+/** URL pública de una imagen del bucket `producciones` (o archivo propio de la web si empieza con "/"). */
+export function assetUrl(path: string): string {
+  if (path.startsWith("/")) return path;
+  return `${env.supabaseUrl}/storage/v1/object/public/producciones/${path.split("/").map(encodeURIComponent).join("/")}`;
+}
+
+export function getTheme(p: KitColumns): ProductionTheme | null {
+  return themeFromKit(p, assetUrl);
+}
 
 export type Performance = {
   id: string;
@@ -25,7 +41,8 @@ export type Performance = {
 
 export type ZonePrice = { nombre: string; price: number };
 
-const PRODUCTION_COLUMNS = "id, nombre, venue, price, on_sale, concluded, created_at";
+const PRODUCTION_COLUMNS =
+  "id, nombre, venue, price, on_sale, concluded, created_at, estado, frase, color_fondo, color_superficie, color_texto, color_acento, logo_path, ambiente_path";
 
 export type HomeData = {
   /** En cartelera primero; luego el archivo, de la más reciente a la más antigua. */
@@ -36,7 +53,7 @@ export type HomeData = {
 export async function getHomeData(): Promise<HomeData> {
   const supabase = await createClient();
   const [prods, perfs] = await Promise.all([
-    supabase.from("productions").select(PRODUCTION_COLUMNS),
+    supabase.from("productions").select(PRODUCTION_COLUMNS).in("estado", PUBLIC_STATES),
     supabase.from("performances").select("production_id, starts_at"),
   ]);
   if (prods.error) throw new Error(`No se pudieron cargar las producciones: ${prods.error.message}`);
@@ -52,6 +69,7 @@ export async function getProduction(id: string) {
       .from("productions")
       .select(PRODUCTION_COLUMNS)
       .eq("id", id)
+      .in("estado", PUBLIC_STATES)
       .maybeSingle(),
     supabase
       .from("performances")
@@ -109,7 +127,7 @@ export async function getPerformanceForSale(performanceId: string) {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("performances")
-    .select("id, starts_at, venue, on_sale, production_id, productions(id, nombre, venue, price, on_sale, concluded, created_at)")
+    .select(`id, starts_at, venue, on_sale, production_id, productions(${PRODUCTION_COLUMNS})`)
     .eq("id", performanceId)
     .maybeSingle();
   if (error || !data) return null;

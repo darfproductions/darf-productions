@@ -4,8 +4,8 @@ import { notFound } from "next/navigation";
 import { CastGrid, Ensemble, TeamGroups } from "@/components/Credits";
 import { Section } from "@/components/PageHeading";
 import { HeroBackdrop, ProductionLogo } from "@/components/PosterArt";
-import { YouTube, youtubeId } from "@/components/YouTube";
-import { PRODUCTION_CONTENT } from "@/content/producciones";
+import { YouTube } from "@/components/YouTube";
+import { getProductionContent, getRehearsalCount } from "@/lib/production-content";
 import {
   formatPerformanceDate,
   formatPrice,
@@ -16,8 +16,7 @@ import {
 } from "@/lib/productions";
 
 // Página de obra: una sola plantilla para todas las producciones.
-// Datos de venta (funciones, precios) desde la base; contenido artístico desde
-// src/content (transitorio hasta la Fase 2).
+// Todo sale de la base: venta (funciones, precios) y contenido (migración 0029).
 
 export async function generateMetadata({ params }: PageProps<"/producciones/[slug]">): Promise<Metadata> {
   const { slug } = await params;
@@ -30,39 +29,29 @@ export default async function ProductionPage({ params }: PageProps<"/produccione
   const data = await getProduction(slug);
   if (!data) notFound();
   const { production: p, performances, prices } = data;
-  const theme = getTheme(p.id);
-  const c = PRODUCTION_CONTENT[p.id];
-  const gallery = await getGallery(p.id);
-  const canciones = c?.actos.reduce((n, a) => n + a.canciones.length, 0) ?? 0;
-  const videos = (c?.videos ?? []).map((v) => ({ ...v, id: youtubeId(v.url) })).filter((v) => v.id);
+  const theme = getTheme(p);
+  const [c, gallery, ensayos] = await Promise.all([getProductionContent(p.id), getGallery(p.id), getRehearsalCount(p.id)]);
+  const canciones = c.actos.reduce((n, a) => n + a.canciones.length, 0);
+  const videos = c.videos;
   const equipos = [
-    { titulo: "Equipo creativo", items: c?.creativo ?? [] },
-    { titulo: "Equipo de producción", items: c?.produccion ?? [] },
-    { titulo: "Crew", items: c?.crew ?? [] },
-    { titulo: "Equipo técnico", items: c?.tecnico ?? [] },
+    { titulo: "Equipo creativo", items: c.creativo },
+    { titulo: "Equipo de producción", items: c.produccion },
+    { titulo: "Crew", items: c.crew },
+    { titulo: "Equipo técnico", items: c.tecnico },
   ];
   const hayEquipo = equipos.some((g) => g.items.length > 0);
-  const f = c?.ficha;
-  const ficha = [
-    { etiqueta: "Temporada", valor: f?.temporada },
-    { etiqueta: "Fechas", valor: f?.fechas },
-    { etiqueta: "Sede", valor: p.venue ?? undefined },
-    { etiqueta: "Duración", valor: f?.duracion },
-    { etiqueta: "Clasificación", valor: f?.clasificacion },
-    { etiqueta: "Basada en", valor: f?.basadaEn },
-    ...(f?.extras ?? []),
-  ].filter((x): x is { etiqueta: string; valor: string } => !!x.valor);
+  const ficha = c.ficha;
 
   // Orden fijo de la plantilla (decisión de Johann).
   const sections = [
-    { id: "sinopsis", label: "Sinopsis", show: !!c?.sinopsis.length },
+    { id: "sinopsis", label: "Sinopsis", show: c.sinopsis.length > 0 },
     { id: "funciones", label: "Funciones", show: !p.concluded || performances.length > 0 },
     { id: "canciones", label: "Canciones", show: canciones > 0 },
-    { id: "elenco", label: "Elenco", show: !!(c?.reparto.length || c?.ensamble.length) },
+    { id: "elenco", label: "Elenco", show: c.reparto.length + c.ensamble.length > 0 },
     { id: "equipos", label: "Equipos", show: hayEquipo },
     { id: "galeria", label: "Galería", show: gallery.length > 0 },
     { id: "videos", label: "Videos", show: videos.length > 0 },
-    { id: "agradecimientos", label: "Agradecimientos", show: !!c?.agradecimientos.length },
+    { id: "agradecimientos", label: "Agradecimientos", show: c.agradecimientos.length > 0 },
   ].filter((s) => s.show);
   const show = (id: string) => sections.some((s) => s.id === id);
 
@@ -86,7 +75,7 @@ export default async function ProductionPage({ params }: PageProps<"/produccione
             {!p.concluded && performances.some((f) => f.on_sale) && (
               <a href="#funciones" className="boton-compra rounded-full px-7 py-4 text-sm font-bold uppercase tracking-[0.1em]">Comprar boletos</a>
             )}
-            {c?.ensayos.length ? (
+            {ensayos > 0 ? (
               <Link href={`/fan-zone/${p.id}`} className="rounded-full border border-obra-acento bg-obra-fondo/60 px-6 py-4 text-sm font-bold uppercase tracking-[0.1em] backdrop-blur">Fan Zone</Link>
             ) : null}
           </div>
@@ -105,7 +94,7 @@ export default async function ProductionPage({ params }: PageProps<"/produccione
 
       <div className="mx-auto grid max-w-[1440px] gap-12 px-5 pt-10 md:px-16 lg:grid-cols-12">
         <div className="flex flex-col gap-14 lg:col-span-8">
-          {show("sinopsis") && c && (
+          {show("sinopsis") && (
             <Section id="sinopsis" title="Sinopsis">
               {c.sinopsis.map((t, i) => <p key={i} className="max-w-3xl text-lg leading-relaxed opacity-90">{t}</p>)}
             </Section>
@@ -144,7 +133,7 @@ export default async function ProductionPage({ params }: PageProps<"/produccione
             </Section>
           )}
 
-          {show("canciones") && c && (
+          {show("canciones") && (
             <Section id="canciones" title="Canciones">
               <div className="grid gap-8 sm:grid-cols-2">
                 {c.actos.map((a, i) => {
@@ -168,10 +157,10 @@ export default async function ProductionPage({ params }: PageProps<"/produccione
             </Section>
           )}
 
-          {show("elenco") && c && (
+          {show("elenco") && (
             <Section id="elenco" title="Elenco">
               {c.reparto.length > 0 && <CastGrid reparto={c.reparto} />}
-              {c.ensamble.length > 0 && <Ensemble names={c.ensamble} />}
+              {c.ensamble.length > 0 && <Ensemble items={c.ensamble} />}
             </Section>
           )}
 
@@ -197,18 +186,18 @@ export default async function ProductionPage({ params }: PageProps<"/produccione
           {show("videos") && (
             <Section id="videos" title="Videos">
               <div className="grid gap-6 sm:grid-cols-2">
-                {videos.map((v) => <YouTube key={v.id} id={v.id!} title={v.titulo} />)}
+                {videos.map((v) => <YouTube key={v.youtube} id={v.youtube} title={v.titulo} />)}
               </div>
             </Section>
           )}
 
-          {show("agradecimientos") && c && (
+          {show("agradecimientos") && (
             <Section id="agradecimientos" title="Agradecimientos">
               <ul className="flex flex-col gap-2 opacity-90">{c.agradecimientos.map((a, i) => <li key={i}>{a}</li>)}</ul>
             </Section>
           )}
 
-          {!c?.sinopsis.length && !canciones && (
+          {!c.sinopsis.length && !canciones && (
             <p className="rounded-xl bg-obra-superficie p-6 opacity-85">
               La sinopsis, las canciones y el elenco de esta producción se publicarán pronto.
             </p>

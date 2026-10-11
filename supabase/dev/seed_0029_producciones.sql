@@ -1,4 +1,4 @@
--- DARF 2.0 — SOLO PARA "DARF 2.0 DEV". Generado por gen_seed_0029.mjs; no editar a mano.
+-- DARF 2.0 — SOLO PARA "DARF 2.0 DEV". Generado una vez (2026-10-11) desde el contenido transitorio de la web 2.0, ya retirado (ver historial de git: gen_seed_0029.mjs).
 -- Carga el contenido de las 3 obras en las tablas de la migración 0029.
 begin;
 do $$ begin

@@ -1,17 +1,10 @@
-import type { StaticImageData } from "next/image";
 import { contrastRatio } from "@/lib/kit-rules";
-import showmanLogo from "@/assets/producciones/showman-title.webp";
-import showmanAmbiente from "@/assets/producciones/showman-ambiente.jpg";
-import mmLogo from "@/assets/producciones/mm-title.webp";
-import mmAmbiente from "@/assets/producciones/mm-ambiente-claro.jpg";
-import hsmLogo from "@/assets/producciones/hsm-title.webp";
-import hsmAmbiente from "@/assets/producciones/hsm-ambiente.jpg";
 
 // ─── Kit de producción (plantilla obligatoria) ───────────────────────────
 // Toda producción se presenta con las MISMAS piezas, siempre acomodadas igual
-// por la plantilla. Ver docs/DARF-2.0-PRODUCCIONES.md. En la Fase 2 el kit se
-// guarda en la base (con estas mismas reglas como restricciones) y se edita
-// desde el panel; por ahora vive aquí para las tres producciones existentes.
+// por la plantilla. Ver docs/DARF-2.0-PRODUCCIONES.md. El kit vive en la tabla
+// productions (migración 0029) y la base no deja publicar una obra sin él.
+// Funciones puras (sin base ni servidor) para poder probarlas: kits.test.ts.
 
 export type ProductionTheme = {
   /** Fondo de la página de la obra: lo elige cada obra (claro u oscuro). */
@@ -19,55 +12,46 @@ export type ProductionTheme = {
   superficie: string;
   texto: string;
   acento: string;
-  /** Logo del título, transparente, en la versión que se lee sobre `fondo`. Obligatorio. */
-  logo: StaticImageData;
-  /** Imagen de ambiente horizontal 16:9, sin texto. Obligatoria. */
-  ambiente: StaticImageData;
+  /** URL del logo del título (transparente, legible sobre `fondo`). */
+  logo: string;
+  /** URL de la imagen de ambiente horizontal 16:9, sin texto. */
+  ambiente: string;
   tagline: string;
 };
 
-export const THEMES: Record<string, ProductionTheme> = {
-  showman: {
-    fondo: "#08101f",
-    superficie: "#0f1c36",
-    texto: "#f7eedb",
-    acento: "#e8be45",
-    logo: showmanLogo,
-    ambiente: showmanAmbiente,
-    tagline: "Bienvenidos al espectáculo más grande.",
-  },
-  mm: {
-    // Fondo blanco con flores, como su identidad original (decisión de Johann, 2026-10-11).
-    fondo: "#f8f7f5",
-    superficie: "#ffffff",
-    texto: "#13235c",
-    acento: "#c2255c",
-    logo: mmLogo,
-    ambiente: mmAmbiente,
-    tagline: "Una boda, tres posibles padres y la música de ABBA.",
-  },
-  hsm: {
-    fondo: "#1a0607",
-    superficie: "#2a0c0e",
-    texto: "#fcebd0",
-    acento: "#f2b544",
-    logo: hsmLogo,
-    ambiente: hsmAmbiente,
-    tagline: "East High, un escenario y el valor de salirse del guion.",
-  },
+/** Columnas del kit en productions. */
+export type KitColumns = {
+  color_fondo: string | null;
+  color_superficie: string | null;
+  color_texto: string | null;
+  color_acento: string | null;
+  logo_path: string | null;
+  ambiente_path: string | null;
+  frase: string | null;
 };
 
-export function getTheme(id: string): ProductionTheme | null {
-  return THEMES[id] ?? null;
+/** Arma el tema de una obra; null si su kit está incompleto. */
+export function themeFromKit(k: KitColumns, assetUrl: (path: string) => string): ProductionTheme | null {
+  if (!k.color_fondo || !k.color_superficie || !k.color_texto || !k.color_acento || !k.logo_path || !k.ambiente_path) {
+    return null;
+  }
+  return {
+    fondo: k.color_fondo,
+    superficie: k.color_superficie,
+    texto: k.color_texto,
+    acento: k.color_acento,
+    logo: assetUrl(k.logo_path),
+    ambiente: assetUrl(k.ambiente_path),
+    tagline: k.frase ?? "",
+  };
 }
 
-/** Reglas de legibilidad del kit (las mismas que validará el panel). */
-export function themeProblems(t: ProductionTheme): string[] {
+/** Reglas de legibilidad del kit (las mismas que production_kit_problems en la base). */
+export function themeProblems(t: Pick<ProductionTheme, "fondo" | "superficie" | "texto" | "acento">): string[] {
   const out: string[] = [];
   if (contrastRatio(t.texto, t.fondo) < 4.5) out.push("El texto no se lee sobre el fondo (mínimo 4.5:1).");
   if (contrastRatio(t.texto, t.superficie) < 4.5) out.push("El texto no se lee sobre la superficie (mínimo 4.5:1).");
   if (contrastRatio(t.acento, t.fondo) < 3) out.push("El acento no se distingue del fondo (mínimo 3:1).");
-  if (t.ambiente.width / t.ambiente.height < 1.6) out.push("La imagen de ambiente debe ser horizontal (16:9).");
   return out;
 }
 
@@ -88,4 +72,3 @@ export function themeStyle(theme: ProductionTheme | null): React.CSSProperties {
     "--obra-acento": theme.acento,
   } as React.CSSProperties;
 }
-

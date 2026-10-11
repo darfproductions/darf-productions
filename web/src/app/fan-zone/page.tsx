@@ -2,15 +2,15 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHeading } from "@/components/PageHeading";
 import { ArtFill } from "@/components/PosterArt";
-import { PRODUCTION_CONTENT } from "@/content/producciones";
 import { requireSession } from "@/lib/auth";
+import { getRehearsalCounts } from "@/lib/production-content";
 import { getHomeData, getTheme } from "@/lib/productions";
 
 export const metadata: Metadata = { title: "Fan Zone" };
 
 export default async function FanZonePage() {
   const session = await requireSession("/fan-zone");
-  const { productions } = await getHomeData();
+  const [{ productions }, counts] = await Promise.all([getHomeData(), getRehearsalCounts()]);
   const nombre = session.profile?.nombre || session.email;
 
   return (
@@ -20,8 +20,8 @@ export default async function FanZonePage() {
       </PageHeading>
       <ul className="mx-auto grid max-w-[1440px] gap-5 px-5 md:grid-cols-3 md:px-16">
         {productions.map((p) => {
-          const t = getTheme(p.id);
-          const n = PRODUCTION_CONTENT[p.id]?.ensayos.length ?? 0;
+          const t = getTheme(p);
+          const n = counts.get(p.id) ?? 0;
           return (
             <li key={p.id}>
               <Link href={`/fan-zone/${p.id}`} className="block overflow-hidden rounded-2xl bg-telon">

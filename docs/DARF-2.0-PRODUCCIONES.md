@@ -1,8 +1,8 @@
 # DARF 2.0 — Plantilla de producción y modelo de datos (Fase 2)
 
-Estado: **regla del kit aplicada en `web/` (2026-10-10); modelo de datos
-PROPUESTO, pendiente de aprobación de Johann.** Nada de esto existe aún en la
-base de datos.
+Estado: **modelo de datos CREADO en Supabase DEV (2026-10-11, migraciones
+0029 y 0030) y la web 2.0 ya lee todo de la base.** Aprobado por Johann. Nada
+de esto existe en producción.
 
 ## 1. Por qué
 
@@ -130,9 +130,23 @@ referencian. `on_sale` y `concluded` siguen existiendo y funcionando igual.
 por producción (ej. "admin solo de Showman") llegan en la Fase 3 sobre estas
 mismas tablas.
 
-**Carga inicial:** el contenido de `web/src/content/producciones.ts` (extraído
-de la 1.0) y los kits de `themes.ts` se cargan con un script a DEV; después la
-web lee de la base y esos archivos transitorios se eliminan.
+**Carga inicial (hecha en DEV):** `supabase/dev/seed_0029_producciones.sql`,
+generado desde el contenido transitorio de la web (extraído de la 1.0). Esos
+archivos transitorios ya se eliminaron; la web lee de la base.
+
+**Imágenes del kit, transitorio:** el logo y el ambiente de las 3 obras están
+en `web/public/producciones/<obra>/` y la base guarda esa ruta (empieza con
+`/`). Las imágenes nuevas (y los retratos) se subirán al bucket `producciones`
+desde el panel (Fase 3); la web acepta ambas. La proporción 16:9 del ambiente
+se validará al subirla en el panel (la base no puede medir imágenes).
+
+**Para revisar con DARF (datos heredados de la 1.0):** algunos nombres
+aparecen escritos distinto entre obras y hoy cuentan como personas distintas:
+"Ana Paola Gonzalez" / "Ana Paola González" y "Emmanuel Nicolas Pinto" /
+"Emmanuel Pinto". Se unifican en el panel cuando confirmen.
+
+**0030:** `production_rehearsal_count(obra)` da solo el número de ensayos
+(para mostrar el botón Fan Zone sin sesión); los videos siguen solo con cuenta.
 
 ## 5. Cómo se comprueba
 

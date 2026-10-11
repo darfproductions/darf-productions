@@ -9,7 +9,7 @@ export default async function Home() {
   const { productions, featured } = await getHomeData();
   const current = featured?.production ?? null;
   const enCartelera = featured?.mode === "cartelera";
-  const currentTheme = current ? getTheme(current.id) : null;
+  const currentTheme = current ? getTheme(current) : null;
 
   return (
     <main className="relative overflow-hidden pb-24">

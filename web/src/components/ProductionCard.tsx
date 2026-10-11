@@ -3,7 +3,7 @@ import { ArtFill } from "@/components/PosterArt";
 import { getTheme, type Production } from "@/lib/productions";
 
 export function ProductionCard({ p }: { p: Production }) {
-  const t = getTheme(p.id);
+  const t = getTheme(p);
   return (
     <Link href={`/producciones/${p.id}`} className="block overflow-hidden rounded-2xl bg-telon transition-transform hover:-translate-y-1">
       <div className="relative aspect-[16/9] overflow-hidden" style={{ background: t?.fondo }}>

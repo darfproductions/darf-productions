@@ -37,7 +37,7 @@ export default async function ComprarPage({ params }: PageProps<"/comprar/[funci
   const loadError = seatsRes?.error || takenRes?.error || pricesRes?.error;
 
   return (
-    <main style={themeStyle(getTheme(p.id))} className="pb-10">
+    <main style={themeStyle(getTheme(p))} className="pb-10">
       <PageHeading eyebrow={`Comprar boletos · ${p.nombre}`} title="Elige tus asientos">
         <span className="capitalize">{formatPerformanceDate(f.starts_at)}</span> · {f.venue ?? p.venue}
       </PageHeading>

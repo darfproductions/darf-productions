@@ -3,8 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PageHeading } from "@/components/PageHeading";
 import { YouTube } from "@/components/YouTube";
-import { PRODUCTION_CONTENT } from "@/content/producciones";
 import { requireSession } from "@/lib/auth";
+import { getRehearsals } from "@/lib/production-content";
 import { getProduction, getTheme, themeStyle } from "@/lib/productions";
 
 export const metadata: Metadata = { title: "Fan Zone" };
@@ -15,11 +15,10 @@ export default async function FanZoneProductionPage({ params }: PageProps<"/fan-
   const data = await getProduction(slug);
   if (!data) notFound();
   const p = data.production;
-  const c = PRODUCTION_CONTENT[p.id];
-  const ensayos = c?.ensayos ?? [];
+  const ensayos = await getRehearsals(p.id);
 
   return (
-    <main style={themeStyle(getTheme(p.id))} className="pb-10">
+    <main style={themeStyle(getTheme(p))} className="pb-10">
       <PageHeading eyebrow="Fan Zone" title={p.nombre}>
         Videos de ensayo y material exclusivo de la producción.
       </PageHeading>
