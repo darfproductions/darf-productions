@@ -39,7 +39,7 @@ export type Tab = {
 // Pestañas del espacio de trabajo de una obra (docs/DARF-2.0-FASE-3.md §4).
 export const PRODUCTION_TABS: Tab[] = [
   { id: "resumen", label: "Resumen", path: "", perms: [], etapa: null },
-  { id: "pagina", label: "Página pública", path: "pagina", perms: ["obra.editar", "obra.publicar"], etapa: "3B" },
+  { id: "pagina", label: "Página pública", path: "pagina", perms: ["obra.editar", "obra.publicar"], etapa: null },
   { id: "audiciones", label: "Audiciones", path: "audiciones", perms: ["audiciones.gestionar", "audiciones.registro", "audiciones.evaluar"], etapa: "3D" },
   { id: "elenco", label: "Elenco y equipos", path: "elenco", perms: ["elenco.gestionar", "expedientes.ver", "mensualidades.gestionar"], etapa: "3B" },
   { id: "ensayos", label: "Ensayos", path: "ensayos", perms: ["ensayos.gestionar"], etapa: "3E" },

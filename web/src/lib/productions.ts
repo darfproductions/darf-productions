@@ -62,14 +62,14 @@ export async function getHomeData(): Promise<HomeData> {
   return { productions, featured: pickFeatured(productions) };
 }
 
-export async function getProduction(id: string) {
+export async function getProduction(id: string, opts: { includeDrafts?: boolean } = {}) {
   const supabase = await createClient();
   const [prod, perfs] = await Promise.all([
     supabase
       .from("productions")
       .select(PRODUCTION_COLUMNS)
       .eq("id", id)
-      .in("estado", PUBLIC_STATES)
+      .in("estado", opts.includeDrafts ? ["borrador", "publicada", "archivada", "cancelada", "oculta"] : PUBLIC_STATES)
       .maybeSingle(),
     supabase
       .from("performances")
