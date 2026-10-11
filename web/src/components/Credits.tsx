@@ -6,6 +6,7 @@ import type { Credit } from "@/content/producciones";
 // - Ensamble: lista compacta con foto pequeña.
 // - Equipos: grupos plegables con foto pequeña, nombre y puesto.
 // Funciona sin JavaScript (details/summary). Sin foto: iniciales en el color de la obra.
+// Las fotos son de cada obra (misma sesión, se ven uniformes), no de la persona.
 
 function initials(name: string) {
   return name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase();

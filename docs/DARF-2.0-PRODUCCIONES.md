@@ -69,9 +69,16 @@ creativo, Equipo de producción, Crew, Equipo técnico.
   desplegar.
 - Equipos: un grupo plegable por tipo (solo el primero abierto), con foto
   pequeña, nombre y puesto.
-- Sin foto: iniciales sobre el color de la obra. Las fotos se guardarán en el
-  retrato profesional de cada persona (tabla `people`, Fase 2), así una persona
-  que participa en varias obras se sube una sola vez.
+- Sin foto: iniciales sobre el color de la obra.
+- **Las fotos son de cada obra (decisión de Johann, 2026-10-11):** cada
+  producción tiene sus propios retratos, porque normalmente se toman en una
+  sesión para ESA obra (misma luz, fondo y vestuario) y así se ven uniformes.
+  Si una persona participa en dos obras, tiene una foto distinta en cada una.
+  La foto pertenece al crédito (`production_credits.foto_path`), no a la persona.
+
+**Especificación de los retratos:** vertical 3:4, mínimo 900×1200 px, JPG o
+WebP, rostro centrado en el tercio superior, misma sesión para toda la obra.
+Se suben por obra, nombrados con el nombre completo de la persona.
 
 Lo que **no** cambia por obra: estructura, medidas, orden, tipografía
 (Montserrat), menú, modo oscuro y el botón de compra con la luz DARF.
@@ -98,17 +105,20 @@ referencian. `on_sale` y `concluded` siguen existiendo y funcionando igual.
 **Tablas nuevas:**
 - `production_acts` (acto, orden) y `production_songs` (título, orden): la
   numeración se calcula sola por el orden.
-- `people` (nombre público, retrato profesional, `profile_id` opcional): base
-  del **modelo central de personas** (visión §12), para que una persona sea a
-  la vez elenco, equipo, talento o usuaria sin duplicarse.
+- `people` (nombre público, `profile_id` opcional; **sin foto**): solo la
+  identidad, base del **modelo central de personas** (visión §12), para que una
+  persona sea a la vez elenco, equipo, talento o usuaria sin duplicarse y se
+  pueda ver en qué obras ha participado.
 - `production_credits` (persona, tipo: reparto/ensamble/creativo/producción/
-  crew/técnico, personaje o puesto, orden).
+  crew/técnico, personaje o puesto, orden, **`foto_path`**): el retrato de esa
+  persona para ESA obra.
 - `production_media` (título, YouTube, tipo: video/ensayo, visibilidad:
   público/fans, orden).
 - `production_facts` (ficha técnica: etiqueta, valor, orden) y
   `production_thanks` (agradecimientos, orden).
-- Storage: bucket `producciones` para logo y ambiente (lectura
-  pública, escritura admin). La galería sigue en `gallery_photos`.
+- Storage: bucket `producciones` (lectura pública, escritura admin), una
+  carpeta por obra: `<obra>/kit/` (logo y ambiente) y `<obra>/creditos/`
+  (retratos). La galería sigue en `gallery_photos`.
 
 **Permisos (RLS):** lectura pública solo de producciones `publicada` o
 `archivada` (y sus tablas hijas); escritura solo admin por ahora. Los permisos
