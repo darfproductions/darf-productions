@@ -89,11 +89,12 @@ do $$ begin
   reset role;
 end $$;
 
--- T4: staff global conserva lo de la 1.0 y nada más
+-- T4: staff global conserva lo de la 1.0 (ver ventas, puerta) y nada más
 do $$ begin
   perform pg_temp.as_user('00000000-0000-0000-0000-0000000000f1');
-  if not (has_perm('hsm', 'ventas.operar') and has_perm('showman', 'puerta.validar')) then raise exception 'FALLO T4: staff perdió 1.0'; end if;
-  if has_perm('mm', 'obra.editar') or has_perm('mm', 'permisos.gestionar') then raise exception 'FALLO T4: staff ganó de más'; end if;
+  -- Desde 0034 (decisión de Johann): staff = lo mismo que hoy en la 1.0 (ver ventas y puerta), sin operar ventas.
+  if not (has_perm('hsm', 'ventas.ver') and has_perm('showman', 'puerta.validar')) then raise exception 'FALLO T4: staff perdió 1.0'; end if;
+  if has_perm('mm', 'obra.editar') or has_perm('mm', 'permisos.gestionar') or has_perm('mm', 'ventas.operar') then raise exception 'FALLO T4: staff ganó de más'; end if;
   reset role;
 end $$;
 
