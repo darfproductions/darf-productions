@@ -1,6 +1,6 @@
 # DARF 2.0 — Fase 3: el panel de producción (análisis y plan)
 
-Estado: **PROPUESTA (2026-10-11), pendiente de las decisiones de Johann (sección 8).** Nada de esto está construido todavía.
+Estado: **APROBADO (2026-10-11).** Decisiones de Johann en la sección 9. En construcción: etapa 3A.
 
 ## Contexto
 
@@ -265,6 +265,20 @@ decisión es tuya.
    recomiendo, porque luego la misma cuenta sirve para el portal del elenco.
 
 ---
+
+## 9. Decisiones de Johann (2026-10-11)
+
+1. **Orden:** 3A → 3B → 3C → 3D → 3E → 3F.
+2. **Audiciones sin costo** de inscripción.
+3. **Evaluación:** canto, baile, actuación y actitud (escala 1–5), más notas
+   personales del juez, privadas.
+4. **El elenco paga mensualidad.** El expediente (3E) lleva el monto, los meses
+   pagados o pendientes y quién registró cada pago. Solo lo ven la productora y
+   el Director (permiso `mensualidades.gestionar`).
+5. **Roles:** además de los de la sección 3 existen **Staff** y **Maquillaje**,
+   y el Director puede crear **roles personalizados** (por ejemplo "Vestuario")
+   eligiendo sus permisos.
+6. **Hace falta cuenta** para inscribirse a una audición.
 
 ## Cómo se comprueba cada etapa
 
