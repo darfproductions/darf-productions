@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Card } from "@/components/panel/ui";
 import { formatPerformanceDate } from "@/lib/productions";
 import { getPanelProduction, listMembers, performanceSummary } from "@/lib/panel-data";
-import { can } from "@/lib/panel-nav";
+import { can, groupMembers } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
 import { kitMissing } from "@/lib/themes";
 
@@ -49,10 +49,10 @@ export default async function ProductionSummary({ params }: PageProps<"/panel/pr
           <p className="mt-2 text-texto-2">Nadie tiene un rol asignado en esta obra todavía (el Director siempre tiene acceso).</p>
         ) : (
           <ul className="mt-3 grid gap-2 sm:grid-cols-2">
-            {miembros.map((m) => (
-              <li key={m.id} className="flex justify-between gap-3 rounded-lg bg-sala px-3 py-2 text-sm">
+            {groupMembers(miembros).map((m) => (
+              <li key={m.user_id} className="flex flex-col gap-0.5 rounded-lg bg-sala px-3 py-2 text-sm">
                 <span className="truncate font-semibold">{m.nombre || m.email}</span>
-                <span className="shrink-0 text-texto-3">{m.role_nombre}</span>
+                <span className="text-texto-3">{m.roles.map((r) => r.role_nombre).join(" · ")}</span>
               </li>
             ))}
           </ul>

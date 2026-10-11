@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { can, globalSections, hasAnyAccess, myProductionIds, productionTabs, roleIdFromName, type PanelAccessData } from "./panel-nav";
+import { can, globalSections, groupMembers, hasAnyAccess, myProductionIds, productionTabs, roleDiff, roleIdFromName, type PanelAccessData } from "./panel-nav";
 
 const director: PanelAccessData = { isDirector: true, byProduction: {} };
 const fan: PanelAccessData = { isDirector: false, byProduction: {} };
@@ -54,5 +54,22 @@ describe("id de rol personalizado", () => {
   it("quita acentos y espacios", () => {
     expect(roleIdFromName("Vestuario y Utilería")).toBe("vestuario_y_utileria");
     expect(roleIdFromName("  Coreografía!! ")).toBe("coreografia");
+  });
+});
+
+describe("varios roles por persona", () => {
+  const rows = [
+    { id: "1", user_id: "u1", nombre: "Ana", email: "a@x.mx", role_id: "registro", role_nombre: "Mesa de registro" },
+    { id: "2", user_id: "u2", nombre: "Beto", email: "b@x.mx", role_id: "taquilla", role_nombre: "Taquilla" },
+    { id: "3", user_id: "u1", nombre: "Ana", email: "a@x.mx", role_id: "puerta", role_nombre: "Puerta" },
+  ];
+  it("agrupa los roles de cada persona", () => {
+    const g = groupMembers(rows);
+    expect(g).toHaveLength(2);
+    expect(g[0].roles.map((r) => r.role_id)).toEqual(["registro", "puerta"]);
+  });
+  it("calcula qué agregar y qué quitar", () => {
+    expect(roleDiff(["registro", "puerta"], ["puerta", "staff"])).toEqual({ agregar: ["staff"], quitar: ["registro"] });
+    expect(roleDiff(["staff"], ["staff"])).toEqual({ agregar: [], quitar: [] });
   });
 });

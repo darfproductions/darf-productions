@@ -86,3 +86,24 @@ export function roleIdFromName(nombre: string): string {
     .replace(/^_+|_+$/g, "")
     .slice(0, 40);
 }
+
+export type MemberRow = { id: string; user_id: string; nombre: string | null; email: string; role_id: string; role_nombre: string };
+export type MemberGroup = { user_id: string; nombre: string | null; email: string; roles: { rowId: string; role_id: string; role_nombre: string }[] };
+
+/** Una tarjeta por persona con todos sus roles en la obra (la base guarda una fila por rol). */
+export function groupMembers(rows: MemberRow[]): MemberGroup[] {
+  const byUser = new Map<string, MemberGroup>();
+  for (const r of rows) {
+    const g = byUser.get(r.user_id) ?? { user_id: r.user_id, nombre: r.nombre, email: r.email, roles: [] };
+    g.roles.push({ rowId: r.id, role_id: r.role_id, role_nombre: r.role_nombre });
+    byUser.set(r.user_id, g);
+  }
+  return [...byUser.values()];
+}
+
+/** Qué roles agregar y cuáles quitar para pasar de los actuales a los deseados. */
+export function roleDiff(actuales: string[], deseados: string[]): { agregar: string[]; quitar: string[] } {
+  const a = new Set(actuales);
+  const d = new Set(deseados);
+  return { agregar: [...d].filter((r) => !a.has(r)), quitar: [...a].filter((r) => !d.has(r)) };
+}
