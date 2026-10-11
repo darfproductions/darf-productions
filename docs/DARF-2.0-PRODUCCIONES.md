@@ -136,8 +136,9 @@ archivos transitorios ya se eliminaron; la web lee de la base.
 
 **Imágenes del kit, transitorio:** el logo y el ambiente de las 3 obras están
 en `web/public/producciones/<obra>/` y la base guarda esa ruta (empieza con
-`/`). Las imágenes nuevas (y los retratos) se subirán al bucket `producciones`
-desde el panel (Fase 3); la web acepta ambas. La proporción 16:9 del ambiente
+`/`). Las imágenes nuevas (y los retratos) se suben al bucket `producciones`
+desde el panel (etapa 3B, con validación de tamaño, proporción y
+transparencia del logo); la web acepta ambas. La proporción 16:9 del ambiente
 se validará al subirla en el panel (la base no puede medir imágenes).
 
 **Para revisar con DARF (datos heredados de la 1.0):** algunos nombres

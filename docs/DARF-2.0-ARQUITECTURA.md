@@ -219,3 +219,23 @@ es `main`; opcional: cambiarla a `darf-2.0` en Vercel → Settings → Environme
   `src/lib/panel-nav.ts` y `src/lib/audit.ts` con pruebas.
 - Pendiente para 3B: que un integrante con rol vea obras en **borrador** (hoy
   la lectura de `productions` solo deja ver borradores a staff/Director).
+
+## 13. Fase 3 · etapa 3B (2026-10-11)
+
+- Migración **0032** (DEV): cada rol edita solo lo suyo en su obra
+  (contenido, elenco, Fan Zone, publicar, venta) con revisión por columnas;
+  el equipo ve sus obras en borrador; archivos por carpeta de obra;
+  `panel_duplicate_production` (solo Director). Pruebas T1–T8 en local y DEV.
+  Resuelve el pendiente de 3A (borradores visibles para el equipo).
+- Migración **0033**: guardar listas "todo o nada" (canciones, ficha extra,
+  videos/ensayos, agradecimientos). El conector se queda esperando ante un
+  `DELETE`, así que en DEV se aplica a mano con `supabase/dev/apply_0033_dev.sql`
+  (con guardia DEV). Pruebas T1–T3 en local.
+- Panel: Nueva producción / Duplicar; por obra, **Página pública** (estado,
+  datos y ficha, kit con subida validada de logo y ambiente, colores con
+  revisión en vivo, canciones por acto, ficha extra, videos, agradecimientos),
+  **Elenco y equipos** (alta de personas sin duplicar, papel, orden, foto por
+  obra) y **Fan Zone** (ensayos y galería). `/vista-previa/[id]` usa la misma
+  plantilla pública (`src/components/ProductionView.tsx`).
+- Las imágenes viejas no se borran del Storage al reemplazarlas (limpieza
+  pendiente, sin riesgo).

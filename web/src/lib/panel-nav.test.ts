@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { can, globalSections, groupMembers, hasAnyAccess, myProductionIds, productionTabs, roleDiff, roleIdFromName, type PanelAccessData } from "./panel-nav";
+import { can, globalSections, groupMembers, hasAnyAccess, myProductionIds, productionIdFrom, productionTabs, roleDiff, roleIdFromName, type PanelAccessData } from "./panel-nav";
 
 const director: PanelAccessData = { isDirector: true, byProduction: {} };
 const fan: PanelAccessData = { isDirector: false, byProduction: {} };
@@ -71,5 +71,13 @@ describe("varios roles por persona", () => {
   it("calcula qué agregar y qué quitar", () => {
     expect(roleDiff(["registro", "puerta"], ["puerta", "staff"])).toEqual({ agregar: ["staff"], quitar: ["registro"] });
     expect(roleDiff(["staff"], ["staff"])).toEqual({ agregar: [], quitar: [] });
+  });
+});
+
+describe("identificador de obra", () => {
+  it("arma una dirección web válida", () => {
+    expect(productionIdFrom("Teen Beach Movie", "2027")).toBe("teen-beach-movie-2027");
+    expect(productionIdFrom("¡Mamma Mía!")).toBe("mamma-mia");
+    expect(productionIdFrom("x".repeat(60))).toHaveLength(40);
   });
 });

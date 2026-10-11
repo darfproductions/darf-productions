@@ -41,14 +41,14 @@ export const PRODUCTION_TABS: Tab[] = [
   { id: "resumen", label: "Resumen", path: "", perms: [], etapa: null },
   { id: "pagina", label: "Página pública", path: "pagina", perms: ["obra.editar", "obra.publicar"], etapa: null },
   { id: "audiciones", label: "Audiciones", path: "audiciones", perms: ["audiciones.gestionar", "audiciones.registro", "audiciones.evaluar"], etapa: "3D" },
-  { id: "elenco", label: "Elenco y equipos", path: "elenco", perms: ["elenco.gestionar", "expedientes.ver", "mensualidades.gestionar"], etapa: "3B" },
+  { id: "elenco", label: "Elenco y equipos", path: "elenco", perms: ["elenco.gestionar", "obra.editar"], etapa: null },
   { id: "ensayos", label: "Ensayos", path: "ensayos", perms: ["ensayos.gestionar"], etapa: "3E" },
   { id: "materiales", label: "Materiales", path: "materiales", perms: ["materiales.gestionar", "materiales.ver"], etapa: "3E" },
   { id: "comunicados", label: "Comunicados", path: "comunicados", perms: ["comunicados.enviar"], etapa: "3E" },
   { id: "boletos", label: "Funciones y boletos", path: "boletos", perms: ["ventas.ver", "ventas.operar", "descuentos.gestionar", "reportes.ver"], etapa: "3C" },
   { id: "puerta", label: "Puerta", path: "puerta", perms: ["puerta.validar"], etapa: "3C" },
   { id: "programa", label: "Programa digital", path: "programa", perms: ["programa.editar"], etapa: "3F" },
-  { id: "fanzone", label: "Fan Zone", path: "fanzone", perms: ["fanzone.editar"], etapa: "3B" },
+  { id: "fanzone", label: "Fan Zone", path: "fanzone", perms: ["fanzone.editar"], etapa: null },
   { id: "permisos", label: "Permisos", path: "permisos", perms: ["permisos.gestionar"], etapa: null },
 ];
 
@@ -106,4 +106,16 @@ export function roleDiff(actuales: string[], deseados: string[]): { agregar: str
   const a = new Set(actuales);
   const d = new Set(deseados);
   return { agregar: [...d].filter((r) => !a.has(r)), quitar: [...a].filter((r) => !d.has(r)) };
+}
+
+/** Identificador de una obra para su dirección web ("Teen Beach Movie", "2027" → "teen-beach-movie-2027"). */
+export function productionIdFrom(nombre: string, temporada = ""): string {
+  return `${nombre} ${temporada}`
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 40)
+    .replace(/-+$/g, "");
 }

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Card, EstadoChip, PanelTitle, Soon } from "@/components/panel/ui";
+import { Card, EstadoChip, PanelTitle } from "@/components/panel/ui";
 import { listPanelProductions } from "@/lib/panel-data";
 import { myProductionIds } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
@@ -18,11 +18,9 @@ export default async function PanelProductions() {
         Cada obra tiene su espacio de trabajo: contenido, audiciones, elenco, funciones y permisos.
       </PanelTitle>
       {access.isDirector && (
-        <div className="flex flex-wrap items-center gap-3">
-          <button disabled className="rounded-full bg-texto px-5 py-2.5 text-sm font-bold text-sala opacity-50">+ Nueva producción</button>
-          <button disabled className="rounded-full border border-white/25 px-4 py-2 text-sm font-bold opacity-50">Duplicar una obra</button>
-          <Soon etapa="3B" />
-        </div>
+        <Link href="/panel/producciones/nueva" className="self-start rounded-full bg-texto px-5 py-2.5 text-sm font-bold text-sala">
+          + Nueva producción o duplicar
+        </Link>
       )}
       <Card className="p-0 md:p-0">
         <ul className="divide-y divide-white/10">
