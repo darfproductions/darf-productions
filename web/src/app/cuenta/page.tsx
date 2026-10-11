@@ -56,7 +56,10 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
   }
 
   // Mis audiciones (0036): solo las propias; QR mientras no haya llegado.
-  const [audiciones, invitaciones, ofertas] = await Promise.all([listMyApplications(session.userId), listMyInvites(), listMyOffers()]);
+  const [audiciones, invitaciones, ofertas, misObras] = await Promise.all([
+    listMyApplications(session.userId), listMyInvites(), listMyOffers(), supabase.rpc("my_productions"),
+  ]);
+  const producciones = (misObras.data ?? []) as { production_id: string; nombre: string; papeles: string[] }[];
   const ofertasPendientes = ofertas.filter((o) => o.estado === "enviada");
   const pendientes = invitaciones.filter((i) => !i.inscrito);
   const audQr = new Map<string, string>();
@@ -132,6 +135,23 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
             <button className="rounded-full border border-white/30 px-6 py-3 text-sm font-bold">Cerrar sesión</button>
           </form>
         </aside>
+
+        {producciones.length > 0 && (
+          <section aria-labelledby="mis-producciones" className="flex flex-col gap-3 lg:col-span-8">
+            <h2 id="mis-producciones" className="titular text-2xl">Mis producciones</h2>
+            <ul className="grid gap-3 sm:grid-cols-2">
+              {producciones.map((p) => (
+                <li key={p.production_id}>
+                  <Link href={`/cuenta/produccion/${p.production_id}`} className="block rounded-2xl bg-telon p-5 hover:bg-telon-2">
+                    <p className="text-lg font-bold">{p.nombre}</p>
+                    <p className="text-sm text-texto-2">{p.papeles.join(" · ") || "Integrante"}</p>
+                    <span className="mt-2 inline-block text-sm font-bold text-violeta-claro">Mi expediente y mensualidades →</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
         {ofertasPendientes.length > 0 && (
           <section aria-labelledby="ofertas" className="flex flex-col gap-3 lg:col-span-8">

@@ -359,6 +359,18 @@ Orden: 1) Elenco y ofertas, 2) Expediente y mensualidades, 3) Ensayos y asistenc
 - Pendiente: si la persona ya tenía crédito capturado a mano (sin cuenta), se crea otra
   ficha con su cuenta; unirlas queda para la limpieza de nombres duplicados.
 
+**Bloque 2 — Expediente y mensualidades** (`0041_member_files.sql`, pruebas T1–T6):
+- Expediente por integrante y obra: datos personales, emergencia, tutor, salud y medidas.
+  Lo llena el integrante en Mi cuenta → Mis producciones; la producción (expedientes.ver)
+  lo corrige y marca "revisado"; si el integrante cambia algo, vuelve a "por revisar".
+  Los datos de salud no van a la Bitácora.
+- Documentos por obra (lista básica: reglamento, permiso de menores, identificación) con
+  archivo opcional privado (bucket `expedientes`) y "entregado" que marca la producción.
+- Semáforo: rojo (falta información), amarillo (por revisar), verde (completo).
+- Mensualidad de la obra (monto, meses, día límite), beca o monto especial por persona
+  y pagos registrados (quién, cuándo, método). Quien solo maneja mensualidades no ve
+  datos de salud. El integrante ve solo lo suyo.
+
 ## Cómo se comprueba cada etapa
 
 - Pruebas SQL de permisos por rol (en local y en DEV) y las de boletería sin cambios.
