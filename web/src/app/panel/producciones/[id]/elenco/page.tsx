@@ -8,7 +8,11 @@ import { can } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
 import { assetUrl } from "@/lib/productions";
 import { createClient } from "@/lib/supabase/server";
+import { ActionForm } from "@/components/panel/ActionForm";
+import { ESTADO_OFERTA, listOffers, offerLabel } from "@/lib/casting";
 import { AddCreditForm } from "./AddCreditForm";
+import { OfferForm } from "./OfferForm";
+import { withdrawOffer } from "./offer-actions";
 import { moveCredit, removeCredit, setCreditPhoto, updatePapel } from "./actions";
 
 export const metadata: Metadata = { title: "Elenco y equipos" };
@@ -37,14 +41,39 @@ export default async function CastEditor({ params }: PageProps<"/panel/produccio
     supabase.from("people").select("nombre").order("nombre").limit(2000),
   ]);
   const rows = (credits ?? []) as unknown as Row[];
+  const armaElenco = can(access, id, "elenco.gestionar");
+  const ofertas = armaElenco ? await listOffers(id) : [];
   const listId = "personas-darf";
 
   return (
     <div className="flex flex-col gap-4">
       <p className="text-sm text-texto-2">
         Las fotos son de esta obra: súbelas de la sesión de esta producción (vertical 3:4) para que todas se vean iguales.
-        Una persona puede estar en varios grupos. Expedientes y mensualidades llegan en la etapa 3E.
+        Una persona puede estar en varios grupos.
       </p>
+      {armaElenco && (
+        <Card className="flex flex-col gap-3">
+          <h2 className="titular text-xl">Ofertas</h2>
+          <p className="text-sm text-texto-2">Manda una oferta a alguien con cuenta DARF. Cuando la acepta en Mi cuenta, aparece solo en el elenco (abajo) y entra al portal del elenco. Desde los Resultados de una audición también puedes mandarlas.</p>
+          {ofertas.length > 0 && (
+            <ul className="flex flex-col gap-2">
+              {ofertas.map((o) => (
+                <li key={o.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-sala px-3 py-2 text-sm">
+                  <span><b>{o.nombre}</b> <span className="text-texto-3">· {o.email}</span><br />{offerLabel(o)}</span>
+                  <span className="flex items-center gap-2">
+                    <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${ESTADO_OFERTA[o.estado]?.cls}`}>{ESTADO_OFERTA[o.estado]?.label}</span>
+                    {o.estado === "enviada" && <ActionForm inline action={withdrawOffer} hidden={{ id: o.id, production_id: id }} confirm={`¿Retirar la oferta a ${o.nombre}?`} submit="Retirar" submitClass="rounded-full border border-white/25 px-3 py-1 text-xs font-bold" />}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+          <details>
+            <summary className="cursor-pointer text-sm font-bold">+ Ofrecer por correo (equipo técnico, creativo o elenco sin audición)</summary>
+            <div className="mt-3"><OfferForm hidden={{ production_id: id }} porCorreo /></div>
+          </details>
+        </Card>
+      )}
       <datalist id={listId}>{(people ?? []).map((p) => <option key={p.nombre as string} value={p.nombre as string} />)}</datalist>
       {GRUPOS.map((g) => {
         const items = rows.filter((r) => r.tipo === g.tipo);

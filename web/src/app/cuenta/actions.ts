@@ -23,3 +23,15 @@ export async function saveProfile(_prev: ProfileState, form: FormData): Promise<
   revalidatePath("/cuenta");
   return { ok: true, message: "Perfil guardado." };
 }
+
+export type OfferReply = { ok: boolean; message: string } | null;
+
+/** Aceptar o declinar una oferta de papel (0040). La base revisa que sea mía y siga vigente. */
+export async function replyOffer(_prev: OfferReply, form: FormData): Promise<OfferReply> {
+  const acepta = String(form.get("respuesta")) === "aceptar";
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("casting_offer_respond", { oid: String(form.get("id")), acepta });
+  if (error) return { ok: false, message: error.message };
+  revalidatePath("/cuenta");
+  return { ok: true, message: acepta ? "¡Bienvenido al elenco! Ya apareces en la obra." : "Respuesta enviada. Gracias por avisar." };
+}

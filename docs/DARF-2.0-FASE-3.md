@@ -338,6 +338,27 @@ decisión es tuya.
 - Base de datos: `0039_audition_cancel_delete.sql` (pruebas T1–T3). En DEV:
   `supabase/dev/apply_0039_dev.sql` en el SQL Editor.
 
+## 13. Etapa 3E en 5 bloques (decisiones de Diego, 2026-10-11)
+
+Orden: 1) Elenco y ofertas, 2) Expediente y mensualidades, 3) Ensayos y asistencia,
+4) Materiales y comunicados, 5) Portal del elenco. Se prueba al terminar cada bloque.
+
+- Expediente: lo llena el integrante desde su portal y la producción lo revisa.
+- Mensualidades: el integrante ve solo las suyas; los pagos los registra la producción
+  (sin pago en línea).
+- Documentos: lista de "entregado" con fecha + archivo opcional (privado).
+- Avisos: dentro de la página (Mi cuenta con contador). Correo/WhatsApp, aparte.
+
+**Bloque 1 — Elenco y ofertas** (`0040_casting_offers.sql`, pruebas T1–T3):
+- Oferta (reparto, ensamble, creativo, producción, crew, técnico + personaje o puesto,
+  mensaje y fecha límite) desde Resultados de una audición o por correo en Elenco y equipos.
+- La persona acepta o declina en Mi cuenta. Al aceptar: su ficha de persona (ligada a su
+  cuenta), su crédito en la obra y el rol Integrante. La solicitud de audición queda
+  "Seleccionado".
+- El Integrante no tiene permisos de panel y ya no cuenta como "equipo de la obra".
+- Pendiente: si la persona ya tenía crédito capturado a mano (sin cuenta), se crea otra
+  ficha con su cuenta; unirlas queda para la limpieza de nombres duplicados.
+
 ## Cómo se comprueba cada etapa
 
 - Pruebas SQL de permisos por rol (en local y en DEV) y las de boletería sin cambios.

@@ -3,7 +3,11 @@ import Link from "next/link";
 import { ActionForm } from "@/components/panel/ActionForm";
 import { Card } from "@/components/panel/ui";
 import { ESTADO_SOLICITUD, score, type Criterio } from "@/lib/audition-rules";
+import { ESTADO_OFERTA, offerLabel } from "@/lib/casting";
 import { requireAudition } from "@/lib/panel-auditions";
+import { listPanelProductions } from "@/lib/panel-data";
+import { can, myProductionIds } from "@/lib/panel-nav";
+import { OfferForm } from "../../../producciones/[id]/elenco/OfferForm";
 import { createClient } from "@/lib/supabase/server";
 import { setApplicationEstado } from "../../actions";
 
@@ -17,7 +21,7 @@ const btn = "rounded-full border border-white/25 px-3 py-1.5 text-xs font-bold h
 export default async function Results({ params, searchParams }: PageProps<"/panel/audiciones/[aid]/resultados">) {
   const { aid } = await params;
   const sp = await searchParams;
-  const { a } = await requireAudition(aid, ["audiciones.gestionar"], "/resultados");
+  const { a, access } = await requireAudition(aid, ["audiciones.gestionar"], "/resultados");
   const criterios = (a.criterios ?? []) as Criterio[];
   const ronda = Math.max(1, Number(sp.ronda ?? 1) || 1);
   const rol = typeof sp.rol === "string" ? sp.rol : "";
@@ -27,6 +31,12 @@ export default async function Results({ params, searchParams }: PageProps<"/pane
     supabase.from("audition_roles").select("nombre").eq("audition_id", aid).order("orden"),
   ]);
   const rows = ((data ?? []) as Row[]).filter((r) => !rol || r.roles?.includes(rol));
+  // Ofertas de papel (3E): a qué obras puedo ofrecer y qué ofertas ya salieron de esta audición.
+  const obrasIds = a.production_id ? [a.production_id] : access.isDirector ? undefined : myProductionIds(access);
+  const obras = (await listPanelProductions(obrasIds)).filter((o) => can(access, o.id, "elenco.gestionar")).map((o) => ({ id: o.id, nombre: o.nombre }));
+  const { data: ofertasData } = await supabase.from("casting_offers").select("application_id, estado, tipo, papel").in("application_id", rows.length ? rows.map((r) => r.id) : ["00000000-0000-0000-0000-000000000000"]);
+  const ofertas = (ofertasData ?? []) as { application_id: string; estado: string; tipo: string; papel: string | null }[];
+  const papeles = (roles.data ?? []).map((r) => r.nombre as string);
   const h = (app: string, r: number) => ({ aid, app, ronda: String(r) });
 
   return (
@@ -65,10 +75,21 @@ export default async function Results({ params, searchParams }: PageProps<"/pane
                 <td className="px-3 py-3 text-lg font-black">{score(r.promedio)}</td>
                 <td className="px-3 py-3">{r.jueces}</td>
                 <td className="px-3 py-3">
+                  {ofertas.filter((o) => o.application_id === r.id).map((o, i) => (
+                    <p key={i} className="mb-1.5 text-xs"><span className={`rounded-full px-2 py-0.5 font-bold ${ESTADO_OFERTA[o.estado]?.cls}`}>{ESTADO_OFERTA[o.estado]?.label}</span> {offerLabel(o)}</p>
+                  ))}
                   <div className="flex flex-col gap-1.5">
                     <ActionForm inline action={setApplicationEstado} hidden={{ ...h(r.id, r.ronda), estado: "callback" }} confirm={`¿Llamar a ${r.nombre} a callback?`} submit="Callback" submitClass={btn} />
                     <ActionForm inline action={setApplicationEstado} hidden={{ ...h(r.id, r.ronda), estado: "seleccionado" }} confirm={`¿Seleccionar a ${r.nombre}?`} submit="Seleccionar" submitClass="rounded-full bg-[#22c55e] px-3 py-1.5 text-xs font-bold text-[#052e16]" />
                     <ActionForm inline action={setApplicationEstado} hidden={{ ...h(r.id, r.ronda), estado: "no_seleccionado" }} confirm={`¿Marcar a ${r.nombre} como no seleccionado?`} submit="No seleccionado" submitClass={btn} />
+                    {obras.length > 0 && (
+                      <details className="text-xs">
+                        <summary className="cursor-pointer font-bold text-violeta-claro">Ofrecer papel</summary>
+                        <div className="mt-2 w-72">
+                          <OfferForm hidden={{ application_id: r.id, aid, ...(obras.length === 1 ? { production_id: obras[0].id } : {}) }} obras={obras.length > 1 ? obras : undefined} papeles={papeles} />
+                        </div>
+                      </details>
+                    )}
                   </div>
                 </td>
               </tr>
@@ -77,7 +98,7 @@ export default async function Results({ params, searchParams }: PageProps<"/pane
         </table>
         {rows.length === 0 && <p className="px-5 py-4 text-texto-2">Sin personas en esta ronda.</p>}
       </Card>
-      <p className="text-xs text-texto-3">Ordenado por promedio. Las notas de cada juez solo las ve la dirección. La integración con el elenco (ofertas de papel) llega en la etapa 3E.</p>
+      <p className="text-xs text-texto-3">Ordenado por promedio. Las notas de cada juez solo las ve la dirección. Con “Ofrecer papel” la persona recibe la oferta en Mi cuenta; al aceptarla entra al elenco de la obra.</p>
     </>
   );
 }

@@ -44,9 +44,7 @@ export async function canSeePanel(session: Session | null): Promise<boolean> {
   const rol = session.profile?.rol;
   if (rol === "staff" || rol === "admin") return true;
   const supabase = await createClient();
-  const [obra, aud] = await Promise.all([
-    supabase.from("production_members").select("id", { count: "exact", head: true }).eq("user_id", session.userId),
-    supabase.from("audition_members").select("id", { count: "exact", head: true }).eq("user_id", session.userId),
-  ]);
-  return (obra.count ?? 0) + (aud.count ?? 0) > 0;
+  // Solo cuentan roles con permisos (el Integrante del elenco usa Mi cuenta, no el panel).
+  const [obra, aud] = await Promise.all([supabase.rpc("my_panel_access"), supabase.rpc("my_audition_access")]);
+  return (obra.data ?? []).length + (aud.data ?? []).length > 0;
 }

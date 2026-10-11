@@ -4,6 +4,8 @@ import { PageHeading } from "@/components/PageHeading";
 import { requireSession } from "@/lib/auth";
 import { ESTADO_SOLICITUD } from "@/lib/audition-rules";
 import { formatSlot, listMyApplications, listMyInvites } from "@/lib/auditions";
+import { listMyOffers, offerLabel } from "@/lib/casting";
+import { OfferReplyForm } from "./OfferReplyForm";
 import { env } from "@/lib/env";
 import { formatPerformanceDate } from "@/lib/productions";
 import { createClient } from "@/lib/supabase/server";
@@ -54,7 +56,8 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
   }
 
   // Mis audiciones (0036): solo las propias; QR mientras no haya llegado.
-  const [audiciones, invitaciones] = await Promise.all([listMyApplications(session.userId), listMyInvites()]);
+  const [audiciones, invitaciones, ofertas] = await Promise.all([listMyApplications(session.userId), listMyInvites(), listMyOffers()]);
+  const ofertasPendientes = ofertas.filter((o) => o.estado === "enviada");
   const pendientes = invitaciones.filter((i) => !i.inscrito);
   const audQr = new Map<string, string>();
   for (const a of audiciones) {
@@ -129,6 +132,25 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
             <button className="rounded-full border border-white/30 px-6 py-3 text-sm font-bold">Cerrar sesión</button>
           </form>
         </aside>
+
+        {ofertasPendientes.length > 0 && (
+          <section aria-labelledby="ofertas" className="flex flex-col gap-3 lg:col-span-8">
+            <h2 id="ofertas" className="titular text-2xl">Tienes {ofertasPendientes.length === 1 ? "una oferta" : `${ofertasPendientes.length} ofertas`} de papel</h2>
+            <ul className="flex flex-col gap-3">
+              {ofertasPendientes.map((o) => (
+                <li key={o.id} className="flex flex-col gap-3 rounded-2xl border border-[#7ee2a8]/40 bg-[#7ee2a8]/10 p-5">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-[0.2em] text-texto-3">{o.obra}</p>
+                    <p className="text-xl font-bold">{offerLabel(o)}</p>
+                    {o.mensaje && <p className="mt-1 whitespace-pre-line text-texto-2">{o.mensaje}</p>}
+                    {o.responder_antes && <p className="mt-1 text-sm capitalize text-texto-2">Responde antes del {formatSlot(o.responder_antes)}</p>}
+                  </div>
+                  <OfferReplyForm id={o.id} label={`${offerLabel(o)} en ${o.obra}`} />
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
         {pendientes.length > 0 && (
           <section aria-labelledby="invitaciones" className="flex flex-col gap-3 lg:col-span-8">
