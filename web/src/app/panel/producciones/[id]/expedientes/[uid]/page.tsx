@@ -14,7 +14,7 @@ import { can } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
 import { porcentaje } from "@/lib/rehearsal-rules";
 import { createClient } from "@/lib/supabase/server";
-import { addIncident, addMeasure, addPayment, markReviewed, removePayment, setDelivered, setScholarship, voidIncident } from "../actions";
+import { addIncident, addMeasure, addPayment, markReviewed, reactivateMember, removePayment, setDelivered, setIngreso, setScholarship, voidIncident, withdrawMember } from "../actions";
 
 export const metadata: Metadata = { title: "Expediente" };
 
@@ -47,7 +47,9 @@ export default async function MemberPage({ params }: PageProps<"/panel/produccio
   const falta = pendientesTexto(d.person, pend, d.member);
   const nAdv = cuentaAdvertencias(d.incidencias);
   const urls = verExp ? await signDocs(d.docs.map((x) => x.archivo_path)) : new Map<string, string>();
-  const ms = d.fee ? estadoCuotas(d.fee, d.terms, d.pagos) : [];
+  const ms = d.fee ? estadoCuotas(d.fee, d.terms, d.pagos, new Date(), d.alta) : [];
+  const fmt = (x: string) => new Date(`${x}T12:00:00Z`).toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" });
+  const manejaAlta = verExp || can(access, id, "elenco.gestionar");
   const h = { pid: id, uid };
 
   return (
@@ -57,6 +59,36 @@ export default async function MemberPage({ params }: PageProps<"/panel/produccio
         <p className="mt-2 text-xl font-bold">{persona.nombre} <span className="text-sm font-normal text-texto-3">· {persona.email}{e !== null ? ` · ${e} años` : ""}</span></p>
         <p className="text-sm text-texto-2">{persona.papeles.join(", ")} · <Link href={`/panel/talento/${uid}`} className="font-bold text-violeta-claro">Ficha de talento (todo su historial) →</Link></p>
       </div>
+
+      {d.alta && (
+        <Card className={`flex flex-col gap-3 ${d.alta.baja_at ? "border border-[#ff8fa3]/40" : ""}`}>
+          <h2 className="titular text-xl">Participación</h2>
+          <p className="text-sm">Ingresó el <b>{fmt(d.alta.ingreso)}</b>{d.alta.baja_at ? <> · <b className="text-[#fecdd3]">Baja el {fmt(d.alta.baja_at)}</b>: {d.alta.baja_motivo}</> : " · Activo"}</p>
+          {manejaAlta && (
+            <div className="flex flex-col gap-3">
+              <ActionForm inline action={setIngreso} hidden={h} submit="Cambiar ingreso" submitClass={ghost}>
+                <input className={`${input} py-1.5 text-sm`} type="date" name="fecha" required defaultValue={d.alta.ingreso} aria-label="Fecha de ingreso" />
+              </ActionForm>
+              <p className="text-xs text-texto-3">Si entró a medio taller, pon su fecha de ingreso: los ensayos y mensualidades anteriores no le cuentan.</p>
+              {d.alta.baja_at
+                ? <ActionForm inline action={reactivateMember} hidden={h} confirm="¿Reactivar? Vuelve a los ensayos, a las mensualidades y a los créditos de la obra." submit="Reactivar" submitClass={ghost} />
+                : (
+                  <details>
+                    <summary className="cursor-pointer text-sm font-bold text-[#ff8fa3]">Dar de baja</summary>
+                    <div className="mt-2">
+                      <ActionForm action={withdrawMember} hidden={h} confirm="¿Dar de baja? Deja de estar citado a ensayos y de verse en los créditos. Su historial se conserva." submit="Dar de baja" submitClass="self-start rounded-full bg-[#be123c] px-4 py-2 text-sm font-bold text-white">
+                        <div className="grid gap-2 sm:grid-cols-[180px_1fr]">
+                          <input className={input} type="date" name="fecha" aria-label="Fecha de baja" />
+                          <input className={input} name="motivo" required placeholder="Motivo (queda en su historial)" />
+                        </div>
+                      </ActionForm>
+                    </div>
+                  </details>
+                )}
+            </div>
+          )}
+        </Card>
+      )}
 
       {verExp && (
         <>

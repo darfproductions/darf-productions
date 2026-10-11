@@ -27,6 +27,13 @@ do $$ begin
   reset role;
 end $$;
 
+-- Desde 0044 cuenta la fecha de ingreso: estas pruebas suponen que entraron hace tiempo.
+do $$ begin
+  if to_regclass('public.member_enrollment') is not null then
+    execute 'update member_enrollment set ingreso = current_date - 365';
+  end if;
+end $$;
+
 -- T1: expediente único: se llena una vez y lo ven las dos obras; cambiarlo regresa ambas a "por revisar"
 do $$ declare n int; begin
   perform pg_temp.as_user('00000000-0000-0000-0000-0000000000c1');

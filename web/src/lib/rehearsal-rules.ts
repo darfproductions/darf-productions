@@ -12,7 +12,7 @@ export const ASISTENCIA: Record<string, { label: string; cls: string }> = {
 
 export type Rehearsal = {
   id: string; titulo: string; inicia: string; termina: string | null; lugar: string | null; notas: string | null;
-  convocatoria: "todos" | "grupos" | "personas"; grupos: string[]; personas: string[]; estado: string;
+  convocatoria: "todos" | "grupos" | "personas"; grupos: string[]; personas: string[]; estado: string; serie_id?: string | null;
 };
 
 /** "Todo el elenco" / "Ensamble y Crew" / "3 personas". */
@@ -34,4 +34,19 @@ export function fechaEnsayo(iso: string, fin?: string | null): string {
   if (!fin) return f;
   const h = new Intl.DateTimeFormat("es-MX", { hour: "numeric", minute: "2-digit", timeZone: "America/Mexico_City" }).format(new Date(fin));
   return `${f} a ${h}`;
+}
+
+export const DIAS = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+
+/** Fechas ("2026-11-07") entre dos días que caen en los días de la semana elegidos (0 = domingo). Máx. 120. */
+export function fechasRecurrentes(desde: string, hasta: string, dias: number[]): string[] {
+  const out: string[] = [];
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(desde) || !/^\d{4}-\d{2}-\d{2}$/.test(hasta) || !dias.length) return out;
+  const d = new Date(`${desde}T12:00:00Z`);
+  const fin = new Date(`${hasta}T12:00:00Z`);
+  while (d <= fin && out.length < 120) {
+    if (dias.includes(d.getUTCDay())) out.push(d.toISOString().slice(0, 10));
+    d.setUTCDate(d.getUTCDate() + 1);
+  }
+  return out;
 }

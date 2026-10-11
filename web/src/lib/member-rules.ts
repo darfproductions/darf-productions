@@ -123,11 +123,28 @@ export function meses(desde: string, hasta: string): string[] {
   return out;
 }
 
+/** Periodo de la persona en la obra (0044): ingreso y, si se fue, baja. */
+export type Enrollment = { ingreso: string; baja_at: string | null; baja_motivo?: string | null };
+
+/** Meses que le tocan: desde el mes de su ingreso hasta el mes anterior a su baja (incluye el mes si la baja es después del día 1). */
+export function mesesDePersona(desde: string, hasta: string, e?: Enrollment | null): string[] {
+  const todos = meses(desde, hasta);
+  if (!e) return todos;
+  const ini = `${e.ingreso.slice(0, 7)}-01`;
+  let fin = "9999-12-01";
+  if (e.baja_at) {
+    const d = new Date(`${e.baja_at}T12:00:00Z`);
+    d.setUTCDate(d.getUTCDate() - 1);
+    fin = `${d.toISOString().slice(0, 7)}-01`;
+  }
+  return todos.filter((m) => m >= ini && m <= fin);
+}
+
 /** Estado de cada mes para una persona (beca = no paga; cuota especial reemplaza el monto). */
-export function estadoCuotas(fee: Fee, persona: FeeTerms, pagos: Payment[], hoy: Date = new Date()): Mes[] {
+export function estadoCuotas(fee: Fee, persona: FeeTerms, pagos: Payment[], hoy: Date = new Date(), e?: Enrollment | null): Mes[] {
   const debe = persona.beca ? 0 : Number(persona.cuota_especial ?? fee.monto);
   const hoyIso = hoy.toISOString().slice(0, 10);
-  return meses(fee.desde, fee.hasta).map((periodo) => {
+  return mesesDePersona(fee.desde, fee.hasta, e).map((periodo) => {
     const pagado = pagos.filter((p) => p.periodo === periodo).reduce((s, p) => s + Number(p.monto), 0);
     const limite = `${periodo.slice(0, 8)}${String(fee.dia_limite).padStart(2, "0")}`;
     let estado: MesEstado;

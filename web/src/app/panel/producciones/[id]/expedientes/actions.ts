@@ -184,3 +184,34 @@ export async function addMeasure(_p: ExpState, f: FormData): Promise<ExpState> {
   if (error) return { ok: false, message: error.message };
   return ok(pid, uid, "Medida registrada.");
 }
+
+// ──────── Participación: ingreso, baja y reactivar (0044) ────────
+
+export async function setIngreso(_p: ExpState, f: FormData): Promise<ExpState> {
+  const pid = str(f, "pid");
+  const uid = str(f, "uid");
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("member_set_ingreso", { pid, uid, fecha: str(f, "fecha") });
+  if (error) return { ok: false, message: /check/.test(error.message) ? "El ingreso no puede ser después de la baja." : error.message };
+  return ok(pid, uid, "Fecha de ingreso guardada.");
+}
+
+export async function withdrawMember(_p: ExpState, f: FormData): Promise<ExpState> {
+  const pid = str(f, "pid");
+  const uid = str(f, "uid");
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("member_withdraw", { pid, uid, fecha: str(f, "fecha") || null, motivo: str(f, "motivo") });
+  if (error) return { ok: false, message: /check/.test(error.message) ? "La baja no puede ser antes de su ingreso." : error.message };
+  revalidatePath(`/producciones/${pid}`);
+  return ok(pid, uid, "Baja registrada. Su historial se conserva.");
+}
+
+export async function reactivateMember(_p: ExpState, f: FormData): Promise<ExpState> {
+  const pid = str(f, "pid");
+  const uid = str(f, "uid");
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("member_reactivate", { pid, uid });
+  if (error) return { ok: false, message: error.message };
+  revalidatePath(`/producciones/${pid}`);
+  return ok(pid, uid, "Reactivado: vuelve a los ensayos y a los créditos.");
+}

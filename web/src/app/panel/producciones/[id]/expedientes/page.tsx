@@ -6,7 +6,7 @@ import { Card, input } from "@/components/panel/ui";
 import { TIPO_CREDITO } from "@/lib/casting-rules";
 import {
   SEMAFORO, adeudo, docsPendientes, edad, estadoCuotas, pesos, semaforo,
-  type DocType, type Fee, type FeeTerms, type MemberDoc, type MemberFile, type PersonFile,
+  type DocType, type Enrollment, type Fee, type FeeTerms, type MemberDoc, type MemberFile, type PersonFile,
 } from "@/lib/member-rules";
 import { can } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
@@ -41,7 +41,7 @@ export default async function Expedientes({ params }: PageProps<"/panel/producci
   const { data: rosterData } = await supabase.rpc("cast_roster", { pid: id });
   const gente = (rosterData ?? []) as Roster[];
   const uids = gente.length ? gente.map((g) => g.user_id) : NONE;
-  const [persons, members, tipos, docs, fee, pagos, terms, disc, cfg] = await Promise.all([
+  const [persons, members, tipos, docs, fee, pagos, terms, disc, cfg, altas] = await Promise.all([
     verExp ? supabase.from("person_files").select("*").in("user_id", uids) : Promise.resolve({ data: [] }),
     verExp ? supabase.from("member_files").select("user_id, revisado_at, confirmado_at").eq("production_id", id) : Promise.resolve({ data: [] }),
     supabase.from("member_doc_types").select("id, nombre, solo_menores, obligatorio, aplica, grupo, personas, descripcion").eq("production_id", id).order("orden"),
@@ -51,7 +51,9 @@ export default async function Expedientes({ params }: PageProps<"/panel/producci
     verCuotas ? supabase.from("member_fee_terms").select("user_id, beca, cuota_especial").eq("production_id", id) : Promise.resolve({ data: [] }),
     verDisc || verCuotas ? supabase.rpc("discipline_summary", { pid: id }) : Promise.resolve({ data: [] }),
     supabase.from("production_discipline").select("*").eq("production_id", id).maybeSingle(),
+    supabase.from("member_enrollment").select("user_id, ingreso, baja_at, baja_motivo").eq("production_id", id),
   ]);
+  const altaDe = (u: string) => ((altas.data ?? []) as (Enrollment & { user_id: string })[]).find((a) => a.user_id === u) ?? null;
   const tiposDoc = (tipos.data ?? []) as DocType[];
   const cuota = fee.data as Fee | null;
   const personDe = (u: string) => ((persons.data ?? []) as (PersonFile & { user_id: string })[]).find((f) => f.user_id === u) ?? null;
@@ -61,7 +63,7 @@ export default async function Expedientes({ params }: PageProps<"/panel/producci
   const pagosDe = (u: string) => ((pagos.data ?? []) as { user_id: string; periodo: string; monto: number }[]).filter((p) => p.user_id === u);
   const discDe = (u: string) => ((disc.data ?? []) as Disc[]).find((d) => d.user_id === u);
   const reglas = cfg.data as { limite_advertencias: number; auto_mensualidad_meses: number | null; auto_retardos: number | null; auto_faltas: number | null } | null;
-  const porDecidir = gente.filter((g) => discDe(g.user_id)?.requiere_decision);
+  const porDecidir = gente.filter((g) => discDe(g.user_id)?.requiere_decision && !altaDe(g.user_id)?.baja_at);
   const h = { pid: id };
 
   return (
@@ -93,12 +95,14 @@ export default async function Expedientes({ params }: PageProps<"/panel/producci
               const e = edad(p?.fecha_nacimiento ?? null);
               const pend = docsPendientes(tiposDoc, docsDe(g.user_id), { uid: g.user_id, esMenor: e !== null && e < 18, tipos: g.tipos });
               const sem = semaforo(p, pend.length, memberDe(g.user_id));
-              const debe = cuota ? adeudo(estadoCuotas(cuota, termsDe(g.user_id), pagosDe(g.user_id))) : 0;
+              const alta = altaDe(g.user_id);
+              const debe = cuota ? adeudo(estadoCuotas(cuota, termsDe(g.user_id), pagosDe(g.user_id), new Date(), alta)) : 0;
               const d = discDe(g.user_id);
               return (
-                <tr key={g.user_id}>
+                <tr key={g.user_id} className={alta?.baja_at ? "opacity-60" : ""}>
                   <td className="px-4 py-3">
                     <Link href={`/panel/producciones/${id}/expedientes/${g.user_id}`} className="font-bold hover:underline">{g.nombre}</Link>
+                    {alta?.baja_at && <span className="ml-2 rounded-full bg-[#5a1a22] px-2 py-0.5 text-[10px] font-bold text-[#fecdd3]">Baja</span>}
                     <p className="text-xs text-texto-3">{g.papeles.join(", ") || "—"}{e !== null && e < 18 ? " · menor" : ""}</p>
                   </td>
                   {verExp && <td className="px-4 py-3"><span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${SEMAFORO[sem].cls}`}>{SEMAFORO[sem].label}</span></td>}

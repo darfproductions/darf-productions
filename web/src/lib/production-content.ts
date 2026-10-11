@@ -42,7 +42,7 @@ export async function getProductionContent(id: string): Promise<ProductionConten
     supabase.from("productions").select("venue, temporada, fecha, duracion, clasificacion, basada_en, sinopsis").eq("id", id).maybeSingle(),
     supabase.from("production_acts").select("id, nombre").eq("production_id", id).order("orden"),
     supabase.from("production_songs").select("act_id, titulo").eq("production_id", id).order("orden"),
-    supabase.from("production_credits").select("tipo, papel, foto_path, people(nombre)").eq("production_id", id).order("orden"),
+    supabase.from("production_credits").select("tipo, papel, foto_path, people(nombre)").eq("production_id", id).eq("activo", true).order("orden"),
     supabase.from("production_media").select("titulo, youtube_id").eq("production_id", id).eq("tipo", "video").order("orden"),
     supabase.from("production_facts").select("etiqueta, valor").eq("production_id", id).order("orden"),
     supabase.from("production_thanks").select("texto").eq("production_id", id).order("orden"),

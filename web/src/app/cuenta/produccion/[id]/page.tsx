@@ -48,7 +48,7 @@ export default async function MyProduction({ params }: PageProps<"/cuenta/produc
   const sem = semaforo(d.person, pend.length, d.member);
   const vigentes = d.incidencias.filter((i) => !i.anulada_at);
   const urls = await signDocs(d.docs.map((x) => x.archivo_path));
-  const ms = d.fee ? estadoCuotas(d.fee, d.terms, d.pagos) : [];
+  const ms = d.fee ? estadoCuotas(d.fee, d.terms, d.pagos, new Date(), d.alta) : [];
   const falta = pendientesTexto(d.person, pend, d.member);
 
   return (
@@ -56,6 +56,14 @@ export default async function MyProduction({ params }: PageProps<"/cuenta/produc
       <PageHeading eyebrow="Mis producciones" title={prod.nombre}>{prod.papeles.join(" · ")}</PageHeading>
       <div className="mx-auto flex max-w-[1100px] flex-col gap-6 px-5 md:px-16">
         <Link href="/cuenta" className="text-sm font-bold text-violeta-claro">← Mi cuenta</Link>
+
+        {d.alta?.baja_at && (
+          <section role="status" className="rounded-2xl border border-[#ff8fa3]/40 bg-[#ff8fa3]/10 p-5 text-sm">
+            <p className="font-bold">Baja de esta producción desde el {new Date(`${d.alta.baja_at}T12:00:00Z`).toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" })}.</p>
+            {d.alta.baja_motivo && <p className="mt-1 text-texto-2">Motivo: {d.alta.baja_motivo}</p>}
+            <p className="mt-1 text-texto-2">Tu historial (asistencia, pagos y documentos) se conserva aquí.</p>
+          </section>
+        )}
 
         <section className="flex flex-wrap items-center gap-3 rounded-2xl bg-telon p-5">
           <span className={`rounded-full px-3 py-1 text-sm font-bold ${SEMAFORO[sem].cls}`}>{sem === "verde" ? "Expediente completo" : SEMAFORO[sem].label}</span>
@@ -93,7 +101,7 @@ export default async function MyProduction({ params }: PageProps<"/cuenta/produc
                 <p><b>{r.titulo}</b>{r.estado === "cancelado" && <span className="ml-2 font-bold text-[#fecdd3]">Cancelado</span>}</p>
                 <p className="capitalize text-texto-2">{fechaEnsayo(r.inicia, r.termina)}{r.lugar ? ` · ${r.lugar}` : ""}</p>
                 {r.notas && <p className="whitespace-pre-line text-texto-2">{r.notas}</p>}
-                {r.estado !== "cancelado" && <AbsenceForm pid={id} rid={r.id} previo={avisoDe(r.id)} />}
+                {r.estado !== "cancelado" && !d.alta?.baja_at && <AbsenceForm pid={id} rid={r.id} previo={avisoDe(r.id)} />}
               </li>
             ))}
           </ul>

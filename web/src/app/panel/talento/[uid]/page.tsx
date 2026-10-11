@@ -30,8 +30,9 @@ export default async function TalentPage({ params }: PageProps<"/panel/talento/[
   const access = await requirePanel(`/panel/talento/${uid}`);
   if (!/^[0-9a-f-]{36}$/.test(uid)) notFound();
   const supabase = await createClient();
-  const { data, error } = await supabase.rpc("talent_history", { uid });
+  const [{ data, error }, { data: altas }] = await Promise.all([supabase.rpc("talent_history", { uid }), supabase.rpc("talent_enrollments", { uid })]);
   if (error || !data) notFound();
+  const altaDe = (pid: string) => ((altas ?? []) as { production_id: string; ingreso: string; baja_at: string | null; baja_motivo: string | null }[]).find((a) => a.production_id === pid);
   const h = data as H;
   const { data: inc } = access.isDirector
     ? await supabase.from("member_incidents").select("id, production_id, tipo, nivel, descripcion, fecha, anulada_at, productions(nombre)").eq("user_id", uid).order("fecha", { ascending: false })
@@ -47,6 +48,7 @@ export default async function TalentPage({ params }: PageProps<"/panel/talento/[
         <ul className="flex flex-col gap-1.5 text-sm">
           {h.obras.map((o, i) => (
             <li key={i}><b>{o.obra}</b> · {TIPO_CREDITO[o.tipo] ?? o.tipo}{o.papel ? ` · ${o.papel}` : ""}
+              {altaDe(o.production_id)?.baja_at && <span className="ml-2 text-xs font-bold text-[#fecdd3]">Baja el {new Date(`${altaDe(o.production_id)!.baja_at}T12:00:00Z`).toLocaleDateString("es-MX")}: {altaDe(o.production_id)!.baja_motivo}</span>}
               {access.isDirector && <> · <Link href={`/panel/producciones/${o.production_id}/expedientes/${uid}`} className="text-violeta-claro">expediente</Link></>}</li>
           ))}
           {h.obras.length === 0 && <li className="text-texto-3">Aún sin obras.</li>}

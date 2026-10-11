@@ -30,6 +30,13 @@ do $$ declare p1 uuid; p2 uuid; begin
   insert into production_credits (production_id, person_id, tipo, papel) values ('showman', p1, 'reparto', 'Barnum'), ('showman', p2, 'ensamble', null);
 end $$;
 
+-- Desde 0044 cuenta la fecha de ingreso: estas pruebas suponen que entraron hace tiempo.
+do $$ begin
+  if to_regclass('public.member_enrollment') is not null then
+    execute 'update member_enrollment set ingreso = current_date - 365';
+  end if;
+end $$;
+
 -- T1: Dirección crea ensayos para todos, solo ensamble y una persona; cada quien ve solo los suyos
 do $$ declare a uuid; b uuid; c uuid; n int; begin
   perform pg_temp.as_user('00000000-0000-0000-0000-0000000000d1');

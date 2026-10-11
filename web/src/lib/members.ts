@@ -1,4 +1,4 @@
-import type { DocType, Fee, FeeTerms, MemberDoc, MemberFile, Payment, PersonFile } from "@/lib/member-rules";
+import type { DocType, Enrollment, Fee, FeeTerms, MemberDoc, MemberFile, Payment, PersonFile } from "@/lib/member-rules";
 import { createClient } from "@/lib/supabase/server";
 
 // Lecturas del expediente (0041, 0042). Pasan por RLS: el integrante solo ve lo suyo; la
@@ -14,12 +14,12 @@ export type MemberData = {
   person: PersonFile | null; member: MemberFile | null; terms: FeeTerms;
   tipos: DocType[]; docs: (MemberDoc & { id: string })[];
   fee: Fee | null; pagos: (Payment & { id: string; metodo: string; nota: string | null; registrado_at: string })[];
-  incidencias: Incident[]; medidas: Measure[]; limite: number;
+  incidencias: Incident[]; medidas: Measure[]; limite: number; alta: Enrollment | null;
 };
 
 export async function getMemberData(pid: string, uid: string): Promise<MemberData> {
   const supabase = await createClient();
-  const [person, member, tipos, docs, fee, pagos, terms, inc, med, disc] = await Promise.all([
+  const [person, member, tipos, docs, fee, pagos, terms, inc, med, disc, alta] = await Promise.all([
     supabase.from("person_files").select("*").eq("user_id", uid).maybeSingle(),
     supabase.from("member_files").select("revisado_at, confirmado_at").eq("production_id", pid).eq("user_id", uid).maybeSingle(),
     supabase.from("member_doc_types").select("id, nombre, solo_menores, obligatorio, aplica, grupo, personas, descripcion").eq("production_id", pid).order("orden").order("nombre"),
@@ -30,6 +30,7 @@ export async function getMemberData(pid: string, uid: string): Promise<MemberDat
     supabase.from("member_incidents").select("id, tipo, nivel, descripcion, fecha, origen, anulada_at, anulada_motivo, created_at").eq("production_id", pid).eq("user_id", uid).order("fecha", { ascending: false }),
     supabase.from("member_measures").select("id, medida, descripcion, fecha").eq("production_id", pid).eq("user_id", uid).order("fecha", { ascending: false }),
     supabase.from("production_discipline").select("limite_advertencias").eq("production_id", pid).maybeSingle(),
+    supabase.from("member_enrollment").select("ingreso, baja_at, baja_motivo").eq("production_id", pid).eq("user_id", uid).maybeSingle(),
   ]);
   return {
     person: (person.data as PersonFile) ?? null,
@@ -42,6 +43,7 @@ export async function getMemberData(pid: string, uid: string): Promise<MemberDat
     incidencias: (inc.data ?? []) as Incident[],
     medidas: (med.data ?? []) as Measure[],
     limite: (disc.data?.limite_advertencias as number) ?? 3,
+    alta: (alta.data as Enrollment) ?? null,
   };
 }
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { adeudo, cuentaAdvertencias, docAplica, docsPendientes, estadoCuotas, faltantes, meses, semaforo } from "./member-rules";
+import { adeudo, cuentaAdvertencias, mesesDePersona, docAplica, docsPendientes, estadoCuotas, faltantes, meses, semaforo } from "./member-rules";
 
 const hoy = new Date("2026-11-15T12:00:00Z");
 const completo = {
@@ -59,6 +59,11 @@ describe("mensualidades", () => {
   it("antes del día límite está pendiente, no vencido", () => {
     const ms = estadoCuotas(fee, { beca: false, cuota_especial: null }, [], new Date("2026-11-05T12:00:00Z"));
     expect(ms[2].estado).toBe("pendiente");
+  });
+  it("ingreso tardío y baja recortan los meses", () => {
+    expect(mesesDePersona("2026-09-01", "2027-01-01", { ingreso: "2026-10-20", baja_at: null })).toEqual(["2026-10-01", "2026-11-01", "2026-12-01", "2027-01-01"]);
+    expect(mesesDePersona("2026-09-01", "2027-01-01", { ingreso: "2026-09-05", baja_at: "2026-11-01" })).toEqual(["2026-09-01", "2026-10-01"]);
+    expect(mesesDePersona("2026-09-01", "2027-01-01", { ingreso: "2026-09-05", baja_at: "2026-11-15" })).toEqual(["2026-09-01", "2026-10-01", "2026-11-01"]);
   });
   it("beca y cuota especial", () => {
     expect(estadoCuotas(fee, { beca: true, cuota_especial: null }, [], hoy).every((m) => m.estado === "beca")).toBe(true);

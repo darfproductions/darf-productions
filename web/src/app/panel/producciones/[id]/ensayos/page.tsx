@@ -6,9 +6,9 @@ import { Card, input } from "@/components/panel/ui";
 import { TIPO_CREDITO } from "@/lib/casting-rules";
 import { can } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
-import { citados, fechaEnsayo, porcentaje, type Rehearsal } from "@/lib/rehearsal-rules";
+import { DIAS, citados, fechaEnsayo, porcentaje, type Rehearsal } from "@/lib/rehearsal-rules";
 import { createClient } from "@/lib/supabase/server";
-import { createRehearsal, setRehearsalEstado } from "./actions";
+import { cancelSeries, createRehearsal, setRehearsalEstado } from "./actions";
 
 export const metadata: Metadata = { title: "Ensayos" };
 
@@ -40,13 +40,17 @@ export default async function Ensayos({ params }: PageProps<"/panel/producciones
         <Link href={`/panel/producciones/${id}/ensayos/${r.id}`} className="font-bold hover:underline">{r.titulo}</Link>
         {r.estado === "cancelado" && <span className="ml-2 text-xs font-bold text-[#fecdd3]">Cancelado</span>}
         <span className="block capitalize text-texto-2">{fechaEnsayo(r.inicia, r.termina)}{r.lugar ? ` · ${r.lugar}` : ""}</span>
-        <span className="block text-xs text-texto-3">Citados: {citados(r)}</span>
+        <span className="block text-xs text-texto-3">Citados: {citados(r)}{r.serie_id ? " · se repite" : ""}</span>
       </span>
       <span className="flex items-center gap-2">
         <Link href={`/panel/producciones/${id}/ensayos/${r.id}`} className="rounded-full bg-texto px-3 py-1.5 text-xs font-bold text-sala">Asistencia</Link>
         <ActionForm inline action={setRehearsalEstado} hidden={{ ...h, id: r.id, estado: r.estado === "cancelado" ? "programado" : "cancelado" }}
           confirm={r.estado === "cancelado" ? "¿Reactivar este ensayo?" : "¿Cancelar este ensayo? Los citados lo verán cancelado."}
           submit={r.estado === "cancelado" ? "Reactivar" : "Cancelar"} submitClass="rounded-full border border-white/25 px-3 py-1.5 text-xs font-bold" />
+        {r.serie_id && r.estado !== "cancelado" && r.inicia >= ahora && (
+          <ActionForm inline action={cancelSeries} hidden={{ ...h, serie: r.serie_id, desde: r.inicia }}
+            confirm="¿Cancelar este ensayo y todos los siguientes de la serie?" submit="Cancelar serie" submitClass="rounded-full border border-[#ff8fa3]/50 px-3 py-1.5 text-xs font-bold text-[#ff8fa3]" />
+        )}
       </span>
     </li>
   );
@@ -69,6 +73,14 @@ export default async function Ensayos({ params }: PageProps<"/panel/producciones
                 <label className="flex flex-col gap-1 text-xs font-semibold">Termina (opcional)<input className={input} type="time" name="fin" /></label>
                 <textarea className={`${input} min-h-16 sm:col-span-2`} name="notas" placeholder="Notas: qué traer, escenas que se verán…" />
               </div>
+              <fieldset className="flex flex-col gap-2 rounded-xl border border-white/10 p-3 text-sm">
+                <label className="flex items-center gap-2 font-semibold"><input type="checkbox" name="repetir" /> Repetir (se crean solos)</label>
+                <div className="flex flex-wrap gap-2">
+                  {DIAS.map((d, i) => <label key={d} className="flex items-center gap-1 rounded-full border border-white/20 px-2.5 py-1 text-xs has-[:checked]:border-white"><input type="checkbox" name="dias" value={i} /> {d}</label>)}
+                </div>
+                <label className="flex flex-wrap items-center gap-2 text-xs font-semibold">Desde la fecha de arriba hasta el <input className={`${input} py-1.5`} type="date" name="hasta" /></label>
+                <p className="text-xs text-texto-3">Ejemplo: todos los sábados de 9:00 a 14:00 del 1 de noviembre al 28 de febrero. Máximo 120 ensayos por serie.</p>
+              </fieldset>
               <fieldset className="flex flex-col gap-2 text-sm">
                 <legend className="mb-1 font-semibold">¿A quién se cita?</legend>
                 <label className="flex items-center gap-2"><input type="radio" name="convocatoria" value="todos" defaultChecked /> Todo el elenco</label>

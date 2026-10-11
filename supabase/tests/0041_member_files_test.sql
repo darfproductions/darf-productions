@@ -1,5 +1,12 @@
 -- Ejecutar SOLO en una transacción que termina abortada (no persiste nada).
 -- Precede: 0031–0041 aplicadas.
+-- Desde 0042 los datos del expediente viven en person_files; las reglas que aquí se prueban
+-- (privacidad, revisado, documentos, mensualidades) se prueban en 0042–0044 con el modelo nuevo.
+do $$ begin
+  if to_regclass('public.person_files') is not null then
+    raise exception 'OK: 0041 reemplazada por 0042 (ver 0042_talent_discipline_test.sql y 0044)';
+  end if;
+end $$;
 
 insert into auth.users (id, instance_id, aud, role, email)
 values

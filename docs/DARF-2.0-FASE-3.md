@@ -399,6 +399,18 @@ Orden: 1) Elenco y ofertas, 2) Expediente y mensualidades, 3) Ensayos y asistenc
 - Advertencias automáticas: 1 por cada N retardos y 1 por cada N faltas sin justificar
   (reglas de la obra en Expedientes), sin repetirse.
 
+**Ajustes al bloque 3** (decisiones de Diego, `0044_enrollment_series.sql`, pruebas T1–T4):
+- **Ingreso y baja de integrantes.** Cada integrante tiene fecha de ingreso (al aceptar la
+  oferta; editable para quien entra a medio taller) y, si se va, baja con fecha y motivo.
+  Solo se le cita a ensayos entre su ingreso y su baja; las mensualidades se cuentan solo en
+  ese periodo. Al darse de baja sale de los créditos públicos; su historial (asistencia,
+  incidencias, pagos, documentos) se conserva y su ficha de talento marca la baja. Se puede
+  reactivar.
+- **Ensayos recurrentes:** "Repetir" con días de la semana y fecha final (máx. 120); se
+  puede cancelar un ensayo o la serie desde ese día.
+- **Pendiente (en espera, decisión de Diego):** rúbrica de evaluación por producción para
+  talleres en escuela, editable por los maestros desde la página.
+
 ## Cómo se comprueba cada etapa
 
 - Pruebas SQL de permisos por rol (en local y en DEV) y las de boletería sin cambios.
