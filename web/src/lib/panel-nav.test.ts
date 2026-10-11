@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { can, globalSections, groupMembers, hasAnyAccess, myProductionIds, productionIdFrom, productionTabs, roleDiff, roleIdFromName, type PanelAccessData } from "./panel-nav";
+import { can, canAudition, canSeeAudition, globalSections, groupMembers, hasAnyAccess, myProductionIds, productionIdFrom, productionTabs, roleDiff, roleIdFromName, type PanelAccessData } from "./panel-nav";
 
 const director: PanelAccessData = { isDirector: true, byProduction: {} };
 const fan: PanelAccessData = { isDirector: false, byProduction: {} };
@@ -79,5 +79,26 @@ describe("identificador de obra", () => {
     expect(productionIdFrom("Teen Beach Movie", "2027")).toBe("teen-beach-movie-2027");
     expect(productionIdFrom("¡Mamma Mía!")).toBe("mamma-mia");
     expect(productionIdFrom("x".repeat(60))).toHaveLength(40);
+  });
+});
+
+describe("convocatorias de obra y generales (0037)", () => {
+  const general = { id: "g1", production_id: null };
+  const deObra = { id: "a1", production_id: "mm" };
+  const juezGeneral: PanelAccessData = { isDirector: false, byProduction: {}, byAudition: { g1: ["audiciones.evaluar"] } };
+  it("una general solo la ve el Director o su equipo propio", () => {
+    expect(canSeeAudition(director, general)).toBe(true);
+    expect(canSeeAudition(juezMM, general)).toBe(false);
+    expect(canAudition(juezGeneral, general, "audiciones.evaluar")).toBe(true);
+    expect(canAudition(juezGeneral, general, "audiciones.gestionar")).toBe(false);
+  });
+  it("la de obra la ve el equipo de la obra", () => {
+    expect(canAudition(juezMM, deObra, "audiciones.evaluar")).toBe(true);
+    expect(canSeeAudition(juezGeneral, deObra)).toBe(false);
+  });
+  it("el equipo propio entra al panel y ve Audiciones en el menú", () => {
+    expect(hasAnyAccess(juezGeneral)).toBe(true);
+    expect(globalSections(juezGeneral).map((s) => s.label)).toEqual(["Inicio", "Producciones", "Audiciones"]);
+    expect(globalSections(juezMM).map((s) => s.label)).toContain("Audiciones");
   });
 });

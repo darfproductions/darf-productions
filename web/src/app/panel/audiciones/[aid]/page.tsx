@@ -2,15 +2,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ActionForm } from "@/components/panel/ActionForm";
+import { CopyLink } from "@/components/panel/CopyLink";
 import { Card, input } from "@/components/panel/ui";
 import { lugares } from "@/lib/audition-rules";
 import { formatSlot } from "@/lib/auditions";
 import { isoToLocalMx } from "@/lib/dates";
-import { getPanelAudition } from "@/lib/panel-auditions";
-import { can } from "@/lib/panel-nav";
-import { requirePanel } from "@/lib/permissions";
+import { requireAudition } from "@/lib/panel-auditions";
 import { createClient } from "@/lib/supabase/server";
-import { addField, addRole, addSlot, removeItem, saveAudition, setAuditionEstado } from "../actions";
+import { addAuditionMember, addField, addRole, addSlot, removeAuditionMember, removeItem, saveAudition, saveOptions, setAuditionEstado } from "../actions";
 
 export const metadata: Metadata = { title: "Configurar audición" };
 
@@ -23,21 +22,27 @@ const ESTADOS = [
   { estado: "borrador", label: "Volver a borrador", confirm: "¿Regresar a borrador? Deja de verse en la web." },
 ];
 
-export default async function AuditionConfig({ params }: PageProps<"/panel/producciones/[id]/audiciones/[aid]">) {
-  const { id, aid } = await params;
-  const access = await requirePanel(`/panel/producciones/${id}/audiciones/${aid}`);
-  if (!can(access, id, "audiciones.gestionar")) {
-    redirect(`/panel/producciones/${id}/audiciones/${aid}/${can(access, id, "audiciones.evaluar") ? "evaluacion" : "registro"}`);
-  }
-  const a = await getPanelAudition(aid);
-  if (!a) redirect(`/panel/producciones/${id}/audiciones`);
+const check = "flex items-start gap-2 text-sm";
+
+export default async function AuditionConfig({ params }: PageProps<"/panel/audiciones/[aid]">) {
+  const { aid } = await params;
+  const { a, may, access } = await requireAudition(aid, []);
+  if (!may("audiciones.gestionar")) redirect(`/panel/audiciones/${aid}/${may("audiciones.evaluar") ? "evaluacion" : "registro"}`);
+  // ¿Puede armar el equipo propio? Obra: quien da permisos en ella. General: el Director.
+  const armaEquipo = access.isDirector || (!!a.production_id && (access.byProduction[a.production_id] ?? []).includes("permisos.gestionar"));
   const supabase = await createClient();
-  const [roles, slots, fields] = await Promise.all([
+  const [roles, slots, fields, team, teamRoles] = await Promise.all([
     supabase.from("audition_roles").select("id, nombre, descripcion").eq("audition_id", aid).order("orden"),
     supabase.rpc("audition_slot_availability", { aid }),
     supabase.from("audition_fields").select("id, etiqueta, tipo, opciones, obligatorio").eq("audition_id", aid).order("orden"),
+    supabase.rpc("audition_list_members", { aid }),
+    supabase.from("role_permissions").select("role_id, panel_roles(nombre, orden)").like("permission_id", "audiciones.%"),
   ]);
-  const h = { pid: id, aid };
+  const opcionesRol = [...new Map(((teamRoles.data ?? []) as unknown as { role_id: string; panel_roles: { nombre: string; orden: number } | null }[])
+    .map((r) => [r.role_id, { id: r.role_id, nombre: r.panel_roles?.nombre ?? r.role_id, orden: r.panel_roles?.orden ?? 99 }])).values()]
+    .sort((x, y) => x.orden - y.orden);
+  const miembros = (team.data ?? []) as { id: string; nombre: string | null; email: string; role_nombre: string }[];
+  const h = { aid };
 
   return (
     <>
@@ -46,6 +51,9 @@ export default async function AuditionConfig({ params }: PageProps<"/panel/produ
           <h2 className="titular text-xl">Publicación</h2>
           {a.estado !== "borrador" && <Link href={`/audiciones/${aid}`} target="_blank" className="text-sm font-bold text-violeta-claro">Ver página pública ↗</Link>}
         </div>
+        {a.visibilidad === "enlace" && (
+          <p className="flex flex-wrap items-center gap-2 text-sm text-texto-2">Solo con enlace: no aparece en la lista pública. Comparte el enlace con quienes deben inscribirse. <CopyLink path={`/audiciones/${aid}`} /></p>
+        )}
         <div className="flex flex-wrap gap-2">
           {ESTADOS.filter((e) => e.estado !== a.estado).map((e) => (
             <ActionForm key={e.estado} inline action={setAuditionEstado} hidden={{ ...h, estado: e.estado }} confirm={e.confirm} submit={e.label} submitClass={e.estado === "abierta" ? "boton-compra rounded-full px-5 py-2 text-sm font-bold" : "rounded-full border border-white/25 px-4 py-2 text-sm font-bold"} />
@@ -66,6 +74,67 @@ export default async function AuditionConfig({ params }: PageProps<"/panel/produ
             <label className="flex flex-col gap-1.5 text-sm font-semibold">Edad máxima<input className={input} type="number" min={3} max={99} name="edad_max" defaultValue={a.edad_max ?? ""} /></label>
           </div>
         </ActionForm>
+      </Card>
+
+      <Card>
+        <h2 className="titular mb-1 text-xl">Inscripción y logística</h2>
+        <p className="mb-3 text-sm text-texto-2">Ajusta qué se pide al inscribirse y cómo se organiza el día.</p>
+        <ActionForm action={saveOptions} hidden={h} submit="Guardar opciones">
+          <div className="grid gap-4 md:grid-cols-2">
+            <fieldset className="flex flex-col gap-2">
+              <legend className="mb-1 text-sm font-semibold">Qué se pide</legend>
+              <label className={check}><input type="checkbox" name="pedir_foto" defaultChecked={a.pedir_foto} className="mt-1" /> Foto del aspirante</label>
+              <label className={check}><input type="checkbox" name="elegir_horario" defaultChecked={a.elegir_horario} className="mt-1" /> El aspirante elige su horario (si no, se lo asignas tú en Solicitudes)</label>
+              <label className={check}><input type="checkbox" name="pedir_tutor" defaultChecked={a.pedir_tutor} className="mt-1" /> Datos y autorización de mamá, papá o tutor para menores de edad</label>
+              <label className={`${check} rounded-lg border border-[#f2b544]/40 p-2`}><input type="checkbox" name="autorizacion_escuela" defaultChecked={a.autorizacion_escuela} className="mt-1" />
+                <span>Si no se piden datos del tutor: confirmo que la escuela u organización ya cuenta con la autorización de los padres de los menores.</span></label>
+            </fieldset>
+            <div className="flex flex-col gap-3">
+              <label className="flex flex-col gap-1.5 text-sm font-semibold">Quién la ve
+                <select className={input} name="visibilidad" defaultValue={a.visibilidad}>
+                  <option value="publica">Todos: aparece en la lista de audiciones</option>
+                  <option value="enlace">Solo con enlace (por ejemplo, una escuela)</option>
+                </select>
+              </label>
+              <label className="flex flex-col gap-1.5 text-sm font-semibold">Números del día
+                <select className={input} name="numeracion" defaultValue={a.numeracion}>
+                  <option value="llegada">Al llegar (orden de llegada)</option>
+                  <option value="previa">Asignación previa (lista en orden desde antes)</option>
+                </select>
+              </label>
+            </div>
+          </div>
+        </ActionForm>
+      </Card>
+
+      <Card className="flex flex-col gap-3">
+        <h2 className="titular text-xl">Equipo de esta convocatoria</h2>
+        <p className="text-sm text-texto-2">
+          {a.production_id
+            ? "El equipo de la obra ya tiene acceso según sus roles. Aquí puedes sumar personas solo para esta convocatoria (por ejemplo, un juez invitado)."
+            : "Personas que trabajan esta convocatoria general: mesa de registro, jueces o dirección. Solo el Director puede armar este equipo."}
+        </p>
+        <ul className="flex flex-col gap-2">
+          {miembros.map((m) => (
+            <li key={m.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-sala px-3 py-2 text-sm">
+              <span><b>{m.nombre || m.email}</b> <span className="text-texto-3">· {m.email} · {m.role_nombre}</span></span>
+              {armaEquipo && <ActionForm inline action={removeAuditionMember} hidden={{ ...h, id: m.id }} confirm={`¿Quitar el rol ${m.role_nombre} a ${m.nombre || m.email}?`} submit="Quitar" submitClass={ghost} />}
+            </li>
+          ))}
+          {miembros.length === 0 && <li className="text-sm text-texto-3">Nadie agregado aún.</li>}
+        </ul>
+        {armaEquipo && (
+          <ActionForm action={addAuditionMember} hidden={h} submit="Agregar al equipo">
+            <input className={`${input} max-w-md`} name="email" type="email" required placeholder="correo@ejemplo.com (debe tener cuenta DARF)" />
+            <div className="flex flex-wrap gap-2">
+              {opcionesRol.map((r) => (
+                <label key={r.id} className="flex items-center gap-2 rounded-full border border-white/20 px-3 py-1.5 text-sm has-[:checked]:border-white">
+                  <input type="checkbox" name="role" value={r.id} /> {r.nombre}
+                </label>
+              ))}
+            </div>
+          </ActionForm>
+        )}
       </Card>
 
       <Card className="flex flex-col gap-3">
@@ -107,7 +176,7 @@ export default async function AuditionConfig({ params }: PageProps<"/panel/produ
 
       <Card className="flex flex-col gap-3">
         <h2 className="titular text-xl">Preguntas del formulario</h2>
-        <p className="text-sm text-texto-2">Nombre, teléfono, fecha de nacimiento, foto, personajes y horario ya se piden siempre. Pide solo lo necesario.</p>
+        <p className="text-sm text-texto-2">Nombre, teléfono y fecha de nacimiento se piden siempre; foto y horario según las opciones de arriba. Pide solo lo necesario.</p>
         <ul className="flex flex-col gap-2">
           {(fields.data ?? []).map((f) => (
             <li key={f.id} className="flex items-center justify-between gap-3 rounded-lg bg-sala px-3 py-2 text-sm">

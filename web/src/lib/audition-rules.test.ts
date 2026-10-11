@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ageAt, lugares, score } from "./audition-rules";
+import { PLANTILLAS, ageAt, dayStatus, daySummary, lugares, minutos, score, videoSource } from "./audition-rules";
 
 describe("audiciones", () => {
   it("edad cumplida a la fecha de la audición", () => {
@@ -15,5 +15,44 @@ describe("audiciones", () => {
     expect(score("4.50")).toBe("4.5");
     expect(score(4)).toBe("4");
     expect(score(null)).toBe("—");
+  });
+});
+
+describe("audiciones 2.0", () => {
+  const base = { checked_in_at: null, entered_at: null, finished_at: null, estado: "inscrito" };
+  it("paso del día", () => {
+    expect(dayStatus(base)).toBe("pendiente");
+    expect(dayStatus({ ...base, checked_in_at: "x" })).toBe("llego");
+    expect(dayStatus({ ...base, checked_in_at: "x", entered_at: "y" })).toBe("en_sala");
+    expect(dayStatus({ ...base, checked_in_at: "x", entered_at: "y", finished_at: "z" })).toBe("termino");
+    expect(dayStatus({ ...base, estado: "no_cumple" })).toBe("no_cumple");
+  });
+  it("resumen y quién sigue (el primero en espera de la lista)", () => {
+    const rows = [
+      { ...base, n: 1, checked_in_at: "a", entered_at: "b", finished_at: "c" },
+      { ...base, n: 2, checked_in_at: "a", entered_at: "b" },
+      { ...base, n: 3 },
+      { ...base, n: 4, checked_in_at: "a" },
+      { ...base, n: 5, checked_in_at: "a" },
+    ];
+    const s = daySummary(rows);
+    expect([s.termino, s.en_sala, s.pendiente, s.llego]).toEqual([1, 1, 1, 2]);
+    expect(s.sigue?.n).toBe(4);
+  });
+  it("minutos en sala", () => {
+    expect(minutos("2026-10-11T10:00:00Z", "2026-10-11T10:07:20Z")).toBe(7);
+    expect(minutos(null, "2026-10-11T10:00:00Z")).toBeNull();
+  });
+  it("enlaces de video: solo https", () => {
+    expect(videoSource("https://youtu.be/abc")).toBe("youtube");
+    expect(videoSource("https://www.youtube.com/watch?v=abc")).toBe("youtube");
+    expect(videoSource("https://drive.google.com/file/d/x")).toBe("drive");
+    expect(videoSource("http://youtu.be/abc")).toBeNull();
+    expect(videoSource("javascript:alert(1)")).toBeNull();
+  });
+  it("la plantilla de escuela no pide tutor pero deja constancia de la autorización", () => {
+    expect(PLANTILLAS.escuela.opciones.pedir_tutor).toBe(false);
+    expect(PLANTILLAS.escuela.opciones.autorizacion_escuela).toBe(true);
+    for (const t of Object.values(PLANTILLAS)) expect(t.opciones.pedir_tutor || t.opciones.autorizacion_escuela).toBe(true);
   });
 });

@@ -280,6 +280,32 @@ decisión es tuya.
    eligiendo sus permisos.
 6. **Hace falta cuenta** para inscribirse a una audición.
 
+## 10. Audiciones 2.0 (ajuste de 3D, decisiones de Diego, 2026-10-11)
+
+> Nota: las decisiones registradas antes como "de Johann" son de Diego (DARF Productions).
+
+- **Convocatorias de obra o generales.** Una convocatoria puede pertenecer a una obra
+  (usa sus colores y su página muestra "Audiciones abiertas") o ser general (p. ej. un
+  llamado de bailarines). Las generales las crea el Director en **Panel → Audiciones**.
+- **Equipo por convocatoria.** Además del equipo de la obra, cada convocatoria puede tener
+  su propio equipo (Mesa de registro, Juez, Dirección…). En las generales lo arma el
+  Director; en las de obra, quien da permisos en la obra. Queda en la Bitácora.
+- **Opciones por convocatoria:** pedir datos del tutor (apagable solo si se confirma que la
+  escuela u organización ya tiene la autorización de los padres), pedir foto, que el
+  aspirante elija horario o que el equipo lo asigne, visible para todos o solo con enlace,
+  y números al llegar o por asignación previa.
+- **Plantillas al crear:** Audición abierta, Audición en escuela, Convocatoria de bailarines.
+- **Asignación previa:** número al inscribirse; "Ordenar por horario" (horario y fecha de
+  inscripción) y ↑ ↓ para mover a alguien. Quien ya llegó conserva su número.
+- **Día de la audición:** lista en orden con Llegó → Entró → Terminó (hora de cada paso),
+  "Sigue: Nº…", resumen (esperando, en sala, terminaron, faltan), filtro por horario y
+  actualización automática cada 20 s.
+- **Videos:** enlaces de YouTube (no listado) o Google Drive en la ficha de cada aspirante,
+  más videos generales del día por grupo. Los jueces los ven; los aspirantes no. En 3E la
+  ficha se liga al expediente de quien entre al elenco.
+- Base de datos: migración `0037_auditions_v2.sql` (pruebas `0037_auditions_v2_test.sql`,
+  T1–T8). En DEV se aplica con `supabase/dev/apply_0037_dev.sql` en el SQL Editor.
+
 ## Cómo se comprueba cada etapa
 
 - Pruebas SQL de permisos por rol (en local y en DEV) y las de boletería sin cambios.

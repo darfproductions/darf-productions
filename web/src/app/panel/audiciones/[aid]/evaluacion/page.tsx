@@ -1,11 +1,8 @@
 /* eslint-disable @next/next/no-img-element -- fotos privadas con enlace temporal */
 import type { Metadata } from "next";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { Card } from "@/components/panel/ui";
-import { signPhotos } from "@/lib/panel-auditions";
-import { can } from "@/lib/panel-nav";
-import { requirePanel } from "@/lib/permissions";
+import { requireAudition, signPhotos } from "@/lib/panel-auditions";
 import { createClient } from "@/lib/supabase/server";
 import { ScoreForm } from "./ScoreForm";
 
@@ -15,15 +12,18 @@ type Row = { id: string; numero: number; nombre: string; edad: number; foto_path
   canto: number | null; baile: number | null; actuacion: number | null; actitud: number | null; notas: string | null };
 
 // Evaluación del juez: solo quienes ya llegaron, en orden de número. Sin datos de contacto.
-export default async function Judging({ params, searchParams }: PageProps<"/panel/producciones/[id]/audiciones/[aid]/evaluacion">) {
-  const { id, aid } = await params;
+export default async function Judging({ params, searchParams }: PageProps<"/panel/audiciones/[aid]/evaluacion">) {
+  const { aid } = await params;
   const sp = await searchParams;
-  const access = await requirePanel(`/panel/producciones/${id}/audiciones/${aid}/evaluacion`);
-  if (!can(access, id, "audiciones.evaluar")) redirect(`/panel/producciones/${id}/audiciones/${aid}`);
+  await requireAudition(aid, ["audiciones.evaluar"], "/evaluacion");
   const ronda = Math.max(1, Number(sp.ronda ?? 1) || 1);
   const supabase = await createClient();
-  const { data, error } = await supabase.rpc("audition_judge_list", { aid, p_ronda: ronda });
+  const [{ data, error }, vids] = await Promise.all([
+    supabase.rpc("audition_judge_list", { aid, p_ronda: ronda }),
+    supabase.from("audition_videos").select("id, titulo, url, application_id").eq("audition_id", aid).not("application_id", "is", null),
+  ]);
   const rows = (data ?? []) as Row[];
+  const videosDe = (app: string) => (vids.data ?? []).filter((v) => v.application_id === app);
   const fotos = await signPhotos(rows.map((r) => r.foto_path));
   const hechas = rows.filter((r) => r.canto || r.baile || r.actuacion || r.actitud).length;
 
@@ -50,9 +50,10 @@ export default async function Judging({ params, searchParams }: PageProps<"/pane
                   <p className="font-bold">{r.nombre}</p>
                   <p className="text-sm text-texto-3">{r.edad} años</p>
                   {r.roles && <p className="text-xs text-texto-2">{r.roles.join(", ")}</p>}
+                  {videosDe(r.id).map((v) => <a key={v.id} href={v.url} target="_blank" rel="noreferrer" className="block text-xs text-violeta-claro underline">{v.titulo} ↗</a>)}
                 </div>
               </div>
-              <div className="flex-1"><ScoreForm pid={id} aid={aid} app={r.id} ronda={ronda} initial={{ canto: r.canto, baile: r.baile, actuacion: r.actuacion, actitud: r.actitud, notas: r.notas }} /></div>
+              <div className="flex-1"><ScoreForm aid={aid} app={r.id} ronda={ronda} initial={{ canto: r.canto, baile: r.baile, actuacion: r.actuacion, actitud: r.actitud, notas: r.notas }} /></div>
             </Card>
           </li>
         ))}

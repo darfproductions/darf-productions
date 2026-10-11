@@ -1,0 +1,55 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { Card, PanelTitle } from "@/components/panel/ui";
+import { ESTADO_CONVOCATORIA } from "@/lib/audition-rules";
+import { listPanelAuditions, type PanelAudition } from "@/lib/panel-auditions";
+import { hasAuditionAccess } from "@/lib/panel-nav";
+import { requirePanel } from "@/lib/permissions";
+import { NewAuditionForm } from "./NewAuditionForm";
+
+export const metadata: Metadata = { title: "Audiciones" };
+
+function Item({ a }: { a: PanelAudition }) {
+  return (
+    <Link href={`/panel/audiciones/${a.id}`} className="block rounded-2xl bg-telon p-5 hover:bg-telon-2">
+      <p className="text-xs font-bold uppercase tracking-[0.2em] text-texto-3">
+        {a.productions?.nombre ?? "Convocatoria general"} · {ESTADO_CONVOCATORIA[a.estado] ?? a.estado}
+        {a.visibilidad === "enlace" ? " · solo con enlace" : ""}
+      </p>
+      <p className="mt-1 text-lg font-bold">{a.titulo}</p>
+    </Link>
+  );
+}
+
+// Todas las convocatorias que puedo trabajar: generales y de cada obra.
+export default async function AuditionsHome() {
+  const access = await requirePanel("/panel/audiciones");
+  if (!hasAuditionAccess(access)) redirect("/panel");
+  const all = await listPanelAuditions(access);
+  const generales = all.filter((a) => !a.production_id);
+  const deObra = all.filter((a) => a.production_id);
+  return (
+    <>
+      <PanelTitle eyebrow="Panel" title="Audiciones">
+        Convocatorias generales (sin obra, como un llamado de bailarines) y las de cada producción.
+      </PanelTitle>
+      <section className="flex flex-col gap-3">
+        <h2 className="titular text-xl">Generales</h2>
+        {generales.map((a) => <Item key={a.id} a={a} />)}
+        {generales.length === 0 && <Card>No hay convocatorias generales.</Card>}
+        {access.isDirector && (
+          <Card>
+            <h3 className="titular mb-3 text-lg">Nueva convocatoria general</h3>
+            <NewAuditionForm pid={null} />
+          </Card>
+        )}
+      </section>
+      <section className="flex flex-col gap-3">
+        <h2 className="titular text-xl">De una producción</h2>
+        {deObra.map((a) => <Item key={a.id} a={a} />)}
+        {deObra.length === 0 && <Card>Ninguna todavía. Se crean desde la pestaña Audiciones de cada producción.</Card>}
+      </section>
+    </>
+  );
+}

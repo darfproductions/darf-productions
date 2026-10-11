@@ -6,10 +6,32 @@ export type PanelAccessData = {
   isDirector: boolean;
   /** obra → permisos que tengo en ella. */
   byProduction: Record<string, string[]>;
+  /** convocatoria → permisos por su equipo propio (0037). */
+  byAudition?: Record<string, string[]>;
 };
 
 export function hasAnyAccess(a: PanelAccessData): boolean {
-  return a.isDirector || Object.values(a.byProduction).some((p) => p.length > 0);
+  return a.isDirector || Object.values(a.byProduction).some((p) => p.length > 0) || Object.values(a.byAudition ?? {}).some((p) => p.length > 0);
+}
+
+const AUD_PERMS = ["audiciones.gestionar", "audiciones.registro", "audiciones.evaluar"];
+
+/** Permiso sobre una convocatoria: el de su obra (general: solo el Director) o el de su equipo propio. */
+export function canAudition(a: PanelAccessData, aud: { id: string; production_id: string | null }, perm: string): boolean {
+  if (a.isDirector) return true;
+  if (aud.production_id && can(a, aud.production_id, perm)) return true;
+  return (a.byAudition?.[aud.id] ?? []).includes(perm);
+}
+
+export function canSeeAudition(a: PanelAccessData, aud: { id: string; production_id: string | null }): boolean {
+  return AUD_PERMS.some((p) => canAudition(a, aud, p));
+}
+
+/** ¿Mostrar "Audiciones" en el menú general? */
+export function hasAuditionAccess(a: PanelAccessData): boolean {
+  return a.isDirector
+    || Object.values(a.byProduction).some((p) => p.some((x) => AUD_PERMS.includes(x)))
+    || Object.values(a.byAudition ?? {}).some((p) => p.length > 0);
 }
 
 export function can(a: PanelAccessData, productionId: string, perm: string): boolean {
@@ -66,6 +88,7 @@ export function globalSections(a: PanelAccessData): Section[] {
   const base: Section[] = [
     { href: "/panel", label: "Inicio" },
     { href: "/panel/producciones", label: "Producciones" },
+    ...(hasAuditionAccess(a) ? [{ href: "/panel/audiciones", label: "Audiciones" }] : []),
   ];
   if (!a.isDirector) return base;
   return [

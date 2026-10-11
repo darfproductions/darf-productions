@@ -34,7 +34,7 @@ export default async function AudicionesPage() {
               {convocatorias.map((a) => (
                 <li key={a.id}>
                   <Link href={`/audiciones/${a.id}`} className="block rounded-2xl bg-telon p-6 transition-transform hover:-translate-y-0.5">
-                    <p className="text-xs font-bold uppercase tracking-[0.2em] text-texto-3">{ESTADO_CONVOCATORIA[a.estado]}</p>
+                    <p className="text-xs font-bold uppercase tracking-[0.2em] text-texto-3">{a.productions?.nombre ?? "Convocatoria general"} · {ESTADO_CONVOCATORIA[a.estado]}</p>
                     <p className="mt-1 text-xl font-bold">{a.titulo}</p>
                     {a.inscripcion_cierra && <p className="mt-1 text-sm capitalize text-texto-2">Inscripción hasta {formatSlot(a.inscripcion_cierra)}</p>}
                     <span className="mt-3 inline-block text-sm font-bold text-violeta-claro">{a.estado === "abierta" ? "Ver e inscribirme →" : "Ver detalles →"}</span>

@@ -14,12 +14,12 @@ const VISTA: Record<string, { bg: string; title: string }> = {
 };
 
 // Mesa de registro: lee el QR de la inscripción o se marca a mano.
-export function Desk({ pid, aid }: { pid: string; aid: string }) {
+export function Desk({ aid }: { aid: string }) {
   const router = useRouter();
   const [res, setRes] = useState<DeskResult | null>(null);
   const [pending, start] = useTransition();
   const v = res ? VISTA[res.result] ?? VISTA.error : null;
-  const run = (ref: string) => start(async () => { setRes(await deskCheckin(pid, aid, ref)); router.refresh(); });
+  const run = (ref: string) => start(async () => { setRes(await deskCheckin(aid, ref)); router.refresh(); });
   return (
     <div className="flex flex-col gap-4">
       {res && v && (

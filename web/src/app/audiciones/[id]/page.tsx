@@ -6,6 +6,7 @@ import { PageHeading } from "@/components/PageHeading";
 import { getSession } from "@/lib/auth";
 import { ESTADO_CONVOCATORIA, ESTADO_SOLICITUD } from "@/lib/audition-rules";
 import { formatSlot, getAudition, getMyApplication } from "@/lib/auditions";
+import { getProduction, getTheme, themeStyle } from "@/lib/productions";
 import { cancelMyApplication } from "./actions";
 import { ApplyForm } from "./ApplyForm";
 
@@ -16,20 +17,27 @@ export async function generateMetadata({ params }: PageProps<"/audiciones/[id]">
 }
 
 // Convocatoria pública: requisitos, personajes, horarios e inscripción (con cuenta).
+// Si es de una obra, usa los colores de la obra y enlaza a su página.
 export default async function AuditionPage({ params }: PageProps<"/audiciones/[id]">) {
   const { id } = await params;
   const data = await getAudition(id);
   if (!data) notFound();
   const { audition: a, roles, fields, slots } = data;
-  const session = await getSession();
+  const [session, obra] = await Promise.all([getSession(), a.production_id ? getProduction(a.production_id) : null]);
+  const theme = obra ? getTheme(obra.production) : null;
   const mine = session ? await getMyApplication(a.id, session.userId) : null;
   const abierta = a.estado === "abierta" && (!a.inscripcion_cierra || new Date(a.inscripcion_cierra) > new Date());
   const qr = mine && !mine.checked_in_at && !["cancelado", "no_cumple"].includes(mine.estado) ? await QRCode.toDataURL(mine.qr_token, { margin: 1, width: 240 }) : null;
   const edades = a.edad_min || a.edad_max ? `${a.edad_min ? `de ${a.edad_min}` : ""}${a.edad_max ? ` hasta ${a.edad_max}` : ""} años` : null;
 
   return (
-    <main className="pb-10">
-      <PageHeading eyebrow={`Audiciones · ${ESTADO_CONVOCATORIA[a.estado] ?? a.estado}`} title={a.titulo}>
+    <main style={themeStyle(theme)} className={`pb-10 ${theme ? "min-h-dvh bg-obra-fondo text-obra-texto" : ""}`}>
+      {obra && (
+        <div className="mx-auto max-w-[1440px] px-5 pt-6 md:px-16">
+          <Link href={`/producciones/${obra.production.id}`} className="text-sm font-bold uppercase tracking-[0.2em] text-obra-acento">← {obra.production.nombre}</Link>
+        </div>
+      )}
+      <PageHeading eyebrow={`${obra ? obra.production.nombre : "Convocatoria general"} · Audiciones · ${ESTADO_CONVOCATORIA[a.estado] ?? a.estado}`} title={a.titulo}>
         {a.descripcion}
       </PageHeading>
       <div className="mx-auto grid max-w-[1440px] gap-8 px-5 md:px-16 lg:grid-cols-12">
@@ -41,7 +49,8 @@ export default async function AuditionPage({ params }: PageProps<"/audiciones/[i
               <div className="flex flex-col gap-1">
                 <p className="text-lg font-bold">Ya estás inscrito</p>
                 <p className="text-sm">Estado: <b>{ESTADO_SOLICITUD[mine.estado]?.label ?? mine.estado}</b>{mine.audition_slots ? ` · ${formatSlot(mine.audition_slots.inicia)}` : ""}</p>
-                {mine.numero && <p className="text-sm">Tu número: <b>{mine.numero}</b></p>}
+                {mine.numero && <p className="text-sm">Tu número: <b>{mine.numero}</b>{!mine.checked_in_at && a.numeracion === "previa" ? " (puede ajustarse antes del día)" : ""}</p>}
+                {!mine.audition_slots && !a.elegir_horario && <p className="text-sm text-texto-2">Te avisaremos tu horario.</p>}
                 {qr && <p className="text-sm text-texto-2">Muestra este QR en la mesa de registro el día de la audición.</p>}
                 {!mine.checked_in_at && ["inscrito", "convocado", "en_espera"].includes(mine.estado) && (
                   <form action={cancelMyApplication}>
@@ -63,7 +72,8 @@ export default async function AuditionPage({ params }: PageProps<"/audiciones/[i
           {abierta && session && !mine?.checked_in_at && (
             <>
               <h2 className="titular text-2xl">{mine && mine.estado !== "cancelado" ? "Editar mi inscripción" : "Inscripción"}</h2>
-              <ApplyForm aid={a.id} userId={session.userId} roles={roles} fields={fields} slots={slots} defaults={{ nombre: session.profile?.nombre ?? "", telefono: session.profile?.telefono ?? "" }} previa={mine} />
+              <ApplyForm aid={a.id} userId={session.userId} roles={roles} fields={fields} slots={a.elegir_horario ? slots : []} fechaAudicion={slots[0]?.inicia ?? null}
+                opciones={{ pedirFoto: a.pedir_foto, pedirTutor: a.pedir_tutor }} defaults={{ nombre: session.profile?.nombre ?? "", telefono: session.profile?.telefono ?? "" }} previa={mine} />
             </>
           )}
           {!abierta && !mine && <p className="rounded-2xl bg-telon p-6 text-texto-2">La inscripción a esta convocatoria está cerrada.</p>}

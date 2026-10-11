@@ -3,6 +3,7 @@ import { CastGrid, Ensemble, TeamGroups } from "@/components/Credits";
 import { Section } from "@/components/PageHeading";
 import { HeroBackdrop, ProductionLogo } from "@/components/PosterArt";
 import { YouTube } from "@/components/YouTube";
+import { listOpenAuditionsFor } from "@/lib/auditions";
 import { getProductionContent, getRehearsalCount } from "@/lib/production-content";
 import {
   formatPerformanceDate,
@@ -19,7 +20,7 @@ import {
 export async function ProductionView({ data }: { data: NonNullable<Awaited<ReturnType<typeof getProduction>>> }) {
   const { production: p, performances, prices } = data;
   const theme = getTheme(p);
-  const [c, gallery, ensayos] = await Promise.all([getProductionContent(p.id), getGallery(p.id), getRehearsalCount(p.id)]);
+  const [c, gallery, ensayos, audiciones] = await Promise.all([getProductionContent(p.id), getGallery(p.id), getRehearsalCount(p.id), listOpenAuditionsFor(p.id)]);
   const canciones = c.actos.reduce((n, a) => n + a.canciones.length, 0);
   const videos = c.videos;
   const equipos = [
@@ -63,6 +64,11 @@ export async function ProductionView({ data }: { data: NonNullable<Awaited<Retur
           <div className="flex flex-wrap gap-3">
             {!p.concluded && performances.some((f) => f.on_sale) && (
               <a href="#funciones" className="boton-compra rounded-full px-7 py-4 text-sm font-bold uppercase tracking-[0.1em]">Comprar boletos</a>
+            )}
+            {audiciones.length > 0 && (
+              <Link href={audiciones.length === 1 ? `/audiciones/${audiciones[0].id}` : "/audiciones"} className="rounded-full border border-obra-acento bg-obra-fondo/60 px-6 py-4 text-sm font-bold uppercase tracking-[0.1em] backdrop-blur">
+                Audiciones abiertas
+              </Link>
             )}
             {ensayos > 0 ? (
               <Link href={`/fan-zone/${p.id}`} className="rounded-full border border-obra-acento bg-obra-fondo/60 px-6 py-4 text-sm font-bold uppercase tracking-[0.1em] backdrop-blur">Fan Zone</Link>

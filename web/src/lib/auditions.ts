@@ -1,11 +1,18 @@
 import { createClient } from "@/lib/supabase/server";
 
-// Lecturas de audiciones (0036). Pasan por RLS: el público ve convocatorias
-// abiertas, cerradas o finalizadas; cada aspirante, solo su inscripción.
+// Lecturas de audiciones (0036, 0037). Pasan por RLS: el público ve convocatorias
+// abiertas, cerradas o finalizadas; cada aspirante, solo su inscripción. Las de
+// "solo con enlace" no salen en la lista, pero se abren con su dirección.
 
 export type Audition = {
   id: string;
-  production_id: string;
+  production_id: string | null;
+  productions: { nombre: string } | null;
+  pedir_tutor: boolean;
+  pedir_foto: boolean;
+  elegir_horario: boolean;
+  visibilidad: "publica" | "enlace";
+  numeracion: "llegada" | "previa";
   titulo: string;
   descripcion: string | null;
   requisitos: string | null;
@@ -19,12 +26,22 @@ export type AuditionRole = { id: string; nombre: string; descripcion: string | n
 export type AuditionField = { id: string; etiqueta: string; tipo: "texto" | "parrafo" | "enlace" | "opcion" | "si_no"; opciones: string[] | null; obligatorio: boolean; orden: number };
 export type AuditionSlot = { id: string; inicia: string; sala: string | null; cupo: number; ocupados: number };
 
-const COLS = "id, production_id, titulo, descripcion, requisitos, sede, estado, inscripcion_cierra, edad_min, edad_max";
+const COLS =
+  "id, production_id, titulo, descripcion, requisitos, sede, estado, inscripcion_cierra, edad_min, edad_max, pedir_tutor, pedir_foto, elegir_horario, visibilidad, numeracion, productions(nombre)";
 
 export async function listPublicAuditions(): Promise<Audition[]> {
   const supabase = await createClient();
-  const { data } = await supabase.from("auditions").select(COLS).in("estado", ["abierta", "cerrada"]).order("created_at", { ascending: false });
-  return (data ?? []) as Audition[];
+  const { data } = await supabase.from("auditions").select(COLS).in("estado", ["abierta", "cerrada"]).eq("visibilidad", "publica").order("created_at", { ascending: false });
+  return (data ?? []) as unknown as Audition[];
+}
+
+/** Convocatorias abiertas y públicas de una obra (aviso en su página). */
+export async function listOpenAuditionsFor(pid: string): Promise<{ id: string; titulo: string }[]> {
+  const supabase = await createClient();
+  const { data } = await supabase.from("auditions").select("id, titulo, inscripcion_cierra")
+    .eq("production_id", pid).eq("estado", "abierta").eq("visibilidad", "publica").order("created_at", { ascending: false });
+  const now = Date.now();
+  return (data ?? []).filter((a) => !a.inscripcion_cierra || new Date(a.inscripcion_cierra as string).getTime() > now).map((a) => ({ id: a.id as string, titulo: a.titulo as string }));
 }
 
 export async function getAudition(id: string) {
@@ -38,7 +55,7 @@ export async function getAudition(id: string) {
   ]);
   if (!a.data) return null;
   return {
-    audition: a.data as Audition,
+    audition: a.data as unknown as Audition,
     roles: (roles.data ?? []) as AuditionRole[],
     fields: (fields.data ?? []) as AuditionField[],
     slots: (slots.data ?? []) as AuditionSlot[],

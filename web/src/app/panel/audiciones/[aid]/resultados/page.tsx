@@ -1,11 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { ActionForm } from "@/components/panel/ActionForm";
 import { Card } from "@/components/panel/ui";
 import { ESTADO_SOLICITUD, score } from "@/lib/audition-rules";
-import { can } from "@/lib/panel-nav";
-import { requirePanel } from "@/lib/permissions";
+import { requireAudition } from "@/lib/panel-auditions";
 import { createClient } from "@/lib/supabase/server";
 import { setApplicationEstado } from "../../actions";
 
@@ -16,11 +14,10 @@ type Row = { id: string; numero: number; nombre: string; edad: number; estado: s
 const btn = "rounded-full border border-white/25 px-3 py-1.5 text-xs font-bold hover:border-white/50 disabled:opacity-60";
 
 // Tablero consolidado (solo dirección): promedios por criterio, notas y decisión.
-export default async function Results({ params, searchParams }: PageProps<"/panel/producciones/[id]/audiciones/[aid]/resultados">) {
-  const { id, aid } = await params;
+export default async function Results({ params, searchParams }: PageProps<"/panel/audiciones/[aid]/resultados">) {
+  const { aid } = await params;
   const sp = await searchParams;
-  const access = await requirePanel(`/panel/producciones/${id}/audiciones/${aid}/resultados`);
-  if (!can(access, id, "audiciones.gestionar")) redirect(`/panel/producciones/${id}/audiciones/${aid}`);
+  await requireAudition(aid, ["audiciones.gestionar"], "/resultados");
   const ronda = Math.max(1, Number(sp.ronda ?? 1) || 1);
   const rol = typeof sp.rol === "string" ? sp.rol : "";
   const supabase = await createClient();
@@ -29,7 +26,7 @@ export default async function Results({ params, searchParams }: PageProps<"/pane
     supabase.from("audition_roles").select("nombre").eq("audition_id", aid).order("orden"),
   ]);
   const rows = ((data ?? []) as Row[]).filter((r) => !rol || r.roles?.includes(rol));
-  const h = (app: string, r: number) => ({ pid: id, aid, app, ronda: String(r) });
+  const h = (app: string, r: number) => ({ aid, app, ronda: String(r) });
 
   return (
     <>
@@ -54,7 +51,7 @@ export default async function Results({ params, searchParams }: PageProps<"/pane
               <tr key={r.id} className="align-top">
                 <td className="px-3 py-3 font-black">{r.numero}</td>
                 <td className="px-3 py-3">
-                  <p className="font-bold">{r.nombre} <span className="font-normal text-texto-3">· {r.edad}</span></p>
+                  <p className="font-bold"><Link href={`/panel/audiciones/${aid}/aspirante/${r.id}`} className="hover:underline">{r.nombre}</Link> <span className="font-normal text-texto-3">· {r.edad}</span></p>
                   {r.roles && <p className="text-xs text-texto-3">{r.roles.join(", ")}</p>}
                   <span className={`mt-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-bold ${ESTADO_SOLICITUD[r.estado]?.cls}`}>{ESTADO_SOLICITUD[r.estado]?.label}</span>
                   {r.notas.length > 0 && (

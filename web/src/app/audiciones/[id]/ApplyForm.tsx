@@ -11,14 +11,17 @@ const field = "rounded-lg bg-sala px-3 py-3 font-normal";
 const fmt = (iso: string) =>
   new Intl.DateTimeFormat("es-MX", { weekday: "long", day: "numeric", month: "long", hour: "numeric", minute: "2-digit", timeZone: "America/Mexico_City" }).format(new Date(iso));
 
-// Formulario de inscripción. Si la persona es menor (a la fecha de la audición),
-// pide datos y autorización de su madre, padre o tutor.
+// Formulario de inscripción. Si la persona es menor (a la fecha de la audición) y la
+// convocatoria lo pide, solicita datos y autorización de su madre, padre o tutor.
+// Foto y horario también dependen de las opciones de la convocatoria (0037).
 export function ApplyForm(props: {
   aid: string;
   userId: string;
   roles: AuditionRole[];
   fields: AuditionField[];
   slots: AuditionSlot[];
+  fechaAudicion: string | null;
+  opciones: { pedirFoto: boolean; pedirTutor: boolean };
   defaults: { nombre: string; telefono: string };
   previa: MyApplication | null;
 }) {
@@ -28,9 +31,9 @@ export function ApplyForm(props: {
   const [foto, setFoto] = useState(p?.foto_path ?? "");
   const [fotoMsg, setFotoMsg] = useState("");
   const [subiendo, setSubiendo] = useState(false);
-  const fechaAudicion = props.slots[0] ? new Date(props.slots[0].inicia) : new Date();
+  const fechaAudicion = props.fechaAudicion ? new Date(props.fechaAudicion) : new Date();
   const edad = nac ? ageAt(nac, fechaAudicion) : null;
-  const menor = edad !== null && edad < 18;
+  const menor = edad !== null && edad < 18 && props.opciones.pedirTutor;
 
   async function subirFoto(file: File) {
     setFotoMsg("");
@@ -67,13 +70,13 @@ export function ApplyForm(props: {
         <input className={field} name="fecha_nacimiento" type="date" required value={nac} onChange={(e) => setNac(e.target.value)} />
         {edad !== null && <span className="text-xs font-normal text-texto-3">Tendrás {edad} años el día de la audición.</span>}
       </label>
-      <div className="flex flex-col gap-1.5 text-sm font-semibold">Foto (rostro, vertical)
+      {props.opciones.pedirFoto && <div className="flex flex-col gap-1.5 text-sm font-semibold">Foto (rostro, vertical)
         <label className="cursor-pointer self-start rounded-full border border-white/25 px-4 py-2.5 text-sm font-bold hover:border-white/50">
           {subiendo ? "Subiendo…" : foto ? "Cambiar foto" : "Subir foto"}
           <input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" disabled={subiendo} onChange={(e) => { const f = e.target.files?.[0]; if (f) void subirFoto(f); }} />
         </label>
         {fotoMsg && <span className="text-xs font-normal text-texto-2">{fotoMsg}</span>}
-      </div>
+      </div>}
 
       {props.roles.length > 0 && (
         <fieldset className="flex flex-col gap-2 sm:col-span-2">

@@ -6,11 +6,11 @@ import { saveScore, type AudState } from "../../actions";
 const CRITERIOS = [["canto", "Canto"], ["baile", "Baile"], ["actuacion", "Actuación"], ["actitud", "Actitud"]] as const;
 
 // Calificación de un juez para una persona (1–5 por criterio + notas privadas).
-export function ScoreForm({ pid, aid, app, ronda, initial }: { pid: string; aid: string; app: string; ronda: number; initial: Record<string, number | string | null> }) {
+export function ScoreForm({ aid, app, ronda, initial }: { aid: string; app: string; ronda: number; initial: Record<string, number | string | null> }) {
   const [state, run, pending] = useActionState<AudState, FormData>(saveScore, null);
   return (
     <form action={run} className="flex flex-col gap-3">
-      {Object.entries({ pid, aid, app, ronda: String(ronda) }).map(([k, v]) => <input key={k} type="hidden" name={k} value={v} />)}
+      {Object.entries({ aid, app, ronda: String(ronda) }).map(([k, v]) => <input key={k} type="hidden" name={k} value={v} />)}
       {CRITERIOS.map(([k, label]) => (
         <fieldset key={k} className="flex flex-wrap items-center gap-2">
           <legend className="sr-only">{label}</legend>
