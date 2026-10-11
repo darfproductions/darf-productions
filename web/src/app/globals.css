@@ -22,6 +22,7 @@
   --obra-superficie: var(--telon);
   --obra-texto: var(--texto);
   --obra-acento: var(--violeta-claro);
+  --obra-sombra: rgb(0 0 0 / 0.5);
 }
 
 @theme inline {

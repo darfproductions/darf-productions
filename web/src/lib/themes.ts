@@ -2,8 +2,8 @@ import type { StaticImageData } from "next/image";
 import { contrastRatio } from "@/lib/kit-rules";
 import showmanLogo from "@/assets/producciones/showman-title.webp";
 import showmanAmbiente from "@/assets/producciones/showman-ambiente.jpg";
-import mmLogo from "@/assets/producciones/mm-logo-oscuro.webp";
-import mmAmbiente from "@/assets/producciones/mm-ambiente.jpg";
+import mmLogo from "@/assets/producciones/mm-title.webp";
+import mmAmbiente from "@/assets/producciones/mm-ambiente-claro.jpg";
 import hsmLogo from "@/assets/producciones/hsm-title.webp";
 import hsmAmbiente from "@/assets/producciones/hsm-ambiente.jpg";
 
@@ -14,12 +14,12 @@ import hsmAmbiente from "@/assets/producciones/hsm-ambiente.jpg";
 // desde el panel; por ahora vive aquí para las tres producciones existentes.
 
 export type ProductionTheme = {
-  /** Fondo de la página de la obra (siempre oscuro: modo único DARF). */
+  /** Fondo de la página de la obra: lo elige cada obra (claro u oscuro). */
   fondo: string;
   superficie: string;
   texto: string;
   acento: string;
-  /** Logo del título, transparente, en versión para fondo oscuro. Obligatorio. */
+  /** Logo del título, transparente, en la versión que se lee sobre `fondo`. Obligatorio. */
   logo: StaticImageData;
   /** Imagen de ambiente horizontal 16:9, sin texto. Obligatoria. */
   ambiente: StaticImageData;
@@ -37,11 +37,11 @@ export const THEMES: Record<string, ProductionTheme> = {
     tagline: "Bienvenidos al espectáculo más grande.",
   },
   mm: {
-    fondo: "#0c1233",
-    superficie: "#16204d",
-    texto: "#f6f2fb",
-    acento: "#f2709c",
-    // Provisional: versión clara generada del logo oficial (azul) hasta que DARF entregue la oficial.
+    // Fondo blanco con flores, como su identidad original (decisión de Johann, 2026-10-11).
+    fondo: "#f8f7f5",
+    superficie: "#ffffff",
+    texto: "#13235c",
+    acento: "#c2255c",
     logo: mmLogo,
     ambiente: mmAmbiente,
     tagline: "Una boda, tres posibles padres y la música de ABBA.",
@@ -67,16 +67,21 @@ export function themeProblems(t: ProductionTheme): string[] {
   if (contrastRatio(t.texto, t.fondo) < 4.5) out.push("El texto no se lee sobre el fondo (mínimo 4.5:1).");
   if (contrastRatio(t.texto, t.superficie) < 4.5) out.push("El texto no se lee sobre la superficie (mínimo 4.5:1).");
   if (contrastRatio(t.acento, t.fondo) < 3) out.push("El acento no se distingue del fondo (mínimo 3:1).");
-  // Modo único oscuro: el fondo debe ser oscuro (la plantilla asume texto claro y el menú DARF).
-  if (contrastRatio(t.fondo, "#000000") > 2) out.push("El fondo debe ser oscuro (modo único DARF).");
   if (t.ambiente.width / t.ambiente.height < 1.6) out.push("La imagen de ambiente debe ser horizontal (16:9).");
   return out;
+}
+
+/** Fondo claro u oscuro: decide sombras y velos de la plantilla, no el diseño. */
+export function isLight(fondo: string): boolean {
+  return contrastRatio(fondo, "#000000") > contrastRatio(fondo, "#ffffff");
 }
 
 /** Variables CSS que el tema de la obra sobreescribe (ver globals.css). */
 export function themeStyle(theme: ProductionTheme | null): React.CSSProperties {
   if (!theme) return {};
   return {
+    // Sombra del logo: oscura sobre fondos oscuros, casi nada sobre claros.
+    "--obra-sombra": isLight(theme.fondo) ? "rgb(19 35 92 / 0.12)" : "rgb(0 0 0 / 0.5)",
     "--obra-fondo": theme.fondo,
     "--obra-superficie": theme.superficie,
     "--obra-texto": theme.texto,

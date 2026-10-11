@@ -15,20 +15,25 @@ logo azul no se leía sobre fondo oscuro).
 ## 2. El kit de producción — versión 2 (decisiones de Johann, 2026-10-10)
 
 Cambios respecto a la versión 1: **sin cartel** (cambia de tamaño y trae
-información de más), **modo único oscuro** para todas las obras, **imagen de
-ambiente obligatoria**.
+información de más) e **imagen de ambiente obligatoria**.
+
+**Actualización 2026-10-11 (Johann):** se descarta el "modo único oscuro".
+**Cada obra elige su color de fondo** en su paleta (Mamma Mia vuelve a blanco
+con flores, como HSM tiene rojo). La plantilla (medidas, orden, tipografía) no
+cambia; solo se adaptan sombras y velos al fondo claro u oscuro. El menú DARF
+queda siempre arriba, sobre la sala oscura, y el hero empieza debajo, para que
+funcione con cualquier fondo.
 
 | Pieza | Especificación | Validación |
 |---|---|---|
-| Logo del título | PNG o WebP con fondo transparente, **versión para fondo oscuro** (claro/luminoso), mínimo 1200 px de ancho, sin márgenes vacíos | Obligatorio para publicar; contraste contra el fondo de la obra |
+| Logo del título | PNG o WebP con fondo transparente, en la **versión que se lee sobre el fondo de la obra**, mínimo 1200 px de ancho, sin márgenes vacíos | Obligatorio para publicar; se revisa a ojo en la vista previa |
 | Imagen de ambiente | Horizontal **16:9**, mínimo **1920×1080**, **sin texto ni logos**; lo importante hacia la derecha (a la izquierda va el logo con un degradado) | Obligatoria; proporción ≥ 1.6 |
-| Colores | Fondo (oscuro), superficie, texto y acento, en hex | Texto/fondo y texto/superficie ≥ 4.5:1; acento/fondo ≥ 3:1; fondo oscuro |
+| Colores | Fondo (el que elija la obra, claro u oscuro), superficie, texto y acento, en hex | Texto/fondo y texto/superficie ≥ 4.5:1; acento/fondo ≥ 3:1 |
 | Frase corta | Una línea bajo el logo | Obligatoria, máx. 120 caracteres |
 
 **Material provisional en DEV (hay que reemplazarlo por el oficial):**
-- Mamma Mia: logo en versión clara **generado** a partir del oficial azul
-  (`mm-logo-oscuro.webp`); ambiente generado a partir de las flores del cartel
-  (papel blanco reemplazado por azul noche).
+- Mamma Mia: logo oficial azul; ambiente recortado a 16:9 de las flores sobre
+  pared blanca (original cuadrado de 1600 px, ampliado a 1920×1080).
 - Showman: ambiente recortado del escenario a 16:9, solo 1545 px de ancho
   (debajo del mínimo).
 - HSM: ambiente recortado del telón a 16:9.
@@ -81,7 +86,7 @@ WebP, rostro centrado en el tercio superior, misma sesión para toda la obra.
 Se suben por obra, nombrados con el nombre completo de la persona.
 
 Lo que **no** cambia por obra: estructura, medidas, orden, tipografía
-(Montserrat), menú, modo oscuro y el botón de compra con la luz DARF.
+(Montserrat), menú DARF y el botón de compra con la luz DARF.
 
 Implementado en `web/src/lib/themes.ts` y `web/src/components/PosterArt.tsx`;
 las reglas del kit se prueban en CI (`kits.test.ts`).
@@ -96,7 +101,7 @@ referencian. `on_sale` y `concluded` siguen existiendo y funcionando igual.
 `archivada`, `cancelada`, `oculta`), `temporada`, `frase`, `sinopsis`,
 `color_fondo`, `color_superficie`, `color_texto`, `color_acento`, `logo_path`,
 `ambiente_path`, `publicada_at`.
-- Restricciones: colores con formato hex; fondo oscuro.
+- Restricciones: colores con formato hex (el fondo puede ser claro u oscuro).
 - Trigger: no se puede pasar a `publicada` si falta una pieza obligatoria del kit
   (logo, ambiente, colores, frase) o si los colores no cumplen el contraste
   (función SQL de contraste, la misma fórmula que la web).
