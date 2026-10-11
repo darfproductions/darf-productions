@@ -1,0 +1,172 @@
+"use server";
+
+import QRCode from "qrcode";
+import { revalidatePath } from "next/cache";
+import { localMxToIso } from "@/lib/dates";
+import { createClient } from "@/lib/supabase/server";
+
+// Boletería de la obra en el panel. Usa las MISMAS funciones de la base que la
+// 1.0 (approve_order, admin_create_seated_order, …); 0034 solo cambió quién
+// puede usarlas: cada permiso en SU obra.
+
+export type TicketState = { ok: boolean; message: string } | null;
+
+const refresh = (pid: string) => {
+  revalidatePath(`/panel/producciones/${pid}`, "layout");
+  revalidatePath(`/producciones/${pid}`);
+  revalidatePath("/cartelera");
+};
+
+export async function approveOrder(_p: TicketState, f: FormData): Promise<TicketState> {
+  const pid = String(f.get("pid"));
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("approve_order", { target_order_id: String(f.get("order")) });
+  if (error) return { ok: false, message: error.message };
+  refresh(pid);
+  return { ok: true, message: "Orden aprobada: los boletos ya aparecen en la cuenta del comprador." };
+}
+
+export async function rejectOrder(_p: TicketState, f: FormData): Promise<TicketState> {
+  const pid = String(f.get("pid"));
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("reject_order", { target_order_id: String(f.get("order")) });
+  if (error) return { ok: false, message: error.message };
+  refresh(pid);
+  return { ok: true, message: "Orden rechazada: los asientos quedaron libres." };
+}
+
+export async function cancelTicket(_p: TicketState, f: FormData): Promise<TicketState> {
+  const pid = String(f.get("pid"));
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("admin_cancel_ticket", { target_ticket_id: String(f.get("ticket")) });
+  if (error) return { ok: false, message: error.message };
+  refresh(pid);
+  return { ok: true, message: "Boleto cancelado: el asiento quedó libre." };
+}
+
+export type SaleResult =
+  | { ok: true; orderCode: string; total: number; tickets: { seat: string; qr: string }[] }
+  | { ok: false; message: string };
+
+/** Venta en taquilla (queda aprobada al momento; mismo RPC que la 1.0). */
+export async function boxOfficeSale(input: { pid: string; performanceId: string; seatIds: string[]; nombre: string; telefono: string; vendedor: string }): Promise<SaleResult> {
+  if (!input.nombre.trim() || !input.telefono.trim()) return { ok: false, message: "Escribe nombre y teléfono del comprador." };
+  if (!input.seatIds.length) return { ok: false, message: "Elige al menos un asiento." };
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("admin_create_seated_order", {
+    target_performance_id: input.performanceId,
+    target_buyer_nombre: input.nombre.trim(),
+    target_buyer_telefono: input.telefono.trim(),
+    target_seat_ids: input.seatIds,
+    target_seller_codigo: input.vendedor.trim() || null,
+  });
+  if (error) return { ok: false, message: error.message };
+  const r = data as { order_code: string; total: number; tickets: { seat_label: string; qr_token: string }[] };
+  const tickets = await Promise.all(
+    (r.tickets ?? []).map(async (t) => ({ seat: t.seat_label, qr: await QRCode.toDataURL(t.qr_token, { margin: 1, width: 240 }) })),
+  );
+  refresh(input.pid);
+  return { ok: true, orderCode: r.order_code, total: Number(r.total), tickets };
+}
+
+// ──────── Funciones y precios (funciones.gestionar) ────────
+
+export async function createPerformance(_p: TicketState, f: FormData): Promise<TicketState> {
+  const pid = String(f.get("pid"));
+  const fecha = String(f.get("fecha") ?? "");
+  const starts_at = fecha ? localMxToIso(fecha) : null;
+  if (fecha && !starts_at) return { ok: false, message: "Revisa la fecha y hora." };
+  const supabase = await createClient();
+  const { error } = await supabase.from("performances").insert({ production_id: pid, starts_at, venue: String(f.get("venue") ?? "").trim() || null, on_sale: false });
+  if (error) return { ok: false, message: error.message };
+  refresh(pid);
+  return { ok: true, message: "Función creada (sin venta). Revisa sus precios y ponla en venta cuando esté lista." };
+}
+
+export async function updatePerformance(_p: TicketState, f: FormData): Promise<TicketState> {
+  const pid = String(f.get("pid"));
+  const id = String(f.get("perf"));
+  const fecha = String(f.get("fecha") ?? "");
+  const starts_at = fecha ? localMxToIso(fecha) : null;
+  if (fecha && !starts_at) return { ok: false, message: "Revisa la fecha y hora." };
+  const on_sale = f.get("on_sale") === "on";
+  if (on_sale && !starts_at) return { ok: false, message: "Una función sin fecha no puede estar en venta." };
+  const prices = [...f.entries()]
+    .filter(([k, v]) => k.startsWith("precio_") && String(v).trim() !== "")
+    .map(([k, v]) => ({ performance_id: id, price_category_id: k.slice(7), price: Number(v) }));
+  if (prices.some((p) => Number.isNaN(p.price))) return { ok: false, message: "Revisa los precios." };
+  if (prices.some((p) => p.price < 0)) return { ok: false, message: "Los precios no pueden ser negativos." };
+  const supabase = await createClient();
+  if (prices.length) {
+    const { error } = await supabase.from("performance_price_categories").upsert(prices, { onConflict: "performance_id,price_category_id" });
+    if (error) return { ok: false, message: error.message };
+  }
+  const { error, count } = await supabase
+    .from("performances")
+    .update({ starts_at, venue: String(f.get("venue") ?? "").trim() || null, on_sale }, { count: "exact" })
+    .eq("id", id)
+    .eq("production_id", pid);
+  if (error) return { ok: false, message: error.message };
+  if (!count) return { ok: false, message: "No tienes permiso para editar esta función." };
+  refresh(pid);
+  return { ok: true, message: on_sale ? "Guardado: la función está en venta." : "Guardado." };
+}
+
+export async function deletePerformance(_p: TicketState, f: FormData): Promise<TicketState> {
+  const pid = String(f.get("pid"));
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("admin_delete_performance", { target_performance_id: String(f.get("perf")) });
+  if (error) return { ok: false, message: error.message };
+  refresh(pid);
+  return { ok: true, message: "Función eliminada." };
+}
+
+/** Obra en venta (switch general que usa la 1.0). ventas.operar; la base exige que esté publicada. */
+export async function setProductionOnSale(_p: TicketState, f: FormData): Promise<TicketState> {
+  const pid = String(f.get("pid"));
+  const on_sale = String(f.get("on_sale")) === "true";
+  const supabase = await createClient();
+  const { error, count } = await supabase.from("productions").update({ on_sale }, { count: "exact" }).eq("id", pid);
+  if (error) return { ok: false, message: error.message };
+  if (!count) return { ok: false, message: "No tienes permiso para cambiar la venta de esta obra." };
+  refresh(pid);
+  return { ok: true, message: on_sale ? "La obra está en venta." : "La obra ya no está en venta." };
+}
+
+// ──────── Descuentos (descuentos.gestionar) ────────
+
+export async function saveDiscount(_p: TicketState, f: FormData): Promise<TicketState> {
+  const pid = String(f.get("pid"));
+  const num = (k: string) => {
+    const v = String(f.get(k) ?? "").trim();
+    return v ? Number(v) : null;
+  };
+  const hasta = String(f.get("hasta") ?? "");
+  const desde = String(f.get("desde") ?? "");
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("admin_save_discount_code", {
+    target_id: String(f.get("id") ?? "") || null,
+    target_production_id: pid,
+    target_codigo: String(f.get("codigo") ?? ""),
+    target_percent: num("percent"),
+    target_valid_from: desde ? localMxToIso(desde) : null,
+    target_valid_until: hasta ? localMxToIso(hasta) : null,
+    target_max_uses_total: num("max_total"),
+    target_max_tickets_per_order: num("max_orden"),
+    target_is_active: f.get("activo") === "on",
+    target_category_ids: f.getAll("zona").map(String),
+    target_performance_ids: f.getAll("funcion").map(String),
+  });
+  if (error) return { ok: false, message: error.message };
+  refresh(pid);
+  return { ok: true, message: "Código guardado." };
+}
+
+export async function deleteDiscount(_p: TicketState, f: FormData): Promise<TicketState> {
+  const pid = String(f.get("pid"));
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("admin_delete_discount_code", { target_id: String(f.get("id")) });
+  if (error) return { ok: false, message: error.message };
+  refresh(pid);
+  return { ok: true, message: "Código eliminado (si ya se usó, solo se desactiva)." };
+}

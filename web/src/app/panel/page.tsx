@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Card, EstadoChip, PanelTitle } from "@/components/panel/ui";
 import { ArtFill } from "@/components/PosterArt";
-import { listPanelProductions, pendingOrdersCount } from "@/lib/panel-data";
+import { listPanelProductions, pendingOrdersByProduction } from "@/lib/panel-data";
 import { myProductionIds } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
 import { getTheme } from "@/lib/productions";
@@ -9,11 +9,11 @@ import { getTheme } from "@/lib/productions";
 // Inicio del panel: mis obras y lo que necesita atención.
 export default async function PanelHome() {
   const access = await requirePanel("/panel");
-  const rol = access.session.profile?.rol;
-  const [obras, pendientes] = await Promise.all([
+  const [obras, pendientesPorObra] = await Promise.all([
     listPanelProductions(access.isDirector ? undefined : myProductionIds(access)),
-    rol === "staff" || rol === "admin" ? pendingOrdersCount() : Promise.resolve(0),
+    pendingOrdersByProduction(),
   ]);
+  const pendientes = [...pendientesPorObra.values()].reduce((a, b) => a + b, 0);
   const nombre = access.session.profile?.nombre?.split(" ")[0] || "";
 
   return (
@@ -23,13 +23,19 @@ export default async function PanelHome() {
       </PanelTitle>
 
       {pendientes > 0 && (
-        <Card className="flex flex-wrap items-center justify-between gap-3 border border-[#f2b544]/40">
+        <Card className="flex flex-col gap-2 border border-[#f2b544]/40">
           <p className="font-semibold">
             <span className="text-2xl font-black text-[#f2b544]">{pendientes}</span> {pendientes === 1 ? "orden pendiente" : "órdenes pendientes"} de aprobar
           </p>
-          <a href="https://darf-2-dev-darf-productions.vercel.app/?v=staff" className="text-sm font-bold text-violeta-claro">
-            Revisar en el panel 1.0 ↗
-          </a>
+          <ul className="flex flex-wrap gap-2 text-sm">
+            {obras.filter((p) => pendientesPorObra.get(p.id)).map((p) => (
+              <li key={p.id}>
+                <Link href={`/panel/producciones/${p.id}/boletos?estado=pendiente`} className="rounded-full border border-white/20 px-3 py-1.5 font-bold text-violeta-claro hover:border-white/50">
+                  {p.nombre} · {pendientesPorObra.get(p.id)} →
+                </Link>
+              </li>
+            ))}
+          </ul>
         </Card>
       )}
 

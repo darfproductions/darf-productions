@@ -20,7 +20,7 @@ export default async function PanelLayout({ children }: LayoutProps<"/panel">) {
         </Link>
       ))}
       <a href="https://darf-2-dev-darf-productions.vercel.app/?v=staff" className="mt-2 rounded-lg px-3 py-2.5 text-sm text-texto-3 hover:bg-telon-2">
-        Boletería en panel 1.0 ↗
+        Panel anterior (1.0) ↗
       </a>
     </>
   );

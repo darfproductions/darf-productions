@@ -1,0 +1,95 @@
+import type { Metadata } from "next";
+import { redirect } from "next/navigation";
+import { ActionForm } from "@/components/panel/ActionForm";
+import { Card, input } from "@/components/panel/ui";
+import { listPerformances, listZones } from "@/lib/boleteria";
+import { isoToLocalMx } from "@/lib/dates";
+import { getPanelProduction } from "@/lib/panel-data";
+import { can } from "@/lib/panel-nav";
+import { requirePanel } from "@/lib/permissions";
+import { formatPerformanceDate } from "@/lib/productions";
+import { createPerformance, deletePerformance, setProductionOnSale, updatePerformance } from "../actions";
+
+export const metadata: Metadata = { title: "Funciones y precios" };
+
+const ghost = "rounded-full border border-white/25 px-4 py-2 text-sm font-bold hover:border-white/50 disabled:opacity-60";
+
+// Funciones de la obra: fecha (o "por definir"), sede, precios por zona y venta.
+export default async function PerformancesPage({ params }: PageProps<"/panel/producciones/[id]/boletos/funciones">) {
+  const { id } = await params;
+  const access = await requirePanel(`/panel/producciones/${id}/boletos/funciones`);
+  const gestionar = can(access, id, "funciones.gestionar");
+  const ventas = can(access, id, "ventas.operar");
+  if (!gestionar && !ventas) redirect(`/panel/producciones/${id}/boletos`);
+  const [p, funciones, zonas] = await Promise.all([getPanelProduction(id), listPerformances(id), listZones(id)]);
+  if (!p) redirect("/panel/producciones");
+
+  return (
+    <>
+      {ventas && (
+        <Card className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="font-bold">Venta de la obra: {p.on_sale ? "abierta" : "cerrada"}</p>
+            <p className="text-sm text-texto-2">Interruptor general (el mismo de la versión actual). Cada función además tiene su propia venta.</p>
+          </div>
+          <ActionForm
+            inline
+            action={setProductionOnSale}
+            hidden={{ pid: id, on_sale: String(!p.on_sale) }}
+            confirm={p.on_sale ? "¿Cerrar la venta de toda la obra?" : "¿Abrir la venta de la obra?"}
+            submit={p.on_sale ? "Cerrar venta" : "Abrir venta"}
+          />
+        </Card>
+      )}
+
+      {gestionar && (
+        <>
+          {funciones.map((f) => (
+            <Card key={f.id}>
+              <p className="mb-3 font-bold capitalize">{formatPerformanceDate(f.starts_at)} {f.on_sale && <span className="ml-2 rounded-full bg-[#14532d] px-2 py-0.5 text-[11px] uppercase text-[#bbf7d0]">en venta</span>}</p>
+              <ActionForm action={updatePerformance} hidden={{ pid: id, perf: f.id }} submit="Guardar función">
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <label className="flex flex-col gap-1.5 text-sm font-semibold">Fecha y hora (CDMX)
+                    <input className={input} type="datetime-local" name="fecha" defaultValue={isoToLocalMx(f.starts_at)} />
+                    <span className="text-xs font-normal text-texto-3">Vacía = por definir (no se puede vender).</span>
+                  </label>
+                  <label className="flex flex-col gap-1.5 text-sm font-semibold sm:col-span-2">Sede (si es distinta a la de la obra)
+                    <input className={input} name="venue" defaultValue={f.venue ?? ""} />
+                  </label>
+                </div>
+                <fieldset className="grid gap-2 sm:grid-cols-3 lg:grid-cols-5">
+                  <legend className="mb-1 text-sm font-semibold">Precio por zona (MXN)</legend>
+                  {zonas.map((z) => (
+                    <label key={z.id} className="flex flex-col gap-1 text-xs font-semibold">{z.nombre}
+                      <input className={input} type="number" min={0} step="1" name={`precio_${z.id}`} defaultValue={f.prices.find((x) => x.categoryId === z.id)?.price ?? ""} />
+                    </label>
+                  ))}
+                </fieldset>
+                <label className="flex items-center gap-2 text-sm font-semibold"><input type="checkbox" name="on_sale" defaultChecked={f.on_sale} /> Esta función está en venta en línea</label>
+              </ActionForm>
+              <div className="mt-3 border-t border-white/10 pt-3">
+                <ActionForm inline action={deletePerformance} hidden={{ pid: id, perf: f.id }} confirm="¿Eliminar esta función? Solo se puede si no tiene boletos activos." submit="Eliminar función" submitClass={ghost} />
+              </div>
+            </Card>
+          ))}
+          <Card>
+            <h2 className="titular mb-3 text-xl">Nueva función</h2>
+            <ActionForm action={createPerformance} hidden={{ pid: id }} submit="Crear función">
+              <div className="grid gap-3 sm:grid-cols-3">
+                <label className="flex flex-col gap-1.5 text-sm font-semibold">Fecha y hora (CDMX)
+                  <input className={input} type="datetime-local" name="fecha" />
+                  <span className="text-xs font-normal text-texto-3">Déjala vacía si aún no hay fecha.</span>
+                </label>
+                <label className="flex flex-col gap-1.5 text-sm font-semibold sm:col-span-2">Sede (opcional)
+                  <input className={input} name="venue" />
+                </label>
+              </div>
+              <p className="text-xs text-texto-3">Los precios se copian de la función más reciente; ajústalos después.</p>
+            </ActionForm>
+          </Card>
+          {zonas.length === 0 && <Card>Esta obra no tiene zonas de precio ni mapa de asientos todavía. Crear un mapa nuevo es parte de la Fase 4 (admisión general y mapas).</Card>}
+        </>
+      )}
+    </>
+  );
+}

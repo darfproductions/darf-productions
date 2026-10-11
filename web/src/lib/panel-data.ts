@@ -72,9 +72,14 @@ export async function performanceSummary(productionId: string) {
   return { total: rows.length, enVenta: rows.filter((r) => r.on_sale).length, proxima: next };
 }
 
-/** Órdenes pendientes de aprobar (solo staff y Director las pueden leer por ahora; 3C lo abre por obra). */
-export async function pendingOrdersCount(): Promise<number> {
+/** Órdenes pendientes de aprobar por obra (RLS: cada quien solo cuenta las de sus obras, 0034). */
+export async function pendingOrdersByProduction(): Promise<Map<string, number>> {
   const supabase = await createClient();
-  const { count } = await supabase.from("orders").select("id", { count: "exact", head: true }).eq("status", "pendiente");
-  return count ?? 0;
+  const { data } = await supabase.from("orders").select("performances(production_id)").eq("status", "pendiente").limit(1000);
+  const out = new Map<string, number>();
+  for (const r of data ?? []) {
+    const pid = (r.performances as unknown as { production_id: string } | null)?.production_id;
+    if (pid) out.set(pid, (out.get(pid) ?? 0) + 1);
+  }
+  return out;
 }

@@ -1,0 +1,139 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { ActionForm } from "@/components/panel/ActionForm";
+import { Card } from "@/components/panel/ui";
+import { listOrders, listPerformances, seatCount } from "@/lib/boleteria";
+import { can } from "@/lib/panel-nav";
+import { requirePanel } from "@/lib/permissions";
+import { formatPerformanceDate } from "@/lib/productions";
+import { occupancy, summarizeSales } from "@/lib/sales";
+import { formatMoney } from "@/lib/tickets";
+import { approveOrder, cancelTicket, rejectOrder } from "./actions";
+
+export const metadata: Metadata = { title: "Ventas y órdenes" };
+
+const ESTADO: Record<string, string> = {
+  pendiente: "bg-[#5a4313] text-[#fde68a]",
+  aprobado: "bg-[#14532d] text-[#bbf7d0]",
+  rechazado: "bg-[#3a3346] text-texto-3",
+};
+const small = "rounded-full border border-white/25 px-3 py-1.5 text-xs font-bold hover:border-white/50 disabled:opacity-60";
+const fecha = (iso: string) => new Intl.DateTimeFormat("es-MX", { dateStyle: "medium", timeStyle: "short", timeZone: "America/Mexico_City" }).format(new Date(iso));
+
+// Ventas de la obra: resumen, ocupación por función y órdenes (aprobar/rechazar/cancelar).
+export default async function SalesPage({ params, searchParams }: PageProps<"/panel/producciones/[id]/boletos">) {
+  const { id } = await params;
+  const sp = await searchParams;
+  const access = await requirePanel(`/panel/producciones/${id}/boletos`);
+  if (!can(access, id, "ventas.ver")) redirect(`/panel/producciones/${id}/boletos/funciones`);
+  const operar = can(access, id, "ventas.operar");
+  const funcion = typeof sp.funcion === "string" ? sp.funcion : "";
+  const estado = typeof sp.estado === "string" ? sp.estado : "";
+
+  const [funciones, todas, filtradas, asientos] = await Promise.all([
+    listPerformances(id),
+    listOrders(id),
+    listOrders(id, { funcion: funcion || undefined, estado: estado || undefined }),
+    seatCount(id),
+  ]);
+  const s = summarizeSales(todas);
+  const nombreFuncion = new Map(funciones.map((f) => [f.id, formatPerformanceDate(f.starts_at)]));
+  const q = (k: string, v: string) => {
+    const p = new URLSearchParams({ ...(funcion && { funcion }), ...(estado && { estado }) });
+    if (v) p.set(k, v); else p.delete(k);
+    const str = p.toString();
+    return `/panel/producciones/${id}/boletos${str ? `?${str}` : ""}`;
+  };
+
+  return (
+    <>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {[
+          ["Ingresos aprobados", formatMoney(s.ingresos)],
+          ["Boletos vendidos", String(s.vendidos)],
+          ["Por aprobar", `${s.ordenesPendientes} órdenes · ${formatMoney(s.pendiente)}`],
+          ["Ya entraron", `${s.validados} de ${s.vendidos}`],
+        ].map(([k, v]) => (
+          <Card key={k} className="p-4 md:p-5">
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-texto-3">{k}</p>
+            <p className="mt-1 text-xl font-black">{v}</p>
+          </Card>
+        ))}
+      </div>
+
+      <Card>
+        <h2 className="titular mb-3 text-xl">Ocupación por función</h2>
+        <ul className="flex flex-col divide-y divide-white/10 text-sm">
+          {funciones.map((f) => {
+            const v = s.porFuncion.get(f.id);
+            return (
+              <li key={f.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
+                <span className="font-semibold capitalize">{formatPerformanceDate(f.starts_at)}{f.on_sale ? "" : " · sin venta"}</span>
+                <span className="text-texto-2">
+                  Vendidos {occupancy(v?.vendidos ?? 0, asientos)} · apartados {v?.apartados ?? 0} · {formatMoney(v?.ingresos ?? 0)}
+                </span>
+              </li>
+            );
+          })}
+          {funciones.length === 0 && <li className="py-2 text-texto-3">Esta obra no tiene funciones.</li>}
+        </ul>
+      </Card>
+
+      <Card className="p-0 md:p-0">
+        <div className="flex flex-col gap-3 px-5 pt-5">
+          <h2 className="titular text-xl">Órdenes</h2>
+          <div className="flex flex-wrap gap-2 text-xs">
+            {[["", "Todas"], ["pendiente", "Por aprobar"], ["aprobado", "Aprobadas"], ["rechazado", "Rechazadas"]].map(([v, l]) => (
+              <Link key={v} href={q("estado", v)} className={`rounded-full border px-3 py-1.5 font-semibold ${estado === v ? "border-texto" : "border-white/20"}`}>{l}</Link>
+            ))}
+            <span className="mx-1 text-texto-3">·</span>
+            <Link href={q("funcion", "")} className={`rounded-full border px-3 py-1.5 font-semibold ${!funcion ? "border-texto" : "border-white/20"}`}>Todas las funciones</Link>
+            {funciones.map((f) => (
+              <Link key={f.id} href={q("funcion", f.id)} className={`rounded-full border px-3 py-1.5 font-semibold capitalize ${funcion === f.id ? "border-texto" : "border-white/20"}`}>
+                {formatPerformanceDate(f.starts_at)}
+              </Link>
+            ))}
+          </div>
+        </div>
+        <ul className="mt-3 divide-y divide-white/10">
+          {filtradas.map((o) => (
+            <li key={o.id} className="flex flex-col gap-2 px-5 py-4">
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <div>
+                  <p className="font-bold">
+                    {o.order_code} <span className={`ml-1 rounded-full px-2 py-0.5 text-[11px] font-bold uppercase ${ESTADO[o.status]}`}>{o.status}</span>
+                    {o.created_by_staff_id && <span className="ml-1 text-xs text-texto-3">taquilla</span>}
+                  </p>
+                  <p className="text-sm text-texto-2">{o.buyer_nombre} · <a href={`tel:${o.buyer_telefono}`} className="underline">{o.buyer_telefono}</a></p>
+                  <p className="text-xs capitalize text-texto-3">{nombreFuncion.get(o.performance_id)} · pidió {fecha(o.created_at)}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-lg font-black">{formatMoney(o.total)}</p>
+                  {o.discount_codigo && <p className="text-xs text-[#7ee2a8]">{o.discount_codigo} −{formatMoney(o.discount_amount)}</p>}
+                </div>
+              </div>
+              <ul className="flex flex-wrap gap-2 text-xs">
+                {o.tickets.map((t) => (
+                  <li key={t.id} className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 ${t.is_active ? "bg-telon-2" : "bg-telon-2 line-through opacity-60"}`}>
+                    {t.seat_label ?? "General"}{t.checked_in_at && " ✓"}
+                    {operar && t.is_active && o.status !== "rechazado" && (
+                      <ActionForm inline action={cancelTicket} hidden={{ pid: id, ticket: t.id }} confirm={`¿Cancelar el boleto ${t.seat_label}? El asiento queda libre.`} submit="×" submitClass="grid h-5 w-5 place-items-center rounded-full text-texto-3 hover:bg-white/10" />
+                    )}
+                  </li>
+                ))}
+              </ul>
+              {operar && o.status === "pendiente" && (
+                <div className="flex flex-wrap gap-2">
+                  <ActionForm inline action={approveOrder} hidden={{ pid: id, order: o.id }} confirm={`¿Aprobar ${o.order_code} por ${formatMoney(o.total)}? Confirma antes que recibiste el pago.`} submit="Aprobar" submitClass="rounded-full bg-[#22c55e] px-4 py-1.5 text-xs font-bold text-[#052e16] disabled:opacity-60" />
+                  <ActionForm inline action={rejectOrder} hidden={{ pid: id, order: o.id }} confirm={`¿Rechazar ${o.order_code}? Los asientos quedan libres.`} submit="Rechazar" submitClass={small} />
+                </div>
+              )}
+            </li>
+          ))}
+          {filtradas.length === 0 && <li className="px-5 py-4 text-texto-2">No hay órdenes con este filtro.</li>}
+        </ul>
+      </Card>
+    </>
+  );
+}

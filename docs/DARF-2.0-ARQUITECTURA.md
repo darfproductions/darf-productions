@@ -239,3 +239,27 @@ es `main`; opcional: cambiarla a `darf-2.0` en Vercel → Settings → Environme
   plantilla pública (`src/components/ProductionView.tsx`).
 - Las imágenes viejas no se borran del Storage al reemplazarlas (limpieza
   pendiente, sin riesgo).
+
+## 14. Fase 3 · etapa 3C (2026-10-11)
+
+- Migración **0034** (aprobada por Johann): la boletería se opera **por obra**.
+  Mismas funciones de la base y mismas reglas de venta; solo cambia la línea que
+  revisa el permiso (generada por script a partir del cuerpo exacto de cada
+  función). Permiso nuevo `funciones.gestionar` (Producción y Taquilla). Staff
+  global queda igual que hoy: ver ventas y validar QR. En DEV se aplica a mano
+  con `supabase/dev/apply_0034_dev.sql`. Pruebas 0034 T1–T7; las de boletería
+  0021–0028 siguen pasando.
+- Panel por obra → **Funciones y boletos**: ventas y órdenes (resumen,
+  ocupación por función, aprobar/rechazar, cancelar boleto), **taquilla** con
+  el mismo mapa de asientos que la compra en línea (`src/components/SeatMap.tsx`)
+  y QR al momento, **funciones y precios** (fecha o "por definir", sede, precio
+  por zona, venta por función y de la obra) y **descuentos**. Pestaña
+  **Puerta**: validar QR con la cámara (si el navegador lo soporta) o con el
+  código escrito.
+
+**Hallazgos para la Fase 4 (no se cambiaron, la lógica de venta no se toca en 3C):**
+- `check_in_ticket` acepta boletos de órdenes **pendientes** (sus QR solo los ve
+  el comprador cuando se aprueba, pero conviene exigir orden aprobada).
+- Leer QR con la cámara en iPhone (Safari) necesita una librería (ej. jsQR);
+  instalarla requiere aprobación. Mientras tanto se escribe el código.
+- Crear zonas y mapas de asientos para obras nuevas, y admisión general.
