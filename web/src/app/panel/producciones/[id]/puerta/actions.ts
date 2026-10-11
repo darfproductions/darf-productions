@@ -3,7 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 
 export type CheckIn =
-  | { result: "ok" | "ya_usado" | "cancelado" | "no_encontrado"; seat_label?: string; buyer_nombre?: string; category?: string; checked_in_at?: string }
+  | { result: "ok" | "ya_usado" | "cancelado" | "no_encontrado" | "no_aprobado"; seat_label?: string; buyer_nombre?: string; category?: string; checked_in_at?: string }
   | { result: "error"; message: string };
 
 /** Valida un QR con la MISMA función de la base que la 1.0 (0034: puerta de esa obra). */

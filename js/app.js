@@ -2191,6 +2191,8 @@ async function handleQrResult(code){
     flash('Este boleto ya fue utilizado.'+(seat?' ('+seat+')':''),'d');show('⚠️ Ya utilizado','bad');
   } else if(d.result==='cancelado'){
     flash('Este boleto fue cancelado.','d');show('❌ Cancelado','bad');
+  } else if(d.result==='no_aprobado'){
+    flash('La compra de este boleto aún no está aprobada.'+(seat?' ('+seat+')':''),'d');show('⏳ Sin aprobar','bad');
   } else {
     flash('Código no reconocido.','d');show('❌ No reconocido','bad');
   }

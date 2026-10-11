@@ -257,9 +257,12 @@ es `main`; opcional: cambiarla a `darf-2.0` en Vercel → Settings → Environme
   **Puerta**: validar QR con la cámara (si el navegador lo soporta) o con el
   código escrito.
 
-**Hallazgos para la Fase 4 (no se cambiaron, la lógica de venta no se toca en 3C):**
-- `check_in_ticket` acepta boletos de órdenes **pendientes** (sus QR solo los ve
-  el comprador cuando se aprueba, pero conviene exigir orden aprobada).
-- Leer QR con la cámara en iPhone (Safari) necesita una librería (ej. jsQR);
-  instalarla requiere aprobación. Mientras tanto se escribe el código.
-- Crear zonas y mapas de asientos para obras nuevas, y admisión general.
+**Hallazgos de 3C y cómo quedaron (Johann aprobó 1 y 2 el 2026-10-11):**
+- ✅ Migración **0035** (aplicada en DEV): en puerta solo entran boletos de órdenes
+  **aprobadas**; una pendiente responde `no_aprobado` y no se marca. Pruebas
+  T1–T2 en local y DEV; 0021, 0027 y 0034 siguen pasando. La copia 1.0 de esta
+  rama (`js/app.js`, solo DEV) muestra "Sin aprobar".
+- ✅ Puerta lee QR también en iPhone con **jsQR 1.4.0** (versión fija; se carga
+  solo cuando el navegador no trae lector propio).
+- Pendiente (Fase 4): crear zonas y mapas de asientos para obras nuevas, y
+  admisión general.
