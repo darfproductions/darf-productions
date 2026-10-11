@@ -266,3 +266,24 @@ es `main`; opcional: cambiarla a `darf-2.0` en Vercel → Settings → Environme
   solo cuando el navegador no trae lector propio).
 - Pendiente (Fase 4): crear zonas y mapas de asientos para obras nuevas, y
   admisión general.
+
+## 15. Fase 3 · etapa 3D: audiciones (2026-10-11)
+
+- Migración **0036** (aplicada en DEV): convocatorias por obra con personajes,
+  horarios con cupo (sin sobreventa) y preguntas configurables; inscripción por
+  RPC con cuenta, validación de edad y, si es menor, datos y autorización de
+  madre, padre o tutor; QR de inscripción; mesa de registro con número
+  consecutivo y alta rápida sin cita; evaluación por juez y ronda (canto, baile,
+  actuación, actitud 1–5 + notas); tablero consolidado y callbacks. Fotos en
+  bucket privado `audiciones`. Jueces y mesa no ven datos de contacto.
+  Pruebas T1–T8 en local (en DEV el conector pide confirmación ante "cancel";
+  la misma prueba pasó completa en la copia local).
+- Web pública: `/audiciones`, `/audiciones/[id]` (inscripción), Mi cuenta →
+  Mis audiciones (estado, número y QR).
+- Panel → Audiciones: configuración (datos, publicación, personajes, horarios,
+  preguntas), solicitudes con filtros y decisión, registro del día (QR con
+  cámara, "Llegó", alta rápida), evaluación del juez y resultados.
+- El lector de QR del panel es un componente compartido (`QrScanner`) para
+  puerta y registro.
+- Pendiente (3E): convertir a la persona seleccionada en oferta de papel y
+  crédito del elenco sin volver a capturar datos.
