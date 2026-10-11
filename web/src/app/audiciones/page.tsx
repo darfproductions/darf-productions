@@ -1,14 +1,17 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { PageHeading } from "@/components/PageHeading";
+import { ESTADO_CONVOCATORIA } from "@/lib/audition-rules";
+import { formatSlot, listPublicAuditions } from "@/lib/auditions";
 
 export const metadata: Metadata = { title: "Audiciones" };
 
 const ESPECIALIDADES = ["Actuación", "Canto", "Baile", "Música en vivo", "Dirección", "Producción", "Técnica / crew", "Vestuario y maquillaje"];
 
-// Audiciones y registro permanente de talento.
-// Las convocatorias y el registro necesitan tablas nuevas (Fase 5): el
-// formulario se muestra para revisar el diseño, pero todavía no envía nada.
-export default function AudicionesPage() {
+// Audiciones: convocatorias abiertas (0036) y, más adelante, registro permanente
+// de talento (Fase 5: el formulario se muestra para revisar el diseño).
+export default async function AudicionesPage() {
+  const convocatorias = await listPublicAuditions();
   return (
     <main className="pb-10">
       <PageHeading eyebrow="Audiciones" title="Únete al elenco">
@@ -19,12 +22,27 @@ export default function AudicionesPage() {
       <div className="mx-auto grid max-w-[1440px] gap-10 px-5 md:px-16 lg:grid-cols-12">
         <section aria-labelledby="convocatorias" className="flex flex-col gap-4 lg:col-span-5">
           <h2 id="convocatorias" className="titular text-2xl">Convocatorias</h2>
-          <div className="rounded-2xl bg-telon p-6">
-            <p className="text-lg font-semibold">No hay convocatorias abiertas en este momento.</p>
-            <p className="mt-2 text-texto-2">
-              Cuando abramos una, aparecerá aquí con sus requisitos, fechas y formulario de inscripción.
-            </p>
-          </div>
+          {convocatorias.length === 0 ? (
+            <div className="rounded-2xl bg-telon p-6">
+              <p className="text-lg font-semibold">No hay convocatorias abiertas en este momento.</p>
+              <p className="mt-2 text-texto-2">
+                Cuando abramos una, aparecerá aquí con sus requisitos, fechas y formulario de inscripción.
+              </p>
+            </div>
+          ) : (
+            <ul className="flex flex-col gap-3">
+              {convocatorias.map((a) => (
+                <li key={a.id}>
+                  <Link href={`/audiciones/${a.id}`} className="block rounded-2xl bg-telon p-6 transition-transform hover:-translate-y-0.5">
+                    <p className="text-xs font-bold uppercase tracking-[0.2em] text-texto-3">{ESTADO_CONVOCATORIA[a.estado]}</p>
+                    <p className="mt-1 text-xl font-bold">{a.titulo}</p>
+                    {a.inscripcion_cierra && <p className="mt-1 text-sm capitalize text-texto-2">Inscripción hasta {formatSlot(a.inscripcion_cierra)}</p>}
+                    <span className="mt-3 inline-block text-sm font-bold text-violeta-claro">{a.estado === "abierta" ? "Ver e inscribirme →" : "Ver detalles →"}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
 
         <section aria-labelledby="registro" className="flex flex-col gap-4 lg:col-span-7">

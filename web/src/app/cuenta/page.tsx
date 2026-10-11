@@ -2,11 +2,14 @@ import type { Metadata } from "next";
 import QRCode from "qrcode";
 import { PageHeading } from "@/components/PageHeading";
 import { requireSession } from "@/lib/auth";
+import { ESTADO_SOLICITUD } from "@/lib/audition-rules";
+import { formatSlot, listMyApplications } from "@/lib/auditions";
 import { env } from "@/lib/env";
 import { formatPerformanceDate } from "@/lib/productions";
 import { createClient } from "@/lib/supabase/server";
 import { formatMoney, whatsappPayUrl } from "@/lib/tickets";
 import { logout } from "../entrar/actions";
+import Link from "next/link";
 import { ProfileForm } from "./ProfileForm";
 
 export const metadata: Metadata = { title: "Mi cuenta" };
@@ -48,6 +51,13 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
   for (const o of orders) {
     if (o.status !== "aprobado") continue;
     for (const t of o.tickets) if (t.is_active) qrs.set(t.id, await QRCode.toDataURL(t.qr_token, { margin: 1, width: 240 }));
+  }
+
+  // Mis audiciones (0036): solo las propias; QR mientras no haya llegado.
+  const audiciones = await listMyApplications(session.userId);
+  const audQr = new Map<string, string>();
+  for (const a of audiciones) {
+    if (!a.checked_in_at && !["cancelado", "no_cumple"].includes(a.estado)) audQr.set(a.id, await QRCode.toDataURL(a.qr_token, { margin: 1, width: 200 }));
   }
 
   return (
@@ -118,6 +128,29 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
             <button className="rounded-full border border-white/30 px-6 py-3 text-sm font-bold">Cerrar sesión</button>
           </form>
         </aside>
+
+        {audiciones.length > 0 && (
+          <section aria-labelledby="mis-audiciones" className="flex flex-col gap-4 lg:col-span-8">
+            <h2 id="mis-audiciones" className="titular text-2xl">Mis audiciones</h2>
+            <ul className="flex flex-col gap-4">
+              {audiciones.map((a) => (
+                <li key={a.id} className="flex flex-col gap-4 rounded-2xl bg-telon p-5 sm:flex-row sm:items-center">
+                  {/* eslint-disable-next-line @next/next/no-img-element -- QR generado (data URL) */}
+                  {audQr.get(a.id) && <img src={audQr.get(a.id)} alt="QR de la audición" width={120} height={120} className="rounded-lg bg-white p-1.5" />}
+                  <div className="flex flex-1 flex-col gap-1">
+                    <p className="text-lg font-bold">{a.auditions?.titulo ?? "Audición"}</p>
+                    {a.audition_slots && <p className="text-sm capitalize text-texto-2">{formatSlot(a.audition_slots.inicia)}{a.audition_slots.sala ? ` · ${a.audition_slots.sala}` : ""}</p>}
+                    <p className="text-sm">
+                      <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${ESTADO_SOLICITUD[a.estado]?.cls ?? ""}`}>{ESTADO_SOLICITUD[a.estado]?.label ?? a.estado}</span>
+                      {a.numero && <span className="ml-2">Número {a.numero}</span>}
+                    </p>
+                    <Link href={`/audiciones/${a.audition_id}`} className="mt-1 text-sm font-bold text-violeta-claro">Ver convocatoria →</Link>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
       </div>
     </main>
   );
