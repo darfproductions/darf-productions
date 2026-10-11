@@ -120,3 +120,15 @@ export async function getPerformanceForSale(performanceId: string) {
     production,
   };
 }
+
+/** Fotos de la galería pública de una obra (tabla gallery_photos + Storage `gallery`). */
+export async function getGallery(productionId: string): Promise<{ id: string; url: string }[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("gallery_photos")
+    .select("id, path")
+    .eq("production_id", productionId)
+    .eq("kind", "galeria")
+    .order("sort_order");
+  return (data ?? []).map((r) => ({ id: r.id, url: supabase.storage.from("gallery").getPublicUrl(r.path).data.publicUrl }));
+}

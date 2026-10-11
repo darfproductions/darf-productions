@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { CastGrid, Ensemble, TeamGroups } from "@/components/Credits";
 import { Section } from "@/components/PageHeading";
 import { HeroBackdrop, ProductionLogo } from "@/components/PosterArt";
 import { YouTube, youtubeId } from "@/components/YouTube";
@@ -8,6 +9,7 @@ import { PRODUCTION_CONTENT } from "@/content/producciones";
 import {
   formatPerformanceDate,
   formatPrice,
+  getGallery,
   getProduction,
   getTheme,
   themeStyle,
@@ -23,19 +25,6 @@ export async function generateMetadata({ params }: PageProps<"/producciones/[slu
   return { title: data?.production.nombre ?? "Producción" };
 }
 
-function CreditList({ items }: { items: { a: string; b: string }[] }) {
-  return (
-    <dl className="grid gap-x-6 sm:grid-cols-2">
-      {items.map((x, i) => (
-        <div key={i} className="flex justify-between gap-4 border-b border-current/15 py-3">
-          <dt className="opacity-75">{x.a}</dt>
-          <dd className="text-right font-semibold">{x.b}</dd>
-        </div>
-      ))}
-    </dl>
-  );
-}
-
 export default async function ProductionPage({ params }: PageProps<"/producciones/[slug]">) {
   const { slug } = await params;
   const data = await getProduction(slug);
@@ -43,18 +32,39 @@ export default async function ProductionPage({ params }: PageProps<"/produccione
   const { production: p, performances, prices } = data;
   const theme = getTheme(p.id);
   const c = PRODUCTION_CONTENT[p.id];
+  const gallery = await getGallery(p.id);
   const canciones = c?.actos.reduce((n, a) => n + a.canciones.length, 0) ?? 0;
   const videos = (c?.videos ?? []).map((v) => ({ ...v, id: youtubeId(v.url) })).filter((v) => v.id);
-  const equipo = [...(c?.creativo ?? []), ...(c?.produccion ?? []), ...(c?.crew ?? [])];
+  const equipos = [
+    { titulo: "Equipo creativo", items: c?.creativo ?? [] },
+    { titulo: "Equipo de producción", items: c?.produccion ?? [] },
+    { titulo: "Crew", items: c?.crew ?? [] },
+    { titulo: "Equipo técnico", items: c?.tecnico ?? [] },
+  ];
+  const hayEquipo = equipos.some((g) => g.items.length > 0);
+  const f = c?.ficha;
+  const ficha = [
+    { etiqueta: "Temporada", valor: f?.temporada },
+    { etiqueta: "Fechas", valor: f?.fechas },
+    { etiqueta: "Sede", valor: p.venue ?? undefined },
+    { etiqueta: "Duración", valor: f?.duracion },
+    { etiqueta: "Clasificación", valor: f?.clasificacion },
+    { etiqueta: "Basada en", valor: f?.basadaEn },
+    ...(f?.extras ?? []),
+  ].filter((x): x is { etiqueta: string; valor: string } => !!x.valor);
 
+  // Orden fijo de la plantilla (decisión de Johann).
   const sections = [
-    { id: "funciones", label: "Funciones", show: !p.concluded || performances.length > 0 },
     { id: "sinopsis", label: "Sinopsis", show: !!c?.sinopsis.length },
+    { id: "funciones", label: "Funciones", show: !p.concluded || performances.length > 0 },
     { id: "canciones", label: "Canciones", show: canciones > 0 },
-    { id: "multimedia", label: "Videos", show: videos.length > 0 },
     { id: "elenco", label: "Elenco", show: !!(c?.reparto.length || c?.ensamble.length) },
-    { id: "equipo", label: "Equipo", show: equipo.length > 0 },
+    { id: "equipos", label: "Equipos", show: hayEquipo },
+    { id: "galeria", label: "Galería", show: gallery.length > 0 },
+    { id: "videos", label: "Videos", show: videos.length > 0 },
+    { id: "agradecimientos", label: "Agradecimientos", show: !!c?.agradecimientos.length },
   ].filter((s) => s.show);
+  const show = (id: string) => sections.some((s) => s.id === id);
 
   return (
     <main style={themeStyle(theme)} className="-mt-[84px] min-h-dvh bg-obra-fondo pb-10 text-obra-texto md:-mt-[100px]">
@@ -94,20 +104,26 @@ export default async function ProductionPage({ params }: PageProps<"/produccione
 
       <div className="mx-auto grid max-w-[1440px] gap-12 px-5 pt-10 md:px-16 lg:grid-cols-12">
         <div className="flex flex-col gap-14 lg:col-span-8">
-          {sections.some((s) => s.id === "funciones") && (
-            <Section id="funciones" title="Funciones">
+          {show("sinopsis") && c && (
+            <Section id="sinopsis" title="Sinopsis">
+              {c.sinopsis.map((t, i) => <p key={i} className="max-w-3xl text-lg leading-relaxed opacity-90">{t}</p>)}
+            </Section>
+          )}
+
+          {show("funciones") && (
+            <Section id="funciones" title="Funciones y precios">
               {performances.length === 0 && <p className="opacity-75">Aún no hay funciones registradas.</p>}
               <ul className="flex flex-col gap-3">
-                {performances.map((f) => {
-                  const vendible = f.on_sale && !!f.starts_at && !p.concluded;
+                {performances.map((fn) => {
+                  const vendible = fn.on_sale && !!fn.starts_at && !p.concluded;
                   return (
-                    <li key={f.id} className="flex flex-wrap items-center justify-between gap-4 rounded-xl bg-obra-superficie px-5 py-4">
+                    <li key={fn.id} className="flex flex-wrap items-center justify-between gap-4 rounded-xl bg-obra-superficie px-5 py-4">
                       <div>
-                        <p className="font-bold capitalize">{formatPerformanceDate(f.starts_at)}</p>
-                        <p className="text-sm opacity-80">{f.venue ?? p.venue}</p>
+                        <p className="font-bold capitalize">{formatPerformanceDate(fn.starts_at)}</p>
+                        <p className="text-sm opacity-80">{fn.venue ?? p.venue}</p>
                       </div>
                       {vendible ? (
-                        <Link href={`/comprar/${f.id}`} className="boton-compra rounded-full px-5 py-3 text-xs font-bold uppercase tracking-[0.08em]">Elegir asientos</Link>
+                        <Link href={`/comprar/${fn.id}`} className="boton-compra rounded-full px-5 py-3 text-xs font-bold uppercase tracking-[0.08em]">Elegir asientos</Link>
                       ) : (
                         <span className="rounded-full border border-current/30 px-3 py-1.5 text-xs font-bold">{p.concluded ? "Concluida" : "Próximamente"}</span>
                       )}
@@ -127,65 +143,69 @@ export default async function ProductionPage({ params }: PageProps<"/produccione
             </Section>
           )}
 
-          {c?.sinopsis.length ? (
-            <Section id="sinopsis" title="Sinopsis">
-              {c.sinopsis.map((t, i) => <p key={i} className="max-w-3xl text-lg leading-relaxed opacity-90">{t}</p>)}
-            </Section>
-          ) : null}
-
-          {canciones > 0 && c && (
+          {show("canciones") && c && (
             <Section id="canciones" title="Canciones">
               <div className="grid gap-8 sm:grid-cols-2">
-                {c.actos.map((a, i) => (
-                  <div key={i}>
-                    {a.nombre && <p className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-obra-acento">{a.nombre}</p>}
-                    <ol className="flex flex-col">
-                      {a.canciones.map((s, j) => (
-                        <li key={j} className="flex gap-4 border-b border-current/15 py-2.5">
-                          <span className="w-6 text-sm font-bold text-obra-acento">{String(j + 1).padStart(2, "0")}</span>
-                          <span>{s}</span>
-                        </li>
-                      ))}
-                    </ol>
-                  </div>
-                ))}
+                {c.actos.map((a, i) => {
+                  // Numeración continua entre actos (Acto II sigue donde terminó el Acto I).
+                  const inicio = c.actos.slice(0, i).reduce((n, x) => n + x.canciones.length, 0);
+                  return (
+                    <div key={i}>
+                      {a.nombre && <p className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-obra-acento">{a.nombre}</p>}
+                      <ol className="flex flex-col">
+                        {a.canciones.map((song, j) => (
+                          <li key={j} className="flex gap-4 border-b border-current/15 py-2.5">
+                            <span className="w-6 text-sm font-bold text-obra-acento">{String(inicio + j + 1).padStart(2, "0")}</span>
+                            <span>{song}</span>
+                          </li>
+                        ))}
+                      </ol>
+                    </div>
+                  );
+                })}
               </div>
             </Section>
           )}
 
-          {videos.length > 0 && (
-            <Section id="multimedia" title="Videos">
+          {show("elenco") && c && (
+            <Section id="elenco" title="Elenco">
+              {c.reparto.length > 0 && <CastGrid reparto={c.reparto} />}
+              {c.ensamble.length > 0 && <Ensemble names={c.ensamble} />}
+            </Section>
+          )}
+
+          {show("equipos") && (
+            <Section id="equipos" title="Equipos">
+              <TeamGroups groups={equipos} />
+            </Section>
+          )}
+
+          {show("galeria") && (
+            <Section id="galeria" title="Galería">
+              <ul className="grid grid-cols-2 gap-3 md:grid-cols-3">
+                {gallery.map((ph) => (
+                  <li key={ph.id} className="overflow-hidden rounded-xl">
+                    {/* eslint-disable-next-line @next/next/no-img-element -- foto desde Storage */}
+                    <img src={ph.url} alt="" loading="lazy" className="aspect-[4/3] w-full object-cover transition-transform hover:scale-105" />
+                  </li>
+                ))}
+              </ul>
+            </Section>
+          )}
+
+          {show("videos") && (
+            <Section id="videos" title="Videos">
               <div className="grid gap-6 sm:grid-cols-2">
                 {videos.map((v) => <YouTube key={v.id} id={v.id!} title={v.titulo} />)}
               </div>
             </Section>
           )}
 
-          {c && (c.reparto.length > 0 || c.ensamble.length > 0) && (
-            <Section id="elenco" title="Elenco">
-              <CreditList items={c.reparto.map((r) => ({ a: r.personaje, b: r.persona }))} />
-              {c.ensamble.length > 0 && (
-                <div>
-                  <p className="mb-2 mt-4 text-xs font-bold uppercase tracking-[0.2em] text-obra-acento">Ensamble</p>
-                  <p className="leading-relaxed opacity-90">{c.ensamble.join(" · ")}</p>
-                </div>
-              )}
-            </Section>
-          )}
-
-          {equipo.length > 0 && c && (
-            <Section id="equipo" title="Equipo">
-              {c.creativo.length > 0 && <><p className="text-xs font-bold uppercase tracking-[0.2em] text-obra-acento">Equipo creativo</p><CreditList items={c.creativo.map((r) => ({ a: r.rol, b: r.persona }))} /></>}
-              {c.produccion.length > 0 && <><p className="mt-4 text-xs font-bold uppercase tracking-[0.2em] text-obra-acento">Equipo de producción</p><CreditList items={c.produccion.map((r) => ({ a: r.rol, b: r.persona }))} /></>}
-              {c.crew.length > 0 && <><p className="mt-4 text-xs font-bold uppercase tracking-[0.2em] text-obra-acento">Crew</p><CreditList items={c.crew.map((r) => ({ a: r.rol, b: r.persona }))} /></>}
-            </Section>
-          )}
-
-          {c?.agradecimientos.length ? (
-            <Section title="Agradecimientos">
+          {show("agradecimientos") && c && (
+            <Section id="agradecimientos" title="Agradecimientos">
               <ul className="flex flex-col gap-2 opacity-90">{c.agradecimientos.map((a, i) => <li key={i}>{a}</li>)}</ul>
             </Section>
-          ) : null}
+          )}
 
           {!c?.sinopsis.length && !canciones && (
             <p className="rounded-xl bg-obra-superficie p-6 opacity-85">
@@ -194,22 +214,23 @@ export default async function ProductionPage({ params }: PageProps<"/produccione
           )}
         </div>
 
-        {c?.ficha.length ? (
+        {/* Ficha técnica: fija a la derecha en computadora, al final en celular. */}
+        {ficha.length > 0 && (
           <aside className="lg:col-span-4">
-            <div className="sticky top-20 rounded-2xl bg-obra-superficie p-6">
+            <div className="rounded-2xl bg-obra-superficie p-6 lg:sticky lg:top-20">
               <p className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-obra-acento">Ficha técnica</p>
               <dl>
-                {c.ficha.map((f, i) => (
-                  <div key={i} className="flex justify-between gap-4 border-b border-current/15 py-2.5 text-sm last:border-0">
-                    <dt className="opacity-75">{f.etiqueta}</dt>
-                    <dd className="text-right font-semibold">{f.valor}</dd>
+                {ficha.map((x) => (
+                  <div key={x.etiqueta} className="flex justify-between gap-4 border-b border-current/15 py-2.5 text-sm last:border-0">
+                    <dt className="opacity-75">{x.etiqueta}</dt>
+                    <dd className="text-right font-semibold">{x.valor}</dd>
                   </div>
                 ))}
               </dl>
               <Link href="/producciones" className="mt-5 block text-sm font-bold text-obra-acento">← Todas las producciones</Link>
             </div>
           </aside>
-        ) : null}
+        )}
       </div>
     </main>
   );

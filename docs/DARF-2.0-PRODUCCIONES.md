@@ -46,10 +46,32 @@ boletos con la luz DARF si hay función en venta; Fan Zone si hay material).
 **Tarjeta de obra (cartelera, archivo, portada, Fan Zone):** proporción 16:9,
 ambiente de fondo, logo centrado en caja fija (72 % × 60 %).
 
-**Secciones, en orden fijo:** Funciones y precios → Sinopsis → Canciones por
-acto → Videos → Galería → Elenco y ensamble → Equipos (creativo, producción,
-crew, técnico) → Agradecimientos → Ficha técnica. Una sección vacía se oculta
-sola; el orden no se edita por obra.
+**Secciones, en orden fijo (decisión de Johann, 2026-10-11):** Sinopsis →
+Funciones y precios → Canciones → Elenco → Equipos → Galería → Videos →
+Agradecimientos. Una sección vacía se oculta sola; el orden no se edita por obra.
+
+**Ficha técnica:** a la derecha y fija al desplazarse en computadora; al final
+en celular. Campos fijos en este orden: Temporada, Fechas, Sede (sale de la
+base), Duración, Clasificación, Basada en; después, campos extra opcionales
+(ej. "Colectivo" en HSM).
+
+**Canciones:** actos opcionales (una obra puede tener una sola lista);
+numeración continua entre actos (Acto II sigue donde termina el Acto I). HSM:
+Acto I = canciones 1–7, Acto II = 8–12.
+
+**Créditos — tipos fijos:** Reparto (persona + personaje), Ensamble, Equipo
+creativo, Equipo de producción, Crew, Equipo técnico.
+
+**Fotos de las personas, sin saturar la página:**
+- Reparto: tarjetas con retrato vertical 3:4; se muestran 8 y el resto con
+  "Ver todo el reparto".
+- Ensamble: lista compacta con foto pequeña redonda; 9 visibles y el resto al
+  desplegar.
+- Equipos: un grupo plegable por tipo (solo el primero abierto), con foto
+  pequeña, nombre y puesto.
+- Sin foto: iniciales sobre el color de la obra. Las fotos se guardarán en el
+  retrato profesional de cada persona (tabla `people`, Fase 2), así una persona
+  que participa en varias obras se sube una sola vez.
 
 Lo que **no** cambia por obra: estructura, medidas, orden, tipografía
 (Montserrat), menú, modo oscuro y el botón de compra con la luz DARF.

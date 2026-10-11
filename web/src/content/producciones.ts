@@ -1,19 +1,33 @@
 // Contenido de las producciones, extraído automáticamente de la web 1.0
-// (index.html, rama main) el 2026-10-10 con un script, sin edición manual.
+// (index.html, rama main) el 2026-10-10 con un script. Ajustes posteriores por
+// decisión de Johann: ficha técnica con campos fijos; HSM dividida en dos actos
+// (canciones 1–7 y 8–12).
 // TRANSITORIO: en la Fase 2 este contenido se carga a tablas de la base y se
 // edita desde el panel; este archivo desaparece entonces.
 
+export type Credit = { rol: string; persona: string; /** Retrato profesional (Fase 2). */ foto?: string };
+
 export type ProductionContent = {
   sinopsis: string[];
+  /** Actos opcionales: si una obra no los usa, un solo grupo con nombre vacío. */
   actos: { nombre: string; canciones: string[] }[];
   videos: { titulo: string; url: string }[];
-  reparto: { personaje: string; persona: string }[];
+  reparto: { personaje: string; persona: string; foto?: string }[];
   ensamble: string[];
-  creativo: { rol: string; persona: string }[];
-  produccion: { rol: string; persona: string }[];
-  crew: { rol: string; persona: string }[];
+  creativo: Credit[];
+  produccion: Credit[];
+  crew: Credit[];
+  tecnico: Credit[];
   agradecimientos: string[];
-  ficha: { etiqueta: string; valor: string }[];
+  /** Ficha técnica con campos fijos (la sede sale de la base) + extras opcionales. */
+  ficha: {
+    temporada?: string;
+    fechas?: string;
+    duracion?: string;
+    clasificacion?: string;
+    basadaEn?: string;
+    extras: { etiqueta: string; valor: string }[];
+  };
   /** Videos de ensayo de la Fan Zone (id de YouTube). */
   ensayos: { titulo: string; youtube: string }[];
 };
@@ -245,36 +259,15 @@ export const PRODUCTION_CONTENT: Record<string, ProductionContent> = {
       "Familias del elenco y equipo creativo",
       "Sponsors y patrocinadores 2026"
     ],
-    "ficha": [
-      {
-        "etiqueta": "Producción",
-        "valor": "Mamma Mia!"
-      },
-      {
-        "etiqueta": "Temporada",
-        "valor": "2026"
-      },
-      {
-        "etiqueta": "Fecha",
-        "valor": "22 de Mayo de 2026"
-      },
-      {
-        "etiqueta": "Basada en",
-        "valor": "Música de ABBA"
-      },
-      {
-        "etiqueta": "Duración",
-        "valor": "~2h 20 min (c/intermedio)"
-      },
-      {
-        "etiqueta": "Clasificación",
-        "valor": "Toda la familia"
-      },
-      {
-        "etiqueta": "Estado",
-        "valor": "Archivo histórico"
-      }
-    ],
+    "ficha": {
+      "extras": [],
+      "temporada": "2026",
+      "fechas": "22 de Mayo de 2026",
+      "basadaEn": "Música de ABBA",
+      "duracion": "~2h 20 min (c/intermedio)",
+      "clasificacion": "Toda la familia"
+    },
+    "tecnico": [],
     "ensayos": [
       {
         "titulo": "Dancing Queen · Ensayo",
@@ -318,7 +311,7 @@ export const PRODUCTION_CONTENT: Record<string, ProductionContent> = {
     ],
     "actos": [
       {
-        "nombre": "",
+        "nombre": "Acto I",
         "canciones": [
           "Wildcat Cheer",
           "The Start of Something New",
@@ -326,7 +319,12 @@ export const PRODUCTION_CONTENT: Record<string, ProductionContent> = {
           "Auditions",
           "What I've Been Looking For",
           "What I've Been Looking For (Reprise)",
-          "Stick To The Status Quo",
+          "Stick To The Status Quo"
+        ]
+      },
+      {
+        "nombre": "Acto II",
+        "canciones": [
           "Counting on You",
           "We're All In This Together",
           "Bop To The Top",
@@ -461,32 +459,18 @@ export const PRODUCTION_CONTENT: Record<string, ProductionContent> = {
     ],
     "crew": [],
     "agradecimientos": [],
-    "ficha": [
-      {
-        "etiqueta": "Producción",
-        "valor": "High School Musical"
-      },
-      {
-        "etiqueta": "Temporada",
-        "valor": "2025"
-      },
-      {
-        "etiqueta": "Fecha",
-        "valor": "30 de Junio de 2025"
-      },
-      {
-        "etiqueta": "Basada en",
-        "valor": "Disney's HSM"
-      },
-      {
-        "etiqueta": "Colectivo",
-        "valor": "Sunhills Valley (SHV)"
-      },
-      {
-        "etiqueta": "Estado",
-        "valor": "Archivo histórico"
-      }
-    ],
+    "ficha": {
+      "extras": [
+        {
+          "etiqueta": "Colectivo",
+          "valor": "Sunhills Valley (SHV)"
+        }
+      ],
+      "temporada": "2025",
+      "fechas": "30 de Junio de 2025",
+      "basadaEn": "Disney's HSM"
+    },
+    "tecnico": [],
     "ensayos": [
       {
         "titulo": "Breaking Free · Ensayo",
@@ -570,16 +554,11 @@ export const PRODUCTION_CONTENT: Record<string, ProductionContent> = {
     ],
     "crew": [],
     "agradecimientos": [],
-    "ficha": [
-      {
-        "etiqueta": "Producción",
-        "valor": "Showman"
-      },
-      {
-        "etiqueta": "Estado",
-        "valor": "2027"
-      }
-    ],
+    "ficha": {
+      "extras": [],
+      "temporada": "2027"
+    },
+    "tecnico": [],
     "ensayos": []
   }
 };
