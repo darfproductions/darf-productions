@@ -327,6 +327,17 @@ decisión es tuya.
 - Base de datos: `0038_audition_types.sql` (pruebas T1–T5). En DEV:
   `supabase/dev/apply_0038_dev.sql` en el SQL Editor.
 
+## 12. Cancelar o borrar una convocatoria (pedido de Diego, 2026-10-11)
+
+- **Cancelar:** estado “Cancelada”. Se conserva todo, ya nadie se inscribe y los inscritos
+  lo ven en la página de la convocatoria y en Mi cuenta. Se puede reabrir.
+- **Borrar para siempre:** para la que quedó mal hecha; hay que escribir el título para
+  confirmar. Se borran inscripciones, calificaciones, horarios, preguntas, invitaciones,
+  videos (enlaces) y fotos. Sin inscritos la borra quien la gestiona; con inscritos, solo
+  quien arma su equipo (obra: quien da permisos; general: el Director). Queda en la Bitácora.
+- Base de datos: `0039_audition_cancel_delete.sql` (pruebas T1–T3). En DEV:
+  `supabase/dev/apply_0039_dev.sql` en el SQL Editor.
+
 ## Cómo se comprueba cada etapa
 
 - Pruebas SQL de permisos por rol (en local y en DEV) y las de boletería sin cambios.

@@ -9,7 +9,7 @@ import { formatSlot } from "@/lib/auditions";
 import { isoToLocalMx } from "@/lib/dates";
 import { requireAudition } from "@/lib/panel-auditions";
 import { createClient } from "@/lib/supabase/server";
-import { addAuditionMember, addField, addInvites, addRole, addSlot, removeAuditionMember, removeInvite, removeItem, saveAsTemplate, saveAudition, saveCriterios, saveOptions, setAuditionEstado } from "../actions";
+import { addAuditionMember, addField, addInvites, addRole, addSlot, removeAuditionMember, removeInvite, removeItem, saveAsTemplate, saveAudition, saveCriterios, saveOptions, setAuditionEstado, deleteAudition } from "../actions";
 
 export const metadata: Metadata = { title: "Configurar audición" };
 
@@ -31,14 +31,16 @@ export default async function AuditionConfig({ params }: PageProps<"/panel/audic
   // ¿Puede armar el equipo propio? Obra: quien da permisos en ella. General: el Director.
   const armaEquipo = access.isDirector || (!!a.production_id && (access.byProduction[a.production_id] ?? []).includes("permisos.gestionar"));
   const supabase = await createClient();
-  const [roles, slots, fields, team, teamRoles, invites] = await Promise.all([
+  const [roles, slots, fields, team, teamRoles, invites, inscritos] = await Promise.all([
     supabase.from("audition_roles").select("id, nombre, descripcion").eq("audition_id", aid).order("orden"),
     supabase.rpc("audition_slot_availability", { aid }),
     supabase.from("audition_fields").select("id, etiqueta, tipo, opciones, obligatorio").eq("audition_id", aid).order("orden"),
     supabase.rpc("audition_list_members", { aid }),
     supabase.from("role_permissions").select("role_id, panel_roles(nombre, orden)").like("permission_id", "audiciones.%"),
     supabase.from("audition_invites").select("id, email, created_at").eq("audition_id", aid).order("created_at"),
+    supabase.from("audition_applications").select("id", { count: "exact", head: true }).eq("audition_id", aid),
   ]);
+  const nInscritos = inscritos.count ?? 0;
   const criterios = (a.criterios ?? []) as Criterio[];
   const opcionesRol = [...new Map(((teamRoles.data ?? []) as unknown as { role_id: string; panel_roles: { nombre: string; orden: number } | null }[])
     .map((r) => [r.role_id, { id: r.role_id, nombre: r.panel_roles?.nombre ?? r.role_id, orden: r.panel_roles?.orden ?? 99 }])).values()]
@@ -57,7 +59,7 @@ export default async function AuditionConfig({ params }: PageProps<"/panel/audic
           <p className="flex flex-wrap items-center gap-2 text-sm text-texto-2">Solo con enlace: no aparece en la lista pública. Comparte el enlace con quienes deben inscribirse. <CopyLink path={`/audiciones/${aid}`} /></p>
         )}
         <div className="flex flex-wrap gap-2">
-          {ESTADOS.filter((e) => e.estado !== a.estado).map((e) => (
+          {ESTADOS.filter((e) => e.estado !== a.estado && !(a.estado === "cancelada" && e.estado === "finalizada")).map((e) => (
             <ActionForm key={e.estado} inline action={setAuditionEstado} hidden={{ ...h, estado: e.estado }} confirm={e.confirm} submit={e.label} submitClass={e.estado === "abierta" ? "boton-compra rounded-full px-5 py-2 text-sm font-bold" : "rounded-full border border-white/25 px-4 py-2 text-sm font-bold"} />
           ))}
         </div>
@@ -240,6 +242,29 @@ export default async function AuditionConfig({ params }: PageProps<"/panel/audic
             <input className={input} name="descripcion" maxLength={300} placeholder="Para qué sirve (opcional)" />
           </div>
         </ActionForm>
+      </Card>
+      <Card className="flex flex-col gap-4 border border-[#ff8fa3]/30">
+        <h2 className="titular text-xl text-[#ff8fa3]">Cancelar o borrar</h2>
+        {a.estado !== "cancelada" && (
+          <div className="flex flex-col gap-2">
+            <p className="text-sm text-texto-2"><b>Cancelar</b> (si ya no se hará): se conserva todo, ya nadie puede inscribirse y {nInscritos ? `los ${nInscritos} inscritos verán` : "quien se haya inscrito verá"} “Convocatoria cancelada” en su página y en Mi cuenta. Se puede reabrir después.</p>
+            <ActionForm inline action={setAuditionEstado} hidden={{ ...h, estado: "cancelada" }} confirm="¿Cancelar esta convocatoria? Ya nadie podrá inscribirse y los inscritos lo verán." submit="Cancelar convocatoria" submitClass="rounded-full border border-[#ff8fa3]/60 px-4 py-2 text-sm font-bold text-[#ff8fa3]" />
+          </div>
+        )}
+        <details>
+          <summary className="cursor-pointer text-sm font-bold">Borrar para siempre (si quedó mal hecha)</summary>
+          <div className="mt-3 flex flex-col gap-2">
+            <p className="text-sm text-texto-2">
+              Se borra la convocatoria con {nInscritos ? <b>{nInscritos} inscripciones</b> : "sus inscripciones"}, calificaciones, horarios, preguntas, invitaciones, videos (enlaces) y fotos. <b>No se puede deshacer.</b>
+              {nInscritos > 0 && " Como ya tiene inscritos, solo puede borrarla quien arma su equipo (en una general, el Director). Si solo se suspendió, mejor cancélala."}
+            </p>
+            <ActionForm action={deleteAudition} hidden={h} confirm="¿Borrar para siempre? No se puede deshacer." submit="Borrar convocatoria" submitClass="self-start rounded-full bg-[#be123c] px-5 py-2 text-sm font-bold text-white">
+              <label className="flex flex-col gap-1.5 text-sm font-semibold">Para confirmar, escribe el título: <span className="font-normal text-texto-3">{a.titulo}</span>
+                <input className={`${input} max-w-md`} name="confirmar" required autoComplete="off" />
+              </label>
+            </ActionForm>
+          </div>
+        </details>
       </Card>
     </>
   );

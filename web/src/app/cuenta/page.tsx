@@ -58,7 +58,7 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
   const pendientes = invitaciones.filter((i) => !i.inscrito);
   const audQr = new Map<string, string>();
   for (const a of audiciones) {
-    if (!a.checked_in_at && !["cancelado", "no_cumple"].includes(a.estado)) audQr.set(a.id, await QRCode.toDataURL(a.qr_token, { margin: 1, width: 200 }));
+    if (!a.checked_in_at && a.auditions?.estado !== "cancelada" && !["cancelado", "no_cumple"].includes(a.estado)) audQr.set(a.id, await QRCode.toDataURL(a.qr_token, { margin: 1, width: 200 }));
   }
 
   return (
@@ -160,7 +160,9 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
                     <p className="text-lg font-bold">{a.auditions?.titulo ?? "Audición"}</p>
                     {a.audition_slots && <p className="text-sm capitalize text-texto-2">{formatSlot(a.audition_slots.inicia)}{a.audition_slots.sala ? ` · ${a.audition_slots.sala}` : ""}</p>}
                     <p className="text-sm">
-                      <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${ESTADO_SOLICITUD[a.estado]?.cls ?? ""}`}>{ESTADO_SOLICITUD[a.estado]?.label ?? a.estado}</span>
+                      {a.auditions?.estado === "cancelada"
+                        ? <span className="rounded-full bg-[#5a1a22] px-2.5 py-1 text-xs font-bold text-[#fecdd3]">Convocatoria cancelada</span>
+                        : <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${ESTADO_SOLICITUD[a.estado]?.cls ?? ""}`}>{ESTADO_SOLICITUD[a.estado]?.label ?? a.estado}</span>}
                       {a.numero && <span className="ml-2">Número {a.numero}</span>}
                     </p>
                     <Link href={`/audiciones/${a.audition_id}`} className="mt-1 text-sm font-bold text-violeta-claro">Ver convocatoria →</Link>

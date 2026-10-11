@@ -29,7 +29,7 @@ export default async function AuditionPage({ params }: PageProps<"/audiciones/[i
   const [mine, invitado] = session ? await Promise.all([getMyApplication(a.id, session.userId), a.solo_invitados ? amInvited(a.id) : true]) : [null, false];
   const enLinea = a.modalidad === "en_linea";
   const abierta = a.estado === "abierta" && (!a.inscripcion_cierra || new Date(a.inscripcion_cierra) > new Date());
-  const qr = mine && !mine.checked_in_at && !["cancelado", "no_cumple"].includes(mine.estado) ? await QRCode.toDataURL(mine.qr_token, { margin: 1, width: 240 }) : null;
+  const qr = mine && a.estado !== "cancelada" && !mine.checked_in_at && !["cancelado", "no_cumple"].includes(mine.estado) ? await QRCode.toDataURL(mine.qr_token, { margin: 1, width: 240 }) : null;
   const edades = a.edad_min || a.edad_max ? `${a.edad_min ? `de ${a.edad_min}` : ""}${a.edad_max ? ` hasta ${a.edad_max}` : ""} años` : null;
 
   return (
@@ -44,7 +44,7 @@ export default async function AuditionPage({ params }: PageProps<"/audiciones/[i
       </PageHeading>
       <div className="mx-auto grid max-w-[1440px] gap-8 px-5 md:px-16 lg:grid-cols-12">
         <section className="flex flex-col gap-6 lg:col-span-7">
-          {mine && mine.estado !== "cancelado" && (
+          {mine && mine.estado !== "cancelado" && a.estado !== "cancelada" && (
             <div className="flex flex-col gap-4 rounded-2xl border border-[#7ee2a8]/40 bg-[#7ee2a8]/10 p-6 sm:flex-row sm:items-center">
               {/* eslint-disable-next-line @next/next/no-img-element -- QR generado (data URL) */}
               {qr && !enLinea && <img src={qr} alt="Tu QR para la audición" width={160} height={160} className="rounded-xl bg-white p-2" />}
@@ -85,7 +85,10 @@ export default async function AuditionPage({ params }: PageProps<"/audiciones/[i
                 opciones={{ pedirFoto: a.pedir_foto, pedirTutor: a.pedir_tutor }} defaults={{ nombre: session.profile?.nombre ?? "", telefono: session.profile?.telefono ?? "" }} previa={mine} />
             </>
           )}
-          {!abierta && !mine && <p className="rounded-2xl bg-telon p-6 text-texto-2">La inscripción a esta convocatoria está cerrada.</p>}
+          {a.estado === "cancelada" && (
+            <p role="status" className="rounded-2xl border border-[#ff8fa3]/40 bg-[#ff8fa3]/10 p-6">Esta convocatoria se canceló. Gracias por tu interés; te avisaremos de nuevas audiciones aquí.</p>
+          )}
+          {!abierta && !mine && a.estado !== "cancelada" && <p className="rounded-2xl bg-telon p-6 text-texto-2">La inscripción a esta convocatoria está cerrada.</p>}
         </section>
 
         <aside className="flex flex-col gap-4 lg:col-span-5">

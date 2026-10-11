@@ -17,6 +17,7 @@ export const ESTADO_CONVOCATORIA: Record<string, string> = {
   abierta: "Inscripción abierta",
   cerrada: "Inscripción cerrada",
   finalizada: "Finalizada",
+  cancelada: "Cancelada",
 };
 
 /** Edad cumplida en una fecha (misma cuenta que audition_age en la base). */

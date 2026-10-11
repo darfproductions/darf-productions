@@ -199,13 +199,43 @@ export async function deleteTemplate(_p: AudState, f: FormData): Promise<AudStat
   return { ok: true, message: "Plantilla borrada." };
 }
 
+/**
+ * Borrar una convocatoria (definitivo). Hay que escribir su título para confirmar.
+ * La base decide quién puede (con inscritos: solo quien arma su equipo, 0039).
+ * Antes quita las fotos de los aspirantes del almacenamiento.
+ */
+export async function deleteAudition(_p: AudState, f: FormData): Promise<AudState> {
+  const aid = str(f, "aid");
+  const supabase = await createClient();
+  const { data: a } = await supabase.from("auditions").select("titulo, production_id").eq("id", aid).maybeSingle();
+  if (!a) return { ok: false, message: "No se encontró la convocatoria." };
+  if (str(f, "confirmar").toLowerCase() !== String(a.titulo).trim().toLowerCase()) {
+    return { ok: false, message: "Escribe el título exacto de la convocatoria para confirmar." };
+  }
+  // Fotos: <audición>/<usuario>/archivo
+  const fotos: string[] = [];
+  const { data: carpetas } = await supabase.storage.from("audiciones").list(aid, { limit: 1000 });
+  for (const c of carpetas ?? []) {
+    const { data: files } = await supabase.storage.from("audiciones").list(`${aid}/${c.name}`, { limit: 1000 });
+    for (const file of files ?? []) fotos.push(`${aid}/${c.name}/${file.name}`);
+  }
+  const { error, count } = await supabase.from("auditions").delete({ count: "exact" }).eq("id", aid);
+  if (error) return { ok: false, message: error.message };
+  if (!count) return { ok: false, message: "No tienes permiso para borrar esta convocatoria." };
+  if (fotos.length) await supabase.storage.from("audiciones").remove(fotos);
+  revalidatePath("/panel/audiciones");
+  revalidatePath("/audiciones");
+  if (a.production_id) revalidatePath(`/panel/producciones/${a.production_id}/audiciones`);
+  redirect(a.production_id ? `/panel/producciones/${a.production_id}/audiciones` : "/panel/audiciones");
+}
+
 export async function setAuditionEstado(_p: AudState, f: FormData): Promise<AudState> {
   const aid = str(f, "aid");
   const estado = str(f, "estado");
   const supabase = await createClient();
   const { error } = await supabase.from("auditions").update({ estado }).eq("id", aid);
   if (error) return { ok: false, message: error.message };
-  return done(aid, estado === "abierta" ? "Convocatoria abierta: ya se puede inscribir la gente." : "Estado actualizado.");
+  return done(aid, estado === "abierta" ? "Convocatoria abierta: ya se puede inscribir la gente." : estado === "cancelada" ? "Convocatoria cancelada. Los inscritos lo verán en su página y en Mi cuenta." : "Estado actualizado.");
 }
 
 export async function addRole(_p: AudState, f: FormData): Promise<AudState> {
