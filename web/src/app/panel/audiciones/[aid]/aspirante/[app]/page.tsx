@@ -1,5 +1,6 @@
 /* eslint-disable @next/next/no-img-element -- foto privada con enlace temporal */
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ActionForm } from "@/components/panel/ActionForm";
 import { Card, input } from "@/components/panel/ui";
@@ -51,6 +52,7 @@ export default async function ApplicantPage({ params }: PageProps<"/panel/audici
           {(x.roles as string[]).length > 0 && <p>Personajes: {(x.roles as string[]).map((r) => roleName.get(r)).filter(Boolean).join(", ")}</p>}
           {x.es_menor && <p className="text-[#f2b544]">Menor de edad{x.tutor_nombre ? ` · tutor: ${x.tutor_nombre} · ${x.tutor_telefono}` : " · autorización por la escuela u organización"}</p>}
           {!x.consentimiento_imagen && <p className="text-xs text-texto-3">No autorizó fotos o video.</p>}
+          {x.user_id && <Link href={`/panel/talento/${x.user_id}`} className="text-xs font-bold text-violeta-claro">Ficha de talento (todas sus audiciones y obras) →</Link>}
         </div>
       </Card>
 

@@ -94,6 +94,7 @@ export function globalSections(a: PanelAccessData): Section[] {
   if (!a.isDirector) return base;
   return [
     ...base,
+    { href: "/panel/talento", label: "Talento" },
     { href: "/panel/usuarios", label: "Usuarios" },
     { href: "/panel/roles", label: "Roles" },
     { href: "/panel/bitacora", label: "Bitácora" },

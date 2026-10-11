@@ -1,28 +1,47 @@
-import type { DocType, Fee, FeeTerms, MemberDoc, MemberFile, Payment } from "@/lib/member-rules";
+import type { DocType, Fee, FeeTerms, MemberDoc, MemberFile, Payment, PersonFile } from "@/lib/member-rules";
 import { createClient } from "@/lib/supabase/server";
 
-// Lecturas del expediente (0041). Pasan por RLS: el integrante solo ve lo suyo; la
-// producción, según expedientes.ver y mensualidades.gestionar.
+// Lecturas del expediente (0041, 0042). Pasan por RLS: el integrante solo ve lo suyo; la
+// producción, según expedientes.ver, mensualidades.gestionar y el registro de incidencias.
 
-export type MemberData = { file: MemberFile | null; terms: FeeTerms; tipos: DocType[]; docs: (MemberDoc & { id: string })[]; fee: Fee | null; pagos: (Payment & { id: string; metodo: string; nota: string | null; registrado_at: string })[] };
+export type Incident = {
+  id: string; tipo: string; nivel: string; descripcion: string; fecha: string; origen: string;
+  anulada_at: string | null; anulada_motivo: string | null; created_at: string;
+};
+export type Measure = { id: string; medida: string; descripcion: string | null; fecha: string };
+
+export type MemberData = {
+  person: PersonFile | null; member: MemberFile | null; terms: FeeTerms;
+  tipos: DocType[]; docs: (MemberDoc & { id: string })[];
+  fee: Fee | null; pagos: (Payment & { id: string; metodo: string; nota: string | null; registrado_at: string })[];
+  incidencias: Incident[]; medidas: Measure[]; limite: number;
+};
 
 export async function getMemberData(pid: string, uid: string): Promise<MemberData> {
   const supabase = await createClient();
-  const [file, tipos, docs, fee, pagos, terms] = await Promise.all([
-    supabase.from("member_files").select("*").eq("production_id", pid).eq("user_id", uid).maybeSingle(),
-    supabase.from("member_doc_types").select("id, nombre, solo_menores, obligatorio").eq("production_id", pid).order("orden").order("nombre"),
+  const [person, member, tipos, docs, fee, pagos, terms, inc, med, disc] = await Promise.all([
+    supabase.from("person_files").select("*").eq("user_id", uid).maybeSingle(),
+    supabase.from("member_files").select("revisado_at, confirmado_at").eq("production_id", pid).eq("user_id", uid).maybeSingle(),
+    supabase.from("member_doc_types").select("id, nombre, solo_menores, obligatorio, aplica, grupo, personas, descripcion").eq("production_id", pid).order("orden").order("nombre"),
     supabase.from("member_docs").select("id, doc_type_id, archivo_path, subido_at, entregado_at").eq("production_id", pid).eq("user_id", uid),
     supabase.from("production_fees").select("monto, desde, hasta, dia_limite").eq("production_id", pid).maybeSingle(),
     supabase.from("member_payments").select("id, periodo, monto, metodo, nota, registrado_at").eq("production_id", pid).eq("user_id", uid).order("periodo"),
     supabase.from("member_fee_terms").select("beca, cuota_especial").eq("production_id", pid).eq("user_id", uid).maybeSingle(),
+    supabase.from("member_incidents").select("id, tipo, nivel, descripcion, fecha, origen, anulada_at, anulada_motivo, created_at").eq("production_id", pid).eq("user_id", uid).order("fecha", { ascending: false }),
+    supabase.from("member_measures").select("id, medida, descripcion, fecha").eq("production_id", pid).eq("user_id", uid).order("fecha", { ascending: false }),
+    supabase.from("production_discipline").select("limite_advertencias").eq("production_id", pid).maybeSingle(),
   ]);
   return {
-    file: (file.data as MemberFile) ?? null,
+    person: (person.data as PersonFile) ?? null,
+    member: (member.data as MemberFile) ?? null,
     terms: (terms.data as FeeTerms) ?? { beca: false, cuota_especial: null },
     tipos: (tipos.data ?? []) as DocType[],
     docs: (docs.data ?? []) as MemberData["docs"],
     fee: (fee.data as Fee) ?? null,
     pagos: (pagos.data ?? []) as MemberData["pagos"],
+    incidencias: (inc.data ?? []) as Incident[],
+    medidas: (med.data ?? []) as Measure[],
+    limite: (disc.data?.limite_advertencias as number) ?? 3,
   };
 }
 

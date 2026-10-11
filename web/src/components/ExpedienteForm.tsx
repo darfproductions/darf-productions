@@ -2,19 +2,21 @@
 
 import { useActionState } from "react";
 import { saveMemberFile, type FileState } from "@/app/expediente/actions";
-import type { MemberFile } from "@/lib/member-rules";
+import type { PersonFile } from "@/lib/member-rules";
 
 const field = "rounded-lg border border-white/10 bg-sala px-3 py-2.5 font-normal text-texto";
 const lbl = "flex flex-col gap-1.5 text-sm font-semibold";
 
-// Formulario del expediente (lo usan el integrante y la producción).
-export function ExpedienteForm({ pid, uid, f, esMenor }: { pid: string; uid: string; f: MemberFile | null; esMenor: boolean }) {
+// Formulario del expediente único de la persona (lo usan el integrante y la producción).
+// "propio": lo llena la persona; al guardar confirma que sus datos están vigentes en esta obra.
+export function ExpedienteForm({ pid, uid, f, esMenor, propio }: { pid: string; uid: string; f: PersonFile | null; esMenor: boolean; propio?: boolean }) {
   const [state, run, pending] = useActionState<FileState, FormData>(saveMemberFile, null);
-  const v = (k: keyof MemberFile) => (f?.[k] ?? "") as string | number;
+  const v = (k: keyof PersonFile) => (f?.[k] ?? "") as string | number;
   return (
     <form action={run} className="flex flex-col gap-5">
       <input type="hidden" name="pid" value={pid} />
       <input type="hidden" name="uid" value={uid} />
+      {propio && <input type="hidden" name="confirmar" value="on" />}
       <fieldset className="grid gap-3 sm:grid-cols-2">
         <legend className="mb-2 font-bold">Datos personales</legend>
         <label className={lbl}>Fecha de nacimiento *<input className={field} type="date" name="fecha_nacimiento" defaultValue={v("fecha_nacimiento")} /></label>

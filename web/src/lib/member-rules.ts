@@ -1,19 +1,36 @@
 // Reglas del expediente y las mensualidades (etapa 3E, bloque 2). Puras, con pruebas.
 // La base vuelve a revisar permisos; aquí solo se calcula lo que se muestra.
 
-export type MemberFile = {
+/** Expediente único de la persona (0042): se reusa en todas sus obras. */
+export type PersonFile = {
   fecha_nacimiento: string | null; telefono: string | null;
   emergencia_nombre: string | null; emergencia_telefono: string | null; emergencia_parentesco: string | null;
   tutor_nombre: string | null; tutor_telefono: string | null; tutor_email: string | null;
   alergias: string | null; condiciones: string | null; medicamentos: string | null; tipo_sangre: string | null;
   altura_cm: number | null; pecho_cm: number | null; cintura_cm: number | null; cadera_cm: number | null;
   talla_ropa: string | null; talla_calzado: string | null;
-  revisado_at: string | null;
 };
+
+/** Estado del expediente en una obra: el integrante confirma vigencia; la producción revisa. */
+export type MemberFile = { revisado_at: string | null; confirmado_at: string | null };
 
 export type FeeTerms = { beca: boolean; cuota_especial: number | null };
 
-export type DocType = { id: string; nombre: string; solo_menores: boolean; obligatorio: boolean };
+export type DocType = {
+  id: string; nombre: string; solo_menores: boolean; obligatorio: boolean;
+  aplica: "todos" | "menores" | "grupo" | "personas"; grupo: string | null; personas: string[]; descripcion?: string | null;
+};
+/** A quién se le pide un documento. */
+export type DocCtx = { uid: string; esMenor: boolean; tipos: string[] };
+
+export function docAplica(t: DocType, c: DocCtx): boolean {
+  switch (t.aplica) {
+    case "menores": return c.esMenor;
+    case "grupo": return !!t.grupo && c.tipos.includes(t.grupo);
+    case "personas": return t.personas.includes(c.uid);
+    default: return !t.solo_menores || c.esMenor;
+  }
+}
 export type MemberDoc = { doc_type_id: string; archivo_path: string | null; subido_at: string | null; entregado_at: string | null };
 
 const lleno = (v: unknown) => v !== null && v !== undefined && String(v).trim() !== "";
@@ -29,7 +46,7 @@ export function edad(nacimiento: string | null, hoy: Date = new Date()): number 
 }
 
 /** Qué datos obligatorios faltan en el expediente. */
-export function faltantes(f: Partial<MemberFile> | null, hoy: Date = new Date()): string[] {
+export function faltantes(f: Partial<PersonFile> | null, hoy: Date = new Date()): string[] {
   const out: string[] = [];
   if (!f) return ["Expediente sin llenar"];
   if (!lleno(f.fecha_nacimiento)) out.push("Fecha de nacimiento");
@@ -41,17 +58,44 @@ export function faltantes(f: Partial<MemberFile> | null, hoy: Date = new Date())
   return out;
 }
 
-/** Documentos obligatorios que aún no se entregan (los de menores, solo si es menor). */
-export function docsPendientes(tipos: DocType[], docs: MemberDoc[], esMenor: boolean): DocType[] {
-  return tipos.filter((t) => t.obligatorio && (!t.solo_menores || esMenor) && !docs.find((d) => d.doc_type_id === t.id)?.entregado_at);
+/** Documentos obligatorios que le tocan y aún no se entregan. */
+export function docsPendientes(tipos: DocType[], docs: MemberDoc[], c: DocCtx): DocType[] {
+  return tipos.filter((t) => t.obligatorio && docAplica(t, c) && !docs.find((d) => d.doc_type_id === t.id)?.entregado_at);
 }
 
 export type Semaforo = "rojo" | "amarillo" | "verde";
 
-/** Rojo: faltan datos o documentos. Amarillo: completo pero sin revisar. Verde: completo y revisado. */
-export function semaforo(f: Partial<MemberFile> | null, pendientes: number, hoy: Date = new Date()): Semaforo {
-  if (faltantes(f, hoy).length || pendientes) return "rojo";
-  return f?.revisado_at ? "verde" : "amarillo";
+/**
+ * Rojo: faltan datos, documentos o confirmar que sus datos siguen vigentes en esta obra.
+ * Amarillo: completo pero sin revisar. Verde: completo y revisado.
+ */
+export function semaforo(p: Partial<PersonFile> | null, pendientes: number, m: MemberFile | null, hoy: Date = new Date()): Semaforo {
+  if (faltantes(p, hoy).length || pendientes || !m?.confirmado_at) return "rojo";
+  return m.revisado_at ? "verde" : "amarillo";
+}
+
+/** Todo lo que falta (para mostrarlo en una línea). */
+export function pendientesTexto(p: Partial<PersonFile> | null, docs: DocType[], m: MemberFile | null, hoy: Date = new Date()): string[] {
+  return [...faltantes(p, hoy), ...docs.map((t) => t.nombre), ...(m?.confirmado_at ? [] : ["Confirmar que sus datos siguen vigentes"])];
+}
+
+// ──────── Incidencias ────────
+
+export const TIPO_INCIDENCIA: Record<string, string> = {
+  retardo: "Retardo", falta: "Falta", conducta: "Conducta / altercado", mensualidad: "Mensualidad", otro: "Otro",
+};
+export const NIVEL_INCIDENCIA: Record<string, { label: string; cls: string }> = {
+  nota: { label: "Nota interna", cls: "bg-[#2b2f3a] text-texto-2" },
+  advertencia: { label: "Advertencia", cls: "bg-[#5a4313] text-[#fde68a]" },
+  grave: { label: "Grave", cls: "bg-[#5a1a22] text-[#fecdd3]" },
+};
+export const MEDIDA: Record<string, string> = {
+  platica: "Plática", aviso_tutor: "Aviso a mamá, papá o tutor", suspension: "Suspensión", baja: "Baja", otra: "Otra",
+};
+
+/** Advertencias que cuentan para el límite: advertencia o grave, no anuladas. */
+export function cuentaAdvertencias(xs: { nivel: string; anulada_at: string | null }[]): number {
+  return xs.filter((x) => !x.anulada_at && (x.nivel === "advertencia" || x.nivel === "grave")).length;
 }
 
 export const SEMAFORO: Record<Semaforo, { label: string; cls: string }> = {

@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 
 // Acciones del expediente que usan tanto el integrante (Mi cuenta) como la producción
-// (panel). La base decide: cada quien lo suyo; la producción, con expedientes.ver.
+// (panel). El expediente es único por persona (0042) y se reusa en todas sus obras.
+// La base decide: cada quien lo suyo; la producción, con expedientes.ver.
 
 export type FileState = { ok: boolean; message: string } | null;
 
@@ -12,26 +13,40 @@ const TEXTOS = ["fecha_nacimiento", "telefono", "emergencia_nombre", "emergencia
   "tutor_telefono", "tutor_email", "alergias", "condiciones", "medicamentos", "tipo_sangre", "talla_ropa", "talla_calzado"] as const;
 const MEDIDAS = ["altura_cm", "pecho_cm", "cintura_cm", "cadera_cm"] as const;
 
-const refresh = (pid: string, uid: string) => {
+const refresh = (pid: string) => {
   revalidatePath(`/cuenta/produccion/${pid}`);
   revalidatePath(`/panel/producciones/${pid}/expedientes`, "layout");
-  void uid;
 };
 
 export async function saveMemberFile(_p: FileState, f: FormData): Promise<FileState> {
   const pid = String(f.get("pid"));
   const uid = String(f.get("uid"));
-  const row: Record<string, unknown> = { production_id: pid, user_id: uid };
+  const row: Record<string, unknown> = { user_id: uid };
   for (const k of TEXTOS) row[k] = String(f.get(k) ?? "").trim() || null;
   for (const k of MEDIDAS) {
     const v = String(f.get(k) ?? "").trim();
     row[k] = v ? Number(v) : null;
   }
   const supabase = await createClient();
-  const { error } = await supabase.from("member_files").upsert(row, { onConflict: "production_id,user_id" });
+  const { error } = await supabase.from("person_files").upsert(row, { onConflict: "user_id" });
   if (error) return { ok: false, message: /check/.test(error.message) ? "Revisa las medidas (en centímetros)." : error.message };
-  refresh(pid, uid);
-  return { ok: true, message: "Expediente guardado." };
+  // Si lo guarda la propia persona desde una obra, cuenta como "datos vigentes" en esa obra.
+  if (f.get("confirmar") === "on") {
+    await supabase.from("member_files").upsert({ production_id: pid, user_id: uid, confirmado_at: new Date().toISOString() }, { onConflict: "production_id,user_id" });
+  }
+  refresh(pid);
+  return { ok: true, message: "Expediente guardado. Se usa en todas tus producciones." };
+}
+
+/** El integrante confirma que sus datos siguen vigentes para esta obra. */
+export async function confirmVigente(_p: FileState, f: FormData): Promise<FileState> {
+  const pid = String(f.get("pid"));
+  const uid = String(f.get("uid"));
+  const supabase = await createClient();
+  const { error } = await supabase.from("member_files").upsert({ production_id: pid, user_id: uid, confirmado_at: new Date().toISOString() }, { onConflict: "production_id,user_id" });
+  if (error) return { ok: false, message: error.message };
+  refresh(pid);
+  return { ok: true, message: "¡Gracias! Quedó confirmado." };
 }
 
 /** Guarda el archivo ya subido al almacenamiento privado como el documento de esa persona. */
@@ -42,6 +57,6 @@ export async function saveDocFile(pid: string, uid: string, docTypeId: string, p
     { onConflict: "doc_type_id,user_id" },
   );
   if (error) return { ok: false, message: error.message };
-  refresh(pid, uid);
+  refresh(pid);
   return { ok: true };
 }

@@ -17,12 +17,19 @@ const ok = (pid: string, uid: string | null, message: string): ExpState => {
   return { ok: true, message };
 };
 
+/** Documento que se pide: a todos, solo a menores, a un grupo o a personas específicas (0042). */
 export async function addDocType(_p: ExpState, f: FormData): Promise<ExpState> {
   const pid = str(f, "pid");
+  const aplica = ["todos", "menores", "grupo", "personas"].includes(str(f, "aplica")) ? str(f, "aplica") : "todos";
+  const personas = f.getAll("personas").map(String).filter(Boolean);
+  if (aplica === "grupo" && !str(f, "grupo")) return { ok: false, message: "Elige el grupo." };
+  if (aplica === "personas" && !personas.length) return { ok: false, message: "Marca al menos a una persona." };
   const supabase = await createClient();
   const { count } = await supabase.from("member_doc_types").select("id", { count: "exact", head: true }).eq("production_id", pid);
   const { error } = await supabase.from("member_doc_types").insert({
-    production_id: pid, nombre: str(f, "nombre"), solo_menores: f.get("solo_menores") === "on", obligatorio: f.get("opcional") !== "on", orden: (count ?? 0) + 1,
+    production_id: pid, nombre: str(f, "nombre"), descripcion: str(f, "descripcion") || null,
+    aplica, solo_menores: aplica === "menores", grupo: aplica === "grupo" ? str(f, "grupo") : null,
+    personas: aplica === "personas" ? personas : [], obligatorio: f.get("opcional") !== "on", orden: (count ?? 0) + 1,
   });
   if (error) return { ok: false, message: error.message };
   return ok(pid, null, "Documento agregado a la lista.");
@@ -32,9 +39,9 @@ export async function addBasicDocs(_p: ExpState, f: FormData): Promise<ExpState>
   const pid = str(f, "pid");
   const supabase = await createClient();
   const { error } = await supabase.from("member_doc_types").insert([
-    { production_id: pid, nombre: "Reglamento firmado", solo_menores: false, obligatorio: true, orden: 1 },
-    { production_id: pid, nombre: "Permiso de madre, padre o tutor", solo_menores: true, obligatorio: true, orden: 2 },
-    { production_id: pid, nombre: "Identificación oficial (INE o acta)", solo_menores: false, obligatorio: false, orden: 3 },
+    { production_id: pid, nombre: "Reglamento firmado", aplica: "todos", solo_menores: false, obligatorio: true, orden: 1 },
+    { production_id: pid, nombre: "Permiso de madre, padre o tutor", aplica: "menores", solo_menores: true, obligatorio: true, orden: 2 },
+    { production_id: pid, nombre: "Identificación oficial (INE o acta)", aplica: "todos", solo_menores: false, obligatorio: false, orden: 3 },
   ]);
   if (error) return { ok: false, message: error.message };
   return ok(pid, null, "Lista básica agregada.");
@@ -124,4 +131,56 @@ export async function removePayment(_p: ExpState, f: FormData): Promise<ExpState
   if (error) return { ok: false, message: error.message };
   if (!count) return { ok: false, message: "No tienes permiso." };
   return ok(pid, uid, "Pago quitado.");
+}
+
+// ──────── Incidencias, advertencias y medidas (0042) ────────
+
+export async function saveDiscipline(_p: ExpState, f: FormData): Promise<ExpState> {
+  const pid = str(f, "pid");
+  const n = (k: string) => (f.get(`${k}_on`) === "on" ? Number(str(f, k) || 0) || null : null);
+  const supabase = await createClient();
+  const { error } = await supabase.from("production_discipline").upsert({
+    production_id: pid, limite_advertencias: Number(str(f, "limite") || 3),
+    auto_mensualidad_meses: n("meses"), auto_retardos: n("retardos"), auto_faltas: n("faltas"),
+  });
+  if (error) return { ok: false, message: error.message };
+  return ok(pid, null, "Reglas guardadas.");
+}
+
+export async function addIncident(_p: ExpState, f: FormData): Promise<ExpState> {
+  const pid = str(f, "pid");
+  const uid = str(f, "uid");
+  const session = await getSession();
+  if (!session) return { ok: false, message: "Tu sesión expiró." };
+  const supabase = await createClient();
+  const { error } = await supabase.from("member_incidents").insert({
+    production_id: pid, user_id: uid, tipo: str(f, "tipo") || "otro", nivel: str(f, "nivel") || "advertencia",
+    descripcion: str(f, "descripcion"), fecha: str(f, "fecha") || undefined, created_by: session.userId,
+  });
+  if (error) return { ok: false, message: error.message };
+  return ok(pid, uid, "Incidencia registrada.");
+}
+
+export async function voidIncident(_p: ExpState, f: FormData): Promise<ExpState> {
+  const pid = str(f, "pid");
+  const uid = str(f, "uid");
+  const motivo = str(f, "motivo");
+  if (!motivo) return { ok: false, message: "Escribe por qué se anula." };
+  const supabase = await createClient();
+  const { error, count } = await supabase.from("member_incidents")
+    .update({ anulada_at: new Date().toISOString(), anulada_motivo: motivo }, { count: "exact" }).eq("id", str(f, "id")).eq("production_id", pid);
+  if (error) return { ok: false, message: error.message };
+  if (!count) return { ok: false, message: "No tienes permiso." };
+  return ok(pid, uid, "Incidencia anulada (queda en el historial).");
+}
+
+export async function addMeasure(_p: ExpState, f: FormData): Promise<ExpState> {
+  const pid = str(f, "pid");
+  const uid = str(f, "uid");
+  const supabase = await createClient();
+  const { error } = await supabase.from("member_measures").insert({
+    production_id: pid, user_id: uid, medida: str(f, "medida") || "otra", descripcion: str(f, "descripcion") || null, fecha: str(f, "fecha") || undefined,
+  });
+  if (error) return { ok: false, message: error.message };
+  return ok(pid, uid, "Medida registrada.");
 }

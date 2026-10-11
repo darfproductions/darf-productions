@@ -371,6 +371,24 @@ Orden: 1) Elenco y ofertas, 2) Expediente y mensualidades, 3) Ensayos y asistenc
   y pagos registrados (quién, cuándo, método). Quien solo maneja mensualidades no ve
   datos de salud. El integrante ve solo lo suyo.
 
+**Ajustes al bloque 2** (decisiones de Diego, `0042_talent_discipline.sql`, pruebas T1–T5):
+- **Expediente único por persona** (`person_files`): emergencia, tutor, salud y medidas se
+  llenan una vez y se reusan en cada obra. Por obra: "mis datos siguen vigentes" (integrante),
+  "revisado" (producción), documentos, mensualidades e incidencias. Si la persona cambia sus
+  datos, todas sus obras vuelven a "por revisar".
+- **Documentos dirigidos:** a todos, solo menores, un grupo (reparto, ensamble…) o personas
+  específicas (p. ej. responsiva de aéreo solo para dos personas), con instrucciones.
+- **Incidencias:** nota interna, advertencia o grave; manuales o automáticas (mensualidad:
+  1 advertencia por cada N meses vencidos; retardos y faltas con el bloque de ensayos).
+  Límite por obra (3 por defecto) → "Requiere decisión" hasta registrar la medida (plática,
+  aviso a papás, suspensión, baja). No se editan: se anulan con motivo. El integrante ve sus
+  advertencias y graves, no las notas.
+- **Ficha de talento** (`/panel/talento/<cuenta>`): obras, audiciones (respuestas, promedio,
+  videos, horas), ofertas; el Director ve además incidencias de todas las obras. La producción
+  ve lo artístico de quien está, audicionó o tiene oferta en su obra.
+- **Talento** (solo Director): buscar personas sin importar acentos, unir fichas duplicadas y
+  ligar una ficha a su cuenta.
+
 ## Cómo se comprueba cada etapa
 
 - Pruebas SQL de permisos por rol (en local y en DEV) y las de boletería sin cambios.

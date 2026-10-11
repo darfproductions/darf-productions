@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { adeudo, docsPendientes, estadoCuotas, faltantes, meses, semaforo } from "./member-rules";
+import { adeudo, cuentaAdvertencias, docAplica, docsPendientes, estadoCuotas, faltantes, meses, semaforo } from "./member-rules";
 
 const hoy = new Date("2026-11-15T12:00:00Z");
 const completo = {
   fecha_nacimiento: "2000-01-01", telefono: "55", emergencia_nombre: "Mamá", emergencia_telefono: "55",
-  alergias: "Ninguna", revisado_at: null,
+  alergias: "Ninguna",
 };
+const confirmado = { confirmado_at: "2026-11-01", revisado_at: null };
 
 describe("expediente", () => {
   it("lo que falta", () => {
@@ -14,20 +15,31 @@ describe("expediente", () => {
     expect(faltantes({ ...completo, fecha_nacimiento: "2012-05-01" }, hoy)).toContain("Madre, padre o tutor");
     expect(faltantes({ ...completo, alergias: " " }, hoy)).toHaveLength(1);
   });
-  it("documentos de menores solo a menores", () => {
-    const tipos = [
-      { id: "a", nombre: "Reglamento", solo_menores: false, obligatorio: true },
-      { id: "b", nombre: "Permiso", solo_menores: true, obligatorio: true },
-      { id: "c", nombre: "Foto", solo_menores: false, obligatorio: false },
-    ];
+  const base = { solo_menores: false, obligatorio: true, grupo: null, personas: [] as string[] };
+  const tipos = [
+    { ...base, id: "a", nombre: "Reglamento", aplica: "todos" as const },
+    { ...base, id: "b", nombre: "Permiso", aplica: "menores" as const, solo_menores: true },
+    { ...base, id: "c", nombre: "Foto", aplica: "todos" as const, obligatorio: false },
+    { ...base, id: "d", nombre: "Responsiva aéreo", aplica: "personas" as const, personas: ["u1"] },
+    { ...base, id: "e", nombre: "Partituras firmadas", aplica: "grupo" as const, grupo: "ensamble" },
+  ];
+  it("documentos dirigidos: menores, personas y grupo", () => {
     const docs = [{ doc_type_id: "a", archivo_path: "x", subido_at: "x", entregado_at: null }];
-    expect(docsPendientes(tipos, docs, false).map((t) => t.id)).toEqual(["a"]);
-    expect(docsPendientes(tipos, docs, true).map((t) => t.id)).toEqual(["a", "b"]);
+    expect(docsPendientes(tipos, docs, { uid: "u2", esMenor: false, tipos: ["reparto"] }).map((t) => t.id)).toEqual(["a"]);
+    expect(docsPendientes(tipos, docs, { uid: "u1", esMenor: true, tipos: ["ensamble"] }).map((t) => t.id)).toEqual(["a", "b", "d", "e"]);
+    expect(docAplica(tipos[3], { uid: "u3", esMenor: false, tipos: [] })).toBe(false);
   });
-  it("semáforo", () => {
-    expect(semaforo(completo, 1, hoy)).toBe("rojo");
-    expect(semaforo(completo, 0, hoy)).toBe("amarillo");
-    expect(semaforo({ ...completo, revisado_at: "2026-11-01" }, 0, hoy)).toBe("verde");
+  it("semáforo: falta confirmar vigencia, por revisar, completo", () => {
+    expect(semaforo(completo, 1, confirmado, hoy)).toBe("rojo");
+    expect(semaforo(completo, 0, null, hoy)).toBe("rojo");
+    expect(semaforo(completo, 0, confirmado, hoy)).toBe("amarillo");
+    expect(semaforo(completo, 0, { ...confirmado, revisado_at: "2026-11-02" }, hoy)).toBe("verde");
+  });
+  it("advertencias que cuentan", () => {
+    expect(cuentaAdvertencias([
+      { nivel: "nota", anulada_at: null }, { nivel: "advertencia", anulada_at: null },
+      { nivel: "grave", anulada_at: null }, { nivel: "advertencia", anulada_at: "2026-11-01" },
+    ])).toBe(2);
   });
 });
 
