@@ -5,7 +5,7 @@ import { ActionForm } from "@/components/panel/ActionForm";
 import { Card, input } from "@/components/panel/ui";
 import { TIPO_CREDITO } from "@/lib/casting-rules";
 import {
-  SEMAFORO, adeudo, docsPendientes, edad, estadoCuotas, pesos, semaforo,
+  SEMAFORO, adeudo, docsPendientes, edad, estadoCuotas, estadoInscripcion, mesNombre, pesos, recaudacion, semaforo,
   type DocType, type Enrollment, type Fee, type FeeTerms, type MemberDoc, type MemberFile, type PersonFile,
 } from "@/lib/member-rules";
 import { can } from "@/lib/panel-nav";
@@ -46,9 +46,9 @@ export default async function Expedientes({ params }: PageProps<"/panel/producci
     verExp ? supabase.from("member_files").select("user_id, revisado_at, confirmado_at").eq("production_id", id) : Promise.resolve({ data: [] }),
     supabase.from("member_doc_types").select("id, nombre, solo_menores, obligatorio, aplica, grupo, personas, descripcion").eq("production_id", id).order("orden"),
     verExp ? supabase.from("member_docs").select("user_id, doc_type_id, archivo_path, subido_at, entregado_at").eq("production_id", id) : Promise.resolve({ data: [] }),
-    supabase.from("production_fees").select("monto, desde, hasta, dia_limite").eq("production_id", id).maybeSingle(),
-    verCuotas ? supabase.from("member_payments").select("user_id, periodo, monto").eq("production_id", id) : Promise.resolve({ data: [] }),
-    verCuotas ? supabase.from("member_fee_terms").select("user_id, beca, cuota_especial").eq("production_id", id) : Promise.resolve({ data: [] }),
+    supabase.from("production_fees").select("monto, desde, hasta, dia_limite, cobrar, inscripcion").eq("production_id", id).maybeSingle(),
+    verCuotas ? supabase.from("member_payments").select("user_id, periodo, monto, concepto, registrado_at").eq("production_id", id) : Promise.resolve({ data: [] }),
+    verCuotas ? supabase.from("member_fee_terms").select("user_id, beca, cuota_especial, sin_inscripcion").eq("production_id", id) : Promise.resolve({ data: [] }),
     verDisc || verCuotas ? supabase.rpc("discipline_summary", { pid: id }) : Promise.resolve({ data: [] }),
     supabase.from("production_discipline").select("*").eq("production_id", id).maybeSingle(),
     supabase.from("member_enrollment").select("user_id, ingreso, baja_at, baja_motivo").eq("production_id", id),
@@ -60,7 +60,10 @@ export default async function Expedientes({ params }: PageProps<"/panel/producci
   const memberDe = (u: string) => ((members.data ?? []) as (MemberFile & { user_id: string })[]).find((f) => f.user_id === u) ?? null;
   const docsDe = (u: string) => ((docs.data ?? []) as (MemberDoc & { user_id: string })[]).filter((d) => d.user_id === u);
   const termsDe = (u: string): FeeTerms => ((terms.data ?? []) as (FeeTerms & { user_id: string })[]).find((t) => t.user_id === u) ?? { beca: false, cuota_especial: null };
-  const pagosDe = (u: string) => ((pagos.data ?? []) as { user_id: string; periodo: string; monto: number }[]).filter((p) => p.user_id === u);
+  type Pago = { user_id: string; periodo: string; monto: number; concepto: "mensualidad" | "inscripcion"; registrado_at: string };
+  const pagosDe = (u: string) => ((pagos.data ?? []) as Pago[]).filter((p) => p.user_id === u);
+  const cobra = !!cuota && cuota.cobrar !== false;
+  const rec = recaudacion((pagos.data ?? []) as Pago[]);
   const discDe = (u: string) => ((disc.data ?? []) as Disc[]).find((d) => d.user_id === u);
   const reglas = cfg.data as { limite_advertencias: number; auto_mensualidad_meses: number | null; auto_retardos: number | null; auto_faltas: number | null } | null;
   const porDecidir = gente.filter((g) => discDe(g.user_id)?.requiere_decision && !altaDe(g.user_id)?.baja_at);
@@ -86,7 +89,7 @@ export default async function Expedientes({ params }: PageProps<"/panel/producci
               {verExp && <th className="px-4 py-3">Expediente</th>}
               {verExp && <th className="px-4 py-3">Documentos</th>}
               {(verDisc || verCuotas) && <th className="px-4 py-3">Advertencias</th>}
-              {verCuotas && cuota && <th className="px-4 py-3">Mensualidad</th>}
+              {verCuotas && cobra && <th className="px-4 py-3">Pagos</th>}
             </tr>
           </thead>
           <tbody className="divide-y divide-white/10">
@@ -96,7 +99,8 @@ export default async function Expedientes({ params }: PageProps<"/panel/producci
               const pend = docsPendientes(tiposDoc, docsDe(g.user_id), { uid: g.user_id, esMenor: e !== null && e < 18, tipos: g.tipos });
               const sem = semaforo(p, pend.length, memberDe(g.user_id));
               const alta = altaDe(g.user_id);
-              const debe = cuota ? adeudo(estadoCuotas(cuota, termsDe(g.user_id), pagosDe(g.user_id), new Date(), alta)) : 0;
+              const insc = cuota ? estadoInscripcion(cuota, termsDe(g.user_id), pagosDe(g.user_id)) : null;
+              const debe = cuota ? adeudo(estadoCuotas(cuota, termsDe(g.user_id), pagosDe(g.user_id), new Date(), alta)) + Math.max(0, (insc?.debe ?? 0) - (insc?.pagado ?? 0)) : 0;
               const d = discDe(g.user_id);
               return (
                 <tr key={g.user_id} className={alta?.baja_at ? "opacity-60" : ""}>
@@ -108,7 +112,8 @@ export default async function Expedientes({ params }: PageProps<"/panel/producci
                   {verExp && <td className="px-4 py-3"><span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${SEMAFORO[sem].cls}`}>{SEMAFORO[sem].label}</span></td>}
                   {verExp && <td className="px-4 py-3 text-xs">{pend.length ? `Faltan ${pend.length}` : "Completos"}</td>}
                   {(verDisc || verCuotas) && <td className="px-4 py-3 text-xs">{d ? <span className={d.advertencias >= d.limite ? "font-bold text-[#fecdd3]" : ""}>{d.advertencias} de {d.limite}</span> : "—"}</td>}
-                  {verCuotas && cuota && <td className="px-4 py-3 text-xs">{termsDe(g.user_id).beca ? "Beca" : debe ? <b className="text-[#fecdd3]">Debe {pesos(debe)}</b> : "Al corriente"}</td>}
+                  {verCuotas && cobra && <td className="px-4 py-3 text-xs">{debe ? <b className="text-[#fecdd3]">Debe {pesos(debe)}</b> : termsDe(g.user_id).beca ? "Beca" : "Al corriente"}
+                    {insc && (insc.estado === "pendiente" || insc.estado === "parcial") && <span className="block text-texto-3">Inscripción pendiente</span>}</td>}
                 </tr>
               );
             })}
@@ -191,16 +196,40 @@ export default async function Expedientes({ params }: PageProps<"/panel/producci
 
       {verCuotas && (
         <Card>
-          <h2 className="titular mb-1 text-xl">Mensualidad</h2>
-          <p className="mb-3 text-sm text-texto-2">Monto por mes y de qué mes a qué mes se cobra. La beca o un monto especial se ponen en el expediente de cada persona.</p>
-          <ActionForm action={saveFee} hidden={h} submit="Guardar mensualidad">
-            <div className="grid gap-2 sm:grid-cols-4">
-              <label className="flex flex-col gap-1 text-xs font-semibold">Monto por mes (MXN)<input className={input} type="number" min={0} step="1" name="monto" required defaultValue={cuota?.monto ?? ""} /></label>
+          <h2 className="titular mb-1 text-xl">Pagos del taller</h2>
+          <p className="mb-3 text-sm text-texto-2">Inscripción (un solo pago, completo aunque entren tarde) y mensualidad (de qué mes a qué mes). Quien entra tarde paga desde su mes de ingreso. La beca, un monto especial o “sin inscripción” se ponen en el expediente de cada persona.</p>
+          <ActionForm action={saveFee} hidden={h} submit="Guardar pagos">
+            <label className="flex items-center gap-2 text-sm font-semibold"><input type="checkbox" name="cobrar" defaultChecked={cuota ? cuota.cobrar !== false : true} /> Este taller tiene pagos (si lo apagas, no se cobra nada a nadie)</label>
+            <div className="grid gap-2 sm:grid-cols-5">
+              <label className="flex flex-col gap-1 text-xs font-semibold">Inscripción (MXN)<input className={input} type="number" min={0} step="1" name="inscripcion" defaultValue={cuota?.inscripcion ?? 0} /></label>
+              <label className="flex flex-col gap-1 text-xs font-semibold">Mensualidad (MXN)<input className={input} type="number" min={0} step="1" name="monto" required defaultValue={cuota?.monto ?? ""} /></label>
               <label className="flex flex-col gap-1 text-xs font-semibold">Primer mes<input className={input} type="month" name="desde" required defaultValue={cuota?.desde.slice(0, 7) ?? ""} /></label>
               <label className="flex flex-col gap-1 text-xs font-semibold">Último mes<input className={input} type="month" name="hasta" required defaultValue={cuota?.hasta.slice(0, 7) ?? ""} /></label>
               <label className="flex flex-col gap-1 text-xs font-semibold">Pagar antes del día<input className={input} type="number" min={1} max={28} name="dia_limite" defaultValue={cuota?.dia_limite ?? 10} /></label>
             </div>
           </ActionForm>
+        </Card>
+      )}
+
+      {verCuotas && rec.meses.length > 0 && (
+        <Card className="overflow-x-auto p-0 md:p-0">
+          <h2 className="titular px-5 pt-4 text-xl">Recaudación</h2>
+          <div className="grid grid-cols-3 gap-3 px-5 py-3 text-center">
+            <div><p className="text-xl font-black">{pesos(rec.inscripciones)}</p><p className="text-xs text-texto-3">Inscripciones</p></div>
+            <div><p className="text-xl font-black">{pesos(rec.mensualidades)}</p><p className="text-xs text-texto-3">Mensualidades</p></div>
+            <div><p className="text-xl font-black">{pesos(rec.total)}</p><p className="text-xs text-texto-3">Total cobrado</p></div>
+          </div>
+          <table className="w-full min-w-[480px] text-sm">
+            <thead className="text-left text-xs uppercase tracking-[0.12em] text-texto-3">
+              <tr>{["Mes en que se cobró", "Inscripciones", "Mensualidades", "Total"].map((t) => <th key={t} className="px-4 py-2">{t}</th>)}</tr>
+            </thead>
+            <tbody className="divide-y divide-white/10">
+              {rec.meses.map((m) => (
+                <tr key={m.mes}><td className="px-4 py-2 capitalize">{mesNombre(m.mes)}</td><td className="px-4 py-2">{pesos(m.inscripciones)}</td>
+                  <td className="px-4 py-2">{pesos(m.mensualidades)}</td><td className="px-4 py-2 font-bold">{pesos(m.total)}</td></tr>
+              ))}
+            </tbody>
+          </table>
         </Card>
       )}
     </div>

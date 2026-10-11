@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { adeudo, cuentaAdvertencias, mesesDePersona, docAplica, docsPendientes, estadoCuotas, faltantes, meses, semaforo } from "./member-rules";
+import { adeudo, cuentaAdvertencias, estadoInscripcion, mesesDePersona, recaudacion, docAplica, docsPendientes, estadoCuotas, faltantes, meses, semaforo } from "./member-rules";
 
 const hoy = new Date("2026-11-15T12:00:00Z");
 const completo = {
@@ -64,6 +64,28 @@ describe("mensualidades", () => {
     expect(mesesDePersona("2026-09-01", "2027-01-01", { ingreso: "2026-10-20", baja_at: null })).toEqual(["2026-10-01", "2026-11-01", "2026-12-01", "2027-01-01"]);
     expect(mesesDePersona("2026-09-01", "2027-01-01", { ingreso: "2026-09-05", baja_at: "2026-11-01" })).toEqual(["2026-09-01", "2026-10-01"]);
     expect(mesesDePersona("2026-09-01", "2027-01-01", { ingreso: "2026-09-05", baja_at: "2026-11-15" })).toEqual(["2026-09-01", "2026-10-01", "2026-11-01"]);
+  });
+  it("inscripción: completa aunque entre tarde; no cuenta como mensualidad", () => {
+    const f = { ...fee, inscripcion: 800 };
+    const pagos = [{ periodo: "2026-11-01", monto: 800, concepto: "inscripcion" as const }, { periodo: "2026-11-01", monto: 500, concepto: "mensualidad" as const }];
+    expect(estadoInscripcion(f, { beca: false, cuota_especial: null }, pagos).estado).toBe("pagado");
+    expect(estadoInscripcion(f, { beca: false, cuota_especial: null }, []).estado).toBe("pendiente");
+    expect(estadoInscripcion(f, { beca: true, cuota_especial: null, sin_inscripcion: true }, []).estado).toBe("exento");
+    const ms = estadoCuotas(f, { beca: false, cuota_especial: null }, pagos, hoy, { ingreso: "2026-11-03", baja_at: null });
+    expect(ms[0]).toMatchObject({ periodo: "2026-11-01", pagado: 500, estado: "pagado" });
+  });
+  it("taller sin pagos: nada que cobrar", () => {
+    expect(estadoCuotas({ ...fee, cobrar: false }, { beca: false, cuota_especial: null }, [], hoy)).toEqual([]);
+    expect(estadoInscripcion({ ...fee, cobrar: false, inscripcion: 800 }, { beca: false, cuota_especial: null }, []).estado).toBe("no_aplica");
+  });
+  it("recaudación por mes de cobro", () => {
+    const r = recaudacion([
+      { monto: 800, concepto: "inscripcion", registrado_at: "2026-11-03T18:00:00Z" },
+      { monto: 500, concepto: "mensualidad", registrado_at: "2026-11-20T18:00:00Z" },
+      { monto: 500, concepto: "mensualidad", registrado_at: "2026-12-01T05:00:00Z" },
+    ]);
+    expect(r.meses.map((m) => [m.mes, m.mensualidades, m.inscripciones])).toEqual([["2026-11-01", 1000, 800]]);
+    expect(r.total).toBe(1800);
   });
   it("beca y cuota especial", () => {
     expect(estadoCuotas(fee, { beca: true, cuota_especial: null }, [], hoy).every((m) => m.estado === "beca")).toBe(true);

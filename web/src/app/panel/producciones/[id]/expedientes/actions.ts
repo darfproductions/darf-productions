@@ -64,9 +64,10 @@ export async function saveFee(_p: ExpState, f: FormData): Promise<ExpState> {
   const supabase = await createClient();
   const { error } = await supabase.from("production_fees").upsert({
     production_id: pid, monto: Number(str(f, "monto") || 0), desde: `${desde}-01`, hasta: `${hasta}-01`, dia_limite: Number(str(f, "dia_limite") || 10),
+    inscripcion: Number(str(f, "inscripcion") || 0), cobrar: f.get("cobrar") === "on",
   });
   if (error) return { ok: false, message: /check/.test(error.message) ? "Revisa los meses: el último debe ser después del primero." : error.message };
-  return ok(pid, null, "Mensualidad guardada.");
+  return ok(pid, null, f.get("cobrar") === "on" ? "Pagos guardados." : "Listo: este taller no cobra nada.");
 }
 
 export async function markReviewed(_p: ExpState, f: FormData): Promise<ExpState> {
@@ -103,7 +104,7 @@ export async function setScholarship(_p: ExpState, f: FormData): Promise<ExpStat
   const especial = str(f, "cuota_especial");
   const supabase = await createClient();
   const { error } = await supabase.from("member_fee_terms").upsert(
-    { production_id: pid, user_id: uid, beca: f.get("beca") === "on", cuota_especial: especial ? Number(especial) : null },
+    { production_id: pid, user_id: uid, beca: f.get("beca") === "on", cuota_especial: especial ? Number(especial) : null, sin_inscripcion: f.get("sin_inscripcion") === "on" },
     { onConflict: "production_id,user_id" },
   );
   if (error) return { ok: false, message: error.message };
@@ -118,6 +119,7 @@ export async function addPayment(_p: ExpState, f: FormData): Promise<ExpState> {
   const supabase = await createClient();
   const { error } = await supabase.from("member_payments").insert({
     production_id: pid, user_id: uid, periodo: str(f, "periodo"), monto, metodo: str(f, "metodo") || "efectivo", nota: str(f, "nota") || null,
+    concepto: str(f, "concepto") === "inscripcion" ? "inscripcion" : "mensualidad",
   });
   if (error) return { ok: false, message: error.message };
   return ok(pid, uid, "Pago registrado.");

@@ -411,6 +411,14 @@ Orden: 1) Elenco y ofertas, 2) Expediente y mensualidades, 3) Ensayos y asistenc
 - **Pendiente (en espera, decisión de Diego):** rúbrica de evaluación por producción para
   talleres en escuela, editable por los maestros desde la página.
 
+**Pagos: inscripción, taller sin pagos y recaudación** (decisión de Diego, `0045_registration_fee.sql`, pruebas T1–T3):
+- Inscripción por obra (un solo pago, completo aunque se entre tarde) además de la
+  mensualidad (desde el mes de ingreso). Por persona: beca (mensualidades), mensualidad
+  especial y "sin inscripción".
+- "Este taller tiene pagos": apagado = no se cobra nada a nadie y no hay advertencias.
+- Cada pago lleva concepto (mensualidad o inscripción). Recaudación por mes en que se cobró
+  (inscripciones, mensualidades y total) y total del taller.
+
 ## Cómo se comprueba cada etapa
 
 - Pruebas SQL de permisos por rol (en local y en DEV) y las de boletería sin cambios.

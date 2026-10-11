@@ -8,7 +8,7 @@ import { requireSession } from "@/lib/auth";
 import { ConfirmVigente } from "@/components/ConfirmVigente";
 import {
   MES_LABEL, NIVEL_INCIDENCIA, SEMAFORO, TIPO_INCIDENCIA, adeudo, cuentaAdvertencias, docAplica, docsPendientes, edad, estadoCuotas,
-  mesNombre, pendientesTexto, pesos, semaforo,
+  INSCRIPCION_LABEL, estadoInscripcion, mesNombre, pendientesTexto, pesos, semaforo,
 } from "@/lib/member-rules";
 import { getMemberData, signDocs } from "@/lib/members";
 import { ASISTENCIA, fechaEnsayo, type Rehearsal } from "@/lib/rehearsal-rules";
@@ -49,6 +49,7 @@ export default async function MyProduction({ params }: PageProps<"/cuenta/produc
   const vigentes = d.incidencias.filter((i) => !i.anulada_at);
   const urls = await signDocs(d.docs.map((x) => x.archivo_path));
   const ms = d.fee ? estadoCuotas(d.fee, d.terms, d.pagos, new Date(), d.alta) : [];
+  const insc = d.fee ? estadoInscripcion(d.fee, d.terms, d.pagos) : null;
   const falta = pendientesTexto(d.person, pend, d.member);
 
   return (
@@ -152,12 +153,17 @@ export default async function MyProduction({ params }: PageProps<"/cuenta/produc
           </section>
         )}
 
-        {d.fee && (
+        {d.fee && d.fee.cobrar !== false && (
           <section aria-labelledby="cuotas" className="flex flex-col gap-3 rounded-2xl bg-telon p-6">
-            <h2 id="cuotas" className="titular text-2xl">Mis mensualidades</h2>
-            {d.terms.beca ? <p className="text-sm">Tienes beca: no pagas mensualidad.</p> : (
-              <p className="text-sm">Mensualidad: <b>{pesos(Number(d.terms.cuota_especial ?? d.fee.monto))}</b> · pagar antes del día {d.fee.dia_limite} de cada mes · Adeudo a hoy: <b>{pesos(adeudo(ms))}</b></p>
+            <h2 id="cuotas" className="titular text-2xl">Mis pagos</h2>
+            {insc && insc.estado !== "no_aplica" && (
+              <p className="flex flex-wrap items-center gap-2 text-sm">Inscripción{insc.debe ? `: ${pesos(insc.debe)}` : ""}
+                <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${INSCRIPCION_LABEL[insc.estado].cls}`}>{INSCRIPCION_LABEL[insc.estado].label}</span></p>
             )}
+            {d.terms.beca ? <p className="text-sm">Tienes beca: no pagas mensualidad.</p> : (
+              <p className="text-sm">Mensualidad: <b>{pesos(Number(d.terms.cuota_especial ?? d.fee.monto))}</b> · pagar antes del día {d.fee.dia_limite} de cada mes</p>
+            )}
+            <p className="text-sm">Adeudo a hoy: <b>{pesos(adeudo(ms) + Math.max(0, (insc?.debe ?? 0) - (insc?.pagado ?? 0)))}</b></p>
             <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
               {ms.map((m) => (
                 <li key={m.periodo} className="flex items-center justify-between rounded-lg bg-sala px-3 py-2 text-sm">

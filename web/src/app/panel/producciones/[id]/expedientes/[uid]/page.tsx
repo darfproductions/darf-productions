@@ -7,7 +7,7 @@ import { ActionForm } from "@/components/panel/ActionForm";
 import { Card, input } from "@/components/panel/ui";
 import {
   MEDIDA, MES_LABEL, NIVEL_INCIDENCIA, SEMAFORO, TIPO_INCIDENCIA, adeudo, cuentaAdvertencias, docAplica, docsPendientes, edad,
-  estadoCuotas, mesNombre, pendientesTexto, pesos, semaforo,
+  INSCRIPCION_LABEL, estadoCuotas, estadoInscripcion, mesNombre, pendientesTexto, pesos, semaforo,
 } from "@/lib/member-rules";
 import { getMemberData, signDocs } from "@/lib/members";
 import { can } from "@/lib/panel-nav";
@@ -48,6 +48,7 @@ export default async function MemberPage({ params }: PageProps<"/panel/produccio
   const nAdv = cuentaAdvertencias(d.incidencias);
   const urls = verExp ? await signDocs(d.docs.map((x) => x.archivo_path)) : new Map<string, string>();
   const ms = d.fee ? estadoCuotas(d.fee, d.terms, d.pagos, new Date(), d.alta) : [];
+  const insc = d.fee ? estadoInscripcion(d.fee, d.terms, d.pagos) : { debe: 0, pagado: 0, estado: "no_aplica" as const };
   const fmt = (x: string) => new Date(`${x}T12:00:00Z`).toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" });
   const manejaAlta = verExp || can(access, id, "elenco.gestionar");
   const h = { pid: id, uid };
@@ -199,15 +200,22 @@ export default async function MemberPage({ params }: PageProps<"/panel/produccio
 
       {verCuotas && (
         <Card className="flex flex-col gap-3">
-          <h2 className="titular text-xl">Mensualidades</h2>
-          <ActionForm inline action={setScholarship} hidden={h} submit="Guardar" submitClass={ghost}>
-            <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="beca" defaultChecked={d.terms.beca} /> Beca (no paga)</label>
-            <input className={`${input} w-40 py-1.5 text-sm`} type="number" min={0} name="cuota_especial" placeholder="Monto especial" defaultValue={d.terms.cuota_especial ?? ""} aria-label="Monto especial por mes" />
-          </ActionForm>
-          {!d.fee && <p className="text-sm text-texto-3">Primero define la mensualidad de la obra (en Expedientes).</p>}
-          {d.fee && (
+          <h2 className="titular text-xl">Pagos</h2>
+          {!d.fee && <p className="text-sm text-texto-3">Primero define los pagos del taller (en Expedientes).</p>}
+          {d.fee && d.fee.cobrar === false && <p className="text-sm text-texto-3">Este taller no tiene pagos.</p>}
+          {d.fee && d.fee.cobrar !== false && (
             <>
-              <p className="text-sm">Adeudo a hoy: <b>{pesos(adeudo(ms))}</b></p>
+              <ActionForm inline action={setScholarship} hidden={h} submit="Guardar" submitClass={ghost}>
+                <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="beca" defaultChecked={d.terms.beca} /> Beca (no paga mensualidades)</label>
+                <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="sin_inscripcion" defaultChecked={d.terms.sin_inscripcion} /> Sin inscripción</label>
+                <input className={`${input} w-40 py-1.5 text-sm`} type="number" min={0} name="cuota_especial" placeholder="Mensualidad especial" defaultValue={d.terms.cuota_especial ?? ""} aria-label="Mensualidad especial" />
+              </ActionForm>
+              <p className="text-sm">Adeudo a hoy: <b>{pesos(adeudo(ms) + Math.max(0, insc.debe - insc.pagado))}</b></p>
+              {insc.estado !== "no_aplica" && (
+                <p className="flex items-center gap-2 text-sm">Inscripción {insc.debe ? pesos(insc.debe) : ""}
+                  <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${INSCRIPCION_LABEL[insc.estado].cls}`}>{INSCRIPCION_LABEL[insc.estado].label}</span>
+                  {insc.estado === "parcial" && <span className="text-xs text-texto-3">({pesos(insc.pagado)} pagados)</span>}</p>
+              )}
               <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                 {ms.map((m) => (
                   <li key={m.periodo} className="flex items-center justify-between rounded-lg bg-sala px-3 py-2 text-sm">
@@ -217,20 +225,25 @@ export default async function MemberPage({ params }: PageProps<"/panel/produccio
                 ))}
               </ul>
               <ActionForm action={addPayment} hidden={h} submit="Registrar pago">
-                <div className="grid gap-2 sm:grid-cols-4">
-                  <select className={input} name="periodo" required defaultValue={ms.find((m) => m.estado !== "pagado" && m.estado !== "beca")?.periodo ?? ms[0]?.periodo} aria-label="Mes">
-                    {ms.map((m) => <option key={m.periodo} value={m.periodo}>{mesNombre(m.periodo)}</option>)}
+                <div className="grid gap-2 sm:grid-cols-5">
+                  <select className={input} name="concepto" defaultValue={insc.estado === "pendiente" ? "inscripcion" : "mensualidad"} aria-label="Concepto">
+                    <option value="mensualidad">Mensualidad</option>
+                    {insc.estado !== "no_aplica" && insc.estado !== "exento" && <option value="inscripcion">Inscripción</option>}
                   </select>
-                  <input className={input} type="number" min={1} step="1" name="monto" required defaultValue={ms[0]?.debe || ""} placeholder="Monto" aria-label="Monto" />
+                  <select className={input} name="periodo" required defaultValue={ms.find((m) => m.estado !== "pagado" && m.estado !== "beca")?.periodo ?? ms[0]?.periodo} aria-label="Mes">
+                    {(ms.length ? ms.map((m) => m.periodo) : [`${new Date().toISOString().slice(0, 7)}-01`]).map((p) => <option key={p} value={p}>{mesNombre(p)}</option>)}
+                  </select>
+                  <input className={input} type="number" min={1} step="1" name="monto" required defaultValue={(insc.estado === "pendiente" ? insc.debe : ms[0]?.debe) || ""} placeholder="Monto" aria-label="Monto" />
                   <select className={input} name="metodo" defaultValue="efectivo" aria-label="Método">{Object.entries(METODOS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
                   <input className={input} name="nota" placeholder="Nota (opcional)" />
                 </div>
+                <p className="text-xs text-texto-3">Para la inscripción, el mes solo sirve de referencia.</p>
               </ActionForm>
               {d.pagos.length > 0 && (
                 <ul className="flex flex-col gap-1.5 text-sm">
                   {d.pagos.map((p) => (
                     <li key={p.id} className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 py-1.5">
-                      <span><span className="capitalize">{mesNombre(p.periodo)}</span> · {pesos(p.monto)} · {METODOS[p.metodo]}{p.nota ? ` · ${p.nota}` : ""}
+                      <span><b>{p.concepto === "inscripcion" ? "Inscripción" : <span className="capitalize">{mesNombre(p.periodo)}</span>}</b> · {pesos(p.monto)} · {METODOS[p.metodo]}{p.nota ? ` · ${p.nota}` : ""}
                         <span className="block text-xs text-texto-3">Registrado {new Date(p.registrado_at).toLocaleDateString("es-MX", { timeZone: "America/Mexico_City" })}</span></span>
                       <ActionForm inline action={removePayment} hidden={{ ...h, id: p.id }} confirm="¿Quitar este pago? Queda en la Bitácora." submit="Quitar" submitClass={ghost} />
                     </li>

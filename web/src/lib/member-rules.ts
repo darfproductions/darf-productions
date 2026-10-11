@@ -14,7 +14,7 @@ export type PersonFile = {
 /** Estado del expediente en una obra: el integrante confirma vigencia; la producción revisa. */
 export type MemberFile = { revisado_at: string | null; confirmado_at: string | null };
 
-export type FeeTerms = { beca: boolean; cuota_especial: number | null };
+export type FeeTerms = { beca: boolean; cuota_especial: number | null; sin_inscripcion?: boolean };
 
 export type DocType = {
   id: string; nombre: string; solo_menores: boolean; obligatorio: boolean;
@@ -106,8 +106,11 @@ export const SEMAFORO: Record<Semaforo, { label: string; cls: string }> = {
 
 // ──────── Mensualidades ────────
 
-export type Fee = { monto: number; desde: string; hasta: string; dia_limite: number };
-export type Payment = { periodo: string; monto: number };
+export type Fee = { monto: number; desde: string; hasta: string; dia_limite: number; cobrar?: boolean; inscripcion?: number };
+export type Payment = { periodo: string; monto: number; concepto?: "mensualidad" | "inscripcion" };
+
+/** Solo los pagos de mensualidad (los de inscripción van aparte). */
+export const soloMensualidad = <T extends Payment>(ps: T[]): T[] => ps.filter((p) => (p.concepto ?? "mensualidad") === "mensualidad");
 export type MesEstado = "pagado" | "parcial" | "pendiente" | "vencido" | "beca" | "futuro";
 export type Mes = { periodo: string; debe: number; pagado: number; estado: MesEstado };
 
@@ -144,8 +147,9 @@ export function mesesDePersona(desde: string, hasta: string, e?: Enrollment | nu
 export function estadoCuotas(fee: Fee, persona: FeeTerms, pagos: Payment[], hoy: Date = new Date(), e?: Enrollment | null): Mes[] {
   const debe = persona.beca ? 0 : Number(persona.cuota_especial ?? fee.monto);
   const hoyIso = hoy.toISOString().slice(0, 10);
+  if (fee.cobrar === false) return [];
   return mesesDePersona(fee.desde, fee.hasta, e).map((periodo) => {
-    const pagado = pagos.filter((p) => p.periodo === periodo).reduce((s, p) => s + Number(p.monto), 0);
+    const pagado = soloMensualidad(pagos).filter((p) => p.periodo === periodo).reduce((s, p) => s + Number(p.monto), 0);
     const limite = `${periodo.slice(0, 8)}${String(fee.dia_limite).padStart(2, "0")}`;
     let estado: MesEstado;
     if (persona.beca || debe === 0) estado = "beca";
@@ -157,11 +161,51 @@ export function estadoCuotas(fee: Fee, persona: FeeTerms, pagos: Payment[], hoy:
   });
 }
 
+export type Inscripcion = { debe: number; pagado: number; estado: "pagado" | "parcial" | "pendiente" | "exento" | "no_aplica" };
+
+/** Inscripción: un solo pago, completo aunque entre tarde. */
+export function estadoInscripcion(fee: Fee, persona: FeeTerms, pagos: Payment[]): Inscripcion {
+  const monto = Number(fee.inscripcion ?? 0);
+  if (fee.cobrar === false || monto <= 0) return { debe: 0, pagado: 0, estado: "no_aplica" };
+  if (persona.sin_inscripcion) return { debe: 0, pagado: 0, estado: "exento" };
+  const pagado = pagos.filter((p) => p.concepto === "inscripcion").reduce((s, p) => s + Number(p.monto), 0);
+  return { debe: monto, pagado, estado: pagado >= monto ? "pagado" : pagado > 0 ? "parcial" : "pendiente" };
+}
+
+export type Recaudacion = { mes: string; mensualidades: number; inscripciones: number; total: number };
+
+/** Lo cobrado por mes en que se registró el pago (hora de CDMX), del más reciente al más antiguo. */
+export function recaudacion(pagos: { monto: number; concepto?: string; registrado_at: string }[]): { meses: Recaudacion[]; mensualidades: number; inscripciones: number; total: number } {
+  const porMes = new Map<string, Recaudacion>();
+  for (const p of pagos) {
+    const mes = new Intl.DateTimeFormat("en-CA", { year: "numeric", month: "2-digit", timeZone: "America/Mexico_City" }).format(new Date(p.registrado_at)).slice(0, 7) + "-01";
+    const r = porMes.get(mes) ?? { mes, mensualidades: 0, inscripciones: 0, total: 0 };
+    if (p.concepto === "inscripcion") r.inscripciones += Number(p.monto); else r.mensualidades += Number(p.monto);
+    r.total += Number(p.monto);
+    porMes.set(mes, r);
+  }
+  const meses = [...porMes.values()].sort((a, b) => b.mes.localeCompare(a.mes));
+  return {
+    meses,
+    mensualidades: meses.reduce((s, m) => s + m.mensualidades, 0),
+    inscripciones: meses.reduce((s, m) => s + m.inscripciones, 0),
+    total: meses.reduce((s, m) => s + m.total, 0),
+  };
+}
+
 /** Cuánto debe a hoy (meses ya iniciados). */
 export function adeudo(ms: Mes[], hoy: Date = new Date()): number {
   const hoyIso = hoy.toISOString().slice(0, 10);
   return ms.filter((m) => m.periodo <= hoyIso).reduce((s, m) => s + Math.max(0, m.debe - m.pagado), 0);
 }
+
+export const INSCRIPCION_LABEL: Record<Inscripcion["estado"], { label: string; cls: string }> = {
+  pagado: { label: "Pagada", cls: "bg-[#14532d] text-[#bbf7d0]" },
+  parcial: { label: "Parcial", cls: "bg-[#5a4313] text-[#fde68a]" },
+  pendiente: { label: "Pendiente", cls: "bg-[#5a1a22] text-[#fecdd3]" },
+  exento: { label: "Sin inscripción", cls: "bg-[#1e3a8a] text-[#dbeafe]" },
+  no_aplica: { label: "No aplica", cls: "bg-[#2b2f3a] text-texto-3" },
+};
 
 export const MES_LABEL: Record<MesEstado, { label: string; cls: string }> = {
   pagado: { label: "Pagado", cls: "bg-[#14532d] text-[#bbf7d0]" },
