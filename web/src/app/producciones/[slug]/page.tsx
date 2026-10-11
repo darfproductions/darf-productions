@@ -67,7 +67,7 @@ export default async function ProductionPage({ params }: PageProps<"/produccione
   const show = (id: string) => sections.some((s) => s.id === id);
 
   return (
-    <main style={themeStyle(theme)} className="min-h-dvh bg-obra-fondo pb-10 text-obra-texto md:-mt-[100px]">
+    <main style={themeStyle(theme)} className="min-h-dvh bg-obra-fondo pb-10 text-obra-texto">
       {/* Hero de la plantilla: altura fija, ambiente de fondo, logo en caja fija.
           El menú DARF queda arriba sobre la sala oscura: así funciona con cualquier fondo de obra. */}
       <section className="relative h-[560px] overflow-hidden md:h-[660px]">
