@@ -37,6 +37,8 @@ export default async function TalentPage({ params }: PageProps<"/panel/talento/[
   const { data: inc } = access.isDirector
     ? await supabase.from("member_incidents").select("id, production_id, tipo, nivel, descripcion, fecha, anulada_at, productions(nombre)").eq("user_id", uid).order("fecha", { ascending: false })
     : { data: [] };
+  const { data: compras } = access.isDirector ? await supabase.rpc("talent_purchases", { uid }) : { data: [] };
+  const misCompras = (compras ?? []) as { order_code: string; obra: string; funcion: string; estado: string; total: number; boletos: number; asistio: number; created_at: string }[];
   const incidencias = (inc ?? []) as unknown as { id: string; production_id: string; tipo: string; nivel: string; descripcion: string; fecha: string; anulada_at: string | null; productions: { nombre: string } | null }[];
 
   return (
@@ -87,6 +89,19 @@ export default async function TalentPage({ params }: PageProps<"/panel/talento/[
               <li key={i}>{o.obra} · {TIPO_CREDITO[o.tipo] ?? o.tipo}{o.papel ? ` · ${o.papel}` : ""} · {fecha(o.fecha)}{" "}
                 <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${ESTADO_OFERTA[o.estado]?.cls}`}>{ESTADO_OFERTA[o.estado]?.label}</span></li>
             ))}
+          </ul>
+        </Card>
+      )}
+
+      {access.isDirector && (
+        <Card>
+          <h2 className="titular mb-3 text-xl">Como público: compras y funciones ({misCompras.length})</h2>
+          <ul className="flex flex-col gap-1.5 text-sm">
+            {misCompras.map((c) => (
+              <li key={c.order_code}><b>{c.obra}</b> · función {fecha(c.funcion)} · {c.boletos} {c.boletos === 1 ? "boleto" : "boletos"} · ${Number(c.total).toLocaleString("es-MX")} · {c.estado}
+                {c.asistio > 0 && <span className="ml-1 text-[#7ee2a8]">· asistió ({c.asistio})</span>} <span className="text-xs text-texto-3">({c.order_code})</span></li>
+            ))}
+            {misCompras.length === 0 && <li className="text-texto-3">Sin compras con esta cuenta.</li>}
           </ul>
         </Card>
       )}

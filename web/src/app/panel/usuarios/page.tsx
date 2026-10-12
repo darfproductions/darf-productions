@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { ConfirmSubmit } from "@/components/panel/ConfirmSubmit";
 import { Card, Notice, PanelTitle, button, buttonGhost, input } from "@/components/panel/ui";
 import { requireDirector } from "@/lib/permissions";
@@ -38,7 +39,7 @@ export default async function UsersPage({ searchParams }: PageProps<"/panel/usua
             <li key={u.id} className="flex flex-wrap items-center justify-between gap-3 px-5 py-3">
               <div className="min-w-0">
                 <p className="truncate font-semibold">{u.nombre || "Sin nombre"}{u.id === access.session.userId && <span className="ml-2 text-xs text-texto-3">(tú)</span>}</p>
-                <p className="truncate text-sm text-texto-3">{u.email} · {ROL_LABEL[u.rol]}</p>
+                <p className="truncate text-sm text-texto-3">{u.email} · {ROL_LABEL[u.rol]} · <Link href={`/panel/talento/${u.id}`} className="font-bold text-violeta-claro">Ficha</Link></p>
               </div>
               <form action={changeGlobalRole} className="flex items-center gap-2">
                 <input type="hidden" name="id" value={u.id} />

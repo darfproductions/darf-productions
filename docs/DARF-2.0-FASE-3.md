@@ -438,9 +438,11 @@ Orden: 1) Elenco y ofertas, 2) Expediente y mensualidades, 3) Ensayos y asistenc
    - Ya existe: ficha de talento (obras, audiciones, ofertas, incidencias), Panel → Talento
      (buscar sin acentos, unir duplicados, ligar ficha a cuenta) y la liga automática al
      aceptar una oferta.
-   - Falta: enlazar desde los créditos de cada obra a la ficha; sugerencias automáticas de
-     liga (mismo nombre o correo); compras y asistencia a funciones en la ficha; ficha del
-     público. No requiere una migración grande: casi todo son consultas sobre lo que ya hay.
+   - Hecho en `0047_people_links.sql` (pruebas T1–T3): cada nombre en Elenco y equipos abre
+     su ficha (con o sin cuenta); ficha de personas sin cuenta con sus obras y "Ligar a su
+     cuenta"; "Posibles ligas" en Talento (mismo nombre, sin acentos, en el perfil o en una
+     audición); compras y funciones a las que asistió en la ficha (solo Director); enlace
+     "Ficha" desde Usuarios (también para el público).
 2. **Códigos de vendedor por cuenta.** Hoy existen `sellers` (código global, sin cuenta ni
    obra) y `orders.seller_id`. Propuesta: código permanente generado para cada cuenta,
    activable por obra; vendedores externos sin cuenta (p. ej. una compañía); reporte de

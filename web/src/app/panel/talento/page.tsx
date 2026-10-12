@@ -16,13 +16,31 @@ export default async function Talento({ searchParams }: PageProps<"/panel/talent
   const sp = await searchParams;
   const q = typeof sp.q === "string" ? sp.q : "";
   const supabase = await createClient();
-  const { data } = await supabase.rpc("people_directory", { q: q || null });
+  const [{ data }, { data: sug }] = await Promise.all([
+    supabase.rpc("people_directory", { q: q || null }),
+    supabase.rpc("people_link_suggestions"),
+  ]);
   const gente = (data ?? []) as P[];
+  const sugerencias = (sug ?? []) as { person_id: string; persona: string; user_id: string; email: string; cuenta: string; motivo: string }[];
   return (
     <>
       <PanelTitle eyebrow="Panel" title="Talento">
         Todas las personas que han estado en DARF. Abre su ficha para ver audiciones, obras y videos. Si una persona aparece dos veces (por ejemplo, con y sin acento), únelas.
       </PanelTitle>
+      {sugerencias.length > 0 && (
+        <Card className="flex flex-col gap-2 border border-[#c4b5fd]/40">
+          <h2 className="titular text-xl">Posibles ligas ({sugerencias.length})</h2>
+          <p className="text-sm text-texto-2">Personas del elenco sin cuenta cuyo nombre coincide con una cuenta registrada. Revisa que sea la misma persona antes de ligar: su historial de obras quedará en su ficha.</p>
+          <ul className="flex flex-col gap-2">
+            {sugerencias.map((x) => (
+              <li key={`${x.person_id}-${x.user_id}`} className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-sala px-3 py-2 text-sm">
+                <span><b>{x.persona}</b> <span className="text-texto-3">↔</span> {x.cuenta} <span className="text-texto-3">· {x.email} · {x.motivo}</span></span>
+                <ActionForm inline action={linkAccount} hidden={{ id: x.person_id, email: x.email }} confirm={`¿Ligar la ficha de ${x.persona} a la cuenta ${x.email}?`} submit="Ligar" submitClass="rounded-full bg-texto px-3 py-1.5 text-xs font-bold text-sala" />
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
       <form className="flex gap-2"><input className={`${input} max-w-md flex-1`} name="q" defaultValue={q} placeholder="Buscar por nombre (sin importar acentos)" /><button className="rounded-full bg-texto px-5 text-sm font-bold text-sala">Buscar</button></form>
       <Card className="p-0 md:p-0">
         <ul className="divide-y divide-white/10">
@@ -33,7 +51,7 @@ export default async function Talento({ searchParams }: PageProps<"/panel/talent
                 <span className="block text-xs text-texto-3">{p.obras.join(", ") || "Sin créditos"} · {p.creditos} créditos</span>
               </span>
               <span className="flex flex-wrap items-center gap-2">
-                {p.profile_id && <Link href={`/panel/talento/${p.profile_id}`} className="text-xs font-bold text-violeta-claro">Ver ficha →</Link>}
+                <Link href={p.profile_id ? `/panel/talento/${p.profile_id}` : `/panel/talento/p/${p.id}`} className="text-xs font-bold text-violeta-claro">Ver ficha →</Link>
                 {!p.email && (
                   <ActionForm inline action={linkAccount} hidden={{ id: p.id }} submit="Ligar" submitClass="rounded-full border border-white/25 px-3 py-1 text-xs font-bold">
                     <input className={`${input} w-52 py-1 text-xs`} name="email" type="email" required placeholder="Correo de su cuenta" />

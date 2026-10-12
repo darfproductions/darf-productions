@@ -1,5 +1,6 @@
 /* eslint-disable @next/next/no-img-element -- retratos desde Storage */
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ConfirmSubmit } from "@/components/panel/ConfirmSubmit";
 import { ImageUpload } from "@/components/panel/ImageUpload";
@@ -26,7 +27,7 @@ const GRUPOS = [
   { tipo: "tecnico", titulo: "Equipo técnico", papel: "Puesto" },
 ] as const;
 
-type Row = { id: string; tipo: string; papel: string | null; foto_path: string | null; orden: number; people: { nombre: string } | null };
+type Row = { id: string; tipo: string; papel: string | null; foto_path: string | null; orden: number; activo: boolean; people: { id: string; nombre: string; profile_id: string | null } | null };
 
 const mini = "grid h-8 w-8 place-items-center rounded-full border border-white/20 text-sm hover:border-white/50 disabled:opacity-40";
 
@@ -37,7 +38,7 @@ export default async function CastEditor({ params }: PageProps<"/panel/produccio
   if (!can(access, id, "elenco.gestionar") && !can(access, id, "obra.editar")) redirect(`/panel/producciones/${id}`);
   const supabase = await createClient();
   const [{ data: credits }, { data: people }] = await Promise.all([
-    supabase.from("production_credits").select("id, tipo, papel, foto_path, orden, people(nombre)").eq("production_id", id).order("orden").order("id"),
+    supabase.from("production_credits").select("id, tipo, papel, foto_path, orden, people(id, nombre, profile_id), activo").eq("production_id", id).order("orden").order("id"),
     supabase.from("people").select("nombre").order("nombre").limit(2000),
   ]);
   const rows = (credits ?? []) as unknown as Row[];
@@ -88,7 +89,11 @@ export default async function CastEditor({ params }: PageProps<"/panel/produccio
                       {r.foto_path && <img src={assetUrl(r.foto_path)} alt="" className="h-full w-full object-cover" />}
                     </div>
                     <div className="min-w-40 flex-1">
-                      <p className="font-semibold">{r.people?.nombre}</p>
+                      <p className="font-semibold">
+                        {r.people ? <Link href={r.people.profile_id ? `/panel/talento/${r.people.profile_id}` : `/panel/talento/p/${r.people.id}`} className="hover:underline">{r.people.nombre}</Link> : "—"}
+                        {r.people && !r.people.profile_id && <span className="ml-2 text-[10px] font-normal text-texto-3">sin cuenta</span>}
+                        {!r.activo && <span className="ml-2 rounded-full bg-[#5a1a22] px-2 py-0.5 text-[10px] font-bold text-[#fecdd3]">Baja</span>}
+                      </p>
                       {g.papel && (
                         <form action={updatePapel} className="mt-1 flex gap-2">
                           <input type="hidden" name="pid" value={id} />
