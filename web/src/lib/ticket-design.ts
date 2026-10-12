@@ -20,7 +20,7 @@ export type BoletoVista = {
 export type EstiloBoleto = { fondo: string; superficie: string; texto: string; acento: string; logo: string | null };
 
 /** Colores de DARF para obras sin kit completo. */
-export const ESTILO_DARF: EstiloBoleto = { fondo: "#0b0910", superficie: "#17131f", texto: "#ffffff", acento: "#8b5cf6", logo: null };
+export const ESTILO_DARF: EstiloBoleto = { fondo: "#0b0910", superficie: "#17121f", texto: "#ffffff", acento: "#a48bff", logo: null }; // Kit de marca: Sala, Telón, Lila
 
 export function estiloDe(t: ProductionTheme | null): EstiloBoleto {
   return t ? { fondo: t.fondo, superficie: t.superficie, texto: t.texto, acento: t.acento, logo: t.logo } : ESTILO_DARF;

@@ -149,7 +149,7 @@ export default async function MyProduction({ params, searchParams }: PageProps<"
         </nav>
 
         {d.person && !d.member?.confirmado_at && (
-          <section className="flex flex-col gap-3 rounded-2xl border border-[#c4b5fd]/40 bg-telon p-5">
+          <section className="flex flex-col gap-3 rounded-2xl border border-[#a48bff]/40 bg-telon p-5">
             <p className="font-bold">Ya tenemos tu expediente de otra producción.</p>
             <p className="text-sm text-texto-2">Revisa abajo que tus datos (emergencia, salud y medidas) sigan al día. Si cambió algo, corrígelo y guarda; si todo sigue igual, confírmalo:</p>
             <ConfirmVigente pid={id} uid={session.userId} />

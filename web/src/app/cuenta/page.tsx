@@ -176,7 +176,7 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
         <section aria-labelledby="notificaciones" className="flex flex-col gap-3 rounded-2xl bg-telon p-5 lg:col-span-12">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <h2 id="notificaciones" className="text-lg font-bold">
-              Notificaciones{notisNuevas > 0 && <span className="ml-2 rounded-full bg-[#7c3aed] px-2 py-0.5 align-middle text-xs text-white">{notisNuevas} {notisNuevas === 1 ? "nueva" : "nuevas"}</span>}
+              Notificaciones{notisNuevas > 0 && <span className="ml-2 rounded-full bg-ciruela px-2 py-0.5 align-middle text-xs text-white">{notisNuevas} {notisNuevas === 1 ? "nueva" : "nuevas"}</span>}
             </h2>
             <span className="flex flex-wrap gap-4 text-sm font-bold">
               <Link href="/cuenta/notificaciones#telefono" className="text-violeta-claro">📱 Activar en mi teléfono</Link>
@@ -188,7 +188,7 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
               {notis.map((n) => (
                 <li key={n.id}>
                   <Link href={n.href ?? "/cuenta/notificaciones"} className="flex items-start gap-3 py-2.5 hover:text-violeta-claro">
-                    <span aria-hidden="true" className={`mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full ${n.read_at ? "bg-transparent" : "bg-[#a78bfa]"}`} />
+                    <span aria-hidden="true" className={`mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full ${n.read_at ? "bg-transparent" : "bg-[#a48bff]"}`} />
                     <span className="min-w-0 flex-1">
                       <span className={`block wrap-anywhere ${n.read_at ? "text-texto-3" : "font-bold"}`}>{n.titulo}</span>
                       {n.detalle && <span className="block truncate text-texto-3">{n.detalle}</span>}
@@ -209,7 +209,7 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
             </p>
           )}
           {recordatorios.map((o) => (
-            <p key={o.id} role="status" className="rounded-xl border border-[#c4b5fd]/40 bg-[#c4b5fd]/10 px-4 py-3">
+            <p key={o.id} role="status" className="rounded-xl border border-[#a48bff]/40 bg-[#a48bff]/10 px-4 py-3">
               <b>{recordatorio(o.performances?.starts_at ?? null)}:</b> {o.performances?.productions?.nombre} ·{" "}
               <span className="capitalize">{formatPerformanceDate(o.performances?.starts_at ?? null)}</span>. Toca «Ver boletos» para tener tus códigos QR a la mano.
             </p>
@@ -312,7 +312,7 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
                     <Link href={`/cuenta/equipo/${k}`} className="block rounded-2xl bg-telon p-5 hover:bg-telon-2">
                       <p className="text-lg font-bold">{e.nombre}
                         {pe?.notas ? <span className="ml-2 rounded-full bg-[#be123c] px-2 py-0.5 text-xs text-white">{pe.notas} {pe.notas === 1 ? "nota" : "notas"}</span> : null}
-                        {pe?.avisos ? <span className="ml-2 rounded-full bg-[#7c3aed] px-2 py-0.5 text-xs text-white">{pe.avisos} {pe.avisos === 1 ? "aviso" : "avisos"}</span> : null}
+                        {pe?.avisos ? <span className="ml-2 rounded-full bg-ciruela px-2 py-0.5 text-xs text-white">{pe.avisos} {pe.avisos === 1 ? "aviso" : "avisos"}</span> : null}
                       </p>
                       <p className="text-sm text-texto-2">{e.roles.join(" · ") || "Equipo DARF"}</p>
                       <span className="mt-2 inline-block text-sm font-bold text-violeta-claro">Notas, juntas, avisos y materiales →</span>
@@ -348,7 +348,7 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
             <h2 id="invitaciones" className="titular text-2xl">Te invitaron a audicionar</h2>
             <ul className="flex flex-col gap-3">
               {pendientes.map((i) => (
-                <li key={i.audition_id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#c4b5fd]/40 bg-telon p-5">
+                <li key={i.audition_id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#a48bff]/40 bg-telon p-5">
                   <div>
                     <p className="text-xs font-bold uppercase tracking-[0.2em] text-texto-3">{i.obra ?? "Convocatoria DARF"}</p>
                     <p className="text-lg font-bold">{i.titulo}</p>

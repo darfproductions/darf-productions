@@ -16,7 +16,7 @@ export function NotificationList({ items }: { items: Notificacion[] }) {
         const nueva = !n.read_at;
         return (
           <li key={n.id} className="flex items-start gap-3 py-3">
-            <span aria-hidden="true" className={`mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full ${nueva ? "bg-[#a78bfa]" : "bg-transparent"}`} />
+            <span aria-hidden="true" className={`mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full ${nueva ? "bg-[#a48bff]" : "bg-transparent"}`} />
             <span aria-hidden="true" className="w-5 shrink-0 text-center">{ICONO[n.tipo] ?? "•"}</span>
             <div className="min-w-0 flex-1">
               {n.href ? (

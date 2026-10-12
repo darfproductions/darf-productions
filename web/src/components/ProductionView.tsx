@@ -86,7 +86,7 @@ export async function ProductionView({ data, vendedor = null }: { data: NonNulla
         </div>
       </section>
 
-      {franja && <ProductionBanner banner={franja} acento={theme?.acento ?? "#b9a6ff"} />}
+      {franja && <ProductionBanner banner={franja} acento={theme?.acento ?? "#a48bff"} />}
 
       {sections.length > 1 && (
         <nav aria-label="Secciones de la obra" className="sticky top-0 z-10 border-b border-current/15 bg-obra-fondo/95 backdrop-blur">

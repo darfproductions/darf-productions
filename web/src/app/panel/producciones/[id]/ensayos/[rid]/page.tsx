@@ -48,7 +48,7 @@ export default async function Asistencia({ params }: PageProps<"/panel/produccio
               <span>
                 <b>{x.nombre}</b> <span className="text-xs text-texto-3">{x.papeles.join(", ")}</span>
                 {x.estado === "retardo" && x.minutos_tarde && <span className="ml-2 text-xs text-[#fde68a]">{x.minutos_tarde} min</span>}
-                {x.aviso && <span className="block text-xs text-[#c4b5fd]">{x.aviso}</span>}
+                {x.aviso && <span className="block text-xs text-[#a48bff]">{x.aviso}</span>}
               </span>
               <Mark pid={id} rid={rid} uid={x.user_id} actual={x.estado} />
             </li>

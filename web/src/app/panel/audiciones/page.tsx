@@ -46,7 +46,7 @@ export default async function AuditionsHome() {
         <section className="flex flex-col gap-3">
           <h2 className="titular text-xl">Registro permanente</h2>
           {permanente ? (
-            <Link href={`/panel/audiciones/${permanente.id}${access.isDirector ? "" : "/solicitudes"}`} className="block rounded-2xl border border-[#c4b5fd]/40 bg-telon p-5 hover:bg-telon-2">
+            <Link href={`/panel/audiciones/${permanente.id}${access.isDirector ? "" : "/solicitudes"}`} className="block rounded-2xl border border-[#a48bff]/40 bg-telon p-5 hover:bg-telon-2">
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-texto-3">Siempre abierto · en línea · {ESTADO_CONVOCATORIA[permanente.estado] ?? permanente.estado}</p>
               <p className="mt-1 text-lg font-bold">{permanente.titulo}</p>
               <p className="mt-1 text-sm text-texto-2">El talento deja su perfil y videos aunque no haya convocatoria. Lo ven y califican el Director y quien gestiona audiciones en alguna producción.</p>

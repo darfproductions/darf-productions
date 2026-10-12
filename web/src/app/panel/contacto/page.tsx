@@ -23,7 +23,7 @@ export default async function Contacto() {
       <PanelTitle eyebrow="Personas" title="Mensajes de contacto">Lo que llega desde la página de Contacto.</PanelTitle>
       {msgs.length === 0 && <Card>No hay mensajes.</Card>}
       {msgs.map((m) => (
-        <Card key={m.id} className={`flex flex-col gap-2 ${m.leido ? "opacity-75" : "border border-[#a78bfa]/40"}`}>
+        <Card key={m.id} className={`flex flex-col gap-2 ${m.leido ? "opacity-75" : "border border-[#a48bff]/40"}`}>
           <p className={m.leido ? "" : "font-bold"}>{m.asunto || "Sin asunto"} <span className="font-normal text-texto-3">· {fecha(m.created_at)}</span></p>
           <p className="text-sm text-texto-2">{m.nombre} · <a href={`mailto:${m.correo}`} className="text-violeta-claro">{m.correo}</a>{m.telefono ? ` · ${m.telefono}` : ""}</p>
           <p className="whitespace-pre-line text-sm">{m.mensaje}</p>

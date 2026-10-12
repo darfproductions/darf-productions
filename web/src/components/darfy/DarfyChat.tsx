@@ -78,7 +78,7 @@ export function DarfyChat({
       aria-label="DARFY, asistente de DARF Productions"
       className="fixed inset-x-2 bottom-10 z-40 flex max-h-[min(640px,calc(100dvh-5rem))] flex-col overflow-hidden rounded-2xl border border-white/10 bg-telon shadow-[0_30px_80px_rgb(0_0_0/0.6)] md:inset-x-auto md:right-8 md:w-[400px]"
     >
-      <header className="flex items-center gap-3 bg-[linear-gradient(110deg,#440ed5,#810888_60%,#bc033f)] px-4 py-3">
+      <header className="flex items-center gap-3 bg-[linear-gradient(110deg,#340feb,#830886_60%,#d20122)] px-4 py-3">
         <span aria-hidden="true" className="grid h-9 w-9 place-items-center rounded-full bg-white/15 text-lg">✦</span>
         <div className="flex-1">
           <p className="font-bold leading-tight">DARFY</p>
@@ -90,7 +90,7 @@ export function DarfyChat({
       <div ref={lista} className="flex flex-1 flex-col gap-3 overflow-y-auto px-4 py-4" aria-live="polite">
         {mensajes.map((m) => (
           <div key={m.id} className={`flex flex-col gap-2 ${m.de === "yo" ? "items-end" : "items-start"}`}>
-            <p className={`max-w-[88%] whitespace-pre-line rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${m.de === "yo" ? "rounded-br-sm bg-[#440ed5] text-white" : "rounded-bl-sm bg-telon-2 text-texto"}`}>
+            <p className={`max-w-[88%] whitespace-pre-line rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${m.de === "yo" ? "rounded-br-sm bg-[#340feb] text-white" : "rounded-bl-sm bg-telon-2 text-texto"}`}>
               {m.texto}
             </p>
             {!!m.ligas?.length && (

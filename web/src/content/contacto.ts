@@ -16,7 +16,7 @@ export const CONTACT_CHANNELS: ContactChannel[] = [
   { channel: "instagram", nombre: "Instagram", handle: "@darfproductions", descripcion: "Fotos, reels y anuncios", href: "https://www.instagram.com/darfproductions", color: "#e1306c" },
   { channel: "tiktok", nombre: "TikTok", handle: "@darf.productions", descripcion: "Videos cortos y detrás de cámaras", href: "https://www.tiktok.com/@darf.productions", color: "#25f4ee" },
   { channel: "youtube", nombre: "YouTube", handle: "@DARFProd", descripcion: "Pro-shots y videos completos", href: "https://www.youtube.com/@DARFProd", color: "#ff3b3b" },
-  { channel: "email", nombre: "Correo", handle: "contact@darfproductions.com", descripcion: "Prensa, patrocinios y colaboraciones", href: "mailto:contact@darfproductions.com", color: "#b9a6ff" },
+  { channel: "email", nombre: "Correo", handle: "contact@darfproductions.com", descripcion: "Prensa, patrocinios y colaboraciones", href: "mailto:contact@darfproductions.com", color: "#a48bff" },
 ];
 
 /** WhatsApp de atención: el número sale de la configuración del entorno (vacío en DEV). */

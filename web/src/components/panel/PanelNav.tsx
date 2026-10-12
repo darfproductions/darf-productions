@@ -19,7 +19,7 @@ export function PanelNavLinks({ menu, badges = {} }: { menu: NavSection[]; badge
             className={`rounded-lg px-3 py-2.5 font-semibold hover:bg-telon-2 hover:text-texto ${on ? "bg-telon-2 text-texto" : "text-texto-2"}`}
           >
             {s.label}
-            {badges[s.id] ? <span className="ml-2 rounded-full bg-[#7c3aed] px-1.5 py-0.5 text-[11px] font-bold text-white" aria-label={`${badges[s.id]} notificaciones nuevas`}>{badges[s.id]}</span> : null}
+            {badges[s.id] ? <span className="ml-2 rounded-full bg-ciruela px-1.5 py-0.5 text-[11px] font-bold text-white" aria-label={`${badges[s.id]} notificaciones nuevas`}>{badges[s.id]}</span> : null}
           </Link>
         );
       })}

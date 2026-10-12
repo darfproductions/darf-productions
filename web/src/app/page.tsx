@@ -83,7 +83,7 @@ export default async function Home() {
       </section>
 
       <section className="relative mx-auto mt-8 grid max-w-[1440px] gap-5 px-5 md:grid-cols-2 md:px-16">
-        <Link href="/fan-zone" id="fan-zone" className="flex min-h-56 flex-col gap-3 rounded-2xl bg-[linear-gradient(125deg,#440ed5,#810888_60%,#bc033f)] p-8 transition-transform hover:-translate-y-1">
+        <Link href="/fan-zone" id="fan-zone" className="flex min-h-56 flex-col gap-3 rounded-2xl bg-[linear-gradient(125deg,#340feb,#830886_60%,#d20122)] p-8 transition-transform hover:-translate-y-1">
           <p className="text-xs font-bold uppercase tracking-[0.24em] text-white/85">Fan Zone</p>
           <h2 className="titular text-3xl">Detrás del telón</h2>
           <p className="max-w-md text-white/90">Ensayos, videos y galerías de cada producción.</p>

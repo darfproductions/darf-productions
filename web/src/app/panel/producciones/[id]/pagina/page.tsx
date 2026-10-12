@@ -98,7 +98,7 @@ export default async function PageEditor({ params }: PageProps<"/panel/produccio
             <div className="grid gap-4 md:grid-cols-2">
               <div className="flex flex-col gap-3 rounded-lg bg-sala p-4">
                 <p className="font-bold">Logo</p>
-                <div className="grid h-32 place-items-center rounded-lg p-3" style={{ background: p.color_fondo ?? "#15111c" }}>
+                <div className="grid h-32 place-items-center rounded-lg p-3" style={{ background: p.color_fondo ?? "#17121f" }}>
                   {p.logo_path ? <img src={assetUrl(p.logo_path)} alt="Logo actual" className="max-h-full max-w-full object-contain" /> : <span className="text-sm text-texto-3">Sin logo</span>}
                 </div>
                 <ImageUpload productionId={id} kind="logo" carpeta="kit" base="logo" save={saveKitImage.bind(null, id, "logo")} label={p.logo_path ? "Cambiar logo" : "Subir logo"} />
@@ -113,12 +113,12 @@ export default async function PageEditor({ params }: PageProps<"/panel/produccio
             </div>
             <ColorsForm
               pid={id}
-              initial={{ fondo: p.color_fondo ?? "#0b0910", superficie: p.color_superficie ?? "#15111c", texto: p.color_texto ?? "#f4f1f8", acento: p.color_acento ?? "#b9a6ff" }}
+              initial={{ fondo: p.color_fondo ?? "#0b0910", superficie: p.color_superficie ?? "#17121f", texto: p.color_texto ?? "#f4f1f8", acento: p.color_acento ?? "#a48bff" }}
             />
           </Block>
 
           <Block id="franja" title="Franja de avisos" note="Una barra abajo del encabezado de la obra para anunciar cosas: últimas funciones, promociones, audiciones… Puede correr como marquesina o quedarse fija, con varios avisos que se turnan.">
-            <BannerEditor pid={id} banner={data.banner} acento={p.color_acento ?? "#b9a6ff"} />
+            <BannerEditor pid={id} banner={data.banner} acento={p.color_acento ?? "#a48bff"} />
           </Block>
 
           <Block id="canciones" title="Canciones">

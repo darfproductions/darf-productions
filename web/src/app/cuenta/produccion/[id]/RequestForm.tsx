@@ -171,7 +171,7 @@ export function RequestForm({ pid, uid, ensayos, horas, docTipos, cuota, inicial
       <div className="grid grid-cols-2 gap-2 lg:grid-cols-4" role="group" aria-label="¿Qué quieres mandar?">
         {tipos.map((t) => (
           <button key={t} type="button" onClick={() => { setTipo(t); setHecho(null); }} aria-pressed={tipo === t}
-            className={`flex min-h-24 flex-col items-start gap-1 rounded-xl border p-3 text-left text-sm transition-colors ${tipo === t ? "border-violeta-claro bg-[#7c3aed]/20" : "border-white/10 bg-sala hover:border-white/30"}`}>
+            className={`flex min-h-24 flex-col items-start gap-1 rounded-xl border p-3 text-left text-sm transition-colors ${tipo === t ? "border-violeta-claro bg-ciruela/20" : "border-white/10 bg-sala hover:border-white/30"}`}>
             <span aria-hidden="true" className="text-xl">{TIPO_SOLICITUD[t].icono}</span>
             <b className="leading-tight">{TIPO_SOLICITUD[t].label}</b>
           </button>

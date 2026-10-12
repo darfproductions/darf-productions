@@ -39,7 +39,7 @@ export default async function Directorio({ searchParams }: PageProps<"/panel/per
       {error && <Notice>{error.message}</Notice>}
 
       {sugerencias.length > 0 && (
-        <Card className="flex flex-col gap-2 border border-[#c4b5fd]/40">
+        <Card className="flex flex-col gap-2 border border-[#a48bff]/40">
           <h2 className="titular text-xl">Posibles ligas ({sugerencias.length})</h2>
           <p className="text-sm text-texto-2">Personas del elenco sin cuenta cuyo nombre coincide con una cuenta registrada. Revisa que sea la misma persona antes de ligar: su historial de obras quedará en su ficha.</p>
           <ul className="flex flex-col gap-2">
