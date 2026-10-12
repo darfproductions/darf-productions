@@ -79,7 +79,7 @@ final (Lanzamiento) y con aprobación explícita.**
 - Habilidades: canto, baile, instrumentos y aéreos.
 - Opción de mostrar el perfil al público en los créditos.
 
-### 7. Escuela (en espera)
+### 7. Escuela — HECHO (0058, ver FASE-3 §21)
 
 - Rúbrica de evaluación por producción, editable por los maestros.
 

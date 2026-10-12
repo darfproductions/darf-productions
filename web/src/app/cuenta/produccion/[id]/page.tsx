@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BirthdayList } from "@/components/BirthdayList";
+import { getEvaluations, getRubric } from "@/lib/rubric";
+import { promedio } from "@/lib/rubric-rules";
 import { DocUpload } from "@/components/DocUpload";
 import { cumplesDelMes, MESES, type Cumple } from "@/lib/account-rules";
 import { ExpedienteForm } from "@/components/ExpedienteForm";
@@ -38,6 +40,9 @@ export default async function MyProduction({ params }: PageProps<"/cuenta/produc
     supabase.from("rehearsal_attendance").select("rehearsal_id, estado, minutos_tarde").eq("user_id", session.userId),
     supabase.from("rehearsal_absences").select("rehearsal_id, motivo").eq("user_id", session.userId),
   ]);
+  const [rub, misEvals] = await Promise.all([getRubric(id), getEvaluations(id, { uid: session.userId })]);
+  const nivelDe = new Map(rub.niveles.map((n) => [n.id, n.nombre]));
+  const evaluaciones = rub.periodos.filter((p) => p.publicado_at).map((p) => ({ p, ev: misEvals.find((e) => e.period_id === p.id) })).filter((x) => x.ev);
   const [mats, anns, reads, cumplesRes] = await Promise.all([
     supabase.from("materials").select("*").eq("production_id", id).order("carpeta", { nullsFirst: true }).order("titulo"),
     supabase.from("announcements").select("id, titulo, cuerpo, importante, created_at").eq("production_id", id).order("created_at", { ascending: false }),
@@ -190,6 +195,32 @@ export default async function MyProduction({ params }: PageProps<"/cuenta/produc
             </details>
           )}
         </section>
+
+        {evaluaciones.length > 0 && (
+          <section aria-labelledby="evaluaciones" className="flex flex-col gap-3 rounded-2xl bg-telon p-6">
+            <h2 id="evaluaciones" className="titular text-2xl">Mis evaluaciones</h2>
+            {evaluaciones.map(({ p, ev }) => (
+              <div key={p.id} className="flex flex-col gap-2 rounded-xl bg-sala p-4">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="font-bold">{p.nombre}{promedio(ev!.rubric_scores) != null && <span className="font-normal text-texto-2"> · promedio {promedio(ev!.rubric_scores)}</span>}</p>
+                  <a href={`/cuenta/produccion/${id}/boleta/${p.id}`} className="rounded-full border border-white/30 px-4 py-1.5 text-xs font-bold">Descargar boleta (PDF)</a>
+                </div>
+                <ul className="flex flex-col divide-y divide-white/10 text-sm">
+                  {rub.criterios.map((c) => {
+                    const s = ev!.rubric_scores.find((x) => x.criterion_id === c.id);
+                    return (
+                      <li key={c.id} className="flex justify-between gap-2 py-1.5">
+                        <span>{c.nombre}</span>
+                        <span className="text-texto-2">{[s?.level_id ? nivelDe.get(s.level_id) : null, s?.numero != null ? String(s.numero) : null].filter(Boolean).join(" · ") || "—"}</span>
+                      </li>
+                    );
+                  })}
+                </ul>
+                {ev!.comentario && <p className="whitespace-pre-line text-sm text-texto-2">“{ev!.comentario}”</p>}
+              </div>
+            ))}
+          </section>
+        )}
 
         {cumples.length > 0 && (
           <section aria-labelledby="cumples" className="flex flex-col gap-3 rounded-2xl bg-telon p-6">

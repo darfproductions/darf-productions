@@ -449,8 +449,7 @@ Orden: 1) Elenco y ofertas, 2) Expediente y mensualidades, 3) Ensayos y asistenc
    aprobadas y costo por conversación) y aprobación de Diego (visión §15.5). Lectura:
    enlace único en el correo que marca "leído" al abrirlo; WhatsApp informa "leído" a
    través de su API.
-4. **Rúbrica de evaluación por producción** (talleres en escuela), editable por los
-   maestros desde la página. En espera.
+4. **Rúbrica de evaluación por producción** (talleres en escuela). Hecho en `0058` (ver §21).
 5. **Fan Zone con más tipos de contenido.** Hoy son videos y galería. Pedido: poder poner
    también enlaces, documentos (PDF), fotos y otros contenidos, y acomodarlos.
 6. **Mi cuenta completa.**
@@ -604,6 +603,25 @@ vendedor (aprobado por Diego).
 - **Elenco de cada obra:**
   - la foto de la obra; si no hay, el retrato del perfil;
   - el nombre enlaza al perfil cuando es público.
+
+## 21. Escuela: rúbrica de evaluación (decisiones de Diego, 2026-10-12)
+
+`0058_school_rubric.sql`, pruebas T1–T5.
+- **Rol nuevo "Maestro"** (sistema), con `obra.ver` y `rubrica.gestionar`. Producción y
+  Dirección artística también tienen el permiso. El maestro ve la lista del elenco sin
+  correos, y no ve expedientes, salud ni pagos.
+- **La rúbrica es de cada obra:**
+  - criterios, con descripción opcional;
+  - niveles;
+  - periodos ("Bimestre 1", "Final"…).
+
+  Hay un botón para empezar con la rúbrica básica.
+- **Evaluación por alumno y periodo:** nivel y número (0–10) por criterio, y un comentario.
+  "Guardar y pasar al siguiente" agiliza evaluar a todo el grupo.
+- **Publicar un periodo:** el alumno ve su evaluación en su portal ("Mis evaluaciones") y
+  descarga su boleta en PDF, generada sin librerías nuevas. Antes de publicar no ve nada.
+  El equipo también descarga la boleta de cada alumno.
+- Bitácora de evaluaciones y periodos.
 
 ## Cómo se comprueba cada etapa
 

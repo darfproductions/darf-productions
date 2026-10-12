@@ -58,7 +58,7 @@ function qrPath(token: string, x: number, y: number, size: number): string {
   return parts.join("\n");
 }
 
-function text(x: number, y: number, size: number, s: string, bold = false): string {
+export function text(x: number, y: number, size: number, s: string, bold = false): string {
   return `BT /${bold ? "F2" : "F1"} ${size} Tf ${x} ${y} Td (${pdfText(s)}) Tj ET`;
 }
 
@@ -86,8 +86,8 @@ function pageContent(t: PdfTicket): string {
   return ops.join("\n");
 }
 
-/** Arma el PDF con una página por boleto. */
-export function ticketsPdf(tickets: PdfTicket[]): Uint8Array {
+/** PDF 1.4 con Helvetica y Helvetica-Bold (F1/F2): una página por contenido. */
+export function buildPdf(contents: string[], w = W, h = H): Uint8Array {
   const objs: string[] = [];
   const add = (s: string) => { objs.push(s); return objs.length; };
   const catalog = add(""); // 1
@@ -95,10 +95,9 @@ export function ticketsPdf(tickets: PdfTicket[]): Uint8Array {
   const f1 = add("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>");
   const f2 = add("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>");
   const kids: number[] = [];
-  for (const t of tickets) {
-    const content = pageContent(t);
+  for (const content of contents) {
     const c = add(`<< /Length ${Buffer.byteLength(content, "latin1")} >>\nstream\n${content}\nendstream`);
-    kids.push(add(`<< /Type /Page /Parent ${pages} 0 R /MediaBox [0 0 ${W} ${H}] /Resources << /Font << /F1 ${f1} 0 R /F2 ${f2} 0 R >> >> /Contents ${c} 0 R >>`));
+    kids.push(add(`<< /Type /Page /Parent ${pages} 0 R /MediaBox [0 0 ${w} ${h}] /Resources << /Font << /F1 ${f1} 0 R /F2 ${f2} 0 R >> >> /Contents ${c} 0 R >>`));
   }
   objs[catalog - 1] = `<< /Type /Catalog /Pages ${pages} 0 R >>`;
   objs[pages - 1] = `<< /Type /Pages /Kids [${kids.map((k) => `${k} 0 R`).join(" ")}] /Count ${kids.length} >>`;
@@ -114,4 +113,9 @@ export function ticketsPdf(tickets: PdfTicket[]): Uint8Array {
   for (const off of offsets) out += `${String(off).padStart(10, "0")} 00000 n \n`;
   out += `trailer\n<< /Size ${objs.length + 1} /Root ${catalog} 0 R >>\nstartxref\n${xref}\n%%EOF\n`;
   return new Uint8Array(Buffer.from(out, "latin1"));
+}
+
+/** Arma el PDF con una página por boleto. */
+export function ticketsPdf(tickets: PdfTicket[]): Uint8Array {
+  return buildPdf(tickets.map(pageContent));
 }
