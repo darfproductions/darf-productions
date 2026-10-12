@@ -4,15 +4,17 @@ import { notFound } from "next/navigation";
 import { PageHeading } from "@/components/PageHeading";
 import { requireSession } from "@/lib/auth";
 import { formatPerformanceDate, getPerformanceForSale, getTheme, themeStyle } from "@/lib/productions";
+import { cleanSellerCode, withSeller } from "@/lib/seller-rules";
 import { createClient } from "@/lib/supabase/server";
 import type { MapSeat } from "@/lib/tickets";
 import { SeatPicker, type ZonePrice } from "./SeatPicker";
 
 export const metadata: Metadata = { title: "Comprar boletos" };
 
-export default async function ComprarPage({ params }: PageProps<"/comprar/[funcion]">) {
+export default async function ComprarPage({ params, searchParams }: PageProps<"/comprar/[funcion]">) {
   const { funcion } = await params;
-  const session = await requireSession(`/comprar/${funcion}`);
+  const vendedor = cleanSellerCode((await searchParams).v);
+  const session = await requireSession(withSeller(`/comprar/${funcion}`, vendedor));
   const data = await getPerformanceForSale(funcion);
   if (!data) notFound();
   const { performance: f, production: p } = data;
@@ -34,6 +36,11 @@ export default async function ComprarPage({ params }: PageProps<"/comprar/[funci
     price: Number(r.price),
     nombre: (r.price_categories as unknown as { nombre: string } | null)?.nombre ?? "",
   }));
+  // Link de vendedor: el código se revisa aquí para mostrar su nombre desde el inicio.
+  const sellerRes = vendible && vendedor ? await supabase.rpc("preview_seller_code", { target_performance_id: f.id, target_code: vendedor }) : null;
+  const sellerCheck = sellerRes && vendedor
+    ? (sellerRes.error ? { ok: false, text: sellerRes.error.message, code: vendedor } : { ok: true, text: `Vendedor: ${sellerRes.data as string}`, code: vendedor })
+    : null;
   const loadError = seatsRes?.error || takenRes?.error || pricesRes?.error;
 
   return (
@@ -59,6 +66,8 @@ export default async function ComprarPage({ params }: PageProps<"/comprar/[funci
             taken={taken}
             prices={prices}
             defaultPhone={session.profile?.telefono ?? ""}
+            defaultSeller={vendedor ?? ""}
+            defaultSellerCheck={sellerCheck}
           />
         )}
       </div>

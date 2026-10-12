@@ -9,6 +9,7 @@ import { formatPerformanceDate } from "@/lib/productions";
 import { porcentaje } from "@/lib/rehearsal-rules";
 import { asistenciaTotal, conteo, descuentosUsados, ventasPorCanal, type Asistencia } from "@/lib/report-rules";
 import { occupancy, summarizeSales } from "@/lib/sales";
+import { TIPO_VENDEDOR, type SellerRow } from "@/lib/seller-rules";
 import { createClient } from "@/lib/supabase/server";
 import { formatMoney } from "@/lib/tickets";
 
@@ -40,7 +41,7 @@ export default async function Reportes({ params }: PageProps<"/panel/produccione
   const supabase = await createClient();
   const none = Promise.resolve({ data: [] });
 
-  const [funciones, orders, asientos, pagos, asist, roster, auds] = await Promise.all([
+  const [funciones, orders, asientos, pagos, asist, roster, auds, vend] = await Promise.all([
     verVentas ? listPerformances(id) : Promise.resolve([]),
     verVentas ? listOrders(id) : Promise.resolve([]),
     verVentas ? seatCount(id) : Promise.resolve(0),
@@ -48,7 +49,9 @@ export default async function Reportes({ params }: PageProps<"/panel/produccione
     verAsist ? supabase.rpc("attendance_summary", { pid: id }) : none,
     verAsist ? supabase.rpc("cast_roster", { pid: id }) : none,
     verAud ? supabase.from("auditions").select("id, titulo, estado, audition_applications(estado)").eq("production_id", id).order("created_at", { ascending: false }) : none,
+    verVentas ? supabase.rpc("seller_list", { pid: id }) : none,
   ]);
+  const vendedores = ((vend.data ?? []) as SellerRow[]).filter((v) => v.ordenes > 0 || v.pendientes > 0);
 
   const s = summarizeSales(orders);
   const canal = ventasPorCanal(orders);
@@ -110,6 +113,19 @@ export default async function Reportes({ params }: PageProps<"/panel/produccione
                 ))}
               </ul>
             ) : <p className="text-sm text-texto-3">Nadie ha usado códigos todavía.</p>}
+          </div>
+          <div>
+            <h3 className="mb-2 font-bold">Ventas por vendedor</h3>
+            {vendedores.length ? (
+              <ol className="flex flex-col divide-y divide-white/10 text-sm">
+                {vendedores.map((v, i) => (
+                  <li key={v.seller_id} className="flex flex-wrap justify-between gap-2 py-2">
+                    <span>{i + 1}. <b>{v.nombre}</b> <span className="text-texto-3">· {TIPO_VENDEDOR[v.tipo]} · {v.codigo}</span></span>
+                    <span className="text-texto-2">{v.boletos} boletos · {formatMoney(Number(v.monto))}{v.pendientes ? ` · ${v.pendientes} por aprobar` : ""}</span>
+                  </li>
+                ))}
+              </ol>
+            ) : <p className="text-sm text-texto-3">Nadie ha vendido con código todavía.</p>}
           </div>
         </Card>
       )}

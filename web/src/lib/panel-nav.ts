@@ -68,7 +68,7 @@ export const PRODUCTION_TABS: Tab[] = [
   { id: "ensayos", label: "Ensayos", path: "ensayos", perms: ["ensayos.gestionar"], etapa: null },
   { id: "materiales", label: "Materiales", path: "materiales", perms: ["materiales.gestionar", "materiales.ver"], etapa: null },
   { id: "comunicados", label: "Comunicados", path: "comunicados", perms: ["comunicados.enviar"], etapa: null },
-  { id: "boletos", label: "Funciones y boletos", path: "boletos", perms: ["ventas.ver", "ventas.operar", "funciones.gestionar", "descuentos.gestionar"], etapa: null },
+  { id: "boletos", label: "Funciones y boletos", path: "boletos", perms: ["ventas.ver", "ventas.operar", "funciones.gestionar", "descuentos.gestionar", "vendedores.gestionar"], etapa: null },
   { id: "puerta", label: "Puerta", path: "puerta", perms: ["puerta.validar"], etapa: null },
   { id: "programa", label: "Programa digital", path: "programa", perms: ["programa.editar"], etapa: null },
   { id: "reportes", label: "Reportes", path: "reportes", perms: ["reportes.ver"], etapa: null },

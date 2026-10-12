@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import QRCode from "qrcode";
+import { CopyLink } from "@/components/panel/CopyLink";
+import { sellerPath, type MySale } from "@/lib/seller-rules";
 import { PageHeading } from "@/components/PageHeading";
 import { requireSession } from "@/lib/auth";
 import { ESTADO_SOLICITUD } from "@/lib/audition-rules";
@@ -56,9 +58,13 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
   }
 
   // Mis audiciones (0036): solo las propias; QR mientras no haya llegado.
-  const [audiciones, invitaciones, ofertas, misObras, sinLeer] = await Promise.all([
+  const [audiciones, invitaciones, ofertas, misObras, sinLeer, misVentas] = await Promise.all([
     listMyApplications(session.userId), listMyInvites(), listMyOffers(), supabase.rpc("my_productions"), supabase.rpc("my_unread_announcements"),
+    supabase.rpc("my_seller"),
   ]);
+  const ventas = (misVentas.data ?? []) as MySale[];
+  const miCodigo = ventas[0]?.codigo ?? null;
+  const obrasVenta = ventas.filter((v) => v.production_id);
   const avisosDe = (pid: string) => ((sinLeer.data ?? []) as { production_id: string; sin_leer: number }[]).find((x) => x.production_id === pid)?.sin_leer ?? 0;
   const producciones = (misObras.data ?? []) as { production_id: string; nombre: string; papeles: string[] }[];
   const ofertasPendientes = ofertas.filter((o) => o.estado === "enviada");
@@ -136,6 +142,34 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
             <button className="rounded-full border border-white/30 px-6 py-3 text-sm font-bold">Cerrar sesión</button>
           </form>
         </aside>
+
+        {miCodigo && (
+          <section aria-labelledby="mis-ventas" className="flex flex-col gap-3 lg:col-span-8">
+            <h2 id="mis-ventas" className="titular text-2xl">Mis ventas</h2>
+            <div className="flex flex-col gap-3 rounded-2xl bg-telon p-5">
+              <p className="text-sm text-texto-2">
+                Tu código de vendedor: <b className="font-mono text-lg tracking-widest text-texto">{miCodigo}</b>. Funciona en las obras donde estás
+                activo (tu elenco, o donde te active el equipo). Comparte tu link: quien compre desde ahí ya trae tu código.
+              </p>
+              {obrasVenta.length > 0 ? (
+                <ul className="flex flex-col divide-y divide-white/10 text-sm">
+                  {obrasVenta.map((v) => (
+                    <li key={v.production_id} className="flex flex-wrap items-center justify-between gap-2 py-2.5">
+                      <span>
+                        <b>{v.obra}</b>
+                        <span className="block text-xs text-texto-3">
+                          {v.boletos} {v.boletos === 1 ? "boleto" : "boletos"} · {formatMoney(Number(v.monto))}{v.pendientes ? ` · ${v.pendientes} por aprobar` : ""}
+                          {!v.activo && " · tu código ya no está activo aquí"}
+                        </span>
+                      </span>
+                      {v.en_venta && <CopyLink path={sellerPath(v.production_id!, miCodigo)} />}
+                    </li>
+                  ))}
+                </ul>
+              ) : <p className="text-sm text-texto-3">Aún no estás activo como vendedor en ninguna obra.</p>}
+            </div>
+          </section>
+        )}
 
         {producciones.length > 0 && (
           <section aria-labelledby="mis-producciones" className="flex flex-col gap-3 lg:col-span-8">

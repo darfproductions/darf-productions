@@ -6,6 +6,7 @@ import { YouTube } from "@/components/YouTube";
 import { listOpenAuditionsFor } from "@/lib/auditions";
 import { getProductionContent, getRehearsalCount } from "@/lib/production-content";
 import { getProgram } from "@/lib/program";
+import { withSeller } from "@/lib/seller-rules";
 import {
   formatPerformanceDate,
   formatPrice,
@@ -18,7 +19,7 @@ import {
 // Plantilla única de la página de obra (pública y vista previa del panel).
 // Todo sale de la base: venta (funciones, precios) y contenido (migración 0029).
 
-export async function ProductionView({ data }: { data: NonNullable<Awaited<ReturnType<typeof getProduction>>> }) {
+export async function ProductionView({ data, vendedor = null }: { data: NonNullable<Awaited<ReturnType<typeof getProduction>>>; vendedor?: string | null }) {
   const { production: p, performances, prices } = data;
   const theme = getTheme(p);
   const [c, gallery, ensayos, audiciones, programa] = await Promise.all([getProductionContent(p.id), getGallery(p.id), getRehearsalCount(p.id), listOpenAuditionsFor(p.id), getProgram(p.id)]);
@@ -112,7 +113,7 @@ export async function ProductionView({ data }: { data: NonNullable<Awaited<Retur
                         <p className="text-sm opacity-80">{fn.venue ?? p.venue}</p>
                       </div>
                       {vendible ? (
-                        <Link href={`/comprar/${fn.id}`} className="boton-compra rounded-full px-5 py-3 text-xs font-bold uppercase tracking-[0.08em]">Elegir asientos</Link>
+                        <Link href={withSeller(`/comprar/${fn.id}`, vendedor)} className="boton-compra rounded-full px-5 py-3 text-xs font-bold uppercase tracking-[0.08em]">Elegir asientos</Link>
                       ) : (
                         <span className="rounded-full border border-current/30 px-3 py-1.5 text-xs font-bold">{p.concluded ? "Concluida" : "Próximamente"}</span>
                       )}

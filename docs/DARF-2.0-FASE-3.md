@@ -443,10 +443,7 @@ Orden: 1) Elenco y ofertas, 2) Expediente y mensualidades, 3) Ensayos y asistenc
      cuenta"; "Posibles ligas" en Talento (mismo nombre, sin acentos, en el perfil o en una
      audición); compras y funciones a las que asistió en la ficha (solo Director); enlace
      "Ficha" desde Usuarios (también para el público).
-2. **Códigos de vendedor por cuenta.** Hoy existen `sellers` (código global, sin cuenta ni
-   obra) y `orders.seller_id`. Propuesta: código permanente generado para cada cuenta,
-   activable por obra; vendedores externos sin cuenta (p. ej. una compañía); reporte de
-   boletos vendidos por vendedor y obra, y "mis ventas" en Mi cuenta.
+2. **Códigos de vendedor por cuenta.** Hecho en `0050_seller_codes.sql` (ver §16).
 3. **Avisos por correo y WhatsApp.** Requiere proveedor externo (correo: p. ej. Resend;
    WhatsApp: API de WhatsApp Business de Meta, con verificación del negocio, plantillas
    aprobadas y costo por conversación) y aprobación de Diego (visión §15.5). Lectura:
@@ -484,6 +481,30 @@ Orden: 1) Elenco y ofertas, 2) Expediente y mensualidades, 3) Ensayos y asistenc
   el QR siempre van a `/programa/<obra>`, que lleva a la forma elegida; así el QR impreso
   no cambia. No se puede publicar en modo enlace o archivo sin el enlace o el archivo.
   El bucket público `producciones` ahora acepta PDF y hasta 20 MB.
+
+## 16. Códigos de vendedor (decisiones de Diego, 2026-10-12)
+
+`0050_seller_codes.sql`, pruebas T1–T6. Cambia la lógica de compra solo en el código de
+vendedor (aprobado por Diego).
+- **Un código fijo por cuenta**, generado solo: 3 letras del nombre + 4 al azar (p. ej.
+  `ANA7K2Q`). Las cuentas nuevas lo reciben al registrarse.
+- **Dónde vale:** en cada obra, solo para su elenco (integrante activo o crédito activo
+  ligado a la cuenta). Con el permiso nuevo `vendedores.gestionar` (Producción y Taquilla),
+  en Boletos → Vendedores se puede:
+  - desactivar a alguien del elenco;
+  - activar a cualquier cuenta por su correo;
+  - crear vendedores externos sin cuenta (p. ej. una compañía).
+- **Al comprar:** el código se revisa al escribirlo y muestra "Vendedor: Ana P.". Si no
+  existe o no está activo en esa obra, no deja comprar hasta corregirlo o borrarlo. La base
+  lo vuelve a revisar al crear la orden, en línea y en taquilla.
+- **Link para compartir** `/producciones/<obra>?v=CODIGO`: el código llega solo a "Elegir
+  asientos", aunque el comprador tenga que iniciar sesión.
+- **Medición:** órdenes, boletos y monto aprobados, más los pendientes. Sin comisión.
+  - "Mis ventas" en Mi cuenta, con un botón para copiar el link de cada obra en venta.
+  - Tabla de vendedores en el panel.
+  - "Ventas por vendedor" en Reportes.
+- **Vendedores de la 1.0** (sin cuenta): al migrarlos hay que activarlos en la obra que
+  corresponda.
 
 ## Cómo se comprueba cada etapa
 

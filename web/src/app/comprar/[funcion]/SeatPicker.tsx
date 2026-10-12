@@ -19,11 +19,15 @@ export function SeatPicker(props: {
   taken: string[];
   prices: ZonePrice[];
   defaultPhone: string;
+  defaultSeller?: string;
+  defaultSellerCheck?: { ok: boolean; text: string; code: string } | null;
 }) {
   const router = useRouter();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [phone, setPhone] = useState(props.defaultPhone);
-  const [seller, setSeller] = useState("");
+  const [seller, setSeller] = useState(props.defaultSeller ?? "");
+  // Código de vendedor: se revisa al escribirlo; uno no válido no deja comprar (0050).
+  const [sellerCheck, setSellerCheck] = useState<{ ok: boolean; text: string; code: string } | null>(props.defaultSellerCheck ?? null);
   const [codeInput, setCodeInput] = useState("");
   const [discount, setDiscount] = useState<DiscountPreview | null>(null);
   const [discountMsg, setDiscountMsg] = useState("");
@@ -64,8 +68,22 @@ export function SeatPicker(props: {
     setDiscountMsg(`Código ${d.codigo} aplicado: ${d.percent}% de descuento.`);
   }
 
+  async function checkSeller(value = seller) {
+    const code = value.trim().toUpperCase();
+    if (!code) { setSellerCheck(null); return; }
+    const { data, error: e } = await createClient().rpc("preview_seller_code", { target_performance_id: props.performanceId, target_code: code });
+    setSellerCheck(e ? { ok: false, text: e.message, code } : { ok: true, text: `Vendedor: ${data as string}`, code });
+  }
+
+  const sellerBad = seller.trim() !== "" && (!sellerCheck || sellerCheck.code !== seller.trim().toUpperCase() || !sellerCheck.ok);
+
   function submit() {
     setError("");
+    if (sellerBad) {
+      setError(sellerCheck && !sellerCheck.ok ? `${sellerCheck.text} Corrígelo o déjalo vacío.` : "Revisando el código de vendedor…");
+      void checkSeller();
+      return;
+    }
     startTransition(async () => {
       const r = await placeOrder({
         performanceId: props.performanceId,
@@ -138,7 +156,9 @@ export function SeatPicker(props: {
             <input value={phone} onChange={(e) => setPhone(e.target.value)} type="tel" autoComplete="tel" className="rounded-lg bg-sala px-3 py-3 font-normal" />
           </label>
           <label className="flex flex-col gap-1.5 text-sm font-semibold">Código de vendedor (opcional)
-            <input value={seller} onChange={(e) => setSeller(e.target.value)} className="rounded-lg bg-sala px-3 py-3 font-normal" />
+            <input value={seller} onChange={(e) => { setSeller(e.target.value); setSellerCheck(null); }} onBlur={() => void checkSeller()}
+              autoCapitalize="characters" className="rounded-lg bg-sala px-3 py-3 font-normal uppercase" />
+            {sellerCheck && <span className={`text-xs font-normal ${sellerCheck.ok ? "text-[#7ee2a8]" : "text-[#ff8fa3]"}`}>{sellerCheck.text}</span>}
           </label>
 
           {error && <p role="alert" className="text-[#ff8fa3]">{error}</p>}

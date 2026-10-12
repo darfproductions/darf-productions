@@ -7,12 +7,13 @@ import { requirePanel } from "@/lib/permissions";
 export default async function TicketsLayout({ children, params }: LayoutProps<"/panel/producciones/[id]/boletos">) {
   const { id } = await params;
   const access = await requirePanel(`/panel/producciones/${id}/boletos`);
-  if (!canAny(access, id, ["ventas.ver", "ventas.operar", "funciones.gestionar", "descuentos.gestionar"])) redirect(`/panel/producciones/${id}`);
+  if (!canAny(access, id, ["ventas.ver", "ventas.operar", "funciones.gestionar", "descuentos.gestionar", "vendedores.gestionar"])) redirect(`/panel/producciones/${id}`);
   const links = [
     { href: "", label: "Ventas y órdenes", show: can(access, id, "ventas.ver") },
     { href: "/taquilla", label: "Taquilla", show: can(access, id, "ventas.operar") },
     { href: "/funciones", label: "Funciones y precios", show: can(access, id, "funciones.gestionar") },
     { href: "/descuentos", label: "Descuentos", show: can(access, id, "descuentos.gestionar") },
+    { href: "/vendedores", label: "Vendedores", show: can(access, id, "ventas.ver") || can(access, id, "vendedores.gestionar") },
   ].filter((l) => l.show);
   return (
     <div className="flex flex-col gap-4">
