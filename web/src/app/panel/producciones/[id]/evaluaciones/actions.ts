@@ -15,6 +15,16 @@ const done = (pid: string, message: string): State => {
   return { ok: true, message };
 };
 
+export async function toggleRubric(_p: State, f: FormData): Promise<State> {
+  const pid = str(f, "pid");
+  const on = str(f, "on") === "si";
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("rubric_set_active", { pid, on_: on });
+  if (error) return { ok: false, message: error.message };
+  revalidatePath(`/cuenta/produccion/${pid}`);
+  return done(pid, on ? "Evaluaciones encendidas en esta obra." : "Evaluaciones apagadas: nadie captura y los alumnos no las ven.");
+}
+
 export async function seedRubric(_p: State, f: FormData): Promise<State> {
   const pid = str(f, "pid");
   const supabase = await createClient();
@@ -126,6 +136,26 @@ export async function saveEvaluation(_p: State, f: FormData): Promise<State> {
     if (r.error) return { ok: false, message: r.error.message };
   }
   if (vacias(shared).length) await supabase.from("rubric_shared_scores").delete().eq("evaluation_id", ev.id).eq("teacher_id", me.user.id).in("criterion_id", vacias(shared));
+  // Correcciones del Director general a lo de otros maestros (la base solo lo permite al Director).
+  const otros = [...f.keys()].filter((k) => k.startsWith("on_")).map((k) => k.slice(3));
+  for (const key of new Set(otros)) {
+    const [crit, teacher] = key.split("__");
+    const n = numeroDe(str(f, `on_${key}`));
+    if (!n.ok) return { ok: false, message: "Las calificaciones van de 0 a 10." };
+    const lvl = str(f, `ol_${key}`) || null;
+    const r = lvl || n.n != null
+      ? await supabase.from("rubric_shared_scores").upsert({ evaluation_id: ev.id, criterion_id: crit, teacher_id: teacher, level_id: lvl, numero: n.n }, { onConflict: "evaluation_id,criterion_id,teacher_id" })
+      : await supabase.from("rubric_shared_scores").delete().eq("evaluation_id", ev.id).eq("criterion_id", crit).eq("teacher_id", teacher);
+    if (r.error) return { ok: false, message: r.error.message };
+  }
+  for (const k of [...f.keys()].filter((k) => k.startsWith("onota_"))) {
+    const teacher = k.slice(6);
+    const txt = str(f, k);
+    const r = txt
+      ? await supabase.from("rubric_notes").upsert({ evaluation_id: ev.id, teacher_id: teacher, comentario: txt, updated_at: new Date().toISOString() }, { onConflict: "evaluation_id,teacher_id" })
+      : await supabase.from("rubric_notes").delete().eq("evaluation_id", ev.id).eq("teacher_id", teacher);
+    if (r.error) return { ok: false, message: r.error.message };
+  }
   const nota = str(f, "nota");
   if (nota) {
     const r = await supabase.from("rubric_notes").upsert({ evaluation_id: ev.id, teacher_id: me.user.id, comentario: nota, updated_at: new Date().toISOString() }, { onConflict: "evaluation_id,teacher_id" });

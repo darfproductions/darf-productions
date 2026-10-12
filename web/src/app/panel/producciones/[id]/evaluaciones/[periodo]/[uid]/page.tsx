@@ -32,6 +32,7 @@ export default async function EvaluarAlumno({ params }: PageProps<"/panel/produc
   if (!can(access, id, "rubrica.gestionar")) redirect(`/panel/producciones/${id}`);
   const me = access.session.userId;
   const supabase = await createClient();
+  if (!(await supabase.rpc("rubric_active", { pid: id })).data) redirect(`/panel/producciones/${id}/evaluaciones`);
   const [{ criterios, niveles, periodos }, evs, roster, restr, maestrosRes, extras] = await Promise.all([
     getRubric(id), getEvaluations(id, { periodo, uid }), supabase.rpc("rubric_roster", { pid: id }),
     supabase.rpc("rubric_restricted", { pid: id }), supabase.rpc("rubric_teacher_list", { pid: id }), periodExtras(periodo, uid),
@@ -41,9 +42,10 @@ export default async function EvaluarAlumno({ params }: PageProps<"/panel/produc
   const per = periodos.find((p) => p.id === periodo);
   if (!a || !per) notFound();
   const coordina = !restr.data;
+  const director = access.isDirector;
   const maestros = (maestrosRes.data ?? []) as { user_id: string; nombre: string; criterios: string[] }[];
   const misMaterias = new Set(maestros.find((m) => m.user_id === me)?.criterios ?? []);
-  const puede = (c: { id: string; compartido?: boolean }) => !c.compartido && (coordina || misMaterias.has(c.id));
+  const puede = (c: { id: string; compartido?: boolean }) => !c.compartido && (director || coordina || misMaterias.has(c.id));
   const nombreMaestro = new Map(maestros.map((m) => [m.user_id, m.nombre]));
   const nivelDe = new Map(niveles.map((n) => [n.id, n.nombre]));
   const ev = evs[0];
@@ -78,7 +80,17 @@ export default async function EvaluarAlumno({ params }: PageProps<"/panel/produc
                 <span>
                   <b>{c.nombre}</b>{c.compartido && <span className="text-xs text-texto-3"> · la califican todos los maestros (tu parte)</span>}
                   {c.descripcion && <span className="block text-xs text-texto-3">{c.descripcion}</span>}
-                  {c.compartido && coordina && ev && ev.rubric_shared_scores.filter((s) => s.criterion_id === c.id).length > 0 && (
+                  {c.compartido && director && ev && ev.rubric_shared_scores.filter((s) => s.criterion_id === c.id && s.teacher_id !== me).map((s) => (
+                    <span key={s.teacher_id} className="mt-1 grid items-center gap-2 text-xs sm:grid-cols-[1fr_150px_80px]">
+                      <span>{nombreMaestro.get(s.teacher_id) ?? "Maestro"}:</span>
+                      <select className={input} name={`ol_${c.id}__${s.teacher_id}`} defaultValue={s.level_id ?? ""} aria-label="Nivel">
+                        <option value="">Nivel…</option>
+                        {niveles.map((n) => <option key={n.id} value={n.id}>{n.nombre}</option>)}
+                      </select>
+                      <input className={input} name={`on_${c.id}__${s.teacher_id}`} inputMode="decimal" defaultValue={s.numero ?? ""} aria-label="Calificación" />
+                    </span>
+                  ))}
+                  {c.compartido && coordina && !director && ev && ev.rubric_shared_scores.filter((s) => s.criterion_id === c.id).length > 0 && (
                     <span className="block text-xs text-texto-2">
                       {ev.rubric_shared_scores.filter((s) => s.criterion_id === c.id).map((s) => `${nombreMaestro.get(s.teacher_id) ?? "Maestro"}: ${ver(s.level_id, s.numero)}`).join(" · ")}
                       {" · "}promedio {promedio(ev.rubric_shared_scores.filter((s) => s.criterion_id === c.id)) ?? "—"}
@@ -103,11 +115,17 @@ export default async function EvaluarAlumno({ params }: PageProps<"/panel/produc
               <textarea className={input} name="comentario" rows={3} maxLength={2000} defaultValue={ev?.comentario ?? ""} />
             </label>
           )}
-          {coordina && ev && ev.rubric_notes.filter((n) => n.teacher_id !== me).length > 0 && (
+          {ev && ev.rubric_notes.filter((n) => n.teacher_id !== me).length > 0 && (director ? (
+            ev.rubric_notes.filter((n) => n.teacher_id !== me).map((n) => (
+              <label key={n.teacher_id} className="flex flex-col gap-1.5 text-sm font-semibold">Comentario de {nombreMaestro.get(n.teacher_id) ?? "maestro"} (corrección del Director)
+                <textarea className={input} name={`onota_${n.teacher_id}`} rows={2} maxLength={2000} defaultValue={n.comentario} />
+              </label>
+            ))
+          ) : coordina ? (
             <div className="flex flex-col gap-1 text-sm text-texto-2">
               {ev.rubric_notes.filter((n) => n.teacher_id !== me).map((n) => <p key={n.teacher_id}><b>{nombreMaestro.get(n.teacher_id) ?? "Maestro"}:</b> {n.comentario}</p>)}
             </div>
-          )}
+          ) : null)}
           {next && <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="ir" value="siguiente" defaultChecked /> Al guardar, pasar al siguiente alumno</label>}
         </ActionForm>
       </Card>

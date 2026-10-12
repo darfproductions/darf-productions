@@ -22,6 +22,8 @@ begin
 end $$;
 
 do $$ declare per uuid; ev uuid; crit uuid; lvl uuid; n int; ext uuid; begin
+  -- Desde 0060 las evaluaciones empiezan apagadas: estas pruebas las encienden.
+  if to_regclass('public.rubric_settings') is not null then execute 'insert into rubric_settings (production_id, activa) values (''showman'', true)'; end if;
   perform pg_temp.as_user('00000000-0000-0000-0000-0000000000a1');
   perform panel_add_member('showman', 't_ana@test.local', 'integrante');
   perform panel_add_member('showman', 't_fan@test.local', 'integrante');

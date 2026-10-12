@@ -636,6 +636,14 @@ vendedor (aprobado por Diego).
   - asistencia: ensayos, asistencias, retardos, faltas, justificadas y % de asistencia;
   - llamadas de atención: advertencias y graves vigentes, con fecha y motivo.
 
+**Ajuste 2 de Diego** (`0060_rubric_toggle.sql`, pruebas T1–T3):
+- **El Director general corrige todo:** cualquier materia (aunque haya maestros asignados),
+  la parte de cada maestro en lo compartido y los comentarios de los maestros.
+- **Interruptor por obra:** las evaluaciones empiezan **apagadas**. Las encienden o apagan el
+  Director o quien tiene `obra.publicar` (Producción).
+  - Apagadas: nadie captura calificaciones y los alumnos no ven sus evaluaciones ni boletas.
+  - Lo capturado se conserva y reaparece al encender.
+
 ## Cómo se comprueba cada etapa
 
 - Pruebas SQL de permisos por rol (en local y en DEV) y las de boletería sin cambios.

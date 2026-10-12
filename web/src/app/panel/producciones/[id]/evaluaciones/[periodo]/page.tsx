@@ -16,6 +16,7 @@ export default async function Periodo({ params }: PageProps<"/panel/producciones
   const access = await requirePanel(`/panel/producciones/${id}/evaluaciones/${periodo}`);
   if (!can(access, id, "rubrica.gestionar")) redirect(`/panel/producciones/${id}`);
   const supabase = await createClient();
+  if (!(await supabase.rpc("rubric_active", { pid: id })).data) redirect(`/panel/producciones/${id}/evaluaciones`);
   const [{ criterios, niveles, periodos }, evs, roster] = await Promise.all([getRubric(id), getEvaluations(id, { periodo }), supabase.rpc("rubric_roster", { pid: id })]);
   const per = periodos.find((p) => p.id === periodo);
   if (!per) notFound();

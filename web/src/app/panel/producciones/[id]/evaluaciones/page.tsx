@@ -8,7 +8,7 @@ import { requirePanel } from "@/lib/permissions";
 import { getEvaluations, getRubric } from "@/lib/rubric";
 import { completa } from "@/lib/rubric-rules";
 import { createClient } from "@/lib/supabase/server";
-import { publishPeriod, removeRubricItem, saveRubricItem, seedRubric, setTeacherCriteria } from "./actions";
+import { publishPeriod, removeRubricItem, saveRubricItem, seedRubric, setTeacherCriteria, toggleRubric } from "./actions";
 
 export const metadata: Metadata = { title: "Evaluaciones" };
 
@@ -57,6 +57,18 @@ export default async function Evaluaciones({ params }: PageProps<"/panel/producc
   const access = await requirePanel(`/panel/producciones/${id}/evaluaciones`);
   if (!can(access, id, "rubrica.gestionar")) redirect(`/panel/producciones/${id}`);
   const supabase = await createClient();
+  const { data: activa } = await supabase.rpc("rubric_active", { pid: id });
+  const encender = access.isDirector || can(access, id, "obra.publicar");
+  if (!activa) {
+    return (
+      <Card className="flex flex-col gap-3">
+        <h2 className="titular text-xl">Evaluaciones apagadas en esta obra</h2>
+        <p className="text-sm text-texto-2">Enciéndelas si esta obra es un taller con calificaciones (rúbrica, maestros, periodos y boletas). Lo que ya se haya capturado se conserva.</p>
+        {encender ? <ActionForm inline action={toggleRubric} hidden={{ pid: id, on: "si" }} submit="Encender evaluaciones" />
+          : <p className="text-sm text-texto-3">Pide al Director o a Producción que las encienda.</p>}
+      </Card>
+    );
+  }
   const [{ criterios, niveles, periodos }, evs, roster, restr, maestrosRes] = await Promise.all([
     getRubric(id), getEvaluations(id), supabase.rpc("rubric_roster", { pid: id }), supabase.rpc("rubric_restricted", { pid: id }),
     supabase.rpc("rubric_teacher_list", { pid: id }),
@@ -70,6 +82,11 @@ export default async function Evaluaciones({ params }: PageProps<"/panel/producc
 
   return (
     <div className="flex flex-col gap-4">
+      {encender && (
+        <div className="flex justify-end">
+          <ActionForm inline action={toggleRubric} hidden={{ pid: id, on: "no" }} confirm="¿Apagar las evaluaciones? Los maestros no podrán capturar y los alumnos dejarán de ver sus boletas (se conservan)." submit="Apagar evaluaciones" submitClass={small} />
+        </div>
+      )}
       {!coordina && (
         <Card className="text-sm">
           Calificas: <b>{criterios.filter((c) => yo?.criterios.includes(c.id)).map((c) => c.nombre).join(", ") || "—"}</b>
