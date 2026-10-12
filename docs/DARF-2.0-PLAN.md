@@ -36,7 +36,7 @@ final (Lanzamiento) y con aprobación explícita.**
 - **Historial más claro:** próximas funciones y funciones pasadas, detalle de cada compra
   (visión §9.3).
 
-### 2. Fan Zone ampliada
+### 2. Fan Zone ampliada — HECHO (0052, ver FASE-3 §18)
 
 - Además de videos: enlaces, documentos (PDF), fotos sueltas, textos o avisos.
 - Acomodar el orden arrastrando o con flechas, y elegir qué se destaca arriba.

@@ -4,7 +4,8 @@ import { Section } from "@/components/PageHeading";
 import { HeroBackdrop, ProductionLogo } from "@/components/PosterArt";
 import { YouTube } from "@/components/YouTube";
 import { listOpenAuditionsFor } from "@/lib/auditions";
-import { getProductionContent, getRehearsalCount } from "@/lib/production-content";
+import { fanzoneCount } from "@/lib/fanzone";
+import { getProductionContent } from "@/lib/production-content";
 import { getProgram } from "@/lib/program";
 import { withSeller } from "@/lib/seller-rules";
 import {
@@ -22,7 +23,7 @@ import {
 export async function ProductionView({ data, vendedor = null }: { data: NonNullable<Awaited<ReturnType<typeof getProduction>>>; vendedor?: string | null }) {
   const { production: p, performances, prices } = data;
   const theme = getTheme(p);
-  const [c, gallery, ensayos, audiciones, programa] = await Promise.all([getProductionContent(p.id), getGallery(p.id), getRehearsalCount(p.id), listOpenAuditionsFor(p.id), getProgram(p.id)]);
+  const [c, gallery, ensayos, audiciones, programa] = await Promise.all([getProductionContent(p.id), getGallery(p.id), fanzoneCount(p.id), listOpenAuditionsFor(p.id), getProgram(p.id)]);
   const canciones = c.actos.reduce((n, a) => n + a.canciones.length, 0);
   const videos = c.videos;
   const equipos = [

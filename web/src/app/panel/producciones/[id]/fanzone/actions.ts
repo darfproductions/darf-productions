@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { fanRow } from "@/lib/fanzone-rules";
 import { createClient } from "@/lib/supabase/server";
 
 // Galería pública de la obra (tabla gallery_photos + bucket gallery, 0028).
@@ -27,4 +28,59 @@ export async function removeGalleryPhoto(f: FormData): Promise<void> {
   if (!error) await supabase.storage.from("gallery").remove([data.path as string]);
   revalidatePath(`/panel/producciones/${pid}/fanzone`);
   revalidatePath(`/producciones/${pid}`);
+}
+
+// ──────── Contenidos de la Fan Zone (0052) ────────
+type State = { ok: boolean; message: string } | null;
+const str = (f: FormData, k: string) => String(f.get(k) ?? "").trim();
+const refresh = (pid: string) => {
+  revalidatePath(`/panel/producciones/${pid}/fanzone`);
+  revalidatePath(`/fan-zone/${pid}`);
+};
+
+export async function addFanzoneItem(_p: State, f: FormData): Promise<State> {
+  const pid = str(f, "pid");
+  const r = fanRow(pid, { tipo: str(f, "tipo"), titulo: str(f, "titulo"), descripcion: String(f.get("descripcion") ?? ""), enlace: str(f, "enlace"), archivo: str(f, "archivo") || null });
+  if (!r.ok) return r;
+  const supabase = await createClient();
+  const { data: last } = await supabase.from("fanzone_items").select("orden").eq("production_id", pid).order("orden", { ascending: false }).limit(1);
+  const { error } = await supabase.from("fanzone_items").insert({
+    production_id: pid, ...r.row, destacado: f.get("destacado") === "on", orden: ((last?.[0]?.orden as number) ?? 0) + 1,
+  });
+  if (error) return { ok: false, message: error.message };
+  refresh(pid);
+  return { ok: true, message: "Agregado a la Fan Zone." };
+}
+
+export async function setFanzoneFlag(_p: State, f: FormData): Promise<State> {
+  const pid = str(f, "pid");
+  const campo = str(f, "campo");
+  if (campo !== "destacado" && campo !== "visible") return { ok: false, message: "Acción no válida." };
+  const supabase = await createClient();
+  const { error, count } = await supabase.from("fanzone_items").update({ [campo]: str(f, "valor") === "si" }, { count: "exact" }).eq("id", str(f, "id")).eq("production_id", pid);
+  if (error) return { ok: false, message: error.message };
+  if (!count) return { ok: false, message: "No tienes permiso." };
+  refresh(pid);
+  return { ok: true, message: "Listo." };
+}
+
+export async function moveFanzoneItem(_p: State, f: FormData): Promise<State> {
+  const pid = str(f, "pid");
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("fanzone_move", { iid: str(f, "id"), arriba: str(f, "dir") === "arriba" });
+  if (error) return { ok: false, message: error.message };
+  refresh(pid);
+  return { ok: true, message: "Movido." };
+}
+
+export async function removeFanzoneItem(_p: State, f: FormData): Promise<State> {
+  const pid = str(f, "pid");
+  const supabase = await createClient();
+  const { data } = await supabase.from("fanzone_items").select("archivo_path").eq("id", str(f, "id")).eq("production_id", pid).maybeSingle();
+  const { error, count } = await supabase.from("fanzone_items").delete({ count: "exact" }).eq("id", str(f, "id")).eq("production_id", pid);
+  if (error) return { ok: false, message: error.message };
+  if (!count) return { ok: false, message: "No tienes permiso." };
+  if (data?.archivo_path) await supabase.storage.from("gallery").remove([data.archivo_path as string]);
+  refresh(pid);
+  return { ok: true, message: "Quitado." };
 }

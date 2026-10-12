@@ -535,6 +535,30 @@ vendedor (aprobado por Diego).
   - la misma tarjeta en el portal del elenco (solo día y mes).
 - **Mis boletos:** próximas funciones arriba; las pasadas en "Funciones pasadas", sin QR.
 
+## 18. Fan Zone ampliada (pedido de Diego, 2026-10-12)
+
+`0052_fanzone_items.sql`, pruebas T1–T5.
+- **Contenidos de 5 tipos en una sola lista:**
+  - video de YouTube;
+  - foto;
+  - documento PDF;
+  - enlace https;
+  - texto o aviso.
+
+  Cada uno lleva título y descripción opcional.
+- **Acomodar:**
+  - flechas ↑ ↓;
+  - "Destacar", que lo sube hasta arriba con un marco;
+  - "Ocultar", que lo deja como borrador.
+- **Quién lo ve y quién lo edita:** se ve con cuenta y solo si la obra es pública. Lo edita
+  quien tiene `fanzone.editar`.
+- **Archivos:** fotos y PDF van a `gallery/<obra>/fanzone/`. El bucket ahora acepta PDF y
+  hasta 20 MB.
+- **Ensayos de antes:** los 12 videos de ensayo de DEV pasaron a la lista nueva. Las filas
+  viejas de `production_media` (tipo ensayo) no se borraron; ya no se usan en la Fan Zone.
+- **Botón "Fan Zone"** en la página de la obra: aparece si hay al menos un contenido
+  visible.
+
 ## Cómo se comprueba cada etapa
 
 - Pruebas SQL de permisos por rol (en local y en DEV) y las de boletería sin cambios.
