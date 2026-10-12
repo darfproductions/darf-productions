@@ -23,3 +23,16 @@ export async function sendAbsence(_p: AbsState, f: FormData): Promise<AbsState> 
   revalidatePath(`/cuenta/produccion/${String(f.get("pid"))}`);
   return { ok: true, message: "Aviso enviado a la producción." };
 }
+
+/** Marcar un comunicado como leído (la base revisa que sea para mí). */
+export async function markRead(f: FormData): Promise<void> {
+  const session = await getSession();
+  if (!session) return;
+  const supabase = await createClient();
+  await supabase.from("announcement_reads").upsert(
+    { announcement_id: String(f.get("aid")), user_id: session.userId },
+    { onConflict: "announcement_id,user_id", ignoreDuplicates: true },
+  );
+  revalidatePath(`/cuenta/produccion/${String(f.get("pid"))}`);
+  revalidatePath("/cuenta");
+}

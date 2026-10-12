@@ -12,7 +12,9 @@ import {
 } from "@/lib/member-rules";
 import { getMemberData, signDocs } from "@/lib/members";
 import { ASISTENCIA, fechaEnsayo, type Rehearsal } from "@/lib/rehearsal-rules";
+import { TIPO_MATERIAL, porCarpeta, signMaterials, type Material } from "@/lib/materials";
 import { AbsenceForm } from "./AbsenceForm";
+import { markRead } from "./actions";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Mi producción" };
@@ -34,6 +36,16 @@ export default async function MyProduction({ params }: PageProps<"/cuenta/produc
     supabase.from("rehearsal_attendance").select("rehearsal_id, estado, minutos_tarde").eq("user_id", session.userId),
     supabase.from("rehearsal_absences").select("rehearsal_id, motivo").eq("user_id", session.userId),
   ]);
+  const [mats, anns, reads] = await Promise.all([
+    supabase.from("materials").select("*").eq("production_id", id).order("carpeta", { nullsFirst: true }).order("titulo"),
+    supabase.from("announcements").select("id, titulo, cuerpo, importante, created_at").eq("production_id", id).order("created_at", { ascending: false }),
+    supabase.from("announcement_reads").select("announcement_id").eq("user_id", session.userId),
+  ]);
+  const materiales = (mats.data ?? []) as Material[];
+  const matUrls = await signMaterials(materiales.map((m) => m.archivo_path));
+  const leidos = new Set(((reads.data ?? []) as { announcement_id: string }[]).map((r) => r.announcement_id));
+  const comunicados = ((anns.data ?? []) as { id: string; titulo: string; cuerpo: string; importante: boolean; created_at: string }[])
+    .sort((a, b) => Number(leidos.has(a.id)) - Number(leidos.has(b.id)) || Number(b.importante) - Number(a.importante));
   const ensayos = (reh.data ?? []) as Rehearsal[];
   const hoy = new Date().toISOString().slice(0, 10);
   const proximos = ensayos.filter((r) => r.inicia.slice(0, 10) >= hoy);
@@ -93,6 +105,25 @@ export default async function MyProduction({ params }: PageProps<"/cuenta/produc
           </section>
         )}
 
+        {comunicados.length > 0 && (
+          <section aria-labelledby="avisos" className="flex flex-col gap-3 rounded-2xl bg-telon p-6">
+            <h2 id="avisos" className="titular text-2xl">Avisos {comunicados.some((a) => !leidos.has(a.id)) && <span className="ml-2 rounded-full bg-[#be123c] px-2.5 py-0.5 text-sm text-white">{comunicados.filter((a) => !leidos.has(a.id)).length} sin leer</span>}</h2>
+            <ul className="flex flex-col gap-2">
+              {comunicados.map((a) => (
+                <li key={a.id} className={`rounded-lg px-4 py-3 text-sm ${leidos.has(a.id) ? "bg-sala opacity-75" : a.importante ? "border border-[#fde68a]/50 bg-sala" : "border border-white/20 bg-sala"}`}>
+                  <p className="font-bold">{a.importante && <span className="mr-1 text-[#fde68a]">● Importante ·</span>} {a.titulo}</p>
+                  <p className="text-xs text-texto-3">{new Date(a.created_at).toLocaleString("es-MX", { day: "numeric", month: "long", hour: "numeric", minute: "2-digit", timeZone: "America/Mexico_City" })}</p>
+                  <p className="mt-1 whitespace-pre-line">{a.cuerpo}</p>
+                  {leidos.has(a.id) ? <p className="mt-1 text-xs text-[#7ee2a8]">✓ Leído</p> : (
+                    <form action={markRead} className="mt-2"><input type="hidden" name="aid" value={a.id} /><input type="hidden" name="pid" value={id} />
+                      <button className="rounded-full bg-texto px-4 py-1.5 text-xs font-bold text-sala">Enterado</button></form>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
         <section aria-labelledby="ensayos" className="flex flex-col gap-3 rounded-2xl bg-telon p-6">
           <h2 id="ensayos" className="titular text-2xl">Mis ensayos</h2>
           {proximos.length === 0 && <p className="text-sm text-texto-2">No tienes ensayos próximos.</p>}
@@ -124,6 +155,30 @@ export default async function MyProduction({ params }: PageProps<"/cuenta/produc
             </details>
           )}
         </section>
+
+        {materiales.length > 0 && (
+          <section aria-labelledby="materiales" className="flex flex-col gap-3 rounded-2xl bg-telon p-6">
+            <h2 id="materiales" className="titular text-2xl">Materiales</h2>
+            {porCarpeta(materiales).map(([carpeta, items]) => (
+              <div key={carpeta}>
+                {carpeta && <p className="mb-1 text-xs font-bold uppercase tracking-[0.2em] text-texto-3">{carpeta}</p>}
+                <ul className="flex flex-col gap-1.5">
+                  {items.map((m) => {
+                    const href = m.archivo_path ? matUrls.get(m.archivo_path) : m.url ?? undefined;
+                    return (
+                      <li key={m.id} className="rounded-lg bg-sala px-3 py-2 text-sm">
+                        {href ? <a href={href} target="_blank" rel="noreferrer" className="font-bold text-violeta-claro underline">{m.titulo} ↗</a> : <b>{m.titulo}</b>}
+                        <span className="text-texto-3"> · {TIPO_MATERIAL[m.tipo]}</span>
+                        {m.descripcion && <span className="block text-xs text-texto-2">{m.descripcion}</span>}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            ))}
+            <p className="text-xs text-texto-3">Son privados: no los compartas fuera de la producción.</p>
+          </section>
+        )}
 
         <section aria-labelledby="exp" className="rounded-2xl bg-telon p-6">
           <h2 id="exp" className="titular mb-1 text-2xl">Mi expediente</h2>

@@ -56,9 +56,10 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
   }
 
   // Mis audiciones (0036): solo las propias; QR mientras no haya llegado.
-  const [audiciones, invitaciones, ofertas, misObras] = await Promise.all([
-    listMyApplications(session.userId), listMyInvites(), listMyOffers(), supabase.rpc("my_productions"),
+  const [audiciones, invitaciones, ofertas, misObras, sinLeer] = await Promise.all([
+    listMyApplications(session.userId), listMyInvites(), listMyOffers(), supabase.rpc("my_productions"), supabase.rpc("my_unread_announcements"),
   ]);
+  const avisosDe = (pid: string) => ((sinLeer.data ?? []) as { production_id: string; sin_leer: number }[]).find((x) => x.production_id === pid)?.sin_leer ?? 0;
   const producciones = (misObras.data ?? []) as { production_id: string; nombre: string; papeles: string[] }[];
   const ofertasPendientes = ofertas.filter((o) => o.estado === "enviada");
   const pendientes = invitaciones.filter((i) => !i.inscrito);
@@ -143,9 +144,9 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
               {producciones.map((p) => (
                 <li key={p.production_id}>
                   <Link href={`/cuenta/produccion/${p.production_id}`} className="block rounded-2xl bg-telon p-5 hover:bg-telon-2">
-                    <p className="text-lg font-bold">{p.nombre}</p>
+                    <p className="text-lg font-bold">{p.nombre}{avisosDe(p.production_id) > 0 && <span className="ml-2 rounded-full bg-[#be123c] px-2 py-0.5 text-xs text-white">{avisosDe(p.production_id)} {avisosDe(p.production_id) === 1 ? "aviso" : "avisos"}</span>}</p>
                     <p className="text-sm text-texto-2">{p.papeles.join(" · ") || "Integrante"}</p>
-                    <span className="mt-2 inline-block text-sm font-bold text-violeta-claro">Mi expediente y mensualidades →</span>
+                    <span className="mt-2 inline-block text-sm font-bold text-violeta-claro">Avisos, ensayos, materiales y mi expediente →</span>
                   </Link>
                 </li>
               ))}

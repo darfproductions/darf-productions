@@ -419,6 +419,16 @@ Orden: 1) Elenco y ofertas, 2) Expediente y mensualidades, 3) Ensayos y asistenc
 - Cada pago lleva concepto (mensualidad o inscripción). Recaudación por mes en que se cobró
   (inscripciones, mensualidades y total) y total del taller.
 
+**Bloque 4 — Materiales y comunicados** (`0046_materials_announcements.sql`, pruebas T1–T3):
+- Materiales privados por obra: archivo (bucket `materiales`, máx. 50 MB: PDF, audio,
+  imagen, video corto) o enlace https (YouTube no listado, Drive). Tipo, carpeta y nota.
+  Para todo el elenco, grupos o personas. Suben quienes tienen materiales.gestionar; ven
+  materiales.ver (staff, maquillaje) y los integrantes activos a quienes va dirigido.
+- Comunicados: título, mensaje, "importante", para todos, grupos o personas. El integrante
+  pulsa "Enterado"; quien envía ve cuántos y quiénes lo leyeron y quiénes faltan. Mi cuenta
+  muestra los avisos sin leer por obra.
+- Quien se da de baja deja de recibir materiales y comunicados.
+
 ## Cómo se comprueba cada etapa
 
 - Pruebas SQL de permisos por rol (en local y en DEV) y las de boletería sin cambios.
