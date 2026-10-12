@@ -1,6 +1,9 @@
 /* eslint-disable @next/next/no-img-element -- logos SVG del kit de marca y retratos desde Storage */
 import Link from "next/link";
+import { Anuncios } from "@/components/anuncios/Anuncios";
 import { CuentaRegresiva } from "@/components/CuentaRegresiva";
+import { ProductionBanner } from "@/components/ProductionBanner";
+import { getPublicSiteBanner } from "@/lib/banner";
 import { EstadoObra } from "@/components/EstadoObra";
 import { ArtFill } from "@/components/PosterArt";
 import { ProductionCard } from "@/components/ProductionCard";
@@ -19,7 +22,7 @@ const iniciales = (n: string) => n.split(/\s+/).filter(Boolean).slice(0, 2).map(
 export default async function Home({ searchParams }: PageProps<"/">) {
   const sp = await searchParams;
   const supabase = await createClient();
-  const [{ productions, featured }, equipoRes] = await Promise.all([getHomeData(), supabase.rpc("team_public")]);
+  const [{ productions, featured }, equipoRes, franja] = await Promise.all([getHomeData(), supabase.rpc("team_public"), getPublicSiteBanner()]);
   const equipo = ((equipoRes.data ?? []) as Miembro[]).slice(0, 5);
   const current = featured?.production ?? null;
   const enCartelera = featured?.mode === "cartelera";
@@ -104,6 +107,10 @@ export default async function Home({ searchParams }: PageProps<"/">) {
           )}
         </div>
       </section>
+
+      {/* Franja del sitio (se edita en Panel → Ajustes → Sitio) y anuncios del inicio. */}
+      {franja && <ProductionBanner banner={franja} acento="#830886" />}
+      <Anuncios lugar="inicio" tono="sitio" className="mx-auto max-w-[1440px] px-5 py-16 md:px-16 md:py-20" />
 
       {/* ── MANIFIESTO: Jóvenes para jóvenes ── */}
       <section aria-labelledby="jpj" className="relative border-y border-linea py-20 md:py-28">

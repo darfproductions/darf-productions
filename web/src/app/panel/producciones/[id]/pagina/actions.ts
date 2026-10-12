@@ -1,8 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { enlaceValido, esColor } from "@/lib/banner-rules";
-import { localMxToIso } from "@/lib/dates";
+import { leerFranja } from "@/lib/banner-form";
 import { createClient } from "@/lib/supabase/server";
 import { themeProblems } from "@/lib/themes";
 import { parseYoutube } from "@/lib/youtube";
@@ -140,28 +139,9 @@ export async function saveVideos(_p: EditState, f: FormData): Promise<EditState>
 /** Franja de avisos abajo del Hero (0069): estilo, color, encendida y la lista de avisos. */
 export async function saveBanner(_p: EditState, f: FormData): Promise<EditState> {
   const pid = String(f.get("pid"));
-  const estilo = String(f.get("estilo")) === "fija" ? "fija" : "corre";
-  const color = f.get("usar_color") ? String(f.get("color") ?? "") : "";
-  if (color && !esColor(color)) return { ok: false, message: "El color no es válido." };
-  const col = (k: string) => f.getAll(k).map((v) => String(v).trim());
-  const [textos, enlaces, botones, inicios, fines] = [col("texto"), col("enlace"), col("boton"), col("inicia"), col("termina")];
-  const items: { texto: string; enlace: string; boton: string; inicia: string | null; termina: string | null }[] = [];
-  for (let i = 0; i < textos.length; i++) {
-    const n = i + 1;
-    if (!textos[i]) {
-      if (enlaces[i] || botones[i]) return { ok: false, message: `Al aviso ${n} le falta el texto.` };
-      continue;
-    }
-    if (textos[i].length > 160) return { ok: false, message: `El aviso ${n} es muy largo (máximo 160 letras).` };
-    let enlace = enlaces[i] ?? "";
-    if (enlace && !enlace.startsWith("/") && !enlace.includes("://")) enlace = `https://${enlace}`;
-    if (enlace && !enlaceValido(enlace)) return { ok: false, message: `La liga del aviso ${n} no es válida. Usa una dirección que empiece con https:// o con / (por ejemplo /audiciones).` };
-    const inicia = inicios[i] ? localMxToIso(inicios[i]) : null;
-    const termina = fines[i] ? localMxToIso(fines[i]) : null;
-    if (inicia && termina && termina <= inicia) return { ok: false, message: `En el aviso ${n}, la fecha de fin debe ser después de la de inicio.` };
-    items.push({ texto: textos[i], enlace, boton: (botones[i] ?? "").slice(0, 30), inicia, termina });
-  }
-  if (items.length > 10) return { ok: false, message: "Máximo 10 avisos en la franja." };
+  const r = leerFranja(f);
+  if (!r.ok) return r;
+  const { estilo, color, items } = r;
   const supabase = await createClient();
   const { error } = await supabase.rpc("panel_set_banner", { pid, p_estilo: estilo, p_color: color || null, p_activa: f.get("activa") === "1", items });
   return error ? fail(error) : done(pid, "Franja guardada.");

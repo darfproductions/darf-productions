@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Anuncios } from "@/components/anuncios/Anuncios";
 import { FanZoneHeading } from "@/components/FanZoneHeading";
 import { ArtFill } from "@/components/PosterArt";
 import { requireSession } from "@/lib/auth";
@@ -18,6 +19,7 @@ export default async function FanZonePage() {
       <FanZoneHeading title={<>Detrás del <span className="txt-oro">telón</span></>}>
         Hola, {nombre}. Videos, fotos, documentos y más de cada producción, solo para la comunidad DARF.
       </FanZoneHeading>
+      <Anuncios lugar="fanzone" tono="fanzone" eyebrow="Solo para la comunidad" titulo="Lo que viene" className="mx-auto max-w-[1440px] px-5 pt-12 md:px-16 md:pt-16" />
       <ul className="mx-auto grid max-w-[1440px] gap-6 px-5 pt-12 sm:grid-cols-2 md:px-16 md:pt-16 lg:grid-cols-3">
         {productions.map((p) => {
           const t = getTheme(p);

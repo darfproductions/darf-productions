@@ -10,6 +10,7 @@ import { requirePanel } from "@/lib/permissions";
 import { assetUrl } from "@/lib/productions";
 import { kitMissing } from "@/lib/themes";
 import { saveFacts, saveGeneral, saveKitImage, saveThanks, saveVideos } from "./actions";
+import { AnunciosEditor } from "@/components/anuncios/AnunciosEditor";
 import { BannerEditor } from "./BannerEditor";
 import { ColorsForm } from "./ColorsForm";
 import { EditForm } from "./EditForm";
@@ -55,7 +56,7 @@ export default async function PageEditor({ params }: PageProps<"/panel/produccio
   return (
     <div className="flex flex-col gap-4">
       <nav aria-label="Secciones del editor" className="flex flex-wrap gap-2 text-sm">
-        {[["estado", "Estado"], ["datos", "Datos y ficha"], ["kit", "Kit visual"], ["franja", "Franja de avisos"], ["canciones", "Canciones"], ["extra", "Ficha extra"], ["videos", "Videos"], ["gracias", "Agradecimientos"]]
+        {[["estado", "Estado"], ["datos", "Datos y ficha"], ["kit", "Kit visual"], ["franja", "Franja de avisos"], ["anuncios", "Anuncios"], ["canciones", "Canciones"], ["extra", "Ficha extra"], ["videos", "Videos"], ["gracias", "Agradecimientos"]]
           .filter(([k]) => editar || k === "estado")
           .map(([k, l]) => <a key={k} href={`#${k}`} className="rounded-full border border-white/20 px-3 py-1.5 font-semibold hover:border-white/50">{l}</a>)}
         <Link href={`/vista-previa/${id}`} target="_blank" className="rounded-full bg-texto px-3 py-1.5 font-bold text-sala">Vista previa ↗</Link>
@@ -120,6 +121,10 @@ export default async function PageEditor({ params }: PageProps<"/panel/produccio
 
           <Block id="franja" title="Franja de avisos" note="Una barra abajo del encabezado de la obra para anunciar cosas: últimas funciones, promociones, audiciones… Puede correr como marquesina o quedarse fija, con varios avisos que se turnan.">
             <BannerEditor pid={id} banner={data.banner} acento={p.color_acento ?? "#a48bff"} />
+          </Block>
+
+          <Block id="anuncios" title="Anuncios" note="Tarjetas en la página de la obra o en la Fan Zone: revelación del elenco, nuevas fechas, convocatorias… Con fecha de revelación se ve una cuenta regresiva y el botón Avísame.">
+            <AnunciosEditor scope={id} />
           </Block>
 
           <Block id="canciones" title="Canciones">

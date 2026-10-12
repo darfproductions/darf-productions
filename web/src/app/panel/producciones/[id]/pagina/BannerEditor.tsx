@@ -5,7 +5,7 @@ import { ProductionBanner } from "@/components/ProductionBanner";
 import { buttonGhost, input } from "@/components/panel/ui";
 import { avisosVigentes, type Banner, type BannerEstilo } from "@/lib/banner-rules";
 import { isoToLocalMx, localMxToIso } from "@/lib/dates";
-import { saveBanner } from "./actions";
+import { saveBanner, type EditState } from "./actions";
 import { EditForm } from "./EditForm";
 
 type Row = { key: number; texto: string; enlace: string; boton: string; inicia: string; termina: string };
@@ -13,7 +13,13 @@ const vacio = (key: number): Row => ({ key, texto: "", enlace: "", boton: "", in
 const lbl = "flex min-w-0 flex-col gap-1 text-xs font-semibold text-texto-2";
 
 // Franja de avisos abajo del Hero: estilo, color, varios avisos con liga y fechas. Vista previa en vivo.
-export function BannerEditor({ pid, banner, acento }: { pid: string; banner: Banner | null; acento: string }) {
+export function BannerEditor({ pid, banner, acento, action = saveBanner }: {
+  pid: string;
+  banner: Banner | null;
+  acento: string;
+  /** Guardado: el de la obra por omisión; la franja del sitio pasa el suyo (0074). */
+  action?: (prev: EditState, f: FormData) => Promise<EditState>;
+}) {
   const [activa, setActiva] = useState(banner?.activa ?? true);
   const [estilo, setEstilo] = useState<BannerEstilo>(banner?.estilo ?? "corre");
   const [usarColor, setUsarColor] = useState(!!banner?.color);
@@ -34,7 +40,7 @@ export function BannerEditor({ pid, banner, acento }: { pid: string; banner: Ban
   const muestra: Banner = { estilo, color: usarColor ? color : null, activa, items: ahora };
 
   return (
-    <EditForm action={saveBanner} pid={pid} submit="Guardar franja">
+    <EditForm action={action} pid={pid} submit="Guardar franja">
       <div className="flex flex-wrap gap-x-6 gap-y-3 text-sm">
         <label className="flex items-center gap-2 font-semibold">
           <input type="checkbox" name="activa" value="1" checked={activa} onChange={(e) => setActiva(e.target.checked)} /> Mostrar la franja

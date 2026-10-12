@@ -1,6 +1,7 @@
 /* eslint-disable @next/next/no-img-element -- logos del kit y fotos desde Storage */
 import Image from "next/image";
 import Link from "next/link";
+import { Anuncios } from "@/components/anuncios/Anuncios";
 import { Compartir } from "@/components/Compartir";
 import { CastGrid, Ensemble, TeamGroups } from "@/components/Credits";
 import { CuentaRegresiva } from "@/components/CuentaRegresiva";
@@ -308,6 +309,9 @@ export async function ProductionView({
           </div>
         </nav>
       )}
+
+      {/* Anuncios de la obra (revelación del elenco, fechas…), si hay. */}
+      <Anuncios lugar="obra" pid={p.id} tono="obra" eyebrow="Novedades de la obra" className="mx-auto max-w-[1440px] px-5 pt-14 md:px-16 md:pt-20" />
 
       {/* Funciones, historia y canciones con la ficha fija a la derecha. */}
       <div className="mx-auto grid max-w-[1440px] items-start gap-12 px-5 pt-14 md:px-16 md:pt-24 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-12">
