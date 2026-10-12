@@ -1,5 +1,16 @@
 # DARF 2.0 — Apple Wallet y Google Wallet (investigación, 2026-10-12)
 
+## Estado: EN PAUSA (decisión de Diego, 2026-10-12)
+Se retoma cuando Apple apruebe la cuenta de Apple Developer (ya pagada) y la página esté lanzada.
+- Google: cuenta de emisor creada, **Issuer ID 3388000000023203308** (no es secreto). Se usará el
+  mismo proyecto de Google Cloud del inicio de sesión con Google. Falta: habilitar Wallet API,
+  cuenta de servicio `darf-wallet`, invitarla como Developer, cuentas de prueba, variables en Vercel.
+- Falta el **botón oficial "Agregar a Google Wallet"** (SVG en español de las guías de marca de
+  Google): pedírselo a Diego, desde aquí no se puede descargar.
+- Código ya listo (sin usarse aún): `web/src/lib/wallet-env.ts` (variables solo de servidor) y
+  `web/src/lib/google-wallet.ts` (JWT RS256 con crypto de Node, token OAuth, upsert de clases y
+  objetos, liga de guardar). Falta: contenido de los pases, rutas, botones y pruebas.
+
 Objetivo: botones **"Agregar a Apple Wallet"** y **"Agregar a Google Wallet"** para lo que hoy
 ya tiene QR en la web: gafete (0078), boletos y credencial del Club Fan (0075).
 El QR de cada pase es el mismo que ya usamos (puerta y "Checar con gafete" no cambian).
