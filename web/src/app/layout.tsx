@@ -3,14 +3,17 @@ import { Montserrat } from "next/font/google";
 import { DarfyChat } from "@/components/darfy/DarfyChat";
 import { ServiceWorkerRegister } from "@/components/pwa/ServiceWorkerRegister";
 import { EnvBanner } from "@/components/EnvBanner";
+import { JpjBar } from "@/components/JpjBar";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { env } from "@/lib/env";
 import "./globals.css";
 
+// Una sola familia (manual de marca): Montserrat 400–900, con itálica para etiquetas.
 const montserrat = Montserrat({
   variable: "--font-montserrat",
   subsets: ["latin"],
+  style: ["normal", "italic"],
 });
 
 export const metadata: Metadata = {
@@ -29,6 +32,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="es" className={`${montserrat.variable} antialiased`}>
       <body className="min-h-dvh">
+        <JpjBar />
         <SiteHeader />
         {children}
         <SiteFooter />

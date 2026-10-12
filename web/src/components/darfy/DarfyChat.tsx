@@ -46,6 +46,13 @@ export function DarfyChat({
     lista.current?.scrollTo({ top: lista.current.scrollHeight, behavior: "smooth" });
   }, [mensajes, formPara, pensando]);
 
+  // Otras partes del sitio (el pie de página) pueden abrir DARFY con este evento.
+  useEffect(() => {
+    const abrir = () => setAbierto(true);
+    window.addEventListener("darfy:abrir", abrir);
+    return () => window.removeEventListener("darfy:abrir", abrir);
+  }, []);
+
   if (ocultoEn.some((p) => pathname.startsWith(p))) return null;
 
   const preguntar = (q: string) => {
@@ -65,10 +72,10 @@ export function DarfyChat({
       <button
         type="button"
         onClick={() => setAbierto(true)}
-        className="boton-compra fixed bottom-12 right-4 z-40 flex items-center gap-2 rounded-full px-5 py-3.5 text-sm font-bold shadow-lg md:right-8"
+        className="glass fixed bottom-12 right-4 z-40 flex min-h-[54px] items-center gap-2.5 rounded-full py-2 pl-2 pr-5 text-[13px] font-bold text-texto shadow-[0_24px_60px_-12px_rgb(0_0_0/0.8)] transition-transform hover:-translate-y-0.5 md:right-8"
         aria-label="Abrir el asistente DARFY"
       >
-        <span aria-hidden="true" className="text-lg leading-none">✦</span> Pregúntale a DARFY
+        <span aria-hidden="true" className="grid h-[38px] w-[38px] place-items-center rounded-full bg-[linear-gradient(135deg,#340feb,#830886,#d20122)] text-base leading-none text-white">✦</span> Pregúntale a DARFY
       </button>
     );
   }
@@ -76,9 +83,9 @@ export function DarfyChat({
   return (
     <section
       aria-label="DARFY, asistente de DARF Productions"
-      className="fixed inset-x-2 bottom-10 z-40 flex max-h-[min(640px,calc(100dvh-5rem))] flex-col overflow-hidden rounded-2xl border border-white/10 bg-telon shadow-[0_30px_80px_rgb(0_0_0/0.6)] md:inset-x-auto md:right-8 md:w-[400px]"
+      className="fixed inset-x-2 bottom-10 z-40 flex max-h-[min(640px,calc(100dvh-5rem))] flex-col overflow-hidden rounded-[22px] border border-linea-2 bg-telon shadow-[0_30px_80px_rgb(0_0_0/0.6)] md:inset-x-auto md:right-8 md:w-[400px]"
     >
-      <header className="flex items-center gap-3 bg-[linear-gradient(110deg,#340feb,#830886_60%,#d20122)] px-4 py-3">
+      <header className="luz-darf flex items-center gap-3 px-4 py-3">
         <span aria-hidden="true" className="grid h-9 w-9 place-items-center rounded-full bg-white/15 text-lg">✦</span>
         <div className="flex-1">
           <p className="font-bold leading-tight">DARFY</p>
@@ -96,7 +103,7 @@ export function DarfyChat({
             {!!m.ligas?.length && (
               <div className="flex max-w-[88%] flex-wrap gap-2">
                 {m.ligas.map((l) => (
-                  <Link key={l.href + l.label} href={l.href} onClick={() => setAbierto(false)} className="rounded-full border border-violeta-claro/50 px-3 py-1.5 text-xs font-bold text-violeta-claro hover:border-violeta-claro">
+                  <Link key={l.href + l.label} href={l.href} onClick={() => setAbierto(false)} className="rounded-full border border-lila/50 px-3 py-1.5 text-xs font-bold text-lila hover:border-lila">
                     {l.label} →
                   </Link>
                 ))}
