@@ -1,7 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { fanRow } from "@/lib/fanzone-rules";
+import { localMxToIso } from "@/lib/dates";
+import { FAN_CATEGORIAS, fanRow } from "@/lib/fanzone-rules";
 import { createClient } from "@/lib/supabase/server";
 
 // Galería pública de la obra (tabla gallery_photos + bucket gallery, 0028).
@@ -35,17 +36,29 @@ type State = { ok: boolean; message: string } | null;
 const str = (f: FormData, k: string) => String(f.get(k) ?? "").trim();
 const refresh = (pid: string) => {
   revalidatePath(`/panel/producciones/${pid}/fanzone`);
-  revalidatePath(`/fan-zone/${pid}`);
+  revalidatePath("/fan-zone", "layout");
 };
+
+/** Pestaña y fecha de desbloqueo (0075). */
+function detalle(f: FormData): { ok: true; categoria: string; disponible_desde: string | null } | { ok: false; message: string } {
+  const categoria = str(f, "categoria") || "otro";
+  if (!(categoria in FAN_CATEGORIAS)) return { ok: false, message: "Elige la pestaña." };
+  const txt = str(f, "disponible_desde");
+  const disponible_desde = txt ? localMxToIso(txt) : null;
+  if (txt && !disponible_desde) return { ok: false, message: "Revisa la fecha de desbloqueo." };
+  return { ok: true, categoria, disponible_desde };
+}
 
 export async function addFanzoneItem(_p: State, f: FormData): Promise<State> {
   const pid = str(f, "pid");
   const r = fanRow(pid, { tipo: str(f, "tipo"), titulo: str(f, "titulo"), descripcion: String(f.get("descripcion") ?? ""), enlace: str(f, "enlace"), archivo: str(f, "archivo") || null });
   if (!r.ok) return r;
+  const det = detalle(f);
+  if (!det.ok) return det;
   const supabase = await createClient();
   const { data: last } = await supabase.from("fanzone_items").select("orden").eq("production_id", pid).order("orden", { ascending: false }).limit(1);
   const { error } = await supabase.from("fanzone_items").insert({
-    production_id: pid, ...r.row, destacado: f.get("destacado") === "on", orden: ((last?.[0]?.orden as number) ?? 0) + 1,
+    production_id: pid, ...r.row, categoria: det.categoria, disponible_desde: det.disponible_desde, destacado: f.get("destacado") === "on", orden: ((last?.[0]?.orden as number) ?? 0) + 1,
   });
   if (error) return { ok: false, message: error.message };
   refresh(pid);
@@ -83,4 +96,42 @@ export async function removeFanzoneItem(_p: State, f: FormData): Promise<State> 
   if (data?.archivo_path) await supabase.storage.from("gallery").remove([data.archivo_path as string]);
   refresh(pid);
   return { ok: true, message: "Quitado." };
+}
+
+export async function setFanzoneDetalle(_p: State, f: FormData): Promise<State> {
+  const pid = str(f, "pid");
+  const det = detalle(f);
+  if (!det.ok) return det;
+  const supabase = await createClient();
+  const { error, count } = await supabase.from("fanzone_items").update({ categoria: det.categoria, disponible_desde: det.disponible_desde }, { count: "exact" }).eq("id", str(f, "id")).eq("production_id", pid);
+  if (error) return { ok: false, message: error.message };
+  if (!count) return { ok: false, message: "No tienes permiso." };
+  refresh(pid);
+  return { ok: true, message: "Guardado." };
+}
+
+// ──────── Foto con el elenco (0075) ────────
+export async function addEncuentro(_p: State, f: FormData): Promise<State> {
+  const pid = str(f, "pid");
+  const cupo = Number(str(f, "cupo"));
+  if (!str(f, "performance")) return { ok: false, message: "Elige la función." };
+  if (!Number.isInteger(cupo) || cupo < 1 || cupo > 500) return { ok: false, message: "El cupo va de 1 a 500." };
+  const supabase = await createClient();
+  const { error } = await supabase.from("fan_encuentros").insert({ production_id: pid, performance_id: str(f, "performance"), cupo, notas: str(f, "notas").slice(0, 300) || null });
+  if (error) return { ok: false, message: error.code === "23505" ? "Esa función ya tiene encuentro." : error.message };
+  refresh(pid);
+  return { ok: true, message: "Encuentro creado." };
+}
+
+export async function setEncuentro(_p: State, f: FormData): Promise<State> {
+  const pid = str(f, "pid");
+  const supabase = await createClient();
+  const q = str(f, "accion") === "borrar"
+    ? supabase.from("fan_encuentros").delete({ count: "exact" }).eq("id", str(f, "id")).eq("production_id", pid)
+    : supabase.from("fan_encuentros").update({ abierto: str(f, "accion") === "abrir" }, { count: "exact" }).eq("id", str(f, "id")).eq("production_id", pid);
+  const { error, count } = await q;
+  if (error) return { ok: false, message: error.message };
+  if (!count) return { ok: false, message: "No tienes permiso." };
+  refresh(pid);
+  return { ok: true, message: "Listo." };
 }

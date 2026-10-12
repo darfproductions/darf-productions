@@ -9,6 +9,12 @@ values
   ('00000000-0000-0000-0000-0000000000e2', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 't_fan@test.local'),
   ('00000000-0000-0000-0000-0000000000d2', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 't_taq@test.local');
 update profiles set rol = 'admin' where id = '00000000-0000-0000-0000-0000000000a1';
+-- Desde 0075 la Fan Zone es del Club Fan: el fan de esta prueba es socio.
+do $$ begin
+  if to_regclass('public.fan_members') is not null then
+    execute $q$insert into fan_members (user_id) values ('00000000-0000-0000-0000-0000000000e2')$q$;
+  end if;
+end $$;
 
 create or replace function pg_temp.as_user(uid text) returns void language plpgsql as $$
 begin

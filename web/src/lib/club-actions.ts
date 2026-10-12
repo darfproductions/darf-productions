@@ -1,0 +1,22 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { createClient } from "@/lib/supabase/server";
+
+// Club Fan (0075): unirse y apartar lugar en "Foto con el elenco". La base revisa las reglas.
+
+export async function unirmeAlClub(): Promise<{ ok: boolean; message: string }> {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("fan_join");
+  if (error) return { ok: false, message: error.message };
+  revalidatePath("/fan-zone", "layout");
+  return { ok: true, message: "¡Ya eres parte del Club Fan!" };
+}
+
+export async function apartarEncuentro(id: string, on: boolean): Promise<{ ok: boolean; message: string }> {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("fan_encuentro_apartar", { eid: id, p_on: on });
+  if (error) return { ok: false, message: error.message };
+  revalidatePath("/fan-zone", "layout");
+  return { ok: true, message: on ? "¡Lugar apartado! Te esperamos después de la función." : "Liberaste tu lugar." };
+}

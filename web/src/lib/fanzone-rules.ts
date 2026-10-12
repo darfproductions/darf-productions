@@ -3,11 +3,27 @@ import { parseYoutube } from "@/lib/youtube";
 // Fan Zone ampliada (0052). Puro, con pruebas en fanzone-rules.test.ts.
 
 export type FanTipo = "video" | "foto" | "documento" | "enlace" | "texto";
+export type FanCategoria = "ensayo" | "making" | "fotos" | "otro";
 export type FanItem = {
   id: string; production_id: string; tipo: FanTipo; titulo: string; descripcion: string | null;
   youtube_id: string | null; archivo_path: string | null; url: string | null;
   destacado: boolean; visible: boolean; orden: number; created_at: string;
+  /** 0075: pestaña de la Fan Zone y fecha en que se desbloquea. */
+  categoria: FanCategoria; disponible_desde: string | null;
 };
+
+/** Pestañas de "Lo nuevo para ti" (0075). */
+export const FAN_CATEGORIAS: Record<FanCategoria, string> = { ensayo: "Ensayos", making: "Making of", fotos: "Fotos", otro: "Más" };
+
+/** Categoría sugerida según el tipo (la misma regla con que se llenaron los existentes). */
+export function categoriaSugerida(tipo: FanTipo): FanCategoria {
+  return tipo === "video" ? "ensayo" : tipo === "foto" ? "fotos" : "otro";
+}
+
+/** "#0001": número de socio del Club Fan con cuatro cifras. */
+export function numeroSocio(n: number): string {
+  return `#${String(n).padStart(4, "0")}`;
+}
 
 export const FAN_TIPOS: Record<FanTipo, { label: string; help: string; icono: string }> = {
   video: { label: "Video", help: "Enlace de YouTube (puede ser no listado).", icono: "▶" },

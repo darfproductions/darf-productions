@@ -4,7 +4,7 @@ import { compressImage } from "@/lib/image-compress";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { input } from "@/components/panel/ui";
-import { FAN_TIPOS, type FanTipo } from "@/lib/fanzone-rules";
+import { categoriaSugerida, FAN_CATEGORIAS, FAN_TIPOS, type FanCategoria, type FanTipo } from "@/lib/fanzone-rules";
 import { createClient } from "@/lib/supabase/client";
 import { addFanzoneItem } from "./actions";
 
@@ -78,6 +78,16 @@ export function FanzoneForm({ pid }: { pid: string }) {
       <label className="flex flex-col gap-1.5 text-sm font-semibold">{tipo === "texto" ? "Texto" : "Descripción (opcional)"}
         <textarea className={input} name="descripcion" rows={tipo === "texto" ? 5 : 2} maxLength={4000} required={tipo === "texto"} />
       </label>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <label className="flex flex-col gap-1.5 text-sm font-semibold">Pestaña
+          <select key={tipo} name="categoria" defaultValue={categoriaSugerida(tipo)} className={input}>
+            {(Object.keys(FAN_CATEGORIAS) as FanCategoria[]).map((c) => <option key={c} value={c}>{FAN_CATEGORIAS[c]}</option>)}
+          </select>
+        </label>
+        <label className="flex flex-col gap-1.5 text-sm font-semibold">Se desbloquea el <span className="text-xs font-normal text-texto-3">Opcional: antes se ve con candado y la fecha.</span>
+          <input type="datetime-local" name="disponible_desde" className={input} />
+        </label>
+      </div>
       <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="destacado" /> Destacar (aparece arriba)</label>
       <div className="flex flex-wrap items-center gap-3">
         <button disabled={busy} className="rounded-full bg-texto px-5 py-2.5 text-sm font-bold text-sala disabled:opacity-60">{busy ? "Guardando…" : "Agregar"}</button>

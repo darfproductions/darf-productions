@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dominio, fanRow, ordenFanzone } from "./fanzone-rules";
+import { categoriaSugerida, dominio, fanRow, numeroSocio, ordenFanzone } from "./fanzone-rules";
 
 const base = { tipo: "video", titulo: "Ensayo", descripcion: "", enlace: "", archivo: null };
 
@@ -37,5 +37,15 @@ describe("orden", () => {
   });
   it("dominio", () => {
     expect(dominio("https://www.instagram.com/darf")).toBe("instagram.com");
+  });
+});
+
+describe("Club Fan", () => {
+  it("número de socio y categoría sugerida", () => {
+    expect(numeroSocio(1)).toBe("#0001");
+    expect(numeroSocio(12345)).toBe("#12345");
+    expect(categoriaSugerida("video")).toBe("ensayo");
+    expect(categoriaSugerida("foto")).toBe("fotos");
+    expect(categoriaSugerida("enlace")).toBe("otro");
   });
 });
