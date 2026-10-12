@@ -1,6 +1,6 @@
 // Inicio del panel "Tu día" (Bloque 2, migración 0061). Funciones puras: panel-home-rules.test.ts.
 
-export type PendienteTipo = "ordenes" | "solicitudes" | "ofertas" | "documentos" | "advertencias" | "evaluaciones";
+export type PendienteTipo = "ordenes" | "solicitudes" | "ofertas" | "documentos" | "advertencias" | "evaluaciones" | "notas_equipo" | "avisos_equipo";
 export type Pendiente = { tipo: PendienteTipo; production_id: string | null; n: number };
 
 const TEXTO: Record<PendienteTipo, [string, string]> = {
@@ -10,8 +10,10 @@ const TEXTO: Record<PendienteTipo, [string, string]> = {
   documentos: ["documento por recibir", "documentos por recibir"],
   advertencias: ["llamada de atención esta semana", "llamadas de atención esta semana"],
   evaluaciones: ["periodo de evaluación sin publicar", "periodos de evaluación sin publicar"],
+  notas_equipo: ["nota de dirección para ti", "notas de dirección para ti"],
+  avisos_equipo: ["aviso del equipo sin leer", "avisos del equipo sin leer"],
 };
-const ORDEN: PendienteTipo[] = ["ordenes", "solicitudes", "ofertas", "documentos", "evaluaciones", "advertencias"];
+const ORDEN: PendienteTipo[] = ["notas_equipo", "ordenes", "solicitudes", "ofertas", "documentos", "evaluaciones", "avisos_equipo", "advertencias"];
 
 export function pendienteTexto(p: Pendiente): string {
   return `${p.n} ${TEXTO[p.tipo][p.n === 1 ? 0 : 1]}`;
@@ -19,6 +21,7 @@ export function pendienteTexto(p: Pendiente): string {
 
 /** A dónde se resuelve cada pendiente. */
 export function pendienteHref(p: Pendiente): string {
+  if (p.tipo === "notas_equipo" || p.tipo === "avisos_equipo") return `/cuenta/equipo/${p.production_id ?? "general"}`;
   if (!p.production_id) return "/panel/audiciones";
   const base = `/panel/producciones/${p.production_id}`;
   switch (p.tipo) {

@@ -55,6 +55,19 @@ export function describeAudit(r: AuditRow, n: AuditNames): string {
         ? `Editó ${String(row.nombre)} (${campos.join(", ")})`
         : `Guardó ${String(row.nombre)} sin cambios visibles`;
     }
+    case "team_materials":
+    case "team_announcements":
+    case "team_notes":
+    case "team_meetings": {
+      const que = { team_materials: "material del equipo", team_announcements: "aviso al equipo", team_notes: "nota de dirección", team_meetings: "junta del equipo" }[r.tabla];
+      const titulo = row.titulo ? ` "${String(row.titulo)}"` : "";
+      const donde = r.production_id ? ` en ${n.production(r.production_id)}` : " (DARF general)";
+      if (r.accion === "insert") return `Agregó ${que}${titulo}${donde}`;
+      if (r.accion === "delete") return `Borró ${que}${titulo}${donde}`;
+      if (r.tabla === "team_notes" && r.antes && r.despues && !r.antes.atendida_at && r.despues.atendida_at) return `Marcó atendida una nota de dirección${donde}`;
+      if (r.tabla === "team_meetings" && r.antes?.estado === "programada" && r.despues?.estado === "realizada") return `Cerró la junta${titulo}${donde}`;
+      return `Editó ${que}${titulo}${donde}`;
+    }
     case "seats": {
       const k = Number(row.asientos ?? 0);
       const cuantos = `${k} ${k === 1 ? "asiento" : "asientos"}`;

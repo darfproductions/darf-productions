@@ -142,6 +142,25 @@ final (Lanzamiento) y con aprobación explícita.**
 - **Equipo DARF:** "Editar su perfil profesional" en cada directivo. En los créditos de una
   producción, su nombre ya enlaza a su perfil cuando el perfil es público.
 
+### 12. Portal del equipo — HECHO (0065)
+
+- **Para quién:** el equipo de cada producción, es decir, quienes tienen un rol del panel en
+  ella (todos menos Integrante). Además hay un **espacio general de DARF**.
+- **Contenido:**
+  - **notas de dirección** a roles o personas: quien las recibe las marca atendidas y
+    responde;
+  - **juntas y llamados:** al cerrarlas se sube el resumen, los acuerdos, el transcript
+    (archivo o texto) y la grabación;
+  - **avisos** con "Enterado";
+  - **materiales** por carpeta.
+- **Quién lo maneja:** quien tiene el permiso `equipo.gestionar` (Producción y Dirección) en
+  la pestaña **Equipo** de cada producción. El espacio general lo maneja solo el Director,
+  en Personas → Equipo DARF → Portal general.
+- **Dónde lo ve el equipo:** en Mi cuenta → Mi equipo, y en el Inicio del panel (notas
+  pendientes y juntas de la semana).
+- **Pendiente, solo con aprobación:** resumen automático de juntas con IA. Necesita un
+  proveedor externo.
+
 ## Orden recomendado
 
 1 → 2 → 3, luego 4. El 5 se puede adelantar si Diego aprueba el proveedor. 6 y 8 van después;

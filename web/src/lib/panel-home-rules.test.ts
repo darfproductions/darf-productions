@@ -10,6 +10,8 @@ describe("pendientes del inicio", () => {
     expect(pendienteHref({ tipo: "ordenes", production_id: "mm", n: 1 })).toBe("/panel/producciones/mm/boletos?estado=pendiente");
     expect(pendienteHref({ tipo: "solicitudes", production_id: null, n: 1 })).toBe("/panel/audiciones");
     expect(pendienteHref({ tipo: "evaluaciones", production_id: "hsm", n: 1 })).toBe("/panel/producciones/hsm/evaluaciones");
+    expect(pendienteHref({ tipo: "notas_equipo", production_id: null, n: 1 })).toBe("/cuenta/equipo/general");
+    expect(pendienteTexto({ tipo: "notas_equipo", production_id: "mm", n: 2 })).toBe("2 notas de dirección para ti");
   });
   it("órdenes primero; sin ceros", () => {
     const r = ordenarPendientes([

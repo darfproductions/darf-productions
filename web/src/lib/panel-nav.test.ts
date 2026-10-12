@@ -39,7 +39,7 @@ describe("pestañas de la obra", () => {
     const tabs = ids(director, "hsm");
     expect(tabs[0]).toBe("resumen");
     expect(tabs.at(-1)).toBe("permisos");
-    expect(tabs).toHaveLength(16);
+    expect(tabs).toHaveLength(17);
   });
 });
 

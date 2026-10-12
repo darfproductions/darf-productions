@@ -13,6 +13,7 @@ type Home = {
   pendientes: Pendiente[];
   funciones: { id: string; production_id: string; starts_at: string; venue: string | null }[];
   ensayos: { id: string; production_id: string; titulo: string; inicia: string; lugar: string | null }[];
+  juntas: { id: string; production_id: string | null; titulo: string; tipo: string; inicia: string; lugar: string | null }[];
   cambios: (AuditRow & { actor_nombre: string; persona_nombre: string | null })[];
 };
 type Cumple = { user_id: string; nombre: string; dia: number; mes: number };
@@ -32,7 +33,7 @@ export default async function PanelHome() {
     supabase.rpc("panel_home"),
     supabase.from("panel_roles").select("id, nombre"),
   ]);
-  const home: Home = { pendientes: [], funciones: [], ensayos: [], cambios: [], ...((homeData ?? {}) as Partial<Home>) };
+  const home: Home = { pendientes: [], funciones: [], ensayos: [], juntas: [], cambios: [], ...((homeData ?? {}) as Partial<Home>) };
   const nombreObra = new Map(obras.map((p) => [p.id, p.nombre]));
 
   // Cumpleaños de la semana: el Director ve todos; los demás, los de sus obras.
@@ -49,6 +50,7 @@ export default async function PanelHome() {
   const agenda = [
     ...home.funciones.map((f) => ({ key: `f${f.id}`, at: f.starts_at, titulo: "Función", obra: f.production_id, lugar: f.venue, href: `/panel/producciones/${f.production_id}/boletos` })),
     ...home.ensayos.map((r) => ({ key: `e${r.id}`, at: r.inicia, titulo: r.titulo, obra: r.production_id, lugar: r.lugar, href: `/panel/producciones/${r.production_id}/ensayos` })),
+    ...home.juntas.map((j) => ({ key: `j${j.id}`, at: j.inicia, titulo: j.titulo, obra: j.production_id, lugar: j.lugar, href: `/cuenta/equipo/${j.production_id ?? "general"}` })),
   ].sort((a, b) => a.at.localeCompare(b.at));
 
   const personas = new Map<string, string>();
@@ -65,7 +67,7 @@ export default async function PanelHome() {
   };
 
   const nombre = access.session.profile?.nombre?.split(" ")[0] || "";
-  const obraDe = (pid: string | null) => (pid ? nombreObra.get(pid) ?? pid : "Convocatoria general");
+  const obraDe = (pid: string | null, general = "Convocatoria general") => (pid ? nombreObra.get(pid) ?? pid : general);
 
   return (
     <>
@@ -80,7 +82,7 @@ export default async function PanelHome() {
             {pendientes.map((p) => (
               <li key={`${p.tipo}-${p.production_id}`}>
                 <Link href={pendienteHref(p)} className="flex items-center justify-between gap-3 rounded-lg bg-sala px-4 py-3 hover:bg-telon-2">
-                  <span><b className="text-[#f2b544]">{pendienteTexto(p)}</b> <span className="text-sm text-texto-3">· {obraDe(p.production_id)}</span></span>
+                  <span><b className="text-[#f2b544]">{pendienteTexto(p)}</b> <span className="text-sm text-texto-3">· {obraDe(p.production_id, p.tipo.endsWith("_equipo") ? "DARF (general)" : "Convocatoria general")}</span></span>
                   <span className="text-violeta-claro">→</span>
                 </Link>
               </li>
@@ -101,7 +103,7 @@ export default async function PanelHome() {
                   <li key={x.key}>
                     <Link href={x.href} className="flex flex-col py-2.5 hover:text-violeta-claro">
                       <span className="text-sm font-bold">{cuando(x.at)}</span>
-                      <span className="text-sm text-texto-2">{x.titulo} · {obraDe(x.obra)}{x.lugar ? ` · ${x.lugar}` : ""}</span>
+                      <span className="text-sm text-texto-2">{x.titulo} · {obraDe(x.obra, "DARF (general)")}{x.lugar ? ` · ${x.lugar}` : ""}</span>
                     </Link>
                   </li>
                 ))}

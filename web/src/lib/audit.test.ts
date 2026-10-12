@@ -37,3 +37,13 @@ describe("bitácora del mapa de asientos", () => {
     expect(describeAudit(row("quitar", { asientos: 1 }), names)).toBe("Quitó 1 asiento del mapa de Mamma Mia");
   });
 });
+
+describe("bitácora del portal del equipo", () => {
+  const names = { person: () => "Ana", role: String, production: () => "Showman" };
+  it("lo cuenta en lenguaje sencillo", () => {
+    expect(describeAudit({ id: 1, at: "", actor: null, tabla: "team_meetings", accion: "update", registro_id: null, production_id: "showman",
+      antes: { estado: "programada", titulo: "Junta" }, despues: { estado: "realizada", titulo: "Junta" } }, names)).toBe('Cerró la junta "Junta" en Showman');
+    expect(describeAudit({ id: 2, at: "", actor: null, tabla: "team_announcements", accion: "insert", registro_id: null, production_id: null,
+      antes: null, despues: { titulo: "Bienvenidos" } }, names)).toBe('Agregó aviso al equipo "Bienvenidos" (DARF general)');
+  });
+});

@@ -72,10 +72,12 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
   }
 
   // Mis audiciones (0036): solo las propias; QR mientras no haya llegado.
-  const [audiciones, invitaciones, ofertas, misObras, sinLeer, misVentas] = await Promise.all([
+  const [audiciones, invitaciones, ofertas, misObras, sinLeer, misVentas, miEquipo, equipoPend] = await Promise.all([
     listMyApplications(session.userId), listMyInvites(), listMyOffers(), supabase.rpc("my_productions"), supabase.rpc("my_unread_announcements"),
-    supabase.rpc("my_seller"),
+    supabase.rpc("my_seller"), supabase.rpc("my_team_productions"), supabase.rpc("my_team_unread"),
   ]);
+  const equipos = (miEquipo.data ?? []) as { production_id: string | null; nombre: string; roles: string[] }[];
+  const pendEquipo = new Map(((equipoPend.data ?? []) as { production_id: string | null; avisos: number; notas: number }[]).map((x) => [x.production_id ?? "general", x]));
   const ventas = (misVentas.data ?? []) as MySale[];
   const miCodigo = ventas[0]?.codigo ?? null;
   const obrasVenta = ventas.filter((v) => v.production_id);
@@ -259,6 +261,30 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
                   </Link>
                 </li>
               ))}
+            </ul>
+          </section>
+        )}
+
+        {equipos.length > 0 && (
+          <section aria-labelledby="mi-equipo" className="flex flex-col gap-3 lg:col-span-8">
+            <h2 id="mi-equipo" className="titular text-2xl">Mi equipo</h2>
+            <ul className="grid gap-3 sm:grid-cols-2">
+              {equipos.map((e) => {
+                const k = e.production_id ?? "general";
+                const pe = pendEquipo.get(k);
+                return (
+                  <li key={k}>
+                    <Link href={`/cuenta/equipo/${k}`} className="block rounded-2xl bg-telon p-5 hover:bg-telon-2">
+                      <p className="text-lg font-bold">{e.nombre}
+                        {pe?.notas ? <span className="ml-2 rounded-full bg-[#be123c] px-2 py-0.5 text-xs text-white">{pe.notas} {pe.notas === 1 ? "nota" : "notas"}</span> : null}
+                        {pe?.avisos ? <span className="ml-2 rounded-full bg-[#7c3aed] px-2 py-0.5 text-xs text-white">{pe.avisos} {pe.avisos === 1 ? "aviso" : "avisos"}</span> : null}
+                      </p>
+                      <p className="text-sm text-texto-2">{e.roles.join(" · ") || "Equipo DARF"}</p>
+                      <span className="mt-2 inline-block text-sm font-bold text-violeta-claro">Notas, juntas, avisos y materiales →</span>
+                    </Link>
+                  </li>
+                );
+              })}
             </ul>
           </section>
         )}
