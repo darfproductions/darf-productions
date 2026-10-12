@@ -5,7 +5,7 @@ import { Card } from "@/components/panel/ui";
 import { can } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
 import { getEvaluations, getRubric } from "@/lib/rubric";
-import { completa, promedio } from "@/lib/rubric-rules";
+import { completa, filasBoleta, promedio } from "@/lib/rubric-rules";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Evaluar" };
@@ -16,7 +16,7 @@ export default async function Periodo({ params }: PageProps<"/panel/producciones
   const access = await requirePanel(`/panel/producciones/${id}/evaluaciones/${periodo}`);
   if (!can(access, id, "rubrica.gestionar")) redirect(`/panel/producciones/${id}`);
   const supabase = await createClient();
-  const [{ criterios, periodos }, evs, roster] = await Promise.all([getRubric(id), getEvaluations(id, { periodo }), supabase.rpc("rubric_roster", { pid: id })]);
+  const [{ criterios, niveles, periodos }, evs, roster] = await Promise.all([getRubric(id), getEvaluations(id, { periodo }), supabase.rpc("rubric_roster", { pid: id })]);
   const per = periodos.find((p) => p.id === periodo);
   if (!per) notFound();
   const alumnos = (roster.data ?? []) as { user_id: string; nombre: string; papeles: string[]; activo: boolean }[];
@@ -30,8 +30,8 @@ export default async function Periodo({ params }: PageProps<"/panel/producciones
         <ul className="flex flex-col divide-y divide-white/10 text-sm">
           {alumnos.map((a) => {
             const ev = evs.find((e) => e.user_id === a.user_id);
-            const ok = ev && completa(criterios, ev.rubric_scores);
-            const prom = ev ? promedio(ev.rubric_scores) : null;
+            const ok = ev && completa(criterios, ev.rubric_scores, ev.rubric_shared_scores);
+            const prom = ev ? promedio(filasBoleta(criterios, niveles, ev.rubric_scores, ev.rubric_shared_scores)) : null;
             return (
               <li key={a.user_id} className={`flex flex-wrap items-center justify-between gap-2 py-2.5 ${a.activo ? "" : "opacity-60"}`}>
                 <span>

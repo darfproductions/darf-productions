@@ -33,7 +33,15 @@ export async function saveRubricItem(_p: State, f: FormData): Promise<State> {
   const id = str(f, "id");
   const supabase = await createClient();
   const row: Record<string, unknown> = { nombre };
-  if (tipo === "criterio") row.descripcion = str(f, "descripcion") || null;
+  if (tipo === "criterio") {
+    row.descripcion = str(f, "descripcion") || null;
+    if (f.has("compartido")) row.compartido = f.getAll("compartido").includes("on");
+  }
+  if (tipo === "periodo" && f.has("desde")) {
+    row.desde = str(f, "desde") || null;
+    row.hasta = str(f, "hasta") || null;
+    if (row.desde && row.hasta && String(row.desde) > String(row.hasta)) return { ok: false, message: "La fecha de inicio va antes de la de fin." };
+  }
   if (id) {
     const { error, count } = await supabase.from(TABLAS[tipo]).update(row, { count: "exact" }).eq("id", id).eq("production_id", pid);
     if (error) return { ok: false, message: error.message };
@@ -68,28 +76,63 @@ export async function publishPeriod(_p: State, f: FormData): Promise<State> {
   return done(pid, publicar ? "Publicado: cada alumno ya ve su evaluación y su boleta." : "Ocultado a los alumnos.");
 }
 
-/** Guarda la evaluación de un alumno en un periodo (nivel + número por criterio y comentario). */
+/** Materias que califica un maestro (0059). Sin materias = coordina toda la rúbrica. */
+export async function setTeacherCriteria(_p: State, f: FormData): Promise<State> {
+  const pid = str(f, "pid"), uid = str(f, "uid");
+  const crits = f.getAll("crit").map(String).filter(Boolean);
+  const supabase = await createClient();
+  const del = await supabase.from("rubric_teachers").delete().eq("production_id", pid).eq("user_id", uid);
+  if (del.error) return { ok: false, message: del.error.message };
+  if (crits.length) {
+    const { error } = await supabase.from("rubric_teachers").insert(crits.map((c) => ({ production_id: pid, user_id: uid, criterion_id: c })));
+    if (error) return { ok: false, message: error.message };
+  }
+  return done(pid, crits.length ? "Materias asignadas." : "Sin materias: este maestro coordina toda la rúbrica.");
+}
+
+/** Guarda lo que este maestro califica de un alumno: sus materias, su parte de lo compartido y su comentario. */
 export async function saveEvaluation(_p: State, f: FormData): Promise<State> {
   const pid = str(f, "pid"), periodo = str(f, "periodo"), uid = str(f, "uid");
-  const criterios = f.getAll("criterio").map(String);
-  const scores: { criterion_id: string; level_id: string | null; numero: number | null }[] = [];
-  for (const c of criterios) {
-    const n = numeroDe(str(f, `n_${c}`));
-    if (!n.ok) return { ok: false, message: "Las calificaciones van de 0 a 10." };
-    scores.push({ criterion_id: c, level_id: str(f, `l_${c}`) || null, numero: n.n });
-  }
   const supabase = await createClient();
-  const { data: ev, error } = await supabase.from("rubric_evaluations")
-    .upsert({ production_id: pid, period_id: periodo, user_id: uid, comentario: str(f, "comentario") || null }, { onConflict: "period_id,user_id" })
-    .select("id").single();
+  const { data: me } = await supabase.auth.getUser();
+  if (!me.user) return { ok: false, message: "Tu sesión expiró." };
+  const leer = (prefix: string, ids: string[]) => {
+    const out: { criterion_id: string; level_id: string | null; numero: number | null }[] = [];
+    for (const c of ids) {
+      const n = numeroDe(str(f, `${prefix}n_${c}`));
+      if (!n.ok) return null;
+      out.push({ criterion_id: c, level_id: str(f, `${prefix}l_${c}`) || null, numero: n.n });
+    }
+    return out;
+  };
+  const scores = leer("", f.getAll("criterio").map(String));
+  const shared = leer("s", f.getAll("compartido").map(String));
+  if (!scores || !shared) return { ok: false, message: "Las calificaciones van de 0 a 10." };
+
+  const row: Record<string, unknown> = { production_id: pid, period_id: periodo, user_id: uid };
+  if (f.has("comentario")) row.comentario = str(f, "comentario") || null;
+  const { data: ev, error } = await supabase.from("rubric_evaluations").upsert(row, { onConflict: "period_id,user_id" }).select("id").single();
   if (error || !ev) return { ok: false, message: error?.message ?? "No se pudo guardar." };
-  const filas = scores.filter((s) => s.level_id || s.numero != null).map((s) => ({ ...s, evaluation_id: ev.id }));
-  const vacias = scores.filter((s) => !s.level_id && s.numero == null).map((s) => s.criterion_id);
-  if (filas.length) {
-    const r = await supabase.from("rubric_scores").upsert(filas, { onConflict: "evaluation_id,criterion_id" });
+
+  const llenas = <T extends { level_id: string | null; numero: number | null }>(xs: T[]) => xs.filter((s) => s.level_id || s.numero != null);
+  const vacias = <T extends { criterion_id: string; level_id: string | null; numero: number | null }>(xs: T[]) => xs.filter((s) => !s.level_id && s.numero == null).map((s) => s.criterion_id);
+  if (llenas(scores).length) {
+    const r = await supabase.from("rubric_scores").upsert(llenas(scores).map((s) => ({ ...s, evaluation_id: ev.id })), { onConflict: "evaluation_id,criterion_id" });
+    if (r.error) return { ok: false, message: r.error.message.includes("row-level") ? "Solo puedes calificar tus materias." : r.error.message };
+  }
+  if (vacias(scores).length) await supabase.from("rubric_scores").delete().eq("evaluation_id", ev.id).in("criterion_id", vacias(scores));
+  if (llenas(shared).length) {
+    const r = await supabase.from("rubric_shared_scores").upsert(llenas(shared).map((s) => ({ ...s, evaluation_id: ev.id, teacher_id: me.user!.id })), { onConflict: "evaluation_id,criterion_id,teacher_id" });
     if (r.error) return { ok: false, message: r.error.message };
   }
-  if (vacias.length) await supabase.from("rubric_scores").delete().eq("evaluation_id", ev.id).in("criterion_id", vacias);
+  if (vacias(shared).length) await supabase.from("rubric_shared_scores").delete().eq("evaluation_id", ev.id).eq("teacher_id", me.user.id).in("criterion_id", vacias(shared));
+  const nota = str(f, "nota");
+  if (nota) {
+    const r = await supabase.from("rubric_notes").upsert({ evaluation_id: ev.id, teacher_id: me.user.id, comentario: nota, updated_at: new Date().toISOString() }, { onConflict: "evaluation_id,teacher_id" });
+    if (r.error) return { ok: false, message: r.error.message };
+  } else {
+    await supabase.from("rubric_notes").delete().eq("evaluation_id", ev.id).eq("teacher_id", me.user.id);
+  }
   revalidatePath(`/panel/producciones/${pid}/evaluaciones`, "layout");
   const next = str(f, "siguiente");
   if (f.get("ir") === "siguiente" && next) redirect(`/panel/producciones/${pid}/evaluaciones/${periodo}/${next}`);

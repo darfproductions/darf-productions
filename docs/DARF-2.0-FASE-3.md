@@ -623,6 +623,19 @@ vendedor (aprobado por Diego).
   El equipo también descarga la boleta de cada alumno.
 - Bitácora de evaluaciones y periodos.
 
+**Ajuste pedido por Diego** (`0059_rubric_teachers.sql`, pruebas T1–T4):
+- **Materias por maestro:** en Evaluaciones → "Maestros y materias" se asigna a cada
+  maestro (rol Maestro) sus materias, y solo califica esas.
+  - Un maestro sin materias asignadas, Producción y Dirección son la coordinación: arman la
+    rúbrica, asignan, ponen fechas, publican y escriben el comentario general.
+- **Materia que califican todos** (p. ej. "Actitud y conducta"): cada maestro pone su nivel
+  y número, y la boleta muestra el promedio y el nivel más repetido. La rúbrica básica ya la
+  trae.
+- **Comentario de cada maestro**, que sale en la boleta con su nombre y sus materias.
+- **Periodos con fechas (del / al).** La boleta y el portal muestran del periodo:
+  - asistencia: ensayos, asistencias, retardos, faltas, justificadas y % de asistencia;
+  - llamadas de atención: advertencias y graves vigentes, con fecha y motivo.
+
 ## Cómo se comprueba cada etapa
 
 - Pruebas SQL de permisos por rol (en local y en DEV) y las de boletería sin cambios.

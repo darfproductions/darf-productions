@@ -31,7 +31,7 @@ do $$ declare per uuid; ev uuid; crit uuid; lvl uuid; n int; ext uuid; begin
   perform pg_temp.as_user('00000000-0000-0000-0000-0000000000d1');
   perform rubric_seed('showman');
   select count(*) into n from rubric_criteria where production_id = 'showman';
-  if n <> 5 then raise exception 'FALLO T1a: criterios %', n; end if;
+  if n < 4 then raise exception 'FALLO T1a: criterios %', n; end if;  -- 0059 cambió la rúbrica básica a 4
   insert into rubric_periods (production_id, nombre, orden) values ('showman', 'Bimestre 1', 1) returning id into per;
   insert into rubric_evaluations (production_id, period_id, user_id, comentario) values ('showman', per, '00000000-0000-0000-0000-0000000000e1', 'Gran avance') returning id into ev;
   select id into crit from rubric_criteria where production_id = 'showman' order by orden limit 1;
@@ -58,7 +58,7 @@ do $$ declare per uuid; ev uuid; crit uuid; lvl uuid; n int; ext uuid; begin
   select count(*) into n from rubric_scores s join rubric_evaluations e on e.id = s.evaluation_id where e.user_id = auth.uid();
   if n <> 1 then raise exception 'FALLO T2b: no ve su calificación publicada'; end if;
   select count(*) into n from rubric_criteria where production_id = 'showman';
-  if n <> 5 then raise exception 'FALLO T2c: no ve los criterios para su boleta'; end if;
+  if n < 4 then raise exception 'FALLO T2c: no ve los criterios para su boleta'; end if;
   perform pg_temp.as_user('00000000-0000-0000-0000-0000000000e2');
   select count(*) into n from rubric_evaluations;
   if n <> 0 then raise exception 'FALLO T2d: otro alumno ve la evaluación de Ana'; end if;
