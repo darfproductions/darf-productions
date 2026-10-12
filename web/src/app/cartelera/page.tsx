@@ -1,39 +1,76 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ObraHorizontal, ObraPanoramica, SeccionObras } from "@/components/ObraCards";
 import { PageHeading } from "@/components/PageHeading";
 import { ProductionCard } from "@/components/ProductionCard";
-import { agrupar } from "@/lib/home-rules";
+import { agrupar, ETIQUETA_ESTADO, type EstadoPublico } from "@/lib/home-rules";
 import { getHomeData } from "@/lib/productions";
 
 export const metadata: Metadata = { title: "Cartelera" };
 
-export default async function CarteleraPage() {
+const FILTROS: (EstadoPublico | "todas")[] = ["todas", "cartelera", "proximamente", "archivo"];
+
+// Cartelera (guía de UI · Fusión): lo que está en escena en grande, lo que viene y el archivo.
+export default async function CarteleraPage({ searchParams }: PageProps<"/cartelera">) {
+  const sp = await searchParams;
   const { productions } = await getHomeData();
-  const { cartelera, proximamente } = agrupar(productions);
+  const g = agrupar(productions);
+  const filtro = (FILTROS.find((f) => f === sp.estado) ?? "todas") as EstadoPublico | "todas";
+  const ver = (e: EstadoPublico) => filtro === "todas" || filtro === e;
+  const temporadas = g.archivo.map((p) => p.temporada).filter((x): x is string => !!x).sort();
+  const rango = temporadas.length ? (temporadas[0] === temporadas.at(-1) ? temporadas[0] : `${temporadas[0]} a ${temporadas.at(-1)}`) : undefined;
 
   return (
-    <main className="pb-10">
-      <PageHeading eyebrow="Cartelera" title="En escena">
+    <main className="pb-24">
+      <PageHeading
+        eyebrow="Cartelera · Jóvenes para jóvenes"
+        title="En escena"
+        aside={
+          <nav aria-label="Filtrar la cartelera" className="flex flex-wrap gap-2">
+            {FILTROS.filter((f) => f === "todas" || g[f].length > 0).map((f) => (
+              <Link
+                key={f}
+                href={f === "todas" ? "/cartelera" : `/cartelera?estado=${f}`}
+                scroll={false}
+                aria-current={filtro === f ? "page" : undefined}
+                className={`chip ${filtro === f ? "chip-on" : "hover:border-white/40"}`}
+              >
+                {f === "todas" ? "Todas" : ETIQUETA_ESTADO[f]}
+              </Link>
+            ))}
+          </nav>
+        }
+      >
         Elige una producción para ver sus funciones, zonas y precios, y comprar tus boletos.
       </PageHeading>
-      <div className="mx-auto max-w-[1440px] px-5 md:px-16">
-        {cartelera.length ? (
-          <ul className="grid gap-5 md:grid-cols-3">
-            {cartelera.map((p) => <li key={p.id}><ProductionCard p={p} /></li>)}
-          </ul>
-        ) : (
-          <div className="rounded-2xl bg-telon p-8">
-            <p className="text-lg">No hay boletos a la venta en este momento.</p>
-            <Link href="/producciones" className="mt-4 inline-block font-bold text-violeta-claro">Ver todas las producciones →</Link>
-          </div>
-        )}
-        {proximamente.length > 0 && (
-          <section aria-labelledby="proximamente" className="mt-12 flex flex-col gap-5">
-            <h2 id="proximamente" className="titular text-2xl">Próximamente</h2>
-            <ul className="grid gap-5 md:grid-cols-3">
-              {proximamente.map((p) => <li key={p.id}><ProductionCard p={p} /></li>)}
+
+      <div className="mx-auto flex max-w-[1440px] flex-col gap-20 px-5 md:gap-24 md:px-16">
+        {ver("cartelera") &&
+          (g.cartelera.length ? (
+            <section aria-label="En cartelera" className="flex flex-col gap-6">
+              {g.cartelera.map((p) => <ObraPanoramica key={p.id} p={p} />)}
+            </section>
+          ) : (
+            <div className="tarjeta flex flex-col items-start gap-4 p-8">
+              <p className="text-lg">No hay boletos a la venta en este momento.</p>
+              <Link href="/producciones" className="font-bold text-lila hover:underline">Ver todas las producciones →</Link>
+            </div>
+          ))}
+
+        {ver("proximamente") && g.proximamente.length > 0 && (
+          <SeccionObras id="proximamente" titulo="Próximamente">
+            <ul className="grid gap-6 xl:grid-cols-2">
+              {g.proximamente.map((p) => <li key={p.id}><ObraHorizontal p={p} /></li>)}
             </ul>
-          </section>
+          </SeccionObras>
+        )}
+
+        {ver("archivo") && g.archivo.length > 0 && (
+          <SeccionObras id="archivo" titulo="Archivo" nota={rango}>
+            <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {g.archivo.map((p) => <li key={p.id}><ProductionCard p={p} cta="Galería y créditos" sizes="(min-width: 1024px) 30vw, (min-width: 640px) 50vw, 100vw" /></li>)}
+            </ul>
+          </SeccionObras>
         )}
       </div>
     </main>

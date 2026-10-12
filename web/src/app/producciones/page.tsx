@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { SeccionObras } from "@/components/ObraCards";
 import { PageHeading } from "@/components/PageHeading";
 import { ProductionCard } from "@/components/ProductionCard";
 import { agrupar } from "@/lib/home-rules";
@@ -16,19 +17,23 @@ export default async function ProduccionesPage() {
   ].filter((x) => x.obras.length);
 
   return (
-    <main className="pb-10">
-      <PageHeading eyebrow="Producciones" title="Nuestras producciones">
+    <main className="pb-24">
+      <PageHeading eyebrow="Producciones · Nuestro repertorio" title="Nuestras producciones">
         Lo que está en escena, lo que viene y todo lo que ya hicimos historia.
       </PageHeading>
-      <div className="mx-auto flex max-w-[1440px] flex-col gap-12 px-5 md:px-16">
+      <div className="mx-auto flex max-w-[1440px] flex-col gap-20 px-5 md:px-16">
         {secciones.map((x) => (
-          <section key={x.id} aria-labelledby={x.id} className="flex flex-col gap-5">
-            <h2 id={x.id} className="titular text-2xl">{x.titulo}</h2>
-            <ul className="grid gap-5 md:grid-cols-3">
-              {x.obras.map((p) => <li key={p.id}><ProductionCard p={p} /></li>)}
+          <SeccionObras key={x.id} id={x.id} titulo={x.titulo}>
+            <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {x.obras.map((p) => (
+                <li key={p.id}>
+                  <ProductionCard p={p} cta={x.id === "archivo" ? "Galería y créditos" : undefined} sizes="(min-width: 1024px) 30vw, (min-width: 640px) 50vw, 100vw" />
+                </li>
+              ))}
             </ul>
-          </section>
+          </SeccionObras>
         ))}
+        {secciones.length === 0 && <p className="tarjeta p-6 text-texto-2">Muy pronto anunciaremos nuestras producciones.</p>}
       </div>
     </main>
   );

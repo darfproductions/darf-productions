@@ -14,7 +14,7 @@ export function lineaObra(p: PublicProduction): string {
 
 // Tarjeta de obra (guía): póster 16:9 con ambiente, tinte de la obra y logo; estado arriba;
 // nombre, fecha y sede, y flecha en círculo. Al pasar el mouse sube y la imagen crece.
-export function ProductionCard({ p, sizes = "(min-width: 768px) 45vw, 100vw" }: { p: PublicProduction; sizes?: string }) {
+export function ProductionCard({ p, sizes = "(min-width: 768px) 45vw, 100vw", cta }: { p: PublicProduction; sizes?: string; /** Texto en lugar de la flecha (p. ej. "Galería y créditos"). */ cta?: string }) {
   const t = getTheme(p);
   return (
     <Link href={`/producciones/${p.id}`} className="tarjeta tarjeta-hover group block">
@@ -28,8 +28,11 @@ export function ProductionCard({ p, sizes = "(min-width: 768px) 45vw, 100vw" }: 
         <span className="flex min-w-0 flex-col gap-1">
           <span className="truncate text-lg font-extrabold md:text-xl">{p.nombre}</span>
           <span className="truncate text-[12.5px] text-texto-3">{lineaObra(p)}</span>
+          {cta && <span className="pt-1 text-[12.5px] font-bold text-oro-claro">{cta} →</span>}
         </span>
-        <span aria-hidden="true" className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-linea-2 transition-colors group-hover:border-white/50">→</span>
+        {!cta && (
+          <span aria-hidden="true" className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-linea-2 transition-colors group-hover:border-white/50">→</span>
+        )}
       </div>
     </Link>
   );
