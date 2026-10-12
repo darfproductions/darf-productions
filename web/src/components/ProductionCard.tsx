@@ -1,20 +1,35 @@
 import Link from "next/link";
+import { EstadoObra } from "@/components/EstadoObra";
 import { ArtFill } from "@/components/PosterArt";
-import { ETIQUETA_ESTADO } from "@/lib/home-rules";
 import { getTheme, type PublicProduction } from "@/lib/productions";
 
-export function ProductionCard({ p }: { p: PublicProduction }) {
+const fecha = (iso: string) =>
+  new Intl.DateTimeFormat("es-MX", { day: "numeric", month: "long", year: "numeric", timeZone: "America/Mexico_City" }).format(new Date(iso));
+
+/** Línea de apoyo de la tarjeta: fecha (próxima o última función) o temporada, y sede. */
+export function lineaObra(p: PublicProduction): string {
+  const cuando = p.estadoPublico === "archivo" ? p.ultima : p.proxima;
+  return [cuando ? fecha(cuando) : p.temporada ? `Temporada ${p.temporada}` : null, p.venue].filter(Boolean).join(" · ") || "Detalles por anunciar";
+}
+
+// Tarjeta de obra (guía): póster 16:9 con ambiente, tinte de la obra y logo; estado arriba;
+// nombre, fecha y sede, y flecha en círculo. Al pasar el mouse sube y la imagen crece.
+export function ProductionCard({ p, sizes = "(min-width: 768px) 45vw, 100vw" }: { p: PublicProduction; sizes?: string }) {
   const t = getTheme(p);
   return (
-    <Link href={`/producciones/${p.id}`} className="block overflow-hidden rounded-2xl bg-telon transition-transform hover:-translate-y-1">
-      <div className="relative aspect-[16/9] overflow-hidden" style={{ background: t?.fondo }}>
-        {t && <ArtFill theme={t} alt="" sizes="(min-width: 768px) 30vw, 100vw" />}
+    <Link href={`/producciones/${p.id}`} className="tarjeta tarjeta-hover group block">
+      <div className="relative aspect-[16/9] overflow-hidden" style={{ background: t?.fondo ?? "var(--telon-2)" }}>
+        <div className="absolute inset-0 transition-transform duration-700 group-hover:scale-[1.04] motion-reduce:transition-none">
+          {t ? <ArtFill theme={t} alt={p.nombre} sizes={sizes} /> : <span className="titular absolute inset-x-6 bottom-6 text-3xl">{p.nombre}</span>}
+        </div>
+        <EstadoObra estado={p.estadoPublico} className="absolute left-4 top-4 md:left-5 md:top-5" />
       </div>
-      <div className="flex items-center justify-between gap-3 px-5 py-4">
-        <span className="text-lg font-bold">{p.nombre}</span>
-        <span className="shrink-0 text-xs font-bold uppercase tracking-[0.14em]" style={{ color: p.estadoPublico === "archivo" ? "var(--texto-3)" : t?.acento }}>
-          {ETIQUETA_ESTADO[p.estadoPublico]}
+      <div className="flex items-center justify-between gap-4 px-5 py-4 md:px-6 md:py-5">
+        <span className="flex min-w-0 flex-col gap-1">
+          <span className="truncate text-lg font-extrabold md:text-xl">{p.nombre}</span>
+          <span className="truncate text-[12.5px] text-texto-3">{lineaObra(p)}</span>
         </span>
+        <span aria-hidden="true" className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-linea-2 transition-colors group-hover:border-white/50">→</span>
       </div>
     </Link>
   );

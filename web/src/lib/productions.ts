@@ -13,6 +13,8 @@ export type Production = KitColumns & {
   id: string;
   nombre: string;
   venue: string | null;
+  /** Temporada (texto libre, "2027"). */
+  temporada?: string | null;
   price: number;
   on_sale: boolean;
   concluded: boolean;
@@ -49,7 +51,7 @@ export type Performance = {
 export type ZonePrice = { nombre: string; price: number };
 
 const PRODUCTION_COLUMNS =
-  "id, nombre, venue, price, on_sale, concluded, destacada, created_at, estado, frase, color_fondo, color_superficie, color_texto, color_acento, logo_path, ambiente_path";
+  "id, nombre, venue, temporada, price, on_sale, concluded, destacada, created_at, estado, frase, color_fondo, color_superficie, color_texto, color_acento, logo_path, ambiente_path";
 
 export type PublicProduction = ConEstado<Production>;
 

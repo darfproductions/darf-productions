@@ -412,6 +412,15 @@ body {
     mix-blend-mode: overlay;
   }
 
+  /* Palabra en contorno (manifiesto "Jóvenes para jóvenes"). */
+  /* El contorno se pinta debajo y la letra se rellena del color de la sala: así no se
+     ven los trazos internos que tiene la fuente variable. */
+  .hueca {
+    color: var(--sala);
+    -webkit-text-stroke: 4px rgb(244 241 248 / 0.55);
+    paint-order: stroke fill;
+  }
+
   /* Avatar de equipo: iniciales en oro claro con aro dorado. */
   .ava {
     display: flex;
