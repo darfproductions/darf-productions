@@ -559,6 +559,27 @@ vendedor (aprobado por Diego).
 - **Botón "Fan Zone"** en la página de la obra: aparece si hay al menos un contenido
   visible.
 
+## 19. Reporte general y cierre de temporada (2026-10-12)
+
+`0053_season_close.sql`, pruebas T1–T5.
+- **Panel → Reportes** (solo el Director): una fila por obra con funciones, boletos,
+  ocupación, asistencia, ingresos, lo cobrado en el taller, integrantes activos y
+  solicitudes de audición. Arriba van los totales y se puede filtrar por estado. Abajo, el
+  ranking de vendedores de todas las obras. Se puede imprimir.
+- **Pestaña "Cierre de temporada"** en cada obra (`obra.publicar` cierra, `reportes.ver` mira):
+  - **Antes de cerrar:** muestra en vivo cómo quedaría el resumen.
+  - **Al cerrar:**
+    - no deja cerrar con órdenes por aprobar;
+    - quita la venta de todas las funciones;
+    - guarda el resumen congelado con notas;
+    - pasa la obra a "archivada".
+  - **Baja opcional de los integrantes** con motivo "Fin de temporada". Sus créditos se
+    quedan, así que el elenco sigue en la página de archivo.
+  - **Después de cerrar:** queda el resumen final, que se puede imprimir o guardar en PDF.
+  - **Reabrir:** solo el Director. Vuelve a "publicada" sin reactivar la venta ni a los
+    integrantes.
+- Al imprimir se ocultan el menú del sitio y el del panel.
+
 ## Cómo se comprueba cada etapa
 
 - Pruebas SQL de permisos por rol (en local y en DEV) y las de boletería sin cambios.

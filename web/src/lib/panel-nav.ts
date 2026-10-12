@@ -73,6 +73,7 @@ export const PRODUCTION_TABS: Tab[] = [
   { id: "programa", label: "Programa digital", path: "programa", perms: ["programa.editar"], etapa: null },
   { id: "reportes", label: "Reportes", path: "reportes", perms: ["reportes.ver"], etapa: null },
   { id: "fanzone", label: "Fan Zone", path: "fanzone", perms: ["fanzone.editar"], etapa: null },
+  { id: "cierre", label: "Cierre de temporada", path: "cierre", perms: ["obra.publicar", "reportes.ver"], etapa: null },
   { id: "permisos", label: "Permisos", path: "permisos", perms: ["permisos.gestionar"], etapa: null },
 ];
 
@@ -95,6 +96,7 @@ export function globalSections(a: PanelAccessData): Section[] {
   if (!a.isDirector) return base;
   return [
     ...base,
+    { href: "/panel/reportes", label: "Reportes" },
     { href: "/panel/talento", label: "Talento" },
     { href: "/panel/cumpleanos", label: "Cumpleaños" },
     { href: "/panel/usuarios", label: "Usuarios" },

@@ -16,12 +16,12 @@ export default async function ProductionWorkspace({ children, params }: LayoutPr
   return (
     <>
       <header className="flex flex-col gap-3">
-        <Link href="/panel/producciones" className="text-sm font-bold text-violeta-claro">← Producciones</Link>
+        <Link href="/panel/producciones" className="text-sm font-bold text-violeta-claro print:hidden">← Producciones</Link>
         <div className="flex flex-wrap items-center gap-3">
           <h1 className="titular text-3xl md:text-4xl">{p.nombre}</h1>
           <EstadoChip estado={p.estado} />
         </div>
-        <nav aria-label="Secciones de la obra" className="-mx-1 flex gap-1 overflow-x-auto border-b border-white/10 pb-px">
+        <nav aria-label="Secciones de la obra" className="-mx-1 flex gap-1 overflow-x-auto border-b border-white/10 pb-px print:hidden">
           {tabs.map((t) =>
             t.etapa ? (
               <span key={t.id} title={`Se construye en la etapa ${t.etapa}`} className="flex shrink-0 items-center gap-2 px-3 py-3 text-sm font-semibold text-texto-3">

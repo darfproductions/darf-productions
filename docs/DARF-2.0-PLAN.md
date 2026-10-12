@@ -41,7 +41,7 @@ final (Lanzamiento) y con aprobación explícita.**
 - Además de videos: enlaces, documentos (PDF), fotos sueltas, textos o avisos.
 - Acomodar el orden arrastrando o con flechas, y elegir qué se destaca arriba.
 
-### 3. Reporte general del Director y cierre de temporada
+### 3. Reporte general del Director y cierre de temporada — HECHO (0053, ver FASE-3 §19)
 
 - **Todas las obras juntas:**
   - ventas;

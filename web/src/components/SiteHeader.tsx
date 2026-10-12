@@ -21,7 +21,7 @@ export async function SiteHeader() {
     : { href: "/entrar", label: "Entrar" };
 
   return (
-    <header className="relative z-20 mx-auto flex max-w-[1440px] items-center justify-between gap-4 px-5 py-5 md:px-16 md:py-7">
+    <header className="relative z-20 mx-auto flex max-w-[1440px] print:hidden items-center justify-between gap-4 px-5 py-5 md:px-16 md:py-7">
       <Link href="/" aria-label="DARF Productions, inicio">
         <Image src={logo} alt="DARF Productions" className="h-9 w-auto md:h-11" priority />
       </Link>

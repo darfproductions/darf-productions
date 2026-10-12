@@ -26,8 +26,8 @@ export default async function PanelLayout({ children }: LayoutProps<"/panel">) {
   );
 
   return (
-    <div className="mx-auto grid max-w-[1440px] gap-6 px-5 pb-16 md:px-16 lg:grid-cols-[220px_1fr]">
-      <aside className="lg:sticky lg:top-6 lg:self-start">
+    <div className="mx-auto grid max-w-[1440px] gap-6 px-5 pb-16 md:px-16 lg:grid-cols-[220px_1fr] print:block">
+      <aside className="lg:sticky lg:top-6 lg:self-start print:hidden">
         <p className="mb-1 hidden px-3 text-xs font-bold uppercase tracking-[0.24em] text-texto-3 lg:block">Panel</p>
         <p className="mb-3 hidden truncate px-3 text-sm text-texto-3 lg:block">{nombre}{access.isDirector ? " · Director" : ""}</p>
         <nav aria-label="Panel" className="hidden flex-col lg:flex">{links}</nav>

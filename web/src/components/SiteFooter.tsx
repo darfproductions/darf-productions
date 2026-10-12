@@ -5,7 +5,7 @@ import { CONTACT_CHANNELS } from "@/content/contacto";
 
 export function SiteFooter() {
   return (
-    <footer className="mx-auto mt-24 flex max-w-[1440px] flex-col gap-6 border-t border-white/10 px-5 pb-16 pt-10 text-sm text-texto-3 md:flex-row md:items-start md:justify-between md:px-16">
+    <footer className="mx-auto mt-24 flex print:hidden max-w-[1440px] flex-col gap-6 border-t border-white/10 px-5 pb-16 pt-10 text-sm text-texto-3 md:flex-row md:items-start md:justify-between md:px-16">
       <div className="flex flex-col gap-2">
         <p className="font-bold uppercase tracking-[0.2em] text-texto">DARF Productions</p>
         <p>Teatro musical.</p>
