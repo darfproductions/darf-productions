@@ -27,3 +27,13 @@ describe("bitácora en lenguaje sencillo", () => {
     expect(changedFields(antes, { ...antes, frase: "b", updated_at: "2" })).toEqual(["frase"]);
   });
 });
+
+describe("bitácora del mapa de asientos", () => {
+  const names = { person: () => "Ana", role: String, production: (id: unknown) => (id === "mm" ? "Mamma Mia" : "Showman") };
+  const row = (accion: string, despues: Record<string, unknown>) => ({ id: 1, at: "", actor: null, tabla: "seats", accion, registro_id: null, production_id: "mm", antes: null, despues });
+  it("una línea por cambio", () => {
+    expect(describeAudit(row("mapa", { asientos: 120 }), names)).toBe("Guardó el mapa de asientos de Mamma Mia (120 asientos)");
+    expect(describeAudit(row("copiar", { asientos: 5, origen: "showman" }), names)).toBe("Copió a Mamma Mia el mapa de asientos de Showman (5 asientos)");
+    expect(describeAudit(row("quitar", { asientos: 1 }), names)).toBe("Quitó 1 asiento del mapa de Mamma Mia");
+  });
+});

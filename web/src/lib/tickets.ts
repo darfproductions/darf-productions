@@ -2,6 +2,7 @@
 // El precio, el total y el descuento REALES los calcula siempre la base de datos
 // (create_seated_ticket_order). Aquí solo se calcula una vista previa para mostrar.
 
+import { compararFilas } from "./seatmap-rules";
 export function formatMoney(n: number): string {
   return `$${Number(n).toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MXN`;
 }
@@ -85,7 +86,7 @@ export function groupSeatsByRow(seats: MapSeat[]) {
     if (!rows.has(r)) rows.set(r, []);
     rows.get(r)!.push(s);
   }
-  return [...rows.keys()].sort().map((row) => {
+  return [...rows.keys()].sort(compararFilas).map((row) => {
     const list = rows.get(row)!.slice().sort((a, b) => (a.seat_number ?? 0) - (b.seat_number ?? 0));
     return {
       row,

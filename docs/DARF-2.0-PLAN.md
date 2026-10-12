@@ -117,7 +117,10 @@ final (Lanzamiento) y con aprobación explícita.**
 2. **Panel — HECHO (0061).** Menú en Inicio · Proyectos · Personas · Reportes · Ajustes.
    Directorio que une Usuarios y Talento, e inicio "Tu día" (pendientes, semana, cumpleaños
    y cambios recientes).
-3. **Mapas de asientos:** generador por filas y ajuste asiento por asiento.
+3. **Mapas de asientos — HECHO (0062).** Funciones y boletos → Mapa de asientos: zonas con
+   color, generador por filas con vista previa, ajuste asiento por asiento (quitar, volver
+   a poner, cambiar zona) y copiar de otra obra. Con boletos vendidos ya no se regenera, y
+   no se quitan asientos vendidos para funciones próximas.
 4. **Boletos bonitos:** una tarjeta por orden, ventana con boletos diseñados y PDF con los
    colores de la obra. Apple y Google Wallet en espera.
 5. **Equipo DARF:** página pública `/nosotros` con los directivos.

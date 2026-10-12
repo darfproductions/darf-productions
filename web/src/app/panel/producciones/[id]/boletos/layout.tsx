@@ -12,6 +12,7 @@ export default async function TicketsLayout({ children, params }: LayoutProps<"/
     { href: "", label: "Ventas y órdenes", show: can(access, id, "ventas.ver") },
     { href: "/taquilla", label: "Taquilla", show: can(access, id, "ventas.operar") },
     { href: "/funciones", label: "Funciones y precios", show: can(access, id, "funciones.gestionar") },
+    { href: "/mapa", label: "Mapa de asientos", show: can(access, id, "funciones.gestionar") },
     { href: "/descuentos", label: "Descuentos", show: can(access, id, "descuentos.gestionar") },
     { href: "/vendedores", label: "Vendedores", show: can(access, id, "ventas.ver") || can(access, id, "vendedores.gestionar") },
   ].filter((l) => l.show);

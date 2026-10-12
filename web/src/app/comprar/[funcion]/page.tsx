@@ -29,7 +29,7 @@ export default async function ComprarPage({ params, searchParams }: PageProps<"/
     ? await Promise.all([
         supabase.from("seats").select("id, seat_label, seat_row, seat_number, lado, price_category_id, is_active").eq("production_id", p.id).limit(2000),
         supabase.rpc("get_taken_seats", { target_performance_id: f.id }),
-        supabase.from("performance_price_categories").select("price_category_id, price, price_categories(nombre, cupo)").eq("performance_id", f.id),
+        supabase.from("performance_price_categories").select("price_category_id, price, price_categories(nombre, cupo, color)").eq("performance_id", f.id),
       ])
     : [null, null, null];
 
@@ -41,6 +41,7 @@ export default async function ComprarPage({ params, searchParams }: PageProps<"/
     categoryId: r.price_category_id as string,
     price: Number(r.price),
     nombre: (r.price_categories as unknown as { nombre: string } | null)?.nombre ?? "",
+    color: (r.price_categories as unknown as { color: string | null } | null)?.color ?? null,
   }));
   // Link de vendedor: el código se revisa aquí para mostrar su nombre desde el inicio.
   const sellerRes = vendible && vendedor ? await supabase.rpc("preview_seller_code", { target_performance_id: f.id, target_code: vendedor }) : null;

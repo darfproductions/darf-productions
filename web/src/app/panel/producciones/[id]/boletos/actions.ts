@@ -218,3 +218,56 @@ export async function boxOfficeGeneralSale(input: { pid: string; performanceId: 
   refresh(input.pid);
   return { ok: true, orderCode: r.order_code, total: Number(r.total), tickets };
 }
+
+// ──────── Mapa de asientos (0062) ────────
+// La base revisa el permiso funciones.gestionar y que no se toquen asientos vendidos.
+
+/** Zona con asiento (sin cupo), con su color para el mapa. */
+export async function saveSeatZone(_p: TicketState, f: FormData): Promise<TicketState> {
+  const pid = String(f.get("pid"));
+  const zid = String(f.get("zid") ?? "");
+  const nombre = String(f.get("nombre") ?? "").trim();
+  const color = String(f.get("color") ?? "").trim();
+  if (!nombre) return { ok: false, message: "Escribe el nombre de la zona." };
+  if (color && !/^#[0-9a-fA-F]{6}$/.test(color)) return { ok: false, message: "Color no válido." };
+  const row = { nombre, color: color || null, descripcion: String(f.get("descripcion") ?? "").trim() || null };
+  const supabase = await createClient();
+  const { error } = zid
+    ? await supabase.from("price_categories").update(row).eq("id", zid).eq("production_id", pid).is("cupo", null)
+    : await supabase.from("price_categories").insert({ ...row, production_id: pid });
+  if (error) return { ok: false, message: error.code === "23505" ? "Ya hay una zona con ese nombre." : error.message };
+  refresh(pid);
+  return { ok: true, message: zid ? "Zona guardada." : "Zona creada. Úsala en el mapa y ponle precio en cada función." };
+}
+
+export type SeatMapResult = { ok: boolean; message: string };
+
+const asientos = (n: unknown) => `${n} ${Number(n) === 1 ? "asiento" : "asientos"}`;
+
+export async function generateSeatMap(pid: string, lista: { fila: string; numero: number; lado: string; etiqueta: string; zona: string }[]): Promise<SeatMapResult> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("seat_map_generate", { pid, lista });
+  if (error) return { ok: false, message: error.message };
+  refresh(pid);
+  return { ok: true, message: `Mapa guardado: ${asientos((data as { asientos: number }).asientos)}.` };
+}
+
+export async function updateSeats(pid: string, ids: string[], accion: "quitar" | "poner" | "zona", zona?: string): Promise<SeatMapResult> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("seat_map_update", { pid, ids, accion, zona: zona || null });
+  if (error) return { ok: false, message: error.message };
+  refresh(pid);
+  const n = asientos((data as { asientos: number }).asientos);
+  return { ok: true, message: accion === "quitar" ? `Quitaste ${n}.` : accion === "poner" ? `Volviste a poner ${n}.` : `Cambiaste de zona ${n}.` };
+}
+
+export async function copySeatMap(_p: TicketState, f: FormData): Promise<TicketState> {
+  const destino = String(f.get("pid"));
+  const origen = String(f.get("origen") ?? "");
+  if (!origen) return { ok: false, message: "Elige la obra de donde copiar." };
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("seat_map_copy", { origen, destino });
+  if (error) return { ok: false, message: error.message };
+  refresh(destino);
+  return { ok: true, message: `Mapa copiado: ${asientos((data as { asientos: number }).asientos)}. Revisa las zonas y sus precios.` };
+}

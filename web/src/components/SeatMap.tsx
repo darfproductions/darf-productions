@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { colorZona } from "@/lib/seatmap-rules";
 import { clampSeat, formatMoney, groupSeatsByRow, seatSize, ZONE_COLORS, type MapSeat } from "@/lib/tickets";
 
-export type ZonePrice = { categoryId: string; price: number; nombre: string };
+export type ZonePrice = { categoryId: string; price: number; nombre: string; color?: string | null };
 
 // Mapa de asientos (mismo dibujo para la compra en línea y la taquilla del panel).
 // Solo pinta; quién puede comprar y qué está ocupado lo decide la base.
@@ -21,6 +22,7 @@ export function SeatMap({
   onToggle: (s: MapSeat) => void;
 }) {
   const priceByCat = useMemo(() => new Map(prices.map((p) => [p.categoryId, p])), [prices]);
+  const colorByCat = useMemo(() => new Map([...prices].sort((a, b) => a.nombre.localeCompare(b.nombre)).map((p, i) => [p.categoryId, colorZona(p, i, ZONE_COLORS)])), [prices]);
   const rows = useMemo(() => groupSeatsByRow(seats), [seats]);
   // Zoom (Fase 4B): "Ajustar" calcula el tamaño para que quepa a lo ancho; + y − o dos dedos lo cambian.
   const box = useRef<HTMLDivElement>(null);
@@ -42,7 +44,7 @@ export function SeatMap({
       <ul className="flex flex-wrap gap-2 text-sm">
         {prices.slice().sort((a, b) => b.price - a.price).map((z) => (
           <li key={z.categoryId} className="flex items-center gap-2 rounded-full bg-telon px-3 py-1.5">
-            <span aria-hidden="true" className="h-3 w-3 rounded-full" style={{ background: ZONE_COLORS[z.nombre] ?? "#888" }} />
+            <span aria-hidden="true" className="h-3 w-3 rounded-full" style={{ background: colorByCat.get(z.categoryId) }} />
             {z.nombre} · {formatMoney(z.price).replace(" MXN", "")}
           </li>
         ))}
@@ -91,7 +93,7 @@ export function SeatMap({
                           width: size,
                           height: size,
                           fontSize: Math.max(7, Math.round(size * 0.38)),
-                          background: isSel ? "#ffffff" : isTaken ? "#3a3446" : ZONE_COLORS[zone!.nombre] ?? "#888",
+                          background: isSel ? "#ffffff" : isTaken ? "#3a3446" : colorByCat.get(zone!.categoryId),
                           color: isSel ? "#0b0910" : isTaken ? "#6e6878" : "#ffffff",
                         }}
                       >

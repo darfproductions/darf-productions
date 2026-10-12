@@ -55,6 +55,16 @@ export function describeAudit(r: AuditRow, n: AuditNames): string {
         ? `Editó ${String(row.nombre)} (${campos.join(", ")})`
         : `Guardó ${String(row.nombre)} sin cambios visibles`;
     }
+    case "seats": {
+      const k = Number(row.asientos ?? 0);
+      const cuantos = `${k} ${k === 1 ? "asiento" : "asientos"}`;
+      const obra = n.production(r.production_id);
+      if (r.accion === "mapa") return `Guardó el mapa de asientos de ${obra} (${cuantos})`;
+      if (r.accion === "copiar") return `Copió a ${obra} el mapa de asientos de ${n.production(row.origen)} (${cuantos})`;
+      if (r.accion === "quitar") return `Quitó ${cuantos} del mapa de ${obra}`;
+      if (r.accion === "poner") return `Volvió a poner ${cuantos} en el mapa de ${obra}`;
+      return `Cambió de zona ${cuantos} en el mapa de ${obra}`;
+    }
     default:
       return `${r.accion} en ${r.tabla}`;
   }
