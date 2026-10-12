@@ -27,7 +27,7 @@ const ESTADOS: Record<string, string> = {
 
 export function EstadoChip({ estado }: { estado: string }) {
   return (
-    <span className={`rounded-full px-3 py-1 text-xs font-bold uppercase tracking-[0.12em] ${ESTADOS[estado] ?? ESTADOS.borrador}`}>
+    <span className={`whitespace-nowrap rounded-full px-2.5 py-0.5 text-[10.5px] font-bold uppercase tracking-[0.14em] ${ESTADOS[estado] ?? ESTADOS.borrador}`}>
       {estado}
     </span>
   );

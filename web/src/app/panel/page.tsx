@@ -166,15 +166,15 @@ export default async function PanelHome() {
             const rol = access.isDirector ? "Director" : `${(access.byProduction[p.id] ?? []).length} permisos`;
             return (
               <li key={p.id}>
-                <Link href={`/panel/producciones/${p.id}`} className="flex items-center gap-3 overflow-hidden rounded-2xl bg-telon pr-3 transition-transform hover:-translate-y-0.5">
-                  <div className="relative h-16 w-24 shrink-0 overflow-hidden" style={{ background: t?.fondo ?? "var(--telon-2)" }}>
+                <Link href={`/panel/producciones/${p.id}`} className="flex items-center gap-3 overflow-hidden rounded-[18px] border border-linea bg-telon pr-3 transition-transform hover:-translate-y-0.5">
+                  <div className="relative h-24 w-28 shrink-0 self-stretch overflow-hidden" style={{ background: t?.fondo ?? "var(--telon-2)" }}>
                     {t && <ArtFill theme={t} alt="" sizes="96px" />}
                   </div>
-                  <div className="min-w-0 flex-1 py-2">
+                  <div className="flex min-w-0 flex-1 flex-col items-start gap-1 py-2">
                     <p className="line-clamp-2 font-bold leading-tight">{p.nombre}</p>
                     <p className="text-xs text-texto-3">{rol}</p>
+                    <EstadoChip estado={p.estado} />
                   </div>
-                  <EstadoChip estado={p.estado} />
                 </Link>
               </li>
             );
