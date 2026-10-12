@@ -121,8 +121,10 @@ final (Lanzamiento) y con aprobación explícita.**
    color, generador por filas con vista previa, ajuste asiento por asiento (quitar, volver
    a poner, cambiar zona) y copiar de otra obra. Con boletos vendidos ya no se regenera, y
    no se quitan asientos vendidos para funciones próximas.
-4. **Boletos bonitos:** una tarjeta por orden, ventana con boletos diseñados y PDF con los
-   colores de la obra. Apple y Google Wallet en espera.
+4. **Boletos bonitos — HECHO.** En Mi cuenta hay una tarjeta por orden, con el logo y los
+   colores de la obra, y un botón "Ver boletos" que abre una ventana con un boleto
+   diseñado por asiento (flechas o deslizar). El PDF se dibuja en el navegador con el
+   mismo diseño; el del servidor queda de respaldo. Apple y Google Wallet en espera.
 5. **Equipo DARF:** página pública `/nosotros` con los directivos.
 
 ## Orden recomendado

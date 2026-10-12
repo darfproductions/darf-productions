@@ -9,7 +9,10 @@ import { formatSlot, listMyApplications, listMyInvites } from "@/lib/auditions";
 import { listMyOffers, offerLabel } from "@/lib/casting";
 import { OfferReplyForm } from "./OfferReplyForm";
 import { env } from "@/lib/env";
-import { formatPerformanceDate } from "@/lib/productions";
+import { formatPerformanceDate, getTheme } from "@/lib/productions";
+import type { KitColumns } from "@/lib/themes";
+import { estiloDe, type BoletoVista } from "@/lib/ticket-design";
+import { OrderTickets } from "@/components/tickets/OrderTickets";
 import { createClient } from "@/lib/supabase/server";
 import { formatMoney, whatsappPayUrl } from "@/lib/tickets";
 import { logout } from "../entrar/actions";
@@ -32,7 +35,8 @@ type OrderRow = {
   created_at: string;
   expires_at: string | null;
   vencida_at: string | null;
-  performances: { starts_at: string | null; production_id: string; productions: { nombre: string } | null } | null;
+  buyer_nombre: string;
+  performances: { starts_at: string | null; venue: string | null; production_id: string; productions: (KitColumns & { nombre: string; venue: string | null }) | null } | null;
   tickets: { id: string; is_active: boolean; qr_token: string; checked_in_at: string | null; seats: { seat_label: string } | null; price_categories: { nombre: string } | null }[];
 };
 
@@ -55,7 +59,7 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
   await supabase.rpc("expire_due_orders", { pid: null });
   const { data, error } = await supabase
     .from("orders")
-    .select("id, order_code, status, total, discount_amount, discount_codigo, buyer_telefono, created_at, expires_at, vencida_at, performances(starts_at, production_id, productions(nombre)), tickets(id, is_active, qr_token, checked_in_at, seats(seat_label), price_categories(nombre))")
+    .select("id, order_code, status, total, discount_amount, discount_codigo, buyer_telefono, buyer_nombre, created_at, expires_at, vencida_at, performances(starts_at, venue, production_id, productions(nombre, venue, color_fondo, color_superficie, color_texto, color_acento, logo_path, ambiente_path, frase)), tickets(id, is_active, qr_token, checked_in_at, seats(seat_label), price_categories(nombre))")
     .eq("buyer_user_id", session.userId)
     .order("created_at", { ascending: false });
   const orders = (data ?? []) as unknown as OrderRow[];
@@ -93,7 +97,21 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
   const pasadas = orders.filter((o) => funcionPasada(o.performances?.starts_at ?? null, ahora));
   const renderOrder = (o: OrderRow) => {
               const nombre = o.performances?.productions?.nombre ?? "Producción";
-              const seats = o.tickets.filter((t) => t.is_active).map((t) => etiqueta(t));
+              const activos = o.tickets.filter((t) => t.is_active);
+              const seats = activos.map((t) => etiqueta(t));
+              const prod = o.performances?.productions ?? null;
+              const estilo = estiloDe(prod ? getTheme(prod) : null);
+              const boletos: BoletoVista[] = activos.map((t) => ({
+                id: t.id,
+                obra: nombre,
+                funcion: formatPerformanceDate(o.performances?.starts_at ?? null),
+                lugar: o.performances?.venue ?? prod?.venue ?? null,
+                asiento: etiqueta(t),
+                orden: o.order_code,
+                comprador: o.buyer_nombre,
+                qr: qrs.get(t.id) ?? null,
+                usado: !!t.checked_in_at,
+              }));
               const wa = o.status === "pendiente"
                 ? whatsappPayUrl(env.whatsapp, {
                     prodName: nombre, orderCode: o.order_code, seats, total: Number(o.total),
@@ -101,15 +119,22 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
                   })
                 : "";
               return (
-                <li key={o.id} className="flex flex-col gap-4 rounded-2xl bg-telon p-5">
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
+                <li key={o.id} className="flex flex-col overflow-hidden rounded-2xl bg-telon">
+                  <div className="flex items-center gap-4 px-5 py-4" style={{ background: estilo.fondo, color: estilo.texto }}>
+                    {estilo.logo ? (
+                      // eslint-disable-next-line @next/next/no-img-element -- logo de la obra
+                      <img src={estilo.logo} alt="" className="h-14 w-24 shrink-0 object-contain" />
+                    ) : null}
+                    <div className="min-w-0 flex-1">
                       <p className="text-lg font-bold">{nombre}</p>
-                      <p className="text-sm capitalize text-texto-2">{formatPerformanceDate(o.performances?.starts_at ?? null)}</p>
-                      <p className="mt-1 text-sm text-texto-3">Orden {o.order_code} · {formatMoney(Number(o.total))}{o.discount_codigo ? ` · código ${o.discount_codigo}` : ""}</p>
+                      <p className="text-sm capitalize opacity-85">{formatPerformanceDate(o.performances?.starts_at ?? null)}</p>
                     </div>
-                    <span className={`rounded-full px-3 py-1.5 text-xs font-bold ${STATUS[o.status].cls}`}>{o.vencida_at ? "Vencida" : STATUS[o.status].label}</span>
+                    <span className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-bold ${STATUS[o.status].cls}`}>{o.vencida_at ? "Vencida" : STATUS[o.status].label}</span>
                   </div>
+                  <div className="flex flex-col gap-4 p-5">
+                  <p className="text-sm text-texto-3">
+                    Orden {o.order_code} · {activos.length} {activos.length === 1 ? "boleto" : "boletos"} · {formatMoney(Number(o.total))}{o.discount_codigo ? ` · código ${o.discount_codigo}` : ""}
+                  </p>
                   {o.vencida_at && <p className="text-sm text-texto-3">No se confirmó el pago a tiempo y los asientos se liberaron. Puedes volver a comprar si sigue habiendo lugares.</p>}
                   {o.status === "pendiente" && o.expires_at && tiempoRestante(o.expires_at) && (
                     <p className="text-sm text-[#fde68a]">Paga antes de <b>{limiteTexto(o.expires_at)}</b> (te quedan {tiempoRestante(o.expires_at)}). Si no, los asientos se liberan solos.</p>
@@ -121,21 +146,15 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
                       <p className="text-sm text-texto-3">Pago por WhatsApp: sin número configurado en este entorno.</p>
                     )
                   )}
-                  {o.status === "aprobado" && o.tickets.some((t) => t.is_active) && !funcionPasada(o.performances?.starts_at ?? null) && (
-                    <a href={`/cuenta/boletos/${encodeURIComponent(o.order_code)}/pdf`} className="self-start rounded-full border border-white/30 px-5 py-2.5 text-sm font-bold hover:border-white/60">Descargar boletos (PDF)</a>
+                  {o.status === "aprobado" && boletos.length > 0 && (
+                    <OrderTickets
+                      boletos={boletos}
+                      estilo={estilo}
+                      orden={o.order_code}
+                      pdfServidor={funcionPasada(o.performances?.starts_at ?? null) ? null : `/cuenta/boletos/${encodeURIComponent(o.order_code)}/pdf`}
+                    />
                   )}
-                  {o.status === "aprobado" && (
-                    <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-                      {o.tickets.filter((t) => t.is_active).map((t) => (
-                        <li key={t.id} className="flex flex-col items-center gap-2 rounded-xl bg-white p-3 text-sala">
-                          {/* eslint-disable-next-line @next/next/no-img-element -- imagen generada (data URL) */}
-                          {qrs.get(t.id) ? <img src={qrs.get(t.id)} alt={`Código QR del asiento ${etiqueta(t)}`} width={160} height={160} /> : <p className="text-xs text-[#555]">Función pasada</p>}
-                          <p className="text-sm font-bold">{etiqueta(t)}</p>
-                          {t.checked_in_at && <p className="text-xs font-semibold text-[#8a1c2c]">Ya utilizado</p>}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
+                  </div>
                 </li>
               );
   };
@@ -155,7 +174,7 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
           {recordatorios.map((o) => (
             <p key={o.id} role="status" className="rounded-xl border border-[#c4b5fd]/40 bg-[#c4b5fd]/10 px-4 py-3">
               <b>{recordatorio(o.performances?.starts_at ?? null)}:</b> {o.performances?.productions?.nombre} ·{" "}
-              <span className="capitalize">{formatPerformanceDate(o.performances?.starts_at ?? null)}</span>. Lleva tus códigos QR (abajo).
+              <span className="capitalize">{formatPerformanceDate(o.performances?.starts_at ?? null)}</span>. Toca «Ver boletos» para tener tus códigos QR a la mano.
             </p>
           ))}
           {error && <p role="alert" className="text-[#ff8fa3]">No se pudieron cargar tus boletos.</p>}
