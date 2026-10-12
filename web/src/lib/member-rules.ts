@@ -107,10 +107,13 @@ export const SEMAFORO: Record<Semaforo, { label: string; cls: string }> = {
 // ──────── Mensualidades ────────
 
 export type Fee = { monto: number; desde: string; hasta: string; dia_limite: number; cobrar?: boolean; inscripcion?: number };
-export type Payment = { periodo: string; monto: number; concepto?: "mensualidad" | "inscripcion" };
+export type Payment = { periodo: string; monto: number; concepto?: "mensualidad" | "inscripcion"; anulado_at?: string | null };
 
-/** Solo los pagos de mensualidad (los de inscripción van aparte). */
-export const soloMensualidad = <T extends Payment>(ps: T[]): T[] => ps.filter((p) => (p.concepto ?? "mensualidad") === "mensualidad");
+/** Un pago anulado (0079) queda en el historial pero ya no cuenta. */
+export const vigente = (p: { anulado_at?: string | null }): boolean => !p.anulado_at;
+
+/** Solo los pagos de mensualidad vigentes (los de inscripción van aparte). */
+export const soloMensualidad = <T extends Payment>(ps: T[]): T[] => ps.filter((p) => vigente(p) && (p.concepto ?? "mensualidad") === "mensualidad");
 export type MesEstado = "pagado" | "parcial" | "pendiente" | "vencido" | "beca" | "futuro";
 export type Mes = { periodo: string; debe: number; pagado: number; estado: MesEstado };
 
@@ -168,16 +171,16 @@ export function estadoInscripcion(fee: Fee, persona: FeeTerms, pagos: Payment[])
   const monto = Number(fee.inscripcion ?? 0);
   if (fee.cobrar === false || monto <= 0) return { debe: 0, pagado: 0, estado: "no_aplica" };
   if (persona.sin_inscripcion) return { debe: 0, pagado: 0, estado: "exento" };
-  const pagado = pagos.filter((p) => p.concepto === "inscripcion").reduce((s, p) => s + Number(p.monto), 0);
+  const pagado = pagos.filter((p) => vigente(p) && p.concepto === "inscripcion").reduce((s, p) => s + Number(p.monto), 0);
   return { debe: monto, pagado, estado: pagado >= monto ? "pagado" : pagado > 0 ? "parcial" : "pendiente" };
 }
 
 export type Recaudacion = { mes: string; mensualidades: number; inscripciones: number; total: number };
 
 /** Lo cobrado por mes en que se registró el pago (hora de CDMX), del más reciente al más antiguo. */
-export function recaudacion(pagos: { monto: number; concepto?: string; registrado_at: string }[]): { meses: Recaudacion[]; mensualidades: number; inscripciones: number; total: number } {
+export function recaudacion(pagos: { monto: number; concepto?: string; registrado_at: string; anulado_at?: string | null }[]): { meses: Recaudacion[]; mensualidades: number; inscripciones: number; total: number } {
   const porMes = new Map<string, Recaudacion>();
-  for (const p of pagos) {
+  for (const p of pagos.filter(vigente)) {
     const mes = new Intl.DateTimeFormat("en-CA", { year: "numeric", month: "2-digit", timeZone: "America/Mexico_City" }).format(new Date(p.registrado_at)).slice(0, 7) + "-01";
     const r = porMes.get(mes) ?? { mes, mensualidades: 0, inscripciones: 0, total: 0 };
     if (p.concepto === "inscripcion") r.inscripciones += Number(p.monto); else r.mensualidades += Number(p.monto);

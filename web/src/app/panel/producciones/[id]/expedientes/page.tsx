@@ -12,6 +12,7 @@ import { can } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
 import { createClient } from "@/lib/supabase/server";
 import { addBasicDocs, addDocType, removeDocType, saveDiscipline, saveFee } from "./actions";
+import { ExpTabs } from "./ExpTabs";
 
 export const metadata: Metadata = { title: "Expedientes" };
 
@@ -47,7 +48,7 @@ export default async function Expedientes({ params }: PageProps<"/panel/producci
     supabase.from("member_doc_types").select("id, nombre, solo_menores, obligatorio, aplica, grupo, personas, descripcion").eq("production_id", id).order("orden"),
     verExp ? supabase.from("member_docs").select("user_id, doc_type_id, archivo_path, subido_at, entregado_at").eq("production_id", id) : Promise.resolve({ data: [] }),
     supabase.from("production_fees").select("monto, desde, hasta, dia_limite, cobrar, inscripcion").eq("production_id", id).maybeSingle(),
-    verCuotas ? supabase.from("member_payments").select("user_id, periodo, monto, concepto, registrado_at").eq("production_id", id) : Promise.resolve({ data: [] }),
+    verCuotas ? supabase.from("member_payments").select("user_id, periodo, monto, concepto, registrado_at, anulado_at").eq("production_id", id) : Promise.resolve({ data: [] }),
     verCuotas ? supabase.from("member_fee_terms").select("user_id, beca, cuota_especial, sin_inscripcion").eq("production_id", id) : Promise.resolve({ data: [] }),
     verDisc || verCuotas ? supabase.rpc("discipline_summary", { pid: id }) : Promise.resolve({ data: [] }),
     supabase.from("production_discipline").select("*").eq("production_id", id).maybeSingle(),
@@ -60,7 +61,7 @@ export default async function Expedientes({ params }: PageProps<"/panel/producci
   const memberDe = (u: string) => ((members.data ?? []) as (MemberFile & { user_id: string })[]).find((f) => f.user_id === u) ?? null;
   const docsDe = (u: string) => ((docs.data ?? []) as (MemberDoc & { user_id: string })[]).filter((d) => d.user_id === u);
   const termsDe = (u: string): FeeTerms => ((terms.data ?? []) as (FeeTerms & { user_id: string })[]).find((t) => t.user_id === u) ?? { beca: false, cuota_especial: null };
-  type Pago = { user_id: string; periodo: string; monto: number; concepto: "mensualidad" | "inscripcion"; registrado_at: string };
+  type Pago = { user_id: string; periodo: string; monto: number; concepto: "mensualidad" | "inscripcion"; registrado_at: string; anulado_at: string | null };
   const pagosDe = (u: string) => ((pagos.data ?? []) as Pago[]).filter((p) => p.user_id === u);
   const cobra = !!cuota && cuota.cobrar !== false;
   const rec = recaudacion((pagos.data ?? []) as Pago[]);
@@ -71,6 +72,7 @@ export default async function Expedientes({ params }: PageProps<"/panel/producci
 
   return (
     <div className="flex flex-col gap-4">
+      <ExpTabs pid={id} actual="integrantes" pagos={verCuotas && cobra} />
       {porDecidir.length > 0 && (
         <Card className="border border-[#ff8fa3]/40">
           <h2 className="font-bold text-[#ff8fa3]">Requiere decisión</h2>
@@ -219,7 +221,10 @@ export default async function Expedientes({ params }: PageProps<"/panel/producci
 
       {verCuotas && rec.meses.length > 0 && (
         <Card className="overflow-x-auto p-0 md:p-0">
-          <h2 className="titular px-5 pt-4 text-xl">Recaudación</h2>
+          <div className="flex flex-wrap items-baseline justify-between gap-2 px-5 pt-4">
+            <h2 className="titular text-xl">Recaudación</h2>
+            <a href={`/panel/producciones/${id}/expedientes/exportar/pagos`} className="text-sm font-bold text-violeta-claro">Exportar pagos (CSV) ↓</a>
+          </div>
           <div className="grid grid-cols-3 gap-3 px-5 py-3 text-center">
             <div><p className="text-xl font-black">{pesos(rec.inscripciones)}</p><p className="text-xs text-texto-3">Inscripciones</p></div>
             <div><p className="text-xl font-black">{pesos(rec.mensualidades)}</p><p className="text-xs text-texto-3">Mensualidades</p></div>

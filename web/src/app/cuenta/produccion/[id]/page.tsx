@@ -15,6 +15,7 @@ import {
   INSCRIPCION_LABEL, estadoInscripcion, mesNombre, pendientesTexto, pesos, semaforo,
 } from "@/lib/member-rules";
 import { getMemberData, signDocs } from "@/lib/members";
+import { METODOS, conceptoPago } from "@/lib/pago-rules";
 import { ASISTENCIA, fechaEnsayo, type Rehearsal } from "@/lib/rehearsal-rules";
 import { TIPO_MATERIAL, porCarpeta, signMaterials, type Material } from "@/lib/materials";
 import { RequestCard } from "@/components/requests/RequestCard";
@@ -353,7 +354,10 @@ export default async function MyProduction({ params, searchParams }: PageProps<"
 
         {d.fee && d.fee.cobrar !== false && (
           <section aria-labelledby="cuotas" className="flex flex-col gap-3 rounded-2xl bg-telon p-6">
-            <h2 id="cuotas" className="titular text-2xl">Mis pagos</h2>
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <h2 id="cuotas" className="titular text-2xl">Mis pagos</h2>
+              <a href={`/cuenta/produccion/${id}/estado-de-cuenta`} className="text-sm font-bold text-violeta-claro">Estado de cuenta (PDF) ↓</a>
+            </div>
             {insc && insc.estado !== "no_aplica" && (
               <p className="flex flex-wrap items-center gap-2 text-sm">Inscripción{insc.debe ? `: ${pesos(insc.debe)}` : ""}
                 <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${INSCRIPCION_LABEL[insc.estado].cls}`}>{INSCRIPCION_LABEL[insc.estado].label}</span></p>
@@ -370,6 +374,24 @@ export default async function MyProduction({ params, searchParams }: PageProps<"
                 </li>
               ))}
             </ul>
+            {d.pagos.length > 0 && (
+              <div className="flex flex-col gap-2">
+                <h3 className="text-xs font-bold uppercase tracking-[0.18em] text-texto-3">Recibos</h3>
+                <ul className="flex flex-col divide-y divide-white/10 rounded-xl bg-sala text-sm" aria-label="Mis recibos">
+                  {[...d.pagos].reverse().map((p) => (
+                    <li key={p.id} className={`flex flex-wrap items-center justify-between gap-2 px-4 py-3 ${p.anulado_at ? "opacity-70" : ""}`}>
+                      <span>
+                        <span className="font-mono text-xs text-texto-3">{p.folio}</span>{" "}
+                        {p.anulado_at && <span className="rounded-full bg-[#5a1a22] px-2 py-0.5 text-[10px] font-bold text-[#fecdd3]">ANULADO</span>}
+                        <span className="block"><b className={p.anulado_at ? "line-through" : ""}>{conceptoPago(p)}</b> · {pesos(p.monto)} · {METODOS[p.metodo] ?? p.metodo}</span>
+                        <span className="block text-xs text-texto-3">{new Date(p.registrado_at).toLocaleDateString("es-MX", { timeZone: "America/Mexico_City", day: "numeric", month: "long", year: "numeric" })}{p.motivo_anulacion ? ` · Motivo: ${p.motivo_anulacion}` : ""}</span>
+                      </span>
+                      <a href={`/cuenta/produccion/${id}/recibo/${p.id}`} className="rounded-full border border-white/30 px-4 py-1.5 text-xs font-bold">Ver recibo (PDF)</a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
             <p className="text-xs text-texto-3">Los pagos los registra la producción. Si ya pagaste, manda tu comprobante en <a href="?nueva=pago#solicitudes" className="font-bold text-violeta-claro underline">Solicitudes</a>; si ves algo que no coincide, mándales un “Tema de pagos”.</p>
           </section>
         )}

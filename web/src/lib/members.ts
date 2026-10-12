@@ -13,7 +13,7 @@ export type Measure = { id: string; medida: string; descripcion: string | null; 
 export type MemberData = {
   person: PersonFile | null; member: MemberFile | null; terms: FeeTerms;
   tipos: DocType[]; docs: (MemberDoc & { id: string })[];
-  fee: Fee | null; pagos: (Payment & { id: string; metodo: string; nota: string | null; registrado_at: string; concepto: "mensualidad" | "inscripcion" })[];
+  fee: Fee | null; pagos: (Payment & { id: string; folio: string; metodo: string; nota: string | null; registrado_at: string; concepto: "mensualidad" | "inscripcion"; anulado_at: string | null; motivo_anulacion: string | null })[];
   incidencias: Incident[]; medidas: Measure[]; limite: number; alta: Enrollment | null;
 };
 
@@ -25,7 +25,7 @@ export async function getMemberData(pid: string, uid: string): Promise<MemberDat
     supabase.from("member_doc_types").select("id, nombre, solo_menores, obligatorio, aplica, grupo, personas, descripcion").eq("production_id", pid).order("orden").order("nombre"),
     supabase.from("member_docs").select("id, doc_type_id, archivo_path, subido_at, entregado_at").eq("production_id", pid).eq("user_id", uid),
     supabase.from("production_fees").select("monto, desde, hasta, dia_limite, cobrar, inscripcion").eq("production_id", pid).maybeSingle(),
-    supabase.from("member_payments").select("id, periodo, monto, metodo, nota, registrado_at, concepto").eq("production_id", pid).eq("user_id", uid).order("periodo"),
+    supabase.from("member_payments").select("id, folio, periodo, monto, metodo, nota, registrado_at, concepto, anulado_at, motivo_anulacion").eq("production_id", pid).eq("user_id", uid).order("periodo"),
     supabase.from("member_fee_terms").select("beca, cuota_especial, sin_inscripcion").eq("production_id", pid).eq("user_id", uid).maybeSingle(),
     supabase.from("member_incidents").select("id, tipo, nivel, descripcion, fecha, origen, anulada_at, anulada_motivo, created_at").eq("production_id", pid).eq("user_id", uid).order("fecha", { ascending: false }),
     supabase.from("member_measures").select("id, medida, descripcion, fecha").eq("production_id", pid).eq("user_id", uid).order("fecha", { ascending: false }),

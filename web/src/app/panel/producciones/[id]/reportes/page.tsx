@@ -46,7 +46,7 @@ export default async function Reportes({ params }: PageProps<"/panel/produccione
     verVentas ? listOrders(id) : Promise.resolve([]),
     verVentas ? salesSummary(id) : Promise.resolve(null),
     verVentas ? seatCount(id) : Promise.resolve(0),
-    verTaller ? supabase.from("member_payments").select("monto, concepto, registrado_at").eq("production_id", id) : none,
+    verTaller ? supabase.from("member_payments").select("monto, concepto, registrado_at").eq("production_id", id).is("anulado_at", null) : none,
     verAsist ? supabase.rpc("attendance_summary", { pid: id }) : none,
     verAsist ? supabase.rpc("cast_roster", { pid: id }) : none,
     verAud ? supabase.from("auditions").select("id, titulo, estado, audition_applications(estado)").eq("production_id", id).order("created_at", { ascending: false }) : none,

@@ -131,8 +131,19 @@ export async function removePayment(_p: ExpState, f: FormData): Promise<ExpState
   const supabase = await createClient();
   const { error, count } = await supabase.from("member_payments").delete({ count: "exact" }).eq("id", str(f, "id")).eq("production_id", pid);
   if (error) return { ok: false, message: error.message };
-  if (!count) return { ok: false, message: "No tienes permiso." };
-  return ok(pid, uid, "Pago quitado.");
+  if (!count) return { ok: false, message: "Ya pasaron 10 minutos: ahora solo se puede anular." };
+  return ok(pid, uid, "Pago borrado.");
+}
+
+/** Anular (0079): el pago y su folio quedan en el historial, pero ya no cuentan. */
+export async function annulPayment(_p: ExpState, f: FormData): Promise<ExpState> {
+  const pid = str(f, "pid");
+  const uid = str(f, "uid");
+  if (!str(f, "motivo")) return { ok: false, message: "Escribe por qué se anula." };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("payment_annul", { p_id: str(f, "id"), p_motivo: str(f, "motivo") });
+  if (error) return { ok: false, message: error.message };
+  return ok(pid, uid, "Pago anulado. Se le avisó a la persona.");
 }
 
 // ──────── Incidencias, advertencias y medidas (0042) ────────

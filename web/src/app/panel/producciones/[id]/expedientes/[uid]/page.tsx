@@ -10,13 +10,16 @@ import {
   INSCRIPCION_LABEL, estadoCuotas, estadoInscripcion, mesNombre, pendientesTexto, pesos, semaforo,
 } from "@/lib/member-rules";
 import { getMemberData, signDocs } from "@/lib/members";
+import { origen } from "@/lib/gafete";
+import { getRecibo } from "@/lib/pagos";
+import { conceptoPago, ligaWhatsApp, mensajeRecibo, sePuedeBorrar } from "@/lib/pago-rules";
 import { can } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
 import { porcentaje } from "@/lib/rehearsal-rules";
 import { RequestCard } from "@/components/requests/RequestCard";
 import { listRequests } from "@/lib/requests";
 import { createClient } from "@/lib/supabase/server";
-import { addIncident, addMeasure, addPayment, markReviewed, reactivateMember, removePayment, setDelivered, setIngreso, setScholarship, voidIncident, withdrawMember } from "../actions";
+import { addIncident, addMeasure, addPayment, annulPayment, markReviewed, reactivateMember, removePayment, setDelivered, setIngreso, setScholarship, voidIncident, withdrawMember } from "../actions";
 
 export const metadata: Metadata = { title: "Expediente" };
 
@@ -56,6 +59,10 @@ export default async function MemberPage({ params }: PageProps<"/panel/produccio
   const fmt = (x: string) => new Date(`${x}T12:00:00Z`).toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" });
   const manejaAlta = verExp || can(access, id, "elenco.gestionar");
   const h = { pid: id, uid };
+  // Teléfono para mandar el recibo por WhatsApp (del expediente o de la cuenta; la base decide si se ve).
+  const tel = verCuotas && d.pagos.length ? d.person?.telefono || (await getRecibo(d.pagos[0].id))?.telefono || null : null;
+  const sitio = verCuotas && d.pagos.length ? await origen() : "";
+  const nombreObra = verCuotas && d.pagos.length ? (await supabase.from("productions").select("nombre").eq("id", id).maybeSingle()).data?.nombre ?? id : id;
 
   return (
     <div className="flex flex-col gap-4">
@@ -204,7 +211,10 @@ export default async function MemberPage({ params }: PageProps<"/panel/produccio
 
       {verCuotas && (
         <Card className="flex flex-col gap-3">
-          <h2 className="titular text-xl">Pagos</h2>
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h2 className="titular text-xl">Pagos</h2>
+            {d.fee && d.fee.cobrar !== false && <a href={`/panel/producciones/${id}/expedientes/${uid}/estado-de-cuenta`} className="text-sm font-bold text-violeta-claro">Estado de cuenta (PDF) ↓</a>}
+          </div>
           {!d.fee && <p className="text-sm text-texto-3">Primero define los pagos del taller (en Expedientes).</p>}
           {d.fee && d.fee.cobrar === false && <p className="text-sm text-texto-3">Este taller no tiene pagos.</p>}
           {d.fee && d.fee.cobrar !== false && (
@@ -244,14 +254,37 @@ export default async function MemberPage({ params }: PageProps<"/panel/produccio
                 <p className="text-xs text-texto-3">Para la inscripción, el mes solo sirve de referencia.</p>
               </ActionForm>
               {d.pagos.length > 0 && (
-                <ul className="flex flex-col gap-1.5 text-sm">
-                  {d.pagos.map((p) => (
-                    <li key={p.id} className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 py-1.5">
-                      <span><b>{p.concepto === "inscripcion" ? "Inscripción" : <span className="capitalize">{mesNombre(p.periodo)}</span>}</b> · {pesos(p.monto)} · {METODOS[p.metodo]}{p.nota ? ` · ${p.nota}` : ""}
-                        <span className="block text-xs text-texto-3">Registrado {new Date(p.registrado_at).toLocaleDateString("es-MX", { timeZone: "America/Mexico_City" })}</span></span>
-                      <ActionForm inline action={removePayment} hidden={{ ...h, id: p.id }} confirm="¿Quitar este pago? Queda en la Bitácora." submit="Quitar" submitClass={ghost} />
-                    </li>
-                  ))}
+                <ul className="flex flex-col gap-1.5 text-sm" aria-label="Pagos registrados">
+                  {[...d.pagos].reverse().map((p) => {
+                    const recibo = `/cuenta/produccion/${id}/recibo/${p.id}`;
+                    const wa = ligaWhatsApp(tel, mensajeRecibo({ nombre: persona.nombre, folio: p.folio, concepto: p.concepto, periodo: p.periodo, monto: Number(p.monto), obra: nombreObra, anulado_at: p.anulado_at }, `${sitio}${recibo}`));
+                    return (
+                      <li key={p.id} className={`flex flex-col gap-2 border-b border-white/10 py-2 ${p.anulado_at ? "opacity-70" : ""}`}>
+                        <span>
+                          <span className="font-mono text-xs text-texto-3">{p.folio}</span>{" "}
+                          {p.anulado_at && <span className="rounded-full bg-[#5a1a22] px-2 py-0.5 text-[10px] font-bold text-[#fecdd3]">ANULADO</span>}
+                          <span className="block"><b className={p.anulado_at ? "line-through" : ""}>{conceptoPago(p)}</b> · {pesos(p.monto)} · {METODOS[p.metodo]}{p.nota ? ` · ${p.nota}` : ""}</span>
+                          <span className="block text-xs text-texto-3">Registrado {new Date(p.registrado_at).toLocaleString("es-MX", { timeZone: "America/Mexico_City", dateStyle: "medium", timeStyle: "short" })}{p.motivo_anulacion ? ` · Anulado: ${p.motivo_anulacion}` : ""}</span>
+                        </span>
+                        <span className="flex flex-wrap items-center gap-2">
+                          <a href={recibo} className={ghost}>Recibo PDF</a>
+                          {wa ? <a href={wa} target="_blank" rel="noopener noreferrer" className={ghost}>Enviar por WhatsApp ↗</a> : <span className="text-xs text-texto-3">Sin teléfono para WhatsApp</span>}
+                          {!p.anulado_at && (sePuedeBorrar(p.registrado_at)
+                            ? <ActionForm inline action={removePayment} hidden={{ ...h, id: p.id }} confirm="¿Borrar este pago? Es solo para errores de captura recientes." submit="Borrar" submitClass={ghost} />
+                            : (
+                              <details>
+                                <summary className={`${ghost} cursor-pointer list-none`}>Anular</summary>
+                                <div className="mt-2">
+                                  <ActionForm inline action={annulPayment} hidden={{ ...h, id: p.id }} confirm={`¿Anular el recibo ${p.folio}? Queda en el historial como ANULADO y se le avisa a la persona.`} submit="Anular pago" submitClass={ghost}>
+                                    <input className={`${input} py-1.5 text-sm`} name="motivo" required placeholder="Motivo (lo verá la persona)" aria-label="Motivo de la anulación" />
+                                  </ActionForm>
+                                </div>
+                              </details>
+                            ))}
+                        </span>
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
             </>
