@@ -46,6 +46,8 @@ export type Performance = {
   starts_at: string | null;
   venue: string | null;
   on_sale: boolean;
+  /** 0076: hasta esta fecha solo compra el Club Fan. */
+  preventa_hasta?: string | null;
 };
 
 export type ZonePrice = { nombre: string; price: number; /** Color de la zona en el mapa (0062). */ color?: string | null };
@@ -83,7 +85,7 @@ export async function getProduction(id: string, opts: { includeDrafts?: boolean 
       .maybeSingle(),
     supabase
       .from("performances")
-      .select("id, starts_at, venue, on_sale")
+      .select("id, starts_at, venue, on_sale, preventa_hasta")
       .eq("production_id", id)
       .order("starts_at", { nullsFirst: false }),
   ]);
@@ -137,14 +139,14 @@ export async function getPerformanceForSale(performanceId: string) {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("performances")
-    .select(`id, starts_at, venue, on_sale, production_id, productions(${PRODUCTION_COLUMNS})`)
+    .select(`id, starts_at, venue, on_sale, preventa_hasta, production_id, productions(${PRODUCTION_COLUMNS})`)
     .eq("id", performanceId)
     .maybeSingle();
   if (error || !data) return null;
   const production = data.productions as unknown as Production | null;
   if (!production) return null;
   return {
-    performance: { id: data.id, starts_at: data.starts_at, venue: data.venue, on_sale: data.on_sale } as Performance,
+    performance: { id: data.id, starts_at: data.starts_at, venue: data.venue, on_sale: data.on_sale, preventa_hasta: data.preventa_hasta } as Performance,
     production,
   };
 }

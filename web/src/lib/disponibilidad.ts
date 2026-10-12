@@ -35,3 +35,8 @@ export function partesFuncion(iso: string): { dia: string; numero: string; mes: 
   const v = (t: Intl.DateTimeFormatPartTypes) => (partes.find((x) => x.type === t)?.value ?? "").replace(".", "");
   return { dia: v("weekday"), numero: v("day"), mes: v("month"), hora: `${v("hour")}:${v("minute")} h` };
 }
+
+/** ¿La función está en preventa del Club Fan ahora? (0076) */
+export function enPreventa(f: { on_sale: boolean; preventa_hasta?: string | null }, ahora: number = Date.now()): boolean {
+  return f.on_sale && !!f.preventa_hasta && new Date(f.preventa_hasta).getTime() > ahora;
+}

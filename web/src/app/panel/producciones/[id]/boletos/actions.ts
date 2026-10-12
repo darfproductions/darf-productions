@@ -92,6 +92,11 @@ export async function updatePerformance(_p: TicketState, f: FormData): Promise<T
   if (fecha && !starts_at) return { ok: false, message: "Revisa la fecha y hora." };
   const on_sale = f.get("on_sale") === "on";
   if (on_sale && !starts_at) return { ok: false, message: "Una función sin fecha no puede estar en venta." };
+  // Preventa del Club Fan (0076): hasta esa fecha solo los socios pueden comprar.
+  const preventaTxt = String(f.get("preventa_hasta") ?? "");
+  const preventa_hasta = preventaTxt ? localMxToIso(preventaTxt) : null;
+  if (preventaTxt && !preventa_hasta) return { ok: false, message: "Revisa la fecha de la preventa." };
+  if (preventa_hasta && starts_at && preventa_hasta >= starts_at) return { ok: false, message: "La preventa debe terminar antes de la función." };
   const prices = [...f.entries()]
     .filter(([k, v]) => k.startsWith("precio_") && String(v).trim() !== "")
     .map(([k, v]) => {
@@ -109,13 +114,13 @@ export async function updatePerformance(_p: TicketState, f: FormData): Promise<T
   }
   const { error, count } = await supabase
     .from("performances")
-    .update({ starts_at, venue: String(f.get("venue") ?? "").trim() || null, on_sale }, { count: "exact" })
+    .update({ starts_at, venue: String(f.get("venue") ?? "").trim() || null, on_sale, preventa_hasta }, { count: "exact" })
     .eq("id", id)
     .eq("production_id", pid);
   if (error) return { ok: false, message: error.message };
   if (!count) return { ok: false, message: "No tienes permiso para editar esta función." };
   refresh(pid);
-  return { ok: true, message: on_sale ? "Guardado: la función está en venta." : "Guardado." };
+  return { ok: true, message: on_sale ? (preventa_hasta && new Date(preventa_hasta).getTime() > Date.now() ? "Guardado: la función está en preventa para el Club Fan." : "Guardado: la función está en venta.") : "Guardado." };
 }
 
 export async function deletePerformance(_p: TicketState, f: FormData): Promise<TicketState> {

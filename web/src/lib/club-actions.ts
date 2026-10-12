@@ -20,3 +20,11 @@ export async function apartarEncuentro(id: string, on: boolean): Promise<{ ok: b
   revalidatePath("/fan-zone", "layout");
   return { ok: true, message: on ? "¡Lugar apartado! Te esperamos después de la función." : "Liberaste tu lugar." };
 }
+
+export async function recordarPreventa(pid: string, on: boolean): Promise<{ ok: boolean; message: string }> {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("preventa_recordar", { pid, p_on: on });
+  if (error) return { ok: false, message: error.message };
+  revalidatePath("/fan-zone", "layout");
+  return { ok: true, message: on ? "Listo: te avisamos en tu cuenta y en tu teléfono cuando abra la preventa." : "Recordatorio desactivado." };
+}

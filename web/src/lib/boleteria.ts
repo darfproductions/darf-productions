@@ -9,6 +9,8 @@ export type PanelPerformance = {
   starts_at: string | null;
   venue: string | null;
   on_sale: boolean;
+  /** 0076: hasta cuándo solo el Club Fan puede comprar. */
+  preventa_hasta: string | null;
   prices: { categoryId: string; nombre: string; price: number; cupo: number | null }[];
 };
 
@@ -16,7 +18,7 @@ export async function listPerformances(pid: string): Promise<PanelPerformance[]>
   const supabase = await createClient();
   const { data } = await supabase
     .from("performances")
-    .select("id, starts_at, venue, on_sale, performance_price_categories(price, cupo, price_category_id, price_categories(nombre))")
+    .select("id, starts_at, venue, on_sale, preventa_hasta, performance_price_categories(price, cupo, price_category_id, price_categories(nombre))")
     .eq("production_id", pid)
     .order("starts_at", { nullsFirst: false });
   return (data ?? []).map((p) => ({
@@ -24,6 +26,7 @@ export async function listPerformances(pid: string): Promise<PanelPerformance[]>
     starts_at: p.starts_at as string | null,
     venue: p.venue as string | null,
     on_sale: p.on_sale as boolean,
+    preventa_hasta: (p.preventa_hasta as string | null) ?? null,
     prices: ((p.performance_price_categories ?? []) as unknown as { price: number; cupo: number | null; price_category_id: string; price_categories: { nombre: string } | null }[])
       .map((r) => ({ categoryId: r.price_category_id, nombre: r.price_categories?.nombre ?? "", price: Number(r.price), cupo: r.cupo }))
       .sort((a, b) => b.price - a.price),

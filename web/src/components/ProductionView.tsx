@@ -11,9 +11,9 @@ import { YouTube } from "@/components/YouTube";
 import { listOpenAuditionsFor } from "@/lib/auditions";
 import { getPublicBanner } from "@/lib/banner";
 import { fechaEstreno } from "@/lib/cuenta-regresiva";
-import { ETIQUETA_FUNCION, estadoFuncion, partesFuncion } from "@/lib/disponibilidad";
+import { enPreventa, ETIQUETA_FUNCION, estadoFuncion, partesFuncion } from "@/lib/disponibilidad";
 import { isDev } from "@/lib/env";
-import { fanzoneCount } from "@/lib/fanzone";
+import { fanzoneCount, getCredencial } from "@/lib/fanzone";
 import { estadoPublico } from "@/lib/home-rules";
 import { getProductionContent } from "@/lib/production-content";
 import { getProgram } from "@/lib/program";
@@ -62,7 +62,7 @@ export async function ProductionView({
   const { production: p, performances, prices } = data;
   const theme = getTheme(p);
   const vendibles = performances.filter((fn) => fn.on_sale && !!fn.starts_at && !p.concluded);
-  const [c, gallery, ensayos, audiciones, programa, franja, ocupacion] = await Promise.all([
+  const [c, gallery, ensayos, audiciones, programa, franja, ocupacion, credencial] = await Promise.all([
     getProductionContent(p.id),
     getGallery(p.id),
     fanzoneCount(p.id),
@@ -70,7 +70,9 @@ export async function ProductionView({
     getProgram(p.id),
     getPublicBanner(p.id),
     performanceOccupancy(vendibles.map((fn) => fn.id)),
+    vendibles.some((fn) => enPreventa(fn)) ? getCredencial() : Promise.resolve(null),
   ]);
+  const socio = !!credencial;
   const estadoDe = (id: string) => {
     const o = ocupacion.get(id);
     return o ? estadoFuncion(o.capacidad, o.ocupados) : null;
@@ -120,6 +122,7 @@ export async function ProductionView({
           {performances.map((fn) => {
             const vendible = fn.on_sale && !!fn.starts_at && !p.concluded;
             const est = vendible ? estadoDe(fn.id) : null;
+            const pre = vendible && enPreventa(fn);
             const agotado = est === "agotado";
             const f = fn.starts_at ? partesFuncion(fn.starts_at) : null;
             return (
@@ -144,9 +147,12 @@ export async function ProductionView({
                     {fn.venue ?? p.venue}
                     {duracion && <> · Duración aprox. {duracion}</>}
                   </span>
+                  {pre && fn.preventa_hasta && (() => { const h = partesFuncion(fn.preventa_hasta); return <span className="text-[12.5px] font-semibold text-obra-acento">Preventa Club Fan hasta el {h.dia} {h.numero} {h.mes}, {h.hora}</span>; })()}
                 </div>
                 <div className="col-span-2 flex flex-wrap items-center justify-between gap-3 md:contents">
-                  {vendible ? (
+                  {pre ? (
+                    <span className="chip chip-fz">Preventa Fan Zone</span>
+                  ) : vendible ? (
                     est ? (
                       <span className="chip chip-obra">
                         <span aria-hidden="true" className={`h-1.5 w-1.5 rounded-full ${ETIQUETA_FUNCION[est].punto}`} />
@@ -159,7 +165,15 @@ export async function ProductionView({
                     <span className="chip chip-obra">{p.concluded ? "Concluida" : "Próximamente"}</span>
                   )}
                   {vendible && !agotado && (
-                    <Link href={withSeller(`/comprar/${fn.id}`, vendedor)} className="fb fb-luz fb-sm ml-auto md:ml-0">Elegir asientos</Link>
+                    pre ? (
+                      socio ? (
+                        <Link href={withSeller(`/comprar/${fn.id}`, vendedor)} className="fb fb-fz fb-sm ml-auto md:ml-0">Entrar a preventa</Link>
+                      ) : (
+                        <Link href="/fan-zone" className="fb fb-fz fb-sm ml-auto md:ml-0">Únete al Club Fan</Link>
+                      )
+                    ) : (
+                      <Link href={withSeller(`/comprar/${fn.id}`, vendedor)} className="fb fb-luz fb-sm ml-auto md:ml-0">Elegir asientos</Link>
+                    )
                   )}
                   {(!vendible || agotado) && <span aria-hidden="true" className="hidden md:block" />}
                 </div>

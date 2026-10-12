@@ -3,6 +3,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PageHeading } from "@/components/PageHeading";
 import { PasosBarra, PasosProvider } from "@/components/PasosCompra";
+import { UnirseClub } from "@/components/fanzone/UnirseClub";
+import { enPreventa, partesFuncion } from "@/lib/disponibilidad";
+import { getCredencial } from "@/lib/fanzone";
 import { requireSession } from "@/lib/auth";
 import { formatPerformanceDate, getPerformanceForSale, getTheme, themeStyle } from "@/lib/productions";
 import { cleanSellerCode, withSeller } from "@/lib/seller-rules";
@@ -22,6 +25,10 @@ export default async function ComprarPage({ params, searchParams }: PageProps<"/
   if (!data) notFound();
   const { performance: f, production: p } = data;
   const vendible = f.on_sale && !!f.starts_at && !p.concluded;
+  // Preventa del Club Fan (0076): quien no es socio puede unirse aquí mismo (la base lo exige igual).
+  const preventa = vendible && enPreventa(f);
+  const bloqueada = preventa && !(await getCredencial());
+  const hasta = preventa && f.preventa_hasta ? partesFuncion(f.preventa_hasta) : null;
 
   const supabase = await createClient();
   // Antes de mostrar el mapa se liberan los asientos de órdenes vencidas (0054).
@@ -61,6 +68,15 @@ export default async function ComprarPage({ params, searchParams }: PageProps<"/
           <div className="rounded-2xl bg-telon p-8">
             <p className="text-lg">Esta función no está a la venta en este momento.</p>
             <Link href={`/producciones/${p.id}`} className="mt-4 inline-block font-bold text-violeta-claro">← Volver a la obra</Link>
+          </div>
+        ) : bloqueada ? (
+          <div className="flex max-w-2xl flex-col items-start gap-4 rounded-[22px] border border-oro/40 bg-[#120f17] p-8">
+            {/* eslint-disable-next-line @next/next/no-img-element -- logo SVG del kit */}
+            <img src="/marca/fan-zone-oro.svg" alt="DARF Fan Zone" className="h-8 w-auto" />
+            <p className="text-2xl font-black uppercase tracking-[-0.02em]">Preventa para el <span className="txt-oro">Club Fan</span></p>
+            <p className="text-texto-2">Esta función está en preventa{hasta ? ` hasta el ${hasta.dia} ${hasta.numero} ${hasta.mes}, ${hasta.hora}` : ""}. Únete gratis al Club Fan y compra antes que nadie; después se abre para todos.</p>
+            <UnirseClub />
+            <Link href={`/producciones/${p.id}`} className="text-sm font-bold text-texto-3 hover:text-texto">← Volver a la obra</Link>
           </div>
         ) : loadError ? (
           <p role="alert" className="rounded-2xl bg-telon p-8">No se pudo cargar el mapa de asientos. Recarga la página.</p>

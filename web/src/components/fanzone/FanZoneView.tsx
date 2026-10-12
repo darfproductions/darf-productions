@@ -4,6 +4,7 @@ import { Anuncios } from "@/components/anuncios/Anuncios";
 import { Credencial } from "@/components/fanzone/Credencial";
 import { EncuentroCard } from "@/components/fanzone/EncuentroCard";
 import { FanItemCard, FanProximoCard } from "@/components/fanzone/FanItemCard";
+import { PreventaFanZone } from "@/components/fanzone/PreventaFanZone";
 import { UnirseClub } from "@/components/fanzone/UnirseClub";
 import { FAN_CATEGORIAS, type FanCategoria } from "@/lib/fanzone-rules";
 import { getCredencial, getEncuentros, getProximos, listFanzone } from "@/lib/fanzone";
@@ -19,7 +20,7 @@ const BENEFICIOS = [
 // Fan Zone (imagen de referencia de Diego): logo y credencial arriba, obras en píldoras,
 // anuncios, "Lo nuevo para ti" por categoría, lo que se desbloquea después y la foto con el elenco.
 // pid = una obra (o todas); cat = pestaña.
-export async function FanZoneView({ pid, cat, nombre, preventa }: { pid: string | null; cat?: string; nombre: string; preventa?: React.ReactNode }) {
+export async function FanZoneView({ pid, cat, nombre }: { pid: string | null; cat?: string; nombre: string }) {
   const [credencial, { productions }] = await Promise.all([getCredencial(), getHomeData()]);
   const base = pid ? `/fan-zone/${pid}` : "/fan-zone";
   const obraDe = new Map(productions.map((p) => [p.id, p.nombre]));
@@ -93,7 +94,7 @@ export async function FanZoneView({ pid, cat, nombre, preventa }: { pid: string 
           </nav>
         )}
 
-        {preventa}
+        <PreventaFanZone pid={pid} />
 
         <Anuncios lugar="fanzone" pid={pid} tono="fanzone" eyebrow="Solo para la comunidad" titulo="Anuncios" />
 

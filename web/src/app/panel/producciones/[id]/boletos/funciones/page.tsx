@@ -70,6 +70,10 @@ export default async function PerformancesPage({ params }: PageProps<"/panel/pro
                   ))}
                 </fieldset>
                 <label className="flex items-center gap-2 text-sm font-semibold"><input type="checkbox" name="on_sale" defaultChecked={f.on_sale} /> Esta función está en venta en línea</label>
+                <label className="flex flex-col gap-1.5 text-sm font-semibold">Preventa Fan Zone hasta
+                  <input className={input} type="datetime-local" name="preventa_hasta" defaultValue={isoToLocalMx(f.preventa_hasta)} />
+                  <span className="text-xs font-normal text-texto-3">Opcional. Con la función en venta, hasta esta fecha solo compran los socios del Club Fan (a quienes activaron el recordatorio les avisamos). Después, venta para todos.</span>
+                </label>
               </ActionForm>
               <div className="mt-3 border-t border-white/10 pt-3">
                 <ActionForm inline action={deletePerformance} hidden={{ pid: id, perf: f.id }} confirm="¿Eliminar esta función? Solo se puede si no tiene boletos activos." submit="Eliminar función" submitClass={ghost} />
