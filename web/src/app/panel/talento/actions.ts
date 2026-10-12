@@ -14,7 +14,7 @@ export async function mergePeople(_p: TalentState, f: FormData): Promise<TalentS
   const supabase = await createClient();
   const { error } = await supabase.rpc("people_merge", { keep, quitar });
   if (error) return { ok: false, message: error.message };
-  revalidatePath("/panel/talento");
+  revalidatePath("/panel/personas");
   return { ok: true, message: "Fichas unidas: sus créditos quedaron en una sola." };
 }
 
@@ -22,6 +22,6 @@ export async function linkAccount(_p: TalentState, f: FormData): Promise<TalentS
   const supabase = await createClient();
   const { error } = await supabase.rpc("people_link_account", { pid: String(f.get("id")), p_email: String(f.get("email") ?? "") });
   if (error) return { ok: false, message: error.message };
-  revalidatePath("/panel/talento");
+  revalidatePath("/panel/personas");
   return { ok: true, message: "Ficha ligada a la cuenta." };
 }

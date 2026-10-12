@@ -35,7 +35,7 @@ export default async function ReporteGeneral({ searchParams }: PageProps<"/panel
 
   return (
     <>
-      <PanelTitle eyebrow="Director" title="Reporte general">Todas las obras juntas: boletos, talleres, elenco y audiciones.</PanelTitle>
+      <PanelTitle eyebrow="Reportes" title="Reporte general">Todas las obras juntas: boletos, talleres, elenco y audiciones.</PanelTitle>
       {ov.error && <p className="text-[#ff8fa3]">{ov.error.message}</p>}
       <div className="flex flex-wrap items-center gap-2 text-sm print:hidden">
         {[["", "Todas"], ["publicada", "Publicadas"], ["borrador", "Borradores"], ["archivada", "Archivadas"]].map(([v, l]) => (

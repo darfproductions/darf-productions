@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { can, canAudition, canSeeAudition, globalSections, groupMembers, hasAnyAccess, myProductionIds, productionIdFrom, productionTabs, roleDiff, roleIdFromName, type PanelAccessData } from "./panel-nav";
+import { activeNav, can, canAudition, canSeeAudition, globalSections, groupMembers, hasAnyAccess, myProductionIds, productionIdFrom, panelMenu, productionTabs, roleDiff, roleIdFromName, type PanelAccessData } from "./panel-nav";
 
 const director: PanelAccessData = { isDirector: true, byProduction: {} };
 const fan: PanelAccessData = { isDirector: false, byProduction: {} };
@@ -44,9 +44,28 @@ describe("pestañas de la obra", () => {
 });
 
 describe("secciones generales", () => {
-  it("Usuarios, Roles y Bitácora solo para el Director", () => {
-    expect(globalSections(taquillaMM).map((s) => s.label)).toEqual(["Inicio", "Producciones"]);
-    expect(globalSections(director).map((s) => s.label)).toContain("Bitácora");
+  it("taquilla: Inicio, Proyectos y Reportes por obra; el Director todo", () => {
+    expect(globalSections(taquillaMM).map((s) => s.label)).toEqual(["Inicio", "Proyectos", "Reportes"]);
+    expect(globalSections(juezMM).map((s) => s.label)).toEqual(["Inicio", "Proyectos"]);
+    expect(globalSections(director).map((s) => s.label)).toEqual(["Inicio", "Proyectos", "Personas", "Reportes", "Ajustes"]);
+  });
+  it("subpestañas según permisos", () => {
+    const t = panelMenu(taquillaMM);
+    expect(t.find((s) => s.id === "proyectos")?.subs.map((x) => x.label)).toEqual(["Obras"]);
+    expect(t.find((s) => s.id === "reportes")?.href).toBe("/panel/reportes/obras");
+    expect(panelMenu(juezMM).find((s) => s.id === "proyectos")?.subs.map((x) => x.label)).toEqual(["Obras", "Audiciones"]);
+    expect(panelMenu(director).find((s) => s.id === "personas")?.subs.map((x) => x.label)).toEqual(["Directorio", "Cumpleaños"]);
+  });
+  it("sección activa: las direcciones viejas caen en su sección nueva", () => {
+    const m = panelMenu(director);
+    expect(activeNav(m, "/panel").section?.id).toBe("inicio");
+    expect(activeNav(m, "/panel/talento/abc").section?.id).toBe("personas");
+    expect(activeNav(m, "/panel/usuarios").section?.id).toBe("personas");
+    expect(activeNav(m, "/panel/producciones/mm/boletos").section?.id).toBe("proyectos");
+    expect(activeNav(m, "/panel/reportes/obras").sub?.label).toBe("Por obra");
+    expect(activeNav(m, "/panel/bitacora").showSubs).toBe(true);
+    expect(activeNav(m, "/panel/producciones/mm").showSubs).toBe(false);
+    expect(activeNav(m, "/panel/producciones-x").section).toBeNull();
   });
 });
 
@@ -98,7 +117,7 @@ describe("convocatorias de obra y generales (0037)", () => {
   });
   it("el equipo propio entra al panel y ve Audiciones en el menú", () => {
     expect(hasAnyAccess(juezGeneral)).toBe(true);
-    expect(globalSections(juezGeneral).map((s) => s.label)).toEqual(["Inicio", "Producciones", "Audiciones"]);
-    expect(globalSections(juezMM).map((s) => s.label)).toContain("Audiciones");
+    expect(globalSections(juezGeneral)).toEqual([{ href: "/panel", label: "Inicio" }, { href: "/panel/audiciones", label: "Proyectos" }]);
+    expect(panelMenu(juezMM).find((s) => s.id === "proyectos")?.subs.map((x) => x.label)).toContain("Audiciones");
   });
 });

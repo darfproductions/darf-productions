@@ -47,7 +47,7 @@ export default async function AuditPage({ searchParams }: PageProps<"/panel/bita
 
   return (
     <>
-      <PanelTitle eyebrow="Director" title="Bitácora">
+      <PanelTitle eyebrow="Ajustes" title="Bitácora">
         Registro automático de cambios en permisos, roles y obras. No se puede editar ni borrar.
       </PanelTitle>
       <nav className="flex flex-wrap gap-2 text-sm">

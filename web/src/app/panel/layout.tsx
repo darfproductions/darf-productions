@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { globalSections } from "@/lib/panel-nav";
+import { PanelNavLinks, PanelSubTabs } from "@/components/panel/PanelNav";
+import { panelMenu } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
 
 export const metadata: Metadata = { title: { default: "Panel", template: "%s · Panel DARF" } };
@@ -9,16 +9,12 @@ export const metadata: Metadata = { title: { default: "Panel", template: "%s · 
 // Cada página vuelve a revisar permisos; la base es la que decide al final.
 export default async function PanelLayout({ children }: LayoutProps<"/panel">) {
   const access = await requirePanel();
-  const sections = globalSections(access);
+  const menu = panelMenu(access);
   const nombre = access.session.profile?.nombre || access.session.email;
 
   const links = (
     <>
-      {sections.map((s) => (
-        <Link key={s.href} href={s.href} className="rounded-lg px-3 py-2.5 font-semibold text-texto-2 hover:bg-telon-2 hover:text-texto">
-          {s.label}
-        </Link>
-      ))}
+      <PanelNavLinks menu={menu} />
       <a href="https://darf-2-dev-darf-productions.vercel.app/?v=staff" className="mt-2 rounded-lg px-3 py-2.5 text-sm text-texto-3 hover:bg-telon-2">
         Panel anterior (1.0) ↗
       </a>
@@ -36,7 +32,10 @@ export default async function PanelLayout({ children }: LayoutProps<"/panel">) {
           <nav aria-label="Panel" className="flex flex-col px-2 pb-3">{links}</nav>
         </details>
       </aside>
-      <div className="flex min-w-0 flex-col gap-6">{children}</div>
+      <div className="flex min-w-0 flex-col gap-6">
+        <PanelSubTabs menu={menu} />
+        {children}
+      </div>
     </div>
   );
 }

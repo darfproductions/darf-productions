@@ -42,7 +42,7 @@ export default async function PersonPage({ params }: PageProps<"/panel/talento/p
           <ActionForm action={linkAccount} hidden={{ id: h.id }} submit="Ligar">
             <input className={`${input} max-w-md`} name="email" type="email" required placeholder="Correo de su cuenta" />
           </ActionForm>
-          <p className="mt-2 text-xs text-texto-3">¿Aparece dos veces? Únelas en <Link href={`/panel/talento?q=${encodeURIComponent(h.nombre.split(" ")[0])}`} className="text-violeta-claro">Talento</Link>.</p>
+          <p className="mt-2 text-xs text-texto-3">¿Aparece dos veces? Únelas en <Link href={`/panel/personas?q=${encodeURIComponent(h.nombre.split(" ")[0])}`} className="text-violeta-claro">Directorio</Link>.</p>
         </Card>
       )}
     </>

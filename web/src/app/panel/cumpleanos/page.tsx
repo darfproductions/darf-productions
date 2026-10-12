@@ -25,7 +25,7 @@ export default async function Cumpleanos({ searchParams }: PageProps<"/panel/cum
 
   return (
     <>
-      <PanelTitle eyebrow="Director" title="Cumpleaños">
+      <PanelTitle eyebrow="Personas" title="Cumpleaños">
         {todos.length} {todos.length === 1 ? "persona tiene" : "personas tienen"} su fecha registrada. Cada quien la pone en Mi cuenta (o en su expediente).
       </PanelTitle>
       <div className="flex flex-col gap-4">

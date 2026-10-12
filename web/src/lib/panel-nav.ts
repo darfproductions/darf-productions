@@ -87,23 +87,70 @@ export function productionTabs(a: PanelAccessData, productionId: string): Tab[] 
 
 export type Section = { href: string; label: string };
 
-/** Secciones generales del panel. Usuarios, Roles y Bitácora: solo el Director. */
+export type NavSection = {
+  id: "inicio" | "proyectos" | "personas" | "reportes" | "ajustes";
+  label: string;
+  /** A dónde lleva la sección (su primera subpestaña). */
+  href: string;
+  /** Subpestañas que se muestran arriba de la página. */
+  subs: Section[];
+  /** Rutas que pertenecen a la sección (para marcarla como activa). */
+  match: string[];
+};
+
+/** ¿Tengo reportes de al menos una obra? */
+export function hasReportAccess(a: PanelAccessData): boolean {
+  return a.isDirector || Object.values(a.byProduction).some((p) => p.includes("reportes.ver"));
+}
+
+/**
+ * Menú del panel en cuatro secciones (más Ajustes para el Director):
+ * Inicio · Proyectos (Obras, Audiciones) · Personas (Directorio, Cumpleaños) · Reportes (General, Por obra) · Ajustes.
+ * Las direcciones viejas (/panel/usuarios, /panel/talento…) siguen funcionando.
+ */
+export function panelMenu(a: PanelAccessData): NavSection[] {
+  const out: NavSection[] = [{ id: "inicio", label: "Inicio", href: "/panel", subs: [], match: [] }];
+  // Quien solo está en el equipo de una convocatoria general no tiene obras: solo ve Audiciones.
+  const proyectos: Section[] = a.isDirector || myProductionIds(a).length ? [{ href: "/panel/producciones", label: "Obras" }] : [];
+  if (hasAuditionAccess(a)) proyectos.push({ href: "/panel/audiciones", label: "Audiciones" });
+  out.push({ id: "proyectos", label: "Proyectos", href: proyectos[0].href, subs: proyectos, match: ["/panel/producciones", "/panel/audiciones"] });
+  if (a.isDirector) {
+    out.push({
+      id: "personas", label: "Personas", href: "/panel/personas",
+      subs: [{ href: "/panel/personas", label: "Directorio" }, { href: "/panel/cumpleanos", label: "Cumpleaños" }],
+      match: ["/panel/personas", "/panel/talento", "/panel/usuarios", "/panel/cumpleanos"],
+    });
+  }
+  if (hasReportAccess(a)) {
+    const subs: Section[] = a.isDirector ? [{ href: "/panel/reportes", label: "General" }] : [];
+    subs.push({ href: "/panel/reportes/obras", label: "Por obra" });
+    out.push({ id: "reportes", label: "Reportes", href: subs[0].href, subs, match: ["/panel/reportes"] });
+  }
+  if (a.isDirector) {
+    out.push({
+      id: "ajustes", label: "Ajustes", href: "/panel/roles",
+      subs: [{ href: "/panel/roles", label: "Roles y permisos" }, { href: "/panel/bitacora", label: "Bitácora" }],
+      match: ["/panel/roles", "/panel/bitacora"],
+    });
+  }
+  return out;
+}
+
+const under = (path: string, base: string) => path === base || path.startsWith(`${base}/`);
+
+/** Sección activa según la dirección, y si se muestran sus subpestañas (solo en las páginas principales). */
+export function activeNav(menu: NavSection[], pathname: string): { section: NavSection | null; sub: Section | null; showSubs: boolean } {
+  const path = pathname.replace(/\/+$/, "") || "/";
+  if (path === "/panel") return { section: menu[0] ?? null, sub: null, showSubs: false };
+  const section = menu.find((s) => s.match.some((m) => under(path, m))) ?? null;
+  if (!section) return { section: null, sub: null, showSubs: false };
+  const sub = section.subs.find((x) => x.href === path) ?? null;
+  return { section, sub, showSubs: !!sub && section.subs.length > 1 };
+}
+
+/** Secciones generales del panel, en una lista simple (compatibilidad). */
 export function globalSections(a: PanelAccessData): Section[] {
-  const base: Section[] = [
-    { href: "/panel", label: "Inicio" },
-    { href: "/panel/producciones", label: "Producciones" },
-    ...(hasAuditionAccess(a) ? [{ href: "/panel/audiciones", label: "Audiciones" }] : []),
-  ];
-  if (!a.isDirector) return base;
-  return [
-    ...base,
-    { href: "/panel/reportes", label: "Reportes" },
-    { href: "/panel/talento", label: "Talento" },
-    { href: "/panel/cumpleanos", label: "Cumpleaños" },
-    { href: "/panel/usuarios", label: "Usuarios" },
-    { href: "/panel/roles", label: "Roles" },
-    { href: "/panel/bitacora", label: "Bitácora" },
-  ];
+  return panelMenu(a).map((s) => ({ href: s.href, label: s.label }));
 }
 
 /** Id de un rol personalizado a partir de su nombre ("Vestuario y Utilería" → "vestuario_y_utileria"). */

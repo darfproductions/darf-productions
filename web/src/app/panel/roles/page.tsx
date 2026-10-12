@@ -37,7 +37,7 @@ export default async function RolesPage({ searchParams }: PageProps<"/panel/role
 
   return (
     <>
-      <PanelTitle eyebrow="Director" title="Roles">
+      <PanelTitle eyebrow="Ajustes" title="Roles y permisos">
         Los roles de sistema están fijos. Crea roles personalizados (por ejemplo “Vestuario”) y elige qué pueden hacer.
       </PanelTitle>
       {typeof sp.error === "string" && <Notice>{sp.error}</Notice>}

@@ -38,7 +38,7 @@ export default async function AuditionsHome() {
   const deObra = all.filter((a) => a.production_id);
   return (
     <>
-      <PanelTitle eyebrow="Panel" title="Audiciones">
+      <PanelTitle eyebrow="Proyectos" title="Audiciones">
         Convocatorias generales (sin obra, como un llamado de bailarines) y las de cada producción.
       </PanelTitle>
       <section className="flex flex-col gap-3">
