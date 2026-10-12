@@ -453,6 +453,11 @@ Orden: 1) Elenco y ofertas, 2) Expediente y mensualidades, 3) Ensayos y asistenc
    maestros desde la página. En espera.
 5. **Fan Zone con más tipos de contenido.** Hoy son videos y galería. Pedido: poder poner
    también enlaces, documentos (PDF), fotos y otros contenidos, y acomodarlos.
+6. **Mi cuenta completa.**
+   - Datos: nombre, apellidos, teléfono, correo (con verificación), cambio de contraseña,
+     fecha de nacimiento y foto de perfil.
+   - Cumpleaños de todos registrados.
+   - Plan completo en `docs/DARF-2.0-PLAN.md`.
 
 ## 15. Etapa 3F: programa digital y reportes (2026-10-12)
 

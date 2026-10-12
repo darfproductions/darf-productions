@@ -1,0 +1,112 @@
+# DARF 2.0 — Plan: qué hay, qué falta y en qué orden (2026-10-12)
+
+Lista viva de trabajo. Cada bloque se hace en `darf-2.0`, se prueba en DEV y necesita el
+visto bueno de Diego antes del siguiente. **Nada se publica en producción hasta el bloque
+final (Lanzamiento) y con aprobación explícita.**
+
+## Ya hecho (en DEV)
+
+| Área | Qué hay |
+|---|---|
+| Web pública | Portada, cartelera, página de obra con tema propio, Fan Zone (videos y galería), audiciones públicas, contacto, programa de mano (plantilla, enlace o archivo, con QR) |
+| Compra | Mapa de asientos, códigos de descuento, códigos de vendedor con link, aprobación por WhatsApp, boletos con QR, Mis boletos |
+| Panel | Roles por obra y personalizados, bitácora, usuarios, editor de obra, funciones y precios, órdenes, taquilla, puerta, descuentos, vendedores, reportes por obra |
+| Audiciones | Por obra y generales, plantillas (abierta, escuela, cerrada, en línea, por invitación, guardadas), criterios propios, horarios, día en vivo con QR, jueces, tablero, ofertas de papel |
+| Elenco | Expediente único, documentos dirigidos, mensualidades e inscripción, incidencias y advertencias, ensayos y asistencia, materiales, comunicados con lectura, bajas e ingresos tardíos |
+| Talento | Ficha por persona (con o sin cuenta), historial, unir duplicados, ligar fichas a cuentas, compras y funciones vistas |
+
+## Lo que sigue
+
+### 1. Mi cuenta completa (pedido de Diego) — siguiente recomendado
+
+- **Datos personales:**
+  - nombre y apellidos por separado;
+  - teléfono;
+  - fecha de nacimiento.
+- **Correo:** cambio con verificación (llega un enlace al correo nuevo).
+- **Contraseña:** cambio seguro desde Mi cuenta (pide la actual) y la opción "Olvidé mi
+  contraseña" en Entrar.
+- **Foto de perfil** personal, distinta del retrato profesional que sale en los créditos.
+- **Una sola fecha de nacimiento:** la del expediente y la de la cuenta son la misma; se
+  captura una vez.
+- **Cumpleaños:**
+  - el Director ve todos;
+  - cada producción ve los de su elenco y equipo, con "cumpleaños del mes" en el panel y
+    en el portal del elenco.
+- **Historial más claro:** próximas funciones y funciones pasadas, detalle de cada compra
+  (visión §9.3).
+
+### 2. Fan Zone ampliada
+
+- Además de videos: enlaces, documentos (PDF), fotos sueltas, textos o avisos.
+- Acomodar el orden arrastrando o con flechas, y elegir qué se destaca arriba.
+
+### 3. Reporte general del Director y cierre de temporada
+
+- **Todas las obras juntas:**
+  - ventas;
+  - ocupación;
+  - vendedores;
+  - lo cobrado en talleres;
+  - asistencia.
+- **Cierre de temporada:**
+  - pasar la obra a archivo;
+  - congelar el elenco y los créditos;
+  - resumen final descargable.
+
+### 4. Boletería y compra (Fase 4 de la visión) — cambia lógica crítica, se aprueba aparte
+
+- Mapa de asientos y compra más cómodos en celular; mensajes más claros.
+- Vencimiento automático de órdenes pendientes (liberar asientos si no pagan a tiempo).
+- Admisión general (sin asiento) donde haga falta.
+- Pruebas obligatorias (visión §8.3):
+  - compras simultáneas;
+  - precios y descuentos;
+  - aprobación, rechazo y cancelación;
+  - códigos QR;
+  - pruebas por rol.
+
+### 5. Avisos por correo y WhatsApp — requiere proveedor externo y tu aprobación
+
+- **Correo** (p. ej. Resend): confirmaciones de compra, comunicados y recordatorios de
+  ensayo, con marca de leído.
+- **WhatsApp:** API de WhatsApp Business de Meta. Requiere verificar el negocio y tiene costo
+  por conversación.
+
+### 6. Perfil profesional
+
+- Retrato profesional, semblanza y trayectoria (obras DARF y externas), con fotos.
+- Habilidades: canto, baile, instrumentos y aéreos.
+- Opción de mostrar el perfil al público en los créditos.
+
+### 7. Escuela (en espera)
+
+- Rúbrica de evaluación por producción, editable por los maestros.
+
+### 8. DARFY, asistente virtual (Fase 6 de la visión)
+
+- Responde preguntas del público con información autorizada (funciones, compra, obras).
+- Nunca muestra datos privados.
+
+### 9. Lanzamiento (fase final) — nada de esto se hace sin tu aprobación
+
+1. Revisión completa en celular y escritorio, y tu aprobación final del diseño.
+2. Aviso de privacidad (menores, expedientes, evaluaciones), idealmente revisado por
+   alguien con conocimiento legal.
+3. **Planes pagos:**
+   - Vercel Pro, porque el plan Hobby no permite uso comercial;
+   - Supabase Pro, para tener respaldos.
+4. Respaldo completo de la base de producción.
+5. **Migración planificada de datos reales de la 1.0:**
+   - cuentas;
+   - órdenes y boletos;
+   - vendedores;
+   - obras;
+   - elenco.
+6. Pruebas finales, plan de reversión y ensayo del cambio en DEV.
+7. Cambio de dominio en GoDaddy y Vercel, el día acordado.
+
+## Orden recomendado
+
+1 → 2 → 3, luego 4. El 5 se puede adelantar si Diego aprueba el proveedor. 6 y 8 van después;
+el 7 queda en espera. El 9 va al final.
