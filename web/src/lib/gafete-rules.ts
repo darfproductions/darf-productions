@@ -10,14 +10,40 @@ export const FRANJAS: Record<Franja, { label: string; fondo: string; texto: stri
 };
 
 export type GafeteMio = {
-  token: string; codigo: string; franja: Franja; papel: string; obra: string | null; temporada: string | null;
+  token: string; codigo: string; franja: Franja; papel: string;
   compartir_telefono: boolean; compartir_correo: boolean; compartir_instagram: boolean; compartir_perfil: boolean;
 };
 
 export type GafetePublico = {
-  nombre: string; franja: Franja; papel: string; obra: string | null; temporada: string | null;
+  nombre: string; franja: Franja; papel: string;
   retrato_path: string | null; telefono: string | null; correo: string | null; instagram: string | null; perfil: string | null;
 };
+
+/** Banda de color de abajo (gafete y credencial del Club Fan). `degradado` es para el canvas del PDF. */
+export type Banda = { label: string; fondo: string; texto: string; degradado?: [number, string][] };
+
+/** Lo que se dibuja (pantalla y PDF): gafete del equipo o credencial del Club Fan. */
+export type PaseVista = {
+  tema: "darf" | "fan"; logo: string; logoAlt: string; nombre: string; fotoUrl: string | null;
+  titulo: string; pie: string; banda: Banda; qr?: string; codigo?: string;
+};
+
+const DEGRADADO_LUZ: [number, string][] = [[0, "#340feb"], [0.55, "#830886"], [1, "#d20122"]];
+
+/** Año en curso en CDMX (vigencia del gafete). */
+export function anioMx(hoy: Date = new Date()): string {
+  return new Intl.DateTimeFormat("en-CA", { year: "numeric", timeZone: "America/Mexico_City" }).format(hoy);
+}
+
+/** Gafete del equipo y elencos (0080: el puesto más alto, sin obra; abajo "DARF Productions · año"). */
+export function paseGafete(g: { nombre: string; fotoUrl: string | null; franja: Franja; papel: string; qr?: string; codigo?: string }, hoy: Date = new Date()): PaseVista {
+  const f = FRANJAS[g.franja] ?? FRANJAS.equipo;
+  return {
+    tema: "darf", logo: "/marca/darf-monograma.svg", logoAlt: "DARF", nombre: g.nombre, fotoUrl: g.fotoUrl,
+    titulo: g.papel, pie: `DARF Productions · ${anioMx(hoy)}`,
+    banda: { ...f, degradado: g.franja === "elenco" ? DEGRADADO_LUZ : undefined }, qr: g.qr, codigo: g.codigo,
+  };
+}
 
 export function iniciales(nombre: string): string {
   return nombre.split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0]).join("").toUpperCase() || "D";

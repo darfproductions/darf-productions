@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { GafeteVista } from "@/components/gafete/GafeteVista";
 import { getGafetePublico } from "@/lib/gafete";
+import { paseGafete } from "@/lib/gafete-rules";
 
 export const metadata: Metadata = { title: "Gafete DARF", robots: { index: false, follow: false } };
 
@@ -14,7 +15,7 @@ export default async function GafetePublicoPage({ params }: PageProps<"/g/[token
   const boton = "flex w-full items-center justify-center gap-2 rounded-full border border-linea-2 px-5 py-3.5 text-sm font-bold hover:border-white/50";
   return (
     <main className="flex flex-col items-center gap-6 px-5 pb-24 pt-10">
-      <GafeteVista nombre={g.nombre} fotoUrl={g.retratoUrl} franja={g.franja} papel={g.papel} obra={g.obra} temporada={g.temporada} />
+      <GafeteVista p={paseGafete({ nombre: g.nombre, fotoUrl: g.retratoUrl, franja: g.franja, papel: g.papel })} />
       <div className="flex w-[min(340px,86vw)] flex-col gap-3">
         {algo ? (
           <>

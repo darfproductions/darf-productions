@@ -31,7 +31,7 @@ export default async function EquipoDarf({ searchParams }: PageProps<"/panel/per
   return (
     <>
       <PanelTitle eyebrow="Personas" title="Equipo DARF">
-        Solo el Director general edita el equipo que sale en la página pública <Link href="/nosotros" className="font-bold text-violeta-claro">Conoce al equipo</Link>. La foto, la semblanza y el enlace salen de su perfil profesional, solo si es público.
+        Solo el Director general edita el equipo que sale en la página pública <Link href="/nosotros" className="font-bold text-violeta-claro">Conoce al equipo</Link>. La foto, la semblanza y el enlace salen de su perfil profesional, solo si es público. El cargo también es el puesto que sale en su gafete (por encima de su papel en cualquier obra).
       </PanelTitle>
       <Link href="/panel/personas/equipo/portal" className="flex flex-col gap-1 rounded-2xl bg-telon p-5 hover:bg-telon-2">
         <span className="font-bold">Portal general del equipo →</span>

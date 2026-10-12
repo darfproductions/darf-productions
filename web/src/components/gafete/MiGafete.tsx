@@ -4,9 +4,10 @@ import { useActionState, useEffect, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { GafeteVista } from "@/components/gafete/GafeteVista";
-import { descargarGafete } from "@/components/gafete/gafete-canvas";
+import { descargarPase } from "@/components/gafete/gafete-canvas";
 import { guardarCompartir, regenerarGafete } from "@/lib/gafete-actions";
 import type { MiGafeteVista } from "@/lib/gafete";
+import { paseGafete } from "@/lib/gafete-rules";
 
 // "Mi gafete" (0078): se abre a pantalla completa para mostrarlo (asistencia a ensayos o
 // compartir contacto), se descarga en PDF y se elige qué ve quien lo escanea.
@@ -28,7 +29,7 @@ export function MiGafete({ g }: { g: MiGafeteVista }) {
     return () => { document.removeEventListener("keydown", esc); document.body.style.overflow = prev; };
   }, [abierto]);
 
-  const datos = { nombre: g.nombre, fotoUrl: g.fotoUrl, franja: g.franja, papel: g.papel, obra: g.obra, temporada: g.temporada, qr: g.qr, codigo: g.codigo };
+  const pase = paseGafete(g);
 
   return (
     <>
@@ -42,9 +43,9 @@ export function MiGafete({ g }: { g: MiGafeteVista }) {
       {abierto && createPortal(
         <div role="dialog" aria-modal="true" aria-label="Mi gafete" className="fixed inset-0 z-[60] flex flex-col items-center gap-5 overflow-y-auto bg-[#050407]/95 px-4 py-8 backdrop-blur">
           <button type="button" onClick={() => setAbierto(false)} className="self-end rounded-full border border-white/25 px-4 py-2 text-sm font-bold" autoFocus>Cerrar ✕</button>
-          <GafeteVista {...datos} />
+          <GafeteVista p={pase} />
           <div className="flex flex-wrap justify-center gap-3">
-            <button type="button" disabled={bajando} onClick={async () => { setBajando(true); try { await descargarGafete(datos); } finally { setBajando(false); } }} className="fb fb-claro fb-sm">{bajando ? "Preparando…" : "Descargar PDF"}</button>
+            <button type="button" disabled={bajando} onClick={async () => { setBajando(true); try { await descargarPase(pase, `gafete-darf-${g.codigo}.pdf`); } finally { setBajando(false); } }} className="fb fb-claro fb-sm">{bajando ? "Preparando…" : "Descargar PDF"}</button>
             <button type="button" onClick={() => setAjustes(!ajustes)} aria-expanded={ajustes} className="fb fb-o fb-sm">Qué compartir</button>
           </div>
           {ajustes && (

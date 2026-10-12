@@ -1,12 +1,13 @@
 "use client";
 
-import { FRANJAS, iniciales, type Franja } from "@/lib/gafete-rules";
+import { iniciales, type PaseVista } from "@/lib/gafete-rules";
 import { pdfConImagenes } from "@/lib/ticket-design";
 
-// Gafete en PDF: se dibuja en un canvas (mismo diseño que GafeteVista) y se guarda como imagen
-// dentro de un PDF de 85 × 135 mm aprox. (para imprimir o guardar en el teléfono).
+// Gafete o credencial del Club Fan en PDF: se dibuja en un canvas (mismo diseño que GafeteVista)
+// y se guarda como imagen dentro de un PDF de 85 × 135 mm aprox. (para imprimir o el teléfono).
 
 const W = 680, H = 1080;
+const ORO = "#d7bb5f";
 
 function cargar(src: string, cors: boolean): Promise<HTMLImageElement | null> {
   return new Promise((res) => {
@@ -18,18 +19,30 @@ function cargar(src: string, cors: boolean): Promise<HTMLImageElement | null> {
   });
 }
 
-export type GafeteDatos = { nombre: string; fotoUrl: string | null; franja: Franja; papel: string; obra: string | null; temporada: string | null; qr: string; codigo: string };
-
-export async function descargarGafete(g: GafeteDatos): Promise<void> {
+export async function descargarPase(p: PaseVista, archivo: string): Promise<void> {
+  const fan = p.tema === "fan";
   const fuente = getComputedStyle(document.body).fontFamily || "sans-serif";
-  const [mono, foto, qr] = await Promise.all([cargar("/marca/darf-monograma.svg", false), g.fotoUrl ? cargar(g.fotoUrl, true) : Promise.resolve(null), cargar(g.qr, false)]);
+  const [logo, foto, qr, sello] = await Promise.all([
+    cargar(p.logo, false), p.fotoUrl ? cargar(p.fotoUrl, true) : Promise.resolve(null),
+    p.qr ? cargar(p.qr, false) : Promise.resolve(null), fan ? cargar("/marca/sello-club.svg", false) : Promise.resolve(null),
+  ]);
   const pintar = (conFoto: boolean) => {
     const c = document.createElement("canvas");
     c.width = W; c.height = H;
     const x = c.getContext("2d")!;
     x.fillStyle = "#0b0910"; x.fillRect(0, 0, W, H);
-    x.fillStyle = "#211a2c"; x.beginPath(); x.roundRect(W / 2 - 96, 30, 192, 40, 20); x.fill();
-    if (mono) { const h = 112, w = (mono.width / mono.height) * h; x.drawImage(mono, (W - w) / 2, 100, w, h); }
+    if (fan) {
+      const g = x.createRadialGradient(W / 2, 0, 20, W / 2, 0, 620);
+      g.addColorStop(0, "rgba(215,187,95,0.32)"); g.addColorStop(1, "rgba(215,187,95,0)");
+      x.fillStyle = g; x.fillRect(0, 0, W, H);
+      x.strokeStyle = "rgba(215,187,95,0.6)"; x.lineWidth = 4; x.strokeRect(2, 2, W - 4, H - 4);
+    }
+    x.fillStyle = fan ? "#2a2216" : "#211a2c"; x.beginPath(); x.roundRect(W / 2 - 96, 30, 192, 40, 20); x.fill();
+    if (logo) {
+      const maxW = fan ? 440 : 400, maxH = fan ? 80 : 112;
+      const k = Math.min(maxW / logo.width, maxH / logo.height);
+      x.drawImage(logo, (W - logo.width * k) / 2, 100 + (112 - logo.height * k) / 2, logo.width * k, logo.height * k);
+    }
     // Foto redonda
     const cx = W / 2, cy = 330, r = 104;
     x.save(); x.beginPath(); x.arc(cx, cy, r, 0, Math.PI * 2); x.closePath(); x.fillStyle = "#211a2c"; x.fill(); x.clip();
@@ -37,29 +50,37 @@ export async function descargarGafete(g: GafeteDatos): Promise<void> {
       const k = Math.max((2 * r) / foto.width, (2 * r) / foto.height);
       x.drawImage(foto, cx - (foto.width * k) / 2, cy - (foto.height * k) / 2, foto.width * k, foto.height * k);
     } else {
-      x.fillStyle = "#a39db0"; x.font = `900 72px ${fuente}`; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(iniciales(g.nombre), cx, cy + 4);
+      x.fillStyle = fan ? "#ecd9a0" : "#a39db0"; x.font = `900 72px ${fuente}`; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(iniciales(p.nombre), cx, cy + 4);
     }
     x.restore();
+    if (fan) { x.strokeStyle = ORO; x.lineWidth = 5; x.beginPath(); x.arc(cx, cy, r + 3, 0, Math.PI * 2); x.stroke(); }
     x.textAlign = "center"; x.textBaseline = "alphabetic";
     x.fillStyle = "#f4f1f8"; x.font = `900 44px ${fuente}`;
-    const palabras = g.nombre.toUpperCase().split(/\s+/);
+    const palabras = p.nombre.toUpperCase().split(/\s+/);
     const l1 = palabras.slice(0, Math.ceil(palabras.length / 2)).join(" "), l2 = palabras.slice(Math.ceil(palabras.length / 2)).join(" ");
     x.fillText(l1, W / 2, 500); if (l2) x.fillText(l2, W / 2, 548);
-    x.fillStyle = "#d7bb5f"; x.font = `700 22px ${fuente}`; x.fillText(g.papel.toUpperCase().split("").join(String.fromCharCode(8202)), W / 2, l2 ? 592 : 548);
+    x.fillStyle = ORO; x.font = `700 22px ${fuente}`; x.fillText(p.titulo.toUpperCase().split("").join(String.fromCharCode(8202)), W / 2, l2 ? 592 : 548);
     // QR
     const q = 260, qx = (W - q) / 2, qy = 620;
-    x.fillStyle = "#ffffff"; x.beginPath(); x.roundRect(qx - 16, qy - 16, q + 32, q + 32, 24); x.fill();
-    if (qr) { x.imageSmoothingEnabled = false; x.drawImage(qr, qx, qy, q, q); x.imageSmoothingEnabled = true; }
-    x.fillStyle = "#d3cddd"; x.font = `700 24px monospace`; x.fillText(g.codigo, W / 2, qy + q + 52);
-    x.fillStyle = "#a39db0"; x.font = `600 18px ${fuente}`;
-    x.fillText([g.obra, g.temporada ? `Temporada ${g.temporada}` : null].filter(Boolean).join(" · ").toUpperCase() || "DARF PRODUCTIONS", W / 2, qy + q + 84);
-    // Franja
-    const f = FRANJAS[g.franja];
-    if (f.fondo.startsWith("linear")) {
-      const gr = x.createLinearGradient(0, 0, W, 0); gr.addColorStop(0, "#340feb"); gr.addColorStop(0.55, "#830886"); gr.addColorStop(1, "#d20122"); x.fillStyle = gr;
-    } else x.fillStyle = f.fondo;
+    if (qr) {
+      x.fillStyle = "#ffffff"; x.beginPath(); x.roundRect(qx - 16, qy - 16, q + 32, q + 32, 24); x.fill();
+      x.imageSmoothingEnabled = false; x.drawImage(qr, qx, qy, q, q); x.imageSmoothingEnabled = true;
+    }
+    if (p.codigo) { x.fillStyle = fan ? "#ecd9a0" : "#d3cddd"; x.font = `700 24px monospace`; x.fillText(p.codigo, W / 2, qy + q + 52); }
+    x.fillStyle = "#a39db0"; x.font = `600 18px ${fuente}`; x.fillText(p.pie.toUpperCase(), W / 2, qy + q + 84);
+    // Banda
+    if (p.banda.degradado) {
+      const gr = x.createLinearGradient(0, 0, W, 0);
+      for (const [o, col] of p.banda.degradado) gr.addColorStop(o, col);
+      x.fillStyle = gr;
+    } else x.fillStyle = p.banda.fondo;
     x.fillRect(0, H - 96, W, 96);
-    x.fillStyle = f.texto; x.font = `italic 900 46px ${fuente}`; x.fillText(f.label, W / 2, H - 32);
+    x.fillStyle = p.banda.texto; x.font = `italic 900 46px ${fuente}`;
+    if (sello) {
+      const ancho = x.measureText(p.banda.label).width, s = 56, inicio = (W - (ancho + s + 18)) / 2;
+      x.drawImage(sello, inicio, H - 48 - s / 2, s, s);
+      x.textAlign = "left"; x.fillText(p.banda.label, inicio + s + 18, H - 32);
+    } else x.fillText(p.banda.label, W / 2, H - 32);
     return c;
   };
   const jpeg = async (c: HTMLCanvasElement) => new Uint8Array(await (await new Promise<Blob>((res, rej) => c.toBlob((b) => (b ? res(b) : rej(new Error("canvas"))), "image/jpeg", 0.92))).arrayBuffer());
@@ -68,6 +89,6 @@ export async function descargarGafete(g: GafeteDatos): Promise<void> {
   const pdf = pdfConImagenes([{ data, w: W, h: H }], 241, 383);
   const url = URL.createObjectURL(new Blob([pdf as BlobPart], { type: "application/pdf" }));
   const a = document.createElement("a");
-  a.href = url; a.download = `gafete-darf-${g.codigo}.pdf`; a.click();
+  a.href = url; a.download = archivo; a.click();
   setTimeout(() => URL.revokeObjectURL(url), 5000);
 }

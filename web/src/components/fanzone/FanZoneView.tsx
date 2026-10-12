@@ -7,14 +7,15 @@ import { FanItemCard, FanProximoCard } from "@/components/fanzone/FanItemCard";
 import { PreventaFanZone } from "@/components/fanzone/PreventaFanZone";
 import { UnirseClub } from "@/components/fanzone/UnirseClub";
 import { FAN_CATEGORIAS, type FanCategoria } from "@/lib/fanzone-rules";
-import { fanzoneCounts, getCredencial, getEncuentros, getProximos, listFanzone } from "@/lib/fanzone";
+import { MiCredencialFan } from "@/components/fanzone/MiCredencialFan";
+import { fanzoneCounts, getCredencial, getEncuentros, getMiCredencialFan, getProximos, listFanzone } from "@/lib/fanzone";
 import { getHomeData } from "@/lib/productions";
 
 const PESTANAS: (FanCategoria | "todo")[] = ["todo", "ensayo", "making", "fotos", "otro"];
 const BENEFICIOS = [
   ["Detrás del telón", "Ensayos, making of y fotos de cada producción."],
   ["Antes que nadie", "Preventas para el club y avisos de lo que viene."],
-  ["Foto con el elenco", "Aparta tu lugar para el encuentro después de la función."],
+  ["Eventos exclusivos", "Foto con el elenco y eventos del club: entras con tu credencial."],
 ];
 
 // Fan Zone (imagen de referencia de Diego): logo y credencial arriba, obras en píldoras,
@@ -55,7 +56,7 @@ export async function FanZoneView({ pid, cat, nombre }: { pid: string | null; ca
     );
   }
 
-  const [items, proximos, encuentros, conteo, proximosTodos] = await Promise.all([listFanzone(pid), getProximos(pid), getEncuentros(pid), fanzoneCounts(), pid ? getProximos(null) : Promise.resolve(null)]);
+  const [items, proximos, encuentros, conteo, proximosTodos, miCredencial] = await Promise.all([listFanzone(pid), getProximos(pid), getEncuentros(pid), fanzoneCounts(), pid ? getProximos(null) : Promise.resolve(null), getMiCredencialFan()]);
   const visibles = items.filter((i) => i.visible);
   const pestana = (PESTANAS.find((p) => p === cat) ?? "todo") as FanCategoria | "todo";
   const lista = pestana === "todo" ? visibles : visibles.filter((i) => i.categoria === pestana);
@@ -78,7 +79,10 @@ export async function FanZoneView({ pid, cat, nombre }: { pid: string | null; ca
             <h1 className="display text-[clamp(2.2rem,5.5vw,4.25rem)]">Hola, {nombre.split(" ")[0]}</h1>
             <p className="lead max-w-xl">Aquí vive todo lo que no se ve desde la butaca: ensayos, making of, fotos con el elenco y tu acceso anticipado.</p>
           </div>
-          <Credencial nombre={nombre} c={credencial} />
+          <div className="flex flex-col items-center gap-4">
+            <Credencial nombre={nombre} c={credencial} />
+            {miCredencial && <MiCredencialFan c={miCredencial} compacto />}
+          </div>
         </div>
       </section>
 
@@ -149,19 +153,20 @@ export async function FanZoneView({ pid, cat, nombre }: { pid: string | null; ca
           )}
         </section>
 
-        {/* Foto con el elenco */}
+        {/* Eventos del Club Fan: foto con el elenco y eventos exclusivos (0080) */}
         <section aria-labelledby="foto-t" className="grid gap-8 rounded-[22px] border border-oro/25 bg-[#120f17] p-6 md:p-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
           <div className="flex flex-col items-start gap-4">
             <span className="chip chip-fz min-h-[26px] px-3 text-[10px] uppercase tracking-[0.14em]">Experiencia fan</span>
-            <h2 id="foto-t" className="text-[clamp(1.8rem,3.4vw,2.5rem)] font-black uppercase leading-[0.95] tracking-[-0.03em]">Foto con el elenco</h2>
-            <p className="max-w-md text-[15px] leading-relaxed text-texto-2">Aparta tu lugar para el encuentro después de la función. Cupo limitado para el Club Fan; necesitas boleto de esa función.</p>
+            <h2 id="foto-t" className="text-[clamp(1.8rem,3.4vw,2.5rem)] font-black uppercase leading-[0.95] tracking-[-0.03em]">Eventos del Club Fan</h2>
+            <p className="max-w-md text-[15px] leading-relaxed text-texto-2">Foto con el elenco después de la función y eventos exclusivos. Aparta tu lugar cuando lo pida y en la entrada muestra tu credencial con QR.</p>
+            {miCredencial && <MiCredencialFan c={miCredencial} compacto />}
           </div>
           {encuentros.length ? (
             <ul className="flex flex-col gap-3">
               {encuentros.map((e) => <EncuentroCard key={e.id} e={e} obra={obraDe.get(e.production_id) ?? ""} />)}
             </ul>
           ) : (
-            <p className="self-center text-sm text-texto-3">Todavía no hay encuentros abiertos. Te avisaremos en los anuncios de la Fan Zone.</p>
+            <p className="self-center text-sm text-texto-3">Todavía no hay eventos abiertos. Te avisaremos en los anuncios de la Fan Zone.</p>
           )}
         </section>
       </div>

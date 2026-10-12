@@ -21,6 +21,8 @@ import { listNotifications, unreadCount } from "@/lib/notifications";
 import { AvatarUpload } from "./AvatarUpload";
 import { MiGafete } from "@/components/gafete/MiGafete";
 import { getMiGafete } from "@/lib/gafete";
+import { MiCredencialFan } from "@/components/fanzone/MiCredencialFan";
+import { getMiCredencialFan } from "@/lib/fanzone";
 import { EmailForm, PasswordForm, ProfileForm } from "./ProfileForm";
 import { funcionPasada } from "@/lib/account-rules";
 import { limiteTexto, recordatorio, tiempoRestante } from "@/lib/expiry-rules";
@@ -81,10 +83,10 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
   }
 
   // Mis audiciones (0036): solo las propias; QR mientras no haya llegado.
-  const [audiciones, invitaciones, ofertas, misObras, sinLeer, misVentas, miEquipo, equipoPend, notis, notisNuevas, gafete] = await Promise.all([
+  const [audiciones, invitaciones, ofertas, misObras, sinLeer, misVentas, miEquipo, equipoPend, notis, notisNuevas, gafete, credencialFan] = await Promise.all([
     listMyApplications(session.userId), listMyInvites(), listMyOffers(), supabase.rpc("my_productions"), supabase.rpc("my_unread_announcements"),
     supabase.rpc("my_seller"), supabase.rpc("my_team_productions"), supabase.rpc("my_team_unread"),
-    listNotifications({ limit: 3 }), unreadCount(), getMiGafete(),
+    listNotifications({ limit: 3 }), unreadCount(), getMiGafete(), getMiCredencialFan(),
   ]);
   const equipos = (miEquipo.data ?? []) as { production_id: string | null; nombre: string; roles: string[] }[];
   const pendEquipo = new Map(((equipoPend.data ?? []) as { production_id: string | null; avisos: number; notas: number }[]).map((x) => [x.production_id ?? "general", x]));
@@ -232,6 +234,7 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
 
         <aside className="flex flex-col gap-6 lg:col-span-4">
           {gafete && <MiGafete g={gafete} />}
+          {credencialFan && <MiCredencialFan c={credencialFan} />}
           <section aria-labelledby="perfil" className="flex flex-col gap-4 rounded-2xl bg-telon p-6">
             <h2 id="perfil" className="text-lg font-bold">Perfil</h2>
             <AvatarUpload uid={session.userId} url={fotoUrl} inicial={(session.profile?.nombre || session.email).slice(0, 1).toUpperCase()} />

@@ -43,7 +43,7 @@ do $$ declare j json; begin
   if badge_mio() is not null then raise exception 'FALLO T1: un fan tiene gafete'; end if;
   perform pg_temp.as_user('00000000-0000-0000-0000-0000000000c1');
   j := badge_mio();
-  if j is null or j->>'franja' <> 'elenco' or j->>'obra' is null then raise exception 'FALLO T1: gafete del elenco (%)', j; end if;
+  if j is null or j->>'franja' <> 'elenco' or j->>'papel' <> 'Elenco' then raise exception 'FALLO T1: gafete del elenco (%)', j; end if; -- 0080: sin obra
   if j->>'codigo' !~ '^DRF-[2-9A-HJ-NP-Z]{4}$' then raise exception 'FALLO T1: código corto'; end if;
   if (badge_mio()->>'token') <> j->>'token' then raise exception 'FALLO T1: cambió el token'; end if;
   insert into ctx values ('t1', j->>'token'), ('c1', j->>'codigo');

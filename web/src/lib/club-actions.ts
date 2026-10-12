@@ -18,7 +18,7 @@ export async function apartarEncuentro(id: string, on: boolean): Promise<{ ok: b
   const { error } = await supabase.rpc("fan_encuentro_apartar", { eid: id, p_on: on });
   if (error) return { ok: false, message: error.message };
   revalidatePath("/fan-zone", "layout");
-  return { ok: true, message: on ? "¡Lugar apartado! Te esperamos después de la función." : "Liberaste tu lugar." };
+  return { ok: true, message: on ? "¡Lugar apartado! Muestra tu credencial del Club Fan en la entrada." : "Liberaste tu lugar." };
 }
 
 export async function recordarPreventa(pid: string, on: boolean): Promise<{ ok: boolean; message: string }> {
@@ -27,4 +27,14 @@ export async function recordarPreventa(pid: string, on: boolean): Promise<{ ok: 
   if (error) return { ok: false, message: error.message };
   revalidatePath("/fan-zone", "layout");
   return { ok: true, message: on ? "Listo: te avisamos en tu cuenta y en tu teléfono cuando abra la preventa." : "Recordatorio desactivado." };
+}
+
+/** Credencial nueva (0080): la anterior y su PDF dejan de servir. */
+export async function regenerarCredencial(): Promise<{ ok: boolean; message: string }> {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("fan_regenerar");
+  if (error) return { ok: false, message: error.message };
+  revalidatePath("/fan-zone", "layout");
+  revalidatePath("/cuenta");
+  return { ok: true, message: "Credencial nueva lista. La anterior ya no sirve." };
 }

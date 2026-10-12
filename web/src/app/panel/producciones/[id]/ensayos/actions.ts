@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { localMxToIso } from "@/lib/dates";
 import { fechasRecurrentes } from "@/lib/rehearsal-rules";
+import { horaMx, type Lectura } from "@/lib/acceso-rules";
 import { createClient } from "@/lib/supabase/server";
 
 // Ensayos y asistencia (0043). La base revisa ensayos.gestionar en la obra.
@@ -98,4 +99,18 @@ export async function checkinGafete(pid: string, rid: string, code: string): Pro
   const fotoUrl = r.foto_path ? (await supabase.storage.from("avatares").createSignedUrl(r.foto_path, 600)).data?.signedUrl ?? null : null;
   if (r.resultado === "presente" || r.resultado === "retardo") revalidatePath(`/panel/producciones/${pid}/ensayos/${rid}`);
   return { ok: true, resultado: r.resultado, nombre: r.nombre, fotoUrl, minutos: r.minutos ?? null, llegada: r.llegada, estado: r.estado };
+}
+
+/** Lo mismo, ya listo para mostrarse en la mesa de entrada (EscanerAcceso). */
+export async function leerGafete(pid: string, rid: string, code: string): Promise<Lectura> {
+  const r = await checkinGafete(pid, rid, code);
+  if (!r.ok) return { ok: false, message: r.message };
+  const h = horaMx(r.llegada);
+  switch (r.resultado) {
+    case "presente": return { ok: true, tono: "ok", titulo: `Presente · ${h}`, nombre: r.nombre, fotoUrl: r.fotoUrl, llegada: `a tiempo · ${h}` };
+    case "retardo": return { ok: true, tono: "aviso", titulo: `Retardo · ${r.minutos ?? 0} min`, nombre: r.nombre, fotoUrl: r.fotoUrl, llegada: `${r.minutos ?? 0} min tarde · ${h}` };
+    case "ya": return { ok: true, tono: "neutro", titulo: `Ya registrado a las ${h}`, nombre: r.nombre, fotoUrl: r.fotoUrl };
+    case "no_citado": return { ok: true, tono: "error", titulo: "No está citado a este ensayo", nombre: r.nombre, fotoUrl: r.fotoUrl };
+    default: return { ok: true, tono: "error", titulo: "Gafete no encontrado", detalle: "Revisa el código o pide a la persona que abra su gafete en Mi cuenta." };
+  }
 }

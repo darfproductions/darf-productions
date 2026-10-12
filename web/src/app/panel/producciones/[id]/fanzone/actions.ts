@@ -2,7 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { localMxToIso } from "@/lib/dates";
-import { FAN_CATEGORIAS, fanRow } from "@/lib/fanzone-rules";
+import { FAN_CATEGORIAS, fanRow, numeroSocio } from "@/lib/fanzone-rules";
+import { horaMx, type Lectura } from "@/lib/acceso-rules";
+import { ACCESO_FAN, type AccesoFan } from "@/lib/credencial-fan-rules";
 import { createClient } from "@/lib/supabase/server";
 
 // Galería pública de la obra (tabla gallery_photos + bucket gallery, 0028).
@@ -110,17 +112,51 @@ export async function setFanzoneDetalle(_p: State, f: FormData): Promise<State> 
   return { ok: true, message: "Guardado." };
 }
 
-// ──────── Foto con el elenco (0075) ────────
+// ──────── Eventos del Club Fan (0075, 0080): foto con el elenco o evento exclusivo ────────
 export async function addEncuentro(_p: State, f: FormData): Promise<State> {
   const pid = str(f, "pid");
+  const tipo = str(f, "tipo") === "evento" ? "evento" : "foto";
   const cupo = Number(str(f, "cupo"));
-  if (!str(f, "performance")) return { ok: false, message: "Elige la función." };
   if (!Number.isInteger(cupo) || cupo < 1 || cupo > 500) return { ok: false, message: "El cupo va de 1 a 500." };
+  const performance = str(f, "performance") || null;
+  const fila: Record<string, unknown> = { production_id: pid, tipo, cupo, notas: str(f, "notas").slice(0, 300) || null };
+  if (tipo === "foto") {
+    if (!performance) return { ok: false, message: "Elige la función." };
+    Object.assign(fila, { performance_id: performance, requiere_registro: true, requiere_boleto: true });
+  } else {
+    const titulo = str(f, "titulo").slice(0, 120);
+    const inicia = localMxToIso(str(f, "inicia"));
+    if (!titulo) return { ok: false, message: "Escribe el nombre del evento." };
+    if (!inicia) return { ok: false, message: "Elige la fecha y hora del evento." };
+    Object.assign(fila, {
+      titulo, inicia, lugar: str(f, "lugar").slice(0, 160) || null, descripcion: str(f, "descripcion").slice(0, 600) || null,
+      performance_id: performance, requiere_registro: f.get("registro") === "on", requiere_boleto: !!performance && f.get("boleto") === "on",
+    });
+  }
   const supabase = await createClient();
-  const { error } = await supabase.from("fan_encuentros").insert({ production_id: pid, performance_id: str(f, "performance"), cupo, notas: str(f, "notas").slice(0, 300) || null });
-  if (error) return { ok: false, message: error.code === "23505" ? "Esa función ya tiene encuentro." : error.message };
+  const { error } = await supabase.from("fan_encuentros").insert(fila);
+  if (error) return { ok: false, message: error.code === "23505" ? "Esa función ya tiene foto con el elenco." : error.message };
   refresh(pid);
-  return { ok: true, message: "Encuentro creado." };
+  return { ok: true, message: tipo === "foto" ? "Foto con el elenco creada." : "Evento creado." };
+}
+
+/** Validar la credencial del Club Fan en la entrada de un evento (fanzone.editar o puerta.validar). */
+export async function validarCredencial(pid: string, eid: string, code: string): Promise<Lectura> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("fan_checkin", { eid, p_code: code });
+  if (error) return { ok: false, message: error.message };
+  const r = data as { resultado: AccesoFan; nombre?: string; foto_path?: string | null; numero?: number; fundador?: boolean; llegada?: string };
+  if (r.resultado === "no_encontrado") return { ok: true, tono: "error", titulo: ACCESO_FAN.no_encontrado.titulo, detalle: "Revisa el código o pide a la persona que abra su credencial en la Fan Zone." };
+  const fotoUrl = r.foto_path ? (await supabase.storage.from("avatares").createSignedUrl(r.foto_path, 600)).data?.signedUrl ?? null : null;
+  const socio = r.numero ? `Socio ${numeroSocio(r.numero)}${r.fundador ? " · Fan fundador" : ""}` : undefined;
+  const base = { ok: true, nombre: r.nombre ?? "", fotoUrl, detalle: socio };
+  if (r.resultado === "ok") {
+    revalidatePath(`/panel/producciones/${pid}/fanzone`);
+    revalidatePath(`/panel/producciones/${pid}/puerta`);
+    return { ...base, tono: "ok", titulo: `${ACCESO_FAN.ok.titulo} · ${horaMx(r.llegada)}`, llegada: horaMx(r.llegada) };
+  }
+  if (r.resultado === "ya") return { ...base, tono: "neutro", titulo: `${ACCESO_FAN.ya.titulo} a las ${horaMx(r.llegada)}` };
+  return { ...base, tono: "error", titulo: ACCESO_FAN[r.resultado]?.titulo ?? "No puede pasar" };
 }
 
 export async function setEncuentro(_p: State, f: FormData): Promise<State> {

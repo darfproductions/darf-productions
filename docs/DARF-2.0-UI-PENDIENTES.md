@@ -24,7 +24,7 @@ rutas, acciones o permisos. Lo que la propuesta muestra y todavía no existe se 
 
 ## Funciones de la propuesta: lo que ya se hizo (2026-10-12)
 
-Diego eligió cuáles sí (ver plan del bloque). Hechas en `darf-2.0`, migraciones 0073–0079:
+Diego eligió cuáles sí (ver plan del bloque). Hechas en `darf-2.0`, migraciones 0073–0080:
 
 | Función | Dónde |
 |---|---|
@@ -45,6 +45,9 @@ Diego eligió cuáles sí (ver plan del bloque). Hechas en `darf-2.0`, migracion
 | Espaciado del panel | Margen arriba en todo el panel (`app/panel/layout.tsx`); revisadas 46 rutas, ninguna queda pegada. |
 | Gafete digital | Mi cuenta → "Mi gafete" (equipo y elencos): QR + código DRF-XXXX, PDF, "Qué compartir"; página pública `/g/<token>` con "Guardar contacto"; panel → ensayo → "Checar con gafete" (presente/retardo según la tolerancia de la obra) (0078). |
 | Pagos con recibo | Folio por año (DARF-2026-0001), anular en lugar de borrar (borrar solo 10 min), aviso al integrante, recordatorios (3 días antes y al día siguiente del límite), recibo y estado de cuenta en PDF, "Enviar por WhatsApp", pestaña Adeudos y exportar CSV (0079). |
+| Gafete con jerarquía | El puesto más alto y sin obra: primero el cargo en DARF (Equipo DARF, p. ej. "CEO"), luego el rol de obra; elenco = "Elenco"; abajo "DARF Productions · año" (0080). |
+| Credencial Club Fan con QR | Gafete dorado con logo Fan Zone, sello, número de socio, QR y código FAN-XXXX (PDF); verificación pública `/f/<token>` sin contacto (0080). |
+| Eventos del Club Fan | Foto con el elenco o evento exclusivo (con o sin registro y boleto); en la entrada se escanea la credencial desde Fan Zone o Puerta y se marca la llegada (0080). |
 | Ajustes de marca | Fan Zone al final del menú, logo original (DARF con PRODUCTIONS abajo), destacada también en la cartelera, logos de DARF y de la obra en los boletos. |
 
 ## Lo que queda pendiente
@@ -59,7 +62,7 @@ Diego eligió cuáles sí (ver plan del bloque). Hechas en `darf-2.0`, migracion
 ## Para el lanzamiento (lista de revisión)
 
 - **Entrar con Google:** en el proyecto de Supabase (DEV y luego el oficial) → Authentication → Providers → Google, con el Client ID y secreto de la 1.0, y agregar la dirección del sitio (`…/auth/callback`) en Google Cloud y en Supabase → URL Configuration. Probar el botón en DEV y otra vez el día de la publicación.
-- Correr en DEV los scripts `supabase/dev/apply_0074_dev.sql`, `apply_0075_dev.sql`, `apply_0076_dev.sql`, `apply_0077_dev.sql`, `apply_0078_dev.sql` y `apply_0079_dev.sql` (en ese orden). La 0073 ya se aplicó.
+- Correr en DEV los scripts `supabase/dev/apply_0074_dev.sql`, `apply_0075_dev.sql`, `apply_0076_dev.sql`, `apply_0077_dev.sql`, `apply_0078_dev.sql`, `apply_0079_dev.sql` y `apply_0080_dev.sql` (en ese orden). La 0073 ya se aplicó.
 
 ## Cómo se verificó
 - Copia local simulada (base local, PostgREST y la web en modo DEV), con funciones de prueba
