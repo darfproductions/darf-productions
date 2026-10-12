@@ -9,14 +9,14 @@ export type PanelPerformance = {
   starts_at: string | null;
   venue: string | null;
   on_sale: boolean;
-  prices: { categoryId: string; nombre: string; price: number }[];
+  prices: { categoryId: string; nombre: string; price: number; cupo: number | null }[];
 };
 
 export async function listPerformances(pid: string): Promise<PanelPerformance[]> {
   const supabase = await createClient();
   const { data } = await supabase
     .from("performances")
-    .select("id, starts_at, venue, on_sale, performance_price_categories(price, price_category_id, price_categories(nombre))")
+    .select("id, starts_at, venue, on_sale, performance_price_categories(price, cupo, price_category_id, price_categories(nombre))")
     .eq("production_id", pid)
     .order("starts_at", { nullsFirst: false });
   return (data ?? []).map((p) => ({
@@ -24,16 +24,27 @@ export async function listPerformances(pid: string): Promise<PanelPerformance[]>
     starts_at: p.starts_at as string | null,
     venue: p.venue as string | null,
     on_sale: p.on_sale as boolean,
-    prices: ((p.performance_price_categories ?? []) as unknown as { price: number; price_category_id: string; price_categories: { nombre: string } | null }[])
-      .map((r) => ({ categoryId: r.price_category_id, nombre: r.price_categories?.nombre ?? "", price: Number(r.price) }))
+    prices: ((p.performance_price_categories ?? []) as unknown as { price: number; cupo: number | null; price_category_id: string; price_categories: { nombre: string } | null }[])
+      .map((r) => ({ categoryId: r.price_category_id, nombre: r.price_categories?.nombre ?? "", price: Number(r.price), cupo: r.cupo }))
       .sort((a, b) => b.price - a.price),
   }));
 }
 
-export async function listZones(pid: string): Promise<{ id: string; nombre: string; is_active: boolean }[]> {
+export type Zone = { id: string; nombre: string; is_active: boolean; cupo: number | null; descripcion: string | null };
+
+export async function listZones(pid: string): Promise<Zone[]> {
   const supabase = await createClient();
-  const { data } = await supabase.from("price_categories").select("id, nombre, is_active").eq("production_id", pid).order("nombre");
-  return (data ?? []) as { id: string; nombre: string; is_active: boolean }[];
+  const { data } = await supabase.from("price_categories").select("id, nombre, is_active, cupo, descripcion").eq("production_id", pid).order("nombre");
+  return (data ?? []) as Zone[];
+}
+
+/** Zonas de entrada general de una función con sus lugares libres (0055). */
+export type GeneralZone = { price_category_id: string; nombre: string; descripcion: string | null; precio: number; cupo: number; ocupados: number; libres: number };
+
+export async function generalAvailability(performanceId: string): Promise<GeneralZone[]> {
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("general_availability", { target_performance_id: performanceId });
+  return ((data ?? []) as GeneralZone[]).map((z) => ({ ...z, precio: Number(z.precio) }));
 }
 
 export async function seatCount(pid: string): Promise<number> {
@@ -48,7 +59,7 @@ export async function listOrders(pid: string, opts: { funcion?: string; estado?:
   if (!perfIds.length) return [];
   let q = supabase
     .from("orders")
-    .select("id, order_code, performance_id, status, buyer_nombre, buyer_telefono, total, discount_codigo, discount_amount, created_at, created_by_staff_id, expires_at, vencida_at, tickets(id, is_active, checked_in_at, seats(seat_label))")
+    .select("id, order_code, performance_id, status, buyer_nombre, buyer_telefono, total, discount_codigo, discount_amount, created_at, created_by_staff_id, expires_at, vencida_at, tickets(id, is_active, checked_in_at, seats(seat_label), price_categories(nombre))")
     .in("performance_id", opts.funcion ? [opts.funcion] : perfIds)
     .order("created_at", { ascending: false })
     .limit(500);
@@ -59,11 +70,11 @@ export async function listOrders(pid: string, opts: { funcion?: string; estado?:
     ...(o as unknown as SaleOrder),
     total: Number(o.total),
     discount_amount: Number(o.discount_amount ?? 0),
-    tickets: ((o.tickets ?? []) as unknown as { id: string; is_active: boolean; checked_in_at: string | null; seats: { seat_label: string } | null }[]).map((t) => ({
+    tickets: ((o.tickets ?? []) as unknown as { id: string; is_active: boolean; checked_in_at: string | null; seats: { seat_label: string } | null; price_categories: { nombre: string } | null }[]).map((t) => ({
       id: t.id,
       is_active: t.is_active,
       checked_in_at: t.checked_in_at,
-      seat_label: t.seats?.seat_label ?? null,
+      seat_label: t.seats?.seat_label ?? (t.price_categories ? `General · ${t.price_categories.nombre}` : null),
     })),
   }));
 }

@@ -1,13 +1,12 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { SeatMap, type ZonePrice } from "@/components/SeatMap";
 import { formatMoney, previewDiscount, type DiscountPreview, type MapSeat } from "@/lib/tickets";
-import { limiteTexto } from "@/lib/expiry-rules";
 import { placeOrder, type OrderResult } from "./actions";
+import { OrderDone } from "./OrderDone";
 
 export type { ZonePrice };
 
@@ -126,28 +125,7 @@ export function SeatPicker(props: {
     });
   }
 
-  if (result) {
-    return (
-      <div role="status" className="flex max-w-2xl flex-col gap-4 rounded-2xl bg-telon p-8">
-        <p className="titular text-3xl">¡Asientos apartados!</p>
-        <p className="text-lg">Orden <b>{result.orderCode}</b> · {result.seats.join(", ")} · Total {formatMoney(result.total)}</p>
-        {result.expiresAt && (
-          <p className="rounded-xl border border-[#fde68a]/40 bg-[#fde68a]/10 px-4 py-3 text-sm">
-            Tus asientos quedan apartados hasta <b>{limiteTexto(result.expiresAt)}</b>. Si no se confirma tu pago para entonces, se liberan solos.
-          </p>
-        )}
-        <p className="text-texto-2">Tu solicitud quedó guardada y tus asientos están apartados hasta que confirmemos tu pago. Cuando se apruebe, tus boletos con QR aparecerán en Mi cuenta.</p>
-        <div className="flex flex-wrap gap-3">
-          {result.whatsappUrl ? (
-            <a href={result.whatsappUrl} className="rounded-full bg-[#25d366] px-6 py-4 text-sm font-bold text-[#062b16]">Pagar por WhatsApp</a>
-          ) : (
-            <p className="text-sm text-texto-3">Pago por WhatsApp: sin número configurado en este entorno.</p>
-          )}
-          <Link href={`/cuenta?orden=${result.orderCode}`} className="rounded-full border border-white/30 px-6 py-4 text-sm font-bold">Ir a Mis boletos</Link>
-        </div>
-      </div>
-    );
-  }
+  if (result) return <OrderDone result={result} />;
 
   return (
     <div className="grid gap-8 lg:grid-cols-12">

@@ -8,7 +8,7 @@ import { getPanelProduction } from "@/lib/panel-data";
 import { can } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
 import { formatPerformanceDate } from "@/lib/productions";
-import { createPerformance, deletePerformance, setProductionOnSale, updatePerformance } from "../actions";
+import { createPerformance, deletePerformance, saveGeneralZone, setProductionOnSale, updatePerformance } from "../actions";
 
 export const metadata: Metadata = { title: "Funciones y precios" };
 
@@ -60,8 +60,12 @@ export default async function PerformancesPage({ params }: PageProps<"/panel/pro
                 <fieldset className="grid gap-2 sm:grid-cols-3 lg:grid-cols-5">
                   <legend className="mb-1 text-sm font-semibold">Precio por zona (MXN)</legend>
                   {zonas.map((z) => (
-                    <label key={z.id} className="flex flex-col gap-1 text-xs font-semibold">{z.nombre}
+                    <label key={z.id} className="flex flex-col gap-1 text-xs font-semibold">{z.nombre}{z.cupo != null && <span className="font-normal text-texto-3">Entrada general</span>}
                       <input className={input} type="number" min={0} step="1" name={`precio_${z.id}`} defaultValue={f.prices.find((x) => x.categoryId === z.id)?.price ?? ""} />
+                      {z.cupo != null && (
+                        <input className={input} type="number" min={0} step="1" name={`cupo_${z.id}`} placeholder={`Cupo: ${z.cupo}`} title="Cupo en esta función (vacío = el de la zona)"
+                          defaultValue={f.prices.find((x) => x.categoryId === z.id)?.cupo ?? ""} />
+                      )}
                     </label>
                   ))}
                 </fieldset>
@@ -72,6 +76,29 @@ export default async function PerformancesPage({ params }: PageProps<"/panel/pro
               </div>
             </Card>
           ))}
+          <Card className="flex flex-col gap-3">
+            <div>
+              <h2 className="titular text-xl">Zonas de entrada general</h2>
+              <p className="text-sm text-texto-2">Zonas sin asiento numerado (ej. Pista: 80 lugares). El cupo vale para todas las funciones; en cada función puedes poner otro. Luego ponle precio en cada función.</p>
+            </div>
+            {zonas.filter((z) => z.cupo != null).map((z) => (
+              <ActionForm key={z.id} action={saveGeneralZone} hidden={{ pid: id, zid: z.id }} submit="Guardar zona" submitClass={ghost}>
+                <div className="grid gap-3 sm:grid-cols-4">
+                  <label className="flex flex-col gap-1.5 text-sm font-semibold">Nombre<input className={input} name="nombre" defaultValue={z.nombre} required maxLength={60} /></label>
+                  <label className="flex flex-col gap-1.5 text-sm font-semibold">Cupo<input className={input} name="cupo" type="number" min={1} step="1" defaultValue={z.cupo ?? ""} required /></label>
+                  <label className="flex flex-col gap-1.5 text-sm font-semibold sm:col-span-2">Descripción (opcional)<input className={input} name="descripcion" defaultValue={z.descripcion ?? ""} maxLength={200} /></label>
+                </div>
+                <label className="flex items-center gap-2 text-sm"><input type="hidden" name="activa" value="off" /><input type="checkbox" name="activa" value="on" defaultChecked={z.is_active} /> Activa (se vende)</label>
+              </ActionForm>
+            ))}
+            <ActionForm action={saveGeneralZone} hidden={{ pid: id }} submit="Crear zona">
+              <div className="grid gap-3 sm:grid-cols-4">
+                <label className="flex flex-col gap-1.5 text-sm font-semibold">Nombre<input className={input} name="nombre" required maxLength={60} placeholder="Pista" /></label>
+                <label className="flex flex-col gap-1.5 text-sm font-semibold">Cupo<input className={input} name="cupo" type="number" min={1} step="1" required placeholder="80" /></label>
+                <label className="flex flex-col gap-1.5 text-sm font-semibold sm:col-span-2">Descripción (opcional)<input className={input} name="descripcion" maxLength={200} placeholder="De pie, frente al escenario" /></label>
+              </div>
+            </ActionForm>
+          </Card>
           <Card>
             <h2 className="titular mb-3 text-xl">Nueva función</h2>
             <ActionForm action={createPerformance} hidden={{ pid: id }} submit="Crear función">
@@ -87,7 +114,7 @@ export default async function PerformancesPage({ params }: PageProps<"/panel/pro
               <p className="text-xs text-texto-3">Los precios se copian de la función más reciente; ajústalos después.</p>
             </ActionForm>
           </Card>
-          {zonas.length === 0 && <Card>Esta obra no tiene zonas de precio ni mapa de asientos todavía. Crear un mapa nuevo es parte de la Fase 4 (admisión general y mapas).</Card>}
+          {zonas.length === 0 && <Card>Esta obra no tiene zonas de precio todavía. Puedes crear zonas de entrada general arriba; un mapa de asientos nuevo se carga aparte.</Card>}
         </>
       )}
     </>

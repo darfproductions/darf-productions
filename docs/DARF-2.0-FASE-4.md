@@ -54,7 +54,40 @@ pruebas de boletería anteriores se vuelven a correr en cada bloque.
   - solo se descarga la orden propia y aprobada;
   - se comprobó que el QR del PDF lo lee el mismo lector de la puerta (jsQR).
 
-### 4C. Entrada general por zona con cupo — pendiente
+### 4C. Entrada general por zona con cupo — HECHO (`0055_general_admission.sql`, pruebas T1–T8)
+
+Decisiones de Diego:
+- el cupo vale para todas las funciones y se puede cambiar en una función específica;
+- se compra aparte de los asientos;
+- máximo 10 por compra en línea (taquilla: 20).
+
+Cómo quedó:
+- **Zona de entrada general:** zona de precio con `cupo` y sin asientos; la base impide
+  mezclarlas. Los boletos llevan `seat_id` null y `price_category_id` = la zona.
+- **Funciones nuevas** `create_general_ticket_order` (público) y `admin_create_general_order`
+  (taquilla). Siguen las mismas reglas que la compra con asiento:
+  - sesión iniciada y función en venta;
+  - 3 órdenes pendientes como máximo;
+  - vendedor activo;
+  - descuento con zonas y funciones permitidas;
+  - vencimiento de 0054.
+
+  Las funciones de compra con asiento no se tocaron.
+- **Sin sobreventa:** la zona se bloquea mientras se cuentan los lugares. Se probó con dos
+  conexiones reales al mismo tiempo: la segunda esperó y recibió "Solo quedan 1 lugares";
+  nunca hubo más boletos que cupo. Ese mensaje ya se cambió a "Solo queda 1 lugar".
+- **Puerta:** `check_in_ticket` solo cambió para mostrar "General · <zona>". La prueba 0035
+  sigue pasando.
+- **Web:**
+  - Funciones y precios → "Zonas de entrada general" (crear, editar y activar), con precio
+    y cupo por función;
+  - compra: tarjeta por zona con lugares libres, cantidad, descuento y vendedor;
+  - taquilla: venta por zona y cantidad;
+  - Mi cuenta, PDF y órdenes muestran "General · <zona>".
+- **Pendiente menor:** la ocupación de Reportes y Cierre cuenta solo asientos numerados como
+  capacidad (no suma el cupo de las zonas generales).
+- **DEV:** la migración contiene la palabra "cancelado" (de `check_in_ticket`), así que se
+  aplica con `supabase/dev/apply_0055_dev.sql` en el SQL Editor.
 
 ## Pruebas obligatorias (visión §8.3)
 

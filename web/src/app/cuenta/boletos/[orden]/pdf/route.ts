@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 type Row = {
   order_code: string; status: string; buyer_nombre: string;
   performances: { starts_at: string | null; venue: string | null; productions: { nombre: string; venue: string | null } | null } | null;
-  tickets: { is_active: boolean; qr_token: string; seats: { seat_label: string } | null }[];
+  tickets: { is_active: boolean; qr_token: string; seats: { seat_label: string } | null; price_categories: { nombre: string } | null }[];
 };
 
 // Boletos de una orden en PDF (Fase 4B). Solo la orden propia y aprobada (RLS: cada quien lee sus órdenes).
@@ -18,7 +18,7 @@ export async function GET(_req: Request, ctx: RouteContext<"/cuenta/boletos/[ord
   const supabase = await createClient();
   const { data } = await supabase
     .from("orders")
-    .select("order_code, status, buyer_nombre, performances(starts_at, venue, productions(nombre, venue)), tickets(is_active, qr_token, seats(seat_label))")
+    .select("order_code, status, buyer_nombre, performances(starts_at, venue, productions(nombre, venue)), tickets(is_active, qr_token, seats(seat_label), price_categories(nombre))")
     .eq("order_code", orden)
     .eq("buyer_user_id", session.userId)
     .maybeSingle();
@@ -30,7 +30,7 @@ export async function GET(_req: Request, ctx: RouteContext<"/cuenta/boletos/[ord
     obra: o.performances?.productions?.nombre ?? "DARF Productions",
     funcion: formatPerformanceDate(o.performances?.starts_at ?? null),
     lugar: o.performances?.venue ?? o.performances?.productions?.venue ?? null,
-    asiento: t.seats?.seat_label ?? "Admisión general",
+    asiento: t.seats?.seat_label ?? (t.price_categories ? `General · ${t.price_categories.nombre}` : "Admisión general"),
     orden: o.order_code,
     comprador: o.buyer_nombre,
     qr: t.qr_token,

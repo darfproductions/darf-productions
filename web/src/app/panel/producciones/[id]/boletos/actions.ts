@@ -94,9 +94,14 @@ export async function updatePerformance(_p: TicketState, f: FormData): Promise<T
   if (on_sale && !starts_at) return { ok: false, message: "Una función sin fecha no puede estar en venta." };
   const prices = [...f.entries()]
     .filter(([k, v]) => k.startsWith("precio_") && String(v).trim() !== "")
-    .map(([k, v]) => ({ performance_id: id, price_category_id: k.slice(7), price: Number(v) }));
+    .map(([k, v]) => {
+      const cat = k.slice(7);
+      const cupo = String(f.get(`cupo_${cat}`) ?? "").trim();
+      return { performance_id: id, price_category_id: cat, price: Number(v), ...(f.has(`cupo_${cat}`) && { cupo: cupo === "" ? null : Number(cupo) }) };
+    });
   if (prices.some((p) => Number.isNaN(p.price))) return { ok: false, message: "Revisa los precios." };
   if (prices.some((p) => p.price < 0)) return { ok: false, message: "Los precios no pueden ser negativos." };
+  if (prices.some((p) => "cupo" in p && p.cupo != null && (!Number.isInteger(p.cupo) || p.cupo < 0))) return { ok: false, message: "El cupo debe ser un número entero." };
   const supabase = await createClient();
   if (prices.length) {
     const { error } = await supabase.from("performance_price_categories").upsert(prices, { onConflict: "performance_id,price_category_id" });
@@ -170,4 +175,46 @@ export async function deleteDiscount(_p: TicketState, f: FormData): Promise<Tick
   if (error) return { ok: false, message: error.message };
   refresh(pid);
   return { ok: true, message: "Código eliminado (si ya se usó, solo se desactiva)." };
+}
+
+// ──────── Entrada general (0055) ────────
+
+export async function saveGeneralZone(_p: TicketState, f: FormData): Promise<TicketState> {
+  const pid = String(f.get("pid"));
+  const zid = String(f.get("zid") ?? "");
+  const nombre = String(f.get("nombre") ?? "").trim();
+  const cupo = Number(f.get("cupo"));
+  if (!nombre) return { ok: false, message: "Escribe el nombre de la zona." };
+  if (!Number.isInteger(cupo) || cupo < 1) return { ok: false, message: "El cupo debe ser un número entero mayor a 0." };
+  const row = { nombre, cupo, descripcion: String(f.get("descripcion") ?? "").trim() || null, is_active: f.has("activa") ? f.getAll("activa").includes("on") : true };
+  const supabase = await createClient();
+  const { error } = zid
+    ? await supabase.from("price_categories").update(row).eq("id", zid).eq("production_id", pid)
+    : await supabase.from("price_categories").insert({ ...row, production_id: pid });
+  if (error) return { ok: false, message: error.code === "23505" ? "Ya hay una zona con ese nombre." : error.message };
+  refresh(pid);
+  return { ok: true, message: zid ? "Zona guardada." : "Zona creada. Ponle precio en cada función." };
+}
+
+export type GeneralSaleResult = SaleResult;
+
+/** Venta de entrada general en taquilla (aprobada al momento). */
+export async function boxOfficeGeneralSale(input: { pid: string; performanceId: string; zoneId: string; cantidad: number; nombre: string; telefono: string; vendedor: string }): Promise<GeneralSaleResult> {
+  if (!input.nombre.trim() || !input.telefono.trim()) return { ok: false, message: "Escribe nombre y teléfono del comprador." };
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("admin_create_general_order", {
+    target_performance_id: input.performanceId,
+    target_buyer_nombre: input.nombre.trim(),
+    target_buyer_telefono: input.telefono.trim(),
+    target_zone_id: input.zoneId,
+    target_cantidad: input.cantidad,
+    target_seller_codigo: input.vendedor.trim() || null,
+  });
+  if (error) return { ok: false, message: error.message };
+  const r = data as { order_code: string; total: number; tickets: { seat_label: string; qr_token: string }[] };
+  const tickets = await Promise.all(
+    (r.tickets ?? []).map(async (t) => ({ seat: t.seat_label, qr: await QRCode.toDataURL(t.qr_token, { margin: 1, width: 240 }) })),
+  );
+  refresh(input.pid);
+  return { ok: true, orderCode: r.order_code, total: Number(r.total), tickets };
 }

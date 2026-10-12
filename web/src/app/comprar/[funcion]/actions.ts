@@ -60,3 +60,44 @@ export async function placeOrder(input: {
     }),
   };
 }
+
+/** Entrada general (0055): N lugares de una zona, sin asiento. La base cuenta el cupo. */
+export async function placeGeneralOrder(input: {
+  performanceId: string;
+  productionName: string;
+  zoneId: string;
+  cantidad: number;
+  phone: string;
+  sellerCode: string;
+  discountCode: string;
+}): Promise<OrderResult> {
+  const session = await getSession();
+  if (!session) return { ok: false, message: "Tu sesión expiró. Vuelve a entrar para comprar." };
+  const phone = input.phone.trim();
+  if (!phone) return { ok: false, message: "Escribe tu número de teléfono." };
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("create_general_ticket_order", {
+    target_performance_id: input.performanceId,
+    target_buyer_nombre: session.profile?.nombre || session.email,
+    target_buyer_telefono: phone,
+    target_zone_id: input.zoneId,
+    target_cantidad: input.cantidad,
+    target_seller_codigo: input.sellerCode.trim() || null,
+    target_discount_code: input.discountCode.trim() || null,
+  });
+  if (error) return { ok: false, message: error.message };
+  const d = data as { order_code: string; total: number; seats?: string[]; discount_codigo?: string | null; discount_amount?: number | null };
+  const seats = d.seats ?? [];
+  const { data: ord } = await supabase.from("orders").select("expires_at").eq("order_code", d.order_code).maybeSingle();
+  return {
+    ok: true,
+    orderCode: d.order_code,
+    total: Number(d.total),
+    seats,
+    expiresAt: (ord?.expires_at as string | null) ?? null,
+    whatsappUrl: whatsappPayUrl(env.whatsapp, {
+      prodName: input.productionName, orderCode: d.order_code, seats, total: Number(d.total), buyerPhone: phone,
+      discountCode: d.discount_codigo, discountAmount: d.discount_amount,
+    }),
+  };
+}

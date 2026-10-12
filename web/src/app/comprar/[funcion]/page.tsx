@@ -7,6 +7,8 @@ import { formatPerformanceDate, getPerformanceForSale, getTheme, themeStyle } fr
 import { cleanSellerCode, withSeller } from "@/lib/seller-rules";
 import { createClient } from "@/lib/supabase/server";
 import type { MapSeat } from "@/lib/tickets";
+import { generalAvailability } from "@/lib/boleteria";
+import { GeneralPicker } from "./GeneralPicker";
 import { SeatPicker, type ZonePrice } from "./SeatPicker";
 
 export const metadata: Metadata = { title: "Comprar boletos" };
@@ -27,13 +29,15 @@ export default async function ComprarPage({ params, searchParams }: PageProps<"/
     ? await Promise.all([
         supabase.from("seats").select("id, seat_label, seat_row, seat_number, lado, price_category_id, is_active").eq("production_id", p.id).limit(2000),
         supabase.rpc("get_taken_seats", { target_performance_id: f.id }),
-        supabase.from("performance_price_categories").select("price_category_id, price, price_categories(nombre)").eq("performance_id", f.id),
+        supabase.from("performance_price_categories").select("price_category_id, price, price_categories(nombre, cupo)").eq("performance_id", f.id),
       ])
     : [null, null, null];
 
   const seats = ((seatsRes?.data ?? []) as (MapSeat & { is_active: boolean })[]).filter((s) => s.is_active);
   const taken = (takenRes?.data ?? []) as string[];
-  const prices: ZonePrice[] = (pricesRes?.data ?? []).map((r) => ({
+  // Zonas con asiento para el mapa; las de entrada general van aparte (0055).
+  const general = vendible ? await generalAvailability(f.id) : [];
+  const prices: ZonePrice[] = (pricesRes?.data ?? []).filter((r) => (r.price_categories as unknown as { cupo: number | null } | null)?.cupo == null).map((r) => ({
     categoryId: r.price_category_id as string,
     price: Number(r.price),
     nombre: (r.price_categories as unknown as { nombre: string } | null)?.nombre ?? "",
@@ -47,7 +51,7 @@ export default async function ComprarPage({ params, searchParams }: PageProps<"/
 
   return (
     <main style={themeStyle(getTheme(p))} className="pb-10">
-      <PageHeading eyebrow={`Comprar boletos · ${p.nombre}`} title="Elige tus asientos">
+      <PageHeading eyebrow={`Comprar boletos · ${p.nombre}`} title={prices.length === 0 && general.length > 0 ? "Elige tus boletos" : "Elige tus asientos"}>
         <span className="capitalize">{formatPerformanceDate(f.starts_at)}</span> · {f.venue ?? p.venue}
       </PageHeading>
       <div className="mx-auto max-w-[1440px] px-5 md:px-16">
@@ -58,10 +62,16 @@ export default async function ComprarPage({ params, searchParams }: PageProps<"/
           </div>
         ) : loadError ? (
           <p role="alert" className="rounded-2xl bg-telon p-8">No se pudo cargar el mapa de asientos. Recarga la página.</p>
-        ) : prices.length === 0 ? (
+        ) : prices.length === 0 && general.length === 0 ? (
           <p className="rounded-2xl bg-telon p-8">Esta función aún no tiene precios disponibles. Intenta más tarde.</p>
         ) : (
-          <SeatPicker
+          <div className="flex flex-col gap-10">
+          {general.length > 0 && (
+            <GeneralPicker performanceId={f.id} productionName={p.nombre} zones={general}
+              defaultPhone={session.profile?.telefono ?? ""} defaultSeller={vendedor ?? ""} />
+          )}
+          {prices.length > 0 && general.length > 0 && <h2 className="titular text-2xl">O elige asientos numerados</h2>}
+          {prices.length > 0 && <SeatPicker
             performanceId={f.id}
             productionId={p.id}
             productionName={p.nombre}
@@ -71,7 +81,8 @@ export default async function ComprarPage({ params, searchParams }: PageProps<"/
             defaultPhone={session.profile?.telefono ?? ""}
             defaultSeller={vendedor ?? ""}
             defaultSellerCheck={sellerCheck}
-          />
+          />}
+          </div>
         )}
       </div>
     </main>

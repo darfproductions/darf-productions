@@ -33,8 +33,12 @@ type OrderRow = {
   expires_at: string | null;
   vencida_at: string | null;
   performances: { starts_at: string | null; production_id: string; productions: { nombre: string } | null } | null;
-  tickets: { id: string; is_active: boolean; qr_token: string; checked_in_at: string | null; seats: { seat_label: string } | null }[];
+  tickets: { id: string; is_active: boolean; qr_token: string; checked_in_at: string | null; seats: { seat_label: string } | null; price_categories: { nombre: string } | null }[];
 };
+
+/** Asiento o "General · zona" (0055). */
+const etiqueta = (t: { seats: { seat_label: string } | null; price_categories: { nombre: string } | null }) =>
+  t.seats?.seat_label ?? (t.price_categories ? `General · ${t.price_categories.nombre}` : "Admisión general");
 
 const STATUS: Record<OrderRow["status"], { label: string; cls: string }> = {
   pendiente: { label: "Pendiente de pago", cls: "bg-[#fcefd4] text-[#7a4b00]" },
@@ -51,7 +55,7 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
   await supabase.rpc("expire_due_orders", { pid: null });
   const { data, error } = await supabase
     .from("orders")
-    .select("id, order_code, status, total, discount_amount, discount_codigo, buyer_telefono, created_at, expires_at, vencida_at, performances(starts_at, production_id, productions(nombre)), tickets(id, is_active, qr_token, checked_in_at, seats(seat_label))")
+    .select("id, order_code, status, total, discount_amount, discount_codigo, buyer_telefono, created_at, expires_at, vencida_at, performances(starts_at, production_id, productions(nombre)), tickets(id, is_active, qr_token, checked_in_at, seats(seat_label), price_categories(nombre))")
     .eq("buyer_user_id", session.userId)
     .order("created_at", { ascending: false });
   const orders = (data ?? []) as unknown as OrderRow[];
@@ -89,7 +93,7 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
   const pasadas = orders.filter((o) => funcionPasada(o.performances?.starts_at ?? null, ahora));
   const renderOrder = (o: OrderRow) => {
               const nombre = o.performances?.productions?.nombre ?? "Producción";
-              const seats = o.tickets.filter((t) => t.is_active).map((t) => t.seats?.seat_label ?? "—");
+              const seats = o.tickets.filter((t) => t.is_active).map((t) => etiqueta(t));
               const wa = o.status === "pendiente"
                 ? whatsappPayUrl(env.whatsapp, {
                     prodName: nombre, orderCode: o.order_code, seats, total: Number(o.total),
@@ -125,8 +129,8 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
                       {o.tickets.filter((t) => t.is_active).map((t) => (
                         <li key={t.id} className="flex flex-col items-center gap-2 rounded-xl bg-white p-3 text-sala">
                           {/* eslint-disable-next-line @next/next/no-img-element -- imagen generada (data URL) */}
-                          {qrs.get(t.id) ? <img src={qrs.get(t.id)} alt={`Código QR del asiento ${t.seats?.seat_label ?? ""}`} width={160} height={160} /> : <p className="text-xs text-[#555]">Función pasada</p>}
-                          <p className="text-sm font-bold">{t.seats?.seat_label ?? "Admisión general"}</p>
+                          {qrs.get(t.id) ? <img src={qrs.get(t.id)} alt={`Código QR del asiento ${etiqueta(t)}`} width={160} height={160} /> : <p className="text-xs text-[#555]">Función pasada</p>}
+                          <p className="text-sm font-bold">{etiqueta(t)}</p>
                           {t.checked_in_at && <p className="text-xs font-semibold text-[#8a1c2c]">Ya utilizado</p>}
                         </li>
                       ))}
