@@ -11,6 +11,7 @@ export const NAV_LINKS = [
   { href: "/audiciones", label: "Audiciones" },
   { href: "/nosotros", label: "Nosotros" },
   { href: "/contacto", label: "Contacto" },
+  { href: "/eventos", label: "Eventos" },
   // Al final: el dorado de la Fan Zone no corta el menú (decisión de Diego).
   { href: "/fan-zone", label: "Fan Zone" },
 ];
@@ -35,7 +36,7 @@ export async function SiteHeader() {
 
         <div className="flex items-center gap-3 lg:gap-6">
           {isStaff && <Link href="/panel" className="hidden text-[13px] font-semibold text-texto-2 hover:text-white lg:inline">Panel</Link>}
-          <Link href={account.href} className="hidden text-[13px] font-semibold text-texto-2 hover:text-white lg:inline">{account.label}</Link>
+          <Link href={account.href} className="hidden whitespace-nowrap text-[13px] font-semibold text-texto-2 hover:text-white lg:inline">{account.label}</Link>
           <Link href="/cartelera" className="fb fb-luz fb-sm min-h-[38px] px-4 lg:min-h-[42px] lg:px-5">Boletos</Link>
           <MobileMenu links={NAV_LINKS} account={account} panel={isStaff} />
         </div>

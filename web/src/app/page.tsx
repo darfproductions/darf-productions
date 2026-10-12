@@ -10,6 +10,8 @@ import { ProductionCard } from "@/components/ProductionCard";
 import { ETIQUETA_ESTADO, type EstadoPublico } from "@/lib/home-rules";
 import { formatPrice, getHomeData, getTheme, perfilUrl } from "@/lib/productions";
 import { createClient } from "@/lib/supabase/server";
+import { EventosInicio } from "@/components/eventos/EventosInicio";
+import { getEventosCartelera } from "@/lib/fanzone";
 
 type Miembro = { id: string; nombre: string; retrato_path: string | null };
 
@@ -22,7 +24,7 @@ const iniciales = (n: string) => n.split(/\s+/).filter(Boolean).slice(0, 2).map(
 export default async function Home({ searchParams }: PageProps<"/">) {
   const sp = await searchParams;
   const supabase = await createClient();
-  const [{ productions, featured }, equipoRes, franja] = await Promise.all([getHomeData(), supabase.rpc("team_public"), getPublicSiteBanner()]);
+  const [{ productions, featured }, equipoRes, franja, eventos] = await Promise.all([getHomeData(), supabase.rpc("team_public"), getPublicSiteBanner(), getEventosCartelera(5)]);
   const equipo = ((equipoRes.data ?? []) as Miembro[]).slice(0, 5);
   const current = featured?.production ?? null;
   const enCartelera = featured?.mode === "cartelera";
@@ -166,6 +168,9 @@ export default async function Home({ searchParams }: PageProps<"/">) {
           </ul>
         )}
       </section>
+
+      {/* ── PRÓXIMOS EVENTOS (0082) ── */}
+      <EventosInicio eventos={eventos} />
 
       {/* ── FAN ZONE (oro) + AUDICIONES (luz) ── */}
       <section className="relative mx-auto grid max-w-[1440px] gap-6 px-5 md:px-16 lg:grid-cols-[1.25fr_0.75fr]">

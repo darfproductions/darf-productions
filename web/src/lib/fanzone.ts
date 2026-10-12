@@ -84,3 +84,14 @@ export async function getCredencialPublica(token: string): Promise<CredencialPub
   const { data } = await supabase.rpc("fan_publico", { p_token: token });
   return (data as CredencialPublica | null) ?? null;
 }
+
+/** Escaparate de próximos eventos (0082): todos, aunque sean del club o pidan cuenta (sin liga). */
+export type EventoCartelera = {
+  id: string; production_id: string | null; obra: string | null; tipo: Evento["tipo"]; categoria: string | null; titulo: string;
+  lugar: string | null; starts_at: string; termina: string; acceso: Evento["acceso"]; requiere_registro: boolean; en_vivo: boolean;
+};
+export async function getEventosCartelera(limite = 6): Promise<EventoCartelera[]> {
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("eventos_cartelera", { p_limite: limite });
+  return (data ?? []) as EventoCartelera[];
+}

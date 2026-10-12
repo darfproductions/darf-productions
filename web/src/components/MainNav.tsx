@@ -14,7 +14,7 @@ export function esActiva(path: string, href: string): boolean {
 export function MainNav({ links }: { links: NavLink[] }) {
   const path = usePathname();
   return (
-    <nav aria-label="Principal" className="hidden items-center gap-7 xl:gap-9 lg:flex">
+    <nav aria-label="Principal" className="hidden items-center gap-5 xl:gap-8 lg:flex">
       {links.map((l) => {
         const on = esActiva(path, l.href);
         const fz = l.href === "/fan-zone";
@@ -23,7 +23,7 @@ export function MainNav({ links }: { links: NavLink[] }) {
             key={l.href}
             href={l.href}
             aria-current={on ? "page" : undefined}
-            className={`relative py-2 text-[12px] font-semibold uppercase tracking-[0.18em] transition-colors ${
+            className={`relative whitespace-nowrap py-2 text-[12px] font-semibold uppercase tracking-[0.14em] transition-colors xl:tracking-[0.18em] ${
               fz ? "txt-oro font-bold hover:brightness-125" : on ? "text-white" : "text-texto-2 hover:text-white"
             }`}
           >
