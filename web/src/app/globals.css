@@ -93,3 +93,16 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Franja de avisos de la obra (marquesina): se pausa al pasar el mouse o con el teclado. */
+@keyframes franja-corre {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.franja-corre {
+  animation: franja-corre 30s linear infinite;
+}
+.franja:hover .franja-corre,
+.franja:focus-within .franja-corre {
+  animation-play-state: paused;
+}

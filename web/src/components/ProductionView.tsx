@@ -2,8 +2,10 @@ import Link from "next/link";
 import { CastGrid, Ensemble, TeamGroups } from "@/components/Credits";
 import { Section } from "@/components/PageHeading";
 import { HeroBackdrop, ProductionLogo } from "@/components/PosterArt";
+import { ProductionBanner } from "@/components/ProductionBanner";
 import { YouTube } from "@/components/YouTube";
 import { listOpenAuditionsFor } from "@/lib/auditions";
+import { getPublicBanner } from "@/lib/banner";
 import { fanzoneCount } from "@/lib/fanzone";
 import { estadoPublico } from "@/lib/home-rules";
 import { getProductionContent } from "@/lib/production-content";
@@ -24,7 +26,7 @@ import {
 export async function ProductionView({ data, vendedor = null }: { data: NonNullable<Awaited<ReturnType<typeof getProduction>>>; vendedor?: string | null }) {
   const { production: p, performances, prices } = data;
   const theme = getTheme(p);
-  const [c, gallery, ensayos, audiciones, programa] = await Promise.all([getProductionContent(p.id), getGallery(p.id), fanzoneCount(p.id), listOpenAuditionsFor(p.id), getProgram(p.id)]);
+  const [c, gallery, ensayos, audiciones, programa, franja] = await Promise.all([getProductionContent(p.id), getGallery(p.id), fanzoneCount(p.id), listOpenAuditionsFor(p.id), getProgram(p.id), getPublicBanner(p.id)]);
   const canciones = c.actos.reduce((n, a) => n + a.canciones.length, 0);
   const videos = c.videos;
   const equipos = [
@@ -83,6 +85,8 @@ export async function ProductionView({ data, vendedor = null }: { data: NonNulla
           </div>
         </div>
       </section>
+
+      {franja && <ProductionBanner banner={franja} acento={theme?.acento ?? "#b9a6ff"} />}
 
       {sections.length > 1 && (
         <nav aria-label="Secciones de la obra" className="sticky top-0 z-10 border-b border-current/15 bg-obra-fondo/95 backdrop-blur">

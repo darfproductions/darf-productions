@@ -1,3 +1,4 @@
+import { getBanner } from "@/lib/banner";
 import { createClient } from "@/lib/supabase/server";
 
 // Datos para los editores del panel (con RLS: el equipo ve su obra aunque sea borrador).
@@ -25,7 +26,7 @@ export type EditableProduction = {
 
 export async function getEditorData(id: string) {
   const supabase = await createClient();
-  const [prod, acts, songs, facts, thanks, media] = await Promise.all([
+  const [prod, acts, songs, facts, thanks, media, banner] = await Promise.all([
     supabase
       .from("productions")
       .select("id, nombre, estado, venue, temporada, fecha, duracion, clasificacion, basada_en, frase, sinopsis, color_fondo, color_superficie, color_texto, color_acento, logo_path, ambiente_path, on_sale")
@@ -36,6 +37,7 @@ export async function getEditorData(id: string) {
     supabase.from("production_facts").select("etiqueta, valor").eq("production_id", id).order("orden"),
     supabase.from("production_thanks").select("texto").eq("production_id", id).order("orden"),
     supabase.from("production_media").select("tipo, titulo, youtube_id").eq("production_id", id).order("orden"),
+    getBanner(id),
   ]);
   if (!prod.data) return null;
   const songRows = songs.data ?? [];
@@ -50,5 +52,6 @@ export async function getEditorData(id: string) {
     thanks: (thanks.data ?? []).map((t) => t.texto as string),
     videos: mediaRows.filter((m) => m.tipo === "video"),
     ensayos: mediaRows.filter((m) => m.tipo === "ensayo"),
+    banner,
   };
 }
