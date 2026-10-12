@@ -15,6 +15,10 @@ export function OrderDone({ result }: { result: Extract<OrderResult, { ok: true 
           </p>
         )}
         <p className="text-texto-2">Tu solicitud quedó guardada y tus asientos están apartados hasta que confirmemos tu pago. Cuando se apruebe, tus boletos con QR aparecerán en Mi cuenta.</p>
+        <p className="text-sm text-texto-2">
+          Te avisamos en Mi cuenta cuando se apruebe y si tu apartado está por vencer.{" "}
+          <Link href="/cuenta/notificaciones#telefono" className="font-bold text-violeta-claro underline">Activa los avisos en tu teléfono</Link> para enterarte al momento.
+        </p>
         <div className="flex flex-wrap gap-3">
           {result.whatsappUrl ? (
             <a href={result.whatsappUrl} className="rounded-full bg-[#25d366] px-6 py-4 text-sm font-bold text-[#062b16]">Pagar por WhatsApp</a>

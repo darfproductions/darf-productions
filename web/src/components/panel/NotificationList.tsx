@@ -3,7 +3,7 @@ import { ActionForm } from "@/components/panel/ActionForm";
 import { deleteNotification, markNotification } from "@/lib/notification-actions";
 import type { Notificacion } from "@/lib/notifications";
 
-const ICONO: Record<string, string> = { contacto: "✉", audicion: "🎭", orden: "🎟", oferta: "📜", documento: "📄", ausencia: "🕒", solicitud: "📝", equipo: "👥", cambio: "⚙", prueba: "🔔" };
+const ICONO: Record<string, string> = { contacto: "✉", audicion: "🎭", orden: "🎟", oferta: "📜", documento: "📄", ausencia: "🕒", solicitud: "📝", equipo: "👥", cambio: "⚙", prueba: "🔔", boletos: "🎫" };
 const fecha = (iso: string) => new Intl.DateTimeFormat("es-MX", { dateStyle: "medium", timeStyle: "short", timeZone: "America/Mexico_City" }).format(new Date(iso));
 const mini = "text-xs font-bold text-texto-3 hover:text-texto";
 

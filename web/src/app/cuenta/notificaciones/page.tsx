@@ -25,7 +25,7 @@ export default async function MisNotificaciones({ searchParams }: PageProps<"/cu
   return (
     <main className="pb-10">
       <PageHeading eyebrow="Mi cuenta" title="Notificaciones">
-        Lo nuevo que tiene que ver contigo: respuestas a tus solicitudes, avisos de tu equipo y más.
+        Lo nuevo que tiene que ver contigo: tus boletos, respuestas a tus solicitudes, avisos de tu equipo y más.
       </PageHeading>
       <div className="mx-auto flex max-w-[900px] flex-col gap-5 px-5 md:px-16">
         <div className="flex flex-wrap items-center justify-between gap-2 text-sm">

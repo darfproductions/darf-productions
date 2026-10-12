@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 export const PUSH_TIPOS: { id: string; label: string }[] = [
   { id: "equipo", label: "Equipo: avisos, materiales, notas, juntas y comentarios" },
   { id: "orden", label: "Ventas: órdenes nuevas por aprobar" },
+  { id: "boletos", label: "Mis boletos: orden aprobada, apartado por vencer y recordatorio de función" },
   { id: "contacto", label: "Mensajes de contacto y preguntas a DARFY" },
   { id: "audicion", label: "Solicitudes de audición y registro de talento" },
   { id: "oferta", label: "Respuestas a ofertas de papel" },
@@ -24,8 +25,9 @@ export async function getPushInfo(): Promise<PushInfo> {
   return { publicKey: (key.data as string | null) ?? null, apagados: (prefs.data?.apagados as string[] | undefined) ?? [] };
 }
 
-/** Lo que le llega a alguien sin panel (elenco, fans): sus solicitudes y su equipo. */
+/** Lo que le llega a alguien sin panel (elenco, fans): sus boletos, sus solicitudes y su equipo. */
 export const PUSH_TIPOS_CUENTA: { id: string; label: string }[] = [
+  { id: "boletos", label: "Mis boletos: orden aprobada, apartado por vencer y recordatorio de función" },
   { id: "solicitud", label: "Respuestas a mis solicitudes (faltas, documentos y pagos)" },
   { id: "equipo", label: "Avisos, materiales, notas y juntas de mi equipo" },
 ];

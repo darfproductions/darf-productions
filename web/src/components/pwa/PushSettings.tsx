@@ -146,7 +146,7 @@ export function PushSettings({ publicKey, apagados, tipos, donde = "panel" }: { 
         {estado === "bloqueado" && <p className="text-sm text-texto-2">Bloqueaste las notificaciones para esta página. Actívalas en los ajustes del navegador (el candado junto a la dirección) y vuelve a intentar.</p>}
         {estado === "apagado" && (
           <>
-            <p className="text-sm text-texto-2">{donde === "panel" ? "Te llega al teléfono lo mismo que ves en tus notificaciones del panel: ventas, mensajes, avisos y notas del equipo, etc." : "Te llega al teléfono lo mismo que ves en tus notificaciones: respuestas a tus solicitudes, avisos de tu equipo y más."}</p>
+            <p className="text-sm text-texto-2">{donde === "panel" ? "Te llega al teléfono lo mismo que ves en tus notificaciones del panel: ventas, mensajes, avisos y notas del equipo, etc." : "Te llega al teléfono lo mismo que ves en tus notificaciones: tus boletos, respuestas a tus solicitudes, avisos de tu equipo y más."}</p>
             <button type="button" disabled={pending} onClick={encender} className={`${boton} self-start`}>{pending ? "Un momento…" : "Recibir notificaciones aquí"}</button>
           </>
         )}

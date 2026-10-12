@@ -183,7 +183,7 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
               {notis.length > 0 && <Link href="/cuenta/notificaciones" className="text-violeta-claro">Ver todas →</Link>}
             </span>
           </div>
-          {notis.length === 0 ? <p className="text-sm text-texto-2">No tienes notificaciones. Aquí te avisamos, por ejemplo, cuando respondan tus solicitudes.</p> : (
+          {notis.length === 0 ? <p className="text-sm text-texto-2">No tienes notificaciones. Aquí te avisamos cuando se aprueben tus boletos, antes de tu función y cuando respondan tus solicitudes.</p> : (
             <ul className="flex flex-col divide-y divide-white/10 text-sm">
               {notis.map((n) => (
                 <li key={n.id}>
