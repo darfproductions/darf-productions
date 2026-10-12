@@ -1,5 +1,6 @@
 "use client";
 
+import { compressImage } from "@/lib/image-compress";
 import { useActionState, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { saveMaterial, type MatState } from "./actions";
@@ -16,9 +17,10 @@ export function MaterialForm({ pid, tipos, carpetas, children }: { pid: string; 
   async function subir(file: File) {
     setMsg("");
     if (!TIPOS.includes(file.type)) return setMsg("Tipo no permitido: PDF, audio (mp3, m4a, wav), imagen o video mp4.");
-    if (file.size > 50 * 1024 * 1024) return setMsg("Pesa más de 50 MB. Para videos largos usa un enlace de YouTube (no listado) o Drive.");
     setBusy(true);
     try {
+      if (file.type.startsWith("image/")) file = (await compressImage(file, "galeria")).file;
+      if (file.size > 50 * 1024 * 1024) return setMsg("Pesa más de 50 MB. Para videos largos usa un enlace de YouTube (no listado) o Drive.");
       const limpio = file.name.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-zA-Z0-9._-]+/g, "-").slice(-80);
       const p = `${pid}/${Date.now().toString(36)}-${limpio}`;
       const { error } = await createClient().storage.from("materiales").upload(p, file, { contentType: file.type });

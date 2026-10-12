@@ -1,5 +1,6 @@
 "use client";
 
+import { PasswordInput } from "@/components/PasswordInput";
 import Link from "next/link";
 import { useActionState, useState } from "react";
 import { login, register, type AuthState } from "./actions";
@@ -34,7 +35,7 @@ export function AuthForms({ next }: { next: string }) {
             <input className={field} name="email" type="email" required autoComplete="email" />
           </label>
           <label className="flex flex-col gap-1.5 text-sm font-semibold">Contraseña
-            <input className={field} name="password" type="password" required autoComplete="current-password" />
+            <PasswordInput className={field} name="password" required autoComplete="current-password" />
           </label>
           <Link href="/entrar/recuperar" className="-mt-2 self-end text-sm text-texto-2 underline">¿Olvidaste tu contraseña?</Link>
           {loginState && !loginState.ok && <p role="alert" className="text-[#ff8fa3]">{loginState.message}</p>}
@@ -53,7 +54,7 @@ export function AuthForms({ next }: { next: string }) {
             <input className={field} name="email" type="email" required autoComplete="email" />
           </label>
           <label className="flex flex-col gap-1.5 text-sm font-semibold">Contraseña
-            <input className={field} name="password" type="password" required minLength={8} autoComplete="new-password" aria-describedby="pw-help" />
+            <PasswordInput className={field} name="password" required minLength={8} autoComplete="new-password" aria-describedby="pw-help" />
             <span id="pw-help" className="text-xs font-normal text-texto-3">Mínimo 8 caracteres, con letras y números.</span>
           </label>
           {regState && !regState.ok && <p role="alert" className="text-[#ff8fa3]">{regState.message}</p>}

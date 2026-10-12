@@ -1,5 +1,6 @@
 "use client";
 
+import { compressImage } from "@/lib/image-compress";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
@@ -15,14 +16,16 @@ export function ProPhotoUpload({ pid, kind, label }: { pid: string; kind: "retra
   async function subir(file: File) {
     setMsg("");
     if (!TIPOS.includes(file.type)) return setMsg("Sube una foto JPG, PNG o WebP.");
-    if (file.size > 8 * 1024 * 1024) return setMsg("La foto pesa más de 8 MB.");
     setBusy(true);
     try {
+      const c = await compressImage(file, "perfil");
+      if (c.file.size > 8 * 1024 * 1024) return setMsg("La foto pesa más de 8 MB.");
+      file = c.file;
       const path = `${pid}/${kind}-${Date.now().toString(36)}.${file.type.split("/")[1]}`;
       const { error } = await createClient().storage.from("perfiles").upload(path, file, { contentType: file.type });
       if (error) return setMsg(`No se pudo subir: ${error.message}`);
       const r = kind === "retrato" ? await setProRetrato(pid, path) : await addProPhoto(pid, path);
-      setMsg(r.message);
+      setMsg([r.message, c.nota].filter(Boolean).join(" · "));
       if (r.ok) router.refresh();
     } finally {
       setBusy(false);

@@ -1,5 +1,6 @@
 "use client";
 
+import { compressImage } from "@/lib/image-compress";
 import { useActionState, useState } from "react";
 import { ageAt, lugares } from "@/lib/audition-rules";
 import type { AuditionField, AuditionRole, AuditionSlot, MyApplication } from "@/lib/auditions";
@@ -40,9 +41,11 @@ export function ApplyForm(props: {
     setSubiendo(true);
     try {
       const bmp = await createImageBitmap(file);
-      const check = checkImage("retrato", { type: file.type, size: file.size, width: bmp.width, height: bmp.height });
+      const c = await compressImage(file, "retrato");
+      const check = checkImage("retrato", { type: file.type, size: c.file.size, width: bmp.width, height: bmp.height });
       bmp.close();
       if (!check.ok) return setFotoMsg(check.errors.join(" "));
+      file = c.file;
       const ext = file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg";
       const path = `${props.aid}/${props.userId}/foto-${Date.now().toString(36)}.${ext}`;
       const { error } = await createClient().storage.from("audiciones").upload(path, file, { contentType: file.type });

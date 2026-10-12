@@ -1,5 +1,6 @@
 "use client";
 
+import { compressImage } from "@/lib/image-compress";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { input } from "@/components/panel/ui";
@@ -27,17 +28,21 @@ export function FanzoneForm({ pid }: { pid: string }) {
     try {
       if (conArchivo) {
         if (!file) return setMsg({ ok: false, text: "Elige el archivo." });
+        let subir = file;
+        let nota: string | null = null;
         const okTipo = tipo === "foto" ? FOTO.includes(file.type) : file.type === "application/pdf";
         if (!okTipo) return setMsg({ ok: false, text: tipo === "foto" ? "La foto debe ser JPG, PNG o WebP." : "El documento debe ser PDF." });
-        if (file.size > 20 * 1024 * 1024) return setMsg({ ok: false, text: "El archivo pesa más de 20 MB." });
-        const ext = file.type === "application/pdf" ? "pdf" : file.type.split("/")[1];
+        if (tipo === "foto") { const c = await compressImage(file, "fanzone"); subir = c.file; nota = c.nota; }
+        if (subir.size > 20 * 1024 * 1024) return setMsg({ ok: false, text: "El archivo pesa más de 20 MB." });
+        const ext = subir.type === "application/pdf" ? "pdf" : subir.type.split("/")[1];
         const path = `${pid}/fanzone/${tipo}-${Date.now().toString(36)}.${ext}`;
-        const up = await createClient().storage.from("gallery").upload(path, file, { contentType: file.type });
+        const up = await createClient().storage.from("gallery").upload(path, subir, { contentType: subir.type });
         if (up.error) return setMsg({ ok: false, text: `No se pudo subir: ${up.error.message}` });
         fd.set("archivo", path);
+        if (nota) fd.set("_nota", nota);
       }
       const r = await addFanzoneItem(null, fd);
-      setMsg(r ? { ok: r.ok, text: r.message } : null);
+      setMsg(r ? { ok: r.ok, text: [r.message, fd.get("_nota")].filter(Boolean).join(" · ") } : null);
       if (r?.ok) { form.reset(); setFile(null); router.refresh(); }
     } finally {
       setBusy(false);

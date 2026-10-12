@@ -1,5 +1,6 @@
 "use client";
 
+import { compressImage } from "@/lib/image-compress";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
@@ -15,9 +16,10 @@ export function ProgramFileUpload({ pid, hay }: { pid: string; hay: boolean }) {
   async function subir(file: File) {
     setMsg("");
     if (!TIPOS.includes(file.type)) return setMsg("Sube un PDF o una imagen (JPG, PNG o WebP).");
-    if (file.size > 20 * 1024 * 1024) return setMsg("El archivo pesa más de 20 MB.");
     setBusy(true);
     try {
+      if (file.type !== "application/pdf") file = (await compressImage(file, "galeria")).file;
+      if (file.size > 20 * 1024 * 1024) return setMsg("El archivo pesa más de 20 MB.");
       const ext = file.type === "application/pdf" ? "pdf" : file.type.split("/")[1];
       const path = `${pid}/programa/programa-${Date.now().toString(36)}.${ext}`;
       const { error } = await createClient().storage.from("producciones").upload(path, file, { contentType: file.type });

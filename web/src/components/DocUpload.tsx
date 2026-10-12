@@ -1,5 +1,6 @@
 "use client";
 
+import { compressImage } from "@/lib/image-compress";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { saveDocFile } from "@/app/expediente/actions";
@@ -15,9 +16,10 @@ export function DocUpload({ pid, uid, docTypeId, hay }: { pid: string; uid: stri
   async function subir(file: File) {
     setMsg("");
     if (!TIPOS.includes(file.type)) return setMsg("Sube un PDF o una foto (JPG, PNG o WebP).");
-    if (file.size > 10 * 1024 * 1024) return setMsg("El archivo pesa más de 10 MB.");
     setBusy(true);
     try {
+      if (file.type !== "application/pdf") file = (await compressImage(file, "documento")).file;
+      if (file.size > 10 * 1024 * 1024) return setMsg("El archivo pesa más de 10 MB.");
       const ext = file.type === "application/pdf" ? "pdf" : file.type.split("/")[1];
       const path = `${pid}/${uid}/${docTypeId}-${Date.now().toString(36)}.${ext}`;
       const { error } = await createClient().storage.from("expedientes").upload(path, file, { contentType: file.type });

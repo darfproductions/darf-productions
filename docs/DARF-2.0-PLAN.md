@@ -106,6 +106,17 @@ final (Lanzamiento) y con aprobación explícita.**
 6. Pruebas finales, plan de reversión y ensayo del cambio en DEV.
 7. Cambio de dominio en GoDaddy y Vercel, el día acordado.
 
+### 10. Notas de Diego del 12 de octubre (en curso)
+
+1. **Ver contraseña y fotos optimizadas — HECHO.** Botón de ojo en todos los campos de
+   contraseña. Las fotos se reducen en el navegador antes de subir (WebP o JPEG; los PNG con
+   transparencia se quedan en PNG).
+2. **Panel:** menú en Inicio · Proyectos · Personas · Reportes · Ajustes, e inicio "Tu día".
+3. **Mapas de asientos:** generador por filas y ajuste asiento por asiento.
+4. **Boletos bonitos:** una tarjeta por orden, ventana con boletos diseñados y PDF con los
+   colores de la obra. Apple y Google Wallet en espera.
+5. **Equipo DARF:** página pública `/nosotros` con los directivos.
+
 ## Orden recomendado
 
 1 → 2 → 3, luego 4. El 5 se puede adelantar si Diego aprueba el proveedor. 6 y 8 van después;

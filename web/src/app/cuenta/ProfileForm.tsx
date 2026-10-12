@@ -1,5 +1,6 @@
 "use client";
 
+import { PasswordInput } from "@/components/PasswordInput";
 import { useActionState } from "react";
 import { changeEmail, changePassword, saveProfile, type ProfileState } from "./actions";
 
@@ -56,13 +57,13 @@ export function PasswordForm() {
   return (
     <form action={action} className="flex flex-col gap-3">
       <label className="flex flex-col gap-1.5 text-sm font-semibold">Contraseña actual
-        <input className={field} name="actual" type="password" required autoComplete="current-password" />
+        <PasswordInput className={field} name="actual" required autoComplete="current-password" />
       </label>
       <label className="flex flex-col gap-1.5 text-sm font-semibold">Contraseña nueva
-        <input className={field} name="nueva" type="password" required minLength={8} autoComplete="new-password" />
+        <PasswordInput className={field} name="nueva" required minLength={8} autoComplete="new-password" />
       </label>
       <label className="flex flex-col gap-1.5 text-sm font-semibold">Repite la nueva
-        <input className={field} name="confirmar" type="password" required minLength={8} autoComplete="new-password" />
+        <PasswordInput className={field} name="confirmar" required minLength={8} autoComplete="new-password" />
       </label>
       <p className="text-xs text-texto-3">Al menos 8 caracteres, con letras y números.</p>
       <Msg s={state} />

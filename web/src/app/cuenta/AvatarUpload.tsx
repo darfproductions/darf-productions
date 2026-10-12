@@ -1,6 +1,7 @@
 "use client";
 
 /* eslint-disable @next/next/no-img-element -- foto privada con URL firmada */
+import { compressImage } from "@/lib/image-compress";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
@@ -16,14 +17,16 @@ export function AvatarUpload({ uid, url, inicial }: { uid: string; url: string |
   async function subir(file: File) {
     setMsg("");
     if (!TIPOS.includes(file.type)) return setMsg("Sube una foto JPG, PNG o WebP.");
-    if (file.size > 5 * 1024 * 1024) return setMsg("La foto pesa más de 5 MB.");
     setBusy(true);
     try {
+      const c = await compressImage(file, "avatar");
+      if (c.file.size > 5 * 1024 * 1024) return setMsg("La foto pesa más de 5 MB.");
+      file = c.file;
       const path = `${uid}/foto-${Date.now().toString(36)}.${file.type.split("/")[1]}`;
       const { error } = await createClient().storage.from("avatares").upload(path, file, { contentType: file.type });
       if (error) return setMsg("No se pudo subir la foto.");
       const r = await setAvatar(path);
-      setMsg(r.message);
+      setMsg([r.message, c.nota].filter(Boolean).join(" · "));
       if (r.ok) router.refresh();
     } finally {
       setBusy(false);

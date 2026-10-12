@@ -1,5 +1,6 @@
 "use client";
 
+import { compressImage } from "@/lib/image-compress";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { checkImage, IMAGE_RULES, storagePath, type ImageKind } from "@/lib/image-rules";
@@ -64,20 +65,22 @@ export function ImageUpload({
     setBusy(true);
     try {
       const dims = await measure(file, kind === "logo");
-      const check = checkImage(kind, { type: file.type, size: file.size, ...dims });
+      // Se comprime antes de subir; el tamaño máximo se revisa sobre la foto ya optimizada.
+      const c = await compressImage(file, kind);
+      const check = checkImage(kind, { type: file.type, size: c.file.size, ...dims });
       if (!check.ok) {
         setMsg({ ok: false, lines: check.errors });
         return;
       }
-      const path = storagePath(productionId, carpeta, base, file.type);
+      const path = storagePath(productionId, carpeta, base, c.file.type);
       const supabase = createClient();
-      const { error } = await supabase.storage.from(bucket).upload(path, file, { contentType: file.type, upsert: false });
+      const { error } = await supabase.storage.from(bucket).upload(path, c.file, { contentType: c.file.type, upsert: false });
       if (error) {
         setMsg({ ok: false, lines: [`No se pudo subir: ${error.message}`] });
         return;
       }
       const res = await save(path);
-      setMsg({ ok: res.ok, lines: [res.message, ...check.warnings] });
+      setMsg({ ok: res.ok, lines: [res.message, ...(c.nota ? [c.nota] : []), ...check.warnings] });
       if (res.ok) router.refresh();
     } catch {
       setMsg({ ok: false, lines: ["No se pudo leer la imagen. Prueba con otro archivo."] });

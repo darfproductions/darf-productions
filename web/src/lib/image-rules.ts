@@ -21,7 +21,7 @@ export const IMAGE_RULES: Record<ImageKind, { types: string[]; maxSize: number; 
   logo: { types: ["image/png", "image/webp"], maxSize: 8 * MB, label: "Logo", hint: "PNG o WebP con fondo transparente, mínimo 1200 px de ancho." },
   ambiente: { types: ["image/jpeg", "image/webp", "image/png"], maxSize: 8 * MB, label: "Imagen de ambiente", hint: "Horizontal 16:9, ideal 1920×1080, sin texto ni logos." },
   retrato: { types: ["image/jpeg", "image/webp", "image/png"], maxSize: 8 * MB, label: "Retrato", hint: "Vertical 3:4, ideal 900×1200, de la sesión de esta obra." },
-  galeria: { types: ["image/jpeg", "image/webp", "image/png"], maxSize: 5 * MB, label: "Foto", hint: "JPG o WebP, máximo 5 MB." },
+  galeria: { types: ["image/jpeg", "image/webp", "image/png"], maxSize: 5 * MB, label: "Foto", hint: "JPG o WebP. Las fotos grandes se optimizan solas antes de subir." },
   patrocinador: { types: ["image/png", "image/webp", "image/jpeg"], maxSize: 4 * MB, label: "Logo del patrocinador", hint: "PNG, WebP o JPG, de preferencia con fondo transparente o blanco; mínimo 300 px de ancho." },
 };
 
