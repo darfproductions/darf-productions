@@ -135,7 +135,9 @@ export function panelMenu(a: PanelAccessData): NavSection[] {
   // Quien solo está en el equipo de una convocatoria general no tiene obras: solo ve Audiciones.
   const proyectos: Section[] = a.isDirector || myProductionIds(a).length ? [{ href: "/panel/producciones", label: "Producciones" }] : [];
   if (hasAuditionAccess(a)) proyectos.push({ href: "/panel/audiciones", label: "Audiciones" });
-  out.push({ id: "proyectos", label: "Proyectos", href: proyectos[0].href, subs: proyectos, match: ["/panel/producciones", "/panel/audiciones"] });
+  // Eventos (0081): el Director y quien tiene Fan Zone en alguna obra.
+  if (a.isDirector || Object.values(a.byProduction).some((p) => p.includes("fanzone.editar"))) proyectos.push({ href: "/panel/eventos", label: "Eventos" });
+  out.push({ id: "proyectos", label: "Proyectos", href: proyectos[0].href, subs: proyectos, match: ["/panel/producciones", "/panel/audiciones", "/panel/eventos"] });
   if (a.isDirector) {
     out.push({
       id: "personas", label: "Personas", href: "/panel/personas",

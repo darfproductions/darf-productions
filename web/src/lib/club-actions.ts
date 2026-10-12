@@ -18,7 +18,8 @@ export async function apartarEncuentro(id: string, on: boolean): Promise<{ ok: b
   const { error } = await supabase.rpc("fan_encuentro_apartar", { eid: id, p_on: on });
   if (error) return { ok: false, message: error.message };
   revalidatePath("/fan-zone", "layout");
-  return { ok: true, message: on ? "¡Lugar apartado! Muestra tu credencial del Club Fan en la entrada." : "Liberaste tu lugar." };
+  revalidatePath("/eventos");
+  return { ok: true, message: on ? "¡Lugar apartado! Te avisamos una hora antes." : "Liberaste tu lugar." };
 }
 
 export async function recordarPreventa(pid: string, on: boolean): Promise<{ ok: boolean; message: string }> {
@@ -37,4 +38,14 @@ export async function regenerarCredencial(): Promise<{ ok: boolean; message: str
   revalidatePath("/fan-zone", "layout");
   revalidatePath("/cuenta");
   return { ok: true, message: "Credencial nueva lista. La anterior ya no sirve." };
+}
+
+/** "Recordarme" en un evento (0081): aviso en la cuenta y al teléfono una hora antes. */
+export async function recordarEvento(id: string, on: boolean): Promise<{ ok: boolean; message: string }> {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("evento_recordar", { eid: id, p_on: on });
+  if (error) return { ok: false, message: error.message };
+  revalidatePath("/fan-zone", "layout");
+  revalidatePath("/eventos");
+  return { ok: true, message: on ? "Listo: te avisamos una hora antes." : "Recordatorio desactivado." };
 }

@@ -112,33 +112,7 @@ export async function setFanzoneDetalle(_p: State, f: FormData): Promise<State> 
   return { ok: true, message: "Guardado." };
 }
 
-// ──────── Eventos del Club Fan (0075, 0080): foto con el elenco o evento exclusivo ────────
-export async function addEncuentro(_p: State, f: FormData): Promise<State> {
-  const pid = str(f, "pid");
-  const tipo = str(f, "tipo") === "evento" ? "evento" : "foto";
-  const cupo = Number(str(f, "cupo"));
-  if (!Number.isInteger(cupo) || cupo < 1 || cupo > 500) return { ok: false, message: "El cupo va de 1 a 500." };
-  const performance = str(f, "performance") || null;
-  const fila: Record<string, unknown> = { production_id: pid, tipo, cupo, notas: str(f, "notas").slice(0, 300) || null };
-  if (tipo === "foto") {
-    if (!performance) return { ok: false, message: "Elige la función." };
-    Object.assign(fila, { performance_id: performance, requiere_registro: true, requiere_boleto: true });
-  } else {
-    const titulo = str(f, "titulo").slice(0, 120);
-    const inicia = localMxToIso(str(f, "inicia"));
-    if (!titulo) return { ok: false, message: "Escribe el nombre del evento." };
-    if (!inicia) return { ok: false, message: "Elige la fecha y hora del evento." };
-    Object.assign(fila, {
-      titulo, inicia, lugar: str(f, "lugar").slice(0, 160) || null, descripcion: str(f, "descripcion").slice(0, 600) || null,
-      performance_id: performance, requiere_registro: f.get("registro") === "on", requiere_boleto: !!performance && f.get("boleto") === "on",
-    });
-  }
-  const supabase = await createClient();
-  const { error } = await supabase.from("fan_encuentros").insert(fila);
-  if (error) return { ok: false, message: error.code === "23505" ? "Esa función ya tiene foto con el elenco." : error.message };
-  refresh(pid);
-  return { ok: true, message: tipo === "foto" ? "Foto con el elenco creada." : "Evento creado." };
-}
+// ──────── Eventos (0081): se crean en Panel → Eventos (app/panel/eventos/actions.ts) ────────
 
 /** Validar la credencial del Club Fan en la entrada de un evento (fanzone.editar o puerta.validar). */
 export async function validarCredencial(pid: string, eid: string, code: string): Promise<Lectura> {
@@ -159,15 +133,3 @@ export async function validarCredencial(pid: string, eid: string, code: string):
   return { ...base, tono: "error", titulo: ACCESO_FAN[r.resultado]?.titulo ?? "No puede pasar" };
 }
 
-export async function setEncuentro(_p: State, f: FormData): Promise<State> {
-  const pid = str(f, "pid");
-  const supabase = await createClient();
-  const q = str(f, "accion") === "borrar"
-    ? supabase.from("fan_encuentros").delete({ count: "exact" }).eq("id", str(f, "id")).eq("production_id", pid)
-    : supabase.from("fan_encuentros").update({ abierto: str(f, "accion") === "abrir" }, { count: "exact" }).eq("id", str(f, "id")).eq("production_id", pid);
-  const { error, count } = await q;
-  if (error) return { ok: false, message: error.message };
-  if (!count) return { ok: false, message: "No tienes permiso." };
-  refresh(pid);
-  return { ok: true, message: "Listo." };
-}

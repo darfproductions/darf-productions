@@ -22,8 +22,8 @@ export default async function DoorPage({ params }: PageProps<"/panel/produccione
   const { data } = await supabase.from("performances").select("id, starts_at").eq("production_id", id).not("starts_at", "is", null).order("starts_at");
   const funciones = (data ?? []) as { id: string; starts_at: string }[];
   // Eventos del Club Fan (0080): en la entrada se valida la credencial del socio.
-  const { data: ev } = await supabase.from("fan_encuentros").select("id, tipo, titulo, inicia, performances(starts_at)").eq("production_id", id);
-  const eventos = ((ev ?? []) as unknown as { id: string; tipo: string; titulo: string | null; inicia: string | null; performances: { starts_at: string | null } | null }[])
+  const { data: ev } = await supabase.from("fan_encuentros").select("id, tipo, categoria, titulo, inicia, termina, performances(starts_at)").eq("production_id", id).neq("tipo", "en_linea");
+  const eventos = ((ev ?? []) as unknown as { id: string; tipo: string; categoria: string | null; titulo: string | null; inicia: string | null; termina: string | null; performances: { starts_at: string | null } | null }[])
     .map((e) => ({ ...e, cuando: e.performances?.starts_at ?? e.inicia }))
     .filter((e) => vigenteEnPuerta(e.cuando))
     .sort((a, b) => (a.cuando ?? "").localeCompare(b.cuando ?? ""));
@@ -36,12 +36,12 @@ export default async function DoorPage({ params }: PageProps<"/panel/produccione
       {eventos.length > 0 && (
         <Card className="flex flex-col gap-3">
           <div>
-            <h2 className="titular text-xl">Club Fan</h2>
-            <p className="mt-1 text-sm text-texto-2">Para la foto con el elenco y los eventos del club no hay boleto aparte: se escanea la credencial del socio (QR dorado, código FAN-XXXX).</p>
+            <h2 className="titular text-xl">Eventos · Club Fan</h2>
+            <p className="mt-1 text-sm text-texto-2">Para los eventos (foto con el elenco, tours, early access…) no hay boleto aparte: se escanea la credencial del Club Fan (QR dorado, código FAN-XXXX).</p>
           </div>
           <ul className="flex flex-col gap-2 text-sm">
             {eventos.map((e) => {
-              const nombre = e.tipo === "foto" ? "Foto con el elenco" : e.titulo ?? "Evento";
+              const nombre = e.titulo || e.categoria || "Evento";
               return (
                 <li key={e.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-linea px-3 py-2.5">
                   <span><b>{nombre}</b> <span className="capitalize text-texto-3">· {formatPerformanceDate(e.cuando)}</span></span>

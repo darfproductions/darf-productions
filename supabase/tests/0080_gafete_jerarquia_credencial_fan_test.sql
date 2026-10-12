@@ -103,18 +103,18 @@ end $$;
 do $$ declare pf uuid; foto uuid; ev uuid; abierto uuid; j json; begin
   insert into performances (production_id, starts_at, on_sale) values ('showman', now() + interval '10 days', true) returning id into pf;
   insert into fan_encuentros (production_id, performance_id, cupo) values ('showman', pf, 10) returning id into foto;
-  insert into fan_encuentros (production_id, tipo, titulo, lugar, inicia, cupo, requiere_boleto) values ('showman', 'evento', 'Ensayo abierto', 'Teatro', now() + interval '5 days', 10, false) returning id into ev;
-  insert into fan_encuentros (production_id, tipo, titulo, inicia, cupo, requiere_registro, requiere_boleto) values ('showman', 'evento', 'Meet & greet', now() + interval '6 days', 1, false, false) returning id into abierto;
+  insert into fan_encuentros (production_id, tipo, titulo, lugar, inicia, cupo, requiere_boleto) values ('showman', 'presencial', 'Ensayo abierto', 'Teatro', now() + interval '5 days', 10, false) returning id into ev;
+  insert into fan_encuentros (production_id, tipo, titulo, inicia, cupo, requiere_registro, requiere_boleto) values ('showman', 'presencial', 'Meet & greet', now() + interval '6 days', 1, false, false) returning id into abierto;
   -- Un evento sin título no se puede crear.
   begin
-    insert into fan_encuentros (production_id, tipo, inicia, cupo, requiere_boleto) values ('showman', 'evento', now() + interval '1 day', 5, false);
+    insert into fan_encuentros (production_id, tipo, inicia, cupo, requiere_boleto) values ('showman', 'presencial', now() + interval '1 day', 5, false);
     raise exception 'FALLO T3: evento sin título';
   exception when check_violation then null; end;
 
   -- La socia aparta el evento con registro; la lista lo muestra.
   perform pg_temp.as_user('00000000-0000-0000-0000-0000000000e5');
   perform fan_encuentro_apartar(ev, true);
-  if (select count(*) from fan_encuentros_lista('showman') where tipo = 'evento') <> 2 then raise exception 'FALLO T3: lista de eventos'; end if;
+  if (select count(*) from fan_encuentros_lista('showman') where tipo = 'presencial') <> 2 then raise exception 'FALLO T3: lista de eventos'; end if;
   begin perform fan_encuentro_apartar(abierto, true); raise exception 'FALLO T3: apartó un evento sin registro';
   exception when others then if sqlerrm like 'FALLO%' then raise; end if; end;
 

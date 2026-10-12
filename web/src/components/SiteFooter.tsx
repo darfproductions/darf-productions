@@ -6,7 +6,7 @@ import { CONTACT_CHANNELS, WHATSAPP_DISPLAY } from "@/content/contacto";
 
 const COLUMNAS: { titulo: string; ligas: { href: string; label: string; fz?: boolean }[] }[] = [
   { titulo: "Explora", ligas: [{ href: "/cartelera", label: "Cartelera" }, { href: "/producciones", label: "Producciones" }, { href: "/audiciones", label: "Audiciones" }, { href: "/nosotros", label: "Nosotros" }] },
-  { titulo: "Comunidad", ligas: [{ href: "/fan-zone", label: "Fan Zone", fz: true }, { href: "/cuenta", label: "Mi cuenta" }, { href: "/cuenta#boletos", label: "Mis boletos" }, { href: "/contacto", label: "Contacto" }] },
+  { titulo: "Comunidad", ligas: [{ href: "/fan-zone", label: "Fan Zone", fz: true }, { href: "/eventos", label: "Eventos" }, { href: "/cuenta", label: "Mi cuenta" }, { href: "/cuenta#boletos", label: "Mis boletos" }, { href: "/contacto", label: "Contacto" }] },
   { titulo: "Ayuda", ligas: [{ href: "/privacidad", label: "Aviso de privacidad" }, { href: "/terminos", label: "Términos" }, { href: "/reembolsos", label: "Cambios y reembolsos" }] },
 ];
 
