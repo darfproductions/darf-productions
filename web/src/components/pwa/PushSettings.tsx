@@ -31,7 +31,7 @@ const boton = "rounded-full bg-texto px-5 py-2.5 text-sm font-bold text-sala dis
 const fantasma = "rounded-full border border-white/25 px-4 py-2 text-sm font-bold hover:border-white/50 disabled:opacity-60";
 
 // "Recibir notificaciones en este teléfono" + instalar la app + qué tipos llegan.
-export function PushSettings({ publicKey, apagados, tipos }: { publicKey: string | null; apagados: string[]; tipos: { id: string; label: string }[] }) {
+export function PushSettings({ publicKey, apagados, tipos, donde = "panel" }: { publicKey: string | null; apagados: string[]; tipos: { id: string; label: string }[]; donde?: "panel" | "cuenta" }) {
   const [estado, setEstado] = useState<Estado>("cargando");
   const [endpoint, setEndpoint] = useState<string | null>(null);
   const [mensaje, setMensaje] = useState<{ ok: boolean; texto: string } | null>(null);
@@ -64,7 +64,7 @@ export function PushSettings({ publicKey, apagados, tipos }: { publicKey: string
     start(async () => {
       setMensaje(null);
       if (!publicKey) {
-        setMensaje({ ok: false, texto: "Las notificaciones todavía no están configuradas. Avísale al Director." });
+        setMensaje({ ok: false, texto: donde === "panel" ? "Las notificaciones todavía no están configuradas. Avísale al Director." : "Las notificaciones todavía no están disponibles. Intenta más tarde." });
         return;
       }
       const permiso = await Notification.requestPermission();
@@ -146,7 +146,7 @@ export function PushSettings({ publicKey, apagados, tipos }: { publicKey: string
         {estado === "bloqueado" && <p className="text-sm text-texto-2">Bloqueaste las notificaciones para esta página. Actívalas en los ajustes del navegador (el candado junto a la dirección) y vuelve a intentar.</p>}
         {estado === "apagado" && (
           <>
-            <p className="text-sm text-texto-2">Te llega al teléfono lo mismo que ves en tus notificaciones del panel: ventas, mensajes, avisos y notas del equipo, etc.</p>
+            <p className="text-sm text-texto-2">{donde === "panel" ? "Te llega al teléfono lo mismo que ves en tus notificaciones del panel: ventas, mensajes, avisos y notas del equipo, etc." : "Te llega al teléfono lo mismo que ves en tus notificaciones: respuestas a tus solicitudes, avisos de tu equipo y más."}</p>
             <button type="button" disabled={pending} onClick={encender} className={`${boton} self-start`}>{pending ? "Un momento…" : "Recibir notificaciones aquí"}</button>
           </>
         )}

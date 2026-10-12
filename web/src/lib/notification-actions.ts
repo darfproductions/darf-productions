@@ -6,7 +6,8 @@ import { createClient } from "@/lib/supabase/server";
 // Marcar leídas y borrar (solo las propias: RLS y permiso solo sobre read_at).
 type State = { ok: boolean; message: string } | null;
 
-const refresh = () => { revalidatePath("/panel", "layout"); };
+// Las mismas notificaciones se ven en el panel y en Mi cuenta.
+const refresh = () => { revalidatePath("/panel", "layout"); revalidatePath("/cuenta", "layout"); };
 
 export async function markNotification(_p: State, f: FormData): Promise<State> {
   const supabase = await createClient();

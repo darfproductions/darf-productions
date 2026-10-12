@@ -31,14 +31,15 @@ self.addEventListener("push", (event) => {
       icon: "/icons/icon-192.png",
       badge: "/icons/badge-96.png",
       tag: d.id ? `n${d.id}` : undefined,
-      data: { href: typeof d.href === "string" && d.href.startsWith("/") ? d.href : "/panel/notificaciones" },
+      // Solo ligas internas ("/…", nunca "//…"); si no, a Mis notificaciones (existe para todos).
+      data: { href: typeof d.href === "string" && /^\/(?![/\\])/.test(d.href) ? d.href : "/cuenta/notificaciones" },
     }),
   );
 });
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const url = new URL(event.notification.data?.href || "/panel/notificaciones", self.location.origin).href;
+  const url = new URL(event.notification.data?.href || "/cuenta/notificaciones", self.location.origin).href;
   event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((wins) => {
       for (const w of wins) {

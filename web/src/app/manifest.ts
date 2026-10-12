@@ -23,7 +23,7 @@ export default function manifest(): MetadataRoute.Manifest {
       { name: "Cartelera", url: "/cartelera" },
       { name: "Mi cuenta", url: "/cuenta" },
       { name: "Panel", url: "/panel" },
-      { name: "Notificaciones", url: "/panel/notificaciones" },
+      { name: "Notificaciones", url: "/cuenta/notificaciones" },
     ],
   };
 }

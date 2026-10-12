@@ -17,6 +17,7 @@ import { createClient } from "@/lib/supabase/server";
 import { formatMoney, whatsappPayUrl } from "@/lib/tickets";
 import { logout } from "../entrar/actions";
 import Link from "next/link";
+import { listNotifications, unreadCount } from "@/lib/notifications";
 import { AvatarUpload } from "./AvatarUpload";
 import { EmailForm, PasswordForm, ProfileForm } from "./ProfileForm";
 import { funcionPasada } from "@/lib/account-rules";
@@ -78,9 +79,10 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
   }
 
   // Mis audiciones (0036): solo las propias; QR mientras no haya llegado.
-  const [audiciones, invitaciones, ofertas, misObras, sinLeer, misVentas, miEquipo, equipoPend] = await Promise.all([
+  const [audiciones, invitaciones, ofertas, misObras, sinLeer, misVentas, miEquipo, equipoPend, notis, notisNuevas] = await Promise.all([
     listMyApplications(session.userId), listMyInvites(), listMyOffers(), supabase.rpc("my_productions"), supabase.rpc("my_unread_announcements"),
     supabase.rpc("my_seller"), supabase.rpc("my_team_productions"), supabase.rpc("my_team_unread"),
+    listNotifications({ limit: 3 }), unreadCount(),
   ]);
   const equipos = (miEquipo.data ?? []) as { production_id: string | null; nombre: string; roles: string[] }[];
   const pendEquipo = new Map(((equipoPend.data ?? []) as { production_id: string | null; avisos: number; notas: number }[]).map((x) => [x.production_id ?? "general", x]));
@@ -171,6 +173,33 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
     <main className="pb-10">
       <PageHeading eyebrow="Mi cuenta" title={`Hola, ${session.profile?.nombre || "fan DARF"}`} />
       <div className="mx-auto grid max-w-[1440px] gap-10 px-5 md:px-16 lg:grid-cols-12">
+        <section aria-labelledby="notificaciones" className="flex flex-col gap-3 rounded-2xl bg-telon p-5 lg:col-span-12">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h2 id="notificaciones" className="text-lg font-bold">
+              Notificaciones{notisNuevas > 0 && <span className="ml-2 rounded-full bg-[#7c3aed] px-2 py-0.5 align-middle text-xs text-white">{notisNuevas} {notisNuevas === 1 ? "nueva" : "nuevas"}</span>}
+            </h2>
+            <span className="flex flex-wrap gap-4 text-sm font-bold">
+              <Link href="/cuenta/notificaciones#telefono" className="text-violeta-claro">📱 Activar en mi teléfono</Link>
+              {notis.length > 0 && <Link href="/cuenta/notificaciones" className="text-violeta-claro">Ver todas →</Link>}
+            </span>
+          </div>
+          {notis.length === 0 ? <p className="text-sm text-texto-2">No tienes notificaciones. Aquí te avisamos, por ejemplo, cuando respondan tus solicitudes.</p> : (
+            <ul className="flex flex-col divide-y divide-white/10 text-sm">
+              {notis.map((n) => (
+                <li key={n.id}>
+                  <Link href={n.href ?? "/cuenta/notificaciones"} className="flex items-start gap-3 py-2.5 hover:text-violeta-claro">
+                    <span aria-hidden="true" className={`mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full ${n.read_at ? "bg-transparent" : "bg-[#a78bfa]"}`} />
+                    <span className="min-w-0 flex-1">
+                      <span className={`block wrap-anywhere ${n.read_at ? "text-texto-3" : "font-bold"}`}>{n.titulo}</span>
+                      {n.detalle && <span className="block truncate text-texto-3">{n.detalle}</span>}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
         <section aria-labelledby="boletos" className="flex flex-col gap-4 lg:col-span-8">
           <h2 id="boletos" className="titular text-2xl">Mis boletos</h2>
           {nueva && (

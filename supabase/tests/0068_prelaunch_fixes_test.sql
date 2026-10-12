@@ -79,13 +79,10 @@ do $$ declare i int; ok boolean := false; begin
   reset role;
 end $$;
 
--- T4: push sin acceso anónimo; push_test solo equipo
-do $$ declare ok boolean := false; begin
+-- T4: push sin acceso anónimo (desde 0071 cualquiera con sesión puede probar su teléfono)
+do $$ begin
   if has_function_privilege('anon', 'push_test()', 'execute') or has_function_privilege('anon', 'push_subscribe(text,text,text,text)', 'execute') then
     raise exception 'FALLO T4: anon puede ejecutar push_*'; end if;
-  perform pg_temp.as_user('00000000-0000-0000-0000-0000000000c1');
-  begin perform push_test(); exception when others then ok := true; end;
-  if not ok then raise exception 'FALLO T4b: un fan manda pruebas'; end if;
   perform pg_temp.as_user('00000000-0000-0000-0000-0000000000b6');
   perform push_test();
   reset role;

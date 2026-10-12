@@ -23,7 +23,7 @@ export async function removePushSubscription(endpoint: string): Promise<State> {
 export async function sendPushTest(): Promise<State> {
   const supabase = await createClient();
   const { error } = await supabase.rpc("push_test");
-  if (error) return { ok: false, message: "No se pudo mandar la prueba." };
+  if (error) return { ok: false, message: /Intenta en una hora/.test(error.message) ? error.message : "No se pudo mandar la prueba." };
   return { ok: true, message: "Enviada: debe llegar en unos segundos." };
 }
 

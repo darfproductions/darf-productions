@@ -23,3 +23,9 @@ export async function getPushInfo(): Promise<PushInfo> {
   ]);
   return { publicKey: (key.data as string | null) ?? null, apagados: (prefs.data?.apagados as string[] | undefined) ?? [] };
 }
+
+/** Lo que le llega a alguien sin panel (elenco, fans): sus solicitudes y su equipo. */
+export const PUSH_TIPOS_CUENTA: { id: string; label: string }[] = [
+  { id: "solicitud", label: "Respuestas a mis solicitudes (faltas, documentos y pagos)" },
+  { id: "equipo", label: "Avisos, materiales, notas y juntas de mi equipo" },
+];
