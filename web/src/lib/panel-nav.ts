@@ -150,8 +150,8 @@ export function panelMenu(a: PanelAccessData): NavSection[] {
   if (a.isDirector) {
     out.push({
       id: "ajustes", label: "Ajustes", href: "/panel/roles",
-      subs: [{ href: "/panel/roles", label: "Roles y permisos" }, { href: "/panel/bitacora", label: "Bitácora" }],
-      match: ["/panel/roles", "/panel/bitacora"],
+      subs: [{ href: "/panel/roles", label: "Roles y permisos" }, { href: "/panel/ajustes/darfy", label: "DARFY" }, { href: "/panel/bitacora", label: "Bitácora" }],
+      match: ["/panel/roles", "/panel/bitacora", "/panel/ajustes"],
     });
   }
   return out;

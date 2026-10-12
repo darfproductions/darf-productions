@@ -82,7 +82,10 @@ export default async function PanelHome() {
       <Card className="flex flex-col gap-2">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <h2 className="titular text-xl">Notificaciones{sinLeer ? <span className="ml-2 rounded-full bg-[#7c3aed] px-2 py-0.5 align-middle text-xs text-white">{sinLeer} nuevas</span> : null}</h2>
-          <Link href="/panel/notificaciones" className="text-sm font-bold text-violeta-claro">Ver todas →</Link>
+          <span className="flex gap-4">
+            <Link href="/panel/notificaciones#telefono" className="text-sm font-bold text-violeta-claro">📱 En mi teléfono</Link>
+            <Link href="/panel/notificaciones" className="text-sm font-bold text-violeta-claro">Ver todas →</Link>
+          </span>
         </div>
         <NotificationList items={notifs} />
       </Card>

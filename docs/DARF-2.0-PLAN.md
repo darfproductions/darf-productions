@@ -83,10 +83,11 @@ final (Lanzamiento) y con aprobación explícita.**
 
 - Rúbrica de evaluación por producción, editable por los maestros.
 
-### 8. DARFY, asistente virtual (Fase 6 de la visión)
+### 8. DARFY, asistente virtual (Fase 6 de la visión) — primera versión HECHA (0067, ver §14)
 
 - Responde preguntas del público con información autorizada (funciones, compra, obras).
 - Nunca muestra datos privados.
+- Pendiente: conectar una IA (Claude) cuando Diego apruebe la clave y el tope de gasto.
 
 ### 9. Lanzamiento (fase final) — nada de esto se hace sin tu aprobación
 
@@ -184,6 +185,36 @@ final (Lanzamiento) y con aprobación explícita.**
     respondidas, documentos subidos, ausencias, todo lo del equipo y cambios de
     configuración.
   - Nueva página **Personas → Contacto** para leer los mensajes.
+
+### 14. DARFY y app con notificaciones push — HECHO (0067)
+
+Decisiones de Diego: DARFY empieza **sin IA** y solo con información pública; si no sabe,
+ofrece WhatsApp y un formulario. La app empieza como **app web instalable** (PWA) con
+push; las tiendas (Apple $99 al año, Google $25) quedan para después.
+
+- **DARFY** (burbuja "Pregúntale a DARFY" en las páginas públicas; no sale en el panel ni
+  al comprar):
+  - contesta con preguntas frecuentes (`darfy_faq`, 15 iniciales) y con datos en vivo:
+    cartelera y próximamente, funciones, precios y lugar de cada obra, audiciones
+    abiertas y Registro permanente;
+  - entiende sin acentos, plural/singular y siglas ("hsm");
+  - si no sabe: botón de WhatsApp con la pregunta ya escrita y "Déjanos tus datos", que
+    llega a Contacto con asunto "Pregunta a DARFY" (y su notificación);
+  - lo que no supo contestar se guarda (solo la pregunta) en **Ajustes → DARFY**, donde
+    staff y Director editan las preguntas frecuentes y convierten las pendientes en
+    nuevas;
+  - motor puro en `web/src/lib/darfy-rules.ts`, que es el contexto que usará la IA.
+- **App instalable:** `manifest.webmanifest`, íconos del logo, service worker
+  (`public/sw.js`) y página "Sin conexión". En Android sale "Instalar app"; en iPhone,
+  Compartir → Agregar a inicio.
+- **Push:**
+  - en Notificaciones → "En mi teléfono": activar, probar, apagar y elegir qué tipos
+    llegan;
+  - cada notificación del panel (0066) se manda a los teléfonos suscritos con la Edge
+    Function `push-send` (Supabase), llamada por `pg_net`;
+  - las llaves VAPID las genera la función y viven en `push_config` (nadie las lee desde
+    la web);
+  - en iPhone solo funciona con la app instalada (iOS 16.4+).
 
 ## Orden recomendado
 

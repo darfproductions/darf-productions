@@ -2,10 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ActionForm } from "@/components/panel/ActionForm";
 import { NotificationList } from "@/components/panel/NotificationList";
+import { PushSettings } from "@/components/pwa/PushSettings";
 import { Card, PanelTitle } from "@/components/panel/ui";
 import { deleteReadNotifications, markAllNotifications } from "@/lib/notification-actions";
 import { listNotifications } from "@/lib/notifications";
 import { requirePanel } from "@/lib/permissions";
+import { getPushInfo, PUSH_TIPOS } from "@/lib/push";
 
 export const metadata: Metadata = { title: "Notificaciones" };
 
@@ -16,7 +18,7 @@ export default async function Notificaciones({ searchParams }: PageProps<"/panel
   await requirePanel("/panel/notificaciones");
   const sp = await searchParams;
   const soloNoLeidas = sp.ver === "nuevas";
-  const items = await listNotifications({ soloNoLeidas });
+  const [items, push] = await Promise.all([listNotifications({ soloNoLeidas }), getPushInfo()]);
   return (
     <>
       <PanelTitle eyebrow="Inicio" title="Notificaciones">
@@ -31,6 +33,10 @@ export default async function Notificaciones({ searchParams }: PageProps<"/panel
         </span>
       </div>
       <Card><NotificationList items={items} /></Card>
+      <Card className="flex flex-col gap-3">
+        <h2 id="telefono" className="titular text-xl">En mi teléfono</h2>
+        <PushSettings publicKey={push.publicKey} apagados={push.apagados} tipos={PUSH_TIPOS} />
+      </Card>
     </>
   );
 }
