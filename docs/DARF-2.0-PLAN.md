@@ -102,7 +102,10 @@ final (Lanzamiento) y con aprobación explícita.**
    - órdenes y boletos;
    - vendedores;
    - obras;
-   - elenco.
+   - elenco;
+   - fotos: cada foto se optimiza al copiarla de la 1.0 a la 2.0 (mismo método que las
+     fotos nuevas). Las originales quedan intactas en la 1.0 como respaldo (decisión de
+     Diego, 2026-10-12).
 6. Pruebas finales, plan de reversión y ensayo del cambio en DEV.
 7. Cambio de dominio en GoDaddy y Vercel, el día acordado.
 
