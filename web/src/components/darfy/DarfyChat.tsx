@@ -67,12 +67,15 @@ export function DarfyChat({
     });
   };
 
+  // En la página de una obra, en celular, la barra de compra va abajo: la burbuja sube.
+  const enObra = /^\/producciones\/[^/]+/.test(pathname);
+
   if (!abierto) {
     return (
       <button
         type="button"
         onClick={() => setAbierto(true)}
-        className="glass fixed bottom-12 right-4 z-40 flex min-h-[54px] items-center gap-2.5 rounded-full py-2 pl-2 pr-5 text-[13px] font-bold text-texto shadow-[0_24px_60px_-12px_rgb(0_0_0/0.8)] transition-transform hover:-translate-y-0.5 md:right-8"
+        className={`glass fixed ${enObra ? "bottom-[112px] md:bottom-12" : "bottom-12"} right-4 z-40 flex min-h-[54px] items-center gap-2.5 rounded-full py-2 pl-2 pr-5 text-[13px] font-bold text-texto shadow-[0_24px_60px_-12px_rgb(0_0_0/0.8)] transition-transform hover:-translate-y-0.5 md:right-8`}
         aria-label="Abrir el asistente DARFY"
       >
         <span aria-hidden="true" className="grid h-[38px] w-[38px] place-items-center rounded-full bg-[linear-gradient(135deg,#340feb,#830886,#d20122)] text-base leading-none text-white">✦</span> Pregúntale a DARFY

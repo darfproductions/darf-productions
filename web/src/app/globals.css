@@ -261,6 +261,17 @@ body {
     background: var(--luz);
   }
 
+  /* Sobre el color de la obra (página de obra con tema claro u oscuro): toman el color del texto. */
+  .fb-obra {
+    color: inherit;
+    border-color: color-mix(in srgb, currentColor 35%, transparent);
+    background: color-mix(in srgb, var(--obra-fondo) 60%, transparent);
+    backdrop-filter: blur(8px);
+  }
+  .fb-obra:hover {
+    border-color: color-mix(in srgb, currentColor 70%, transparent);
+  }
+
   /* Chips (sede, fechas, precio, filtros). */
   .chip {
     display: inline-flex;
@@ -290,6 +301,12 @@ body {
     color: var(--sala);
     border-color: transparent;
     font-weight: 700;
+  }
+
+  .chip-obra {
+    color: inherit;
+    border-color: color-mix(in srgb, currentColor 28%, transparent);
+    background: color-mix(in srgb, var(--obra-fondo) 60%, transparent);
   }
 
   /* Estado de producción: píldora de 28 px con punto. */

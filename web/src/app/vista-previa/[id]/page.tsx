@@ -23,7 +23,7 @@ export default async function PreviewPage({ params }: PageProps<"/vista-previa/[
         Vista previa · <EstadoChip estado={data.production.estado} />
         <Link href={`/panel/producciones/${id}/pagina`} className="underline">Volver al editor</Link>
       </div>
-      <ProductionView data={data} />
+      <ProductionView data={data} vistaPrevia />
     </>
   );
 }

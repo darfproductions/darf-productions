@@ -48,7 +48,7 @@ export type Performance = {
   on_sale: boolean;
 };
 
-export type ZonePrice = { nombre: string; price: number };
+export type ZonePrice = { nombre: string; price: number; /** Color de la zona en el mapa (0062). */ color?: string | null };
 
 const PRODUCTION_COLUMNS =
   "id, nombre, venue, temporada, price, on_sale, concluded, destacada, created_at, estado, frase, color_fondo, color_superficie, color_texto, color_acento, logo_path, ambiente_path";
@@ -96,17 +96,17 @@ export async function getProduction(id: string, opts: { includeDrafts?: boolean 
   if (onSaleIds.length) {
     const { data } = await supabase
       .from("performance_price_categories")
-      .select("price, price_categories(nombre)")
+      .select("price, price_categories(nombre, color)")
       .in("performance_id", onSaleIds);
-    const byZone = new Map<string, number>();
+    const byZone = new Map<string, ZonePrice>();
     for (const row of data ?? []) {
-      const cat = row.price_categories as unknown as { nombre: string } | null;
+      const cat = row.price_categories as unknown as { nombre: string; color: string | null } | null;
       if (!cat) continue;
       const price = Number(row.price);
       const prev = byZone.get(cat.nombre);
-      if (prev === undefined || price < prev) byZone.set(cat.nombre, price);
+      if (prev === undefined || price < prev.price) byZone.set(cat.nombre, { nombre: cat.nombre, price, color: cat.color });
     }
-    prices = [...byZone].map(([nombre, price]) => ({ nombre, price })).sort((a, b) => b.price - a.price);
+    prices = [...byZone.values()].sort((a, b) => b.price - a.price);
   }
 
   return {
@@ -159,4 +159,23 @@ export async function getGallery(productionId: string): Promise<{ id: string; ur
     .eq("kind", "galeria")
     .order("sort_order");
   return (data ?? []).map((r) => ({ id: r.id, url: supabase.storage.from("gallery").getPublicUrl(r.path).data.publicUrl }));
+}
+
+/** Capacidad y lugares ocupados de cada función (mapa + entrada general). Solo lectura. */
+export async function performanceOccupancy(ids: string[]): Promise<Map<string, { capacidad: number; ocupados: number }>> {
+  const supabase = await createClient();
+  const out = new Map<string, { capacidad: number; ocupados: number }>();
+  await Promise.all(
+    ids.map(async (id) => {
+      const [cap, taken, general] = await Promise.all([
+        supabase.rpc("performance_capacity", { pfid: id }),
+        supabase.rpc("get_taken_seats", { target_performance_id: id }),
+        supabase.rpc("general_availability", { target_performance_id: id }),
+      ]);
+      if (cap.error || taken.error || general.error) return; // sin datos: la fila no muestra estado
+      const ocupadosGeneral = ((general.data ?? []) as { ocupados: number }[]).reduce((n, z) => n + Number(z.ocupados), 0);
+      out.set(id, { capacidad: Number(cap.data ?? 0), ocupados: ((taken.data ?? []) as unknown[]).length + ocupadosGeneral });
+    }),
+  );
+  return out;
 }

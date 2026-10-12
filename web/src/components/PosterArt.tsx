@@ -44,7 +44,7 @@ export function HeroBackdrop({ theme }: { theme: ProductionTheme }) {
   return (
     <div aria-hidden="true" className="absolute inset-0 overflow-hidden">
       <Image src={theme.ambiente} alt="" fill priority sizes="100vw" className="object-cover" />
-      <div className="absolute -left-40 -top-40 h-[40rem] w-[40rem] rounded-full bg-[radial-gradient(circle,rgb(68_14_213/0.3),transparent_65%)]" />
+      <div className="absolute -left-40 -top-40 h-[40rem] w-[40rem] rounded-full bg-[radial-gradient(circle,rgb(52_15_235/0.32),transparent_65%)]" />
       <div className="absolute inset-0 bg-[linear-gradient(90deg,var(--obra-fondo)_0%,color-mix(in_srgb,var(--obra-fondo)_80%,transparent)_38%,color-mix(in_srgb,var(--obra-fondo)_15%,transparent)_75%),linear-gradient(180deg,transparent_60%,var(--obra-fondo)_100%)]" />
     </div>
   );
