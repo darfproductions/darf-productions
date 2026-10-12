@@ -429,6 +429,30 @@ Orden: 1) Elenco y ofertas, 2) Expediente y mensualidades, 3) Ensayos y asistenc
   muestra los avisos sin leer por obra.
 - Quien se da de baja deja de recibir materiales y comunicados.
 
+## 14. Pendientes futuros (pedidos por Diego, 2026-10-12)
+
+1. **Base de datos interconectada de personas.** Cada persona del elenco (también las de
+   la 1.0, capturadas a mano) ligada a su cuenta, para ver desde cualquier obra quién hizo
+   cada papel y abrir su ficha: obras, audiciones, expediente; y, para el público, sus
+   compras de boletos y funciones a las que fue.
+   - Ya existe: ficha de talento (obras, audiciones, ofertas, incidencias), Panel → Talento
+     (buscar sin acentos, unir duplicados, ligar ficha a cuenta) y la liga automática al
+     aceptar una oferta.
+   - Falta: enlazar desde los créditos de cada obra a la ficha; sugerencias automáticas de
+     liga (mismo nombre o correo); compras y asistencia a funciones en la ficha; ficha del
+     público. No requiere una migración grande: casi todo son consultas sobre lo que ya hay.
+2. **Códigos de vendedor por cuenta.** Hoy existen `sellers` (código global, sin cuenta ni
+   obra) y `orders.seller_id`. Propuesta: código permanente generado para cada cuenta,
+   activable por obra; vendedores externos sin cuenta (p. ej. una compañía); reporte de
+   boletos vendidos por vendedor y obra, y "mis ventas" en Mi cuenta.
+3. **Avisos por correo y WhatsApp.** Requiere proveedor externo (correo: p. ej. Resend;
+   WhatsApp: API de WhatsApp Business de Meta, con verificación del negocio, plantillas
+   aprobadas y costo por conversación) y aprobación de Diego (visión §15.5). Lectura:
+   enlace único en el correo que marca "leído" al abrirlo; WhatsApp informa "leído" a
+   través de su API.
+4. **Rúbrica de evaluación por producción** (talleres en escuela), editable por los
+   maestros desde la página. En espera.
+
 ## Cómo se comprueba cada etapa
 
 - Pruebas SQL de permisos por rol (en local y en DEV) y las de boletería sin cambios.

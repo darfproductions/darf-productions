@@ -63,9 +63,12 @@ export default async function MyProduction({ params }: PageProps<"/cuenta/produc
   const ms = d.fee ? estadoCuotas(d.fee, d.terms, d.pagos, new Date(), d.alta) : [];
   const insc = d.fee ? estadoInscripcion(d.fee, d.terms, d.pagos) : null;
   const falta = pendientesTexto(d.person, pend, d.member);
+  const siguiente = proximos.find((r) => r.estado !== "cancelado") ?? null;
+  const sinLeer = comunicados.filter((a) => !leidos.has(a.id)).length;
+  const debeHoy = adeudo(ms) + Math.max(0, (insc?.debe ?? 0) - (insc?.pagado ?? 0));
 
   return (
-    <main className="pb-10">
+    <main className="pb-10 [&_section[aria-labelledby]]:scroll-mt-16">
       <PageHeading eyebrow="Mis producciones" title={prod.nombre}>{prod.papeles.join(" · ")}</PageHeading>
       <div className="mx-auto flex max-w-[1100px] flex-col gap-6 px-5 md:px-16">
         <Link href="/cuenta" className="text-sm font-bold text-violeta-claro">← Mi cuenta</Link>
@@ -78,11 +81,38 @@ export default async function MyProduction({ params }: PageProps<"/cuenta/produc
           </section>
         )}
 
-        <section className="flex flex-wrap items-center gap-3 rounded-2xl bg-telon p-5">
-          <span className={`rounded-full px-3 py-1 text-sm font-bold ${SEMAFORO[sem].cls}`}>{sem === "verde" ? "Expediente completo" : SEMAFORO[sem].label}</span>
-          {falta.length > 0 && <p className="text-sm text-texto-2">Te falta: {falta.join(", ")}.</p>}
-          {sem === "amarillo" && <p className="text-sm text-texto-2">Ya está todo; la producción lo revisará.</p>}
+        {/* Resumen: lo más importante primero (pensado para el celular). */}
+        <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <a href="#ensayos" className="rounded-2xl bg-telon p-4">
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-texto-3">Próximo ensayo</p>
+            {siguiente ? <><p className="mt-1 font-bold capitalize">{fechaEnsayo(siguiente.inicia)}</p><p className="text-xs text-texto-2">{siguiente.titulo}{siguiente.lugar ? ` · ${siguiente.lugar}` : ""}</p></>
+              : <p className="mt-1 text-sm text-texto-2">Sin ensayos próximos</p>}
+          </a>
+          <a href="#avisos" className="rounded-2xl bg-telon p-4">
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-texto-3">Avisos</p>
+            <p className={`mt-1 text-2xl font-black ${sinLeer ? "text-[#ff8fa3]" : ""}`}>{sinLeer}</p>
+            <p className="text-xs text-texto-2">sin leer</p>
+          </a>
+          <a href="#exp" className="rounded-2xl bg-telon p-4">
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-texto-3">Expediente</p>
+            <span className={`mt-2 inline-block rounded-full px-2.5 py-0.5 text-xs font-bold ${SEMAFORO[sem].cls}`}>{sem === "verde" ? "Completo" : SEMAFORO[sem].label}</span>
+            {falta.length > 0 && <p className="mt-1 text-xs text-texto-2">{falta.length === 1 ? "Falta 1 cosa" : `Faltan ${falta.length} cosas`}</p>}
+          </a>
+          <a href="#cuotas" className="rounded-2xl bg-telon p-4">
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-texto-3">Pagos</p>
+            {!d.fee || d.fee.cobrar === false ? <p className="mt-1 text-sm text-texto-2">Sin pagos</p>
+              : debeHoy > 0 ? <><p className="mt-1 text-xl font-black text-[#ff8fa3]">{pesos(debeHoy)}</p><p className="text-xs text-texto-2">pendiente a hoy</p></>
+              : <p className="mt-1 font-bold text-[#7ee2a8]">Al corriente</p>}
+          </a>
         </section>
+        {falta.length > 0 && <p className="-mt-3 text-sm text-texto-2">Te falta: {falta.join(", ")}.</p>}
+        {sem === "amarillo" && <p className="-mt-3 text-sm text-texto-2">Tu expediente está completo; la producción lo revisará.</p>}
+
+        <nav aria-label="Secciones" className="sticky top-0 z-10 -mx-5 flex gap-1 overflow-x-auto bg-sala/95 px-5 py-2 text-sm backdrop-blur md:mx-0 md:rounded-full md:px-3">
+          {[["avisos", "Avisos", comunicados.length > 0], ["ensayos", "Ensayos", true], ["materiales", "Materiales", materiales.length > 0],
+            ["exp", "Expediente", true], ["docs", "Documentos", misDocs.length > 0], ["cuotas", "Pagos", !!d.fee && d.fee.cobrar !== false]]
+            .filter(([, , v]) => v).map(([k, l]) => <a key={k as string} href={`#${k}`} className="whitespace-nowrap rounded-full px-3 py-1.5 font-semibold text-texto-2 hover:bg-telon hover:text-texto">{l}</a>)}
+        </nav>
 
         {d.person && !d.member?.confirmado_at && (
           <section className="flex flex-col gap-3 rounded-2xl border border-[#c4b5fd]/40 bg-telon p-5">
