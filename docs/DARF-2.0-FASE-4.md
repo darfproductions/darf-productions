@@ -84,8 +84,15 @@ Cómo quedó:
   - compra: tarjeta por zona con lugares libres, cantidad, descuento y vendedor;
   - taquilla: venta por zona y cantidad;
   - Mi cuenta, PDF y órdenes muestran "General · <zona>".
-- **Pendiente menor:** la ocupación de Reportes y Cierre cuenta solo asientos numerados como
-  capacidad (no suma el cupo de las zonas generales).
+- **Ocupación con entrada general** (`0056_capacity.sql`, pruebas T1–T3). La capacidad de una
+  función es: asientos numerados + cupo de las zonas generales con precio en ella (el cupo
+  de la función o el de la zona). Se usa en:
+  - Ventas;
+  - Reportes de la obra;
+  - Cierre de temporada (por función y en total);
+  - Reporte general (`director_capacity`).
+
+  Los cierres guardados antes de este cambio siguen con asientos × funciones.
 - **DEV:** la migración contiene la palabra "cancelado" (de `check_in_ticket`), así que se
   aplica con `supabase/dev/apply_0055_dev.sql` en el SQL Editor.
 

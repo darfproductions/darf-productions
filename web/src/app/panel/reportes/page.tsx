@@ -4,7 +4,7 @@ import { PrintButton } from "@/components/PrintButton";
 import { Card, EstadoChip, PanelTitle } from "@/components/panel/ui";
 import { pesos } from "@/lib/member-rules";
 import { requireDirector } from "@/lib/permissions";
-import { ocupacionTemporada, pct, totales, type OverviewRow } from "@/lib/season-rules";
+import { ocupacion, pct, totales, type OverviewRow } from "@/lib/season-rules";
 import { createClient } from "@/lib/supabase/server";
 import { formatMoney } from "@/lib/tickets";
 
@@ -25,8 +25,9 @@ export default async function ReporteGeneral({ searchParams }: PageProps<"/panel
   const sp = await searchParams;
   const filtro = typeof sp.estado === "string" ? sp.estado : "";
   const supabase = await createClient();
-  const [ov, sel] = await Promise.all([supabase.rpc("director_overview"), supabase.rpc("director_sellers")]);
-  const todas = (ov.data ?? []) as OverviewRow[];
+  const [ov, sel, cap] = await Promise.all([supabase.rpc("director_overview"), supabase.rpc("director_sellers"), supabase.rpc("director_capacity")]);
+  const capacidad = new Map(((cap.data ?? []) as { production_id: string; capacidad: number }[]).map((c) => [c.production_id, c.capacidad]));
+  const todas = ((ov.data ?? []) as OverviewRow[]).map((r) => ({ ...r, capacidad: capacidad.get(r.production_id) }));
   const rows = filtro ? todas.filter((r) => r.estado === filtro) : todas;
   const t = totales(rows);
   const vendedores = (sel.data ?? []) as { nombre: string; codigo: string; tipo: string; obras: number; ordenes: number; monto: number }[];
@@ -62,7 +63,7 @@ export default async function ReporteGeneral({ searchParams }: PageProps<"/panel
           </thead>
           <tbody className="divide-y divide-white/10">
             {rows.map((r) => {
-              const oc = ocupacionTemporada(r.boletos, r.asientos, r.funciones);
+              const oc = ocupacion(r.boletos, r.asientos, r.funciones, r.capacidad);
               const as = pct(r.asistieron, r.boletos);
               return (
                 <tr key={r.production_id}>

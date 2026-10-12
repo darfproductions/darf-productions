@@ -4,7 +4,8 @@ export type SeasonSummary = {
   obra: string;
   generado_at: string;
   asientos: number;
-  funciones: { starts_at: string | null; boletos: number; asistieron: number; ingresos: number }[];
+  capacidad?: number; // desde 0056; los cierres viejos no la traen
+  funciones: { starts_at: string | null; boletos: number; asistieron: number; ingresos: number; capacidad?: number }[];
   ventas: { ordenes: number; pendientes: number; ingresos: number; descuentos: number; ordenes_taquilla: number; boletos: number; asistieron: number };
   vendedores: { nombre: string; codigo: string; ordenes: number; monto: number }[];
   taller: { cobrado: number; integrantes: number; activos: number };
@@ -14,7 +15,7 @@ export type SeasonSummary = {
 };
 
 export type OverviewRow = {
-  production_id: string; nombre: string; estado: string; funciones: number; funciones_futuras: number; asientos: number;
+  production_id: string; nombre: string; estado: string; funciones: number; funciones_futuras: number; asientos: number; capacidad?: number;
   boletos: number; asistieron: number; ingresos: number; pendientes: number; cobrado_taller: number;
   integrantes_activos: number; solicitudes: number; cerrado_at: string | null;
 };
@@ -27,6 +28,11 @@ export function pct(parte: number, total: number): number | null {
 /** Ocupación de la temporada: boletos sobre (asientos × funciones). */
 export function ocupacionTemporada(boletos: number, asientos: number, funciones: number): number | null {
   return pct(boletos, asientos * funciones);
+}
+
+/** Ocupación de la temporada con la capacidad real (asientos + entrada general) o, si no la hay, asientos × funciones. */
+export function ocupacion(boletos: number, asientos: number, funciones: number, capacidad?: number | null): number | null {
+  return capacidad != null ? pct(boletos, capacidad) : ocupacionTemporada(boletos, asientos, funciones);
 }
 
 /** Suma de las filas del reporte general. */

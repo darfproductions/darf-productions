@@ -55,3 +55,13 @@ export function occupancy(ocupados: number, total: number): string {
   if (!total) return `${ocupados}`;
   return `${ocupados} de ${total} (${Math.round((ocupados / total) * 100)} %)`;
 }
+
+/** Capacidad de una función: asientos numerados + cupo de las zonas generales con precio en ella (0056). */
+export function capacidadFuncion(
+  asientos: number,
+  precios: { categoryId: string; cupo: number | null }[],
+  zonas: { id: string; cupo: number | null; is_active: boolean }[],
+): number {
+  const general = new Map(zonas.filter((z) => z.cupo != null && z.is_active).map((z) => [z.id, z.cupo as number]));
+  return asientos + precios.reduce((n, p) => (general.has(p.categoryId) ? n + (p.cupo ?? general.get(p.categoryId)!) : n), 0);
+}

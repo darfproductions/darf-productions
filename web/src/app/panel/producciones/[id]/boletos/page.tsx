@@ -3,11 +3,11 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ActionForm } from "@/components/panel/ActionForm";
 import { Card } from "@/components/panel/ui";
-import { listOrders, listPerformances, seatCount } from "@/lib/boleteria";
+import { listOrders, listPerformances, listZones, seatCount } from "@/lib/boleteria";
 import { can } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
 import { formatPerformanceDate } from "@/lib/productions";
-import { occupancy, summarizeSales } from "@/lib/sales";
+import { capacidadFuncion, occupancy, summarizeSales } from "@/lib/sales";
 import { formatMoney } from "@/lib/tickets";
 import { createClient } from "@/lib/supabase/server";
 import { tiempoRestante } from "@/lib/expiry-rules";
@@ -34,11 +34,12 @@ export default async function SalesPage({ params, searchParams }: PageProps<"/pa
   const estado = typeof sp.estado === "string" ? sp.estado : "";
 
   await (await createClient()).rpc("expire_due_orders", { pid: id });
-  const [funciones, todas, filtradas, asientos] = await Promise.all([
+  const [funciones, todas, filtradas, asientos, zonas] = await Promise.all([
     listPerformances(id),
     listOrders(id),
     listOrders(id, { funcion: funcion || undefined, estado: estado || undefined }),
     seatCount(id),
+    listZones(id),
   ]);
   const s = summarizeSales(todas);
   const nombreFuncion = new Map(funciones.map((f) => [f.id, formatPerformanceDate(f.starts_at)]));
@@ -74,7 +75,7 @@ export default async function SalesPage({ params, searchParams }: PageProps<"/pa
               <li key={f.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
                 <span className="font-semibold capitalize">{formatPerformanceDate(f.starts_at)}{f.on_sale ? "" : " · sin venta"}</span>
                 <span className="text-texto-2">
-                  Vendidos {occupancy(v?.vendidos ?? 0, asientos)} · apartados {v?.apartados ?? 0} · {formatMoney(v?.ingresos ?? 0)}
+                  Vendidos {occupancy(v?.vendidos ?? 0, capacidadFuncion(asientos, f.prices, zonas))} · apartados {v?.apartados ?? 0} · {formatMoney(v?.ingresos ?? 0)}
                 </span>
               </li>
             );

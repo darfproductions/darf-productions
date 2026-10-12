@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { Card } from "@/components/panel/ui";
-import { listOrders, listPerformances, seatCount } from "@/lib/boleteria";
+import { listOrders, listPerformances, listZones, seatCount } from "@/lib/boleteria";
 import { mesNombre, pesos, recaudacion } from "@/lib/member-rules";
 import { can } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
 import { formatPerformanceDate } from "@/lib/productions";
 import { porcentaje } from "@/lib/rehearsal-rules";
 import { asistenciaTotal, conteo, descuentosUsados, ventasPorCanal, type Asistencia } from "@/lib/report-rules";
-import { occupancy, summarizeSales } from "@/lib/sales";
+import { capacidadFuncion, occupancy, summarizeSales } from "@/lib/sales";
 import { TIPO_VENDEDOR, type SellerRow } from "@/lib/seller-rules";
 import { createClient } from "@/lib/supabase/server";
 import { formatMoney } from "@/lib/tickets";
@@ -41,7 +41,7 @@ export default async function Reportes({ params }: PageProps<"/panel/produccione
   const supabase = await createClient();
   const none = Promise.resolve({ data: [] });
 
-  const [funciones, orders, asientos, pagos, asist, roster, auds, vend] = await Promise.all([
+  const [funciones, orders, asientos, pagos, asist, roster, auds, vend, zonas] = await Promise.all([
     verVentas ? listPerformances(id) : Promise.resolve([]),
     verVentas ? listOrders(id) : Promise.resolve([]),
     verVentas ? seatCount(id) : Promise.resolve(0),
@@ -50,6 +50,7 @@ export default async function Reportes({ params }: PageProps<"/panel/produccione
     verAsist ? supabase.rpc("cast_roster", { pid: id }) : none,
     verAud ? supabase.from("auditions").select("id, titulo, estado, audition_applications(estado)").eq("production_id", id).order("created_at", { ascending: false }) : none,
     verVentas ? supabase.rpc("seller_list", { pid: id }) : none,
+    verVentas ? listZones(id) : Promise.resolve([]),
   ]);
   const vendedores = ((vend.data ?? []) as SellerRow[]).filter((v) => v.ordenes > 0 || v.pendientes > 0);
 
@@ -93,7 +94,7 @@ export default async function Reportes({ params }: PageProps<"/panel/produccione
                   <li key={f.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
                     <span className="font-semibold capitalize">{formatPerformanceDate(f.starts_at)}</span>
                     <span className="text-texto-2">
-                      Ocupación {occupancy(v?.vendidos ?? 0, asientos)} · asistieron {v?.validados ?? 0} · {formatMoney(v?.ingresos ?? 0)}
+                      Ocupación {occupancy(v?.vendidos ?? 0, capacidadFuncion(asientos, f.prices, zonas))} · asistieron {v?.validados ?? 0} · {formatMoney(v?.ingresos ?? 0)}
                     </span>
                   </li>
                 );

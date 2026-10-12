@@ -1,7 +1,7 @@
 import { TIPO_CREDITO } from "@/lib/casting-rules";
 import { pesos } from "@/lib/member-rules";
 import { formatPerformanceDate } from "@/lib/productions";
-import { ocupacionTemporada, pct, type SeasonSummary } from "@/lib/season-rules";
+import { ocupacion, pct, type SeasonSummary } from "@/lib/season-rules";
 import { formatMoney } from "@/lib/tickets";
 
 function Stat({ k, v }: { k: string; v: string }) {
@@ -17,7 +17,7 @@ const h3 = "mb-2 mt-2 font-bold";
 // Resumen de temporada (0053): en vivo antes de cerrar o congelado al cerrar.
 export function SeasonSummaryView({ s }: { s: SeasonSummary }) {
   const v = s.ventas;
-  const ocup = ocupacionTemporada(v.boletos, s.asientos, s.funciones.length);
+  const ocup = ocupacion(v.boletos, s.asientos, s.funciones.length, s.capacidad);
   const asist = pct(v.asistieron, v.boletos);
   const ens = pct(s.ensayos.presentes, s.ensayos.presentes + s.ensayos.faltas);
   const elenco = Object.entries(s.elenco);
@@ -40,7 +40,7 @@ export function SeasonSummaryView({ s }: { s: SeasonSummary }) {
           {s.funciones.map((f, i) => (
             <li key={i} className="flex flex-wrap justify-between gap-2 py-1.5">
               <span className="capitalize">{formatPerformanceDate(f.starts_at)}</span>
-              <span>{f.boletos} boletos · {f.asistieron} entraron · {formatMoney(Number(f.ingresos))}</span>
+              <span>{f.boletos} boletos{f.capacidad ? ` de ${f.capacidad} (${pct(f.boletos, f.capacidad)} %)` : ""} · {f.asistieron} entraron · {formatMoney(Number(f.ingresos))}</span>
             </li>
           ))}
           {s.funciones.length === 0 && <li className="py-1.5 text-texto-3">Sin funciones.</li>}

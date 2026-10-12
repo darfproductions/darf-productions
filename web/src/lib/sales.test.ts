@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { occupancy, summarizeSales, type SaleOrder } from "./sales";
+import { capacidadFuncion, occupancy, summarizeSales, type SaleOrder } from "./sales";
 
 const t = (id: string, active = true, checked: string | null = null) => ({ id, is_active: active, checked_in_at: checked, seat_label: id });
 const base: Omit<SaleOrder, "id" | "status" | "total" | "tickets" | "performance_id"> = {
@@ -25,5 +25,15 @@ describe("resumen de ventas", () => {
   it("ocupación legible", () => {
     expect(occupancy(120, 400)).toBe("120 de 400 (30 %)");
     expect(occupancy(5, 0)).toBe("5");
+  });
+});
+
+describe("capacidad con entrada general", () => {
+  it("suma asientos y cupo de zonas generales con precio; el cupo de la función manda", () => {
+    const zonas = [{ id: "pref", cupo: null, is_active: true }, { id: "pista", cupo: 80, is_active: true }, { id: "gradas", cupo: 50, is_active: false }];
+    expect(capacidadFuncion(200, [{ categoryId: "pref", cupo: null }], zonas)).toBe(200);
+    expect(capacidadFuncion(200, [{ categoryId: "pref", cupo: null }, { categoryId: "pista", cupo: null }], zonas)).toBe(280);
+    expect(capacidadFuncion(200, [{ categoryId: "pista", cupo: 30 }], zonas)).toBe(230);
+    expect(capacidadFuncion(200, [{ categoryId: "gradas", cupo: null }], zonas)).toBe(200);
   });
 });
