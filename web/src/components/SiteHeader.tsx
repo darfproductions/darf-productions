@@ -9,6 +9,7 @@ export const NAV_LINKS = [
   { href: "/producciones", label: "Producciones" },
   { href: "/fan-zone", label: "Fan Zone" },
   { href: "/audiciones", label: "Audiciones" },
+  { href: "/nosotros", label: "Nosotros" },
   { href: "/contacto", label: "Contacto" },
 ];
 

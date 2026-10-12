@@ -125,7 +125,10 @@ final (Lanzamiento) y con aprobación explícita.**
    colores de la obra, y un botón "Ver boletos" que abre una ventana con un boleto
    diseñado por asiento (flechas o deslizar). El PDF se dibuja en el navegador con el
    mismo diseño; el del servidor queda de respaldo. Apple y Google Wallet en espera.
-5. **Equipo DARF:** página pública `/nosotros` con los directivos.
+5. **Equipo DARF — HECHO (0063).** Página pública `/nosotros` ("Conoce al equipo") con los
+   directivos y su cargo, y enlace "Nosotros" en el menú del sitio. Se administra en Panel →
+   Personas → Equipo DARF (solo el Director). Foto, semblanza y enlace salen del perfil
+   profesional, solo si la persona lo hizo público.
 
 ## Orden recomendado
 

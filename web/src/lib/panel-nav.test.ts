@@ -54,7 +54,8 @@ describe("secciones generales", () => {
     expect(t.find((s) => s.id === "proyectos")?.subs.map((x) => x.label)).toEqual(["Obras"]);
     expect(t.find((s) => s.id === "reportes")?.href).toBe("/panel/reportes/obras");
     expect(panelMenu(juezMM).find((s) => s.id === "proyectos")?.subs.map((x) => x.label)).toEqual(["Obras", "Audiciones"]);
-    expect(panelMenu(director).find((s) => s.id === "personas")?.subs.map((x) => x.label)).toEqual(["Directorio", "Cumpleaños"]);
+    expect(panelMenu(director).find((s) => s.id === "personas")?.subs.map((x) => x.label)).toEqual(["Directorio", "Cumpleaños", "Equipo DARF"]);
+    expect(activeNav(panelMenu(director), "/panel/personas/equipo").sub?.label).toBe("Equipo DARF");
   });
   it("sección activa: las direcciones viejas caen en su sección nueva", () => {
     const m = panelMenu(director);

@@ -105,7 +105,7 @@ export function hasReportAccess(a: PanelAccessData): boolean {
 
 /**
  * Menú del panel en cuatro secciones (más Ajustes para el Director):
- * Inicio · Proyectos (Obras, Audiciones) · Personas (Directorio, Cumpleaños) · Reportes (General, Por obra) · Ajustes.
+ * Inicio · Proyectos (Obras, Audiciones) · Personas (Directorio, Cumpleaños, Equipo DARF) · Reportes (General, Por obra) · Ajustes.
  * Las direcciones viejas (/panel/usuarios, /panel/talento…) siguen funcionando.
  */
 export function panelMenu(a: PanelAccessData): NavSection[] {
@@ -117,7 +117,7 @@ export function panelMenu(a: PanelAccessData): NavSection[] {
   if (a.isDirector) {
     out.push({
       id: "personas", label: "Personas", href: "/panel/personas",
-      subs: [{ href: "/panel/personas", label: "Directorio" }, { href: "/panel/cumpleanos", label: "Cumpleaños" }],
+      subs: [{ href: "/panel/personas", label: "Directorio" }, { href: "/panel/cumpleanos", label: "Cumpleaños" }, { href: "/panel/personas/equipo", label: "Equipo DARF" }],
       match: ["/panel/personas", "/panel/talento", "/panel/usuarios", "/panel/cumpleanos"],
     });
   }
