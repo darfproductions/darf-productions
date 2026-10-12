@@ -31,7 +31,7 @@ export default async function EquipoDarf({ searchParams }: PageProps<"/panel/per
   return (
     <>
       <PanelTitle eyebrow="Personas" title="Equipo DARF">
-        Los directivos que salen en la página pública <Link href="/nosotros" className="font-bold text-violeta-claro">Conoce al equipo</Link>. La foto, la semblanza y el enlace salen de su perfil profesional, solo si la persona lo hizo público.
+        Solo el Director general edita el equipo que sale en la página pública <Link href="/nosotros" className="font-bold text-violeta-claro">Conoce al equipo</Link>. La foto, la semblanza y el enlace salen de su perfil profesional, solo si es público.
       </PanelTitle>
 
       <Card className="flex flex-col gap-4">
@@ -46,6 +46,10 @@ export default async function EquipoDarf({ searchParams }: PageProps<"/panel/per
                 <span className="text-xs font-semibold text-texto-3">
                   · {pro?.publico ? <Link href={`/artistas/${pro.slug}`} className="text-violeta-claro">perfil público ↗</Link> : "perfil profesional no público (sale solo nombre y cargo)"}
                 </span>
+              </p>
+              <p className="text-sm">
+                <Link href={`/panel/talento/p/${m.person_id}/perfil`} className="font-bold text-violeta-claro">Editar su perfil profesional →</Link>
+                <span className="text-texto-3"> (foto, semblanza, trayectoria y si es público; así su nombre se vuelve clic en los créditos de cada producción)</span>
               </p>
               <div className="flex flex-wrap items-end gap-2">
                 <ActionForm inline action={saveTeamMember} hidden={{ id: m.id }} submit="Guardar" submitClass={ghost}>

@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import type { AuditionOptions, Criterio } from "@/lib/audition-rules";
-import { canAudition, canSeeAudition } from "@/lib/panel-nav";
+import { canAudition, canConfigAudition, canSeeAudition } from "@/lib/panel-nav";
 import { requirePanel, type PanelAccess } from "@/lib/permissions";
 import { createClient } from "@/lib/supabase/server";
 
@@ -10,7 +10,7 @@ import { createClient } from "@/lib/supabase/server";
 export type PanelAudition = AuditionOptions & {
   id: string; production_id: string | null; titulo: string; descripcion: string | null; requisitos: string | null; sede: string | null;
   estado: string; inscripcion_cierra: string | null; edad_min: number | null; edad_max: number | null; created_at: string;
-  criterios: Criterio[]; plantilla: string | null;
+  criterios: Criterio[]; plantilla: string | null; permanente: boolean;
   productions?: { nombre: string } | null;
 };
 
@@ -46,7 +46,7 @@ export async function requireAudition(aid: string, perms: string[], path = "") {
   if (!a || !canSeeAudition(access, a)) notFound();
   const may = (perm: string) => canAudition(access, a, perm);
   if (perms.length && !perms.some(may)) redirect(`/panel/audiciones/${aid}`);
-  return { access, a, may };
+  return { access, a, may, config: canConfigAudition(access, a) };
 }
 
 /** Enlaces temporales (1 hora) a las fotos privadas de aspirantes; la base decide quién puede. */

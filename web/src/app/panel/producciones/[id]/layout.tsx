@@ -16,7 +16,7 @@ export default async function ProductionWorkspace({ children, params }: LayoutPr
   return (
     <>
       <header className="flex flex-col gap-3">
-        <Link href="/panel/producciones" className="text-sm font-bold text-violeta-claro print:hidden">← Obras</Link>
+        <Link href="/panel/producciones" className="text-sm font-bold text-violeta-claro print:hidden">← Producciones</Link>
         <div className="flex flex-wrap items-center gap-3">
           <h1 className="titular text-3xl md:text-4xl">{p.nombre}</h1>
           <EstadoChip estado={p.estado} />

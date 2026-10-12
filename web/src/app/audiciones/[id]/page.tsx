@@ -39,7 +39,7 @@ export default async function AuditionPage({ params }: PageProps<"/audiciones/[i
           <Link href={`/producciones/${obra.production.id}`} className="text-sm font-bold uppercase tracking-[0.2em] text-obra-acento">← {obra.production.nombre}</Link>
         </div>
       )}
-      <PageHeading eyebrow={`${obra ? obra.production.nombre : "Convocatoria general"} · Audiciones · ${ESTADO_CONVOCATORIA[a.estado] ?? a.estado}`} title={a.titulo}>
+      <PageHeading eyebrow={`${obra ? obra.production.nombre : a.permanente ? "Registro permanente" : "Convocatoria general"} · Audiciones · ${ESTADO_CONVOCATORIA[a.estado] ?? a.estado}`} title={a.titulo}>
         {a.descripcion}
       </PageHeading>
       <div className="mx-auto grid max-w-[1440px] gap-8 px-5 md:px-16 lg:grid-cols-12">

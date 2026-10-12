@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { activeNav, can, canAudition, canSeeAudition, globalSections, groupMembers, hasAnyAccess, myProductionIds, productionIdFrom, panelMenu, productionTabs, roleDiff, roleIdFromName, type PanelAccessData } from "./panel-nav";
+import { activeNav, can, canAudition, canConfigAudition, canSeeAudition, globalSections, groupMembers, hasAnyAccess, myProductionIds, productionIdFrom, panelMenu, productionTabs, roleDiff, roleIdFromName, type PanelAccessData } from "./panel-nav";
 
 const director: PanelAccessData = { isDirector: true, byProduction: {} };
 const fan: PanelAccessData = { isDirector: false, byProduction: {} };
@@ -51,9 +51,9 @@ describe("secciones generales", () => {
   });
   it("subpestañas según permisos", () => {
     const t = panelMenu(taquillaMM);
-    expect(t.find((s) => s.id === "proyectos")?.subs.map((x) => x.label)).toEqual(["Obras"]);
+    expect(t.find((s) => s.id === "proyectos")?.subs.map((x) => x.label)).toEqual(["Producciones"]);
     expect(t.find((s) => s.id === "reportes")?.href).toBe("/panel/reportes/obras");
-    expect(panelMenu(juezMM).find((s) => s.id === "proyectos")?.subs.map((x) => x.label)).toEqual(["Obras", "Audiciones"]);
+    expect(panelMenu(juezMM).find((s) => s.id === "proyectos")?.subs.map((x) => x.label)).toEqual(["Producciones", "Audiciones"]);
     expect(panelMenu(director).find((s) => s.id === "personas")?.subs.map((x) => x.label)).toEqual(["Directorio", "Cumpleaños", "Equipo DARF"]);
     expect(activeNav(panelMenu(director), "/panel/personas/equipo").sub?.label).toBe("Equipo DARF");
   });
@@ -63,7 +63,7 @@ describe("secciones generales", () => {
     expect(activeNav(m, "/panel/talento/abc").section?.id).toBe("personas");
     expect(activeNav(m, "/panel/usuarios").section?.id).toBe("personas");
     expect(activeNav(m, "/panel/producciones/mm/boletos").section?.id).toBe("proyectos");
-    expect(activeNav(m, "/panel/reportes/obras").sub?.label).toBe("Por obra");
+    expect(activeNav(m, "/panel/reportes/obras").sub?.label).toBe("Por producción");
     expect(activeNav(m, "/panel/bitacora").showSubs).toBe(true);
     expect(activeNav(m, "/panel/producciones/mm").showSubs).toBe(false);
     expect(activeNav(m, "/panel/producciones-x").section).toBeNull();
@@ -120,5 +120,22 @@ describe("convocatorias de obra y generales (0037)", () => {
     expect(hasAnyAccess(juezGeneral)).toBe(true);
     expect(globalSections(juezGeneral)).toEqual([{ href: "/panel", label: "Inicio" }, { href: "/panel/audiciones", label: "Proyectos" }]);
     expect(panelMenu(juezMM).find((s) => s.id === "proyectos")?.subs.map((x) => x.label)).toContain("Audiciones");
+  });
+});
+
+describe("registro permanente (0064)", () => {
+  const perm = { id: "p", production_id: null, permanente: true };
+  const general = { id: "g", production_id: null };
+  const prodMM: PanelAccessData = { isDirector: false, byProduction: { mm: ["audiciones.gestionar", "audiciones.evaluar"] } };
+  it("quien gestiona audiciones en una obra lo trabaja, pero no lo configura", () => {
+    expect(canAudition(prodMM, perm, "audiciones.gestionar")).toBe(true);
+    expect(canAudition(prodMM, perm, "audiciones.evaluar")).toBe(true);
+    expect(canConfigAudition(prodMM, perm)).toBe(false);
+    expect(canConfigAudition(director, perm)).toBe(true);
+    expect(canAudition(prodMM, general, "audiciones.gestionar")).toBe(false);
+  });
+  it("taquilla o un juez de obra no lo ven", () => {
+    expect(canSeeAudition(taquillaMM, perm)).toBe(false);
+    expect(canSeeAudition(juezMM, perm)).toBe(false);
   });
 });

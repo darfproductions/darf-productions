@@ -16,14 +16,30 @@ export function hasAnyAccess(a: PanelAccessData): boolean {
 
 const AUD_PERMS = ["audiciones.gestionar", "audiciones.registro", "audiciones.evaluar"];
 
-/** Permiso sobre una convocatoria: el de su obra (general: solo el Director) o el de su equipo propio. */
-export function canAudition(a: PanelAccessData, aud: { id: string; production_id: string | null }, perm: string): boolean {
+type AudRef = { id: string; production_id: string | null; permanente?: boolean };
+
+/** ¿Gestiona audiciones en alguna obra? (puede trabajar el Registro permanente, 0064) */
+export function managesProductionAuditions(a: PanelAccessData): boolean {
+  return a.isDirector || Object.values(a.byProduction).some((p) => p.includes("audiciones.gestionar"));
+}
+
+/** Permiso sobre una convocatoria: el de su obra (general: solo el Director), el de su equipo propio
+ *  o, en el Registro permanente, gestionar y calificar para quien gestiona audiciones en alguna obra. */
+export function canAudition(a: PanelAccessData, aud: AudRef, perm: string): boolean {
   if (a.isDirector) return true;
   if (aud.production_id && can(a, aud.production_id, perm)) return true;
+  if (aud.permanente && (perm === "audiciones.gestionar" || perm === "audiciones.evaluar") && managesProductionAuditions(a)) return true;
   return (a.byAudition?.[aud.id] ?? []).includes(perm);
 }
 
-export function canSeeAudition(a: PanelAccessData, aud: { id: string; production_id: string | null }): boolean {
+/** Configurar la convocatoria (datos, preguntas, equipo, borrarla): la regla de siempre; el permanente, solo el Director. */
+export function canConfigAudition(a: PanelAccessData, aud: AudRef): boolean {
+  if (a.isDirector) return true;
+  if (aud.production_id && can(a, aud.production_id, "audiciones.gestionar")) return true;
+  return (a.byAudition?.[aud.id] ?? []).includes("audiciones.gestionar");
+}
+
+export function canSeeAudition(a: PanelAccessData, aud: AudRef): boolean {
   return AUD_PERMS.some((p) => canAudition(a, aud, p));
 }
 
@@ -105,13 +121,13 @@ export function hasReportAccess(a: PanelAccessData): boolean {
 
 /**
  * Menú del panel en cuatro secciones (más Ajustes para el Director):
- * Inicio · Proyectos (Obras, Audiciones) · Personas (Directorio, Cumpleaños, Equipo DARF) · Reportes (General, Por obra) · Ajustes.
+ * Inicio · Proyectos (Producciones, Audiciones) · Personas (Directorio, Cumpleaños, Equipo DARF) · Reportes (General, Por producción) · Ajustes.
  * Las direcciones viejas (/panel/usuarios, /panel/talento…) siguen funcionando.
  */
 export function panelMenu(a: PanelAccessData): NavSection[] {
   const out: NavSection[] = [{ id: "inicio", label: "Inicio", href: "/panel", subs: [], match: [] }];
   // Quien solo está en el equipo de una convocatoria general no tiene obras: solo ve Audiciones.
-  const proyectos: Section[] = a.isDirector || myProductionIds(a).length ? [{ href: "/panel/producciones", label: "Obras" }] : [];
+  const proyectos: Section[] = a.isDirector || myProductionIds(a).length ? [{ href: "/panel/producciones", label: "Producciones" }] : [];
   if (hasAuditionAccess(a)) proyectos.push({ href: "/panel/audiciones", label: "Audiciones" });
   out.push({ id: "proyectos", label: "Proyectos", href: proyectos[0].href, subs: proyectos, match: ["/panel/producciones", "/panel/audiciones"] });
   if (a.isDirector) {
@@ -123,7 +139,7 @@ export function panelMenu(a: PanelAccessData): NavSection[] {
   }
   if (hasReportAccess(a)) {
     const subs: Section[] = a.isDirector ? [{ href: "/panel/reportes", label: "General" }] : [];
-    subs.push({ href: "/panel/reportes/obras", label: "Por obra" });
+    subs.push({ href: "/panel/reportes/obras", label: "Por producción" });
     out.push({ id: "reportes", label: "Reportes", href: subs[0].href, subs, match: ["/panel/reportes"] });
   }
   if (a.isDirector) {

@@ -162,6 +162,21 @@ export const PLANTILLAS: Record<string, Plantilla> = {
 };
 
 /** Personalizada: convocatoria en blanco (abierta y presencial, sin preguntas extra). */
+/** Registro permanente de talento (0064): general, en línea, siempre abierto. Se crea con su propio botón. */
+export const REGISTRO_PERMANENTE: Plantilla = {
+  label: "Registro permanente", grupo: "forma",
+  descripcion: "Siempre abierto, sin fecha: el talento deja su perfil y videos aunque no haya convocatoria.",
+  opciones: con({ modalidad: "en_linea", elegir_horario: false }),
+  criterios: CRITERIOS_BASE,
+  preguntas: [
+    { etiqueta: "Especialidad principal", tipo: "opcion", opciones: ["Actuación", "Canto", "Baile", "Música en vivo", "Dirección", "Producción", "Técnica / crew", "Vestuario y maquillaje"], obligatorio: true },
+    { etiqueta: "Enlace a tu video o portafolio (YouTube no listado, Drive o página)", tipo: "enlace", obligatorio: true },
+    { etiqueta: "Otras especialidades", tipo: "texto" },
+    EXPERIENCIA,
+  ],
+  requisitos: "Déjanos tu perfil aunque no haya convocatoria abierta: lo consultamos cuando preparamos una producción nueva. Tus datos se guardan hasta que canceles tu registro desde Mi cuenta.",
+};
+
 export const EN_BLANCO: Plantilla = {
   label: "Personalizada", grupo: "principal",
   descripcion: "Empieza en blanco y ajusta todo a tu medida, o usa una de tus plantillas guardadas.",

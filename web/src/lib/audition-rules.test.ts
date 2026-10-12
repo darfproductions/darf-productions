@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { ageAt, criteriosFromText, dayStatus, daySummary, lugares, minutos, score, videoSource } from "./audition-rules";
-import { EN_BLANCO, PLANTILLAS } from "./audition-templates";
+import { EN_BLANCO, PLANTILLAS, REGISTRO_PERMANENTE } from "./audition-templates";
 
 describe("audiciones", () => {
   it("edad cumplida a la fecha de la audición", () => {
@@ -56,7 +56,7 @@ describe("audiciones 2.0", () => {
     expect(PLANTILLAS.escuela.opciones.autorizacion_escuela).toBe(true);
   });
   it("todas las plantillas cumplen las reglas de la base (0037, 0038)", () => {
-    for (const t of [...Object.values(PLANTILLAS), EN_BLANCO]) {
+    for (const t of [...Object.values(PLANTILLAS), EN_BLANCO, REGISTRO_PERMANENTE]) {
       expect(t.opciones.pedir_tutor || t.opciones.autorizacion_escuela).toBe(true);
       expect(!t.opciones.solo_invitados || t.opciones.visibilidad === "enlace").toBe(true);
       expect(t.criterios.length).toBeGreaterThan(0);

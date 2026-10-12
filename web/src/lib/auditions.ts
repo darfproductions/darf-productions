@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 
 export type Audition = {
   id: string;
+  permanente?: boolean;
   production_id: string | null;
   productions: { nombre: string } | null;
   pedir_tutor: boolean;
@@ -29,12 +30,19 @@ export type AuditionField = { id: string; etiqueta: string; tipo: "texto" | "par
 export type AuditionSlot = { id: string; inicia: string; sala: string | null; cupo: number; ocupados: number };
 
 const COLS =
-  "id, production_id, titulo, descripcion, requisitos, sede, estado, inscripcion_cierra, edad_min, edad_max, pedir_tutor, pedir_foto, elegir_horario, visibilidad, numeracion, modalidad, solo_invitados, productions(nombre)";
+  "id, production_id, titulo, descripcion, requisitos, sede, estado, inscripcion_cierra, edad_min, edad_max, pedir_tutor, pedir_foto, elegir_horario, visibilidad, numeracion, modalidad, solo_invitados, permanente, productions(nombre)";
 
 export async function listPublicAuditions(): Promise<Audition[]> {
   const supabase = await createClient();
-  const { data } = await supabase.from("auditions").select(COLS).in("estado", ["abierta", "cerrada"]).eq("visibilidad", "publica").order("created_at", { ascending: false });
+  const { data } = await supabase.from("auditions").select(COLS).in("estado", ["abierta", "cerrada"]).eq("visibilidad", "publica").eq("permanente", false).order("created_at", { ascending: false });
   return (data ?? []) as unknown as Audition[];
+}
+
+/** El Registro permanente de talento (0064), si está abierto. */
+export async function getPermanentRegistry(): Promise<{ id: string; titulo: string; requisitos: string | null } | null> {
+  const supabase = await createClient();
+  const { data } = await supabase.from("auditions").select("id, titulo, requisitos").eq("permanente", true).eq("estado", "abierta").maybeSingle();
+  return data ?? null;
 }
 
 /** Convocatorias abiertas y públicas de una obra (aviso en su página). */

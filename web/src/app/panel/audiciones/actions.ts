@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { criteriosFromText } from "@/lib/audition-rules";
-import { EN_BLANCO, PLANTILLAS, type Plantilla } from "@/lib/audition-templates";
+import { EN_BLANCO, PLANTILLAS, REGISTRO_PERMANENTE, type Plantilla } from "@/lib/audition-templates";
 import { getSession } from "@/lib/auth";
 import { localMxToIso } from "@/lib/dates";
 import { createClient } from "@/lib/supabase/server";
@@ -56,6 +56,25 @@ export async function createAudition(_p: AudState, f: FormData): Promise<AudStat
   }
   if (pid) revalidatePath(`/panel/producciones/${pid}/audiciones`);
   revalidatePath("/panel/audiciones");
+  redirect(base(data.id as string));
+}
+
+/** Crea el Registro permanente (solo uno; general, en línea y abierto). */
+export async function createPermanentRegistry(): Promise<AudState> {
+  const supabase = await createClient();
+  const t = REGISTRO_PERMANENTE;
+  const { data, error } = await supabase
+    .from("auditions")
+    .insert({ production_id: null, titulo: "Registro permanente de talento", ...t.opciones, estado: "abierta", permanente: true, criterios: t.criterios, requisitos: t.requisitos ?? null, plantilla: t.label })
+    .select("id")
+    .single();
+  if (error) return { ok: false, message: error.code === "23505" ? "El Registro permanente ya existe." : "Solo el Director puede crearlo." };
+  const { error: e2 } = await supabase.from("audition_fields").insert(t.preguntas.map((q, i) => ({
+    audition_id: data.id, etiqueta: q.etiqueta, tipo: q.tipo, opciones: q.tipo === "opcion" ? q.opciones ?? null : null, obligatorio: !!q.obligatorio, orden: i + 1,
+  })));
+  if (e2) return { ok: false, message: `Se creó, pero no se pudieron poner las preguntas: ${e2.message}` };
+  revalidatePath("/panel/audiciones");
+  revalidatePath("/audiciones");
   redirect(base(data.id as string));
 }
 

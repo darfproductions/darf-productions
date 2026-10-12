@@ -130,6 +130,18 @@ final (Lanzamiento) y con aprobación explícita.**
    Personas → Equipo DARF (solo el Director). Foto, semblanza y enlace salen del perfil
    profesional, solo si la persona lo hizo público.
 
+### 11. Ajustes de Diego (12 de octubre, tarde) — HECHO
+
+- En el panel, "Obras" ahora dice "Producciones" (Proyectos, Reportes e Inicio).
+- **Registro permanente de talento (0064).** Es un formato de audición: una convocatoria
+  general, en línea y siempre abierta, que se crea en Proyectos → Audiciones.
+  - **Dónde llega:** a sus Solicitudes y a la ficha de talento de cada persona.
+  - **Quién la ve y califica:** el Director y quien gestiona audiciones en alguna producción.
+    Solo el Director la configura.
+  - **Datos:** se guardan hasta que la persona cancela su registro desde Mi cuenta.
+- **Equipo DARF:** "Editar su perfil profesional" en cada directivo. En los créditos de una
+  producción, su nombre ya enlaza a su perfil cuando el perfil es público.
+
 ## Orden recomendado
 
 1 → 2 → 3, luego 4. El 5 se puede adelantar si Diego aprueba el proveedor. 6 y 8 van después;

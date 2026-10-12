@@ -14,7 +14,7 @@ export default async function PanelProductions() {
 
   return (
     <>
-      <PanelTitle eyebrow="Proyectos" title="Obras">
+      <PanelTitle eyebrow="Proyectos" title="Producciones">
         Cada obra tiene su espacio de trabajo: contenido, audiciones, elenco, funciones y permisos.
       </PanelTitle>
       {access.isDirector && (

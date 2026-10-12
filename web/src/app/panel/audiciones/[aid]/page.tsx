@@ -26,8 +26,10 @@ const check = "flex items-start gap-2 text-sm";
 
 export default async function AuditionConfig({ params }: PageProps<"/panel/audiciones/[aid]">) {
   const { aid } = await params;
-  const { a, may, access } = await requireAudition(aid, []);
+  const { a, may, access, config } = await requireAudition(aid, []);
   if (!may("audiciones.gestionar")) redirect(`/panel/audiciones/${aid}/${may("audiciones.evaluar") ? "evaluacion" : "registro"}`);
+  // Registro permanente: solo el Director lo configura; los demás van directo a las solicitudes.
+  if (!config) redirect(`/panel/audiciones/${aid}/solicitudes`);
   // ¿Puede armar el equipo propio? Obra: quien da permisos en ella. General: el Director.
   const armaEquipo = access.isDirector || (!!a.production_id && (access.byProduction[a.production_id] ?? []).includes("permisos.gestionar"));
   const supabase = await createClient();

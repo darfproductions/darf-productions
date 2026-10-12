@@ -5,7 +5,7 @@ import { listPanelProductions } from "@/lib/panel-data";
 import { can, myProductionIds } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
 
-export const metadata: Metadata = { title: "Reportes por obra" };
+export const metadata: Metadata = { title: "Reportes por producción" };
 
 // Lista de obras cuyo reporte puedo ver; cada una abre su pestaña Reportes.
 export default async function ReportesPorObra() {
@@ -14,7 +14,7 @@ export default async function ReportesPorObra() {
     .filter((p) => can(access, p.id, "reportes.ver"));
   return (
     <>
-      <PanelTitle eyebrow="Reportes" title="Por obra">
+      <PanelTitle eyebrow="Reportes" title="Por producción">
         Ventas, ocupación, vendedores y asistencia de cada obra.
       </PanelTitle>
       {obras.length === 0 && <Card>No tienes reportes de ninguna obra.</Card>}

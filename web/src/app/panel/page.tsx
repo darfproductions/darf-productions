@@ -141,7 +141,7 @@ export default async function PanelHome() {
       )}
 
       <section className="flex flex-col gap-4">
-        <h2 className="titular text-xl">Mis obras</h2>
+        <h2 className="titular text-xl">Mis producciones</h2>
         {obras.length === 0 && <Card>Aún no tienes obras asignadas.</Card>}
         <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {obras.map((p) => {

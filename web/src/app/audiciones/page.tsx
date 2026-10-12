@@ -2,16 +2,16 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHeading } from "@/components/PageHeading";
 import { ESTADO_CONVOCATORIA } from "@/lib/audition-rules";
-import { formatSlot, listPublicAuditions } from "@/lib/auditions";
+import { formatSlot, getPermanentRegistry, listPublicAuditions } from "@/lib/auditions";
 
 export const metadata: Metadata = { title: "Audiciones" };
 
 const ESPECIALIDADES = ["Actuación", "Canto", "Baile", "Música en vivo", "Dirección", "Producción", "Técnica / crew", "Vestuario y maquillaje"];
 
-// Audiciones: convocatorias abiertas (0036) y, más adelante, registro permanente
-// de talento (Fase 5: el formulario se muestra para revisar el diseño).
+// Audiciones: convocatorias abiertas (0036) y el Registro permanente de talento (0064),
+// que es una convocatoria general siempre abierta y en línea.
 export default async function AudicionesPage() {
-  const convocatorias = await listPublicAuditions();
+  const [convocatorias, permanente] = await Promise.all([listPublicAuditions(), getPermanentRegistry()]);
   return (
     <main className="pb-10">
       <PageHeading eyebrow="Audiciones" title="Únete al elenco">
@@ -51,42 +51,17 @@ export default async function AudicionesPage() {
             Déjanos tu perfil artístico aunque no haya convocatoria. Lo consultamos cuando
             preparamos una producción nueva.
           </p>
-          <p role="note" className="rounded-xl border border-[#ffd400]/50 bg-[#ffd400]/10 px-4 py-3 text-sm">
-            Vista previa del diseño: el envío se activará cuando se apruebe el modelo de datos de
-            talento (permisos, consentimiento y conservación de datos).
-          </p>
-          <form className="grid gap-4 rounded-2xl bg-telon p-6 sm:grid-cols-2" aria-describedby="registro">
-            <fieldset disabled className="contents">
-              <label className="flex flex-col gap-1.5 text-sm font-semibold">Nombre artístico
-                <input className="rounded-lg bg-sala px-3 py-3 font-normal" name="nombre" />
-              </label>
-              <label className="flex flex-col gap-1.5 text-sm font-semibold">Correo
-                <input className="rounded-lg bg-sala px-3 py-3 font-normal" type="email" name="correo" />
-              </label>
-              <label className="flex flex-col gap-1.5 text-sm font-semibold">Teléfono
-                <input className="rounded-lg bg-sala px-3 py-3 font-normal" type="tel" name="telefono" />
-              </label>
-              <label className="flex flex-col gap-1.5 text-sm font-semibold">Enlace a video o portafolio
-                <input className="rounded-lg bg-sala px-3 py-3 font-normal" type="url" name="portafolio" />
-              </label>
-              <fieldset className="flex flex-col gap-2 sm:col-span-2">
-                <legend className="mb-2 text-sm font-semibold">Especialidades</legend>
-                <div className="flex flex-wrap gap-2">
-                  {ESPECIALIDADES.map((e) => (
-                    <label key={e} className="flex items-center gap-2 rounded-full border border-white/20 px-3 py-2 text-sm">
-                      <input type="checkbox" name="especialidades" value={e} /> {e}
-                    </label>
-                  ))}
-                </div>
-              </fieldset>
-              <label className="flex flex-col gap-1.5 text-sm font-semibold sm:col-span-2">Experiencia
-                <textarea className="min-h-28 rounded-lg bg-sala px-3 py-3 font-normal" name="experiencia" />
-              </label>
-              <button type="submit" className="rounded-full bg-texto px-6 py-4 text-sm font-bold uppercase tracking-[0.1em] text-sala opacity-50 sm:col-span-2">
-                Enviar registro (próximamente)
-              </button>
-            </fieldset>
-          </form>
+          {permanente ? (
+            <div className="flex flex-col gap-4 rounded-2xl bg-telon p-6">
+              <p className="text-texto-2">Cuéntanos tu especialidad y compártenos un video o portafolio. Te guardamos en nuestro registro de talento hasta que tú decidas darte de baja desde Mi cuenta.</p>
+              <ul className="flex flex-wrap gap-2">
+                {ESPECIALIDADES.map((e) => <li key={e} className="rounded-full border border-white/20 px-3 py-1.5 text-sm">{e}</li>)}
+              </ul>
+              <Link href={`/audiciones/${permanente.id}`} className="self-start rounded-full bg-texto px-6 py-4 text-sm font-bold uppercase tracking-[0.1em] text-sala">Registrarme →</Link>
+            </div>
+          ) : (
+            <p className="rounded-2xl bg-telon p-6 text-texto-2">Muy pronto podrás dejarnos tu perfil aquí.</p>
+          )}
         </section>
       </div>
     </main>

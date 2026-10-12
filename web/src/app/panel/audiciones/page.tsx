@@ -8,7 +8,7 @@ import { listPanelAuditions, type PanelAudition } from "@/lib/panel-auditions";
 import { hasAuditionAccess } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
 import { createClient } from "@/lib/supabase/server";
-import { deleteTemplate } from "./actions";
+import { createPermanentRegistry, deleteTemplate } from "./actions";
 import { NewAuditionForm } from "./NewAuditionForm";
 
 export const metadata: Metadata = { title: "Audiciones" };
@@ -34,13 +34,31 @@ export default async function AuditionsHome() {
     listPanelAuditions(access),
     supabase.from("audition_templates").select("id, nombre, descripcion, created_by").order("nombre"),
   ]);
-  const generales = all.filter((a) => !a.production_id);
+  const permanente = all.find((a) => a.permanente) ?? null;
+  const generales = all.filter((a) => !a.production_id && !a.permanente);
   const deObra = all.filter((a) => a.production_id);
   return (
     <>
       <PanelTitle eyebrow="Proyectos" title="Audiciones">
         Convocatorias generales (sin obra, como un llamado de bailarines) y las de cada producción.
       </PanelTitle>
+      {(permanente || access.isDirector) && (
+        <section className="flex flex-col gap-3">
+          <h2 className="titular text-xl">Registro permanente</h2>
+          {permanente ? (
+            <Link href={`/panel/audiciones/${permanente.id}${access.isDirector ? "" : "/solicitudes"}`} className="block rounded-2xl border border-[#c4b5fd]/40 bg-telon p-5 hover:bg-telon-2">
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-texto-3">Siempre abierto · en línea · {ESTADO_CONVOCATORIA[permanente.estado] ?? permanente.estado}</p>
+              <p className="mt-1 text-lg font-bold">{permanente.titulo}</p>
+              <p className="mt-1 text-sm text-texto-2">El talento deja su perfil y videos aunque no haya convocatoria. Lo ven y califican el Director y quien gestiona audiciones en alguna producción.</p>
+            </Link>
+          ) : (
+            <Card className="flex flex-col gap-3">
+              <p className="text-sm text-texto-2">Formato de audición siempre abierto y en línea: quien quiera trabajar con DARF deja sus datos, especialidad y video. Llega aquí, a sus Solicitudes, y a la ficha de talento de cada persona.</p>
+              <ActionForm action={createPermanentRegistry} submit="Crear el Registro permanente" />
+            </Card>
+          )}
+        </section>
+      )}
       <section className="flex flex-col gap-3">
         <h2 className="titular text-xl">Generales</h2>
         {generales.map((a) => <Item key={a.id} a={a} />)}
