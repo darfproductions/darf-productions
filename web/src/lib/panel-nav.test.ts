@@ -26,8 +26,8 @@ describe("acceso al panel", () => {
 });
 
 describe("pestañas de la obra", () => {
-  it("taquilla ve Resumen y Funciones, no Audiciones ni Permisos", () => {
-    expect(ids(taquillaMM, "mm")).toEqual(["resumen", "boletos"]);
+  it("taquilla ve Resumen, Funciones y Reportes; no Audiciones ni Permisos", () => {
+    expect(ids(taquillaMM, "mm")).toEqual(["resumen", "boletos", "reportes"]);
   });
   it("un juez solo ve Resumen y Audiciones", () => {
     expect(ids(juezMM, "mm")).toEqual(["resumen", "audiciones"]);
@@ -39,7 +39,7 @@ describe("pestañas de la obra", () => {
     const tabs = ids(director, "hsm");
     expect(tabs[0]).toBe("resumen");
     expect(tabs.at(-1)).toBe("permisos");
-    expect(tabs).toHaveLength(13);
+    expect(tabs).toHaveLength(14);
   });
 });
 

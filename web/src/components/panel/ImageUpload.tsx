@@ -46,7 +46,7 @@ export function ImageUpload({
 }: {
   productionId: string;
   kind: ImageKind;
-  carpeta: "kit" | "creditos" | "galeria";
+  carpeta: "kit" | "creditos" | "galeria" | "programa";
   bucket?: "producciones" | "gallery";
   base: string;
   save: (path: string) => Promise<Result>;

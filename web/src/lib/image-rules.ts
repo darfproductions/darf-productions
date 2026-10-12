@@ -2,7 +2,7 @@
 // Funciones puras para poder probarlas: image-rules.test.ts. El navegador mide la
 // imagen antes de subirla; la base además limita tipo y tamaño del archivo.
 
-export type ImageKind = "logo" | "ambiente" | "retrato" | "galeria";
+export type ImageKind = "logo" | "ambiente" | "retrato" | "galeria" | "patrocinador";
 
 export type ImageInfo = {
   type: string;
@@ -22,6 +22,7 @@ export const IMAGE_RULES: Record<ImageKind, { types: string[]; maxSize: number; 
   ambiente: { types: ["image/jpeg", "image/webp", "image/png"], maxSize: 8 * MB, label: "Imagen de ambiente", hint: "Horizontal 16:9, ideal 1920×1080, sin texto ni logos." },
   retrato: { types: ["image/jpeg", "image/webp", "image/png"], maxSize: 8 * MB, label: "Retrato", hint: "Vertical 3:4, ideal 900×1200, de la sesión de esta obra." },
   galeria: { types: ["image/jpeg", "image/webp", "image/png"], maxSize: 5 * MB, label: "Foto", hint: "JPG o WebP, máximo 5 MB." },
+  patrocinador: { types: ["image/png", "image/webp", "image/jpeg"], maxSize: 4 * MB, label: "Logo del patrocinador", hint: "PNG, WebP o JPG, de preferencia con fondo transparente o blanco; mínimo 300 px de ancho." },
 };
 
 export function checkImage(kind: ImageKind, i: ImageInfo): ImageCheck {
@@ -47,11 +48,12 @@ export function checkImage(kind: ImageKind, i: ImageInfo): ImageCheck {
     if (ratio < 0.6 || ratio > 0.9) warnings.push("No es vertical 3:4; se recortará para que todas las fotos se vean iguales.");
     else if (i.width < 900) warnings.push("Mide menos de 900 px de ancho; ideal 900×1200.");
   }
+  if (kind === "patrocinador" && i.width < 300) errors.push("El logo es muy pequeño (mínimo 300 px de ancho).");
   return { ok: errors.length === 0, errors, warnings };
 }
 
 /** Nombre de archivo seguro y único dentro de la carpeta de la obra. */
-export function storagePath(productionId: string, carpeta: "kit" | "creditos" | "galeria", base: string, type: string): string {
+export function storagePath(productionId: string, carpeta: "kit" | "creditos" | "galeria" | "programa", base: string, type: string): string {
   const ext = type === "image/png" ? "png" : type === "image/webp" ? "webp" : "jpg";
   const slug = base.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "imagen";
   return `${productionId}/${carpeta}/${slug}-${Date.now().toString(36)}.${ext}`;

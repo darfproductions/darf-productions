@@ -455,6 +455,28 @@ Orden: 1) Elenco y ofertas, 2) Expediente y mensualidades, 3) Ensayos y asistenc
 4. **Rúbrica de evaluación por producción** (talleres en escuela), editable por los
    maestros desde la página. En espera.
 
+## 15. Etapa 3F: programa digital y reportes (2026-10-12)
+
+- **Programa digital** (`0048_program.sql`, pruebas T1–T3). Pestaña "Programa" de cada obra
+  (permiso `programa.editar`: Producción, Contenido):
+  - Se llena solo con la obra: reparto, ensamble, números musicales, equipos y
+    agradecimientos de la Página pública. Se pueden ocultar canciones, equipos o
+    agradecimientos.
+  - Se agregan notas de dirección con firma, un mensaje extra y patrocinadores (nombre,
+    enlace https y logo PNG/WebP/JPG en `producciones/<obra>/programa/`).
+  - Se publica aparte de la obra. El público lo ve en `/programa/<obra>` solo si el programa
+    está publicado **y** la obra está publicada o archivada. Quien edita lo ve antes.
+  - QR para la sala, descargable como imagen.
+- **Reportes** por obra (pestaña nueva, permiso `reportes.ver`). Cada sección aparece solo
+  si además se tiene el permiso de esa área:
+  - Boletos (`ventas.ver`): ingresos, vendidos, asistencia a funciones, en línea contra
+    taquilla, ocupación por función y códigos de descuento usados.
+  - Taller (`mensualidades.gestionar`): lo cobrado por mes, mensualidades e inscripciones.
+  - Ensayos (`ensayos.gestionar` o `expedientes.ver`): asistencia total y quién está por
+    debajo de 80 %.
+  - Audiciones (`audiciones.gestionar`): solicitudes por estado en cada convocatoria.
+- La lógica de los reportes está en `lib/report-rules.ts`, con pruebas.
+
 ## Cómo se comprueba cada etapa
 
 - Pruebas SQL de permisos por rol (en local y en DEV) y las de boletería sin cambios.
