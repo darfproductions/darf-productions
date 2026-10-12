@@ -21,6 +21,8 @@ export default async function ComprarPage({ params, searchParams }: PageProps<"/
   const vendible = f.on_sale && !!f.starts_at && !p.concluded;
 
   const supabase = await createClient();
+  // Antes de mostrar el mapa se liberan los asientos de órdenes vencidas (0054).
+  if (vendible) await supabase.rpc("expire_due_orders", { pid: p.id });
   const [seatsRes, takenRes, pricesRes] = vendible
     ? await Promise.all([
         supabase.from("seats").select("id, seat_label, seat_row, seat_number, lado, price_category_id, is_active").eq("production_id", p.id).limit(2000),

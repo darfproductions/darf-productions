@@ -48,7 +48,7 @@ export async function listOrders(pid: string, opts: { funcion?: string; estado?:
   if (!perfIds.length) return [];
   let q = supabase
     .from("orders")
-    .select("id, order_code, performance_id, status, buyer_nombre, buyer_telefono, total, discount_codigo, discount_amount, created_at, created_by_staff_id, tickets(id, is_active, checked_in_at, seats(seat_label))")
+    .select("id, order_code, performance_id, status, buyer_nombre, buyer_telefono, total, discount_codigo, discount_amount, created_at, created_by_staff_id, expires_at, vencida_at, tickets(id, is_active, checked_in_at, seats(seat_label))")
     .in("performance_id", opts.funcion ? [opts.funcion] : perfIds)
     .order("created_at", { ascending: false })
     .limit(500);
@@ -71,6 +71,7 @@ export async function listOrders(pid: string, opts: { funcion?: string; estado?:
 /** Mapa para la taquilla: asientos, ocupados y precios de la función. */
 export async function boxOfficeData(pid: string, performanceId: string) {
   const supabase = await createClient();
+  await supabase.rpc("expire_due_orders", { pid });
   const [seats, taken, prices] = await Promise.all([
     supabase.from("seats").select("id, seat_label, seat_row, seat_number, lado, price_category_id, is_active").eq("production_id", pid).limit(2000),
     supabase.rpc("get_taken_seats", { target_performance_id: performanceId }),

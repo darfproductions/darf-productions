@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { whatsappPayUrl } from "@/lib/tickets";
 
 export type OrderResult =
-  | { ok: true; orderCode: string; total: number; seats: string[]; whatsappUrl: string }
+  | { ok: true; orderCode: string; total: number; seats: string[]; whatsappUrl: string; expiresAt: string | null }
   | { ok: false; message: string };
 
 // Crea la orden llamando a la MISMA función de la base que usa la 1.0
@@ -28,6 +28,8 @@ export async function placeOrder(input: {
   if (!phone) return { ok: false, message: "Escribe tu número de teléfono." };
 
   const supabase = await createClient();
+  // Libera lo vencido de esa función antes de apartar (0054).
+  await supabase.rpc("expire_due_orders", { pid: null });
   const { data, error } = await supabase.rpc("create_seated_ticket_order", {
     target_performance_id: input.performanceId,
     target_buyer_nombre: session.profile?.nombre || session.email,
@@ -40,7 +42,9 @@ export async function placeOrder(input: {
 
   const d = data as { order_code: string; total: number; seats?: string[]; discount_codigo?: string | null; discount_amount?: number | null };
   const seats = d.seats ?? [];
+  const { data: ord } = await supabase.from("orders").select("expires_at").eq("order_code", d.order_code).maybeSingle();
   return {
+    expiresAt: (ord?.expires_at as string | null) ?? null,
     ok: true,
     orderCode: d.order_code,
     total: Number(d.total),

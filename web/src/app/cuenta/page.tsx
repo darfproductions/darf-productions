@@ -17,6 +17,7 @@ import Link from "next/link";
 import { AvatarUpload } from "./AvatarUpload";
 import { EmailForm, PasswordForm, ProfileForm } from "./ProfileForm";
 import { funcionPasada } from "@/lib/account-rules";
+import { limiteTexto, recordatorio, tiempoRestante } from "@/lib/expiry-rules";
 
 export const metadata: Metadata = { title: "Mi cuenta" };
 
@@ -29,6 +30,8 @@ type OrderRow = {
   discount_codigo: string | null;
   buyer_telefono: string;
   created_at: string;
+  expires_at: string | null;
+  vencida_at: string | null;
   performances: { starts_at: string | null; production_id: string; productions: { nombre: string } | null } | null;
   tickets: { id: string; is_active: boolean; qr_token: string; checked_in_at: string | null; seats: { seat_label: string } | null }[];
 };
@@ -45,9 +48,10 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
   const nueva = typeof sp.orden === "string" ? sp.orden : null;
 
   const supabase = await createClient();
+  await supabase.rpc("expire_due_orders", { pid: null });
   const { data, error } = await supabase
     .from("orders")
-    .select("id, order_code, status, total, discount_amount, discount_codigo, buyer_telefono, created_at, performances(starts_at, production_id, productions(nombre)), tickets(id, is_active, qr_token, checked_in_at, seats(seat_label))")
+    .select("id, order_code, status, total, discount_amount, discount_codigo, buyer_telefono, created_at, expires_at, vencida_at, performances(starts_at, production_id, productions(nombre)), tickets(id, is_active, qr_token, checked_in_at, seats(seat_label))")
     .eq("buyer_user_id", session.userId)
     .order("created_at", { ascending: false });
   const orders = (data ?? []) as unknown as OrderRow[];
@@ -80,6 +84,7 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
     ? (await supabase.storage.from("avatares").createSignedUrl(session.profile.foto_path, 3600)).data?.signedUrl ?? null
     : null;
   const ahora = new Date();
+  const recordatorios = orders.filter((o) => o.status === "aprobado" && o.tickets.some((t) => t.is_active) && recordatorio(o.performances?.starts_at ?? null));
   const proximas = orders.filter((o) => !funcionPasada(o.performances?.starts_at ?? null, ahora));
   const pasadas = orders.filter((o) => funcionPasada(o.performances?.starts_at ?? null, ahora));
   const renderOrder = (o: OrderRow) => {
@@ -99,8 +104,12 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
                       <p className="text-sm capitalize text-texto-2">{formatPerformanceDate(o.performances?.starts_at ?? null)}</p>
                       <p className="mt-1 text-sm text-texto-3">Orden {o.order_code} · {formatMoney(Number(o.total))}{o.discount_codigo ? ` · código ${o.discount_codigo}` : ""}</p>
                     </div>
-                    <span className={`rounded-full px-3 py-1.5 text-xs font-bold ${STATUS[o.status].cls}`}>{STATUS[o.status].label}</span>
+                    <span className={`rounded-full px-3 py-1.5 text-xs font-bold ${STATUS[o.status].cls}`}>{o.vencida_at ? "Vencida" : STATUS[o.status].label}</span>
                   </div>
+                  {o.vencida_at && <p className="text-sm text-texto-3">No se confirmó el pago a tiempo y los asientos se liberaron. Puedes volver a comprar si sigue habiendo lugares.</p>}
+                  {o.status === "pendiente" && o.expires_at && tiempoRestante(o.expires_at) && (
+                    <p className="text-sm text-[#fde68a]">Paga antes de <b>{limiteTexto(o.expires_at)}</b> (te quedan {tiempoRestante(o.expires_at)}). Si no, los asientos se liberan solos.</p>
+                  )}
                   {o.status === "pendiente" && (
                     wa ? (
                       <a href={wa} className="self-start rounded-full bg-[#25d366] px-5 py-3 text-sm font-bold text-[#062b16]">Pagar por WhatsApp</a>
@@ -136,6 +145,12 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
               pago, tus boletos con QR aparecerán aquí.
             </p>
           )}
+          {recordatorios.map((o) => (
+            <p key={o.id} role="status" className="rounded-xl border border-[#c4b5fd]/40 bg-[#c4b5fd]/10 px-4 py-3">
+              <b>{recordatorio(o.performances?.starts_at ?? null)}:</b> {o.performances?.productions?.nombre} ·{" "}
+              <span className="capitalize">{formatPerformanceDate(o.performances?.starts_at ?? null)}</span>. Lleva tus códigos QR (abajo).
+            </p>
+          ))}
           {error && <p role="alert" className="text-[#ff8fa3]">No se pudieron cargar tus boletos.</p>}
           {!error && orders.length === 0 && <p className="rounded-2xl bg-telon p-6 text-texto-2">Todavía no tienes compras.</p>}
           {!error && orders.length > 0 && proximas.length === 0 && <p className="rounded-2xl bg-telon p-6 text-texto-2">No tienes funciones próximas.</p>}

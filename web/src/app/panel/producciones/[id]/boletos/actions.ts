@@ -53,6 +53,7 @@ export async function boxOfficeSale(input: { pid: string; performanceId: string;
   if (!input.nombre.trim() || !input.telefono.trim()) return { ok: false, message: "Escribe nombre y teléfono del comprador." };
   if (!input.seatIds.length) return { ok: false, message: "Elige al menos un asiento." };
   const supabase = await createClient();
+  await supabase.rpc("expire_due_orders", { pid: input.pid });
   const { data, error } = await supabase.rpc("admin_create_seated_order", {
     target_performance_id: input.performanceId,
     target_buyer_nombre: input.nombre.trim(),

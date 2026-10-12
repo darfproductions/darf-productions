@@ -14,6 +14,8 @@ export type SaleOrder = {
   discount_amount: number;
   created_at: string;
   created_by_staff_id: string | null;
+  expires_at?: string | null;
+  vencida_at?: string | null;
   tickets: SaleTicket[];
 };
 

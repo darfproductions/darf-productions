@@ -6,6 +6,7 @@ import { useMemo, useState, useTransition } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { SeatMap, type ZonePrice } from "@/components/SeatMap";
 import { formatMoney, previewDiscount, type DiscountPreview, type MapSeat } from "@/lib/tickets";
+import { limiteTexto } from "@/lib/expiry-rules";
 import { placeOrder, type OrderResult } from "./actions";
 
 export type { ZonePrice };
@@ -103,6 +104,11 @@ export function SeatPicker(props: {
       <div role="status" className="flex max-w-2xl flex-col gap-4 rounded-2xl bg-telon p-8">
         <p className="titular text-3xl">¡Asientos apartados!</p>
         <p className="text-lg">Orden <b>{result.orderCode}</b> · {result.seats.join(", ")} · Total {formatMoney(result.total)}</p>
+        {result.expiresAt && (
+          <p className="rounded-xl border border-[#fde68a]/40 bg-[#fde68a]/10 px-4 py-3 text-sm">
+            Tus asientos quedan apartados hasta <b>{limiteTexto(result.expiresAt)}</b>. Si no se confirma tu pago para entonces, se liberan solos.
+          </p>
+        )}
         <p className="text-texto-2">Tu solicitud quedó guardada y tus asientos están apartados hasta que confirmemos tu pago. Cuando se apruebe, tus boletos con QR aparecerán en Mi cuenta.</p>
         <div className="flex flex-wrap gap-3">
           {result.whatsappUrl ? (

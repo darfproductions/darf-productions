@@ -54,7 +54,7 @@ final (Lanzamiento) y con aprobación explícita.**
   - congelar el elenco y los créditos;
   - resumen final descargable.
 
-### 4. Boletería y compra (Fase 4 de la visión) — cambia lógica crítica, se aprueba aparte
+### 4. Boletería y compra (Fase 4) — APROBADO; en curso (ver `docs/DARF-2.0-FASE-4.md`)
 
 - Mapa de asientos y compra más cómodos en celular; mensajes más claros.
 - Vencimiento automático de órdenes pendientes (liberar asientos si no pagan a tiempo).
