@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/server";
 type State = { ok: boolean; message: string } | null;
 const refresh = (pid: string) => {
   revalidatePath(`/panel/producciones/${pid}`, "layout");
-  for (const p of [`/producciones/${pid}`, "/panel/reportes", "/", "/producciones", "/cartelera"]) revalidatePath(p);
+  for (const p of [`/producciones/${pid}`, "/panel/reportes", "/", "/producciones"]) revalidatePath(p);
 };
 
 export async function closeSeason(_p: State, f: FormData): Promise<State> {

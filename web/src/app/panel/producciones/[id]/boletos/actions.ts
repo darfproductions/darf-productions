@@ -14,7 +14,7 @@ export type TicketState = { ok: boolean; message: string } | null;
 const refresh = (pid: string) => {
   revalidatePath(`/panel/producciones/${pid}`, "layout");
   revalidatePath(`/producciones/${pid}`);
-  revalidatePath("/cartelera");
+  revalidatePath("/producciones");
 };
 
 export async function approveOrder(_p: TicketState, f: FormData): Promise<TicketState> {

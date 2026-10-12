@@ -20,7 +20,7 @@ export default async function Eventos() {
       <div className="mx-auto flex max-w-[1440px] flex-col gap-6 px-5 md:px-16">
         <Link href="/cuenta" className="text-sm font-bold text-lila">← Mi cuenta</Link>
         {eventos.length === 0 ? (
-          <p className="tarjeta p-6 text-texto-2">Aquí aparecerán las funciones a las que vayas. <Link href="/cartelera" className="font-bold text-lila">Ver cartelera →</Link></p>
+          <p className="tarjeta p-6 text-texto-2">Aquí aparecerán las funciones a las que vayas. <Link href="/producciones?estado=cartelera" className="font-bold text-lila">Ver producciones →</Link></p>
         ) : (
           <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {eventos.map((e) => {

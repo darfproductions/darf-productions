@@ -2,11 +2,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { getSession } from "@/lib/auth";
 import { canSeePanel } from "@/lib/permissions";
+import { avatarUrl } from "@/lib/avatar";
+import { getCredencial } from "@/lib/fanzone";
 import { MainNav } from "./MainNav";
+import { MenuCuenta } from "./MenuCuenta";
 import { MobileMenu } from "./MobileMenu";
 
 export const NAV_LINKS = [
-  { href: "/cartelera", label: "Cartelera" },
   { href: "/producciones", label: "Producciones" },
   { href: "/audiciones", label: "Audiciones" },
   { href: "/nosotros", label: "Nosotros" },
@@ -21,7 +23,12 @@ export const NAV_LINKS = [
 export async function SiteHeader() {
   const session = await getSession();
   // Panel: staff, Director o quien tenga un rol en alguna obra (0031).
-  const isStaff = await canSeePanel(session);
+  const [isStaff, foto, credencial] = await Promise.all([
+    canSeePanel(session),
+    session ? avatarUrl(session.profile?.foto_path) : Promise.resolve(null),
+    session ? getCredencial() : Promise.resolve(null),
+  ]);
+  const socio = !!credencial;
   const account = session ? { href: "/cuenta", label: "Mi cuenta" } : { href: "/entrar", label: "Entrar" };
 
   return (
@@ -35,10 +42,13 @@ export async function SiteHeader() {
         <MainNav links={NAV_LINKS} />
 
         <div className="flex items-center gap-3 lg:gap-6">
-          {isStaff && <Link href="/panel" className="hidden text-[13px] font-semibold text-texto-2 hover:text-white lg:inline">Panel</Link>}
-          <Link href={account.href} className="hidden whitespace-nowrap text-[13px] font-semibold text-texto-2 hover:text-white lg:inline">{account.label}</Link>
-          <Link href="/cartelera" className="fb fb-luz fb-sm min-h-[38px] px-4 lg:min-h-[42px] lg:px-5">Boletos</Link>
-          <MobileMenu links={NAV_LINKS} account={account} panel={isStaff} />
+          {session ? (
+            <MenuCuenta nombre={session.profile?.nombre ?? ""} email={session.email} fotoUrl={foto} panel={isStaff} socio={socio} />
+          ) : (
+            <Link href="/entrar" className="hidden whitespace-nowrap text-[13px] font-semibold text-texto-2 hover:text-white lg:inline">Entrar</Link>
+          )}
+          <Link href="/producciones?estado=cartelera" className="fb fb-luz fb-sm min-h-[38px] px-4 lg:min-h-[42px] lg:px-5">Boletos</Link>
+          <MobileMenu links={NAV_LINKS} account={account} panel={isStaff} sesion={!!session} />
         </div>
       </div>
     </header>

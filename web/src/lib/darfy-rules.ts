@@ -168,7 +168,7 @@ function respuestaCartelera(obras: ObraInfo[], conPrecios = false): Respuesta {
   return {
     tipo: "dato",
     texto: partes.join(" "),
-    ligas: [...cartelera, ...pronto].slice(0, 3).map((o) => ({ href: `/producciones/${o.id}`, label: o.nombre })).concat({ href: "/cartelera", label: "Cartelera" }),
+    ligas: [...cartelera, ...pronto].slice(0, 3).map((o) => ({ href: `/producciones/${o.id}`, label: o.nombre })).concat({ href: "/producciones", label: "Producciones" }),
   };
 }
 

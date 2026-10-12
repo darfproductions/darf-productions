@@ -4,8 +4,7 @@ import { EncuentroCard } from "@/components/fanzone/EncuentroCard";
 import { PageHeading } from "@/components/PageHeading";
 import { getSession } from "@/lib/auth";
 import { getCredencial, getEncuentros, getEventosCartelera } from "@/lib/fanzone";
-import { partesFuncion } from "@/lib/disponibilidad";
-import { ACCESO_EVENTO, TIPOS_EVENTO } from "@/lib/eventos-rules";
+import { EventoBloqueado } from "@/components/eventos/EventoBloqueado";
 
 export const metadata: Metadata = { title: "Eventos" };
 
@@ -47,30 +46,7 @@ export default async function EventosPage() {
               <p className="text-texto-2">{session ? "Únete gratis al Club Fan para apartar tu lugar y entrar." : "Entra con tu cuenta para verlos; algunos son exclusivos del Club Fan (es gratis)."}</p>
             </div>
             <ul className="grid gap-4 md:grid-cols-2">
-              {bloqueados.map((e) => {
-                const f = partesFuncion(e.starts_at);
-                const cta = !session ? { href: "/entrar?next=/eventos", label: "Entra para ver más" } : { href: "/fan-zone", label: "Únete al Club Fan" };
-                return (
-                  <li key={e.id} id={`e-${e.id}`} className="flex flex-col gap-3 rounded-[18px] border border-oro/25 bg-sala/40 p-4">
-                    <div className="flex items-center gap-4">
-                      <div className="grid justify-items-center border-r border-white/10 pr-4">
-                        <small className="text-[10px] font-bold uppercase tracking-[0.2em] text-oro">{f.dia}</small>
-                        <b className="num text-3xl font-black leading-none">{f.numero}</b>
-                        <small className="text-[10px] font-bold uppercase tracking-[0.2em] text-texto-3">{f.mes}</small>
-                      </div>
-                      <div className="flex min-w-0 flex-col gap-0.5">
-                        <span className="flex flex-wrap items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-oro">
-                          {e.categoria || TIPOS_EVENTO[e.tipo].label}
-                          <span className="rounded-full border border-oro/40 px-2 py-0.5 text-[9px] tracking-[0.12em] text-oro-claro">🔒 {ACCESO_EVENTO[e.acceso].corto}</span>
-                        </span>
-                        <strong className="truncate">{e.titulo}</strong>
-                        <span className="text-[12.5px] text-texto-3">{f.hora}{e.tipo === "en_linea" ? " · En línea" : e.lugar ? ` · ${e.lugar}` : ""}{e.obra ? ` · ${e.obra}` : ""}</span>
-                      </div>
-                    </div>
-                    <Link href={cta.href} className="fb fb-fz fb-sm self-start">{cta.label}</Link>
-                  </li>
-                );
-              })}
+              {bloqueados.map((e) => <EventoBloqueado key={e.id} e={e} sesion={!!session} />)}
             </ul>
           </section>
         )}

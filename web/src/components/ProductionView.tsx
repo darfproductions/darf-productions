@@ -13,7 +13,10 @@ import { getPublicBanner } from "@/lib/banner";
 import { fechaEstreno } from "@/lib/cuenta-regresiva";
 import { enPreventa, ETIQUETA_FUNCION, estadoFuncion, partesFuncion } from "@/lib/disponibilidad";
 import { isDev } from "@/lib/env";
-import { fanzoneCount, getCredencial } from "@/lib/fanzone";
+import { EncuentroCard } from "@/components/fanzone/EncuentroCard";
+import { EventoBloqueado } from "@/components/eventos/EventoBloqueado";
+import { getSession } from "@/lib/auth";
+import { fanzoneCount, getCredencial, getEncuentros, getEventosCartelera } from "@/lib/fanzone";
 import { estadoPublico } from "@/lib/home-rules";
 import { getProductionContent } from "@/lib/production-content";
 import { getProgram } from "@/lib/program";
@@ -62,7 +65,7 @@ export async function ProductionView({
   const { production: p, performances, prices } = data;
   const theme = getTheme(p);
   const vendibles = performances.filter((fn) => fn.on_sale && !!fn.starts_at && !p.concluded);
-  const [c, gallery, ensayos, audiciones, programa, franja, ocupacion, credencial] = await Promise.all([
+  const [c, gallery, ensayos, audiciones, programa, franja, ocupacion, credencial, eventos, cartelera, sesion] = await Promise.all([
     getProductionContent(p.id),
     getGallery(p.id),
     fanzoneCount(p.id),
@@ -70,9 +73,15 @@ export async function ProductionView({
     getProgram(p.id),
     getPublicBanner(p.id),
     performanceOccupancy(vendibles.map((fn) => fn.id)),
-    vendibles.some((fn) => enPreventa(fn)) ? getCredencial() : Promise.resolve(null),
+    getCredencial(),
+    getEncuentros(p.id),
+    getEventosCartelera(30),
+    getSession(),
   ]);
   const socio = !!credencial;
+  // Eventos de esta obra (0081/0082): los que puede abrir y, con candado, los del club o con cuenta.
+  const abiertos = new Set(eventos.map((e) => e.id));
+  const bloqueados = cartelera.filter((e) => e.production_id === p.id && !abiertos.has(e.id));
   const estadoDe = (id: string) => {
     const o = ocupacion.get(id);
     return o ? estadoFuncion(o.capacidad, o.ocupados) : null;
@@ -103,6 +112,7 @@ export async function ProductionView({
   const base = [
     { id: "sinopsis", label: "Sinopsis", show: c.sinopsis.length > 0 },
     { id: "funciones", label: "Funciones", show: !p.concluded || performances.length > 0 },
+    { id: "eventos", label: "Eventos", show: eventos.length + bloqueados.length > 0 },
     { id: "canciones", label: "Canciones", show: canciones > 0 },
     { id: "elenco", label: "Elenco", show: c.reparto.length + c.ensamble.length > 0 },
     { id: "equipos", label: "Equipos", show: hayEquipo },
@@ -331,6 +341,15 @@ export async function ProductionView({
       <div className="mx-auto grid max-w-[1440px] items-start gap-12 px-5 pt-14 md:px-16 md:pt-24 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-12">
         <div className="flex min-w-0 flex-col gap-16 md:gap-24">
           {p.concluded ? <>{sinopsis}{funciones}</> : <>{funciones}{sinopsis}</>}
+          {show("eventos") && (
+            <Bloque id="eventos" eyebrow="Vívelo de cerca" titulo="Eventos">
+              <ul className="grid gap-4 md:grid-cols-2">
+                {eventos.map((e) => <EncuentroCard key={e.id} e={e} sesion={!!sesion} socio={socio} mostrarObra={false} />)}
+                {bloqueados.map((e) => <EventoBloqueado key={e.id} e={e} sesion={!!sesion} mostrarObra={false} />)}
+              </ul>
+              <Link href="/eventos" className="self-start text-sm font-bold underline-offset-4 opacity-80 hover:underline hover:opacity-100">Ver todos los eventos de DARF →</Link>
+            </Bloque>
+          )}
           {repertorio}
           {!c.sinopsis.length && !canciones && (
             <p className="rounded-[22px] border border-current/12 bg-obra-superficie p-6 opacity-85">

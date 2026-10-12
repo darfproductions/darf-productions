@@ -50,6 +50,8 @@ Diego eligió cuáles sí (ver plan del bloque). Hechas en `darf-2.0`, migracion
 | Eventos del Club Fan | Foto con el elenco o evento exclusivo (con o sin registro y boleto); en la entrada se escanea la credencial desde Fan Zone o Puerta y se marca la llegada (0080). |
 | Eventos | Panel → Eventos: por función (foto con el elenco, tour por backstage, early access), presenciales (ensayo abierto, meet & greet) y en línea (transmisión, lanzamiento, preventa; liga 15 min antes y durante). Acceso Club Fan, con cuenta o público; de una obra o de DARF. Aviso al publicarse y recordatorio una hora antes; página pública `/eventos` (0081). |
 | Eventos en portada y menú | "Eventos" en la barra de arriba (y en el menú del celular y el pie); sección "Próximos eventos" en la portada debajo de Producciones con el más cercano destacado; en `/eventos` los del club o con cuenta salen con candado para invitar a entrar o unirse (0082). |
+| Menú compacto | Cartelera se unió con Producciones (`/cartelera` redirige con su filtro); "Panel" y "Mi cuenta" pasan a un botón de cuenta con menú (Mi cuenta, Mis boletos, credencial, Panel, Cerrar sesión). En celular sigue la hamburguesa (la app tendrá su propio menú). |
+| Eventos en la obra | Sección "Eventos" en la página de cada obra (abiertos y con candado). |
 | Ajustes de marca | Fan Zone al final del menú, logo original (DARF con PRODUCTIONS abajo), destacada también en la cartelera, logos de DARF y de la obra en los boletos. |
 
 ## Lo que queda pendiente

@@ -4,11 +4,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { logout } from "@/app/entrar/actions";
 import { esActiva, type NavLink } from "./MainNav";
 
 // Menú del celular a pantalla completa (guía de UI): secciones grandes, Fan Zone en oro y
 // Audiciones en pulso. Se cierra al navegar, con Esc o con la ✕; bloquea el scroll de atrás.
-export function MobileMenu({ links, account, panel }: { links: NavLink[]; account: NavLink; panel: boolean }) {
+export function MobileMenu({ links, account, panel, sesion = false }: { links: NavLink[]; account: NavLink; panel: boolean; sesion?: boolean }) {
   const [abierto, setAbierto] = useState(false);
   const path = usePathname();
   const boton = useRef<HTMLButtonElement>(null);
@@ -81,7 +82,13 @@ export function MobileMenu({ links, account, panel }: { links: NavLink[]; accoun
           <div className="relative mt-auto flex flex-col gap-2.5 p-5 pb-10">
             <Link href="/fan-zone" onClick={() => setAbierto(false)} className="fb fb-fz">Únete a la Fan Zone</Link>
             <Link href={account.href} onClick={() => setAbierto(false)} className="fb fb-o">{account.label}</Link>
-            <Link href="/cartelera" onClick={() => setAbierto(false)} className="fb fb-luz">Comprar boletos</Link>
+            {sesion && <Link href="/cuenta#boletos" onClick={() => setAbierto(false)} className="fb fb-o">Mis boletos</Link>}
+            <Link href="/producciones?estado=cartelera" onClick={() => setAbierto(false)} className="fb fb-luz">Comprar boletos</Link>
+            {sesion && (
+              <form action={logout} className="flex">
+                <button type="submit" className="w-full py-2 text-center text-sm font-bold text-texto-3 underline">Cerrar sesión</button>
+              </form>
+            )}
             <p className="pt-2 text-center text-xs text-texto-3">@darfproductions · Jóvenes para jóvenes</p>
           </div>
         </div>,

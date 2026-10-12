@@ -29,7 +29,7 @@ export default async function Transacciones() {
       <div className="mx-auto flex max-w-[1100px] flex-col gap-6 px-5 md:px-16">
         <Link href="/cuenta" className="text-sm font-bold text-lila">← Mi cuenta</Link>
         {lista.length === 0 ? (
-          <p className="tarjeta p-6 text-texto-2">Todavía no tienes compras. <Link href="/cartelera" className="font-bold text-lila">Ver cartelera →</Link></p>
+          <p className="tarjeta p-6 text-texto-2">Todavía no tienes compras. <Link href="/producciones?estado=cartelera" className="font-bold text-lila">Ver producciones →</Link></p>
         ) : (
           <>
             <p className="text-sm text-texto-2">{lista.length} {lista.length === 1 ? "orden" : "órdenes"} · Pagado en total <b className="num text-texto">{formatMoney(pagado)}</b></p>
