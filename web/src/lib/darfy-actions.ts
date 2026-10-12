@@ -78,6 +78,6 @@ export async function contactoDarfy(_prev: DarfyContactState, form: FormData): P
     asunto: "Pregunta a DARFY",
     mensaje: [pregunta && `Pregunta: ${pregunta}`, mensaje].filter(Boolean).join("\n\n"),
   });
-  if (error) return { ok: false, message: "No se pudo enviar. Intenta de nuevo en un momento." };
+  if (error) return { ok: false, message: /Intenta de nuevo/.test(error.message) ? error.message : "No se pudo enviar. Intenta de nuevo en un momento." };
   return { ok: true, message: "¡Listo! Recibimos tu pregunta y alguien del equipo te contactará pronto." };
 }

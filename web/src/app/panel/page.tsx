@@ -171,7 +171,7 @@ export default async function PanelHome() {
                     {t && <ArtFill theme={t} alt="" sizes="96px" />}
                   </div>
                   <div className="min-w-0 flex-1 py-2">
-                    <p className="truncate font-bold">{p.nombre}</p>
+                    <p className="line-clamp-2 font-bold leading-tight">{p.nombre}</p>
                     <p className="text-xs text-texto-3">{rol}</p>
                   </div>
                   <EstadoChip estado={p.estado} />

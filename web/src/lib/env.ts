@@ -26,6 +26,14 @@ export const env = {
   ),
   /** Número de WhatsApp para pagos, sin "+" ni espacios. Vacío = sin botón. */
   whatsapp: process.env.NEXT_PUBLIC_DARF_WHATSAPP ?? "",
+  /** Liga al panel de la 1.0 (solo mientras conviven). Vacío = no se muestra. */
+  panel1Url: process.env.NEXT_PUBLIC_DARF_PANEL_1_URL ?? "",
 };
 
 export const isDev = env.darfEnv !== "PROD";
+
+// Candado de lanzamiento (0068): una compilación de producción nunca debe usar la base DEV.
+const DEV_REF = "qgywscczyzuqinutuvak";
+if (env.darfEnv === "PROD" && env.supabaseUrl.includes(DEV_REF)) {
+  throw new Error("NEXT_PUBLIC_DARF_ENV=PROD pero la página apunta a Supabase DEV. Revisa las variables del proyecto en Vercel.");
+}

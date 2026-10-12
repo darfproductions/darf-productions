@@ -44,7 +44,7 @@ export function SeatPicker(props: {
   useEffect(() => {
     const id = setInterval(async () => {
       const sb = createClient();
-      if (props.productionId) await sb.rpc("expire_due_orders", { pid: props.productionId });
+      if (document.visibilityState === "hidden") return; // las vencidas las libera la base cada minuto (0068)
       const { data } = await sb.rpc("get_taken_seats", { target_performance_id: props.performanceId });
       if (!data) return;
       const ocupados = new Set(data as string[]);

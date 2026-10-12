@@ -12,6 +12,7 @@ export function ContactForm() {
   }
   return (
     <form action={action} className="grid gap-4 rounded-2xl bg-telon p-6 sm:grid-cols-2">
+      <input type="text" name="sitio" tabIndex={-1} autoComplete="off" aria-hidden="true" className="hidden" />
       <label className="flex flex-col gap-1.5 text-sm font-semibold">Nombre *
         <input className={field} name="nombre" required autoComplete="name" />
       </label>

@@ -47,6 +47,8 @@ export function AuthForms({ next }: { next: string }) {
         <p role="status" className="text-lg">{regState.message}</p>
       ) : (
         <form action={regAction} className="flex flex-col gap-4">
+          <input type="hidden" name="next" value={next} />
+          <input type="text" name="sitio" tabIndex={-1} autoComplete="off" aria-hidden="true" className="hidden" />
           <label className="flex flex-col gap-1.5 text-sm font-semibold">Nombre
             <input className={field} name="nombre" required autoComplete="name" />
           </label>
@@ -57,6 +59,7 @@ export function AuthForms({ next }: { next: string }) {
             <PasswordInput className={field} name="password" required minLength={8} autoComplete="new-password" aria-describedby="pw-help" />
             <span id="pw-help" className="text-xs font-normal text-texto-3">Mínimo 8 caracteres, con letras y números.</span>
           </label>
+          <p className="text-xs text-texto-3">Al crear tu cuenta aceptas los <a href="/terminos" target="_blank" className="underline">términos</a> y el <a href="/privacidad" target="_blank" className="underline">aviso de privacidad</a>.</p>
           {regState && !regState.ok && <p role="alert" className="text-[#ff8fa3]">{regState.message}</p>}
           <button disabled={regPending} className="boton-compra rounded-full py-4 text-sm font-bold uppercase tracking-[0.1em] disabled:opacity-60">
             {regPending ? "Creando…" : "Crear cuenta"}

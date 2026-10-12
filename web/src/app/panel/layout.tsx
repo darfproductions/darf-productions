@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { PanelNavLinks, PanelSubTabs } from "@/components/panel/PanelNav";
+import { env } from "@/lib/env";
 import { unreadCount } from "@/lib/notifications";
 import { panelMenu } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
@@ -17,14 +18,16 @@ export default async function PanelLayout({ children }: LayoutProps<"/panel">) {
   const links = (
     <>
       <PanelNavLinks menu={menu} badges={{ inicio: nuevas }} />
-      <a href="https://darf-2-dev-darf-productions.vercel.app/?v=staff" className="mt-2 rounded-lg px-3 py-2.5 text-sm text-texto-3 hover:bg-telon-2">
-        Panel anterior (1.0) ↗
-      </a>
+      {env.panel1Url && (
+        <a href={env.panel1Url} className="mt-2 rounded-lg px-3 py-2.5 text-sm text-texto-3 hover:bg-telon-2">
+          Panel anterior (1.0) ↗
+        </a>
+      )}
     </>
   );
 
   return (
-    <div className="mx-auto grid max-w-[1440px] gap-6 px-5 pb-16 md:px-16 lg:grid-cols-[220px_1fr] print:block">
+    <div className="mx-auto grid max-w-[1440px] gap-6 px-5 pb-16 md:px-16 lg:grid-cols-[220px_minmax(0,1fr)] print:block">
       <aside className="lg:sticky lg:top-6 lg:self-start print:hidden">
         <p className="mb-1 hidden px-3 text-xs font-bold uppercase tracking-[0.24em] text-texto-3 lg:block">Panel</p>
         <p className="mb-3 hidden truncate px-3 text-sm text-texto-3 lg:block">{nombre}{access.isDirector ? " · Director" : ""}</p>

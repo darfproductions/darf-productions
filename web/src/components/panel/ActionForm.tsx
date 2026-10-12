@@ -30,7 +30,7 @@ export function ActionForm({
       onSubmit={(e) => {
         if (confirm && !window.confirm(confirm)) e.preventDefault();
       }}
-      className={inline ? "inline-flex flex-wrap items-center gap-2" : "flex flex-col gap-3"}
+      className={inline ? "inline-flex max-w-full flex-wrap items-center gap-2" : "flex flex-col gap-3"}
     >
       {hidden && Object.entries(hidden).map(([k, v]) => <input key={k} type="hidden" name={k} value={v} />)}
       {children}

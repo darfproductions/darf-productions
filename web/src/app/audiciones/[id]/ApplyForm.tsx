@@ -142,7 +142,7 @@ export function ApplyForm(props: {
       )}
 
       <div className="flex flex-col gap-2 text-sm sm:col-span-2">
-        <label className="flex items-start gap-2"><input type="checkbox" name="consentimiento_datos" required className="mt-1" /> Autorizo a DARF Productions a usar mis datos solo para esta audición. *</label>
+        <label className="flex items-start gap-2"><input type="checkbox" name="consentimiento_datos" required className="mt-1" /> <span>Autorizo a DARF Productions a usar mis datos solo para esta audición, según el <a href="/privacidad" target="_blank" className="font-semibold text-violeta-claro underline">aviso de privacidad</a>. *</span></label>
         <label className="flex items-start gap-2"><input type="checkbox" name="consentimiento_imagen" defaultChecked={p?.consentimiento_imagen} className="mt-1" /> Autorizo que se tomen fotos o video durante la audición para uso interno de la producción.</label>
       </div>
 

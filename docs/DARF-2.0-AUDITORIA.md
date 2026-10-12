@@ -71,6 +71,23 @@ DEV y producción no se tocaron. Las cuentas y los datos de prueba se borraron a
 9. **Totales de venta limitados a 500 órdenes** (`web/src/lib/boleteria.ts:65` → `summarizeSales`). Arreglo: sumar en SQL.
 10. **"0 boletos" en Mi cuenta para órdenes pendientes.** Verificado: una orden de 3 asientos mostraba "0 boletos".
 
+## Estado de los 10 críticos (resueltos en la rama `darf-2.0`, migración 0068)
+
+| # | Pendiente | Cómo quedó |
+|---|---|---|
+| 1 | Puerta acepta boletos de otra función | Se elige la función; un boleto de otra se rechaza en rojo **sin gastarse**; todas las respuestas muestran obra y fecha. |
+| 2 | Redirección abierta en `/entrar` | `safeNext` rechaza `\`, `//` y caracteres de control, y exige el mismo sitio (con pruebas). |
+| 3 | 404 y errores en inglés | Páginas propias: no existe, algo salió mal, error general y "no tienes acceso" en el panel. |
+| 4 | Sin aviso de privacidad ni términos | Borrador en `/privacidad`, `/terminos` y `/reembolsos`, con ligas en el pie, el registro y las audiciones. **Falta: razón social, domicilio y revisión legal.** |
+| 5 | Restos de DEV | El enlace a la 1.0 solo aparece con `NEXT_PUBLIC_DARF_PANEL_1_URL`; los textos de "entorno de pruebas" se cambiaron por la liga a Contacto; la web falla al arrancar si es PROD y apunta a la base DEV. |
+| 6 | Desborde en celular | Las rejillas sin columnas ya se encogen en celular (regla global) y se ajustaron Contacto, Nueva producción, Directorio, Elenco e Inicio. |
+| 7 | Spam de contacto, DARFY y push | Límites en la base: 5 por correo por hora y 300 por hora en total; largos máximos; campo trampa; `push_*` sin acceso anónimo y la prueba de push solo para el equipo. |
+| 8 | Vencimiento sin programador | `pg_cron` corre `expire_due_orders()` cada minuto; el mapa ya no escribe al sondear y no sondea con la pestaña oculta. |
+| 9 | Totales mal después de 500 órdenes | Los totales de boletos y reportes los calcula la base (`production_sales_summary`). |
+| 10 | "0 boletos" en órdenes pendientes | Mi cuenta muestra los asientos de la orden pendiente (sin QR). |
+
+Lo que queda para el día del lanzamiento está en `DARF-2.0-PLAN.md` §9, punto 8.
+
 ## Importante (primer ajuste después)
 
 - **Mapa en celular:**

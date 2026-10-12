@@ -8,6 +8,7 @@ export type ContactState = { ok: boolean; message: string } | null;
 // solo staff puede leerlos). Mismo destino que el formulario de la 1.0.
 export async function sendContact(_prev: ContactState, form: FormData): Promise<ContactState> {
   const get = (k: string) => String(form.get(k) ?? "").trim();
+  if (get("sitio")) return { ok: true, message: "¡Gracias! Recibimos tu mensaje y te responderemos pronto." }; // campo trampa para robots
   const nombre = get("nombre");
   const correo = get("correo");
   const mensaje = get("mensaje");
@@ -23,6 +24,6 @@ export async function sendContact(_prev: ContactState, form: FormData): Promise<
     asunto: get("asunto") || null,
     mensaje,
   });
-  if (error) return { ok: false, message: "No se pudo enviar. Intenta de nuevo en un momento." };
+  if (error) return { ok: false, message: /Intenta de nuevo/.test(error.message) ? error.message : "No se pudo enviar. Intenta de nuevo en un momento." };
   return { ok: true, message: "¡Gracias! Recibimos tu mensaje y te responderemos pronto." };
 }

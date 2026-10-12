@@ -19,7 +19,7 @@ export function OrderDone({ result }: { result: Extract<OrderResult, { ok: true 
           {result.whatsappUrl ? (
             <a href={result.whatsappUrl} className="rounded-full bg-[#25d366] px-6 py-4 text-sm font-bold text-[#062b16]">Pagar por WhatsApp</a>
           ) : (
-            <p className="text-sm text-texto-3">Pago por WhatsApp: sin número configurado en este entorno.</p>
+            <Link href="/contacto" className="rounded-full bg-[#25d366] px-6 py-4 text-sm font-bold text-[#062b16]">Escríbenos para pagar</Link>
           )}
           <Link href={`/cuenta?orden=${result.orderCode}`} className="rounded-full border border-white/30 px-6 py-4 text-sm font-bold">Ir a Mis boletos</Link>
         </div>

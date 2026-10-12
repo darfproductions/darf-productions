@@ -95,10 +95,10 @@ export default async function CastEditor({ params }: PageProps<"/panel/produccio
                         {!r.activo && <span className="ml-2 rounded-full bg-[#5a1a22] px-2 py-0.5 text-[10px] font-bold text-[#fecdd3]">Baja</span>}
                       </p>
                       {g.papel && (
-                        <form action={updatePapel} className="mt-1 flex gap-2">
+                        <form action={updatePapel} className="mt-1 flex max-w-sm gap-2">
                           <input type="hidden" name="pid" value={id} />
                           <input type="hidden" name="id" value={r.id} />
-                          <input className={`${input} py-1.5 text-sm`} name="papel" defaultValue={r.papel ?? ""} aria-label={g.papel} />
+                          <input className={`${input} min-w-0 flex-1 py-1.5 text-sm`} name="papel" defaultValue={r.papel ?? ""} aria-label={g.papel} />
                           <button className={`${buttonGhost} py-1 text-xs`}>Guardar</button>
                         </form>
                       )}

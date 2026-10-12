@@ -16,15 +16,15 @@ function ChannelCard({ c, disabledNote }: { c: ContactChannel; disabledNote?: st
       >
         <SocialIcon channel={c.channel} />
       </span>
-      <span className="flex min-w-0 flex-col">
+      <span className="flex min-w-0 flex-1 flex-col">
         <span className="text-lg font-bold">{c.nombre}</span>
         <span className="truncate font-semibold" style={{ color: c.color }}>{c.handle}</span>
-        <span className="text-sm text-texto-3">{disabledNote ?? c.descripcion}</span>
+        <span className="break-words text-sm text-texto-3">{disabledNote ?? c.descripcion}</span>
       </span>
       <span aria-hidden="true" className="ml-auto text-2xl text-texto-3 transition-transform group-hover:translate-x-1 group-hover:text-white">→</span>
     </>
   );
-  const cls = "group flex items-center gap-4 rounded-2xl border border-white/10 bg-telon p-5 transition-all";
+  const cls = "group flex min-w-0 items-center gap-4 rounded-2xl border border-white/10 bg-telon p-5 transition-all";
   return c.href ? (
     <a
       href={c.href}
@@ -58,8 +58,8 @@ export default function ContactoPage() {
           <h2 id="canales" className="titular text-2xl">Síguenos y escríbenos</h2>
           <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {[whatsapp, ...CONTACT_CHANNELS].map((c) => (
-              <li key={c.channel}>
-                <ChannelCard c={c} disabledNote={c.href ? undefined : "En el entorno de pruebas el enlace está desactivado"} />
+              <li key={c.channel} className="min-w-0">
+                <ChannelCard c={c} disabledNote={c.href ? undefined : "Escríbenos con el formulario de abajo"} />
               </li>
             ))}
           </ul>

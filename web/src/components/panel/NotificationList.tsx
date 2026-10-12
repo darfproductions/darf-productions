@@ -20,8 +20,8 @@ export function NotificationList({ items }: { items: Notificacion[] }) {
             <span aria-hidden="true" className="w-5 shrink-0 text-center">{ICONO[n.tipo] ?? "•"}</span>
             <div className="min-w-0 flex-1">
               {n.href ? (
-                <Link href={n.href} className={`block hover:text-violeta-claro ${nueva ? "font-bold text-texto" : "text-texto-3"}`}>{n.titulo}</Link>
-              ) : <p className={nueva ? "font-bold" : "text-texto-3"}>{n.titulo}</p>}
+                <Link href={n.href} className={`block wrap-anywhere hover:text-violeta-claro ${nueva ? "font-bold text-texto" : "text-texto-3"}`}>{n.titulo}</Link>
+              ) : <p className={`wrap-anywhere ${nueva ? "font-bold" : "text-texto-3"}`}>{n.titulo}</p>}
               {n.detalle && <p className={`truncate text-sm ${nueva ? "text-texto-2" : "text-texto-3"}`}>{n.detalle}</p>}
               <p className="text-xs text-texto-3">{fecha(n.created_at)}{nueva ? "" : " · leída"}</p>
             </div>

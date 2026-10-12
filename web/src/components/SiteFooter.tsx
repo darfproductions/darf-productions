@@ -9,6 +9,11 @@ export function SiteFooter() {
       <div className="flex flex-col gap-2">
         <p className="font-bold uppercase tracking-[0.2em] text-texto">DARF Productions</p>
         <p>Teatro musical.</p>
+        <p className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
+          <Link href="/privacidad" className="hover:text-white">Aviso de privacidad</Link>
+          <Link href="/terminos" className="hover:text-white">Términos</Link>
+          <Link href="/reembolsos" className="hover:text-white">Cambios y reembolsos</Link>
+        </p>
       </div>
       <nav aria-label="Pie de página" className="flex flex-wrap gap-x-6 gap-y-2">
         {NAV_LINKS.map((l) => (

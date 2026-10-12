@@ -3,11 +3,11 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ActionForm } from "@/components/panel/ActionForm";
 import { Card } from "@/components/panel/ui";
-import { listOrders, listPerformances, listZones, seatCount } from "@/lib/boleteria";
+import { listOrders, listPerformances, listZones, salesSummary, seatCount } from "@/lib/boleteria";
 import { can } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
 import { formatPerformanceDate } from "@/lib/productions";
-import { capacidadFuncion, occupancy, summarizeSales } from "@/lib/sales";
+import { capacidadFuncion, occupancy } from "@/lib/sales";
 import { formatMoney } from "@/lib/tickets";
 import { createClient } from "@/lib/supabase/server";
 import { tiempoRestante } from "@/lib/expiry-rules";
@@ -34,14 +34,13 @@ export default async function SalesPage({ params, searchParams }: PageProps<"/pa
   const estado = typeof sp.estado === "string" ? sp.estado : "";
 
   await (await createClient()).rpc("expire_due_orders", { pid: id });
-  const [funciones, todas, filtradas, asientos, zonas] = await Promise.all([
+  const [funciones, s, filtradas, asientos, zonas] = await Promise.all([
     listPerformances(id),
-    listOrders(id),
+    salesSummary(id),
     listOrders(id, { funcion: funcion || undefined, estado: estado || undefined }),
     seatCount(id),
     listZones(id),
   ]);
-  const s = summarizeSales(todas);
   const nombreFuncion = new Map(funciones.map((f) => [f.id, formatPerformanceDate(f.starts_at)]));
   const q = (k: string, v: string) => {
     const p = new URLSearchParams({ ...(funcion && { funcion }), ...(estado && { estado }) });
@@ -138,6 +137,7 @@ export default async function SalesPage({ params, searchParams }: PageProps<"/pa
             </li>
           ))}
           {filtradas.length === 0 && <li className="px-5 py-4 text-texto-2">No hay órdenes con este filtro.</li>}
+          {filtradas.length >= 500 && <li className="px-5 py-4 text-sm text-texto-3">Mostrando las 500 más recientes. Usa los filtros de función y estado para ver las demás; los totales de arriba sí incluyen todas.</li>}
         </ul>
       </Card>
     </>

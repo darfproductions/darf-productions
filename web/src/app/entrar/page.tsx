@@ -16,7 +16,12 @@ export default async function EntrarPage({ searchParams }: PageProps<"/entrar">)
       <PageHeading eyebrow="Mi cuenta" title="Entra a DARF">
         Con tu cuenta compras boletos, ves tus códigos QR y entras a la Fan Zone.
       </PageHeading>
-      <div className="mx-auto max-w-md px-5">
+      <div className="mx-auto flex max-w-md flex-col gap-4 px-5">
+        {sp.error === "enlace" && (
+          <p role="alert" className="rounded-xl border border-[#ff8fa3]/40 bg-[#3a1220] px-4 py-3 text-sm">
+            El enlace ya venció o ya se usó. Entra con tu correo y contraseña; si no la recuerdas, usa “¿Olvidaste tu contraseña?” para recibir uno nuevo.
+          </p>
+        )}
         <AuthForms next={next} />
       </div>
     </main>

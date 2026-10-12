@@ -109,6 +109,15 @@ final (Lanzamiento) y con aprobación explícita.**
      Diego, 2026-10-12).
 6. Pruebas finales, plan de reversión y ensayo del cambio en DEV.
 7. Cambio de dominio en GoDaddy y Vercel, el día acordado.
+8. Ajustes del día del lanzamiento (del test maestro, 0068):
+   - Vercel producción: Root Directory = `web` (la 1.0 de la raíz apunta a DEV y no debe
+     publicarse); variables `NEXT_PUBLIC_DARF_ENV=PROD`, Supabase PROD, WhatsApp real y
+     sin `NEXT_PUBLIC_DARF_PANEL_1_URL`. La web se niega a compilar si PROD apunta a DEV.
+   - Supabase PROD → Auth: contraseña mínima 8, protección de contraseñas filtradas y
+     captcha (Turnstile); URL del sitio y lista de redirecciones.
+   - Activar `pg_cron` (vencimiento de órdenes cada minuto) y `pg_net` (push).
+   - Correos de Resend con dominio propio verificado.
+   - Textos legales (`web/src/content/legal.ts`) revisados, con razón social y domicilio.
 
 ### 10. Notas de Diego del 12 de octubre (en curso)
 

@@ -45,7 +45,7 @@ export default async function Directorio({ searchParams }: PageProps<"/panel/per
           <ul className="flex flex-col gap-2">
             {sugerencias.map((x) => (
               <li key={`${x.person_id}-${x.user_id}`} className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-sala px-3 py-2 text-sm">
-                <span><b>{x.persona}</b> <span className="text-texto-3">↔</span> {x.cuenta} <span className="text-texto-3">· {x.email} · {x.motivo}</span></span>
+                <span className="min-w-0 wrap-anywhere"><b>{x.persona}</b> <span className="text-texto-3">↔</span> {x.cuenta} <span className="text-texto-3">· {x.email} · {x.motivo}</span></span>
                 <ActionForm inline action={linkAccount} hidden={{ id: x.person_id, email: x.email }} confirm={`¿Ligar la ficha de ${x.persona} a la cuenta ${x.email}?`} submit="Ligar" submitClass="rounded-full bg-texto px-3 py-1.5 text-xs font-bold text-sala" />
               </li>
             ))}
@@ -54,7 +54,7 @@ export default async function Directorio({ searchParams }: PageProps<"/panel/per
       )}
 
       <form className="flex flex-wrap gap-2">
-        <input className={`${input} max-w-md flex-1`} name="q" defaultValue={q} placeholder="Buscar por nombre o correo" />
+        <input className={`${input} max-w-md min-w-0 flex-1 basis-56`} name="q" defaultValue={q} placeholder="Buscar por nombre o correo" />
         {filtro !== "todos" && <input type="hidden" name="filtro" value={filtro} />}
         <button className={button}>Buscar</button>
       </form>
@@ -68,13 +68,13 @@ export default async function Directorio({ searchParams }: PageProps<"/panel/per
         <ul className="divide-y divide-white/10">
           {filas.map((p) => (
             <li key={p.key} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm">
-              <span className="min-w-0">
+              <span className="min-w-0 wrap-anywhere">
                 <Link href={p.fichaHref} className="font-bold hover:text-violeta-claro">{p.nombre}</Link>
                 {p.userId === access.session.userId && <span className="ml-2 text-xs text-texto-3">(tú)</span>}
                 {p.email ? <span className="text-texto-3"> · {p.email}</span> : <span className="text-xs text-[#fde68a]"> · sin cuenta</span>}
                 <span className="block text-xs text-texto-3">{p.obras.join(", ") || "Sin créditos"}{p.creditos ? ` · ${p.creditos} créditos` : ""}</span>
               </span>
-              <span className="flex flex-wrap items-center gap-2">
+              <span className="flex min-w-0 flex-wrap items-center gap-2">
                 {p.userId && p.rol ? (
                   <form action={changeGlobalRole} className="flex items-center gap-2">
                     <input type="hidden" name="id" value={p.userId} />
@@ -88,7 +88,7 @@ export default async function Directorio({ searchParams }: PageProps<"/panel/per
                   </form>
                 ) : !p.userId && p.personId ? (
                   <ActionForm inline action={linkAccount} hidden={{ id: p.personId }} submit="Ligar" submitClass="rounded-full border border-white/25 px-3 py-1 text-xs font-bold">
-                    <input className={`${input} w-52 py-1 text-xs`} name="email" type="email" required placeholder="Correo de su cuenta" />
+                    <input className={`${input} w-52 max-w-full py-1 text-xs`} name="email" type="email" required placeholder="Correo de su cuenta" />
                   </ActionForm>
                 ) : null}
                 <Link href={p.fichaHref} className="text-xs font-bold text-violeta-claro">Ficha →</Link>

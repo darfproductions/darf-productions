@@ -78,9 +78,12 @@ do $$ declare n int; total int; fid uuid; ok boolean; begin
   if not ok then raise exception 'FALLO: insert directo a push_subscriptions'; end if;
   perform push_set_off(array['orden', 'inventado']);
   if (select apagados from push_prefs where user_id = auth.uid()) <> array['orden'] then raise exception 'FALLO: push_set_off'; end if;
-  perform push_test();
+  -- 0068: push_test es solo para el equipo; aquí se prueba que la notificación se crea sin pg_net.
+  perform pg_temp.reset();
+  insert into notifications (user_id, tipo, titulo) values ('00000000-0000-0000-0000-0000000000d1', 'prueba', 'Prueba');
+  perform pg_temp.as_user('00000000-0000-0000-0000-0000000000d1');
   select count(*) into n from notifications where tipo = 'prueba';
-  if n <> 1 then raise exception 'FALLO: push_test no creó la notificación (sin pg_net no debe fallar)'; end if;
+  if n <> 1 then raise exception 'FALLO: la notificación no se creó (sin pg_net no debe fallar)'; end if;
 
   perform pg_temp.as_user('00000000-0000-0000-0000-0000000000d2');
   select count(*) into n from push_subscriptions;

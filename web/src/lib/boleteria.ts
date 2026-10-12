@@ -1,5 +1,5 @@
 import type { MapSeat } from "@/lib/tickets";
-import type { SaleOrder } from "@/lib/sales";
+import type { SaleOrder, summarizeSales } from "@/lib/sales";
 import { createClient } from "@/lib/supabase/server";
 
 // Lecturas de boletería para el panel. Pasan por RLS: cada quien ve solo su obra (0034).
@@ -98,5 +98,21 @@ export async function boxOfficeData(pid: string, performanceId: string) {
       color: (r.price_categories as unknown as { color: string | null } | null)?.color ?? null,
     })),
     error: seats.error ?? taken.error ?? prices.error,
+  };
+}
+
+export type SalesSummary = ReturnType<typeof summarizeSales> & { ordenes: number };
+
+/** Totales de venta calculados en la base (0068): no dependen del límite de la lista de órdenes. */
+export async function salesSummary(pid: string): Promise<SalesSummary> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("production_sales_summary", { pid });
+  if (error || !data) throw new Error(`No se pudieron calcular las ventas: ${error?.message ?? "sin datos"}`);
+  const d = data as Omit<SalesSummary, "porFuncion"> & { porFuncion: Record<string, { vendidos: number; apartados: number; ingresos: number; validados: number }> };
+  const num = (x: unknown) => Number(x ?? 0);
+  return {
+    ingresos: num(d.ingresos), pendiente: num(d.pendiente), vendidos: num(d.vendidos), apartados: num(d.apartados),
+    validados: num(d.validados), ordenesPendientes: num(d.ordenesPendientes), ordenes: num(d.ordenes),
+    porFuncion: new Map(Object.entries(d.porFuncion ?? {}).map(([k, v]) => [k, { vendidos: num(v.vendidos), apartados: num(v.apartados), ingresos: num(v.ingresos), validados: num(v.validados) }])),
   };
 }

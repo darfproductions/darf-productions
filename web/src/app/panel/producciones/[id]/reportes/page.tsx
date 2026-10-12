@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { Card } from "@/components/panel/ui";
-import { listOrders, listPerformances, listZones, seatCount } from "@/lib/boleteria";
+import { listOrders, listPerformances, listZones, salesSummary, seatCount } from "@/lib/boleteria";
 import { mesNombre, pesos, recaudacion } from "@/lib/member-rules";
 import { can } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
@@ -41,9 +41,10 @@ export default async function Reportes({ params }: PageProps<"/panel/produccione
   const supabase = await createClient();
   const none = Promise.resolve({ data: [] });
 
-  const [funciones, orders, asientos, pagos, asist, roster, auds, vend, zonas] = await Promise.all([
+  const [funciones, orders, resumen, asientos, pagos, asist, roster, auds, vend, zonas] = await Promise.all([
     verVentas ? listPerformances(id) : Promise.resolve([]),
     verVentas ? listOrders(id) : Promise.resolve([]),
+    verVentas ? salesSummary(id) : Promise.resolve(null),
     verVentas ? seatCount(id) : Promise.resolve(0),
     verTaller ? supabase.from("member_payments").select("monto, concepto, registrado_at").eq("production_id", id) : none,
     verAsist ? supabase.rpc("attendance_summary", { pid: id }) : none,
@@ -54,7 +55,7 @@ export default async function Reportes({ params }: PageProps<"/panel/produccione
   ]);
   const vendedores = ((vend.data ?? []) as SellerRow[]).filter((v) => v.ordenes > 0 || v.pendientes > 0);
 
-  const s = summarizeSales(orders);
+  const s = resumen ?? summarizeSales([]);
   const canal = ventasPorCanal(orders);
   const descuentos = descuentosUsados(orders);
   const rec = recaudacion((pagos.data ?? []) as { monto: number; concepto?: string; registrado_at: string }[]);

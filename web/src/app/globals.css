@@ -40,6 +40,20 @@
   --font-sans: var(--font-montserrat);
 }
 
+/* En celular, una rejilla sin columnas crece con su contenido más ancho (un texto
+   largo o un campo) y la página se desborda. Una columna que sí se encoge lo evita;
+   las clases grid-cols-* de cada pantalla la siguen reemplazando. */
+@layer base {
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  input,
+  select,
+  textarea {
+    min-width: 0;
+  }
+}
+
 body {
   background: var(--sala);
   color: var(--texto);

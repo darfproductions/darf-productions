@@ -38,8 +38,4 @@ export async function requireSession(next: string): Promise<Session> {
   return session;
 }
 
-/** Solo rutas internas, para evitar redirecciones a otros sitios. */
-export function safeNext(next: string | null | undefined, fallback = "/cuenta"): string {
-  if (!next || !next.startsWith("/") || next.startsWith("//")) return fallback;
-  return next;
-}
+export { safeNext } from "@/lib/safe-next";

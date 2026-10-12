@@ -63,6 +63,12 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
     .eq("buyer_user_id", session.userId)
     .order("created_at", { ascending: false });
   const orders = (data ?? []) as unknown as OrderRow[];
+  // Los boletos de una orden pendiente no se ven (ni su QR) hasta aprobarse; aquí solo sus asientos (0068).
+  const asientosPendientes = new Map<string, string[]>();
+  if (orders.some((o) => o.status === "pendiente")) {
+    const { data: items } = await supabase.rpc("my_pending_order_items");
+    for (const it of (items ?? []) as { order_id: string; etiqueta: string }[]) asientosPendientes.set(it.order_id, [...(asientosPendientes.get(it.order_id) ?? []), it.etiqueta]);
+  }
 
   // QR generados en el servidor solo para boletos activos de órdenes aprobadas.
   const qrs = new Map<string, string>();
@@ -100,7 +106,7 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
   const renderOrder = (o: OrderRow) => {
               const nombre = o.performances?.productions?.nombre ?? "Producción";
               const activos = o.tickets.filter((t) => t.is_active);
-              const seats = activos.map((t) => etiqueta(t));
+              const seats = o.status === "pendiente" ? (asientosPendientes.get(o.id) ?? []) : activos.map((t) => etiqueta(t));
               const prod = o.performances?.productions ?? null;
               const estilo = estiloDe(prod ? getTheme(prod) : null);
               const boletos: BoletoVista[] = activos.map((t) => ({
@@ -135,7 +141,7 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
                   </div>
                   <div className="flex flex-col gap-4 p-5">
                   <p className="text-sm text-texto-3">
-                    Orden {o.order_code} · {activos.length} {activos.length === 1 ? "boleto" : "boletos"} · {formatMoney(Number(o.total))}{o.discount_codigo ? ` · código ${o.discount_codigo}` : ""}
+                    Orden {o.order_code} · {seats.length} {seats.length === 1 ? "boleto" : "boletos"}{o.status === "pendiente" && seats.length ? ` (${seats.join(", ")})` : ""} · {formatMoney(Number(o.total))}{o.discount_codigo ? ` · código ${o.discount_codigo}` : ""}
                   </p>
                   {o.vencida_at && <p className="text-sm text-texto-3">No se confirmó el pago a tiempo y los asientos se liberaron. Puedes volver a comprar si sigue habiendo lugares.</p>}
                   {o.status === "pendiente" && o.expires_at && tiempoRestante(o.expires_at) && (
@@ -145,7 +151,7 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
                     wa ? (
                       <a href={wa} className="self-start rounded-full bg-[#25d366] px-5 py-3 text-sm font-bold text-[#062b16]">Pagar por WhatsApp</a>
                     ) : (
-                      <p className="text-sm text-texto-3">Pago por WhatsApp: sin número configurado en este entorno.</p>
+                      <Link href="/contacto" className="self-start rounded-full bg-[#25d366] px-5 py-3 text-sm font-bold text-[#062b16]">Escríbenos para pagar</Link>
                     )
                   )}
                   {o.status === "aprobado" && boletos.length > 0 && (

@@ -13,16 +13,16 @@ function NameFields({ nombreDefault = "" }: { nombreDefault?: string }) {
   const sugerido = productionIdFrom(nombre, temporada);
   return (
     <div className="grid gap-3 sm:grid-cols-2">
-      <label className="flex flex-col gap-1.5 text-sm font-semibold">Nombre de la obra
+      <label className="flex min-w-0 flex-col gap-1.5 text-sm font-semibold">Nombre de la obra
         <input className={input} name="nombre" required value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Teen Beach Movie" />
       </label>
-      <label className="flex flex-col gap-1.5 text-sm font-semibold">Temporada
+      <label className="flex min-w-0 flex-col gap-1.5 text-sm font-semibold">Temporada
         <input className={input} name="temporada" value={temporada} onChange={(e) => setTemporada(e.target.value)} placeholder="2027" />
       </label>
-      <label className="flex flex-col gap-1.5 text-sm font-semibold sm:col-span-2">Dirección web
-        <span className="flex items-center gap-1 text-texto-3">
-          darfproductions.com/producciones/
-          <input className={`${input} flex-1`} name="id" required value={tocado ? id : sugerido} onChange={(e) => { setTocado(true); setId(e.target.value); }} pattern="[a-z0-9][a-z0-9_\-]{1,39}" />
+      <label className="flex min-w-0 flex-col gap-1.5 text-sm font-semibold sm:col-span-2">Dirección web
+        <span className="flex flex-wrap items-center gap-1 text-texto-3">
+          <span className="break-all">darfproductions.com/producciones/</span>
+          <input className={`${input} min-w-0 flex-1 basis-48`} name="id" required value={tocado ? id : sugerido} onChange={(e) => { setTocado(true); setId(e.target.value); }} pattern="[a-z0-9][a-z0-9_\-]{1,39}" />
         </span>
         <span className="text-xs font-normal text-texto-3">Solo minúsculas, números y guiones. No se puede cambiar después.</span>
       </label>

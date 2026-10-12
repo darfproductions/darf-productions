@@ -28,6 +28,7 @@ export async function register(_prev: AuthState, form: FormData): Promise<AuthSt
   const nombre = String(form.get("nombre") ?? "").trim();
   const email = String(form.get("email") ?? "").trim();
   const password = String(form.get("password") ?? "");
+  if (String(form.get("sitio") ?? "")) return { ok: true, message: "Revisa tu correo para confirmar tu cuenta." }; // campo trampa para robots
   if (!nombre || !email) return { ok: false, message: "Escribe tu nombre y correo." };
   if (!passwordOk(password)) return { ok: false, message: "La contraseña necesita al menos 8 caracteres, con letras y números." };
 
@@ -36,14 +37,14 @@ export async function register(_prev: AuthState, form: FormData): Promise<AuthSt
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
-    options: { data: { nombre }, emailRedirectTo: `${origin}/auth/callback?next=/cuenta` },
+    options: { data: { nombre }, emailRedirectTo: `${origin}/auth/callback?next=${encodeURIComponent(safeNext(String(form.get("next") ?? "")))}` },
   });
   if (error) return { ok: false, message: "No se pudo crear la cuenta. Revisa tus datos e intenta de nuevo." };
   // Correo ya registrado: Supabase responde sin identidades para no revelar cuentas.
   if (data.user && data.user.identities?.length === 0) {
     return { ok: false, message: "Ese correo ya tiene cuenta. Entra con tu contraseña." };
   }
-  if (data.session) redirect("/cuenta");
+  if (data.session) redirect(safeNext(String(form.get("next") ?? "")));
   return { ok: true, message: `Te enviamos un enlace a ${email}. Ábrelo para confirmar tu cuenta y luego entra.` };
 }
 
