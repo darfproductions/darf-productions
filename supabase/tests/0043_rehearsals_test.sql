@@ -70,7 +70,8 @@ end $$;
 -- T2: asistencia solo a citados; el integrante avisa que no va y ve solo la suya
 do $$ declare n int; begin
   perform pg_temp.as_user('00000000-0000-0000-0000-0000000000c2');
-  insert into rehearsal_absences (rehearsal_id, user_id, motivo) values ((select ens from ctx), auth.uid(), 'Examen');
+  -- 0070: el aviso ahora es una solicitud de falta (ya no se escribe directo en rehearsal_absences).
+  perform request_absence('showman', array[(select ens from ctx)], 'Examen');
   begin
     insert into rehearsal_attendance (rehearsal_id, user_id, estado) values ((select ens from ctx), auth.uid(), 'presente');
     raise exception 'FALLO T2: el integrante se tomó asistencia';
@@ -85,7 +86,7 @@ do $$ declare n int; begin
     if sqlerrm not like '%row-level security%' then raise exception 'FALLO T2b: %', sqlerrm; end if;
   end;
   insert into rehearsal_attendance (rehearsal_id, user_id, estado) values ((select ens from ctx), '00000000-0000-0000-0000-0000000000c2', 'justificada');
-  select count(*) into n from rehearsal_roster((select ens from ctx)) where aviso = 'Examen' and estado = 'justificada';
+  select count(*) into n from rehearsal_roster((select ens from ctx)) where aviso like '%Examen' and estado = 'justificada';
   if n <> 1 then raise exception 'FALLO T2c: la lista no trae aviso y estado'; end if;
   perform pg_temp.as_user('00000000-0000-0000-0000-0000000000c1');
   select count(*) into n from rehearsal_attendance;

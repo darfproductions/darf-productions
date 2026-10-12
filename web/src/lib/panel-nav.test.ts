@@ -39,7 +39,7 @@ describe("pestañas de la obra", () => {
     const tabs = ids(director, "hsm");
     expect(tabs[0]).toBe("resumen");
     expect(tabs.at(-1)).toBe("permisos");
-    expect(tabs).toHaveLength(17);
+    expect(tabs).toHaveLength(18);
   });
 });
 
@@ -142,7 +142,7 @@ describe("registro permanente (0064)", () => {
 
 describe("producción concluida (0066)", () => {
   it("solo quedan las pestañas de archivo", () => {
-    expect(productionTabs(director, "hsm", true).map((t) => t.id)).toEqual(["resumen", "pagina", "elenco", "expedientes", "fanzone", "equipo", "reportes", "cierre", "permisos"].sort((x, y) => productionTabs(director, "hsm").findIndex((t) => t.id === x) - productionTabs(director, "hsm").findIndex((t) => t.id === y)));
+    expect(productionTabs(director, "hsm", true).map((t) => t.id)).toEqual(["resumen", "pagina", "elenco", "expedientes", "solicitudes", "fanzone", "equipo", "reportes", "cierre", "permisos"].sort((x, y) => productionTabs(director, "hsm").findIndex((t) => t.id === x) - productionTabs(director, "hsm").findIndex((t) => t.id === y)));
     expect(productionTabs(taquillaMM, "mm", true).map((t) => t.id)).toEqual(["resumen", "reportes", "cierre"]);
   });
 });

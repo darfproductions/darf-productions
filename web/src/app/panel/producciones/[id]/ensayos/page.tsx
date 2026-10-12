@@ -8,7 +8,9 @@ import { can } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
 import { DIAS, citados, fechaEnsayo, porcentaje, type Rehearsal } from "@/lib/rehearsal-rules";
 import { createClient } from "@/lib/supabase/server";
-import { cancelSeries, createRehearsal, setRehearsalEstado } from "./actions";
+import { textoLimite } from "@/lib/request-rules";
+import { avisoFaltaHoras } from "@/lib/requests";
+import { cancelSeries, createRehearsal, setAvisoHoras, setRehearsalEstado } from "./actions";
 
 export const metadata: Metadata = { title: "Ensayos" };
 
@@ -21,10 +23,12 @@ export default async function Ensayos({ params }: PageProps<"/panel/producciones
   const access = await requirePanel(`/panel/producciones/${id}/ensayos`);
   if (!can(access, id, "ensayos.gestionar")) redirect(`/panel/producciones/${id}`);
   const supabase = await createClient();
-  const [{ data: reh }, { data: roster }, { data: sum }] = await Promise.all([
+  const [{ data: reh }, { data: roster }, { data: sum }, horas, { count: porRevisar }] = await Promise.all([
     supabase.from("rehearsals").select("*").eq("production_id", id).order("inicia"),
     supabase.rpc("cast_roster", { pid: id }),
     supabase.rpc("attendance_summary", { pid: id }),
+    avisoFaltaHoras(id),
+    supabase.from("member_requests").select("id", { count: "exact", head: true }).eq("production_id", id).eq("tipo", "falta").eq("estado", "pendiente"),
   ]);
   const ensayos = (reh ?? []) as Rehearsal[];
   const gente = (roster ?? []) as Roster[];
@@ -99,6 +103,23 @@ export default async function Ensayos({ params }: PageProps<"/panel/producciones
             </ActionForm>
           </div>
         </details>
+      </Card>
+
+      <Card className="flex flex-col gap-3">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className="titular text-xl">Faltas con aviso</h2>
+          <Link href={`/panel/producciones/${id}/solicitudes`} className="text-sm font-bold text-violeta-claro">
+            {porRevisar ? `${porRevisar} ${porRevisar === 1 ? "solicitud" : "solicitudes"} de falta por revisar →` : "Ver solicitudes →"}
+          </Link>
+        </div>
+        <p className="text-sm text-texto-2">El elenco pide sus faltas desde su portal. Si las apruebas, el ensayo queda como <b>justificada</b> sola. Hoy se pueden pedir hasta <b>{textoLimite(horas)}</b>.</p>
+        <ActionForm inline action={setAvisoHoras} hidden={h} submit="Guardar" submitClass="rounded-full bg-texto px-4 py-2 text-xs font-bold text-sala">
+          <label className="flex flex-wrap items-center gap-2 text-sm font-semibold">Se piden hasta
+            <select name="horas" defaultValue={String(horas)} className={`${input} py-2`}>
+              {[0, 6, 12, 24, 48, 72, 168].map((x) => <option key={x} value={x}>{textoLimite(x)}</option>)}
+            </select>
+          </label>
+        </ActionForm>
       </Card>
 
       {gente.length > 0 && (

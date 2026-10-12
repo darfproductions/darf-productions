@@ -82,6 +82,7 @@ export const PRODUCTION_TABS: Tab[] = [
   { id: "elenco", label: "Elenco y equipos", path: "elenco", perms: ["elenco.gestionar", "obra.editar"], etapa: null },
   { id: "expedientes", label: "Expedientes", path: "expedientes", perms: ["expedientes.ver", "mensualidades.gestionar"], etapa: null },
   { id: "ensayos", label: "Ensayos", path: "ensayos", perms: ["ensayos.gestionar"], etapa: null },
+  { id: "solicitudes", label: "Solicitudes", path: "solicitudes", perms: ["ensayos.gestionar", "expedientes.ver", "mensualidades.gestionar"], etapa: null },
   { id: "materiales", label: "Materiales", path: "materiales", perms: ["materiales.gestionar", "materiales.ver"], etapa: null },
   { id: "comunicados", label: "Comunicados", path: "comunicados", perms: ["comunicados.enviar"], etapa: null },
   { id: "equipo", label: "Equipo", path: "equipo", perms: ["equipo.gestionar"], etapa: null },
@@ -96,7 +97,7 @@ export const PRODUCTION_TABS: Tab[] = [
 ];
 
 /** Pestañas que siguen visibles cuando la producción está concluida (decisión de Diego). */
-export const CONCLUIDA_TABS = ["resumen", "pagina", "elenco", "expedientes", "fanzone", "cierre", "permisos", "reportes", "equipo"];
+export const CONCLUIDA_TABS = ["resumen", "pagina", "elenco", "expedientes", "solicitudes", "fanzone", "cierre", "permisos", "reportes", "equipo"];
 
 /** Pestañas que veo en una obra: Resumen si tengo cualquier permiso ahí; el resto según su permiso.
  *  Si la obra está concluida, solo las de CONCLUIDA_TABS. */

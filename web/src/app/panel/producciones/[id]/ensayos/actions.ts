@@ -70,3 +70,16 @@ export async function cancelSeries(_p: RehState, f: FormData): Promise<RehState>
   revalidatePath(`/panel/producciones/${pid}/ensayos`, "layout");
   return { ok: true, message: `${count ?? 0} ensayos de la serie cancelados.` };
 }
+
+/** Con cuántas horas de anticipación se pide una falta (0070). 0 = hasta que empiece. */
+export async function setAvisoHoras(_p: RehState, f: FormData): Promise<RehState> {
+  const pid = str(f, "pid");
+  const horas = Number(str(f, "horas"));
+  if (!Number.isInteger(horas) || horas < 0 || horas > 168) return { ok: false, message: "Elige una opción." };
+  const supabase = await createClient();
+  const { error } = await supabase.from("production_discipline").upsert({ production_id: pid, aviso_falta_horas: horas }, { onConflict: "production_id" });
+  if (error) return { ok: false, message: "No se pudo guardar." };
+  revalidatePath(`/panel/producciones/${pid}/ensayos`);
+  revalidatePath(`/cuenta/produccion/${pid}`);
+  return { ok: true, message: "Guardado." };
+}

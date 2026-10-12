@@ -8,7 +8,7 @@ export const PUSH_TIPOS: { id: string; label: string }[] = [
   { id: "audicion", label: "Solicitudes de audición y registro de talento" },
   { id: "oferta", label: "Respuestas a ofertas de papel" },
   { id: "documento", label: "Documentos de expedientes" },
-  { id: "ausencia", label: "Avisos de falta a ensayos" },
+  { id: "solicitud", label: "Solicitudes del elenco (faltas, documentos y pagos) y sus respuestas" },
   { id: "cambio", label: "Cambios de configuración" },
 ];
 

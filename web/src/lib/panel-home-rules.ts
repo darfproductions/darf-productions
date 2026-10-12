@@ -1,11 +1,12 @@
 // Inicio del panel "Tu día" (Bloque 2, migración 0061). Funciones puras: panel-home-rules.test.ts.
 
-export type PendienteTipo = "ordenes" | "solicitudes" | "ofertas" | "documentos" | "advertencias" | "evaluaciones" | "notas_equipo" | "avisos_equipo";
+export type PendienteTipo = "ordenes" | "solicitudes" | "solicitudes_elenco" | "ofertas" | "documentos" | "advertencias" | "evaluaciones" | "notas_equipo" | "avisos_equipo";
 export type Pendiente = { tipo: PendienteTipo; production_id: string | null; n: number };
 
 const TEXTO: Record<PendienteTipo, [string, string]> = {
   ordenes: ["orden por aprobar", "órdenes por aprobar"],
   solicitudes: ["solicitud de audición sin revisar", "solicitudes de audición sin revisar"],
+  solicitudes_elenco: ["solicitud del elenco por revisar", "solicitudes del elenco por revisar"],
   ofertas: ["oferta de papel sin respuesta", "ofertas de papel sin respuesta"],
   documentos: ["documento por recibir", "documentos por recibir"],
   advertencias: ["llamada de atención esta semana", "llamadas de atención esta semana"],
@@ -13,7 +14,7 @@ const TEXTO: Record<PendienteTipo, [string, string]> = {
   notas_equipo: ["nota de dirección para ti", "notas de dirección para ti"],
   avisos_equipo: ["aviso del equipo sin leer", "avisos del equipo sin leer"],
 };
-const ORDEN: PendienteTipo[] = ["notas_equipo", "ordenes", "solicitudes", "ofertas", "documentos", "evaluaciones", "avisos_equipo", "advertencias"];
+const ORDEN: PendienteTipo[] = ["notas_equipo", "ordenes", "solicitudes_elenco", "solicitudes", "ofertas", "documentos", "evaluaciones", "avisos_equipo", "advertencias"];
 
 export function pendienteTexto(p: Pendiente): string {
   return `${p.n} ${TEXTO[p.tipo][p.n === 1 ? 0 : 1]}`;
@@ -31,6 +32,7 @@ export function pendienteHref(p: Pendiente): string {
     case "documentos":
     case "advertencias": return `${base}/expedientes`;
     case "evaluaciones": return `${base}/evaluaciones`;
+    case "solicitudes_elenco": return `${base}/solicitudes`;
   }
 }
 

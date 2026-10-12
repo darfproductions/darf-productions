@@ -79,6 +79,17 @@ export function describeAudit(r: AuditRow, n: AuditNames): string {
       if (r.accion === "poner") return `Volvió a poner ${cuantos} en el mapa de ${obra}`;
       return `Cambió de zona ${cuantos} en el mapa de ${obra}`;
     }
+    case "member_requests": {
+      const que = { falta: "falta", documento: "documento", pago: "comprobante de pago", otro: "solicitud" }[String(row.tipo)] ?? "solicitud";
+      const quien = n.person(row.user_id);
+      const obra = n.production(r.production_id);
+      if (r.accion === "insert") return `${quien} mandó una solicitud (${que}) en ${obra}`;
+      const est = String(row.estado);
+      if (est === "aprobada") return `Aprobó la solicitud de ${quien} (${que}) en ${obra}`;
+      if (est === "rechazada") return `Rechazó la solicitud de ${quien} (${que}) en ${obra}`;
+      if (est === "cancelada") return `${quien} canceló su solicitud (${que}) en ${obra}`;
+      return `Actualizó la solicitud de ${quien} (${que}) en ${obra}`;
+    }
     default:
       return `${r.accion} en ${r.tabla}`;
   }

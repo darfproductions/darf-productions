@@ -13,6 +13,8 @@ import { getMemberData, signDocs } from "@/lib/members";
 import { can } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
 import { porcentaje } from "@/lib/rehearsal-rules";
+import { RequestCard } from "@/components/requests/RequestCard";
+import { listRequests } from "@/lib/requests";
 import { createClient } from "@/lib/supabase/server";
 import { addIncident, addMeasure, addPayment, markReviewed, reactivateMember, removePayment, setDelivered, setIngreso, setScholarship, voidIncident, withdrawMember } from "../actions";
 
@@ -34,6 +36,8 @@ export default async function MemberPage({ params }: PageProps<"/panel/produccio
   const { data: roster } = await supabase.rpc("cast_roster", { pid: id });
   const persona = ((roster ?? []) as { user_id: string; nombre: string; email: string; papeles: string[]; tipos: string[] }[]).find((r) => r.user_id === uid);
   if (!persona) notFound();
+  const solicitudes = await listRequests(id, { uid, limit: 50 });
+  const solUrls = await signDocs(solicitudes.map((q) => q.archivo_path));
   const [d, sumRes] = await Promise.all([
     getMemberData(id, uid),
     verExp || can(access, id, "ensayos.gestionar") ? supabase.rpc("attendance_summary", { pid: id }) : Promise.resolve({ data: [] }),
@@ -252,6 +256,17 @@ export default async function MemberPage({ params }: PageProps<"/panel/produccio
               )}
             </>
           )}
+        </Card>
+      )}
+      {solicitudes.length > 0 && (
+        <Card className="flex flex-col gap-3">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h2 className="titular text-xl">Solicitudes <span className="text-base font-normal text-texto-3">· {solicitudes.length}</span></h2>
+            <Link href={`/panel/producciones/${id}/solicitudes`} className="text-sm font-bold text-violeta-claro">Revisar solicitudes →</Link>
+          </div>
+          <ul className="grid gap-2 lg:grid-cols-2">
+            {solicitudes.map((q) => <li key={q.id} className="min-w-0"><RequestCard r={q} url={q.archivo_path ? solUrls.get(q.archivo_path) : undefined} /></li>)}
+          </ul>
         </Card>
       )}
     </div>

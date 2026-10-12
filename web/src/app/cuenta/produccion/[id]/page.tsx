@@ -17,8 +17,12 @@ import {
 import { getMemberData, signDocs } from "@/lib/members";
 import { ASISTENCIA, fechaEnsayo, type Rehearsal } from "@/lib/rehearsal-rules";
 import { TIPO_MATERIAL, porCarpeta, signMaterials, type Material } from "@/lib/materials";
-import { AbsenceForm } from "./AbsenceForm";
-import { markRead } from "./actions";
+import { RequestCard } from "@/components/requests/RequestCard";
+import { ConfirmSubmit } from "@/components/panel/ConfirmSubmit";
+import { avisoFaltaHoras, listRequests } from "@/lib/requests";
+import { puedeAvisarFalta, textoLimite, type RequestTipo } from "@/lib/request-rules";
+import { cancelRequest, markRead } from "./actions";
+import { RequestForm, type EnsayoOpcion } from "./RequestForm";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Mi producción" };
@@ -27,18 +31,20 @@ type MyProd = { production_id: string; nombre: string; estado: string; papeles: 
 
 // Portal del integrante (etapa 3E): su expediente, documentos y mensualidades.
 // Ensayos, materiales y avisos se suman en los siguientes bloques.
-export default async function MyProduction({ params }: PageProps<"/cuenta/produccion/[id]">) {
+export default async function MyProduction({ params, searchParams }: PageProps<"/cuenta/produccion/[id]">) {
   const { id } = await params;
+  const sp = await searchParams;
   const session = await requireSession(`/cuenta/produccion/${id}`);
   const supabase = await createClient();
   const { data } = await supabase.rpc("my_productions");
   const prod = ((data ?? []) as MyProd[]).find((p) => p.production_id === id);
   if (!prod) notFound();
-  const [d, reh, asis, avisos] = await Promise.all([
+  const [d, reh, asis, solicitudes, horasAviso] = await Promise.all([
     getMemberData(id, session.userId),
     supabase.from("rehearsals").select("*").eq("production_id", id).order("inicia"),
     supabase.from("rehearsal_attendance").select("rehearsal_id, estado, minutos_tarde").eq("user_id", session.userId),
-    supabase.from("rehearsal_absences").select("rehearsal_id, motivo").eq("user_id", session.userId),
+    listRequests(id, { uid: session.userId, limit: 100 }),
+    avisoFaltaHoras(id),
   ]);
   const [rub, misEvals] = await Promise.all([getRubric(id), getEvaluations(id, { uid: session.userId })]);
   const evaluaciones = await Promise.all(
@@ -66,7 +72,16 @@ export default async function MyProduction({ params }: PageProps<"/cuenta/produc
   const proximos = ensayos.filter((r) => r.inicia.slice(0, 10) >= hoy);
   const pasados = ensayos.filter((r) => r.inicia.slice(0, 10) < hoy).reverse();
   const asisDe = (rid: string) => ((asis.data ?? []) as { rehearsal_id: string; estado: string; minutos_tarde: number | null }[]).find((a) => a.rehearsal_id === rid);
-  const avisoDe = (rid: string) => ((avisos.data ?? []) as { rehearsal_id: string; motivo: string }[]).find((a) => a.rehearsal_id === rid)?.motivo ?? null;
+  // Solicitud de falta vigente (pendiente o aprobada; si no, la última rechazada) de cada ensayo.
+  const faltaDe = (rid: string) => {
+    const de = solicitudes.filter((q) => q.tipo === "falta" && q.ensayos.some((x) => x.id === rid));
+    return de.find((q) => q.estado === "pendiente" || q.estado === "aprobada") ?? de.find((q) => q.estado === "rechazada") ?? null;
+  };
+  const ahora = new Date();
+  const opcionesFalta: EnsayoOpcion[] = proximos.filter((r) => r.estado !== "cancelado" && new Date(r.inicia) > ahora).map((r) => {
+    const q = faltaDe(r.id);
+    return { id: r.id, titulo: r.titulo, inicia: r.inicia, termina: r.termina, permitido: puedeAvisarFalta(r.inicia, horasAviso, ahora), pedida: !!q && q.estado !== "rechazada" };
+  });
   const e = edad(d.person?.fecha_nacimiento ?? null);
   const esMenor = e !== null && e < 18;
   const ctx = { uid: session.userId, esMenor, tipos: prod.tipos };
@@ -80,6 +95,10 @@ export default async function MyProduction({ params }: PageProps<"/cuenta/produc
   const falta = pendientesTexto(d.person, pend, d.member);
   const siguiente = proximos.find((r) => r.estado !== "cancelado") ?? null;
   const sinLeer = comunicados.filter((a) => !leidos.has(a.id)).length;
+  const solUrls = await signDocs(solicitudes.map((q) => q.archivo_path));
+  const tipoInicial = (["falta", "documento", "pago", "otro"] as const).find((t) => t === sp.nueva) ?? (typeof sp.falta === "string" ? "falta" : null);
+  const cuota = d.fee && d.fee.cobrar !== false && !d.terms.beca ? Number(d.terms.cuota_especial ?? d.fee.monto) : null;
+  const activa = !d.alta?.baja_at;
   const debeHoy = adeudo(ms) + Math.max(0, (insc?.debe ?? 0) - (insc?.pagado ?? 0));
 
   return (
@@ -124,7 +143,7 @@ export default async function MyProduction({ params }: PageProps<"/cuenta/produc
         {sem === "amarillo" && <p className="-mt-3 text-sm text-texto-2">Tu expediente está completo; la producción lo revisará.</p>}
 
         <nav aria-label="Secciones" className="sticky top-0 z-10 -mx-5 flex gap-1 overflow-x-auto bg-sala/95 px-5 py-2 text-sm backdrop-blur md:mx-0 md:rounded-full md:px-3">
-          {[["avisos", "Avisos", comunicados.length > 0], ["ensayos", "Ensayos", true], ["materiales", "Materiales", materiales.length > 0],
+          {[["avisos", "Avisos", comunicados.length > 0], ["ensayos", "Ensayos", true], ["solicitudes", "Solicitudes", activa || solicitudes.length > 0], ["materiales", "Materiales", materiales.length > 0],
             ["exp", "Expediente", true], ["docs", "Documentos", misDocs.length > 0], ["cuotas", "Pagos", !!d.fee && d.fee.cobrar !== false]]
             .filter(([, , v]) => v).map(([k, l]) => <a key={k as string} href={`#${k}`} className="whitespace-nowrap rounded-full px-3 py-1.5 font-semibold text-texto-2 hover:bg-telon hover:text-texto">{l}</a>)}
         </nav>
@@ -178,7 +197,16 @@ export default async function MyProduction({ params }: PageProps<"/cuenta/produc
                 <p><b>{r.titulo}</b>{r.estado === "cancelado" && <span className="ml-2 font-bold text-[#fecdd3]">Cancelado</span>}</p>
                 <p className="capitalize text-texto-2">{fechaEnsayo(r.inicia, r.termina)}{r.lugar ? ` · ${r.lugar}` : ""}</p>
                 {r.notas && <p className="whitespace-pre-line text-texto-2">{r.notas}</p>}
-                {r.estado !== "cancelado" && !d.alta?.baja_at && <AbsenceForm pid={id} rid={r.id} previo={avisoDe(r.id)} />}
+                {r.estado !== "cancelado" && activa && (() => {
+                  const q = faltaDe(r.id);
+                  if (q && q.estado !== "rechazada") {
+                    return <p className="text-xs font-bold text-[#fde68a]">{q.estado === "aprobada" ? "✓ Falta justificada" : "Falta solicitada · esperando respuesta"}</p>;
+                  }
+                  const op = opcionesFalta.find((o) => o.id === r.id);
+                  return op?.permitido
+                    ? <Link href={`?falta=${r.id}#solicitudes`} scroll={false} className="self-start text-sm font-bold text-violeta-claro">{q ? "Tu solicitud fue rechazada · volver a pedir" : "No podré ir · solicitar falta"} →</Link>
+                    : <p className="text-xs text-texto-3">{q ? "Tu solicitud fue rechazada." : `Las faltas se avisan ${textoLimite(horasAviso)}; para este ensayo ya pasó el límite.`}</p>;
+                })()}
               </li>
             ))}
           </ul>
@@ -200,6 +228,38 @@ export default async function MyProduction({ params }: PageProps<"/cuenta/produc
             </details>
           )}
         </section>
+
+        {(activa || solicitudes.length > 0) && (
+          <section aria-labelledby="solicitudes" className="flex flex-col gap-4 rounded-2xl bg-telon p-6">
+            <div>
+              <h2 id="solicitudes" className="titular text-2xl">Solicitudes</h2>
+              <p className="mt-1 text-sm text-texto-2">Avisa una falta, manda documentos o comprobantes de pago, o cualquier otra solicitud. La producción la aprueba o la rechaza y aquí queda el registro.</p>
+            </div>
+            {activa && (
+              <RequestForm key={String(sp.falta ?? sp.nueva ?? "")} pid={id} uid={session.userId} ensayos={opcionesFalta} horas={horasAviso}
+                docTipos={misDocs.map((t) => ({ id: t.id, nombre: t.nombre }))} cuota={cuota}
+                inicial={{ tipo: tipoInicial as RequestTipo | null, falta: typeof sp.falta === "string" ? sp.falta : null }} />
+            )}
+            <h3 className="mt-2 text-lg font-bold">Mis solicitudes</h3>
+            {solicitudes.length === 0 ? <p className="text-sm text-texto-2">Aún no has mandado solicitudes.</p> : (
+              <ul className="flex flex-col gap-2">
+                {solicitudes.map((q) => (
+                  <li key={q.id}>
+                    <RequestCard r={q} url={q.archivo_path ? solUrls.get(q.archivo_path) : undefined}>
+                      {q.estado === "pendiente" && (
+                        <form action={cancelRequest} className="self-start">
+                          <input type="hidden" name="id" value={q.id} />
+                          <input type="hidden" name="pid" value={id} />
+                          <ConfirmSubmit message="¿Cancelar esta solicitud?" className="rounded-full border border-white/25 px-4 py-2 text-xs font-bold hover:border-white/50">Cancelar solicitud</ConfirmSubmit>
+                        </form>
+                      )}
+                    </RequestCard>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        )}
 
         {evaluaciones.length > 0 && (
           <section aria-labelledby="evaluaciones" className="flex flex-col gap-3 rounded-2xl bg-telon p-6">
@@ -310,7 +370,7 @@ export default async function MyProduction({ params }: PageProps<"/cuenta/produc
                 </li>
               ))}
             </ul>
-            <p className="text-xs text-texto-3">Los pagos los registra la producción. Si ves algo que no coincide, avísales.</p>
+            <p className="text-xs text-texto-3">Los pagos los registra la producción. Si ya pagaste, manda tu comprobante en <a href="?nueva=pago#solicitudes" className="font-bold text-violeta-claro underline">Solicitudes</a>; si ves algo que no coincide, mándales un “Tema de pagos”.</p>
           </section>
         )}
       </div>

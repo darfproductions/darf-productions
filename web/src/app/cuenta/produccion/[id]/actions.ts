@@ -2,26 +2,79 @@
 
 import { revalidatePath } from "next/cache";
 import { getSession } from "@/lib/auth";
+import { montoValido, periodoDeMes } from "@/lib/request-rules";
 import { createClient } from "@/lib/supabase/server";
 
-// Portal del integrante: avisar que no podrá ir a un ensayo (0043). La producción decide
-// si la falta queda justificada.
+// Portal del integrante: solicitudes (0070). La base valida todo (límite de la falta,
+// citado, archivo propio) y avisa a quien revisa.
 
-export type AbsState = { ok: boolean; message: string } | null;
+export type ReqState = { ok: boolean; message: string } | null;
 
-export async function sendAbsence(_p: AbsState, f: FormData): Promise<AbsState> {
+// Los mensajes de las funciones (P0001) ya vienen en español claro; lo demás es genérico.
+const errorClaro = (e: { code?: string; message: string }) =>
+  e.code === "P0001" ? e.message : "No se pudo enviar. Intenta de nuevo en un momento.";
+
+export async function requestAbsence(_p: ReqState, f: FormData): Promise<ReqState> {
   const session = await getSession();
-  if (!session) return { ok: false, message: "Tu sesión expiró." };
-  const motivo = String(f.get("motivo") ?? "").trim();
-  if (!motivo) return { ok: false, message: "Escribe el motivo." };
+  if (!session) return { ok: false, message: "Tu sesión expiró. Vuelve a entrar." };
+  const pid = String(f.get("pid"));
+  const ensayos = f.getAll("ensayo").map(String).filter(Boolean);
+  const motivo = String(f.get("motivo") ?? "").trim().slice(0, 1000);
+  if (!ensayos.length) return { ok: false, message: "Elige el ensayo (o los ensayos) a los que vas a faltar." };
+  if (!motivo) return { ok: false, message: "Escribe la razón." };
   const supabase = await createClient();
-  const { error } = await supabase.from("rehearsal_absences").upsert(
-    { rehearsal_id: String(f.get("rid")), user_id: session.userId, motivo, created_at: new Date().toISOString() },
-    { onConflict: "rehearsal_id,user_id" },
-  );
-  if (error) return { ok: false, message: error.message };
+  const { error } = await supabase.rpc("request_absence", { pid, rehearsal_ids: ensayos, p_motivo: motivo });
+  if (error) return { ok: false, message: errorClaro(error) };
+  revalidatePath(`/cuenta/produccion/${pid}`);
+  return { ok: true, message: "Solicitud enviada. Te avisamos cuando la revisen." };
+}
+
+export async function submitRequest(_p: ReqState, f: FormData): Promise<ReqState> {
+  const session = await getSession();
+  if (!session) return { ok: false, message: "Tu sesión expiró. Vuelve a entrar." };
+  const pid = String(f.get("pid"));
+  const tipo = String(f.get("tipo"));
+  if (!["documento", "pago", "otro"].includes(tipo)) return { ok: false, message: "Elige qué quieres enviar." };
+  const txt = (k: string) => String(f.get(k) ?? "").trim() || null;
+  const archivo = txt("archivo");
+  const docType = txt("doc_type");
+  const motivo = txt("motivo")?.slice(0, 1000) ?? null;
+  let periodo: string | null = null;
+  let monto: number | null = null;
+  if (tipo === "documento") {
+    if (!archivo) return { ok: false, message: "Sube el archivo del documento." };
+    if (!docType && !txt("doc_nombre")) return { ok: false, message: "Escribe el nombre del documento." };
+  } else if (tipo === "pago") {
+    if (!archivo) return { ok: false, message: "Sube tu comprobante." };
+    monto = montoValido(String(f.get("monto") ?? ""));
+    if (!monto) return { ok: false, message: "Escribe el monto que pagaste." };
+    if (txt("concepto") === "mensualidad") {
+      periodo = periodoDeMes(String(f.get("mes") ?? ""));
+      if (!periodo) return { ok: false, message: "Elige el mes que pagaste." };
+    }
+  } else if (!motivo) {
+    return { ok: false, message: "Escribe tu solicitud." };
+  }
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("request_submit", {
+    pid, p_tipo: tipo, p_motivo: motivo, p_archivo: archivo,
+    p_doc_type: tipo === "documento" ? docType : null,
+    p_doc_nombre: tipo === "documento" && !docType ? txt("doc_nombre")?.slice(0, 80) ?? null : null,
+    p_concepto: tipo === "pago" ? txt("concepto") : null, p_periodo: periodo, p_monto: monto,
+    p_metodo: tipo === "pago" ? txt("metodo") : null,
+  });
+  if (error) return { ok: false, message: errorClaro(error) };
+  revalidatePath(`/cuenta/produccion/${pid}`);
+  return { ok: true, message: "Solicitud enviada. Te avisamos cuando la revisen." };
+}
+
+/** Cancelar mi solicitud mientras sigue pendiente. */
+export async function cancelRequest(f: FormData): Promise<void> {
+  const session = await getSession();
+  if (!session) return;
+  const supabase = await createClient();
+  await supabase.rpc("request_cancel", { p_id: String(f.get("id")) });
   revalidatePath(`/cuenta/produccion/${String(f.get("pid"))}`);
-  return { ok: true, message: "Aviso enviado a la producción." };
 }
 
 /** Marcar un comunicado como leído (la base revisa que sea para mí). */
