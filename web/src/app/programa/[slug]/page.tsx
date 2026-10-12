@@ -1,7 +1,7 @@
 /* eslint-disable @next/next/no-img-element -- logos de patrocinadores desde Storage */
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { CastGrid, Ensemble, TeamGroups } from "@/components/Credits";
 import { Section } from "@/components/PageHeading";
 import { HeroBackdrop, ProductionLogo } from "@/components/PosterArt";
@@ -23,6 +23,9 @@ export default async function Programa({ params }: PageProps<"/programa/[slug]">
   if (!data) notFound();
   const { page, sponsors } = await getProgram(slug);
   if (!page) notFound();
+  // Enlace o archivo: el QR y "Programa de mano" llevan directo ahí.
+  if (page.modo === "enlace" && page.enlace_url) redirect(page.enlace_url);
+  if (page.modo === "archivo" && page.archivo_path) redirect(assetUrl(page.archivo_path));
   const p = data.production;
   const theme = getTheme(p);
   const c = await getProductionContent(p.id);

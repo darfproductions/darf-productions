@@ -454,6 +454,8 @@ Orden: 1) Elenco y ofertas, 2) Expediente y mensualidades, 3) Ensayos y asistenc
    través de su API.
 4. **Rúbrica de evaluación por producción** (talleres en escuela), editable por los
    maestros desde la página. En espera.
+5. **Fan Zone con más tipos de contenido.** Hoy son videos y galería. Pedido: poder poner
+   también enlaces, documentos (PDF), fotos y otros contenidos, y acomodarlos.
 
 ## 15. Etapa 3F: programa digital y reportes (2026-10-12)
 
@@ -476,6 +478,12 @@ Orden: 1) Elenco y ofertas, 2) Expediente y mensualidades, 3) Ensayos y asistenc
     debajo de 80 %.
   - Audiciones (`audiciones.gestionar`): solicitudes por estado en cada convocatoria.
 - La lógica de los reportes está en `lib/report-rules.ts`, con pruebas.
+- **Tres formas de programa** (`0049_program_modes.sql`, pruebas T1–T3; pedido de Diego):
+  plantilla de la página (lo de arriba), **enlace** externo (Canva, Drive…) o **archivo**
+  subido (PDF o imagen, máx. 20 MB). El botón "Programa de mano" de la página de la obra y
+  el QR siempre van a `/programa/<obra>`, que lleva a la forma elegida; así el QR impreso
+  no cambia. No se puede publicar en modo enlace o archivo sin el enlace o el archivo.
+  El bucket público `producciones` ahora acepta PDF y hasta 20 MB.
 
 ## Cómo se comprueba cada etapa
 

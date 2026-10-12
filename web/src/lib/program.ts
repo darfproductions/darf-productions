@@ -5,6 +5,14 @@ import { createClient } from "@/lib/supabase/server";
 export type ProgramPage = {
   production_id: string; publicado: boolean; notas_direccion: string | null; firma_direccion: string | null; mensaje: string | null;
   mostrar_canciones: boolean; mostrar_equipos: boolean; mostrar_agradecimientos: boolean;
+  modo: ProgramMode; enlace_url: string | null; archivo_path: string | null;
+};
+/** plantilla = página de DARF; enlace = link externo; archivo = PDF o imagen subido (0049). */
+export type ProgramMode = "plantilla" | "enlace" | "archivo";
+export const PROGRAM_MODES: Record<ProgramMode, { label: string; help: string }> = {
+  plantilla: { label: "Plantilla de la página", help: "Se llena sola con la obra; agregas notas, mensaje y patrocinadores." },
+  enlace: { label: "Enlace", help: "Un link a tu programa (Canva, Drive u otra página)." },
+  archivo: { label: "Archivo", help: "Sube un PDF o una imagen (máx. 20 MB)." },
 };
 export type Sponsor = { id: string; nombre: string; url: string | null; logo_path: string | null; orden: number };
 

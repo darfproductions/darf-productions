@@ -35,7 +35,10 @@ export async function setProgramPublished(_p: ProgState, f: FormData): Promise<P
   const publicar = str(f, "publicar") === "si";
   const supabase = await createClient();
   const { error } = await supabase.from("program_pages").upsert({ production_id: pid, publicado: publicar, updated_at: new Date().toISOString() });
-  if (error) return { ok: false, message: error.message };
+  if (error) {
+    if (error.message.includes("program_pages_modo_listo")) return { ok: false, message: "Primero agrega el enlace o sube el archivo del programa." };
+    return { ok: false, message: error.message };
+  }
   return done(pid, publicar ? "Programa publicado: ya se abre con el QR." : "Programa oculto.");
 }
 
@@ -66,4 +69,32 @@ export async function setSponsorLogo(pid: string, sid: string, path: string): Pr
   revalidatePath(`/panel/producciones/${pid}/programa`);
   revalidatePath(`/programa/${pid}`);
   return { ok: true, message: "Logo guardado." };
+}
+
+// Forma del programa: plantilla, enlace o archivo (0049).
+export async function setProgramMode(_p: ProgState, f: FormData): Promise<ProgState> {
+  const pid = str(f, "pid");
+  const modo = str(f, "modo");
+  if (!["plantilla", "enlace", "archivo"].includes(modo)) return { ok: false, message: "Elige una forma." };
+  const url = str(f, "enlace_url");
+  if (modo === "enlace" && !/^https:\/\/\S+$/i.test(url)) return { ok: false, message: "Pega el enlace completo, empezando con https://" };
+  const supabase = await createClient();
+  const { error } = await supabase.from("program_pages").upsert({
+    production_id: pid, modo, ...(modo === "enlace" && { enlace_url: url }), updated_at: new Date().toISOString(),
+  });
+  if (error) {
+    if (error.message.includes("program_pages_modo_listo")) return { ok: false, message: "Sube el archivo antes de cambiar a esta forma, u oculta el programa primero." };
+    return { ok: false, message: error.message };
+  }
+  return done(pid, modo === "plantilla" ? "Usarás la plantilla de la página." : modo === "enlace" ? "Enlace guardado: “Ver programa” y el QR llevan ahí." : "Listo. Sube el archivo abajo.");
+}
+
+export async function setProgramFile(pid: string, path: string): Promise<{ ok: boolean; message: string }> {
+  if (!path.startsWith(`${pid}/programa/`)) return { ok: false, message: "Ruta no válida." };
+  const supabase = await createClient();
+  const { error } = await supabase.from("program_pages").upsert({ production_id: pid, modo: "archivo", archivo_path: path, updated_at: new Date().toISOString() });
+  if (error) return { ok: false, message: error.message };
+  revalidatePath(`/panel/producciones/${pid}/programa`);
+  revalidatePath(`/programa/${pid}`);
+  return { ok: true, message: "Archivo del programa guardado." };
 }

@@ -9,8 +9,9 @@ import { Card, input } from "@/components/panel/ui";
 import { can } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
 import { assetUrl } from "@/lib/productions";
-import { getProgram } from "@/lib/program";
-import { addSponsor, removeSponsor, saveProgram, setProgramPublished, setSponsorLogo } from "./actions";
+import { getProgram, PROGRAM_MODES, type ProgramMode } from "@/lib/program";
+import { addSponsor, removeSponsor, saveProgram, setProgramMode, setProgramPublished, setSponsorLogo } from "./actions";
+import { ProgramFileUpload } from "./ProgramFileUpload";
 
 export const metadata: Metadata = { title: "Programa" };
 
@@ -32,14 +33,15 @@ export default async function Programa({ params }: PageProps<"/panel/produccione
   const link = `${proto}://${host}/programa/${id}`;
   const qr = await QRCode.toDataURL(link, { margin: 2, width: 600 });
   const publicado = !!page?.publicado;
+  const modo: ProgramMode = page?.modo ?? "plantilla";
 
   return (
     <div className="flex flex-col gap-4">
       <Card className="flex flex-col gap-3">
         <h2 className="titular text-xl">Programa digital</h2>
         <p className="text-sm text-texto-2">
-          Se llena solo con la obra (reparto, ensamble, canciones, equipos y agradecimientos de la Página pública). Aquí agregas
-          las notas de dirección, un mensaje y los patrocinadores. El público lo ve solo si está publicado y la obra también.
+          Elige cómo lo armas: con la plantilla de la página, con un enlace o subiendo un archivo. “Programa de mano” en la
+          página de la obra y el QR siempre llevan a la forma que elijas. El público lo ve solo si está publicado y la obra también.
         </p>
         <div className="flex flex-wrap items-center gap-3 text-sm">
           <span className={`rounded-full px-3 py-1 font-bold ${publicado ? "bg-green-500/20 text-green-300" : "bg-white/10 text-texto-2"}`}>
@@ -50,6 +52,33 @@ export default async function Programa({ params }: PageProps<"/panel/produccione
         </div>
       </Card>
 
+      <Card className="flex flex-col gap-3">
+        <h2 className="titular text-xl">¿Cómo quieres tu programa?</h2>
+        <ActionForm action={setProgramMode} hidden={{ pid: id }} submit="Guardar forma">
+          <div className="grid gap-2 sm:grid-cols-3">
+            {(Object.keys(PROGRAM_MODES) as ProgramMode[]).map((m) => (
+              <label key={m} className="flex cursor-pointer gap-2 rounded-lg bg-sala p-3 text-sm has-[:checked]:ring-2 has-[:checked]:ring-violeta-claro">
+                <input type="radio" name="modo" value={m} defaultChecked={modo === m} />
+                <span><b>{PROGRAM_MODES[m].label}</b><span className="block text-xs text-texto-3">{PROGRAM_MODES[m].help}</span></span>
+              </label>
+            ))}
+          </div>
+          <label className="flex flex-col gap-1.5 text-sm font-semibold">Enlace (solo si eliges “Enlace”)
+            <input className={input} name="enlace_url" type="url" placeholder="https://…" maxLength={500} defaultValue={page?.enlace_url ?? ""} />
+          </label>
+        </ActionForm>
+        {modo === "archivo" && (
+          <div className="flex flex-col gap-2 rounded-lg bg-sala p-3 text-sm">
+            <p className="font-bold">Archivo del programa</p>
+            {page?.archivo_path
+              ? <a href={assetUrl(page.archivo_path)} target="_blank" rel="noreferrer" className="text-violeta-claro underline">Ver archivo actual ↗</a>
+              : <p className="text-texto-3">Aún no subes el archivo.</p>}
+            <ProgramFileUpload pid={id} hay={!!page?.archivo_path} />
+          </div>
+        )}
+      </Card>
+
+      {modo === "plantilla" && (<>
       <Card>
         <h2 className="titular mb-3 text-xl">Contenido</h2>
         <ActionForm action={saveProgram} hidden={{ pid: id }} submit="Guardar programa">
@@ -103,6 +132,7 @@ export default async function Programa({ params }: PageProps<"/panel/produccione
           </div>
         </ActionForm>
       </Card>
+      </>)}
 
       <Card className="flex flex-col items-start gap-3">
         <h2 className="titular text-xl">QR para la sala</h2>
