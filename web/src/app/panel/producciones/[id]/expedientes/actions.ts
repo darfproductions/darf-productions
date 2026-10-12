@@ -144,6 +144,7 @@ export async function saveDiscipline(_p: ExpState, f: FormData): Promise<ExpStat
   const { error } = await supabase.from("production_discipline").upsert({
     production_id: pid, limite_advertencias: Number(str(f, "limite") || 3),
     auto_mensualidad_meses: n("meses"), auto_retardos: n("retardos"), auto_faltas: n("faltas"),
+    tolerancia_min: Math.min(120, Math.max(0, Number(str(f, "tolerancia") || 10) || 0)),
   });
   if (error) return { ok: false, message: error.message };
   return ok(pid, null, "Reglas guardadas.");

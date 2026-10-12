@@ -24,7 +24,7 @@ rutas, acciones o permisos. Lo que la propuesta muestra y todavía no existe se 
 
 ## Funciones de la propuesta: lo que ya se hizo (2026-10-12)
 
-Diego eligió cuáles sí (ver plan del bloque). Hechas en `darf-2.0`, migraciones 0073–0077:
+Diego eligió cuáles sí (ver plan del bloque). Hechas en `darf-2.0`, migraciones 0073–0078:
 
 | Función | Dónde |
 |---|---|
@@ -41,6 +41,9 @@ Diego eligió cuáles sí (ver plan del bloque). Hechas en `darf-2.0`, migracion
 | Transacciones y eventos asistidos | `/cuenta/transacciones` y `/cuenta/eventos`. |
 | Eliminar mi cuenta | `/cuenta/eliminar` (0077). |
 | Entrar con Google | Botón en `/entrar`. **Requiere activar Google en Supabase** (ver abajo). |
+| Fan Zone con doble filtro | Obra + tipo de contenido se combinan (`/fan-zone/<obra>?cat=ensayo`), con "Mostrando" y × para quitar cada filtro. |
+| Espaciado del panel | Margen arriba en todo el panel (`app/panel/layout.tsx`); revisadas 46 rutas, ninguna queda pegada. |
+| Gafete digital | Mi cuenta → "Mi gafete" (equipo y elencos): QR + código DRF-XXXX, PDF, "Qué compartir"; página pública `/g/<token>` con "Guardar contacto"; panel → ensayo → "Checar con gafete" (presente/retardo según la tolerancia de la obra) (0078). |
 | Ajustes de marca | Fan Zone al final del menú, logo original (DARF con PRODUCTIONS abajo), destacada también en la cartelera, logos de DARF y de la obra en los boletos. |
 
 ## Lo que queda pendiente
@@ -55,7 +58,7 @@ Diego eligió cuáles sí (ver plan del bloque). Hechas en `darf-2.0`, migracion
 ## Para el lanzamiento (lista de revisión)
 
 - **Entrar con Google:** en el proyecto de Supabase (DEV y luego el oficial) → Authentication → Providers → Google, con el Client ID y secreto de la 1.0, y agregar la dirección del sitio (`…/auth/callback`) en Google Cloud y en Supabase → URL Configuration. Probar el botón en DEV y otra vez el día de la publicación.
-- Correr en DEV los scripts `supabase/dev/apply_0074_dev.sql`, `apply_0075_dev.sql`, `apply_0076_dev.sql` y `apply_0077_dev.sql` (en ese orden). La 0073 ya se aplicó.
+- Correr en DEV los scripts `supabase/dev/apply_0074_dev.sql`, `apply_0075_dev.sql`, `apply_0076_dev.sql`, `apply_0077_dev.sql` y `apply_0078_dev.sql` (en ese orden). La 0073 ya se aplicó.
 
 ## Cómo se verificó
 - Copia local simulada (base local, PostgREST y la web en modo DEV), con funciones de prueba

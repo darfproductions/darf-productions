@@ -83,3 +83,19 @@ export async function setAvisoHoras(_p: RehState, f: FormData): Promise<RehState
   revalidatePath(`/cuenta/produccion/${pid}`);
   return { ok: true, message: "Guardado." };
 }
+
+/** Checar asistencia con el gafete (0078). La base calcula presente o retardo con la tolerancia. */
+export type CheckinResult = {
+  ok: boolean; message?: string;
+  resultado?: "presente" | "retardo" | "ya" | "no_citado" | "no_encontrado";
+  nombre?: string; fotoUrl?: string | null; minutos?: number | null; llegada?: string; estado?: string;
+};
+export async function checkinGafete(pid: string, rid: string, code: string): Promise<CheckinResult> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("rehearsal_checkin", { rid, p_code: code });
+  if (error) return { ok: false, message: error.message };
+  const r = data as { resultado: CheckinResult["resultado"]; nombre?: string; foto_path?: string | null; minutos?: number | null; llegada?: string; estado?: string };
+  const fotoUrl = r.foto_path ? (await supabase.storage.from("avatares").createSignedUrl(r.foto_path, 600)).data?.signedUrl ?? null : null;
+  if (r.resultado === "presente" || r.resultado === "retardo") revalidatePath(`/panel/producciones/${pid}/ensayos/${rid}`);
+  return { ok: true, resultado: r.resultado, nombre: r.nombre, fotoUrl, minutos: r.minutos ?? null, llegada: r.llegada, estado: r.estado };
+}

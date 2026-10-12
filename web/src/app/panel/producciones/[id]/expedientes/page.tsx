@@ -65,7 +65,7 @@ export default async function Expedientes({ params }: PageProps<"/panel/producci
   const cobra = !!cuota && cuota.cobrar !== false;
   const rec = recaudacion((pagos.data ?? []) as Pago[]);
   const discDe = (u: string) => ((disc.data ?? []) as Disc[]).find((d) => d.user_id === u);
-  const reglas = cfg.data as { limite_advertencias: number; auto_mensualidad_meses: number | null; auto_retardos: number | null; auto_faltas: number | null } | null;
+  const reglas = cfg.data as { limite_advertencias: number; auto_mensualidad_meses: number | null; auto_retardos: number | null; auto_faltas: number | null; tolerancia_min?: number } | null;
   const porDecidir = gente.filter((g) => discDe(g.user_id)?.requiere_decision && !altaDe(g.user_id)?.baja_at);
   const h = { pid: id };
 
@@ -176,7 +176,13 @@ export default async function Expedientes({ params }: PageProps<"/panel/producci
           <p className="mb-3 text-sm text-texto-2">Al llegar al límite, la persona aparece en “Requiere decisión”. Las automáticas se crean solas (retardos y faltas, cuando haya asistencia de ensayos).</p>
           <ActionForm action={saveDiscipline} hidden={h} submit="Guardar reglas">
             <div className="grid gap-3 text-sm sm:grid-cols-2">
-              <label className="flex flex-col gap-1 font-semibold">Límite de advertencias<input className={`${input} w-28`} type="number" min={1} max={20} name="limite" defaultValue={reglas?.limite_advertencias ?? 3} /></label>
+              <div className="flex flex-col gap-3">
+                <label className="flex flex-col gap-1 font-semibold">Límite de advertencias<input className={`${input} w-28`} type="number" min={1} max={20} name="limite" defaultValue={reglas?.limite_advertencias ?? 3} /></label>
+                <label className="flex flex-col gap-1 font-semibold">Tolerancia de retardo (minutos)
+                  <input className={`${input} w-28`} type="number" min={0} max={120} name="tolerancia" defaultValue={reglas?.tolerancia_min ?? 10} />
+                  <span className="text-xs font-normal text-texto-3">Al checar con gafete: después de la hora del ensayo más estos minutos, se marca retardo.</span>
+                </label>
+              </div>
               <div className="flex flex-col gap-2">
                 {([
                   ["meses", "Mensualidad: 1 advertencia por cada", "meses vencidos", reglas ? reglas.auto_mensualidad_meses : 2],

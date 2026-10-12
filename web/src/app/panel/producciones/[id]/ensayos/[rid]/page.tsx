@@ -7,6 +7,7 @@ import { can } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
 import { ASISTENCIA, citados, fechaEnsayo, type Rehearsal } from "@/lib/rehearsal-rules";
 import { createClient } from "@/lib/supabase/server";
+import { CheckinGafete } from "./CheckinGafete";
 import { Mark } from "./Mark";
 
 export const metadata: Metadata = { title: "Asistencia" };
@@ -37,6 +38,7 @@ export default async function Asistencia({ params }: PageProps<"/panel/produccio
         <p className="text-sm capitalize text-texto-2">{fechaEnsayo(e.inicia, e.termina)}{e.lugar ? ` · ${e.lugar}` : ""} · {citados(e)}</p>
         {e.notas && <p className="mt-1 whitespace-pre-line text-sm text-texto-2">{e.notas}</p>}
       </div>
+      {e.estado !== "cancelado" && <CheckinGafete pid={id} rid={rid} />}
       <Card className="grid grid-cols-2 gap-3 p-4 text-center sm:grid-cols-5 md:p-4">
         {Object.entries(ASISTENCIA).map(([k, v]) => <div key={k}><p className="text-2xl font-black">{cuenta(k)}</p><p className="text-xs text-texto-3">{v.label}</p></div>)}
         <div><p className="text-2xl font-black">{lista.filter((x) => !x.estado).length}</p><p className="text-xs text-texto-3">Sin marcar</p></div>
@@ -48,6 +50,7 @@ export default async function Asistencia({ params }: PageProps<"/panel/produccio
               <span>
                 <b>{x.nombre}</b> <span className="text-xs text-texto-3">{x.papeles.join(", ")}</span>
                 {x.estado === "retardo" && x.minutos_tarde && <span className="ml-2 text-xs text-aviso">{x.minutos_tarde} min</span>}
+                {x.nota === "Gafete" && <span className="ml-2 text-xs text-texto-3">🪪 gafete</span>}
                 {x.aviso && <span className="block text-xs text-[#a48bff]">{x.aviso}</span>}
               </span>
               <Mark pid={id} rid={rid} uid={x.user_id} actual={x.estado} />
