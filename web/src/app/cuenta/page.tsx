@@ -183,6 +183,10 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
               fecha={session.profile?.fecha_nacimiento ?? ""}
             />
           </section>
+          <a href="/cuenta/perfil-profesional" className="flex flex-col gap-1 rounded-2xl bg-telon p-6 hover:bg-telon-2">
+            <span className="text-lg font-bold">Perfil profesional →</span>
+            <span className="text-sm text-texto-2">Retrato, semblanza, trayectoria, habilidades y reel. Puedes hacerlo público.</span>
+          </a>
           <details className="rounded-2xl bg-telon p-6">
             <summary className="cursor-pointer text-lg font-bold">Correo y contraseña</summary>
             <div className="mt-4 flex flex-col gap-6">

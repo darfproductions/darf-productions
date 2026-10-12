@@ -22,6 +22,11 @@ export type Production = KitColumns & {
 
 const PUBLIC_STATES = ["publicada", "archivada"];
 
+/** URL pública de una foto del perfil profesional (bucket `perfiles`, 0057). */
+export function perfilUrl(path: string): string {
+  return `${env.supabaseUrl}/storage/v1/object/public/perfiles/${path.split("/").map(encodeURIComponent).join("/")}`;
+}
+
 /** URL pública de una imagen del bucket `producciones` (o archivo propio de la web si empieza con "/"). */
 export function assetUrl(path: string): string {
   if (path.startsWith("/")) return path;

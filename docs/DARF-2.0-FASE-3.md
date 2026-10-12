@@ -580,6 +580,31 @@ vendedor (aprobado por Diego).
     integrantes.
 - Al imprimir se ocultan el menú del sitio y el del panel.
 
+## 20. Perfil profesional (decisiones de Diego, 2026-10-12)
+
+`0057_pro_profile.sql`, pruebas T1–T6.
+- **Ligado a la ficha de la persona** (`people`), así también aplica a gente de la 1.0 sin
+  cuenta. Al abrir Mi cuenta → Perfil profesional se crea la ficha si no existe.
+- **Contenido:**
+  - retrato profesional;
+  - semblanza;
+  - trayectoria externa (las obras DARF salen solas);
+  - habilidades: tesitura, baile, instrumentos, aéreos, acrobacia, idiomas y otras;
+  - Instagram, TikTok, YouTube y reel;
+  - galería de hasta 6 fotos.
+
+  Las fotos van al bucket público `perfiles/<ficha>/`.
+- **Quién edita:** la persona, desde Mi cuenta. El Director o quien tiene `elenco.gestionar`
+  en una obra donde aparece lo corrige en Talento → Perfil profesional.
+- **Público, solo si la persona lo activa:** `/artistas/<slug>`.
+  - El slug sale del nombre.
+  - Nunca muestra teléfono, correo ni expediente.
+  - **Menores:** además hace falta el permiso del tutor, que solo registra el equipo, y la
+    base guarda quién lo registró.
+- **Elenco de cada obra:**
+  - la foto de la obra; si no hay, el retrato del perfil;
+  - el nombre enlaza al perfil cuando es público.
+
 ## Cómo se comprueba cada etapa
 
 - Pruebas SQL de permisos por rol (en local y en DEV) y las de boletería sin cambios.

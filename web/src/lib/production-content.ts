@@ -1,10 +1,10 @@
-import { assetUrl } from "@/lib/productions";
+import { perfilUrl, assetUrl } from "@/lib/productions";
 import { createClient } from "@/lib/supabase/server";
 
 // Contenido artístico de una obra (tablas de la migración 0029): sinopsis,
 // ficha, canciones, créditos con foto POR OBRA, videos y agradecimientos.
 
-export type Credit = { rol: string; persona: string; /** Retrato de ESTA obra. */ foto?: string };
+export type Credit = { rol: string; persona: string; /** Retrato de ESTA obra (o el del perfil, 0057). */ foto?: string; /** /artistas/<slug> si su perfil es público. */ perfil?: string };
 
 export type Ficha = { etiqueta: string; valor: string }[];
 
@@ -13,8 +13,8 @@ export type ProductionContent = {
   /** Actos opcionales: si la obra no los usa, un solo grupo con nombre vacío. */
   actos: { nombre: string; canciones: string[] }[];
   videos: { titulo: string; youtube: string }[];
-  reparto: { personaje: string; persona: string; foto?: string }[];
-  ensamble: { persona: string; foto?: string }[];
+  reparto: { personaje: string; persona: string; foto?: string; perfil?: string }[];
+  ensamble: { persona: string; foto?: string; perfil?: string }[];
   creativo: Credit[];
   produccion: Credit[];
   crew: Credit[];
@@ -34,18 +34,19 @@ type FichaRow = {
   sinopsis: string | null;
 };
 
-type CreditRow = { tipo: string; papel: string | null; foto_path: string | null; people: { nombre: string } | null };
+type CreditRow = { tipo: string; papel: string | null; foto_path: string | null; person_id: string; people: { nombre: string } | null };
 
 export async function getProductionContent(id: string): Promise<ProductionContent> {
   const supabase = await createClient();
-  const [prod, acts, songs, credits, media, facts, thanks] = await Promise.all([
+  const [prod, acts, songs, credits, media, facts, thanks, pro] = await Promise.all([
     supabase.from("productions").select("venue, temporada, fecha, duracion, clasificacion, basada_en, sinopsis").eq("id", id).maybeSingle(),
     supabase.from("production_acts").select("id, nombre").eq("production_id", id).order("orden"),
     supabase.from("production_songs").select("act_id, titulo").eq("production_id", id).order("orden"),
-    supabase.from("production_credits").select("tipo, papel, foto_path, people(nombre)").eq("production_id", id).eq("activo", true).order("orden"),
+    supabase.from("production_credits").select("tipo, papel, foto_path, person_id, people(nombre)").eq("production_id", id).eq("activo", true).order("orden"),
     supabase.from("production_media").select("titulo, youtube_id").eq("production_id", id).eq("tipo", "video").order("orden"),
     supabase.from("production_facts").select("etiqueta, valor").eq("production_id", id).order("orden"),
     supabase.from("production_thanks").select("texto").eq("production_id", id).order("orden"),
+    supabase.rpc("production_pro_info", { pid: id }),
   ]);
   const failed = [prod, acts, songs, credits, media, facts, thanks].find((r) => r.error);
   if (failed?.error) throw new Error(`No se pudo cargar el contenido de la obra: ${failed.error.message}`);
@@ -61,8 +62,15 @@ export async function getProductionContent(id: string): Promise<ProductionConten
 
   const rows = (credits.data ?? []) as unknown as CreditRow[];
   const of = (tipo: string) => rows.filter((r) => r.tipo === tipo && r.people);
-  const foto = (r: CreditRow) => (r.foto_path ? assetUrl(r.foto_path) : undefined);
-  const team = (tipo: string): Credit[] => of(tipo).map((r) => ({ rol: r.papel ?? "", persona: r.people!.nombre, foto: foto(r) }));
+  // Foto de la obra; si no hay, el retrato del perfil profesional. Enlace solo si el perfil es público (0057).
+  const proInfo = new Map(((pro.data ?? []) as { person_id: string; retrato_path: string | null; slug: string | null }[]).map((x) => [x.person_id, x]));
+  const foto = (r: CreditRow) => {
+    if (r.foto_path) return assetUrl(r.foto_path);
+    const ret = proInfo.get(r.person_id)?.retrato_path;
+    return ret ? perfilUrl(ret) : undefined;
+  };
+  const perfil = (r: CreditRow) => { const sl = proInfo.get(r.person_id)?.slug; return sl ? `/artistas/${sl}` : undefined; };
+  const team = (tipo: string): Credit[] => of(tipo).map((r) => ({ rol: r.papel ?? "", persona: r.people!.nombre, foto: foto(r), perfil: perfil(r) }));
 
   const ficha = [
     { etiqueta: "Temporada", valor: p?.temporada },
@@ -78,8 +86,8 @@ export async function getProductionContent(id: string): Promise<ProductionConten
     sinopsis: (p?.sinopsis ?? "").split(/\n\s*\n/).map((t) => t.trim()).filter(Boolean),
     actos: actos.filter((a) => a.canciones.length > 0),
     videos: (media.data ?? []).map((m) => ({ titulo: m.titulo as string, youtube: m.youtube_id as string })),
-    reparto: of("reparto").map((r) => ({ personaje: r.papel ?? "", persona: r.people!.nombre, foto: foto(r) })),
-    ensamble: of("ensamble").map((r) => ({ persona: r.people!.nombre, foto: foto(r) })),
+    reparto: of("reparto").map((r) => ({ personaje: r.papel ?? "", persona: r.people!.nombre, foto: foto(r), perfil: perfil(r) })),
+    ensamble: of("ensamble").map((r) => ({ persona: r.people!.nombre, foto: foto(r), perfil: perfil(r) })),
     creativo: team("creativo"),
     produccion: team("produccion"),
     crew: team("crew"),

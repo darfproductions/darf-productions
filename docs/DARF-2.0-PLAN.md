@@ -54,7 +54,7 @@ final (Lanzamiento) y con aprobación explícita.**
   - congelar el elenco y los créditos;
   - resumen final descargable.
 
-### 4. Boletería y compra (Fase 4) — APROBADO; en curso (ver `docs/DARF-2.0-FASE-4.md`)
+### 4. Boletería y compra (Fase 4) — HECHO (0054–0056, ver `docs/DARF-2.0-FASE-4.md`)
 
 - Mapa de asientos y compra más cómodos en celular; mensajes más claros.
 - Vencimiento automático de órdenes pendientes (liberar asientos si no pagan a tiempo).
@@ -73,7 +73,7 @@ final (Lanzamiento) y con aprobación explícita.**
 - **WhatsApp:** API de WhatsApp Business de Meta. Requiere verificar el negocio y tiene costo
   por conversación.
 
-### 6. Perfil profesional
+### 6. Perfil profesional — HECHO (0057, ver FASE-3 §20)
 
 - Retrato profesional, semblanza y trayectoria (obras DARF y externas), con fotos.
 - Habilidades: canto, baile, instrumentos y aéreos.

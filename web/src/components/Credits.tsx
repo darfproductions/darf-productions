@@ -6,7 +6,8 @@ import type { Credit } from "@/lib/production-content";
 // - Ensamble: lista compacta con foto pequeña.
 // - Equipos: grupos plegables con foto pequeña, nombre y puesto.
 // Funciona sin JavaScript (details/summary). Sin foto: iniciales en el color de la obra.
-// Las fotos son de cada obra (misma sesión, se ven uniformes), no de la persona.
+// Las fotos son de cada obra (misma sesión, se ven uniformes); si falta, el retrato del perfil (0057).
+// El nombre enlaza a /artistas/<slug> cuando la persona hizo público su perfil.
 
 function initials(name: string) {
   return name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
@@ -25,12 +26,16 @@ function Avatar({ name, foto, size }: { name: string; foto?: string; size: "sm" 
 
 const MORE = "cursor-pointer list-none rounded-full border border-current/30 px-5 py-2.5 text-sm font-bold hover:border-current/60";
 
-export function CastGrid({ reparto }: { reparto: { personaje: string; persona: string; foto?: string }[] }) {
+function Nombre({ persona, perfil, className }: { persona: string; perfil?: string; className: string }) {
+  return perfil ? <a href={perfil} className={`${className} underline-offset-4 hover:underline`}>{persona}</a> : <span className={className}>{persona}</span>;
+}
+
+export function CastGrid({ reparto }: { reparto: { personaje: string; persona: string; foto?: string; perfil?: string }[] }) {
   const card = (r: (typeof reparto)[number], i: number) => (
     <li key={i} className="flex flex-col gap-2">
       <Avatar name={r.persona} foto={r.foto} size="lg" />
       <div>
-        <p className="font-bold leading-tight">{r.persona}</p>
+        <p className="leading-tight"><Nombre persona={r.persona} perfil={r.perfil} className="font-bold" /></p>
         <p className="text-sm opacity-75">{r.personaje}</p>
       </div>
     </li>
@@ -54,9 +59,9 @@ export function CastGrid({ reparto }: { reparto: { personaje: string; persona: s
   );
 }
 
-export function Ensemble({ items }: { items: { persona: string; foto?: string }[] }) {
-  const item = (n: { persona: string; foto?: string }, i: number) => (
-    <li key={i} className="flex items-center gap-3"><Avatar name={n.persona} foto={n.foto} size="sm" /><span className="text-sm font-semibold">{n.persona}</span></li>
+export function Ensemble({ items }: { items: { persona: string; foto?: string; perfil?: string }[] }) {
+  const item = (n: { persona: string; foto?: string; perfil?: string }, i: number) => (
+    <li key={i} className="flex items-center gap-3"><Avatar name={n.persona} foto={n.foto} size="sm" /><Nombre persona={n.persona} perfil={n.perfil} className="text-sm font-semibold" /></li>
   );
   const grid = "grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3";
   return (
@@ -91,7 +96,7 @@ export function TeamGroups({ groups }: { groups: { titulo: string; items: Credit
               <li key={i} className="flex items-center gap-3">
                 <Avatar name={c.persona} foto={c.foto} size="sm" />
                 <div className="min-w-0">
-                  <p className="truncate font-semibold">{c.persona}</p>
+                  <p className="truncate"><Nombre persona={c.persona} perfil={c.perfil} className="font-semibold" /></p>
                   <p className="truncate text-sm opacity-70">{c.rol}</p>
                 </div>
               </li>

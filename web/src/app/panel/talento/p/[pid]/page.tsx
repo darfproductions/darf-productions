@@ -26,6 +26,7 @@ export default async function PersonPage({ params }: PageProps<"/panel/talento/p
   return (
     <>
       <PanelTitle eyebrow="Ficha de persona" title={h.nombre}>Sin cuenta en la página todavía.</PanelTitle>
+      <Link href={`/panel/talento/p/${pid}/perfil`} className="self-start rounded-full border border-white/25 px-4 py-2 text-sm font-bold">Perfil profesional →</Link>
       <Card>
         <h2 className="titular mb-3 text-xl">Obras ({h.obras.length})</h2>
         <ul className="flex flex-col gap-1.5 text-sm">
