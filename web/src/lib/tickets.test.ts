@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatMoney, groupSeatsByRow, previewDiscount, whatsappPayUrl } from "./tickets";
+import { clampSeat, formatMoney, groupSeatsByRow, previewDiscount, seatSize, whatsappPayUrl } from "./tickets";
 
 describe("pago por WhatsApp", () => {
   it("sin número configurado no genera enlace (DEV)", () => {
@@ -57,5 +57,15 @@ describe("mapa de asientos", () => {
     expect(g.map((r) => r.row)).toEqual(["A", "B"]);
     expect(g[1].blocks[1].map((x) => x.id)).toEqual(["b1", "b2"]);
     expect(g[0].blocks[0].map((x) => x.id)).toEqual(["a1"]);
+  });
+});
+
+describe("tamaño de asiento (zoom del mapa)", () => {
+  it("ajusta al ancho dentro de 12–28 px y el zoom manual llega a 48", () => {
+    expect(seatSize(360, 30)).toBe(12);
+    expect(seatSize(1000, 30)).toBe(26);
+    expect(seatSize(3000, 10)).toBe(28);
+    expect(clampSeat(60)).toBe(48);
+    expect(clampSeat(5)).toBe(12);
   });
 });

@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo } from "react";
-import { formatMoney, groupSeatsByRow, ZONE_COLORS, type MapSeat } from "@/lib/tickets";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { clampSeat, formatMoney, groupSeatsByRow, seatSize, ZONE_COLORS, type MapSeat } from "@/lib/tickets";
 
 export type ZonePrice = { categoryId: string; price: number; nombre: string };
 
@@ -22,6 +22,21 @@ export function SeatMap({
 }) {
   const priceByCat = useMemo(() => new Map(prices.map((p) => [p.categoryId, p])), [prices]);
   const rows = useMemo(() => groupSeatsByRow(seats), [seats]);
+  // Zoom (Fase 4B): "Ajustar" calcula el tamaño para que quepa a lo ancho; + y − o dos dedos lo cambian.
+  const box = useRef<HTMLDivElement>(null);
+  const cols = useMemo(() => Math.max(1, ...rows.map((r) => r.blocks.reduce((n, b) => n + b.length, 0) + r.blocks.length * 2 + 2)), [rows]);
+  const [fit, setFit] = useState(24);
+  const [zoom, setZoom] = useState<number | null>(null);
+  const pinch = useRef<{ d: number; s: number } | null>(null);
+  useEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([e]) => setFit(seatSize(e.contentRect.width, cols)));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [cols]);
+  const size = zoom ?? fit;
+  const dist = (t: React.TouchList) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
   return (
     <>
       <ul className="flex flex-wrap gap-2 text-sm">
@@ -35,7 +50,22 @@ export function SeatMap({
         <li className="flex items-center gap-2 rounded-full bg-telon px-3 py-1.5"><span aria-hidden="true" className="h-3 w-3 rounded-full bg-white" /> Selección</li>
       </ul>
 
-      <div className="overflow-x-auto rounded-2xl bg-telon p-4">
+      <div className="flex items-center gap-2 text-sm">
+        <span className="text-texto-3">Zoom</span>
+        <button type="button" aria-label="Alejar" onClick={() => setZoom(clampSeat(size - 4))} className="h-9 w-9 rounded-full border border-white/25 font-bold">−</button>
+        <button type="button" aria-label="Acercar" onClick={() => setZoom(clampSeat(size + 4))} className="h-9 w-9 rounded-full border border-white/25 font-bold">+</button>
+        <button type="button" onClick={() => setZoom(null)} className="rounded-full border border-white/25 px-3 py-1.5 font-semibold">Ajustar</button>
+        <span className="hidden text-xs text-texto-3 sm:inline">o usa dos dedos en el mapa</span>
+      </div>
+
+      <div
+        ref={box}
+        className="max-h-[70vh] overflow-auto rounded-2xl bg-telon p-4"
+        style={{ touchAction: "pan-x pan-y" }}
+        onTouchStart={(e) => { if (e.touches.length === 2) pinch.current = { d: dist(e.touches), s: size }; }}
+        onTouchMove={(e) => { if (e.touches.length === 2 && pinch.current) setZoom(clampSeat(pinch.current.s * (dist(e.touches) / pinch.current.d))); }}
+        onTouchEnd={() => { pinch.current = null; }}
+      >
         <div className="mx-auto flex w-max flex-col items-center gap-1.5">
           <div className="mb-3 w-full rounded-md bg-telon-2 py-2 text-center text-xs font-bold uppercase tracking-[0.3em] text-texto-3">Escenario</div>
           {rows.map(({ row, blocks }) => (
@@ -56,8 +86,11 @@ export function SeatMap({
                         aria-pressed={isSel}
                         aria-label={`Asiento ${s.seat_label}${zone ? `, ${zone.nombre}, ${formatMoney(zone.price)}` : ""}${isTaken ? ", ocupado" : ""}`}
                         title={s.seat_label}
-                        className="flex h-6 w-6 items-center justify-center rounded text-[9px] font-bold disabled:cursor-not-allowed"
+                        className="flex items-center justify-center rounded font-bold disabled:cursor-not-allowed"
                         style={{
+                          width: size,
+                          height: size,
+                          fontSize: Math.max(7, Math.round(size * 0.38)),
                           background: isSel ? "#ffffff" : isTaken ? "#3a3446" : ZONE_COLORS[zone!.nombre] ?? "#888",
                           color: isSel ? "#0b0910" : isTaken ? "#6e6878" : "#ffffff",
                         }}
@@ -76,3 +109,4 @@ export function SeatMap({
     </>
   );
 }
+

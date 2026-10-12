@@ -93,3 +93,11 @@ export function groupSeatsByRow(seats: MapSeat[]) {
     };
   });
 }
+
+/** Tamaño de asiento para que quepan `cols` columnas en `ancho` px (entre 12 y 28). */
+export function seatSize(ancho: number, cols: number): number {
+  return clampSeat(Math.floor((ancho - 32) / (cols * 1.2)), 28);
+}
+export function clampSeat(n: number, max = 48): number {
+  return Math.max(12, Math.min(max, Math.round(n)));
+}

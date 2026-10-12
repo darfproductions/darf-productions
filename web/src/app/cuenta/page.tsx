@@ -117,6 +117,9 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
                       <p className="text-sm text-texto-3">Pago por WhatsApp: sin número configurado en este entorno.</p>
                     )
                   )}
+                  {o.status === "aprobado" && o.tickets.some((t) => t.is_active) && !funcionPasada(o.performances?.starts_at ?? null) && (
+                    <a href={`/cuenta/boletos/${encodeURIComponent(o.order_code)}/pdf`} className="self-start rounded-full border border-white/30 px-5 py-2.5 text-sm font-bold hover:border-white/60">Descargar boletos (PDF)</a>
+                  )}
                   {o.status === "aprobado" && (
                     <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3">
                       {o.tickets.filter((t) => t.is_active).map((t) => (

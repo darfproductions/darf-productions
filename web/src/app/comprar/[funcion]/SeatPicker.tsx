@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { SeatMap, type ZonePrice } from "@/components/SeatMap";
 import { formatMoney, previewDiscount, type DiscountPreview, type MapSeat } from "@/lib/tickets";
@@ -15,6 +15,7 @@ const MAX_SEATS = 20; // mismo tope que valida la base
 
 export function SeatPicker(props: {
   performanceId: string;
+  productionId?: string;
   productionName: string;
   seats: MapSeat[];
   taken: string[];
@@ -36,7 +37,29 @@ export function SeatPicker(props: {
   const [result, setResult] = useState<Extract<OrderResult, { ok: true }> | null>(null);
   const [pending, startTransition] = useTransition();
 
-  const taken = useMemo(() => new Set(props.taken), [props.taken]);
+  // Disponibilidad en vivo (Fase 4B): cada 20 s se vuelve a preguntar qué está ocupado. Si alguien
+  // apartó un asiento que tenías elegido, se quita de tu selección y se avisa.
+  const [polled, setPolled] = useState<string[] | null>(null);
+  const [aviso, setAviso] = useState("");
+  const taken = useMemo(() => new Set(polled ?? props.taken), [polled, props.taken]);
+  useEffect(() => {
+    const id = setInterval(async () => {
+      const sb = createClient();
+      if (props.productionId) await sb.rpc("expire_due_orders", { pid: props.productionId });
+      const { data } = await sb.rpc("get_taken_seats", { target_performance_id: props.performanceId });
+      if (!data) return;
+      const ocupados = new Set(data as string[]);
+      setPolled(data as string[]);
+      setSelected((prev) => {
+        const perdidos = [...prev].filter((sid) => ocupados.has(sid));
+        if (!perdidos.length) return prev;
+        const labels = props.seats.filter((s) => perdidos.includes(s.id)).map((s) => s.seat_label).join(", ");
+        setAviso(`Alguien acaba de apartar ${labels}. Lo quitamos de tu selección; elige otro.`);
+        return new Set([...prev].filter((sid) => !ocupados.has(sid)));
+      });
+    }, 20000);
+    return () => clearInterval(id);
+  }, [props.performanceId, props.productionId, props.seats]);
   const priceByCat = useMemo(() => new Map(props.prices.map((p) => [p.categoryId, p])), [props.prices]);
   const chosen = props.seats.filter((s) => selected.has(s.id));
   const subtotal = chosen.reduce((n, s) => n + (priceByCat.get(s.price_category_id ?? "")?.price ?? 0), 0);
@@ -95,7 +118,11 @@ export function SeatPicker(props: {
         discountCode: discount?.codigo ?? null,
       });
       if (r.ok) { setResult(r); setSelected(new Set()); }
-      else { setError(r.message); router.refresh(); }
+      else {
+        setError(/disponible|bloqueado/i.test(r.message) ? `${r.message}. Actualizamos el mapa: elige otro asiento.` : r.message);
+        setPolled(null);
+        router.refresh();
+      }
     });
   }
 
@@ -125,12 +152,13 @@ export function SeatPicker(props: {
   return (
     <div className="grid gap-8 lg:grid-cols-12">
       <section aria-label="Mapa de asientos" className="flex flex-col gap-4 lg:col-span-8">
+        {aviso && <p role="alert" className="rounded-xl border border-[#ff8fa3]/40 bg-[#ff8fa3]/10 px-4 py-3 text-sm">{aviso}</p>}
         <SeatMap seats={props.seats} prices={props.prices} taken={taken} selected={selected} onToggle={toggle} />
-        <button type="button" onClick={() => router.refresh()} className="self-start text-sm font-bold text-violeta-claro">Actualizar disponibilidad</button>
+        <button type="button" onClick={() => { setPolled(null); setAviso(""); router.refresh(); }} className="self-start text-sm font-bold text-violeta-claro">Actualizar disponibilidad</button>
       </section>
 
-      <aside className="flex flex-col gap-4 lg:col-span-4">
-        <div className="sticky top-6 flex flex-col gap-4 rounded-2xl bg-telon p-6">
+      <aside className="flex flex-col gap-4 pb-24 lg:col-span-4 lg:pb-0">
+        <div id="tu-compra" className="sticky top-6 flex scroll-mt-4 flex-col gap-4 rounded-2xl bg-telon p-6">
           <h2 className="text-lg font-bold">Tu compra</h2>
           {chosen.length === 0 ? (
             <p className="text-texto-2">Toca los asientos en el mapa para elegirlos.</p>
@@ -178,6 +206,15 @@ export function SeatPicker(props: {
           </button>
         </div>
       </aside>
+      {chosen.length > 0 && (
+        <div className="fixed inset-x-0 bottom-0 z-30 flex items-center justify-between gap-3 border-t border-white/10 bg-sala/95 px-4 py-3 backdrop-blur lg:hidden">
+          <span className="text-sm">
+            <b>{chosen.length} {chosen.length === 1 ? "asiento" : "asientos"}</b> · {formatMoney(subtotal - disc.amount)}
+          </span>
+          <button type="button" onClick={() => document.getElementById("tu-compra")?.scrollIntoView({ behavior: "smooth" })}
+            className="boton-compra rounded-full px-5 py-3 text-xs font-bold uppercase tracking-[0.08em]">Continuar</button>
+        </div>
+      )}
     </div>
   );
 }

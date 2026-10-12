@@ -63,6 +63,7 @@ export default async function ComprarPage({ params, searchParams }: PageProps<"/
         ) : (
           <SeatPicker
             performanceId={f.id}
+            productionId={p.id}
             productionName={p.nombre}
             seats={seats}
             taken={taken}

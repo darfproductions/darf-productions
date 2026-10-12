@@ -35,7 +35,24 @@ pruebas de boletería anteriores se vuelven a correr en cada bloque.
 - **Riesgo conocido:** sin programador, una orden vencida se libera la próxima vez que
   alguien abre el mapa de esa obra, compra o abre el panel. No antes.
 
-### 4B. Mapa cómodo en celular y boleto en PDF — pendiente
+### 4B. Mapa cómodo en celular y boleto en PDF — HECHO (sin cambios de base)
+
+- **Mapa:**
+  - zoom con − y +, "Ajustar" al ancho de la pantalla y pellizco con dos dedos;
+  - el tamaño se calcula solo al abrir (`seatSize`/`clampSeat`, con pruebas);
+  - es el mismo mapa para la compra en línea y la taquilla.
+- **En celular**, una barra fija abajo muestra cuántos asientos van y el total, con el botón
+  "Continuar" hacia el resumen de la compra.
+- **Disponibilidad en vivo:** cada 20 s se libera lo vencido y se vuelve a preguntar qué está
+  ocupado. Si alguien apartó un asiento que tenías elegido, se quita de tu selección y se
+  avisa. Si la base rechaza la compra porque un asiento se ocupó, el mapa se actualiza.
+- **Boleto en PDF:**
+  - en Mi cuenta, "Descargar boletos (PDF)" en órdenes aprobadas de funciones próximas;
+  - una página por boleto, con obra, función, lugar, asiento, orden y QR;
+  - el PDF se arma en el servidor (`lib/pdf-ticket.ts`) sin librerías nuevas, y el QR se
+    dibuja en vectores;
+  - solo se descarga la orden propia y aprobada;
+  - se comprobó que el QR del PDF lo lee el mismo lector de la puerta (jsQR).
 
 ### 4C. Entrada general por zona con cupo — pendiente
 
