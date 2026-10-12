@@ -5,6 +5,7 @@ import { HeroBackdrop, ProductionLogo } from "@/components/PosterArt";
 import { YouTube } from "@/components/YouTube";
 import { listOpenAuditionsFor } from "@/lib/auditions";
 import { fanzoneCount } from "@/lib/fanzone";
+import { estadoPublico } from "@/lib/home-rules";
 import { getProductionContent } from "@/lib/production-content";
 import { getProgram } from "@/lib/program";
 import { withSeller } from "@/lib/seller-rules";
@@ -62,7 +63,7 @@ export async function ProductionView({ data, vendedor = null }: { data: NonNulla
           {theme && <p className="max-w-xl text-lg leading-relaxed opacity-90 md:text-xl">{theme.tagline}</p>}
           <ul className="flex flex-wrap gap-2 text-sm font-semibold">
             {p.venue && <li className="rounded-full border border-current/30 bg-obra-fondo/60 px-3 py-1.5 backdrop-blur">{p.venue}</li>}
-            <li className="rounded-full border border-current/30 bg-obra-fondo/60 px-3 py-1.5 backdrop-blur">{p.concluded ? "Producción concluida" : "En cartelera"}</li>
+            <li className="rounded-full border border-current/30 bg-obra-fondo/60 px-3 py-1.5 backdrop-blur">{{ archivo: "Producción concluida", cartelera: "En cartelera", proximamente: "Próximamente" }[estadoPublico(p, performances.map((f) => ({ ...f, production_id: p.id })))]}</li>
           </ul>
           <div className="flex flex-wrap gap-3">
             {!p.concluded && performances.some((f) => f.on_sale) && (

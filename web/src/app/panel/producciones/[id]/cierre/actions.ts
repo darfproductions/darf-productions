@@ -3,11 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 
-// Cierre de temporada (0053). La base revisa obra.publicar (cerrar) y Director (reabrir).
+// Cierre de temporada (0053). La base revisa obra.publicar para cerrar y reactivar (0066).
 
 type State = { ok: boolean; message: string } | null;
 const refresh = (pid: string) => {
-  for (const p of [`/panel/producciones/${pid}`, `/panel/producciones/${pid}/cierre`, `/producciones/${pid}`, "/panel/reportes"]) revalidatePath(p);
+  revalidatePath(`/panel/producciones/${pid}`, "layout");
+  for (const p of [`/producciones/${pid}`, "/panel/reportes", "/", "/producciones", "/cartelera"]) revalidatePath(p);
 };
 
 export async function closeSeason(_p: State, f: FormData): Promise<State> {
@@ -26,5 +27,5 @@ export async function reopenSeason(_p: State, f: FormData): Promise<State> {
   const { error } = await supabase.rpc("season_reopen", { pid });
   if (error) return { ok: false, message: error.message };
   refresh(pid);
-  return { ok: true, message: "Temporada reabierta: la obra vuelve a estar publicada (sin venta activa)." };
+  return { ok: true, message: "Producción reactivada: vuelve a estar publicada (sin venta activa) y regresan todas las pestañas." };
 }

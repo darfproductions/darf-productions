@@ -188,3 +188,25 @@ export async function attendNote(_p: TeamState, f: FormData): Promise<TeamState>
   refresh(pid);
   return { ok: true, message: deshacer ? "Nota pendiente otra vez." : "Nota atendida." };
 }
+
+// ──── Comentarios en materiales ────
+export async function addTeamComment(_p: TeamState, f: FormData): Promise<TeamState> {
+  const pid = espacioPid(str(f, "espacio"));
+  const cuerpo = str(f, "cuerpo");
+  if (!cuerpo) return { ok: false, message: "Escribe tu comentario." };
+  const supabase = await createClient();
+  const { error } = await supabase.from("team_comments").insert({ material_id: str(f, "material"), cuerpo: cuerpo.slice(0, 2000) });
+  if (error) return { ok: false, message: error.message };
+  refresh(pid);
+  return { ok: true, message: "Comentario enviado." };
+}
+
+export async function removeTeamComment(_p: TeamState, f: FormData): Promise<TeamState> {
+  const pid = espacioPid(str(f, "espacio"));
+  const supabase = await createClient();
+  const { error, count } = await supabase.from("team_comments").delete({ count: "exact" }).eq("id", str(f, "id"));
+  const bad = fail(error, count);
+  if (bad) return bad;
+  refresh(pid);
+  return { ok: true, message: "Comentario borrado." };
+}

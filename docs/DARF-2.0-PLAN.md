@@ -161,6 +161,30 @@ final (Lanzamiento) y con aprobación explícita.**
 - **Pendiente, solo con aprobación:** resumen automático de juntas con IA. Necesita un
   proveedor externo.
 
+### 13. Ajustes de Diego (12 de octubre, noche) — HECHO (0066)
+
+- **Portal del equipo colaborativo:** todos en el equipo suben material y comentan el de
+  los demás. Cada quien borra lo suyo; Producción y Dirección borran todo.
+- **Producción concluida:**
+  - el panel solo deja Resumen, Página pública, Elenco y equipos, Expedientes, Fan Zone,
+    Equipo, Reportes, Cierre y Permisos;
+  - "Reactivar producción" lo pueden usar el Director o quien publica la obra.
+- **En cartelera, Próximamente y Archivo:**
+  - "En cartelera" solo si tiene funciones a la venta; si no, "Próximamente";
+  - orden: Cartelera (la función más cercana primero) → Próximamente → Archivo;
+  - en `/producciones` hay tres secciones;
+  - la portada se elige con "Destacar en portada" en el panel; si no se elige, sale la
+    función más cercana.
+- **Notificaciones** en el inicio del panel y en `/panel/notificaciones`:
+  - las no leídas salen en negritas;
+  - se pueden marcar como leídas y borrar;
+  - hay un contador en el menú;
+  - nunca llega lo que hace uno mismo;
+  - avisan de: contacto, solicitudes de audición, órdenes por aprobar, ofertas
+    respondidas, documentos subidos, ausencias, todo lo del equipo y cambios de
+    configuración.
+  - Nueva página **Personas → Contacto** para leer los mensajes.
+
 ## Orden recomendado
 
 1 → 2 → 3, luego 4. El 5 se puede adelantar si Diego aprueba el proveedor. 6 y 8 van después;

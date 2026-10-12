@@ -42,7 +42,8 @@ do $$ declare mat uuid; av uuid; nota uuid; junta uuid; n int; h jsonb; begin
   if (select count(*) from team_materials) <> 1 or (select count(*) from team_announcements) <> 1 or (select count(*) from team_meetings) <> 1 then raise exception 'FALLO T2a'; end if;
   if (select count(*) from team_notes) <> 0 then raise exception 'FALLO T2b: ve nota ajena'; end if;
   insert into team_announcement_reads (announcement_id, user_id) values (av, '00000000-0000-0000-0000-0000000000d1');
-  begin insert into team_materials (production_id, titulo, url) values ('showman', 'x', 'https://x.example'); raise exception 'FALLO T2c: el maestro escribió';
+  -- Desde 0066 cualquiera del equipo sube material propio, pero no a nombre de otro ni en otra obra.
+  begin insert into team_materials (production_id, titulo, url, created_by) values ('showman', 'x', 'https://x.example', '00000000-0000-0000-0000-0000000000b1'); raise exception 'FALLO T2c: subió a nombre de otro';
   exception when insufficient_privilege then null; end;
 
   -- T3: staff ve la nota, la atiende y responde, pero no cambia el texto

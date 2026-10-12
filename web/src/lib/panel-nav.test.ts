@@ -54,7 +54,7 @@ describe("secciones generales", () => {
     expect(t.find((s) => s.id === "proyectos")?.subs.map((x) => x.label)).toEqual(["Producciones"]);
     expect(t.find((s) => s.id === "reportes")?.href).toBe("/panel/reportes/obras");
     expect(panelMenu(juezMM).find((s) => s.id === "proyectos")?.subs.map((x) => x.label)).toEqual(["Producciones", "Audiciones"]);
-    expect(panelMenu(director).find((s) => s.id === "personas")?.subs.map((x) => x.label)).toEqual(["Directorio", "Cumpleaños", "Equipo DARF"]);
+    expect(panelMenu(director).find((s) => s.id === "personas")?.subs.map((x) => x.label)).toEqual(["Directorio", "Cumpleaños", "Equipo DARF", "Contacto"]);
     expect(activeNav(panelMenu(director), "/panel/personas/equipo").sub?.label).toBe("Equipo DARF");
   });
   it("sección activa: las direcciones viejas caen en su sección nueva", () => {
@@ -137,5 +137,12 @@ describe("registro permanente (0064)", () => {
   it("taquilla o un juez de obra no lo ven", () => {
     expect(canSeeAudition(taquillaMM, perm)).toBe(false);
     expect(canSeeAudition(juezMM, perm)).toBe(false);
+  });
+});
+
+describe("producción concluida (0066)", () => {
+  it("solo quedan las pestañas de archivo", () => {
+    expect(productionTabs(director, "hsm", true).map((t) => t.id)).toEqual(["resumen", "pagina", "elenco", "expedientes", "fanzone", "equipo", "reportes", "cierre", "permisos"].sort((x, y) => productionTabs(director, "hsm").findIndex((t) => t.id === x) - productionTabs(director, "hsm").findIndex((t) => t.id === y)));
+    expect(productionTabs(taquillaMM, "mm", true).map((t) => t.id)).toEqual(["resumen", "reportes", "cierre"]);
   });
 });

@@ -7,8 +7,11 @@ import { requireSession } from "@/lib/auth";
 import { porCarpeta } from "@/lib/materials";
 import { cuando } from "@/lib/panel-home-rules";
 import { createClient } from "@/lib/supabase/server";
-import { getTeamSpace, signTeamFiles } from "@/lib/team";
-import { attendNote, markTeamRead } from "@/lib/team-actions";
+import { MaterialComments } from "@/components/team/MaterialComments";
+import { TeamAudienceFields } from "@/components/team/TeamAudienceFields";
+import { TeamFileUpload } from "@/components/team/TeamFileUpload";
+import { getTeamSpace, signTeamFiles, teamRoles, teamRosterPublic } from "@/lib/team";
+import { attendNote, markTeamRead, removeTeamMaterial, saveTeamMaterial } from "@/lib/team-actions";
 import { espacioPid, separarJuntas, TIPO_JUNTA } from "@/lib/team-rules";
 
 export const metadata: Metadata = { title: "Mi equipo" };
@@ -32,7 +35,8 @@ export default async function MiEquipo({ params }: PageProps<"/cuenta/equipo/[id
   if (!yo && !gestiona) notFound();
   if (!nombre) nombre = pid ? ((await supabase.from("productions").select("nombre").eq("id", pid).maybeSingle()).data?.nombre as string | undefined) ?? pid : "DARF (general)";
 
-  const space = await getTeamSpace(pid);
+  const [space, roles, gente] = await Promise.all([getTeamSpace(pid), teamRoles(), teamRosterPublic(pid)]);
+  const nombres = new Map(gente.map((g) => [g.user_id, g.nombre]));
   const { data: leidos } = await supabase.from("team_announcement_reads").select("announcement_id").eq("user_id", session.userId);
   const yaLei = new Set((leidos ?? []).map((r) => r.announcement_id as string));
   const files = await signTeamFiles([...space.materiales.map((m) => m.archivo_path), ...space.juntas.map((j) => j.transcript_path)]);
@@ -115,14 +119,41 @@ export default async function MiEquipo({ params }: PageProps<"/cuenta/equipo/[id
 
         <section className="flex flex-col gap-3">
           <h2 className="titular text-2xl">Materiales</h2>
+          <details className={caja}>
+            <summary className="cursor-pointer font-bold">+ Subir material o información para el equipo</summary>
+            <div className="mt-3">
+              <ActionForm action={saveTeamMaterial} hidden={h} submit="Compartir">
+                <div className="grid gap-2 sm:grid-cols-3">
+                  <input className={`${campo} sm:col-span-2`} name="titulo" required maxLength={160} placeholder="Ej. Plan de vestuario acto 1" />
+                  <input className={campo} name="carpeta" maxLength={80} placeholder="Carpeta (opcional)" />
+                  <input className={`${campo} sm:col-span-3`} name="descripcion" maxLength={2000} placeholder="Nota (opcional)" />
+                </div>
+                <div className="flex flex-wrap items-center gap-3">
+                  <TeamFileUpload pid={pid} carpeta="materiales" name="archivo_path" />
+                  <span className="text-sm text-texto-3">o</span>
+                  <input className={`${campo} min-w-0 flex-1`} name="url" type="url" placeholder="Enlace https://" />
+                </div>
+                <TeamAudienceFields roles={roles} gente={gente} />
+              </ActionForm>
+            </div>
+          </details>
           {space.materiales.length === 0 && <p className="text-texto-2">No hay materiales.</p>}
           {porCarpeta(space.materiales).map(([carpeta, xs]) => (
             <div key={carpeta || "-"} className={caja}>
               <h3 className="font-bold">{carpeta || "General"}</h3>
               {xs.map((m) => (
-                <a key={m.id} href={m.url ?? files.get(m.archivo_path ?? "") ?? "#"} target="_blank" rel="noreferrer" className="rounded-lg bg-sala px-3 py-2 text-sm hover:bg-telon-2">
-                  <b>{m.titulo} ↗</b>{m.descripcion && <span className="block text-xs text-texto-3">{m.descripcion}</span>}
-                </a>
+                <div key={m.id} className="flex flex-col gap-2 rounded-lg bg-sala px-3 py-2 text-sm">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <a href={m.url ?? files.get(m.archivo_path ?? "") ?? "#"} target="_blank" rel="noreferrer" className="hover:text-violeta-claro">
+                      <b>{m.titulo} ↗</b>
+                      <span className="block text-xs text-texto-3">Subió {nombres.get(m.created_by ?? "") ?? "el equipo"}{m.descripcion ? ` · ${m.descripcion}` : ""}</span>
+                    </a>
+                    {(m.created_by === session.userId || gestiona) && (
+                      <ActionForm inline action={removeTeamMaterial} hidden={{ ...h, id: m.id }} confirm="¿Quitar este material?" submit="Quitar" submitClass="text-xs font-bold text-[#ff8fa3]" />
+                    )}
+                  </div>
+                  <MaterialComments espacio={id} materialId={m.id} comentarios={space.comentarios.filter((c) => c.material_id === m.id)} nombres={nombres} yo={session.userId} puedeBorrarTodo={!!gestiona} />
+                </div>
               ))}
             </div>
           ))}

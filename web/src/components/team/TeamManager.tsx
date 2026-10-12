@@ -9,6 +9,7 @@ import {
   saveMeeting, saveTeamMaterial, sendTeamAnnouncement, sendTeamNote,
 } from "@/lib/team-actions";
 import { acuerdosTexto, espacioId, teamAudienceLabel, TIPO_JUNTA } from "@/lib/team-rules";
+import { MaterialComments } from "./MaterialComments";
 import { PeopleChecks, TeamAudienceFields } from "./TeamAudienceFields";
 import { TeamFileUpload } from "./TeamFileUpload";
 
@@ -186,9 +187,10 @@ export async function TeamManager({ pid, seccion, base }: { pid: string | null; 
                 <div key={m.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-sala px-3 py-2 text-sm">
                   <span>
                     <a href={m.url ?? files.get(m.archivo_path ?? "") ?? "#"} target="_blank" rel="noreferrer" className="font-bold hover:text-violeta-claro">{m.titulo} ↗</a>
-                    <span className="block text-xs text-texto-3">{teamAudienceLabel(m, rolNombre, persona)}{m.descripcion ? ` · ${m.descripcion}` : ""}</span>
+                    <span className="block text-xs text-texto-3">{teamAudienceLabel(m, rolNombre, persona)} · subió {persona.get(m.created_by ?? "") ?? "alguien del equipo"}{m.descripcion ? ` · ${m.descripcion}` : ""}</span>
                   </span>
                   <ActionForm inline action={removeTeamMaterial} hidden={{ ...h, id: m.id }} confirm="¿Quitar este material?" submit="Quitar" submitClass={quitar} />
+                  <div className="w-full"><MaterialComments espacio={esp} materialId={m.id} comentarios={space.comentarios.filter((c) => c.material_id === m.id)} nombres={persona} yo="" puedeBorrarTodo /></div>
                 </div>
               ))}
             </Card>

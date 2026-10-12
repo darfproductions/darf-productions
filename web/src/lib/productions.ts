@@ -2,7 +2,7 @@ import { env } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
 import { themeFromKit, type KitColumns, type ProductionTheme } from "@/lib/themes";
 export { themeProblems, themeStyle, type ProductionTheme } from "@/lib/themes";
-import { lastPerformanceDates, pickFeatured, sortForHome, type Featured } from "@/lib/home-rules";
+import { clasificar, elegirPortada, ordenarObras, type ConEstado, type Featured } from "@/lib/home-rules";
 
 // ─── Datos de producciones ────────────────────────────────────────────────
 // Todo sale de la base (plantilla: migración 0029) con la sesión del
@@ -16,6 +16,8 @@ export type Production = KitColumns & {
   price: number;
   on_sale: boolean;
   concluded: boolean;
+  /** La elegida para la portada (0066). */
+  destacada?: boolean;
   created_at: string;
   estado: string;
 };
@@ -47,11 +49,13 @@ export type Performance = {
 export type ZonePrice = { nombre: string; price: number };
 
 const PRODUCTION_COLUMNS =
-  "id, nombre, venue, price, on_sale, concluded, created_at, estado, frase, color_fondo, color_superficie, color_texto, color_acento, logo_path, ambiente_path";
+  "id, nombre, venue, price, on_sale, concluded, destacada, created_at, estado, frase, color_fondo, color_superficie, color_texto, color_acento, logo_path, ambiente_path";
+
+export type PublicProduction = ConEstado<Production>;
 
 export type HomeData = {
-  /** En cartelera primero; luego el archivo, de la más reciente a la más antigua. */
-  productions: Production[];
+  /** Cartelera → Próximamente → Archivo (ver home-rules.ts). */
+  productions: PublicProduction[];
   featured: Featured<Production> | null;
 };
 
@@ -59,12 +63,11 @@ export async function getHomeData(): Promise<HomeData> {
   const supabase = await createClient();
   const [prods, perfs] = await Promise.all([
     supabase.from("productions").select(PRODUCTION_COLUMNS).in("estado", PUBLIC_STATES),
-    supabase.from("performances").select("production_id, starts_at"),
+    supabase.from("performances").select("production_id, starts_at, on_sale"),
   ]);
   if (prods.error) throw new Error(`No se pudieron cargar las producciones: ${prods.error.message}`);
-  const lastDates = lastPerformanceDates(perfs.data ?? []);
-  const productions = sortForHome((prods.data ?? []) as Production[], lastDates);
-  return { productions, featured: pickFeatured(productions) };
+  const productions = ordenarObras(clasificar((prods.data ?? []) as Production[], perfs.data ?? []));
+  return { productions, featured: elegirPortada(productions) };
 }
 
 export async function getProduction(id: string, opts: { includeDrafts?: boolean } = {}) {

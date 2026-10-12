@@ -14,6 +14,17 @@ import { closeSeason, reopenSeason } from "./actions";
 export const metadata: Metadata = { title: "Cierre de temporada" };
 
 type Closure = { id: string; cerrado_at: string; notas: string | null; bajas: number; resumen: SeasonSummary; reabierto_at: string | null };
+// Reactivar (0066): el Director o quien publica la obra. Vuelven a verse todas las pestañas.
+function Reactivar({ id }: { id: string }) {
+  return (
+    <Card className="print:hidden">
+      <h2 className="titular mb-2 text-xl">Reactivar producción</h2>
+      <p className="mb-3 text-sm text-texto-2">Vuelve a poner la obra como publicada (Próximamente) y regresan todas las pestañas del panel. No reactiva la venta ni a los integrantes; eso se hace a mano.</p>
+      <ActionForm action={reopenSeason} hidden={{ pid: id }} confirm="¿Reactivar esta producción?" submit="Reactivar producción" submitClass="rounded-full border border-white/30 px-4 py-2 text-sm font-bold" />
+    </Card>
+  );
+}
+
 const fecha = (iso: string) => new Intl.DateTimeFormat("es-MX", { dateStyle: "long", timeZone: "America/Mexico_City" }).format(new Date(iso));
 
 // Cierre de temporada: resumen en vivo, cerrar (archiva y congela) y el resumen final imprimible.
@@ -48,13 +59,7 @@ export default async function Cierre({ params }: PageProps<"/panel/producciones/
           {vigente.notas && <p className="whitespace-pre-line rounded-lg bg-sala p-3 text-sm print:bg-transparent">{vigente.notas}</p>}
           <SeasonSummaryView s={vigente.resumen} />
         </Card>
-        {access.isDirector && (
-          <Card className="print:hidden">
-            <h2 className="titular mb-2 text-xl">Reabrir</h2>
-            <p className="mb-3 text-sm text-texto-2">Vuelve a poner la obra como publicada. No reactiva la venta ni a los integrantes; eso se hace a mano.</p>
-            <ActionForm action={reopenSeason} hidden={{ pid: id }} confirm="¿Reabrir la temporada?" submit="Reabrir temporada" submitClass="rounded-full border border-white/30 px-4 py-2 text-sm font-bold" />
-          </Card>
-        )}
+        {cierra && <Reactivar id={id} />}
       </div>
     );
   }
@@ -94,6 +99,7 @@ export default async function Cierre({ params }: PageProps<"/panel/producciones/
         </Card>
       )}
       {p.estado === "archivada" && <Card>Esta obra ya está archivada{cierres.length ? "" : " (se archivó sin cierre de temporada)"}.</Card>}
+      {p.estado === "archivada" && cierra && <Reactivar id={id} />}
     </div>
   );
 }

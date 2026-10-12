@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 
 export type PanelProduction = KitColumns & {
   id: string;
+  destacada?: boolean;
   nombre: string;
   estado: string;
   venue: string | null;
@@ -15,7 +16,7 @@ export type PanelProduction = KitColumns & {
 };
 
 const COLUMNS =
-  "id, nombre, estado, venue, temporada, on_sale, concluded, created_at, frase, color_fondo, color_superficie, color_texto, color_acento, logo_path, ambiente_path";
+  "id, nombre, estado, venue, temporada, on_sale, concluded, destacada, created_at, frase, color_fondo, color_superficie, color_texto, color_acento, logo_path, ambiente_path";
 
 export async function listPanelProductions(ids?: string[]): Promise<PanelProduction[]> {
   const supabase = await createClient();

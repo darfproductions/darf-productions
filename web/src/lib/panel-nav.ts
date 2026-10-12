@@ -95,11 +95,15 @@ export const PRODUCTION_TABS: Tab[] = [
   { id: "permisos", label: "Permisos", path: "permisos", perms: ["permisos.gestionar"], etapa: null },
 ];
 
-/** Pestañas que veo en una obra: Resumen si tengo cualquier permiso ahí; el resto según su permiso. */
-export function productionTabs(a: PanelAccessData, productionId: string): Tab[] {
+/** Pestañas que siguen visibles cuando la producción está concluida (decisión de Diego). */
+export const CONCLUIDA_TABS = ["resumen", "pagina", "elenco", "expedientes", "fanzone", "cierre", "permisos", "reportes", "equipo"];
+
+/** Pestañas que veo en una obra: Resumen si tengo cualquier permiso ahí; el resto según su permiso.
+ *  Si la obra está concluida, solo las de CONCLUIDA_TABS. */
+export function productionTabs(a: PanelAccessData, productionId: string, concluida = false): Tab[] {
   const mine = a.isDirector || (a.byProduction[productionId] ?? []).length > 0;
   if (!mine) return [];
-  return PRODUCTION_TABS.filter((t) => t.perms.length === 0 || canAny(a, productionId, t.perms));
+  return PRODUCTION_TABS.filter((t) => (t.perms.length === 0 || canAny(a, productionId, t.perms)) && (!concluida || CONCLUIDA_TABS.includes(t.id)));
 }
 
 export type Section = { href: string; label: string };
@@ -134,8 +138,8 @@ export function panelMenu(a: PanelAccessData): NavSection[] {
   if (a.isDirector) {
     out.push({
       id: "personas", label: "Personas", href: "/panel/personas",
-      subs: [{ href: "/panel/personas", label: "Directorio" }, { href: "/panel/cumpleanos", label: "Cumpleaños" }, { href: "/panel/personas/equipo", label: "Equipo DARF" }],
-      match: ["/panel/personas", "/panel/talento", "/panel/usuarios", "/panel/cumpleanos"],
+      subs: [{ href: "/panel/personas", label: "Directorio" }, { href: "/panel/cumpleanos", label: "Cumpleaños" }, { href: "/panel/personas/equipo", label: "Equipo DARF" }, { href: "/panel/contacto", label: "Contacto" }],
+      match: ["/panel/personas", "/panel/talento", "/panel/usuarios", "/panel/cumpleanos", "/panel/contacto"],
     });
   }
   if (hasReportAccess(a)) {

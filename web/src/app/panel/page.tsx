@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { Card, EstadoChip, PanelTitle } from "@/components/panel/ui";
 import { ArtFill } from "@/components/PosterArt";
+import { NotificationList } from "@/components/panel/NotificationList";
 import { describeAudit, type AuditRow } from "@/lib/audit";
+import { listNotifications } from "@/lib/notifications";
 import { listPanelProductions, pendingOrdersByProduction } from "@/lib/panel-data";
 import { can, myProductionIds } from "@/lib/panel-nav";
 import { cuando, cumplesProximos, ordenarPendientes, pendienteHref, pendienteTexto, type Pendiente } from "@/lib/panel-home-rules";
@@ -27,12 +29,14 @@ export default async function PanelHome() {
   const access = await requirePanel("/panel");
   const supabase = await createClient();
   const ids = access.isDirector ? undefined : myProductionIds(access);
-  const [obras, pendientesPorObra, { data: homeData }, { data: roles }] = await Promise.all([
+  const [obras, pendientesPorObra, { data: homeData }, { data: roles }, notifs] = await Promise.all([
     listPanelProductions(ids),
     pendingOrdersByProduction(),
     supabase.rpc("panel_home"),
     supabase.from("panel_roles").select("id, nombre"),
+    listNotifications({ limit: 8 }),
   ]);
+  const sinLeer = notifs.filter((n) => !n.read_at).length;
   const home: Home = { pendientes: [], funciones: [], ensayos: [], juntas: [], cambios: [], ...((homeData ?? {}) as Partial<Home>) };
   const nombreObra = new Map(obras.map((p) => [p.id, p.nombre]));
 
@@ -74,6 +78,14 @@ export default async function PanelHome() {
       <PanelTitle eyebrow="Tu día" title={nombre ? `Hola, ${nombre}` : "Inicio"}>
         {access.isDirector ? "Tienes acceso de Director a todas las obras." : "Esto es lo que pasa en las obras en las que tienes un rol."}
       </PanelTitle>
+
+      <Card className="flex flex-col gap-2">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className="titular text-xl">Notificaciones{sinLeer ? <span className="ml-2 rounded-full bg-[#7c3aed] px-2 py-0.5 align-middle text-xs text-white">{sinLeer} nuevas</span> : null}</h2>
+          <Link href="/panel/notificaciones" className="text-sm font-bold text-violeta-claro">Ver todas →</Link>
+        </div>
+        <NotificationList items={notifs} />
+      </Card>
 
       {pendientes.length > 0 ? (
         <Card className="flex flex-col gap-3 border border-[#f2b544]/40">

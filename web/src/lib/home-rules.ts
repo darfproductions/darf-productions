@@ -1,18 +1,34 @@
-// Reglas de la portada. Funciones puras (sin base de datos ni servidor) para
-// poder probarlas: ver home-rules.test.ts.
+// Reglas de la portada y de las listas de producciones. Funciones puras (sin base de
+// datos ni servidor) para poder probarlas: ver home-rules.test.ts.
+//   * En cartelera: publicada y con al menos una función a la venta (con fecha que no ha pasado).
+//   * Próximamente: publicada pero aún sin boletos a la venta.
+//   * Archivo: concluida.
 
-type Rankable = { id: string; concluded: boolean; created_at: string };
+export type EstadoPublico = "cartelera" | "proximamente" | "archivo";
+
+type Rankable = { id: string; concluded: boolean; created_at: string; destacada?: boolean };
+type FuncionRow = { production_id: string; starts_at: string | null; on_sale?: boolean | null };
+
+export type ConEstado<T> = T & { estadoPublico: EstadoPublico; proxima: string | null; ultima: string | null };
 
 export type Featured<T extends Rankable> = {
-  production: T;
-  /** "cartelera": hay obra activa. "archivo": no hay; se destaca la más reciente. */
-  mode: "cartelera" | "archivo";
+  production: ConEstado<T>;
+  mode: EstadoPublico;
 };
 
+export const ETIQUETA_ESTADO: Record<EstadoPublico, string> = {
+  cartelera: "En cartelera",
+  proximamente: "Próximamente",
+  archivo: "Archivo",
+};
+
+/** Una función vendible: en venta, con fecha y no pasada (gracia de 6 horas). */
+function vendible(f: FuncionRow, ahora: Date): boolean {
+  return !!f.on_sale && !!f.starts_at && new Date(f.starts_at).getTime() + 6 * 3600_000 > ahora.getTime();
+}
+
 /** Última fecha de función (con fecha) por producción. */
-export function lastPerformanceDates(
-  rows: { production_id: string; starts_at: string | null }[],
-): Map<string, string> {
+export function lastPerformanceDates(rows: FuncionRow[]): Map<string, string> {
   const last = new Map<string, string>();
   for (const r of rows) {
     if (!r.starts_at) continue;
@@ -22,26 +38,51 @@ export function lastPerformanceDates(
   return last;
 }
 
-/** Fecha para ordenar: última función con fecha; si no hay, alta de la producción. */
-function recency(p: Rankable, lastDates: Map<string, string>): number {
-  return new Date(lastDates.get(p.id) ?? p.created_at).getTime();
+export function estadoPublico(p: Pick<Rankable, "id" | "concluded">, funciones: FuncionRow[], ahora: Date = new Date()): EstadoPublico {
+  if (p.concluded) return "archivo";
+  return funciones.some((f) => f.production_id === p.id && vendible(f, ahora)) ? "cartelera" : "proximamente";
 }
 
-/** En cartelera primero; dentro de cada grupo, la más reciente primero. */
-export function sortForHome<T extends Rankable>(productions: T[], lastDates: Map<string, string>): T[] {
-  return [...productions].sort((a, b) => {
-    if (a.concluded !== b.concluded) return a.concluded ? 1 : -1;
-    return recency(b, lastDates) - recency(a, lastDates);
+/** Agrega estado, próxima función vendible y última función a cada obra. */
+export function clasificar<T extends Rankable>(productions: T[], funciones: FuncionRow[], ahora: Date = new Date()): ConEstado<T>[] {
+  const ultimas = lastPerformanceDates(funciones);
+  return productions.map((p) => {
+    const proxima = funciones
+      .filter((f) => f.production_id === p.id && vendible(f, ahora))
+      .map((f) => f.starts_at as string)
+      .sort()[0] ?? null;
+    return { ...p, estadoPublico: estadoPublico(p, funciones, ahora), proxima, ultima: ultimas.get(p.id) ?? null };
+  });
+}
+
+const ORDEN: EstadoPublico[] = ["cartelera", "proximamente", "archivo"];
+const t = (s: string | null | undefined) => (s ? new Date(s).getTime() : 0);
+
+/** Cartelera (función más cercana primero) → Próximamente (más reciente) → Archivo (más reciente). */
+export function ordenarObras<T extends Rankable>(xs: ConEstado<T>[]): ConEstado<T>[] {
+  return [...xs].sort((a, b) => {
+    const g = ORDEN.indexOf(a.estadoPublico) - ORDEN.indexOf(b.estadoPublico);
+    if (g) return g;
+    if (a.estadoPublico === "cartelera") return t(a.proxima) - t(b.proxima);
+    if (a.estadoPublico === "proximamente") return t(b.created_at) - t(a.created_at);
+    return t(b.ultima ?? b.created_at) - t(a.ultima ?? a.created_at);
   });
 }
 
 /**
- * Producción destacada de la portada. Espera la lista ya ordenada por
- * sortForHome: si hay obra en cartelera, es ella; si no, la más reciente del
- * archivo (cuando no hay obra en cartelera, el spot se lo lleva el archivo).
+ * Obra de la portada (espera la lista ya ordenada): la destacada en el panel si está en
+ * cartelera o próximamente; si no, la de cartelera con la función más cercana; si no,
+ * la próxima más reciente; si no, la más reciente del archivo.
  */
-export function pickFeatured<T extends Rankable>(sorted: T[]): Featured<T> | null {
-  const first = sorted[0];
-  if (!first) return null;
-  return { production: first, mode: first.concluded ? "archivo" : "cartelera" };
+export function elegirPortada<T extends Rankable>(sorted: ConEstado<T>[]): Featured<T> | null {
+  const elegida = sorted.find((p) => p.destacada && p.estadoPublico !== "archivo") ?? sorted[0];
+  return elegida ? { production: elegida, mode: elegida.estadoPublico } : null;
+}
+
+export function agrupar<T extends Rankable>(xs: ConEstado<T>[]): Record<EstadoPublico, ConEstado<T>[]> {
+  return {
+    cartelera: xs.filter((p) => p.estadoPublico === "cartelera"),
+    proximamente: xs.filter((p) => p.estadoPublico === "proximamente"),
+    archivo: xs.filter((p) => p.estadoPublico === "archivo"),
+  };
 }

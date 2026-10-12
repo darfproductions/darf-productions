@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { activeNav, type NavSection } from "@/lib/panel-nav";
 
 // Menú lateral del panel con la sección activa marcada.
-export function PanelNavLinks({ menu }: { menu: NavSection[] }) {
+export function PanelNavLinks({ menu, badges = {} }: { menu: NavSection[]; badges?: Partial<Record<NavSection["id"], number>> }) {
   const { section } = activeNav(menu, usePathname());
   return (
     <>
@@ -19,6 +19,7 @@ export function PanelNavLinks({ menu }: { menu: NavSection[] }) {
             className={`rounded-lg px-3 py-2.5 font-semibold hover:bg-telon-2 hover:text-texto ${on ? "bg-telon-2 text-texto" : "text-texto-2"}`}
           >
             {s.label}
+            {badges[s.id] ? <span className="ml-2 rounded-full bg-[#7c3aed] px-1.5 py-0.5 text-[11px] font-bold text-white" aria-label={`${badges[s.id]} notificaciones nuevas`}>{badges[s.id]}</span> : null}
           </Link>
         );
       })}

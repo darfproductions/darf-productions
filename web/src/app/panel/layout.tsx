@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { PanelNavLinks, PanelSubTabs } from "@/components/panel/PanelNav";
+import { unreadCount } from "@/lib/notifications";
 import { panelMenu } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
 
@@ -10,11 +11,12 @@ export const metadata: Metadata = { title: { default: "Panel", template: "%s · 
 export default async function PanelLayout({ children }: LayoutProps<"/panel">) {
   const access = await requirePanel();
   const menu = panelMenu(access);
+  const nuevas = await unreadCount();
   const nombre = access.session.profile?.nombre || access.session.email;
 
   const links = (
     <>
-      <PanelNavLinks menu={menu} />
+      <PanelNavLinks menu={menu} badges={{ inicio: nuevas }} />
       <a href="https://darf-2-dev-darf-productions.vercel.app/?v=staff" className="mt-2 rounded-lg px-3 py-2.5 text-sm text-texto-3 hover:bg-telon-2">
         Panel anterior (1.0) ↗
       </a>

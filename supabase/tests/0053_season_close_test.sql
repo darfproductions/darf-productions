@@ -1,4 +1,5 @@
 -- Ejecutar SOLO en una transacción que termina abortada (no persiste nada).
+-- (0066: Producción con obra.publicar puede reactivar.)
 -- Precede: 0031–0053 aplicadas.
 
 insert into auth.users (id, instance_id, aud, role, email)
@@ -82,16 +83,12 @@ do $$ declare n int; fid uuid; oid uuid; s jsonb; perid uuid; cid uuid; begin
     raise exception 'FALLO T4a: cerró dos veces';
   exception when raise_exception then if sqlerrm like 'FALLO%' then raise; end if;
   end;
-  begin
-    perform season_reopen('showman');
-    raise exception 'FALLO T4b: Producción reabrió';
-  exception when raise_exception then if sqlerrm like 'FALLO%' then raise; end if;
-  end;
-  perform pg_temp.as_user('00000000-0000-0000-0000-0000000000a1');
+  -- Desde 0066 Producción (obra.publicar) también reactiva (decisión de Diego).
   perform season_reopen('showman');
   if (select estado from productions where id = 'showman') <> 'publicada' then raise exception 'FALLO T4c: no se reabrió'; end if;
 
   -- T5: reporte general solo del Director
+  perform pg_temp.as_user('00000000-0000-0000-0000-0000000000a1');
   select count(*) into n from director_overview() d where d.production_id = 'showman' and d.ingresos = 300 and d.boletos = 2;
   if n <> 1 then raise exception 'FALLO T5a: reporte general'; end if;
   perform pg_temp.as_user('00000000-0000-0000-0000-0000000000d1');

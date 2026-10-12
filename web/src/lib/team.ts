@@ -4,7 +4,8 @@ import type { Acuerdo, TeamAudience } from "@/lib/team-rules";
 // Lecturas del portal del equipo (0065). Pasan por RLS: quien lo maneja ve todo; cada
 // persona del equipo ve solo lo que va dirigido a ella. pid null = espacio general de DARF.
 
-export type TeamMaterial = TeamAudience & { id: string; titulo: string; descripcion: string | null; carpeta: string | null; archivo_path: string | null; url: string | null; created_at: string };
+export type TeamMaterial = TeamAudience & { id: string; titulo: string; descripcion: string | null; carpeta: string | null; archivo_path: string | null; url: string | null; created_at: string; created_by: string | null };
+export type TeamComment = { id: string; material_id: string; autor: string; cuerpo: string; created_at: string };
 export type TeamAnnouncement = TeamAudience & { id: string; titulo: string; cuerpo: string; importante: boolean; created_at: string };
 export type TeamNote = {
   id: string; contexto: string | null; cuerpo: string; para_roles: string[]; para_personas: string[]; prioridad: "normal" | "urgente";
@@ -14,11 +15,11 @@ export type TeamMeeting = TeamAudience & {
   id: string; tipo: string; titulo: string; inicia: string; termina: string | null; lugar: string | null; enlace: string | null; agenda: string | null;
   estado: "programada" | "realizada"; resumen: string | null; acuerdos: Acuerdo[]; transcript_path: string | null; transcript_texto: string | null; grabacion_url: string | null;
 };
-export type TeamSpace = { materiales: TeamMaterial[]; avisos: TeamAnnouncement[]; notas: TeamNote[]; juntas: TeamMeeting[] };
+export type TeamSpace = { materiales: TeamMaterial[]; avisos: TeamAnnouncement[]; notas: TeamNote[]; juntas: TeamMeeting[]; comentarios: TeamComment[] };
 
 export async function getTeamSpace(pid: string | null): Promise<TeamSpace> {
   const supabase = await createClient();
-  const m0 = supabase.from("team_materials").select("id, titulo, descripcion, carpeta, archivo_path, url, audiencia, roles, personas, created_at");
+  const m0 = supabase.from("team_materials").select("id, titulo, descripcion, carpeta, archivo_path, url, audiencia, roles, personas, created_at, created_by");
   const a0 = supabase.from("team_announcements").select("id, titulo, cuerpo, importante, audiencia, roles, personas, created_at");
   const n0 = supabase.from("team_notes").select("id, contexto, cuerpo, para_roles, para_personas, prioridad, atendida_at, atendida_por, respuesta, created_at");
   const j0 = supabase.from("team_meetings").select("*");
@@ -28,8 +29,13 @@ export async function getTeamSpace(pid: string | null): Promise<TeamSpace> {
     (pid ? n0.eq("production_id", pid) : n0.is("production_id", null)).order("created_at", { ascending: false }).limit(200),
     (pid ? j0.eq("production_id", pid) : j0.is("production_id", null)).order("inicia", { ascending: false }).limit(100),
   ]);
+  const materiales = (m.data ?? []) as TeamMaterial[];
+  const { data: com } = materiales.length
+    ? await supabase.from("team_comments").select("id, material_id, autor, cuerpo, created_at").in("material_id", materiales.map((x) => x.id)).order("created_at")
+    : { data: [] };
   return {
-    materiales: (m.data ?? []) as TeamMaterial[],
+    comentarios: (com ?? []) as TeamComment[],
+    materiales,
     avisos: (a.data ?? []) as TeamAnnouncement[],
     notas: (n.data ?? []) as TeamNote[],
     juntas: (j.data ?? []) as TeamMeeting[],
@@ -64,4 +70,11 @@ export async function teamReadStatus(aid: string): Promise<{ user_id: string; no
   const supabase = await createClient();
   const { data } = await supabase.rpc("team_announcement_read_status", { aid });
   return (data ?? []) as { user_id: string; nombre: string; leido_at: string | null }[];
+}
+
+/** Nombres y roles del equipo para cualquiera del equipo (sin correos). */
+export async function teamRosterPublic(pid: string | null): Promise<{ user_id: string; nombre: string; role_ids: string[] }[]> {
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("team_roster_public", { pid });
+  return (data ?? []) as { user_id: string; nombre: string; role_ids: string[] }[];
 }

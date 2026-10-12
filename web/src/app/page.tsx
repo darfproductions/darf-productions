@@ -4,11 +4,13 @@ import { ProductionCard } from "@/components/ProductionCard";
 import { formatPrice, getHomeData, getTheme } from "@/lib/productions";
 
 // Portada: habla con la voz de DARF; la obra destacada es invitada.
-// Destacada = la obra en cartelera; si no hay, la más reciente del archivo.
+// Destacada = la elegida en el panel o la de cartelera con la función más cercana;
+// si no hay cartelera, la próxima; si no, la más reciente del archivo (home-rules.ts).
 export default async function Home() {
   const { productions, featured } = await getHomeData();
   const current = featured?.production ?? null;
   const enCartelera = featured?.mode === "cartelera";
+  const proxima = featured?.mode === "proximamente";
   const currentTheme = current ? getTheme(current) : null;
 
   return (
@@ -45,14 +47,14 @@ export default async function Home() {
                 <h2 className="titular absolute inset-x-6 bottom-6 text-4xl">{current.nombre}</h2>
               )}
               <span className="absolute left-4 top-4 rounded-full bg-texto px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-sala">
-                {enCartelera ? "Ahora en cartelera" : "Lo último que presentamos"}
+                {enCartelera ? "Ahora en cartelera" : proxima ? "Próximamente" : "Lo último que presentamos"}
               </span>
             </div>
             <div className="flex flex-col gap-4 p-6">
               <ul className="flex flex-wrap gap-2 text-xs font-semibold" style={{ color: currentTheme?.texto }}>
                 {current.venue && <li className="rounded-full border border-current/30 px-3 py-1.5">{current.venue}</li>}
                 {enCartelera && current.price > 0 && <li className="rounded-full border border-current/30 px-3 py-1.5">Desde {formatPrice(current.price)}</li>}
-                {!enCartelera && <li className="rounded-full border border-current/30 px-3 py-1.5">Archivo</li>}
+                {!enCartelera && <li className="rounded-full border border-current/30 px-3 py-1.5">{proxima ? "Boletos muy pronto" : "Archivo"}</li>}
               </ul>
               {enCartelera ? (
                 <div className="flex flex-wrap gap-2">
@@ -65,7 +67,7 @@ export default async function Home() {
                 </div>
               ) : (
                 <Link href={`/producciones/${current.id}`} className="rounded-full border py-4 text-center text-[13px] font-bold uppercase tracking-[0.1em]" style={{ borderColor: currentTheme?.acento, color: currentTheme?.texto }}>
-                  Revivir la obra
+                  {proxima ? "Conocer la obra" : "Revivir la obra"}
                 </Link>
               )}
             </div>

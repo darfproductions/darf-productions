@@ -58,8 +58,9 @@ export function describeAudit(r: AuditRow, n: AuditNames): string {
     case "team_materials":
     case "team_announcements":
     case "team_notes":
-    case "team_meetings": {
-      const que = { team_materials: "material del equipo", team_announcements: "aviso al equipo", team_notes: "nota de dirección", team_meetings: "junta del equipo" }[r.tabla];
+    case "team_meetings":
+    case "team_comments": {
+      const que = { team_materials: "material del equipo", team_announcements: "aviso al equipo", team_notes: "nota de dirección", team_meetings: "junta del equipo", team_comments: "comentario en un material" }[r.tabla];
       const titulo = row.titulo ? ` "${String(row.titulo)}"` : "";
       const donde = r.production_id ? ` en ${n.production(r.production_id)}` : " (DARF general)";
       if (r.accion === "insert") return `Agregó ${que}${titulo}${donde}`;

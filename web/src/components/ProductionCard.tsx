@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { ArtFill } from "@/components/PosterArt";
-import { getTheme, type Production } from "@/lib/productions";
+import { ETIQUETA_ESTADO } from "@/lib/home-rules";
+import { getTheme, type PublicProduction } from "@/lib/productions";
 
-export function ProductionCard({ p }: { p: Production }) {
+export function ProductionCard({ p }: { p: PublicProduction }) {
   const t = getTheme(p);
   return (
     <Link href={`/producciones/${p.id}`} className="block overflow-hidden rounded-2xl bg-telon transition-transform hover:-translate-y-1">
@@ -11,8 +12,8 @@ export function ProductionCard({ p }: { p: Production }) {
       </div>
       <div className="flex items-center justify-between gap-3 px-5 py-4">
         <span className="text-lg font-bold">{p.nombre}</span>
-        <span className="text-xs font-bold uppercase tracking-[0.14em]" style={{ color: p.concluded ? "var(--texto-3)" : t?.acento }}>
-          {p.concluded ? "Archivo" : "En cartelera"}
+        <span className="shrink-0 text-xs font-bold uppercase tracking-[0.14em]" style={{ color: p.estadoPublico === "archivo" ? "var(--texto-3)" : t?.acento }}>
+          {ETIQUETA_ESTADO[p.estadoPublico]}
         </span>
       </div>
     </Link>
