@@ -22,42 +22,40 @@ rutas, acciones o permisos. Lo que la propuesta muestra y todavía no existe se 
 | F4 · Cartelera | "En escena" con filtros, obra en cartelera panorámica, Próximamente en tarjetas horizontales y el **Archivo** (antes no aparecía en la cartelera). `/producciones` con la misma tarjeta. |
 | F5 · Resto | Fan Zone en el mundo Oro (sin luz DARF ni Pulso); textos de éxito y aviso con los tokens del kit; tarjetas del inicio del panel legibles. Mi cuenta, compra, audiciones, contacto, entrar y legales ya toman la piel por los tokens. |
 
-## Funciones nuevas que muestra la propuesta (pendientes)
+## Funciones de la propuesta: lo que ya se hizo (2026-10-12)
 
-Ordenadas por pantalla de la propuesta. Para cada una: qué haría falta.
+Diego eligió cuáles sí (ver plan del bloque). Hechas en `darf-2.0`, migraciones 0073–0077:
 
-### Inicio y página de obra
-- **Cuenta regresiva al estreno** (inicio y hero de la obra). Solo web: con la fecha de la primera función.
-- **Franja de avisos general en el inicio** (hoy la franja es por obra, 0069). Necesita una franja "del sitio" en la base y en el panel.
-- **Boletín por correo** (suscribirse en el pie). Tabla de suscriptores, confirmación por correo y baja.
-- **"Comparte la obra"** (botón de compartir). Solo web.
-- **Idioma en la ficha.** Se puede cargar hoy como "dato extra" de la ficha; si se quiere fijo, columna nueva.
-- **Revelación del elenco con fecha** ("Se revela en…"). Columna de fecha en la obra y regla en la página.
+| Función | Dónde |
+|---|---|
+| Cuenta regresiva al estreno | Hero de la obra y obra destacada del inicio (`CuentaRegresiva`). |
+| Franja de avisos del sitio | Abajo del hero del inicio; Panel → Ajustes → Sitio (0074). |
+| Anuncios (elenco, convocatoria, fechas, nueva función, preventa, general) | Inicio, obra y Fan Zone; con revelación por fecha, "Avísame" y "solo Club Fan" (0074). |
+| Compartir la obra | Botón en el hero de la obra. |
+| Idioma en la ficha | Panel → Página pública → Datos y ficha (0073). |
+| Cifras en Nosotros | `public_stats()` (0073). La foto grupal no se muestra hasta que exista. |
+| Club Fan | Número de socio, credencial y "Fan fundador" (#1–#100) (0075). |
+| Fan Zone interactiva | Pestañas Ensayos / Making of / Fotos / Más, contenido que se desbloquea por fecha, foto con el elenco (0075). |
+| Preventa Fan Zone | Por función ("Preventa Fan Zone hasta"), regla en la base, "Activar recordatorio" (0076). |
+| Pasos de compra 1–4 | `/comprar` (sin cargo por servicio; pago por transferencia y WhatsApp). |
+| Transacciones y eventos asistidos | `/cuenta/transacciones` y `/cuenta/eventos`. |
+| Eliminar mi cuenta | `/cuenta/eliminar` (0077). |
+| Entrar con Google | Botón en `/entrar`. **Requiere activar Google en Supabase** (ver abajo). |
+| Ajustes de marca | Fan Zone al final del menú, logo original (DARF con PRODUCTIONS abajo), destacada también en la cartelera, logos de DARF y de la obra en los boletos. |
 
-### Funciones y boletos
-- **Lista de espera en funciones agotadas.** Tabla de espera y aviso cuando se liberan lugares.
-- **Preventa Fan Zone** (estado "Preventa" y "Entrar a preventa"). Fechas de preventa por función y regla de compra solo para cuentas de la Fan Zone.
-- **Etiquetas de función** ("Estreno", "Función familiar"). Columna de etiqueta en funciones y campo en el panel.
-- **Pasos de compra (1 a 4)** y **cargo por servicio** visible antes de pagar.
-- **Pago con tarjeta y OXXO** (hoy: transferencia y aprobación en el panel). Requiere pasarela de pago.
-- **"Avísame"** en obras próximas. Tabla de interesados y aviso cuando abra la venta.
+## Lo que queda pendiente
 
-### Fan Zone
-- **Club Fan con número de socio y credencial**, y "Activar recordatorio".
-- **Contenido que se desbloquea por fecha.** Fecha de publicación por contenido.
-- **"Foto con el elenco"** (apartar lugar después de la función).
+- **Boletín por correo** (después; necesita suscripción, confirmación y baja).
+- **Wallet** (Apple/Google): falta la cuenta de Apple Developer.
+- **Avisos por WhatsApp**: es un servicio de pago.
+- **Foto grupal en Nosotros**: cuando haya foto.
+- **Tema claro del panel "DARF Admin"**: sin decidir; el panel sigue oscuro.
+- No se harán: lista de espera, etiquetas de función (la franja ya cubre eso), transferir boleto, pago con tarjeta u OXXO.
 
-### Mi cuenta y acceso
-- **Transacciones**, **eventos asistidos**, **Wallet** y **transferir boleto**.
-- **Preferencias de notificación por correo y WhatsApp** (hoy: notificaciones en la web y en el teléfono).
-- **Eliminar mi cuenta** (con lo que pide el aviso de privacidad).
-- **Entrar con Google**, **verificación por código** y **"Recordarme"**.
+## Para el lanzamiento (lista de revisión)
 
-### Nosotros
-- **Cifras** (producciones, funciones, integrantes) y **foto grupal**.
-
-### Panel
-- **Tema claro "DARF Admin"** de la propuesta (resumen con gráficas, exportar CSV, bandeja de mensajes). Decisión de este bloque: el panel se queda oscuro.
+- **Entrar con Google:** en el proyecto de Supabase (DEV y luego el oficial) → Authentication → Providers → Google, con el Client ID y secreto de la 1.0, y agregar la dirección del sitio (`…/auth/callback`) en Google Cloud y en Supabase → URL Configuration. Probar el botón en DEV y otra vez el día de la publicación.
+- Correr en DEV los scripts `supabase/dev/apply_0074_dev.sql`, `apply_0075_dev.sql`, `apply_0076_dev.sql` y `apply_0077_dev.sql` (en ese orden). La 0073 ya se aplicó.
 
 ## Cómo se verificó
 - Copia local simulada (base local, PostgREST y la web en modo DEV), con funciones de prueba

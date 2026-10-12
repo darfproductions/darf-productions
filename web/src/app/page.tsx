@@ -35,6 +35,9 @@ export default async function Home({ searchParams }: PageProps<"/">) {
 
   return (
     <main className="relative overflow-hidden">
+      {sp.cuenta === "eliminada" && (
+        <p role="status" className="relative z-10 bg-telon-2 px-5 py-3 text-center text-sm">Tu cuenta se eliminó. Gracias por acompañarnos; aquí estaremos cuando quieras volver.</p>
+      )}
       {/* ── HERO: texto + tarjeta destacada, sobre los haces de luz ── */}
       <section id="cartelera" className="relative">
         <div aria-hidden="true" className="haz absolute inset-0" />

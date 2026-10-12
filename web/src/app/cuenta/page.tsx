@@ -239,6 +239,16 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
               fecha={session.profile?.fecha_nacimiento ?? ""}
             />
           </section>
+          <div className="grid grid-cols-2 gap-3">
+            <a href="/cuenta/transacciones" className="flex flex-col gap-1 rounded-2xl bg-telon p-5 hover:bg-telon-2">
+              <span className="font-bold">Transacciones →</span>
+              <span className="text-xs text-texto-2">Todas tus órdenes y pagos.</span>
+            </a>
+            <a href="/cuenta/eventos" className="flex flex-col gap-1 rounded-2xl bg-telon p-5 hover:bg-telon-2">
+              <span className="font-bold">Eventos asistidos →</span>
+              <span className="text-xs text-texto-2">Las funciones a las que fuiste.</span>
+            </a>
+          </div>
           <a href="/cuenta/perfil-profesional" className="flex flex-col gap-1 rounded-2xl bg-telon p-6 hover:bg-telon-2">
             <span className="text-lg font-bold">Perfil profesional →</span>
             <span className="text-sm text-texto-2">Retrato, semblanza, trayectoria, habilidades y reel. Puedes hacerlo público.</span>
@@ -250,9 +260,12 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
               <PasswordForm />
             </div>
           </details>
-          <form action={logout}>
-            <button className="rounded-full border border-white/30 px-6 py-3 text-sm font-bold">Cerrar sesión</button>
-          </form>
+          <div className="flex flex-wrap items-center gap-4">
+            <form action={logout}>
+              <button className="rounded-full border border-white/30 px-6 py-3 text-sm font-bold">Cerrar sesión</button>
+            </form>
+            <a href="/cuenta/eliminar" className="text-sm font-semibold text-texto-3 underline hover:text-texto">Eliminar mi cuenta</a>
+          </div>
         </aside>
 
         {miCodigo && (
