@@ -48,6 +48,19 @@ export async function register(_prev: AuthState, form: FormData): Promise<AuthSt
   return { ok: true, message: `Te enviamos un enlace a ${email}. Ábrelo para confirmar tu cuenta y luego entra.` };
 }
 
+/** Entrar con Google (como en la 1.0). Supabase regresa a /auth/callback, que abre la sesión. */
+export async function loginGoogle(form: FormData) {
+  const origin = (await headers()).get("origin") ?? "";
+  const next = safeNext(String(form.get("next") ?? ""));
+  const supabase = await createClient();
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: { redirectTo: `${origin}/auth/callback?next=${encodeURIComponent(next)}` },
+  });
+  if (error || !data.url) redirect("/entrar?error=google");
+  redirect(data.url);
+}
+
 export async function logout() {
   const supabase = await createClient();
   await supabase.auth.signOut();

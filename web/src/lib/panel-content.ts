@@ -12,6 +12,7 @@ export type EditableProduction = {
   fecha: string | null;
   duracion: string | null;
   clasificacion: string | null;
+  idioma: string | null;
   basada_en: string | null;
   frase: string | null;
   sinopsis: string | null;
@@ -29,7 +30,7 @@ export async function getEditorData(id: string) {
   const [prod, acts, songs, facts, thanks, media, banner] = await Promise.all([
     supabase
       .from("productions")
-      .select("id, nombre, estado, venue, temporada, fecha, duracion, clasificacion, basada_en, frase, sinopsis, color_fondo, color_superficie, color_texto, color_acento, logo_path, ambiente_path, on_sale")
+      .select("id, nombre, estado, venue, temporada, fecha, duracion, clasificacion, idioma, basada_en, frase, sinopsis, color_fondo, color_superficie, color_texto, color_acento, logo_path, ambiente_path, on_sale")
       .eq("id", id)
       .maybeSingle(),
     supabase.from("production_acts").select("id, nombre").eq("production_id", id).order("orden"),

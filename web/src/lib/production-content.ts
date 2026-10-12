@@ -30,6 +30,7 @@ type FichaRow = {
   fecha: string | null;
   duracion: string | null;
   clasificacion: string | null;
+  idioma: string | null;
   basada_en: string | null;
   sinopsis: string | null;
 };
@@ -39,7 +40,7 @@ type CreditRow = { tipo: string; papel: string | null; foto_path: string | null;
 export async function getProductionContent(id: string): Promise<ProductionContent> {
   const supabase = await createClient();
   const [prod, acts, songs, credits, media, facts, thanks, pro] = await Promise.all([
-    supabase.from("productions").select("venue, temporada, fecha, duracion, clasificacion, basada_en, sinopsis").eq("id", id).maybeSingle(),
+    supabase.from("productions").select("venue, temporada, fecha, duracion, clasificacion, idioma, basada_en, sinopsis").eq("id", id).maybeSingle(),
     supabase.from("production_acts").select("id, nombre").eq("production_id", id).order("orden"),
     supabase.from("production_songs").select("act_id, titulo").eq("production_id", id).order("orden"),
     supabase.from("production_credits").select("tipo, papel, foto_path, person_id, people(nombre)").eq("production_id", id).eq("activo", true).order("orden"),
@@ -78,6 +79,7 @@ export async function getProductionContent(id: string): Promise<ProductionConten
     { etiqueta: "Sede", valor: p?.venue },
     { etiqueta: "Duración", valor: p?.duracion },
     { etiqueta: "Clasificación", valor: p?.clasificacion },
+    { etiqueta: "Idioma", valor: p?.idioma },
     { etiqueta: "Basada en", valor: p?.basada_en },
     ...(facts.data ?? []),
   ].filter((x): x is { etiqueta: string; valor: string } => !!x.valor);

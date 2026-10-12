@@ -86,6 +86,7 @@ export default async function PageEditor({ params }: PageProps<"/panel/produccio
                 {field("Sede", "venue", p.venue, { placeholder: "Teatro…" })}
                 {field("Duración", "duracion", p.duracion, { placeholder: "~2 h con intermedio" })}
                 {field("Clasificación", "clasificacion", p.clasificacion, { placeholder: "Toda la familia" })}
+                {field("Idioma", "idioma", p.idioma, { placeholder: "Español" })}
                 {field("Basada en", "basada_en", p.basada_en)}
                 <label className="flex flex-col gap-1.5 text-sm font-semibold sm:col-span-2">Sinopsis (deja una línea en blanco entre párrafos)
                   <textarea className={`${input} min-h-48 leading-7`} name="sinopsis" defaultValue={p.sinopsis ?? ""} />

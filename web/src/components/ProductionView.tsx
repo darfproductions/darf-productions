@@ -1,12 +1,15 @@
 /* eslint-disable @next/next/no-img-element -- logos del kit y fotos desde Storage */
 import Image from "next/image";
 import Link from "next/link";
+import { Compartir } from "@/components/Compartir";
 import { CastGrid, Ensemble, TeamGroups } from "@/components/Credits";
+import { CuentaRegresiva } from "@/components/CuentaRegresiva";
 import { HeroBackdrop, ProductionLogo } from "@/components/PosterArt";
 import { ProductionBanner } from "@/components/ProductionBanner";
 import { YouTube } from "@/components/YouTube";
 import { listOpenAuditionsFor } from "@/lib/auditions";
 import { getPublicBanner } from "@/lib/banner";
+import { fechaEstreno } from "@/lib/cuenta-regresiva";
 import { ETIQUETA_FUNCION, estadoFuncion, partesFuncion } from "@/lib/disponibilidad";
 import { isDev } from "@/lib/env";
 import { fanzoneCount } from "@/lib/fanzone";
@@ -76,6 +79,8 @@ export async function ProductionView({
   const proxima = comprables[0] ?? null;
   const desde = prices.length ? Math.min(...prices.map((z) => z.price)) : p.price > 0 ? p.price : null;
   const enVenta = vendibles.length > 0;
+  // Antes del estreno, la tarjeta del hero cuenta los días que faltan.
+  const estreno = p.concluded ? null : fechaEstreno(performances);
 
   const canciones = c.actos.reduce((n, a) => n + a.canciones.length, 0);
   const videos = c.videos;
@@ -257,14 +262,15 @@ export async function ProductionView({
               )}
               {programa.page?.publicado && <a href={`/programa/${p.id}`} className="fb fb-obra">Programa de mano</a>}
               {ensayos > 0 && <Link href={`/fan-zone/${p.id}`} className="fb fb-fz">Fan Zone</Link>}
+              {!vistaPrevia && <Compartir titulo={p.nombre} texto={`${p.nombre} · DARF Productions`} ruta={`/producciones/${p.id}`} />}
             </div>
           </div>
 
           {/* Próxima función y precio, en vidrio (solo computadora; en celular está la barra de abajo). */}
-          {proxima?.starts_at && (
-            <a href="#funciones" className="glass hidden gap-4 p-6 text-texto transition-colors hover:border-white/30 lg:grid">
-              <span className="text-[10px] font-bold uppercase tracking-[0.32em] text-oro">Próxima función</span>
-              <ProximaFecha iso={proxima.starts_at} sede={proxima.venue ?? p.venue} />
+          {(estreno || proxima?.starts_at) && (
+            <a href="#funciones" className={`glass gap-4 p-6 text-texto transition-colors hover:border-white/30 lg:grid ${estreno ? "grid" : "hidden"}`}>
+              <span className="text-[10px] font-bold uppercase tracking-[0.32em] text-oro">{estreno ? "Estreno en" : "Próxima función"}</span>
+              {estreno ? <CuentaRegresiva hasta={estreno} /> : proxima?.starts_at && <ProximaFecha iso={proxima.starts_at} sede={proxima.venue ?? p.venue} />}
               {desde !== null && (
                 <>
                   <hr className="border-linea-2" />

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PageHeading } from "@/components/PageHeading";
+import { PasosBarra, PasosProvider } from "@/components/PasosCompra";
 import { requireSession } from "@/lib/auth";
 import { formatPerformanceDate, getPerformanceForSale, getTheme, themeStyle } from "@/lib/productions";
 import { cleanSellerCode, withSeller } from "@/lib/seller-rules";
@@ -66,7 +67,9 @@ export default async function ComprarPage({ params, searchParams }: PageProps<"/
         ) : prices.length === 0 && general.length === 0 ? (
           <p className="rounded-2xl bg-telon p-8">Esta función aún no tiene precios disponibles. Intenta más tarde.</p>
         ) : (
+          <PasosProvider>
           <div className="flex flex-col gap-10">
+          <PasosBarra />
           {general.length > 0 && (
             <GeneralPicker performanceId={f.id} productionName={p.nombre} zones={general}
               defaultPhone={session.profile?.telefono ?? ""} defaultSeller={vendedor ?? ""} />
@@ -84,6 +87,7 @@ export default async function ComprarPage({ params, searchParams }: PageProps<"/
             defaultSellerCheck={sellerCheck}
           />}
           </div>
+          </PasosProvider>
         )}
       </div>
     </main>

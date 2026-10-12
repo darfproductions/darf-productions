@@ -26,6 +26,11 @@ export function estiloDe(t: ProductionTheme | null): EstiloBoleto {
   return t ? { fondo: t.fondo, superficie: t.superficie, texto: t.texto, acento: t.acento, logo: t.logo } : ESTILO_DARF;
 }
 
+/** Logo de DARF que se lee sobre el fondo del boleto (kit: versión para fondo claro u oscuro). */
+export function logoDarf(fondo: string): string {
+  return isLight(fondo) ? "/marca/darf-principal-claro.svg" : "/marca/darf-principal.svg";
+}
+
 /** Texto legible encima de un color (negro o blanco). */
 export function textoSobre(color: string): string {
   return isLight(color) ? "#0b0910" : "#ffffff";

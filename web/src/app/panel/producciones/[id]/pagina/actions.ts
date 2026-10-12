@@ -46,6 +46,7 @@ export async function saveGeneral(_p: EditState, f: FormData): Promise<EditState
     fecha: txt(f, "fecha"),
     duracion: txt(f, "duracion"),
     clasificacion: txt(f, "clasificacion"),
+    idioma: txt(f, "idioma"),
     basada_en: txt(f, "basada_en"),
   });
   return err ? fail(err) : done(pid, "Datos guardados.");

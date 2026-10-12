@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { GeneralZone } from "@/lib/boleteria";
 import { formatMoney } from "@/lib/tickets";
 import { placeGeneralOrder, type OrderResult } from "./actions";
+import { usePaso } from "@/components/PasosCompra";
 import { OrderDone } from "./OrderDone";
 
 const MAX = 10; // mismo tope que valida la base (0055)
@@ -40,6 +41,7 @@ export function GeneralPicker(props: { performanceId: string; productionName: st
     });
   }
 
+  usePaso(result ? 4 : zone ? 3 : 2);
   if (result) return <OrderDone result={result} />;
 
   return (

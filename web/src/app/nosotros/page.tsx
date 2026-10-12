@@ -7,18 +7,44 @@ import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Conoce al equipo", description: "El equipo directivo de DARF Productions." };
 
+type Cifras = { producciones: number; funciones: number; talento: number; boletos: number };
+
+const CIFRAS: { k: keyof Cifras; texto: string }[] = [
+  { k: "producciones", texto: "Producciones" },
+  { k: "funciones", texto: "Funciones presentadas" },
+  { k: "talento", texto: "Jóvenes en escena y detrás" },
+  { k: "boletos", texto: "Boletos vendidos" },
+];
+
+// Sin celdas vacías: la rejilla se acomoda a cuántas cifras hay.
+const COLUMNAS: Record<number, string> = { 1: "grid-cols-1", 2: "grid-cols-2", 3: "grid-cols-1 sm:grid-cols-3", 4: "grid-cols-2 lg:grid-cols-4" };
+
 type Miembro = { id: string; nombre: string; cargo: string; slug: string | null; retrato_path: string | null; semblanza: string | null };
 
 // Conoce al equipo (0063): directivos de DARF. Foto y perfil solo si la persona hizo público su perfil.
 export default async function Nosotros() {
   const supabase = await createClient();
-  const { data } = await supabase.rpc("team_public");
+  const [{ data }, stats] = await Promise.all([supabase.rpc("team_public"), supabase.rpc("public_stats")]);
   const equipo = (data ?? []) as Miembro[];
+  // Cifras de la base (0073); una en cero no se muestra para no verse vacía.
+  const cifras = stats.data ? CIFRAS.filter((c) => Number((stats.data as Cifras)[c.k]) > 0) : [];
   return (
     <main className="pb-16">
       <PageHeading eyebrow="Nosotros" title="Conoce al equipo">
         Las personas que hacen posible cada temporada de DARF Productions.
       </PageHeading>
+      {cifras.length > 0 && (
+        <section aria-label="DARF en cifras" className="mx-auto max-w-[1440px] px-5 pb-14 md:px-16">
+          <dl className={`grid gap-px overflow-hidden rounded-[22px] border border-linea bg-linea ${COLUMNAS[cifras.length]}`}>
+            {cifras.map((c) => (
+              <div key={c.k} className="flex flex-col gap-2 bg-telon p-6 md:p-8">
+                <dt className="order-2 text-[12.5px] font-semibold text-texto-3">{c.texto}</dt>
+                <dd className="num txt-luz text-[clamp(2.4rem,5vw,3.75rem)] font-black leading-none tracking-[-0.04em]">{Number((stats.data as Cifras)[c.k]).toLocaleString("es-MX")}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+      )}
       <div className="mx-auto max-w-[1440px] px-5 md:px-16">
         {equipo.length === 0 ? (
           <p className="rounded-2xl bg-telon p-6 text-texto-2">Muy pronto conocerás a nuestro equipo.</p>

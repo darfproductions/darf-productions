@@ -4,12 +4,14 @@
 //   * Próximamente: publicada pero aún sin boletos a la venta.
 //   * Archivo: concluida.
 
+import { fechaEstreno } from "@/lib/cuenta-regresiva";
+
 export type EstadoPublico = "cartelera" | "proximamente" | "archivo";
 
 type Rankable = { id: string; concluded: boolean; created_at: string; destacada?: boolean };
 type FuncionRow = { production_id: string; starts_at: string | null; on_sale?: boolean | null };
 
-export type ConEstado<T> = T & { estadoPublico: EstadoPublico; proxima: string | null; ultima: string | null };
+export type ConEstado<T> = T & { estadoPublico: EstadoPublico; proxima: string | null; ultima: string | null; /** Primera función si aún no llega (cuenta regresiva). */ estreno: string | null };
 
 export type Featured<T extends Rankable> = {
   production: ConEstado<T>;
@@ -51,7 +53,8 @@ export function clasificar<T extends Rankable>(productions: T[], funciones: Func
       .filter((f) => f.production_id === p.id && vendible(f, ahora))
       .map((f) => f.starts_at as string)
       .sort()[0] ?? null;
-    return { ...p, estadoPublico: estadoPublico(p, funciones, ahora), proxima, ultima: ultimas.get(p.id) ?? null };
+    const estreno = p.concluded ? null : fechaEstreno(funciones.filter((f) => f.production_id === p.id), ahora);
+    return { ...p, estadoPublico: estadoPublico(p, funciones, ahora), proxima, ultima: ultimas.get(p.id) ?? null, estreno };
   });
 }
 

@@ -1,5 +1,5 @@
 import type { BoletoVista, EstiloBoleto } from "@/lib/ticket-design";
-import { contador } from "@/lib/ticket-design";
+import { contador, logoDarf } from "@/lib/ticket-design";
 
 // Boleto diseñado con el logo y los colores de la obra (Bloque 4). Mismo dibujo que el PDF.
 export function TicketCard({ b, estilo, i, total }: { b: BoletoVista; estilo: EstiloBoleto; i: number; total: number }) {
@@ -9,7 +9,9 @@ export function TicketCard({ b, estilo, i, total }: { b: BoletoVista; estilo: Es
       className="mx-auto flex w-full max-w-[360px] flex-col overflow-hidden rounded-3xl shadow-2xl"
       style={{ background: estilo.fondo, color: estilo.texto }}
     >
-      <div className="flex h-36 items-center justify-center px-6 pt-5">
+      {/* eslint-disable-next-line @next/next/no-img-element -- logo SVG del kit de marca */}
+      <img src={logoDarf(estilo.fondo)} alt="DARF Productions" className="mx-auto mt-5 h-7 w-auto" />
+      <div className="flex h-32 items-center justify-center px-6 pt-3">
         {estilo.logo ? (
           // eslint-disable-next-line @next/next/no-img-element -- logo de la obra (puede venir de Storage)
           <img src={estilo.logo} alt={b.obra} className="max-h-full max-w-full object-contain" />

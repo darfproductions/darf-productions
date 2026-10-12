@@ -22,6 +22,11 @@ export default async function EntrarPage({ searchParams }: PageProps<"/entrar">)
             El enlace ya venció o ya se usó. Entra con tu correo y contraseña; si no la recuerdas, usa “¿Olvidaste tu contraseña?” para recibir uno nuevo.
           </p>
         )}
+        {sp.error === "google" && (
+          <p role="alert" className="rounded-xl border border-[#ff8fa3]/40 bg-[#3a1220] px-4 py-3 text-sm">
+            No se pudo entrar con Google en este momento. Intenta de nuevo o entra con tu correo.
+          </p>
+        )}
         <AuthForms next={next} />
       </div>
     </main>

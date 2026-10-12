@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { contador, ESTILO_DARF, estiloDe, mover, nombreArchivo, pdfConImagenes, textoSobre } from "./ticket-design";
+import { contador, ESTILO_DARF, estiloDe, logoDarf, mover, nombreArchivo, pdfConImagenes, textoSobre } from "./ticket-design";
 
 describe("boleto diseñado", () => {
   it("usa los colores de la obra o los de DARF", () => {
@@ -33,5 +33,12 @@ describe("PDF con imágenes", () => {
     offs.forEach((o, i) => expect(s.slice(o, o + `${i + 1} 0 obj`.length)).toBe(`${i + 1} 0 obj`));
     // los bytes del JPEG van intactos
     expect(s).toContain(String.fromCharCode(...jpeg));
+  });
+});
+
+describe("logoDarf", () => {
+  it("versión clara u oscura según el fondo", () => {
+    expect(logoDarf("#f8f7f5")).toBe("/marca/darf-principal-claro.svg");
+    expect(logoDarf("#0b0910")).toBe("/marca/darf-principal.svg");
   });
 });

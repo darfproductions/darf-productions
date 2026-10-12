@@ -1,6 +1,6 @@
 "use client";
 
-import { contador, nombreArchivo, pdfConImagenes, type BoletoVista, type EstiloBoleto, type JpegPagina } from "@/lib/ticket-design";
+import { contador, logoDarf, nombreArchivo, pdfConImagenes, type BoletoVista, type EstiloBoleto, type JpegPagina } from "@/lib/ticket-design";
 
 // Dibuja el boleto diseñado en un canvas (mismo diseño que TicketCard) y arma el PDF con
 // una página por boleto. Todo en el navegador; si algo falla, queda el PDF del servidor.
@@ -31,22 +31,28 @@ function lineas(ctx: CanvasRenderingContext2D, texto: string, ancho: number): st
 
 const mayus = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
-function dibujar(ctx: CanvasRenderingContext2D, b: BoletoVista, e: EstiloBoleto, logo: HTMLImageElement | null, qr: HTMLImageElement | null, i: number, total: number, fuente: string) {
+function dibujar(ctx: CanvasRenderingContext2D, b: BoletoVista, e: EstiloBoleto, logo: HTMLImageElement | null, darf: HTMLImageElement | null, qr: HTMLImageElement | null, i: number, total: number, fuente: string) {
   ctx.fillStyle = e.fondo;
   ctx.fillRect(0, 0, W, H);
   ctx.textAlign = "center";
   ctx.textBaseline = "alphabetic";
 
-  // Logo (o el nombre de la obra)
+  // Logo de DARF arriba (kit de marca)
+  if (darf) {
+    const dh = 56, dw = (darf.width / darf.height) * dh;
+    ctx.drawImage(darf, (W - dw) / 2, 32, dw, dh);
+  }
+
+  // Logo de la obra (o su nombre)
   if (logo) {
-    const bw = 560, bh = 250;
+    const bw = 560, bh = 210;
     const k = Math.min(bw / logo.width, bh / logo.height);
     const lw = logo.width * k, lh = logo.height * k;
-    ctx.drawImage(logo, (W - lw) / 2, 40 + (bh - lh) / 2, lw, lh);
+    ctx.drawImage(logo, (W - lw) / 2, 104 + (bh - lh) / 2, lw, lh);
   } else {
     ctx.fillStyle = e.texto;
-    ctx.font = `900 64px ${fuente}`;
-    lineas(ctx, b.obra, 600).slice(0, 3).forEach((l, k) => ctx.fillText(l, W / 2, 140 + k * 72));
+    ctx.font = `900 60px ${fuente}`;
+    lineas(ctx, b.obra, 600).slice(0, 3).forEach((l, k) => ctx.fillText(l, W / 2, 170 + k * 66));
   }
 
   // Función y lugar
@@ -107,6 +113,7 @@ async function jpeg(canvas: HTMLCanvasElement): Promise<Uint8Array> {
 export async function crearPdf(boletos: BoletoVista[], estilo: EstiloBoleto): Promise<Uint8Array> {
   const fuente = getComputedStyle(document.body).fontFamily || "sans-serif";
   let logo = estilo.logo ? await cargar(estilo.logo, true) : null;
+  const darf = await cargar(logoDarf(estilo.fondo), false); // mismo origen
   const paginas: JpegPagina[] = [];
   for (let i = 0; i < boletos.length; i++) {
     const b = boletos[i];
@@ -115,14 +122,14 @@ export async function crearPdf(boletos: BoletoVista[], estilo: EstiloBoleto): Pr
     canvas.width = W; canvas.height = H;
     const ctx = canvas.getContext("2d");
     if (!ctx) throw new Error("Canvas no disponible.");
-    dibujar(ctx, b, estilo, logo, qr, i, boletos.length, fuente);
+    dibujar(ctx, b, estilo, logo, darf, qr, i, boletos.length, fuente);
     let data: Uint8Array;
     try {
       data = await jpeg(canvas);
     } catch {
       // Si el logo no se pudo usar (permiso del servidor de imágenes), sin logo.
       logo = null;
-      dibujar(ctx, b, estilo, null, qr, i, boletos.length, fuente);
+      dibujar(ctx, b, estilo, null, darf, qr, i, boletos.length, fuente);
       data = await jpeg(canvas);
     }
     paginas.push({ data, w: W, h: H });

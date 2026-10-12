@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { SeatMap, type ZonePrice } from "@/components/SeatMap";
 import { formatMoney, previewDiscount, type DiscountPreview, type MapSeat } from "@/lib/tickets";
 import { placeOrder, type OrderResult } from "./actions";
+import { usePaso } from "@/components/PasosCompra";
 import { OrderDone } from "./OrderDone";
 
 export type { ZonePrice };
@@ -125,6 +126,7 @@ export function SeatPicker(props: {
     });
   }
 
+  usePaso(result ? 4 : chosen.length ? 3 : 2);
   if (result) return <OrderDone result={result} />;
 
   return (

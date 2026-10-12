@@ -1,5 +1,6 @@
 /* eslint-disable @next/next/no-img-element -- logos SVG del kit de marca y retratos desde Storage */
 import Link from "next/link";
+import { CuentaRegresiva } from "@/components/CuentaRegresiva";
 import { EstadoObra } from "@/components/EstadoObra";
 import { ArtFill } from "@/components/PosterArt";
 import { ProductionCard } from "@/components/ProductionCard";
@@ -85,6 +86,12 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                     {enCartelera && current.price > 0 && <li className="chip num">Desde {formatPrice(current.price)}</li>}
                     {!enCartelera && <li className="chip">{proxima ? "Boletos muy pronto" : "Archivo"}</li>}
                   </ul>
+                  {current.estreno && (
+                    <div className="flex flex-col gap-3 rounded-[18px] border border-linea-2 bg-sala/40 p-4">
+                      <span className="text-[10px] font-bold uppercase tracking-[0.32em] text-oro">Estreno en</span>
+                      <CuentaRegresiva hasta={current.estreno} />
+                    </div>
+                  )}
                   <div className="flex flex-wrap gap-3">
                     {enCartelera && <Link href={`/producciones/${current.id}#funciones`} className="fb fb-luz flex-1">Comprar boletos</Link>}
                     <Link href={`/producciones/${current.id}`} className={`fb fb-oro ${enCartelera ? "" : "flex-1"}`}>

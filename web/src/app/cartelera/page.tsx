@@ -13,8 +13,11 @@ const FILTROS: (EstadoPublico | "todas")[] = ["todas", "cartelera", "proximament
 // Cartelera (guía de UI · Fusión): lo que está en escena en grande, lo que viene y el archivo.
 export default async function CarteleraPage({ searchParams }: PageProps<"/cartelera">) {
   const sp = await searchParams;
-  const { productions } = await getHomeData();
+  const { productions, featured } = await getHomeData();
   const g = agrupar(productions);
+  // La obra destacada en el panel (la misma de la portada) va en grande; las demás, en tarjetas.
+  const destacada = g.cartelera.find((p) => p.id === featured?.production.id) ?? g.cartelera[0];
+  const otras = g.cartelera.filter((p) => p !== destacada);
   const filtro = (FILTROS.find((f) => f === sp.estado) ?? "todas") as EstadoPublico | "todas";
   const ver = (e: EstadoPublico) => filtro === "todas" || filtro === e;
   const temporadas = g.archivo.map((p) => p.temporada).filter((x): x is string => !!x).sort();
@@ -48,7 +51,12 @@ export default async function CarteleraPage({ searchParams }: PageProps<"/cartel
         {ver("cartelera") &&
           (g.cartelera.length ? (
             <section aria-label="En cartelera" className="flex flex-col gap-6">
-              {g.cartelera.map((p) => <ObraPanoramica key={p.id} p={p} />)}
+              <ObraPanoramica p={destacada} />
+              {otras.length > 0 && (
+                <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                  {otras.map((p) => <li key={p.id}><ProductionCard p={p} sizes="(min-width: 1024px) 30vw, (min-width: 640px) 50vw, 100vw" /></li>)}
+                </ul>
+              )}
             </section>
           ) : (
             <div className="tarjeta flex flex-col items-start gap-4 p-8">

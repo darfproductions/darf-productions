@@ -8,14 +8,15 @@ import { MobileMenu } from "./MobileMenu";
 export const NAV_LINKS = [
   { href: "/cartelera", label: "Cartelera" },
   { href: "/producciones", label: "Producciones" },
-  { href: "/fan-zone", label: "Fan Zone" },
   { href: "/audiciones", label: "Audiciones" },
   { href: "/nosotros", label: "Nosotros" },
   { href: "/contacto", label: "Contacto" },
+  // Al final: el dorado de la Fan Zone no corta el menú (decisión de Diego).
+  { href: "/fan-zone", label: "Fan Zone" },
 ];
 
-// Encabezado (guía de UI): vidrio sobre la sala, línea de luz abajo, logo horizontal
-// del kit, menú centrado y a la derecha cuenta + "Boletos".
+// Encabezado (guía de UI): vidrio sobre la sala, línea de luz abajo, logo original del kit
+// (DARF con PRODUCTIONS abajo), menú centrado y a la derecha cuenta + "Boletos".
 export async function SiteHeader() {
   const session = await getSession();
   // Panel: staff, Director o quien tenga un rol en alguna obra (0031).
@@ -27,7 +28,7 @@ export async function SiteHeader() {
       <div aria-hidden="true" className="absolute inset-x-0 -bottom-px h-px bg-[linear-gradient(90deg,transparent,rgb(131_8_134/0.9),rgb(210_1_34/0.7),transparent)]" />
       <div className="mx-auto flex h-[68px] max-w-[1440px] items-center justify-between gap-4 px-5 md:px-16 lg:h-[88px]">
         <Link href="/" aria-label="DARF Productions, inicio" className="flex shrink-0">
-          <Image src="/marca/darf-horizontal.svg" alt="DARF Productions" width={600} height={84} unoptimized priority className="h-6 w-auto md:h-[34px]" />
+          <Image src="/marca/darf-principal.svg" alt="DARF Productions" width={600} height={215} unoptimized priority className="h-9 w-auto lg:h-11" />
         </Link>
 
         <MainNav links={NAV_LINKS} />
