@@ -48,3 +48,13 @@ export function renombrar(nombre: string, tipo: string): string {
   const ext = tipo === "image/webp" ? "webp" : tipo === "image/png" ? "png" : "jpg";
   return `${nombre.replace(/\.[^.]+$/, "") || "foto"}.${ext}`;
 }
+
+/** Área de un logo sin sus márgenes transparentes, con un poco de aire. null = no conviene recortar. */
+export function recorteAlfa(caja: { x0: number; y0: number; x1: number; y1: number } | null, w: number, h: number, aire = 0.02): { x: number; y: number; w: number; h: number } | null {
+  if (!caja || caja.x1 < caja.x0 || caja.y1 < caja.y0) return null;
+  const pad = Math.round(Math.max(caja.x1 - caja.x0, caja.y1 - caja.y0) * aire);
+  const x = Math.max(0, caja.x0 - pad), y = Math.max(0, caja.y0 - pad);
+  const r = { x, y, w: Math.min(w, caja.x1 + pad + 1) - x, h: Math.min(h, caja.y1 + pad + 1) - y };
+  // Solo si quita al menos 5% del ancho o del alto.
+  return r.w < w * 0.95 || r.h < h * 0.95 ? r : null;
+}

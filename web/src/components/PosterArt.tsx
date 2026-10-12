@@ -21,15 +21,19 @@ export function ArtFill({ theme, alt, sizes }: { theme: ProductionTheme; alt: st
 
 /** Logo como título del hero, en caja fija (mismo tamaño visual en todas las obras). */
 export function ProductionLogo({ theme, nombre, priority }: { theme: ProductionTheme; nombre: string; priority?: boolean }) {
+  // El logo usa su propia forma: uno ancho llena el ancho; uno cuadrado o vertical crece en
+  // alto (hasta su tope) para que se vea del mismo peso que los anchos.
   return (
-    <h1 className="relative h-32 w-full max-w-[520px] md:h-48">
+    <h1 className="flex">
       <Image
         src={theme.logo}
         alt={nombre}
-        fill
+        width={1400}
+        height={1400}
         priority={priority}
-        sizes="520px"
-        className="object-contain object-left-bottom drop-shadow-[0_8px_24px_var(--obra-sombra)]"
+        sizes="(min-width: 768px) 560px, 90vw"
+        style={{ width: "auto", height: "auto" }}
+        className="max-h-[170px] max-w-full object-contain object-left-bottom drop-shadow-[0_8px_24px_var(--obra-sombra)] md:max-h-[260px] md:max-w-[560px]"
       />
     </h1>
   );

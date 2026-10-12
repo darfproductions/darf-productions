@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { destino, formatoSalida, hayQueComprimir, peso, renombrar } from "./image-compress-rules";
+import { destino, formatoSalida, hayQueComprimir, peso, recorteAlfa, renombrar } from "./image-compress-rules";
 
 describe("compresión de fotos", () => {
   it("reduce al lado mayor sin deformar ni agrandar", () => {
@@ -21,5 +21,13 @@ describe("compresión de fotos", () => {
     expect(peso(4.2 * 1024 * 1024)).toBe("4.2 MB");
     expect(peso(380 * 1024)).toBe("380 KB");
     expect(renombrar("IMG_001.HEIC.jpeg", "image/webp")).toBe("IMG_001.HEIC.webp");
+  });
+});
+
+describe("recorte de márgenes transparentes en logos", () => {
+  it("recorta con un poco de aire y solo si vale la pena", () => {
+    expect(recorteAlfa({ x0: 100, y0: 200, x1: 899, y1: 599 }, 1000, 1000)).toEqual({ x: 84, y: 184, w: 832, h: 432 });
+    expect(recorteAlfa({ x0: 2, y0: 2, x1: 997, y1: 997 }, 1000, 1000)).toBeNull();
+    expect(recorteAlfa(null, 10, 10)).toBeNull();
   });
 });
