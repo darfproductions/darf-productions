@@ -87,8 +87,8 @@ export default async function Applications({ params, searchParams }: PageProps<"
                     {a.numero && <span className="ml-2">Nº {a.numero}</span>}{a.walk_in && <span className="ml-2 text-texto-3">sin cita</span>}</p>
                   <p className="text-texto-2"><a href={`tel:${a.telefono}`} className="underline">{a.telefono}</a>{a.audition_slots ? ` · ${formatSlot(a.audition_slots.inicia)}` : ""}</p>
                   {a.es_menor && (a.tutor_nombre
-                    ? <p className="text-[#f2b544]">Menor · tutor: {a.tutor_nombre} · <a href={`tel:${a.tutor_telefono}`} className="underline">{a.tutor_telefono}</a>{a.tutor_email ? ` · ${a.tutor_email}` : ""}</p>
-                    : <p className="text-[#f2b544]">Menor · autorización por la escuela u organización</p>)}
+                    ? <p className="text-aviso">Menor · tutor: {a.tutor_nombre} · <a href={`tel:${a.tutor_telefono}`} className="underline">{a.tutor_telefono}</a>{a.tutor_email ? ` · ${a.tutor_email}` : ""}</p>
+                    : <p className="text-aviso">Menor · autorización por la escuela u organización</p>)}
                   {horarios.length > 0 && (!aud.elegir_horario || !a.audition_slots) && !a.checked_in_at && (
                     <ActionForm inline action={setSlot} hidden={{ aid, app: a.id }} submit="Asignar" submitClass="rounded-full border border-white/25 px-3 py-1.5 text-xs font-bold">
                       <select name="slot" defaultValue={a.slot_id ?? ""} className={`${input} py-1.5 text-xs`} aria-label="Horario">

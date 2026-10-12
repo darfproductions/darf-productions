@@ -111,7 +111,7 @@ export default async function Evaluaciones({ params }: PageProps<"/panel/producc
             <li key={p.id} className="flex flex-wrap items-center justify-between gap-2 py-2.5">
               <span>
                 <b>{p.nombre}</b>{" "}
-                <span className={`text-xs ${p.publicado_at ? "text-[#7ee2a8]" : "text-texto-3"}`}>{p.publicado_at ? "Publicado" : "Sin publicar"}</span>
+                <span className={`text-xs ${p.publicado_at ? "text-exito" : "text-texto-3"}`}>{p.publicado_at ? "Publicado" : "Sin publicar"}</span>
                 <span className="block text-xs text-texto-3">{p.desde || p.hasta ? `${p.desde ?? "…"} a ${p.hasta ?? "…"} · ` : "Sin fechas (cuenta toda la asistencia) · "}{hechas(p.id)} de {alumnos.length} alumnos completos</span>
               </span>
               <span className="flex flex-wrap items-center gap-2">
@@ -153,7 +153,7 @@ export default async function Evaluaciones({ params }: PageProps<"/panel/producc
             {maestros.map((m) => (
               <li key={m.user_id} className="rounded-lg bg-sala p-3">
                 <ActionForm action={setTeacherCriteria} hidden={{ pid: id, uid: m.user_id }} submit="Guardar materias" submitClass={small}>
-                  <p className="font-bold">{m.nombre} {!m.criterios.length && <span className="text-xs font-normal text-[#fde68a]">· coordina (sin materias)</span>}</p>
+                  <p className="font-bold">{m.nombre} {!m.criterios.length && <span className="text-xs font-normal text-aviso">· coordina (sin materias)</span>}</p>
                   <div className="flex flex-wrap gap-3 text-sm">
                     {materias.map((c) => (
                       <label key={c.id} className="flex items-center gap-1.5"><input type="checkbox" name="crit" value={c.id} defaultChecked={m.criterios.includes(c.id)} /> {c.nombre}</label>

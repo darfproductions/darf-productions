@@ -71,7 +71,7 @@ export default async function Directorio({ searchParams }: PageProps<"/panel/per
               <span className="min-w-0 wrap-anywhere">
                 <Link href={p.fichaHref} className="font-bold hover:text-violeta-claro">{p.nombre}</Link>
                 {p.userId === access.session.userId && <span className="ml-2 text-xs text-texto-3">(tú)</span>}
-                {p.email ? <span className="text-texto-3"> · {p.email}</span> : <span className="text-xs text-[#fde68a]"> · sin cuenta</span>}
+                {p.email ? <span className="text-texto-3"> · {p.email}</span> : <span className="text-xs text-aviso"> · sin cuenta</span>}
                 <span className="block text-xs text-texto-3">{p.obras.join(", ") || "Sin créditos"}{p.creditos ? ` · ${p.creditos} créditos` : ""}</span>
               </span>
               <span className="flex min-w-0 flex-wrap items-center gap-2">

@@ -92,7 +92,7 @@ export default async function AuditionConfig({ params }: PageProps<"/panel/audic
               <label className={check}><input type="checkbox" name="pedir_foto" defaultChecked={a.pedir_foto} className="mt-1" /> Foto del aspirante</label>
               <label className={check}><input type="checkbox" name="elegir_horario" defaultChecked={a.elegir_horario} className="mt-1" /> El aspirante elige su horario (si no, se lo asignas tú en Solicitudes)</label>
               <label className={check}><input type="checkbox" name="pedir_tutor" defaultChecked={a.pedir_tutor} className="mt-1" /> Datos y autorización de mamá, papá o tutor para menores de edad</label>
-              <label className={`${check} rounded-lg border border-[#f2b544]/40 p-2`}><input type="checkbox" name="autorizacion_escuela" defaultChecked={a.autorizacion_escuela} className="mt-1" />
+              <label className={`${check} rounded-lg border border-aviso/40 p-2`}><input type="checkbox" name="autorizacion_escuela" defaultChecked={a.autorizacion_escuela} className="mt-1" />
                 <span>Si no se piden datos del tutor: confirmo que la escuela u organización ya cuenta con la autorización de los padres de los menores.</span></label>
             </fieldset>
             <div className="flex flex-col gap-3">

@@ -154,12 +154,12 @@ export function SeatPicker(props: {
               <input id="codigo" value={codeInput} onChange={(e) => setCodeInput(e.target.value)} disabled={!!discount} className="min-w-0 flex-1 rounded-lg bg-sala px-3 py-2.5" />
               <button type="button" onClick={applyCode} className="rounded-lg border border-white/30 px-4 text-sm font-bold">{discount ? "Quitar" : "Aplicar"}</button>
             </div>
-            {(disc.note || discountMsg) && <p className={`text-sm ${disc.note || !discount ? "text-[#ff8fa3]" : "text-[#7ee2a8]"}`}>{disc.note || discountMsg}</p>}
+            {(disc.note || discountMsg) && <p className={`text-sm ${disc.note || !discount ? "text-[#ff8fa3]" : "text-exito"}`}>{disc.note || discountMsg}</p>}
           </div>
 
           <dl className="flex flex-col gap-1 border-t border-white/10 pt-4 text-sm">
             <div className="flex justify-between"><dt>Subtotal</dt><dd>{formatMoney(subtotal)}</dd></div>
-            {disc.amount > 0 && <div className="flex justify-between text-[#7ee2a8]"><dt>Descuento {discount?.codigo}</dt><dd>−{formatMoney(disc.amount)}</dd></div>}
+            {disc.amount > 0 && <div className="flex justify-between text-exito"><dt>Descuento {discount?.codigo}</dt><dd>−{formatMoney(disc.amount)}</dd></div>}
             <div className="flex justify-between text-lg font-bold"><dt>Total</dt><dd>{formatMoney(subtotal - disc.amount)}</dd></div>
             <p className="text-xs text-texto-3">El total final lo confirma el sistema al apartar tus asientos.</p>
           </dl>
@@ -170,7 +170,7 @@ export function SeatPicker(props: {
           <label className="flex flex-col gap-1.5 text-sm font-semibold">Código de vendedor (opcional)
             <input value={seller} onChange={(e) => { setSeller(e.target.value); setSellerCheck(null); }} onBlur={() => void checkSeller()}
               autoCapitalize="characters" className="rounded-lg bg-sala px-3 py-3 font-normal uppercase" />
-            {sellerCheck && <span className={`text-xs font-normal ${sellerCheck.ok ? "text-[#7ee2a8]" : "text-[#ff8fa3]"}`}>{sellerCheck.text}</span>}
+            {sellerCheck && <span className={`text-xs font-normal ${sellerCheck.ok ? "text-exito" : "text-[#ff8fa3]"}`}>{sellerCheck.text}</span>}
           </label>
 
           {error && <p role="alert" className="text-[#ff8fa3]">{error}</p>}

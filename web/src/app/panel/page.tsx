@@ -91,13 +91,13 @@ export default async function PanelHome() {
       </Card>
 
       {pendientes.length > 0 ? (
-        <Card className="flex flex-col gap-3 border border-[#f2b544]/40">
+        <Card className="flex flex-col gap-3 border border-aviso/40">
           <h2 className="titular text-xl">Pendientes</h2>
           <ul className="flex flex-col gap-2">
             {pendientes.map((p) => (
               <li key={`${p.tipo}-${p.production_id}`}>
                 <Link href={pendienteHref(p)} className="flex items-center justify-between gap-3 rounded-lg bg-sala px-4 py-3 hover:bg-telon-2">
-                  <span><b className="text-[#f2b544]">{pendienteTexto(p)}</b> <span className="text-sm text-texto-3">· {obraDe(p.production_id, p.tipo.endsWith("_equipo") ? "DARF (general)" : "Convocatoria general")}</span></span>
+                  <span><b className="text-aviso">{pendienteTexto(p)}</b> <span className="text-sm text-texto-3">· {obraDe(p.production_id, p.tipo.endsWith("_equipo") ? "DARF (general)" : "Convocatoria general")}</span></span>
                   <span className="text-violeta-claro">→</span>
                 </Link>
               </li>
@@ -132,7 +132,7 @@ export default async function PanelHome() {
                 {cumples.map((c) => (
                   <li key={c.user_id} className="flex justify-between gap-3">
                     <span className="font-semibold">{c.nombre}</span>
-                    <span className={c.faltan === 0 ? "font-bold text-[#f2b544]" : "text-texto-3"}>{c.faltan === 0 ? "¡Hoy!" : c.faltan === 1 ? "Mañana" : `En ${c.faltan} días`}</span>
+                    <span className={c.faltan === 0 ? "font-bold text-aviso" : "text-texto-3"}>{c.faltan === 0 ? "¡Hoy!" : c.faltan === 1 ? "Mañana" : `En ${c.faltan} días`}</span>
                   </li>
                 ))}
               </ul>

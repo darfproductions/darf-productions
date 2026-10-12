@@ -101,7 +101,7 @@ export default async function TalentPage({ params }: PageProps<"/panel/talento/[
           <ul className="flex flex-col gap-1.5 text-sm">
             {misCompras.map((c) => (
               <li key={c.order_code}><b>{c.obra}</b> · función {fecha(c.funcion)} · {c.boletos} {c.boletos === 1 ? "boleto" : "boletos"} · ${Number(c.total).toLocaleString("es-MX")} · {c.estado}
-                {c.asistio > 0 && <span className="ml-1 text-[#7ee2a8]">· asistió ({c.asistio})</span>} <span className="text-xs text-texto-3">({c.order_code})</span></li>
+                {c.asistio > 0 && <span className="ml-1 text-exito">· asistió ({c.asistio})</span>} <span className="text-xs text-texto-3">({c.order_code})</span></li>
             ))}
             {misCompras.length === 0 && <li className="text-texto-3">Sin compras con esta cuenta.</li>}
           </ul>

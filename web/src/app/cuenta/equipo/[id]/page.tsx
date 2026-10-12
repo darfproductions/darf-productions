@@ -67,7 +67,7 @@ export default async function MiEquipo({ params }: PageProps<"/cuenta/equipo/[id
               <p className="whitespace-pre-line">{n.cuerpo}</p>
               {n.atendida_at ? (
                 <div className="flex flex-wrap items-center gap-3 text-sm">
-                  <span className="text-[#7ee2a8]">✓ Atendida {fecha(n.atendida_at)}{n.respuesta ? ` — “${n.respuesta}”` : ""}</span>
+                  <span className="text-exito">✓ Atendida {fecha(n.atendida_at)}{n.respuesta ? ` — “${n.respuesta}”` : ""}</span>
                   <ActionForm inline action={attendNote} hidden={{ ...h, id: n.id, deshacer: "1" }} submit="Marcar pendiente" submitClass="text-xs font-bold text-violeta-claro" />
                 </div>
               ) : (
@@ -107,11 +107,11 @@ export default async function MiEquipo({ params }: PageProps<"/cuenta/equipo/[id
           <h2 className="titular text-2xl">Avisos</h2>
           {space.avisos.length === 0 && <p className="text-texto-2">No hay avisos.</p>}
           {space.avisos.map((a) => (
-            <div key={a.id} className={`${caja} ${a.importante && !yaLei.has(a.id) ? "border border-[#f2b544]/50" : ""}`}>
-              <p className="font-bold">{a.importante && <span className="mr-2 text-[#f2b544]">●</span>}{a.titulo}</p>
+            <div key={a.id} className={`${caja} ${a.importante && !yaLei.has(a.id) ? "border border-aviso/50" : ""}`}>
+              <p className="font-bold">{a.importante && <span className="mr-2 text-aviso">●</span>}{a.titulo}</p>
               <p className="text-xs text-texto-3">{fecha(a.created_at)}</p>
               <p className="whitespace-pre-line text-sm">{a.cuerpo}</p>
-              {yaLei.has(a.id) ? <p className="text-xs text-[#7ee2a8]">✓ Enterado</p>
+              {yaLei.has(a.id) ? <p className="text-xs text-exito">✓ Enterado</p>
                 : yo ? <ActionForm inline action={markTeamRead} hidden={{ ...h, id: a.id }} submit="Enterado" submitClass="rounded-full bg-texto px-4 py-2 text-sm font-bold text-sala" /> : null}
             </div>
           ))}

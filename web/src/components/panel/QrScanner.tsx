@@ -87,7 +87,7 @@ export function QrScanner({ onCode, busy, placeholder = "Código del QR" }: { on
         )}
       </div>
       {camara === "sin-soporte" && (
-        <p className="text-sm text-[#f2b544]">No se pudo abrir la cámara (revisa que el navegador tenga permiso). Mientras, escribe el código abajo.</p>
+        <p className="text-sm text-aviso">No se pudo abrir la cámara (revisa que el navegador tenga permiso). Mientras, escribe el código abajo.</p>
       )}
       <form
         className="flex max-w-md gap-2"

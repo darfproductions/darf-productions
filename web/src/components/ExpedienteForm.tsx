@@ -52,7 +52,7 @@ export function ExpedienteForm({ pid, uid, f, esMenor, propio }: { pid: string; 
       </fieldset>
       <div className="flex flex-wrap items-center gap-3">
         <button disabled={pending} className="rounded-full bg-texto px-6 py-3 text-sm font-bold text-sala disabled:opacity-60">{pending ? "Guardando…" : "Guardar expediente"}</button>
-        {state && <span role={state.ok ? "status" : "alert"} className={`text-sm ${state.ok ? "text-[#7ee2a8]" : "text-[#ff8fa3]"}`}>{state.message}</span>}
+        {state && <span role={state.ok ? "status" : "alert"} className={`text-sm ${state.ok ? "text-exito" : "text-[#ff8fa3]"}`}>{state.message}</span>}
       </div>
     </form>
   );

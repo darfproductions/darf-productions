@@ -32,7 +32,7 @@ export default async function ProductionSummary({ params }: PageProps<"/panel/pr
         {faltan.length === 0 ? (
           <p className="mt-2 font-semibold text-[#bbf7d0]">Completo: la obra se puede publicar.</p>
         ) : (
-          <ul className="mt-2 flex flex-col gap-1 text-[#f2b544]">{faltan.map((f) => <li key={f}>• {f}</li>)}</ul>
+          <ul className="mt-2 flex flex-col gap-1 text-aviso">{faltan.map((f) => <li key={f}>• {f}</li>)}</ul>
         )}
         <Link href={`/producciones/${p.id}`} className="mt-4 inline-block text-sm font-bold text-violeta-claro">Ver página pública ↗</Link>
       </Card>

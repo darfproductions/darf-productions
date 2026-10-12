@@ -147,7 +147,7 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
                   </p>
                   {o.vencida_at && <p className="text-sm text-texto-3">No se confirmó el pago a tiempo y los asientos se liberaron. Puedes volver a comprar si sigue habiendo lugares.</p>}
                   {o.status === "pendiente" && o.expires_at && tiempoRestante(o.expires_at) && (
-                    <p className="text-sm text-[#fde68a]">Paga antes de <b>{limiteTexto(o.expires_at)}</b> (te quedan {tiempoRestante(o.expires_at)}). Si no, los asientos se liberan solos.</p>
+                    <p className="text-sm text-aviso">Paga antes de <b>{limiteTexto(o.expires_at)}</b> (te quedan {tiempoRestante(o.expires_at)}). Si no, los asientos se liberan solos.</p>
                   )}
                   {o.status === "pendiente" && (
                     wa ? (
@@ -203,7 +203,7 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
         <section aria-labelledby="boletos" className="flex flex-col gap-4 lg:col-span-8">
           <h2 id="boletos" className="titular text-2xl">Mis boletos</h2>
           {nueva && (
-            <p role="status" className="rounded-xl border border-[#7ee2a8]/40 bg-[#7ee2a8]/10 px-4 py-3">
+            <p role="status" className="rounded-xl border border-exito/40 bg-exito/10 px-4 py-3">
               Tu solicitud <b>{nueva}</b> quedó guardada y tus asientos están apartados. Cuando confirmemos tu
               pago, tus boletos con QR aparecerán aquí.
             </p>
@@ -329,7 +329,7 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
             <h2 id="ofertas" className="titular text-2xl">Tienes {ofertasPendientes.length === 1 ? "una oferta" : `${ofertasPendientes.length} ofertas`} de papel</h2>
             <ul className="flex flex-col gap-3">
               {ofertasPendientes.map((o) => (
-                <li key={o.id} className="flex flex-col gap-3 rounded-2xl border border-[#7ee2a8]/40 bg-[#7ee2a8]/10 p-5">
+                <li key={o.id} className="flex flex-col gap-3 rounded-2xl border border-exito/40 bg-exito/10 p-5">
                   <div>
                     <p className="text-xs font-bold uppercase tracking-[0.2em] text-texto-3">{o.obra}</p>
                     <p className="text-xl font-bold">{offerLabel(o)}</p>

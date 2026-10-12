@@ -11,7 +11,7 @@ export function ConfirmVigente({ pid, uid }: { pid: string; uid: string }) {
       <input type="hidden" name="pid" value={pid} />
       <input type="hidden" name="uid" value={uid} />
       <button disabled={pending} className="boton-compra rounded-full px-5 py-2.5 text-sm font-bold disabled:opacity-60">Sí, mis datos siguen vigentes</button>
-      {state && <span className={`text-sm ${state.ok ? "text-[#7ee2a8]" : "text-[#ff8fa3]"}`}>{state.message}</span>}
+      {state && <span className={`text-sm ${state.ok ? "text-exito" : "text-[#ff8fa3]"}`}>{state.message}</span>}
     </form>
   );
 }

@@ -40,7 +40,7 @@ export default async function Vendedores({ params }: PageProps<"/panel/produccio
               <span>
                 <b>{r.nombre}</b> <span className="font-mono text-texto-2">{r.codigo}</span>
                 <span className="block text-xs text-texto-3">
-                  {TIPO_VENDEDOR[r.tipo]} · <span className={r.activo ? "text-[#7ee2a8]" : ""}>{estadoVendedor(r)}</span> ·{" "}
+                  {TIPO_VENDEDOR[r.tipo]} · <span className={r.activo ? "text-exito" : ""}>{estadoVendedor(r)}</span> ·{" "}
                   {r.boletos} boletos · {formatMoney(Number(r.monto))}{r.pendientes ? ` · ${r.pendientes} por aprobar` : ""}
                 </span>
               </span>

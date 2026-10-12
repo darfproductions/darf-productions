@@ -71,7 +71,7 @@ export default async function ReporteGeneral({ searchParams }: PageProps<"/panel
                     <Link href={`/panel/producciones/${r.production_id}/reportes`} className="font-bold hover:text-violeta-claro">{r.nombre}</Link>
                     <span className="ml-2 inline-block align-middle"><EstadoChip estado={r.estado} /></span>
                     {r.cerrado_at && <Link href={`/panel/producciones/${r.production_id}/cierre`} className="block text-xs text-texto-3 underline">Resumen de cierre</Link>}
-                    {r.pendientes > 0 && <span className="block text-xs text-[#fde68a]">{r.pendientes} órdenes por aprobar</span>}
+                    {r.pendientes > 0 && <span className="block text-xs text-aviso">{r.pendientes} órdenes por aprobar</span>}
                   </td>
                   <td className="px-4 py-3">{r.funciones}{r.funciones_futuras ? <span className="text-texto-3"> ({r.funciones_futuras} próximas)</span> : ""}</td>
                   <td className="px-4 py-3">{r.boletos}</td>

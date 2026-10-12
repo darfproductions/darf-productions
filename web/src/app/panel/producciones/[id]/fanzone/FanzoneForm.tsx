@@ -81,7 +81,7 @@ export function FanzoneForm({ pid }: { pid: string }) {
       <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="destacado" /> Destacar (aparece arriba)</label>
       <div className="flex flex-wrap items-center gap-3">
         <button disabled={busy} className="rounded-full bg-texto px-5 py-2.5 text-sm font-bold text-sala disabled:opacity-60">{busy ? "Guardando…" : "Agregar"}</button>
-        {msg && <span className={`text-sm ${msg.ok ? "text-[#7ee2a8]" : "text-[#ff8fa3]"}`}>{msg.text}</span>}
+        {msg && <span className={`text-sm ${msg.ok ? "text-exito" : "text-[#ff8fa3]"}`}>{msg.text}</span>}
       </div>
     </form>
   );

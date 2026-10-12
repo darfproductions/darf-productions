@@ -10,7 +10,7 @@ const ghost = "self-start rounded-full border border-white/30 px-5 py-2.5 text-s
 
 function Msg({ s }: { s: ProfileState }) {
   if (!s) return null;
-  return <p role={s.ok ? "status" : "alert"} className={`text-sm ${s.ok ? "text-[#7ee2a8]" : "text-[#ff8fa3]"}`}>{s.message}</p>;
+  return <p role={s.ok ? "status" : "alert"} className={`text-sm ${s.ok ? "text-exito" : "text-[#ff8fa3]"}`}>{s.message}</p>;
 }
 
 export function ProfileForm(p: { nombres: string; apellidos: string; telefono: string; fecha: string }) {

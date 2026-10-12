@@ -52,14 +52,14 @@ export default async function PanelProductions() {
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
-                    {faltan > 0 && <span className="text-xs font-bold text-[#f2b544]">Kit incompleto</span>}
+                    {faltan > 0 && <span className="text-xs font-bold text-aviso">Kit incompleto</span>}
                     {estadoPub.get(p.id) && <span className="text-xs font-bold uppercase tracking-[0.12em] text-texto-3">{ETIQUETA_ESTADO[estadoPub.get(p.id)!]}</span>}
                     <EstadoChip estado={p.estado} />
                   </div>
                 </Link>
                 {p.estado === "publicada" && can(access, p.id, "obra.publicar") && (
                   p.destacada
-                    ? <span className="text-sm font-bold text-[#f2b544]" title="Destacada en la portada">★ En portada</span>
+                    ? <span className="text-sm font-bold text-aviso" title="Destacada en la portada">★ En portada</span>
                     : <ActionForm inline action={setFeatured} hidden={{ pid: p.id }} submit="☆ Destacar en portada" submitClass="rounded-full border border-white/25 px-3 py-1.5 text-xs font-bold" />
                 )}
               </li>

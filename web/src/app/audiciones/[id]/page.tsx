@@ -45,7 +45,7 @@ export default async function AuditionPage({ params }: PageProps<"/audiciones/[i
       <div className="mx-auto grid max-w-[1440px] gap-8 px-5 md:px-16 lg:grid-cols-12">
         <section className="flex flex-col gap-6 lg:col-span-7">
           {mine && mine.estado !== "cancelado" && a.estado !== "cancelada" && (
-            <div className="flex flex-col gap-4 rounded-2xl border border-[#7ee2a8]/40 bg-[#7ee2a8]/10 p-6 sm:flex-row sm:items-center">
+            <div className="flex flex-col gap-4 rounded-2xl border border-exito/40 bg-exito/10 p-6 sm:flex-row sm:items-center">
               {/* eslint-disable-next-line @next/next/no-img-element -- QR generado (data URL) */}
               {qr && !enLinea && <img src={qr} alt="Tu QR para la audición" width={160} height={160} className="rounded-xl bg-white p-2" />}
               <div className="flex flex-col gap-1">

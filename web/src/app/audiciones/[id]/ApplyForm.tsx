@@ -132,8 +132,8 @@ export function ApplyForm(props: {
       })}
 
       {menor && (
-        <fieldset className="grid gap-3 rounded-xl border border-[#f2b544]/40 p-4 sm:col-span-2 sm:grid-cols-3">
-          <legend className="px-1 text-sm font-bold text-[#f2b544]">Eres menor de edad: datos de tu madre, padre o tutor</legend>
+        <fieldset className="grid gap-3 rounded-xl border border-aviso/40 p-4 sm:col-span-2 sm:grid-cols-3">
+          <legend className="px-1 text-sm font-bold text-aviso">Eres menor de edad: datos de tu madre, padre o tutor</legend>
           <label className="flex flex-col gap-1.5 text-sm font-semibold">Nombre *<input className={field} name="tutor_nombre" required defaultValue={p?.tutor_nombre ?? ""} /></label>
           <label className="flex flex-col gap-1.5 text-sm font-semibold">Teléfono *<input className={field} name="tutor_telefono" type="tel" required defaultValue={p?.tutor_telefono ?? ""} /></label>
           <label className="flex flex-col gap-1.5 text-sm font-semibold">Correo<input className={field} name="tutor_email" type="email" defaultValue={p?.tutor_email ?? ""} /></label>
@@ -146,7 +146,7 @@ export function ApplyForm(props: {
         <label className="flex items-start gap-2"><input type="checkbox" name="consentimiento_imagen" defaultChecked={p?.consentimiento_imagen} className="mt-1" /> Autorizo que se tomen fotos o video durante la audición para uso interno de la producción.</label>
       </div>
 
-      {state && <p role={state.ok ? "status" : "alert"} className={`sm:col-span-2 ${state.ok ? "text-[#7ee2a8]" : "text-[#ff8fa3]"}`}>{state.message}</p>}
+      {state && <p role={state.ok ? "status" : "alert"} className={`sm:col-span-2 ${state.ok ? "text-exito" : "text-[#ff8fa3]"}`}>{state.message}</p>}
       <button disabled={pending || subiendo} className="boton-compra rounded-full px-6 py-4 text-sm font-bold uppercase tracking-[0.1em] disabled:opacity-60 sm:col-span-2">
         {pending ? "Enviando…" : p && p.estado !== "cancelado" ? "Guardar cambios" : "Inscribirme"}
       </button>

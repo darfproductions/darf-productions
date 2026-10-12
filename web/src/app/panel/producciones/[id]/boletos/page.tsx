@@ -16,7 +16,7 @@ import { approveOrder, cancelTicket, rejectOrder } from "./actions";
 export const metadata: Metadata = { title: "Ventas y órdenes" };
 
 const ESTADO: Record<string, string> = {
-  pendiente: "bg-[#5a4313] text-[#fde68a]",
+  pendiente: "bg-[#5a4313] text-aviso",
   aprobado: "bg-[#14532d] text-[#bbf7d0]",
   rechazado: "bg-[#3a3346] text-texto-3",
 };
@@ -108,14 +108,14 @@ export default async function SalesPage({ params, searchParams }: PageProps<"/pa
                     {o.order_code} <span className={`ml-1 rounded-full px-2 py-0.5 text-[11px] font-bold uppercase ${ESTADO[o.status]}`}>{o.status}</span>
                     {o.created_by_staff_id && <span className="ml-1 text-xs text-texto-3">taquilla</span>}
                     {o.vencida_at && <span className="ml-1 text-xs font-bold text-[#ff8fa3]">vencida (no se pagó a tiempo)</span>}
-                    {o.status === "pendiente" && tiempoRestante(o.expires_at ?? null) && <span className="ml-1 text-xs text-[#fde68a]">vence en {tiempoRestante(o.expires_at ?? null)}</span>}
+                    {o.status === "pendiente" && tiempoRestante(o.expires_at ?? null) && <span className="ml-1 text-xs text-aviso">vence en {tiempoRestante(o.expires_at ?? null)}</span>}
                   </p>
                   <p className="text-sm text-texto-2">{o.buyer_nombre} · <a href={`tel:${o.buyer_telefono}`} className="underline">{o.buyer_telefono}</a></p>
                   <p className="text-xs capitalize text-texto-3">{nombreFuncion.get(o.performance_id)} · pidió {fecha(o.created_at)}</p>
                 </div>
                 <div className="text-right">
                   <p className="text-lg font-black">{formatMoney(o.total)}</p>
-                  {o.discount_codigo && <p className="text-xs text-[#7ee2a8]">{o.discount_codigo} −{formatMoney(o.discount_amount)}</p>}
+                  {o.discount_codigo && <p className="text-xs text-exito">{o.discount_codigo} −{formatMoney(o.discount_amount)}</p>}
                 </div>
               </div>
               <ul className="flex flex-wrap gap-2 text-xs">

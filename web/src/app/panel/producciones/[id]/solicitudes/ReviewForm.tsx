@@ -14,7 +14,7 @@ const QUE_PASA: Record<string, string> = {
 // Aprobar o rechazar (con respuesta) una solicitud pendiente.
 export function ReviewForm({ pid, id, tipo, monto, conDoc }: { pid: string; id: string; tipo: string; monto: number | null; conDoc: boolean }) {
   const [state, run, pending] = useActionState<ReviewState, FormData>(reviewRequest, null);
-  if (state?.ok) return <p role="status" className="font-bold text-[#7ee2a8]">✓ {state.message}</p>;
+  if (state?.ok) return <p role="status" className="font-bold text-exito">✓ {state.message}</p>;
   const nota = tipo === "documento" && !conDoc ? "Es un documento fuera de la lista: al aprobar solo queda registrado." : QUE_PASA[tipo];
   return (
     <form action={run} className="mt-1 flex flex-col gap-2 border-t border-white/10 pt-3">

@@ -70,7 +70,7 @@ export default async function EvaluarAlumno({ params }: PageProps<"/panel/produc
             {[["Ensayos", extras.citados], ["Asistencias", extras.presentes], ["Retardos", extras.retardos], ["Faltas", extras.faltas], ["Justificadas", extras.justificadas], ["Asistencia", pct == null ? "—" : `${pct} %`]].map(([k, v]) => (
               <div key={String(k)} className="rounded-lg bg-sala p-2"><p className="text-[10px] font-bold uppercase tracking-[0.14em] text-texto-3">{k}</p><p className="font-black">{v}</p></div>
             ))}
-            {extras.incidencias.length > 0 && <p className="text-[#fde68a] sm:col-span-3 lg:col-span-6">{extras.incidencias.length} llamada(s) de atención en el periodo: {extras.incidencias.map((i) => i.descripcion).join(" · ")}</p>}
+            {extras.incidencias.length > 0 && <p className="text-aviso sm:col-span-3 lg:col-span-6">{extras.incidencias.length} llamada(s) de atención en el periodo: {extras.incidencias.map((i) => i.descripcion).join(" · ")}</p>}
           </div>
         )}
         <ActionForm action={saveEvaluation} hidden={{ pid: id, periodo, uid, siguiente: next ?? "" }} submit="Guardar evaluación">

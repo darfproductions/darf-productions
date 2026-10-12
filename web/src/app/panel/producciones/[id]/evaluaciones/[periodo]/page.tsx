@@ -26,8 +26,8 @@ export default async function Periodo({ params }: PageProps<"/panel/producciones
     <div className="flex flex-col gap-4">
       <Link href={base} className="text-sm font-bold text-violeta-claro">← Evaluaciones</Link>
       <Card className="flex flex-col gap-3">
-        <h2 className="titular text-xl">{per.nombre} {per.publicado_at && <span className="text-sm font-normal text-[#7ee2a8]">· publicado</span>}</h2>
-        {criterios.length === 0 && <p className="text-sm text-[#fde68a]">Primero agrega criterios a la rúbrica.</p>}
+        <h2 className="titular text-xl">{per.nombre} {per.publicado_at && <span className="text-sm font-normal text-exito">· publicado</span>}</h2>
+        {criterios.length === 0 && <p className="text-sm text-aviso">Primero agrega criterios a la rúbrica.</p>}
         <ul className="flex flex-col divide-y divide-white/10 text-sm">
           {alumnos.map((a) => {
             const ev = evs.find((e) => e.user_id === a.user_id);
@@ -40,7 +40,7 @@ export default async function Periodo({ params }: PageProps<"/panel/producciones
                   <span className="block text-xs text-texto-3">{a.papeles.join(" · ") || "Integrante"}</span>
                 </span>
                 <span className="flex flex-wrap items-center gap-2">
-                  <span className={`text-xs font-bold ${ok ? "text-[#7ee2a8]" : ev ? "text-[#fde68a]" : "text-texto-3"}`}>
+                  <span className={`text-xs font-bold ${ok ? "text-exito" : ev ? "text-aviso" : "text-texto-3"}`}>
                     {ok ? `Completa${prom != null ? ` · ${prom}` : ""}` : ev ? "Incompleta" : "Pendiente"}
                   </span>
                   <Link href={`${base}/${periodo}/${a.user_id}`} className="rounded-full border border-white/25 px-3 py-1.5 text-xs font-bold">{ev ? "Editar" : "Evaluar"}</Link>

@@ -42,7 +42,7 @@ function Archivo({ pid, uid, onBusy }: { pid: string; uid: string; onBusy: (b: b
 
 function Resultado({ state }: { state: ReqState }) {
   if (!state) return null;
-  return <p role="status" className={`text-sm font-semibold ${state.ok ? "text-[#7ee2a8]" : "text-[#ff8fa3]"}`}>{state.message}</p>;
+  return <p role="status" className={`text-sm font-semibold ${state.ok ? "text-exito" : "text-[#ff8fa3]"}`}>{state.message}</p>;
 }
 
 function FaltaForm({ pid, ensayos, horas, marcado, onDone }: { pid: string; ensayos: EnsayoOpcion[]; horas: number; marcado: string | null; onDone: () => void }) {

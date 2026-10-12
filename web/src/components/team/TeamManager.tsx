@@ -73,8 +73,8 @@ export async function TeamManager({ pid, seccion, base }: { pid: string | null; 
                 </p>
                 <p className="whitespace-pre-line">{n.cuerpo}</p>
                 {n.atendida_at ? (
-                  <p className="text-xs text-[#7ee2a8]">✓ Atendida por {persona.get(n.atendida_por ?? "") ?? "alguien del equipo"} · {fecha(n.atendida_at)}{n.respuesta ? ` — “${n.respuesta}”` : ""}</p>
-                ) : <p className="text-xs text-[#fde68a]">Pendiente</p>}
+                  <p className="text-xs text-exito">✓ Atendida por {persona.get(n.atendida_por ?? "") ?? "alguien del equipo"} · {fecha(n.atendida_at)}{n.respuesta ? ` — “${n.respuesta}”` : ""}</p>
+                ) : <p className="text-xs text-aviso">Pendiente</p>}
                 <ActionForm inline action={removeTeamNote} hidden={{ ...h, id: n.id }} confirm="¿Borrar esta nota?" submit="Borrar" submitClass={quitar} />
               </div>
             ))}

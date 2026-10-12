@@ -82,7 +82,7 @@ export function ProProfileEditor({ pid, nombre, pro, fotos, team, esMenor }: {
                 <span><b>Es menor de edad.</b> Tengo el permiso de su madre, padre o tutor para publicar este perfil.</span>
               </label>
             ) : (
-              <p className="rounded-lg bg-sala p-3 text-sm text-[#fde68a]">Eres menor de edad: tu perfil solo será público cuando la producción registre el permiso de tu madre, padre o tutor.{pro?.tutor_autorizado_at ? " (Ya está registrado.)" : ""}</p>
+              <p className="rounded-lg bg-sala p-3 text-sm text-aviso">Eres menor de edad: tu perfil solo será público cuando la producción registre el permiso de tu madre, padre o tutor.{pro?.tutor_autorizado_at ? " (Ya está registrado.)" : ""}</p>
             )
           )}
           {pro && <p className="text-sm text-texto-2">Ahora: {publico ? <a href={`/artistas/${pro.slug}`} className="font-bold text-violeta-claro underline">público ↗</a> : "privado"}</p>}

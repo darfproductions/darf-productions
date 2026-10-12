@@ -54,7 +54,7 @@ export function MaterialForm({ pid, tipos, carpetas, children }: { pid: string; 
       {children}
       <div className="flex items-center gap-3">
         <button disabled={pending || busy} className="rounded-full bg-texto px-5 py-2.5 text-sm font-bold text-sala disabled:opacity-60">{pending ? "Guardando…" : "Agregar material"}</button>
-        {state && <span className={`text-sm ${state.ok ? "text-[#7ee2a8]" : "text-[#ff8fa3]"}`}>{state.message}</span>}
+        {state && <span className={`text-sm ${state.ok ? "text-exito" : "text-[#ff8fa3]"}`}>{state.message}</span>}
       </div>
     </form>
   );

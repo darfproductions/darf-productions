@@ -65,7 +65,7 @@ export default async function PageEditor({ params }: PageProps<"/panel/produccio
         <div className="flex flex-wrap items-center gap-3"><span className="text-sm text-texto-2">Estado actual:</span><EstadoChip estado={p.estado} /></div>
         {faltan.length > 0 ? (
           <div className="rounded-lg bg-sala p-3 text-sm">
-            <p className="font-bold text-[#f2b544]">Para publicar falta:</p>
+            <p className="font-bold text-aviso">Para publicar falta:</p>
             <ul className="mt-1 text-texto-2">{faltan.map((f) => <li key={f}>• {f}</li>)}</ul>
           </div>
         ) : (

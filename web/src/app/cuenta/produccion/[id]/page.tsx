@@ -136,7 +136,7 @@ export default async function MyProduction({ params, searchParams }: PageProps<"
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-texto-3">Pagos</p>
             {!d.fee || d.fee.cobrar === false ? <p className="mt-1 text-sm text-texto-2">Sin pagos</p>
               : debeHoy > 0 ? <><p className="mt-1 text-xl font-black text-[#ff8fa3]">{pesos(debeHoy)}</p><p className="text-xs text-texto-2">pendiente a hoy</p></>
-              : <p className="mt-1 font-bold text-[#7ee2a8]">Al corriente</p>}
+              : <p className="mt-1 font-bold text-exito">Al corriente</p>}
           </a>
         </section>
         {falta.length > 0 && <p className="-mt-3 text-sm text-texto-2">Te falta: {falta.join(", ")}.</p>}
@@ -157,7 +157,7 @@ export default async function MyProduction({ params, searchParams }: PageProps<"
         )}
 
         {vigentes.length > 0 && (
-          <section className="flex flex-col gap-2 rounded-2xl border border-[#fde68a]/40 bg-telon p-5">
+          <section className="flex flex-col gap-2 rounded-2xl border border-aviso/40 bg-telon p-5">
             <h2 className="font-bold">Advertencias: {cuentaAdvertencias(vigentes)} de {d.limite}</h2>
             <ul className="flex flex-col gap-1.5 text-sm">
               {vigentes.map((i) => (
@@ -174,11 +174,11 @@ export default async function MyProduction({ params, searchParams }: PageProps<"
             <h2 id="avisos" className="titular text-2xl">Avisos {comunicados.some((a) => !leidos.has(a.id)) && <span className="ml-2 rounded-full bg-[#be123c] px-2.5 py-0.5 text-sm text-white">{comunicados.filter((a) => !leidos.has(a.id)).length} sin leer</span>}</h2>
             <ul className="flex flex-col gap-2">
               {comunicados.map((a) => (
-                <li key={a.id} className={`rounded-lg px-4 py-3 text-sm ${leidos.has(a.id) ? "bg-sala opacity-75" : a.importante ? "border border-[#fde68a]/50 bg-sala" : "border border-white/20 bg-sala"}`}>
-                  <p className="font-bold">{a.importante && <span className="mr-1 text-[#fde68a]">● Importante ·</span>} {a.titulo}</p>
+                <li key={a.id} className={`rounded-lg px-4 py-3 text-sm ${leidos.has(a.id) ? "bg-sala opacity-75" : a.importante ? "border border-aviso/50 bg-sala" : "border border-white/20 bg-sala"}`}>
+                  <p className="font-bold">{a.importante && <span className="mr-1 text-aviso">● Importante ·</span>} {a.titulo}</p>
                   <p className="text-xs text-texto-3">{new Date(a.created_at).toLocaleString("es-MX", { day: "numeric", month: "long", hour: "numeric", minute: "2-digit", timeZone: "America/Mexico_City" })}</p>
                   <p className="mt-1 whitespace-pre-line">{a.cuerpo}</p>
-                  {leidos.has(a.id) ? <p className="mt-1 text-xs text-[#7ee2a8]">✓ Leído</p> : (
+                  {leidos.has(a.id) ? <p className="mt-1 text-xs text-exito">✓ Leído</p> : (
                     <form action={markRead} className="mt-2"><input type="hidden" name="aid" value={a.id} /><input type="hidden" name="pid" value={id} />
                       <button className="rounded-full bg-texto px-4 py-1.5 text-xs font-bold text-sala">Enterado</button></form>
                   )}
@@ -200,7 +200,7 @@ export default async function MyProduction({ params, searchParams }: PageProps<"
                 {r.estado !== "cancelado" && activa && (() => {
                   const q = faltaDe(r.id);
                   if (q && q.estado !== "rechazada") {
-                    return <p className="text-xs font-bold text-[#fde68a]">{q.estado === "aprobada" ? "✓ Falta justificada" : "Falta solicitada · esperando respuesta"}</p>;
+                    return <p className="text-xs font-bold text-aviso">{q.estado === "aprobada" ? "✓ Falta justificada" : "Falta solicitada · esperando respuesta"}</p>;
                   }
                   const op = opcionesFalta.find((o) => o.id === r.id);
                   return op?.permitido
@@ -282,7 +282,7 @@ export default async function MyProduction({ params, searchParams }: PageProps<"
                   <p className="text-sm text-texto-2">
                     Asistencia: {extras.presentes} de {extras.citados} ensayos · {extras.retardos} retardos · {extras.faltas} faltas
                     {asistenciaPct(extras) != null && ` · ${asistenciaPct(extras)} %`}
-                    {extras.incidencias.length > 0 && <span className="block text-[#fde68a]">{extras.incidencias.length} llamada(s) de atención en el periodo</span>}
+                    {extras.incidencias.length > 0 && <span className="block text-aviso">{extras.incidencias.length} llamada(s) de atención en el periodo</span>}
                   </p>
                 )}
                 {ev.comentario && <p className="whitespace-pre-line text-sm text-texto-2">“{ev.comentario}”</p>}

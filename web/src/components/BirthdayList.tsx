@@ -21,7 +21,7 @@ export function BirthdayList({ items, fotos, vacio = "Nadie cumple años este me
             <span className="flex-1">
               <b>{c.nombre}</b>{anios !== null && <span className="text-texto-3"> · cumple {anios}</span>}
             </span>
-            {cuando && <span className={`text-xs font-bold ${cuando === "¡Hoy!" ? "text-[#fde68a]" : "text-texto-3"}`}>{cuando}</span>}
+            {cuando && <span className={`text-xs font-bold ${cuando === "¡Hoy!" ? "text-aviso" : "text-texto-3"}`}>{cuando}</span>}
           </li>
         );
       })}

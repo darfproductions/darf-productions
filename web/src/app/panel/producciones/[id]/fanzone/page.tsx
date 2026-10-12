@@ -40,7 +40,7 @@ export default async function FanZoneEditor({ params }: PageProps<"/panel/produc
                 <span className="min-w-0 flex-1">
                   <span className="mr-1 text-texto-3">{FAN_TIPOS[it.tipo].icono}</span>
                   <b>{it.titulo}</b>
-                  {it.destacado && <span className="ml-2 rounded-full bg-[#fde68a]/20 px-2 py-0.5 text-[11px] font-bold text-[#fde68a]">Destacado</span>}
+                  {it.destacado && <span className="ml-2 rounded-full bg-aviso/20 px-2 py-0.5 text-[11px] font-bold text-aviso">Destacado</span>}
                   {!it.visible && <span className="ml-2 rounded-full bg-white/10 px-2 py-0.5 text-[11px] font-bold">Oculto</span>}
                   <span className="block truncate text-xs text-texto-3">
                     {FAN_TIPOS[it.tipo].label}

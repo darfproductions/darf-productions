@@ -81,8 +81,8 @@ export default async function DayPage({ params, searchParams }: PageProps<"/pane
           ))}
         </Card>
         {resumen.sigue && (
-          <Card className="flex flex-wrap items-center justify-between gap-3 border border-[#fde68a]/40 p-4 md:p-4">
-            <p><span className="text-xs font-bold uppercase tracking-[0.2em] text-[#fde68a]">Sigue</span><br />
+          <Card className="flex flex-wrap items-center justify-between gap-3 border border-aviso/40 p-4 md:p-4">
+            <p><span className="text-xs font-bold uppercase tracking-[0.2em] text-aviso">Sigue</span><br />
               <b className="text-xl">{resumen.sigue.numero ? `Nº ${resumen.sigue.numero} · ` : ""}{resumen.sigue.nombre}</b></p>
             <StepButtons aid={aid} app={resumen.sigue.id} nombre={resumen.sigue.nombre} status="llego" />
           </Card>
@@ -108,7 +108,7 @@ export default async function DayPage({ params, searchParams }: PageProps<"/pane
                   <b className="w-12 shrink-0 text-lg">{r.numero ?? "—"}</b>
                   <span className="min-w-0 flex-1">
                     {gestiona ? <Link href={`/panel/audiciones/${aid}/aspirante/${r.id}`} className="font-bold hover:underline">{r.nombre}</Link> : <b>{r.nombre}</b>}
-                    {r.es_menor && <span className="ml-2 text-xs text-[#f2b544]">menor</span>}
+                    {r.es_menor && <span className="ml-2 text-xs text-aviso">menor</span>}
                     {r.walk_in && <span className="ml-2 text-xs text-texto-3">sin cita</span>}
                     <span className={`ml-2 rounded-full px-2 py-0.5 text-[10px] font-bold ${DAY_LABEL[st].cls}`}>{DAY_LABEL[st].label}</span>
                     <span className="block text-xs text-texto-3">

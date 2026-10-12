@@ -10,7 +10,7 @@ export function OrderDone({ result }: { result: Extract<OrderResult, { ok: true 
         <p className="titular text-3xl">¡Asientos apartados!</p>
         <p className="text-lg">Orden <b>{result.orderCode}</b> · {result.seats.join(", ")} · Total {formatMoney(result.total)}</p>
         {result.expiresAt && (
-          <p className="rounded-xl border border-[#fde68a]/40 bg-[#fde68a]/10 px-4 py-3 text-sm">
+          <p className="rounded-xl border border-aviso/40 bg-aviso/10 px-4 py-3 text-sm">
             Tus asientos quedan apartados hasta <b>{limiteTexto(result.expiresAt)}</b>. Si no se confirma tu pago para entonces, se liberan solos.
           </p>
         )}

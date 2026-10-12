@@ -47,7 +47,7 @@ export default async function Asistencia({ params }: PageProps<"/panel/produccio
             <li key={x.user_id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm">
               <span>
                 <b>{x.nombre}</b> <span className="text-xs text-texto-3">{x.papeles.join(", ")}</span>
-                {x.estado === "retardo" && x.minutos_tarde && <span className="ml-2 text-xs text-[#fde68a]">{x.minutos_tarde} min</span>}
+                {x.estado === "retardo" && x.minutos_tarde && <span className="ml-2 text-xs text-aviso">{x.minutos_tarde} min</span>}
                 {x.aviso && <span className="block text-xs text-[#a48bff]">{x.aviso}</span>}
               </span>
               <Mark pid={id} rid={rid} uid={x.user_id} actual={x.estado} />
