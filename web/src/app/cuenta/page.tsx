@@ -14,7 +14,9 @@ import { createClient } from "@/lib/supabase/server";
 import { formatMoney, whatsappPayUrl } from "@/lib/tickets";
 import { logout } from "../entrar/actions";
 import Link from "next/link";
-import { ProfileForm } from "./ProfileForm";
+import { AvatarUpload } from "./AvatarUpload";
+import { EmailForm, PasswordForm, ProfileForm } from "./ProfileForm";
+import { funcionPasada } from "@/lib/account-rules";
 
 export const metadata: Metadata = { title: "Mi cuenta" };
 
@@ -53,7 +55,7 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
   // QR generados en el servidor solo para boletos activos de órdenes aprobadas.
   const qrs = new Map<string, string>();
   for (const o of orders) {
-    if (o.status !== "aprobado") continue;
+    if (o.status !== "aprobado" || funcionPasada(o.performances?.starts_at ?? null)) continue;
     for (const t of o.tickets) if (t.is_active) qrs.set(t.id, await QRCode.toDataURL(t.qr_token, { margin: 1, width: 240 }));
   }
 
@@ -74,22 +76,13 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
     if (!a.checked_in_at && a.auditions?.estado !== "cancelada" && !["cancelado", "no_cumple"].includes(a.estado)) audQr.set(a.id, await QRCode.toDataURL(a.qr_token, { margin: 1, width: 200 }));
   }
 
-  return (
-    <main className="pb-10">
-      <PageHeading eyebrow="Mi cuenta" title={`Hola, ${session.profile?.nombre || "fan DARF"}`} />
-      <div className="mx-auto grid max-w-[1440px] gap-10 px-5 md:px-16 lg:grid-cols-12">
-        <section aria-labelledby="boletos" className="flex flex-col gap-4 lg:col-span-8">
-          <h2 id="boletos" className="titular text-2xl">Mis boletos</h2>
-          {nueva && (
-            <p role="status" className="rounded-xl border border-[#7ee2a8]/40 bg-[#7ee2a8]/10 px-4 py-3">
-              Tu solicitud <b>{nueva}</b> quedó guardada y tus asientos están apartados. Cuando confirmemos tu
-              pago, tus boletos con QR aparecerán aquí.
-            </p>
-          )}
-          {error && <p role="alert" className="text-[#ff8fa3]">No se pudieron cargar tus boletos.</p>}
-          {!error && orders.length === 0 && <p className="rounded-2xl bg-telon p-6 text-texto-2">Todavía no tienes compras.</p>}
-          <ul className="flex flex-col gap-4">
-            {orders.map((o) => {
+  const fotoUrl = session.profile?.foto_path
+    ? (await supabase.storage.from("avatares").createSignedUrl(session.profile.foto_path, 3600)).data?.signedUrl ?? null
+    : null;
+  const ahora = new Date();
+  const proximas = orders.filter((o) => !funcionPasada(o.performances?.starts_at ?? null, ahora));
+  const pasadas = orders.filter((o) => funcionPasada(o.performances?.starts_at ?? null, ahora));
+  const renderOrder = (o: OrderRow) => {
               const nombre = o.performances?.productions?.nombre ?? "Producción";
               const seats = o.tickets.filter((t) => t.is_active).map((t) => t.seats?.seat_label ?? "—");
               const wa = o.status === "pendiente"
@@ -120,7 +113,7 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
                       {o.tickets.filter((t) => t.is_active).map((t) => (
                         <li key={t.id} className="flex flex-col items-center gap-2 rounded-xl bg-white p-3 text-sala">
                           {/* eslint-disable-next-line @next/next/no-img-element -- imagen generada (data URL) */}
-                          <img src={qrs.get(t.id)} alt={`Código QR del asiento ${t.seats?.seat_label ?? ""}`} width={160} height={160} />
+                          {qrs.get(t.id) ? <img src={qrs.get(t.id)} alt={`Código QR del asiento ${t.seats?.seat_label ?? ""}`} width={160} height={160} /> : <p className="text-xs text-[#555]">Función pasada</p>}
                           <p className="text-sm font-bold">{t.seats?.seat_label ?? "Admisión general"}</p>
                           {t.checked_in_at && <p className="text-xs font-semibold text-[#8a1c2c]">Ya utilizado</p>}
                         </li>
@@ -129,15 +122,52 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
                   )}
                 </li>
               );
-            })}
+  };
+
+  return (
+    <main className="pb-10">
+      <PageHeading eyebrow="Mi cuenta" title={`Hola, ${session.profile?.nombre || "fan DARF"}`} />
+      <div className="mx-auto grid max-w-[1440px] gap-10 px-5 md:px-16 lg:grid-cols-12">
+        <section aria-labelledby="boletos" className="flex flex-col gap-4 lg:col-span-8">
+          <h2 id="boletos" className="titular text-2xl">Mis boletos</h2>
+          {nueva && (
+            <p role="status" className="rounded-xl border border-[#7ee2a8]/40 bg-[#7ee2a8]/10 px-4 py-3">
+              Tu solicitud <b>{nueva}</b> quedó guardada y tus asientos están apartados. Cuando confirmemos tu
+              pago, tus boletos con QR aparecerán aquí.
+            </p>
+          )}
+          {error && <p role="alert" className="text-[#ff8fa3]">No se pudieron cargar tus boletos.</p>}
+          {!error && orders.length === 0 && <p className="rounded-2xl bg-telon p-6 text-texto-2">Todavía no tienes compras.</p>}
+          {!error && orders.length > 0 && proximas.length === 0 && <p className="rounded-2xl bg-telon p-6 text-texto-2">No tienes funciones próximas.</p>}
+          <ul className="flex flex-col gap-4">
+            {proximas.map(renderOrder)}
           </ul>
+          {pasadas.length > 0 && (
+            <details className="rounded-2xl bg-telon/60 p-4">
+              <summary className="cursor-pointer font-bold">Funciones pasadas ({pasadas.length})</summary>
+              <ul className="mt-4 flex flex-col gap-4">{pasadas.map(renderOrder)}</ul>
+            </details>
+          )}
         </section>
 
         <aside className="flex flex-col gap-6 lg:col-span-4">
           <section aria-labelledby="perfil" className="flex flex-col gap-4 rounded-2xl bg-telon p-6">
             <h2 id="perfil" className="text-lg font-bold">Perfil</h2>
-            <ProfileForm nombre={session.profile?.nombre ?? ""} telefono={session.profile?.telefono ?? ""} email={session.email} />
+            <AvatarUpload uid={session.userId} url={fotoUrl} inicial={(session.profile?.nombre || session.email).slice(0, 1).toUpperCase()} />
+            <ProfileForm
+              nombres={session.profile?.nombres ?? session.profile?.nombre ?? ""}
+              apellidos={session.profile?.apellidos ?? ""}
+              telefono={session.profile?.telefono ?? ""}
+              fecha={session.profile?.fecha_nacimiento ?? ""}
+            />
           </section>
+          <details className="rounded-2xl bg-telon p-6">
+            <summary className="cursor-pointer text-lg font-bold">Correo y contraseña</summary>
+            <div className="mt-4 flex flex-col gap-6">
+              <EmailForm email={session.email} />
+              <PasswordForm />
+            </div>
+          </details>
           <form action={logout}>
             <button className="rounded-full border border-white/30 px-6 py-3 text-sm font-bold">Cerrar sesión</button>
           </form>

@@ -1,5 +1,8 @@
 import Link from "next/link";
+import { BirthdayList } from "@/components/BirthdayList";
 import { Card } from "@/components/panel/ui";
+import { cumplesDelMes, MESES, type Cumple } from "@/lib/account-rules";
+import { createClient } from "@/lib/supabase/server";
 import { formatPerformanceDate } from "@/lib/productions";
 import { getPanelProduction, listMembers, performanceSummary } from "@/lib/panel-data";
 import { can, groupMembers } from "@/lib/panel-nav";
@@ -17,6 +20,10 @@ export default async function ProductionSummary({ params }: PageProps<"/panel/pr
   ]);
   if (!p) return null;
   const faltan = kitMissing(p);
+  const mes = new Date().getMonth() + 1;
+  const cumples = can(access, id, "obra.ver")
+    ? cumplesDelMes((((await (await createClient()).rpc("birthdays", { pid: id })).data ?? []) as Cumple[]), mes)
+    : [];
 
   return (
     <div className="grid gap-4 md:grid-cols-2">
@@ -37,6 +44,13 @@ export default async function ProductionSummary({ params }: PageProps<"/panel/pr
           {funciones.enVenta} en venta · {funciones.proxima ? `próxima: ${formatPerformanceDate(funciones.proxima)}` : "sin próxima fecha"}
         </p>
       </Card>
+
+      {can(access, id, "obra.ver") && (
+        <Card className="md:col-span-2">
+          <p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-texto-3">Cumpleaños de {MESES[mes - 1]}</p>
+          <BirthdayList items={cumples} vacio="Nadie del elenco o del equipo cumple años este mes (o aún no registran su fecha)." />
+        </Card>
+      )}
 
       <Card className="md:col-span-2">
         <div className="flex flex-wrap items-center justify-between gap-2">

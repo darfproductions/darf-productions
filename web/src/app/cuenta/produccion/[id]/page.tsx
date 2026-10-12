@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { BirthdayList } from "@/components/BirthdayList";
 import { DocUpload } from "@/components/DocUpload";
+import { cumplesDelMes, MESES, type Cumple } from "@/lib/account-rules";
 import { ExpedienteForm } from "@/components/ExpedienteForm";
 import { PageHeading } from "@/components/PageHeading";
 import { requireSession } from "@/lib/auth";
@@ -36,11 +38,14 @@ export default async function MyProduction({ params }: PageProps<"/cuenta/produc
     supabase.from("rehearsal_attendance").select("rehearsal_id, estado, minutos_tarde").eq("user_id", session.userId),
     supabase.from("rehearsal_absences").select("rehearsal_id, motivo").eq("user_id", session.userId),
   ]);
-  const [mats, anns, reads] = await Promise.all([
+  const [mats, anns, reads, cumplesRes] = await Promise.all([
     supabase.from("materials").select("*").eq("production_id", id).order("carpeta", { nullsFirst: true }).order("titulo"),
     supabase.from("announcements").select("id, titulo, cuerpo, importante, created_at").eq("production_id", id).order("created_at", { ascending: false }),
     supabase.from("announcement_reads").select("announcement_id").eq("user_id", session.userId),
+    supabase.rpc("birthdays", { pid: id }),
   ]);
+  const mesHoy = new Date().getMonth() + 1;
+  const cumples = cumplesDelMes((cumplesRes.data ?? []) as Cumple[], mesHoy);
   const materiales = (mats.data ?? []) as Material[];
   const matUrls = await signMaterials(materiales.map((m) => m.archivo_path));
   const leidos = new Set(((reads.data ?? []) as { announcement_id: string }[]).map((r) => r.announcement_id));
@@ -185,6 +190,13 @@ export default async function MyProduction({ params }: PageProps<"/cuenta/produc
             </details>
           )}
         </section>
+
+        {cumples.length > 0 && (
+          <section aria-labelledby="cumples" className="flex flex-col gap-3 rounded-2xl bg-telon p-6">
+            <h2 id="cumples" className="titular text-2xl">Cumpleaños de {MESES[mesHoy - 1]}</h2>
+            <BirthdayList items={cumples} />
+          </section>
+        )}
 
         {materiales.length > 0 && (
           <section aria-labelledby="materiales" className="flex flex-col gap-3 rounded-2xl bg-telon p-6">

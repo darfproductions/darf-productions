@@ -52,3 +52,13 @@ export async function logout() {
   await supabase.auth.signOut();
   redirect("/");
 }
+
+/** "Olvidé mi contraseña": manda el enlace para poner una nueva. No dice si el correo tiene cuenta. */
+export async function requestReset(_prev: AuthState, form: FormData): Promise<AuthState> {
+  const email = String(form.get("email") ?? "").trim();
+  if (!email) return { ok: false, message: "Escribe tu correo." };
+  const origin = (await headers()).get("origin") ?? "";
+  const supabase = await createClient();
+  await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${origin}/auth/callback?next=/cuenta/contrasena` });
+  return { ok: true, message: `Si ${email} tiene cuenta, te llegará un enlace para poner una contraseña nueva. Revisa también tu correo no deseado.` };
+}

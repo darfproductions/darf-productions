@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useState } from "react";
 import { login, register, type AuthState } from "./actions";
 
@@ -35,6 +36,7 @@ export function AuthForms({ next }: { next: string }) {
           <label className="flex flex-col gap-1.5 text-sm font-semibold">Contraseña
             <input className={field} name="password" type="password" required autoComplete="current-password" />
           </label>
+          <Link href="/entrar/recuperar" className="-mt-2 self-end text-sm text-texto-2 underline">¿Olvidaste tu contraseña?</Link>
           {loginState && !loginState.ok && <p role="alert" className="text-[#ff8fa3]">{loginState.message}</p>}
           <button disabled={loginPending} className="boton-compra rounded-full py-4 text-sm font-bold uppercase tracking-[0.1em] disabled:opacity-60">
             {loginPending ? "Entrando…" : "Entrar"}

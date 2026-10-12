@@ -96,6 +96,7 @@ export function globalSections(a: PanelAccessData): Section[] {
   return [
     ...base,
     { href: "/panel/talento", label: "Talento" },
+    { href: "/panel/cumpleanos", label: "Cumpleaños" },
     { href: "/panel/usuarios", label: "Usuarios" },
     { href: "/panel/roles", label: "Roles" },
     { href: "/panel/bitacora", label: "Bitácora" },

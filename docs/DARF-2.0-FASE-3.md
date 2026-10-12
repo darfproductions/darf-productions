@@ -511,6 +511,30 @@ vendedor (aprobado por Diego).
 - **Vendedores de la 1.0** (sin cuenta): al migrarlos hay que activarlos en la obra que
   corresponda.
 
+## 17. Mi cuenta completa (pedido de Diego, 2026-10-12)
+
+`0051_account_profile.sql`, pruebas T1–T5.
+- **Perfil:**
+  - nombre(s) y apellidos por separado. `profiles.nombre` sigue siendo el nombre completo
+    que se muestra en todo el sitio y se arma solo. Lo que había en "nombre" pasó a
+    "nombres";
+  - teléfono;
+  - fecha de nacimiento;
+  - foto personal en el bucket privado `avatares`. La ven la persona, el Director y el
+    equipo de sus obras. No es el retrato de los créditos.
+- **Fecha de nacimiento única:** la de la cuenta y la del expediente se copian entre sí.
+- **Correo:** cambio con enlace de confirmación de Supabase. Mientras no se abra, sigue el
+  correo actual.
+- **Contraseña:**
+  - cambio que pide la actual;
+  - "¿Olvidaste tu contraseña?" en Entrar: el enlace abre `/cuenta/contrasena`, con una
+    cookie de 15 minutos que solo da ese enlace.
+- **Cumpleaños:**
+  - Panel → Cumpleaños (Director: todos, por mes, con edad y foto);
+  - tarjeta "Cumpleaños del mes" en el resumen de cada obra (equipo con obra.ver);
+  - la misma tarjeta en el portal del elenco (solo día y mes).
+- **Mis boletos:** próximas funciones arriba; las pasadas en "Funciones pasadas", sin QR.
+
 ## Cómo se comprueba cada etapa
 
 - Pruebas SQL de permisos por rol (en local y en DEV) y las de boletería sin cambios.

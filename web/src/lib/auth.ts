@@ -6,7 +6,15 @@ export type Profile = {
   nombre: string | null;
   telefono: string | null;
   rol: "fan" | "staff" | "admin";
+  nombres: string | null;
+  apellidos: string | null;
+  fecha_nacimiento: string | null;
+  foto_path: string | null;
 };
+
+/** Cookie que deja poner contraseña nueva tras abrir el enlace de recuperación. */
+export const RECOVERY_COOKIE = "darf_recovery";
+export const RECOVERY_PATH = "/cuenta/contrasena";
 
 export type Session = { userId: string; email: string; profile: Profile | null };
 
@@ -17,7 +25,7 @@ export async function getSession(): Promise<Session | null> {
   if (!data.user) return null;
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, nombre, telefono, rol")
+    .select("id, nombre, telefono, rol, nombres, apellidos, fecha_nacimiento, foto_path")
     .eq("id", data.user.id)
     .maybeSingle();
   return { userId: data.user.id, email: data.user.email ?? "", profile: profile as Profile | null };

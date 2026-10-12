@@ -17,7 +17,7 @@ final (Lanzamiento) y con aprobación explícita.**
 
 ## Lo que sigue
 
-### 1. Mi cuenta completa (pedido de Diego) — siguiente recomendado
+### 1. Mi cuenta completa (pedido de Diego) — HECHO (0051, ver FASE-3 §17)
 
 - **Datos personales:**
   - nombre y apellidos por separado;
