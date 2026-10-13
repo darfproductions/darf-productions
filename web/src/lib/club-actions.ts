@@ -14,6 +14,16 @@ export async function unirmeAlClub(): Promise<{ ok: boolean; message: string }> 
   return { ok: true, message: "¡Ya eres parte del Club Fan!" };
 }
 
+/** Salir del Club Fan (0095): desde Mi cuenta. Sus boletos y lugares apartados se quedan. */
+export async function salirDelClub(): Promise<{ ok: boolean; message: string }> {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("fan_leave");
+  if (error) return { ok: false, message: mensajeError(error) };
+  revalidatePath("/fan-zone", "layout");
+  revalidatePath("/cuenta");
+  return { ok: true, message: "Saliste del Club Fan. Puedes volver cuando quieras." };
+}
+
 export async function apartarEncuentro(id: string, on: boolean): Promise<{ ok: boolean; message: string }> {
   const supabase = await createClient();
   const { error } = await supabase.rpc("fan_encuentro_apartar", { eid: id, p_on: on });

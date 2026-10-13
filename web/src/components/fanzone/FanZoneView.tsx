@@ -47,6 +47,7 @@ export async function FanZoneView({ pid, cat, nombre }: { pid: string | null; ca
                 ))}
               </ul>
               <UnirseClub />
+              <Link href="/club-fan" className="text-sm font-bold text-oro-claro underline-offset-4 hover:underline">Ver todos los beneficios →</Link>
             </div>
             <div aria-hidden="true" className="opacity-60 blur-[1px]">
               <Credencial nombre="Tu nombre" c={{ numero: 0, desde: new Date(0).toISOString(), fundador: false }} />

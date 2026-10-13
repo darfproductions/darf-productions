@@ -24,6 +24,8 @@ import { AvatarUpload } from "./AvatarUpload";
 import { MiCredencial } from "@/components/credencial/MiCredencial";
 import { ActionForm } from "@/components/panel/ActionForm";
 import { getMiCredencial } from "@/lib/credencial";
+import { SalirClub } from "@/components/fanzone/SalirClub";
+import { numeroSocio } from "@/lib/fanzone-rules";
 import { EmailForm, PasswordForm, ProfileForm } from "./ProfileForm";
 import { funcionPasada } from "@/lib/account-rules";
 import { limiteTexto, recordatorio, tiempoRestante } from "@/lib/expiry-rules";
@@ -418,6 +420,13 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
 
         <aside className="order-2 flex flex-col gap-6 lg:order-none lg:col-span-4 lg:self-start">
           {credencial && <div id="credencial" className="scroll-mt-24"><MiCredencial c={credencial} /></div>}
+          {credencial?.socio && (
+            <section aria-labelledby="club" className="flex flex-col gap-2 rounded-2xl bg-telon p-6">
+              <h2 id="club" className="text-lg font-bold">Club Fan</h2>
+              <p className="text-sm text-texto-2">Eres socio {numeroSocio(credencial.socio.numero)}{credencial.socio.fundador ? " · Fan fundador" : ""}. <Link href="/club-fan" className="font-bold text-lila">Tus beneficios</Link></p>
+              <SalirClub numero={numeroSocio(credencial.socio.numero)} />
+            </section>
+          )}
           <section aria-labelledby="perfil" className="flex flex-col gap-4 rounded-2xl bg-telon p-6">
             <h2 id="perfil" className="text-lg font-bold">Perfil</h2>
             <AvatarUpload uid={session.userId} url={fotoUrl} inicial={(session.profile?.nombre || session.email).slice(0, 1).toUpperCase()} />

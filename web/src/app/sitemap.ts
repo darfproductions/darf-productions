@@ -9,7 +9,7 @@ import { createClient } from "@/lib/supabase/server";
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   if (isDev) return [];
   const base = env.siteUrl || "https://darfproductions.com";
-  const fijas = ["", "/producciones", "/eventos", "/audiciones", "/nosotros", "/fan-zone", "/contacto", "/privacidad", "/terminos", "/reembolsos"]
+  const fijas = ["", "/producciones", "/eventos", "/audiciones", "/nosotros", "/fan-zone", "/club-fan", "/contacto", "/privacidad", "/terminos", "/reembolsos"]
     .map((p) => ({ url: `${base}${p}`, changeFrequency: "weekly" as const, priority: p === "" ? 1 : 0.6 }));
   const [{ productions }, audiciones, artistas] = await Promise.all([
     getHomeData(),

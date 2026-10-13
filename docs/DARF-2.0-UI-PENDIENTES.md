@@ -86,6 +86,7 @@ Diego eligió cuáles sí (ver plan del bloque). Hechas en `darf-2.0`, migracion
 | Listo para vender (4C) | En el Resumen de la obra: publicada, kit completo, funciones próximas, lugares (mapa o zonas con cupo), asientos con zona, precio en cada zona de cada función, venta abierta y WhatsApp de pagos; el póster para la portada como opcional. Cada punto lleva a donde se arregla; si todo está bien queda plegado con "✓ Todo listo". |
 | Antes de cerrar la temporada (4C) | En Cierre de temporada, arriba del botón: órdenes por aprobar (lo único que impide cerrar), funciones que aún no pasan, reembolsos de funciones canceladas, mensualidades vencidas, ofertas sin respuesta, documentos por revisar, créditos y galería para la página de archivo. |
 | Invitar al equipo (0094) | En Permisos: con cuenta entra directo; sin cuenta queda invitación con "Copiar enlace", "Mandar por WhatsApp", reenviar y cancelar (vence en 30 días). Al confirmar su correo al crear la cuenta entra sola con sus roles. Correo automático con la Edge Function `team-invite` (Resend) cuando se active en `invite_config.hook_url`. Aviso de bienvenida con liga a la "Guía de tu rol" (qué puede hacer y dónde, según sus permisos). |
+| Club Fan (0095) | Página pública /club-fan con beneficios, preguntas y cómo unirse (liga en el pie de página y en la Fan Zone). En Mi cuenta, sección "Club Fan" con "Salir del Club Fan" (con confirmación): se borran sus recordatorios de preventa; boletos y lugares apartados se quedan; si vuelve, nuevo número de socio. |
 
 ## Lo que queda pendiente
 
@@ -100,7 +101,7 @@ Diego eligió cuáles sí (ver plan del bloque). Hechas en `darf-2.0`, migracion
 ## Para el lanzamiento (lista de revisión)
 
 - **Entrar con Google:** en el proyecto de Supabase (DEV y luego el oficial) → Authentication → Providers → Google, con el Client ID y secreto de la 1.0, y agregar la dirección del sitio (`…/auth/callback`) en Google Cloud y en Supabase → URL Configuration. Probar el botón en DEV y otra vez el día de la publicación.
-- DEV ya tiene aplicadas todas las migraciones hasta la 0093 (verificado; pendiente de correr: `supabase/dev/apply_0094_dev.sql`). El proyecto oficial necesitará las mismas, en orden, el día de la publicación.
+- DEV ya tiene aplicadas todas las migraciones hasta la 0093 (verificado; pendientes de correr en orden: `supabase/dev/apply_0094_dev.sql` y `supabase/dev/apply_0095_dev.sql`). El proyecto oficial necesitará las mismas, en orden, el día de la publicación.
 - **Contraseñas (Supabase → Authentication → Providers → Email / Policies), en DEV y en el oficial:**
   - Largo mínimo **8** y "letras y números" (la página ya lo exige; así también lo exige Supabase si alguien llama directo a su servicio).
   - **"Secure password change"** encendido y **aviso por correo** cuando cambia la contraseña o el correo ("Password changed" / "Email changed" notifications).
