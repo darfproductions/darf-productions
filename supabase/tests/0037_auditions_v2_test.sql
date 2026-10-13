@@ -178,7 +178,7 @@ do $$ declare e uuid; r json; v audition_applications%rowtype; begin
   update ctx set esc = e;
   insert into audition_slots (audition_id, inicia, cupo) values (e, now() + interval '5 days', 30);
   perform pg_temp.as_user('00000000-0000-0000-0000-0000000000c3');
-  r := audition_apply(e, jsonb_build_object('nombre', 'Mía', 'telefono', '55', 'fecha_nacimiento', (current_date - interval '12 years')::date,
+  r := audition_apply(e, jsonb_build_object('nombre', 'Mía', 'telefono', '55', 'fecha_nacimiento', (hoy_mx() - interval '12 years')::date,
         'consentimiento_datos', true, 'tutor_nombre', 'No se guarda', 'foto_path', e::text || '/00000000-0000-0000-0000-0000000000c3/x.jpg',
         'slot_id', (select id from audition_slots where audition_id = e)));
   select * into v from audition_applications where id = (r->>'application_id')::uuid;
@@ -254,7 +254,7 @@ do $$ declare a uuid; begin
   insert into auditions (production_id, titulo, estado) values ('showman', 'Normal', 'abierta') returning id into a;
   perform pg_temp.as_user('00000000-0000-0000-0000-0000000000c2');
   begin
-    perform audition_apply(a, jsonb_build_object('nombre', 'Niño', 'telefono', '55', 'fecha_nacimiento', (current_date - interval '10 years')::date,
+    perform audition_apply(a, jsonb_build_object('nombre', 'Niño', 'telefono', '55', 'fecha_nacimiento', (hoy_mx() - interval '10 years')::date,
           'consentimiento_datos', true));
     raise exception 'FALLO T8: menor sin tutor en convocatoria normal';
   exception when raise_exception then

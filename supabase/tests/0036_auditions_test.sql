@@ -93,7 +93,7 @@ end $$;
 
 -- T3: menor de edad necesita tutor y autorización; edad mínima
 do $$ declare r json; p jsonb; begin
-  p := jsonb_build_object('nombre', 'Carla', 'telefono', '56', 'fecha_nacimiento', (current_date - interval '14 years')::date::text,
+  p := jsonb_build_object('nombre', 'Carla', 'telefono', '56', 'fecha_nacimiento', (hoy_mx() - interval '14 years')::date::text,
        'slot_id', (select slot2 from ctx), 'respuestas', jsonb_build_object((select campo from ctx)::text, 'x'), 'consentimiento_datos', true);
   perform pg_temp.as_user('00000000-0000-0000-0000-0000000000c3');
   begin
@@ -103,7 +103,7 @@ do $$ declare r json; p jsonb; begin
     if sqlerrm not like '%menor de edad%' then raise exception 'FALLO T3a: %', sqlerrm; end if;
   end;
   begin
-    perform audition_apply((select aud from ctx), p || jsonb_build_object('fecha_nacimiento', (current_date - interval '8 years')::date::text));
+    perform audition_apply((select aud from ctx), p || jsonb_build_object('fecha_nacimiento', (hoy_mx() - interval '8 years')::date::text));
     raise exception 'FALLO T3: aceptó menor de la edad mínima';
   exception when raise_exception then
     if sqlerrm not like '%mayores de 10%' then raise exception 'FALLO T3b: %', sqlerrm; end if;
@@ -206,7 +206,7 @@ do $$ declare n int; begin
   perform pg_temp.as_user('00000000-0000-0000-0000-0000000000c3');
   perform audition_cancel_mine((select app3 from ctx));
   if (select estado from audition_applications where id = (select app3 from ctx)) <> 'cancelado' then raise exception 'FALLO T8'; end if;
-  perform audition_apply((select aud from ctx), jsonb_build_object('nombre', 'Carla', 'telefono', '56', 'fecha_nacimiento', (current_date - interval '14 years')::date::text,
+  perform audition_apply((select aud from ctx), jsonb_build_object('nombre', 'Carla', 'telefono', '56', 'fecha_nacimiento', (hoy_mx() - interval '14 years')::date::text,
     'slot_id', (select slot2 from ctx), 'respuestas', jsonb_build_object((select campo from ctx)::text, 'x'), 'consentimiento_datos', true,
     'tutor_nombre', 'Mamá', 'tutor_telefono', '57', 'consentimiento_tutor', true));
   if (select estado from audition_applications where id = (select app3 from ctx)) <> 'inscrito' then raise exception 'FALLO T8b'; end if;

@@ -41,7 +41,7 @@ do $$ declare p1 uuid; r uuid; begin
   perform panel_add_member('showman', 't_rep@test.local', 'integrante');
   perform panel_add_member('showman', 't_ens@test.local', 'integrante');
   perform pg_temp.reset();
-  update member_enrollment set ingreso = current_date - 365;
+  update member_enrollment set ingreso = hoy_mx() - 365;
   insert into people (nombre, profile_id) values ('Rep', '00000000-0000-0000-0000-0000000000c1') returning id into p1;
   insert into production_credits (production_id, person_id, tipo, papel) values ('showman', p1, 'reparto', 'Barnum');
   insert into production_discipline (production_id, auto_faltas, aviso_falta_horas) values ('showman', 1, 24)

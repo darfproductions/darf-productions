@@ -30,7 +30,7 @@ end $$;
 -- Desde 0044 cuenta la fecha de ingreso: estas pruebas suponen que entraron hace tiempo.
 do $$ begin
   if to_regclass('public.member_enrollment') is not null then
-    execute 'update member_enrollment set ingreso = current_date - 365';
+    execute 'update member_enrollment set ingreso = hoy_mx() - 365';
   end if;
 end $$;
 
@@ -115,12 +115,12 @@ do $$ declare n int; r record; esperadas int; begin
   perform pg_temp.as_user('00000000-0000-0000-0000-0000000000d1');
   insert into production_discipline (production_id, limite_advertencias, auto_mensualidad_meses) values ('showman', 3, 2);
   insert into production_fees (production_id, monto, desde, hasta, dia_limite)
-  values ('showman', 500, (date_trunc('month', current_date) - interval '5 months')::date, (date_trunc('month', current_date) + interval '2 months')::date, 28);
+  values ('showman', 500, (date_trunc('month', hoy_mx()) - interval '5 months')::date, (date_trunc('month', hoy_mx()) + interval '2 months')::date, 28);
   insert into member_payments (production_id, user_id, periodo, monto)
   select 'showman', '00000000-0000-0000-0000-0000000000c2', g::date, 500
-    from generate_series(date_trunc('month', current_date) - interval '5 months', date_trunc('month', current_date), interval '1 month') g;
+    from generate_series(date_trunc('month', hoy_mx()) - interval '5 months', date_trunc('month', hoy_mx()), interval '1 month') g;
   -- int1 debe los 5 meses anteriores (y el actual si ya pasó el día 28) → 1 advertencia por cada 2; int2 pagó todo → 0
-  esperadas := (5 + case when extract(day from current_date) > 28 then 1 else 0 end) / 2;
+  esperadas := (5 + case when extract(day from hoy_mx()) > 28 then 1 else 0 end) / 2;
   n := discipline_scan_fees('showman');
   if n <> esperadas then raise exception 'FALLO T4a: se crearon % advertencias automáticas (esperadas %)', n, esperadas; end if;
   n := discipline_scan_fees('showman');

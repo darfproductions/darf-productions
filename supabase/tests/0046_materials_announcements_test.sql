@@ -105,7 +105,7 @@ end $$;
 -- T3: quien se da de baja deja de recibir
 do $$ declare n int; begin
   perform pg_temp.as_user('00000000-0000-0000-0000-0000000000d1');
-  perform member_withdraw('showman', '00000000-0000-0000-0000-0000000000c2', current_date, 'Se fue');
+  perform member_withdraw('showman', '00000000-0000-0000-0000-0000000000c2', null, 'Se fue');
   perform pg_temp.as_user('00000000-0000-0000-0000-0000000000c2');
   select count(*) into n from materials;
   if n <> 0 then raise exception 'FALLO T3a: con baja sigue viendo % materiales', n; end if;

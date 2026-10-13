@@ -16,17 +16,17 @@ end $$;
 do $$ declare n int; begin
   perform pg_temp.as_user('00000000-0000-0000-0000-0000000000a1');
   perform panel_add_member('showman', 't_int1@test.local', 'integrante');
-  perform member_set_ingreso('showman', '00000000-0000-0000-0000-0000000000c1', current_date - 365);
+  perform member_set_ingreso('showman', '00000000-0000-0000-0000-0000000000c1', hoy_mx() - 365);
   insert into production_fees (production_id, monto, inscripcion, desde, hasta, dia_limite)
-  values ('showman', 500, 800, (date_trunc('month', current_date) - interval '6 months')::date, (date_trunc('month', current_date) + interval '2 months')::date, 1);
+  values ('showman', 500, 800, (date_trunc('month', hoy_mx()) - interval '6 months')::date, (date_trunc('month', hoy_mx()) + interval '2 months')::date, 1);
   -- T1: el pago de inscripción no cuenta como mensualidad
   insert into member_payments (production_id, user_id, periodo, monto, concepto)
   select 'showman', '00000000-0000-0000-0000-0000000000c1', g::date, 500, 'inscripcion'
-    from generate_series(date_trunc('month', current_date) - interval '6 months', date_trunc('month', current_date) - interval '1 month', interval '1 month') g;
+    from generate_series(date_trunc('month', hoy_mx()) - interval '6 months', date_trunc('month', hoy_mx()) - interval '1 month', interval '1 month') g;
   n := discipline_scan_fees('showman');
   if n < 1 then raise exception 'FALLO T1: pagos de inscripción contaron como mensualidades (% advertencias)', n; end if;
   begin
-    insert into member_payments (production_id, user_id, periodo, monto, concepto) values ('showman', '00000000-0000-0000-0000-0000000000c1', date_trunc('month', current_date)::date, 1, 'otro');
+    insert into member_payments (production_id, user_id, periodo, monto, concepto) values ('showman', '00000000-0000-0000-0000-0000000000c1', date_trunc('month', hoy_mx())::date, 1, 'otro');
     raise exception 'FALLO T1b: aceptó un concepto inválido';
   exception when check_violation then null;
   end;

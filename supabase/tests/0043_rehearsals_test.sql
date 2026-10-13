@@ -33,7 +33,7 @@ end $$;
 -- Desde 0044 cuenta la fecha de ingreso: estas pruebas suponen que entraron hace tiempo.
 do $$ begin
   if to_regclass('public.member_enrollment') is not null then
-    execute 'update member_enrollment set ingreso = current_date - 365';
+    execute 'update member_enrollment set ingreso = hoy_mx() - 365';
   end if;
 end $$;
 

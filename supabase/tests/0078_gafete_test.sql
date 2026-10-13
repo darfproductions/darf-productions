@@ -10,13 +10,13 @@ values ('00000000-0000-0000-0000-0000000000c1', '00000000-0000-0000-0000-0000000
        ('00000000-0000-0000-0000-0000000000c6', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 't_otra@test.local');
 update profiles set rol = 'admin' where id = '00000000-0000-0000-0000-0000000000c4';
 update profiles set nombre = 'Ana Elenco', telefono = '4421112233' where id = '00000000-0000-0000-0000-0000000000c1';
-update profiles set nombre = 'Mia Menor', telefono = '4429990000', fecha_nacimiento = current_date - interval '15 years' where id = '00000000-0000-0000-0000-0000000000c5';
+update profiles set nombre = 'Mia Menor', telefono = '4429990000', fecha_nacimiento = hoy_mx() - interval '15 years' where id = '00000000-0000-0000-0000-0000000000c5';
 insert into production_members (production_id, user_id, role_id) values
   ('showman', '00000000-0000-0000-0000-0000000000c1', 'integrante'),
   ('showman', '00000000-0000-0000-0000-0000000000c2', 'integrante'),
   ('showman', '00000000-0000-0000-0000-0000000000c5', 'integrante'),
   ('mm', '00000000-0000-0000-0000-0000000000c6', 'integrante');
-update member_enrollment set ingreso = current_date - 30 where user_id in ('00000000-0000-0000-0000-0000000000c1', '00000000-0000-0000-0000-0000000000c2', '00000000-0000-0000-0000-0000000000c5', '00000000-0000-0000-0000-0000000000c6');
+update member_enrollment set ingreso = hoy_mx() - 30 where user_id in ('00000000-0000-0000-0000-0000000000c1', '00000000-0000-0000-0000-0000000000c2', '00000000-0000-0000-0000-0000000000c5', '00000000-0000-0000-0000-0000000000c6');
 
 create or replace function pg_temp.as_user(uid uuid) returns void language plpgsql as $$
 begin

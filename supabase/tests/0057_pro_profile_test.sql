@@ -48,7 +48,7 @@ do $$ declare pid uuid; n int; r record; begin
   reset role;
 
   -- T3: menor de edad: hace falta el permiso del tutor, que registra el equipo
-  update profiles set fecha_nacimiento = (current_date - interval '12 years')::date where id = '00000000-0000-0000-0000-0000000000e1';
+  update profiles set fecha_nacimiento = (hoy_mx() - interval '12 years')::date where id = '00000000-0000-0000-0000-0000000000e1';
   if pro_is_public(pid) then raise exception 'FALLO T3a: menor público sin permiso'; end if;
   insert into production_credits (production_id, person_id, tipo, papel, activo) values ('showman', pid, 'reparto', 'Jenny', true);
   perform pg_temp.as_user('00000000-0000-0000-0000-0000000000a1');

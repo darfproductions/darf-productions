@@ -35,7 +35,7 @@ do $$ declare per uuid; ev uuid; canto uuid; baile uuid; act uuid; n int; x json
   select id into act from rubric_criteria where production_id = 'showman' and compartido;
   if act is null then raise exception 'FALLO T1a: falta Actitud y conducta compartida'; end if;
   insert into rubric_teachers values ('showman', '00000000-0000-0000-0000-0000000000d1', canto), ('showman', '00000000-0000-0000-0000-0000000000d2', baile);
-  insert into rubric_periods (production_id, nombre, desde, hasta) values ('showman', 'Bimestre 1', current_date - 30, current_date) returning id into per;
+  insert into rubric_periods (production_id, nombre, desde, hasta) values ('showman', 'Bimestre 1', hoy_mx() - 30, hoy_mx()) returning id into per;
   insert into rubric_evaluations (production_id, period_id, user_id, comentario) values ('showman', per, '00000000-0000-0000-0000-0000000000e1', 'General') returning id into ev;
 
   -- T2: la maestra de canto califica canto, no baile; no toca la estructura ni el comentario general
@@ -73,15 +73,15 @@ do $$ declare per uuid; ev uuid; canto uuid; baile uuid; act uuid; n int; x json
   if (select avg(numero) from rubric_shared_scores where evaluation_id = ev) <> 9 then raise exception 'FALLO T3c: promedio'; end if;
 
   -- T4: boleta: asistencia y llamadas de atención del periodo (Ana entró hace un año)
-  update member_enrollment set ingreso = current_date - 365 where production_id = 'showman' and user_id = '00000000-0000-0000-0000-0000000000e1';
+  update member_enrollment set ingreso = hoy_mx() - 365 where production_id = 'showman' and user_id = '00000000-0000-0000-0000-0000000000e1';
   insert into rehearsals (production_id, inicia) values ('showman', now() - interval '5 days') returning id into r1;
   insert into rehearsals (production_id, inicia) values ('showman', now() - interval '4 days') returning id into r2;
   insert into rehearsals (production_id, inicia) values ('showman', now() - interval '60 days') returning id into r3;
   insert into rehearsal_attendance (rehearsal_id, user_id, estado) values (r1, '00000000-0000-0000-0000-0000000000e1', 'presente'), (r2, '00000000-0000-0000-0000-0000000000e1', 'retardo'), (r3, '00000000-0000-0000-0000-0000000000e1', 'falta');
   insert into member_incidents (production_id, user_id, tipo, nivel, descripcion, fecha) values
-    ('showman', '00000000-0000-0000-0000-0000000000e1', 'conducta', 'advertencia', 'Uso del celular', current_date - 2),
-    ('showman', '00000000-0000-0000-0000-0000000000e1', 'otro', 'nota', 'Nota interna', current_date - 2),
-    ('showman', '00000000-0000-0000-0000-0000000000e1', 'falta', 'advertencia', 'Antigua', current_date - 90);
+    ('showman', '00000000-0000-0000-0000-0000000000e1', 'conducta', 'advertencia', 'Uso del celular', hoy_mx() - 2),
+    ('showman', '00000000-0000-0000-0000-0000000000e1', 'otro', 'nota', 'Nota interna', hoy_mx() - 2),
+    ('showman', '00000000-0000-0000-0000-0000000000e1', 'falta', 'advertencia', 'Antigua', hoy_mx() - 90);
   perform pg_temp.as_user('00000000-0000-0000-0000-0000000000d2');
   x := rubric_period_extras(per, '00000000-0000-0000-0000-0000000000e1');
   if (x->>'citados')::int <> 2 or (x->>'presentes')::int <> 1 or (x->>'retardos')::int <> 1 or (x->>'faltas')::int <> 0 then raise exception 'FALLO T4a: asistencia %', x; end if;

@@ -32,11 +32,11 @@ end $$;
 
 -- T1: al entrar queda su ingreso; ingreso tardío: no se le cita a ensayos anteriores
 do $$ declare n int; a uuid; b uuid; begin
-  if (select count(*) from member_enrollment where production_id = 'showman' and ingreso = current_date) <> 2 then
+  if (select count(*) from member_enrollment where production_id = 'showman' and ingreso = hoy_mx()) <> 2 then
     raise exception 'FALLO T1a: no se registró el ingreso al entrar';
   end if;
   perform pg_temp.as_user('00000000-0000-0000-0000-0000000000d1');
-  perform member_set_ingreso('showman', '00000000-0000-0000-0000-0000000000c1', current_date - 30);
+  perform member_set_ingreso('showman', '00000000-0000-0000-0000-0000000000c1', hoy_mx() - 30);
   insert into rehearsals (production_id, titulo, inicia) values ('showman', 'Antes', now() - interval '10 days') returning id into a;
   insert into rehearsals (production_id, titulo, inicia) values ('showman', 'Futuro', now() + interval '10 days') returning id into b;
   insert into ctx (antes, futuro) values (a, b);
@@ -47,7 +47,7 @@ do $$ declare n int; a uuid; b uuid; begin
   if n <> 1 then raise exception 'FALLO T1c: quien entró tarde ve % ensayos (solo el futuro)', n; end if;
   perform pg_temp.as_user('00000000-0000-0000-0000-0000000000d2');
   begin
-    perform member_set_ingreso('showman', '00000000-0000-0000-0000-0000000000c2', current_date - 5);
+    perform member_set_ingreso('showman', '00000000-0000-0000-0000-0000000000c2', hoy_mx() - 5);
     raise exception 'FALLO T1: un juez cambió el ingreso';
   exception when raise_exception then
     if sqlerrm not like 'No autorizado%' then raise exception 'FALLO T1d: %', sqlerrm; end if;
@@ -60,12 +60,12 @@ do $$ declare n int; begin
   perform pg_temp.as_user('00000000-0000-0000-0000-0000000000d1');
   insert into rehearsal_attendance (rehearsal_id, user_id, estado) values ((select antes from ctx), '00000000-0000-0000-0000-0000000000c1', 'presente');
   begin
-    perform member_withdraw('showman', '00000000-0000-0000-0000-0000000000c1', current_date, '');
+    perform member_withdraw('showman', '00000000-0000-0000-0000-0000000000c1', hoy_mx(), '');
     raise exception 'FALLO T2: baja sin motivo';
   exception when raise_exception then
     if sqlerrm not like 'Escribe el motivo%' then raise exception 'FALLO T2a: %', sqlerrm; end if;
   end;
-  perform member_withdraw('showman', '00000000-0000-0000-0000-0000000000c1', current_date, 'Cambio de ciudad');
+  perform member_withdraw('showman', '00000000-0000-0000-0000-0000000000c1', hoy_mx(), 'Cambio de ciudad');
   select count(*) into n from rehearsal_roster((select futuro from ctx)) where user_id = '00000000-0000-0000-0000-0000000000c1';
   if n <> 0 then raise exception 'FALLO T2b: sigue citado después de la baja'; end if;
   select count(*) into n from rehearsal_roster((select antes from ctx)) where user_id = '00000000-0000-0000-0000-0000000000c1';
@@ -91,7 +91,7 @@ end $$;
 do $$ declare n int; begin
   perform pg_temp.as_user('00000000-0000-0000-0000-0000000000a1');
   insert into production_fees (production_id, monto, desde, hasta, dia_limite)
-  values ('showman', 500, (date_trunc('month', current_date) - interval '6 months')::date, (date_trunc('month', current_date) + interval '2 months')::date, 1);
+  values ('showman', 500, (date_trunc('month', hoy_mx()) - interval '6 months')::date, (date_trunc('month', hoy_mx()) + interval '2 months')::date, 1);
   perform discipline_scan_fees('showman');
   select count(*) into n from member_incidents where user_id = '00000000-0000-0000-0000-0000000000c2' and tipo = 'mensualidad';
   if n <> 0 then raise exception 'FALLO T3a: quien entró este mes tiene % advertencias por meses anteriores', n; end if;

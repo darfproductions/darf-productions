@@ -27,7 +27,8 @@ do $$ declare j json; j2 json; begin
   j := fan_join();
   j2 := fan_join();
   if (j->>'numero') <> (j2->>'numero') then raise exception 'FALLO T1: cambió el número al repetir'; end if;
-  if not (j->>'fundador')::boolean then raise exception 'FALLO T1: debería ser fundador'; end if;
+  -- Fundador = los primeros 100 (no depende de cuántos números ya se usaron en la base de prueba).
+  if (j->>'fundador')::boolean <> ((j->>'numero')::int <= 100) then raise exception 'FALLO T1: fundador no cuadra con el número'; end if;
   if not is_fan_member() then raise exception 'FALLO T1: no quedó como socio'; end if;
   perform pg_temp.as_user('00000000-0000-0000-0000-0000000000f3');
   j2 := fan_join();

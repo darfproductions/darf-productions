@@ -27,7 +27,7 @@ do $$ declare n int; r record; begin
   perform panel_add_member('showman', 't_taq@test.local', 'taquilla');
   -- T1: nombres + apellidos arman el nombre; el rol no se puede cambiar
   perform pg_temp.as_user('00000000-0000-0000-0000-0000000000e1');
-  update profiles set nombres = ' Ana ', apellidos = 'Pérez López', fecha_nacimiento = ('2010-' || to_char(current_date, 'MM') || '-01')::date,
+  update profiles set nombres = ' Ana ', apellidos = 'Pérez López', fecha_nacimiento = ('2010-' || to_char(hoy_mx(), 'MM') || '-01')::date,
          telefono = '5512345678' where id = auth.uid();
   select * into r from profiles where id = auth.uid();
   if r.nombre <> 'Ana Pérez López' then raise exception 'FALLO T1a: nombre %', r.nombre; end if;
@@ -37,7 +37,7 @@ do $$ declare n int; r record; begin
   exception when insufficient_privilege then null;
   end;
   begin
-    update profiles set fecha_nacimiento = current_date + 1 where id = auth.uid();
+    update profiles set fecha_nacimiento = hoy_mx() + 1 where id = auth.uid();
     raise exception 'FALLO T1c: fecha en el futuro';
   exception when check_violation then null;
   end;
@@ -56,7 +56,7 @@ do $$ declare n int; r record; begin
   perform pg_temp.as_user('00000000-0000-0000-0000-0000000000e1');
   update profiles set fecha_nacimiento = '2010-01-15' where id = auth.uid();
   if (select fecha_nacimiento from person_files where user_id = auth.uid()) <> '2010-01-15' then raise exception 'FALLO T2a: no pasó al expediente'; end if;
-  update person_files set fecha_nacimiento = ('2010-' || to_char(current_date, 'MM') || '-02')::date where user_id = auth.uid();
+  update person_files set fecha_nacimiento = ('2010-' || to_char(hoy_mx(), 'MM') || '-02')::date where user_id = auth.uid();
   if extract(day from (select fecha_nacimiento from profiles where id = auth.uid())) <> 2 then raise exception 'FALLO T2b: no pasó a la cuenta'; end if;
   -- T3: cumpleaños de la obra: elenco activo y equipo los ven (sin año); un fan no
   select count(*) into n from birthdays('showman') b where b.nombre = 'Ana Pérez López' and b.nacimiento is null;
