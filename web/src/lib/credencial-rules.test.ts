@@ -12,7 +12,7 @@ describe("credencial única (0083)", () => {
   it("cuenta: pase básico con el mismo código", () => {
     const p = paseCredencial(base, hoy);
     expect(p.titulo).toBe("Cuenta DARF");
-    expect(p.banda.label).toBe("ASISTENTE");
+    expect(p.banda.label).toBe("SPECTATOR");
     expect(p.pie).toBe("DARF Productions · desde 2025");
     expect(p.codigo).toBe("DRF-ABCD");
   });

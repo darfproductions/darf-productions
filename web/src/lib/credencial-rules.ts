@@ -23,7 +23,7 @@ export const NIVEL: Record<Nivel, { boton: string; ayuda: string }> = {
 };
 
 /** Cuenta registrada sin Club Fan (0087): gris. */
-export const BANDA_CUENTA: Banda = { label: "ASISTENTE", fondo: "#6b6675", texto: "#ffffff" };
+export const BANDA_CUENTA: Banda = { label: "SPECTATOR", fondo: "#6b6675", texto: "#ffffff" };
 
 export function paseCredencial(c: CredencialMia & { nombre: string; fotoUrl: string | null; qr?: string }, hoy: Date = new Date()): PaseVista {
   const base = { nombre: c.nombre, fotoUrl: c.fotoUrl, qr: c.qr, codigo: c.codigo };
