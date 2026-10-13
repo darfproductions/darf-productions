@@ -1,0 +1,485 @@
+@import "tailwindcss";
+
+/* ─── Sistema visual DARF 2.0 · Kit de Marca v1.0 (oct 2026) ───────────────
+   Colores EXACTOS del kit (08-Color/DARF-variables.css) y forma de la guía de UI
+   (botones en píldora, tarjetas de 22 px). Cada producción solo sobreescribe las
+   variables --obra-*; el botón de compra conserva siempre la luz DARF. */
+
+:root {
+  /* base: la sala */
+  --sala: #0b0910;          /* fondo */
+  --telon: #17121f;         /* tarjetas y superficies */
+  --telon-2: #211a2c;       /* campos, superficies elevadas */
+  --texto: #f4f1f8;         /* hueso */
+  --texto-2: #d3cddd;
+  --texto-3: #a39db0;
+  --linea: rgb(255 255 255 / 0.08);
+  --linea-2: rgb(255 255 255 / 0.16);
+
+  /* la luz DARF */
+  --indigo: #340feb;
+  --ciruela: #830886;
+  --carmin: #d20122;
+  --luz-inicio: var(--indigo);
+  --luz-medio: var(--ciruela);
+  --luz-fin: var(--carmin);
+  --luz: linear-gradient(120deg, #340feb 0%, #830886 55%, #d20122 100%);
+  --luz-texto: linear-gradient(100deg, #7b5cff 0%, #c23bc6 45%, #ff2d5a 100%);
+
+  /* acentos */
+  --pulso: #ff2d87;         /* energía, "En cartelera" (texto encima: sala) */
+  --lila: #a48bff;          /* enlaces sobre oscuro */
+  --violeta-claro: var(--lila); /* nombre anterior: se conserva para no tocar 50+ archivos */
+  --oro: #d7bb5f;           /* Fan Zone, eyebrows, detalles */
+  --oro-claro: #f3e3a6;
+  --oro-profundo: #9e7b33;
+  --oro-metal: linear-gradient(135deg, #f3e3a6 0%, #d7bb5f 40%, #9e7b33 75%, #e9d58c 100%);
+  --exito: #3ddc97;         /* función disponible */
+  --aviso: #ffb547;         /* últimos lugares */
+
+  /* Tema de producción (valores por defecto = marca DARF). */
+  --obra-fondo: var(--sala);
+  --obra-superficie: var(--telon);
+  --obra-texto: var(--texto);
+  --obra-acento: var(--lila);
+  --obra-sombra: rgb(0 0 0 / 0.5);
+}
+
+@theme inline {
+  --color-sala: var(--sala);
+  --color-telon: var(--telon);
+  --color-telon-2: var(--telon-2);
+  --color-texto: var(--texto);
+  --color-texto-2: var(--texto-2);
+  --color-texto-3: var(--texto-3);
+  --color-linea: var(--linea);
+  --color-linea-2: var(--linea-2);
+  --color-indigo: var(--indigo);
+  --color-ciruela: var(--ciruela);
+  --color-carmin: var(--carmin);
+  --color-pulso: var(--pulso);
+  --color-lila: var(--lila);
+  --color-violeta-claro: var(--violeta-claro);
+  --color-oro: var(--oro);
+  --color-oro-claro: var(--oro-claro);
+  --color-oro-profundo: var(--oro-profundo);
+  --color-exito: var(--exito);
+  --color-aviso: var(--aviso);
+  --color-obra-fondo: var(--obra-fondo);
+  --color-obra-superficie: var(--obra-superficie);
+  --color-obra-texto: var(--obra-texto);
+  --color-obra-acento: var(--obra-acento);
+  --font-sans: var(--font-montserrat);
+}
+
+/* En celular, una rejilla sin columnas crece con su contenido más ancho (un texto
+   largo o un campo) y la página se desborda. Una columna que sí se encoge lo evita;
+   las clases grid-cols-* de cada pantalla la siguen reemplazando. */
+@layer base {
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  input,
+  select,
+  textarea {
+    min-width: 0;
+  }
+}
+
+body {
+  background: var(--sala);
+  color: var(--texto);
+  font-family: var(--font-montserrat), Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ─── Componentes de la guía (en la capa components: las utilidades de Tailwind
+   los pueden ajustar en cada pantalla) ─── */
+@layer components {
+  /* Titulares: Montserrat Black en mayúsculas (manual: interletra −3 %, interlínea 90 %). */
+  .titular {
+    font-family: var(--font-montserrat), Arial, sans-serif;
+    font-weight: 900;
+    letter-spacing: -0.035em;
+    text-transform: uppercase;
+    line-height: 0.92;
+  }
+  .display {
+    font-weight: 900;
+    text-transform: uppercase;
+    line-height: 0.88;
+    letter-spacing: -0.05em;
+    font-size: clamp(3.1rem, 8.6vw, 7rem); /* 54 → 112 px */
+  }
+  .h2-seccion {
+    font-weight: 900;
+    text-transform: uppercase;
+    line-height: 0.95;
+    letter-spacing: -0.04em;
+    font-size: clamp(2.25rem, 4.6vw, 3.5rem); /* 36 → 56 px */
+  }
+  .h3-seccion {
+    font-weight: 900;
+    text-transform: uppercase;
+    line-height: 1;
+    letter-spacing: -0.025em;
+    font-size: clamp(1.375rem, 2.4vw, 1.875rem); /* 22 → 30 px */
+  }
+  .lead {
+    font-size: clamp(1rem, 1.4vw, 1.1875rem);
+    line-height: 1.65;
+    color: var(--texto-2);
+  }
+  .num {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Eyebrow / kicker: oro, mayúsculas, línea de 32 px antes. */
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: var(--oro);
+  }
+  .eyebrow::before {
+    content: "";
+    width: 32px;
+    height: 1px;
+    flex: none;
+    background: linear-gradient(90deg, var(--oro), transparent);
+  }
+  .eyebrow-gris {
+    color: var(--texto-3);
+  }
+  .eyebrow-gris::before {
+    background: linear-gradient(90deg, var(--texto-3), transparent);
+  }
+
+  /* Texto con degradado: Luz para palabras clave; oro metálico para todo lo de Fan Zone. */
+  .txt-luz {
+    background: var(--luz-texto);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .txt-oro {
+    background: var(--oro-metal);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Botones en píldora (guía): alto 52 px, chico 42 px. */
+  .fb {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    min-height: 52px;
+    padding: 0 28px;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: transform 0.2s, filter 0.2s, background-color 0.2s, border-color 0.2s;
+  }
+  .fb:hover {
+    transform: translateY(-1px);
+  }
+  .fb:disabled,
+  .fb[aria-disabled="true"] {
+    opacity: 0.55;
+    cursor: not-allowed;
+    transform: none;
+  }
+  .fb-sm {
+    min-height: 42px;
+    padding: 0 20px;
+    font-size: 11.5px;
+  }
+  .fb-luz {
+    background: var(--luz);
+    color: #fff;
+    box-shadow: 0 10px 40px -12px rgb(131 8 134 / 0.9), inset 0 1px 0 rgb(255 255 255 / 0.25);
+  }
+  .fb-luz:hover {
+    filter: brightness(1.1);
+  }
+  .fb-fz {
+    background: var(--oro-metal);
+    color: var(--sala);
+    box-shadow: 0 10px 36px -12px rgb(215 187 95 / 0.75), inset 0 1px 0 rgb(255 255 255 / 0.55), inset 0 -1px 0 rgb(0 0 0 / 0.25);
+  }
+  .fb-fz:hover {
+    filter: brightness(1.07);
+  }
+  .fb-claro {
+    background: var(--texto);
+    color: var(--sala);
+  }
+  .fb-claro:hover {
+    background: #fff;
+  }
+  .fb-o {
+    background: rgb(255 255 255 / 0.02);
+    color: var(--texto);
+    border-color: var(--linea-2);
+  }
+  .fb-o:hover {
+    border-color: rgb(255 255 255 / 0.5);
+  }
+  .fb-oro {
+    background: transparent;
+    color: var(--oro-claro);
+    border-color: rgb(215 187 95 / 0.45);
+  }
+  .fb-oro:hover {
+    border-color: var(--oro);
+    background: rgb(215 187 95 / 0.08);
+  }
+
+  /* Botón de compra (nombre anterior, usado en 20+ lugares): la píldora Luz. */
+  .boton-compra {
+    background: var(--luz);
+    color: #fff;
+    box-shadow: 0 10px 40px -12px rgb(131 8 134 / 0.9), inset 0 1px 0 rgb(255 255 255 / 0.25);
+    transition: transform 0.2s, filter 0.2s;
+  }
+  .boton-compra:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.1);
+  }
+  .luz-darf {
+    background: var(--luz);
+  }
+
+  /* Sobre el color de la obra (página de obra con tema claro u oscuro): toman el color del texto. */
+  .fb-obra {
+    color: inherit;
+    border-color: color-mix(in srgb, currentColor 35%, transparent);
+    background: color-mix(in srgb, var(--obra-fondo) 60%, transparent);
+    backdrop-filter: blur(8px);
+  }
+  .fb-obra:hover {
+    border-color: color-mix(in srgb, currentColor 70%, transparent);
+  }
+
+  /* Chips (sede, fechas, precio, filtros). */
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 32px;
+    padding: 0 14px;
+    border-radius: 999px;
+    border: 1px solid var(--linea-2);
+    background: rgb(255 255 255 / 0.03);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--texto);
+    white-space: nowrap;
+  }
+  .chip-on {
+    background: var(--texto);
+    color: var(--sala);
+    border-color: var(--texto);
+  }
+  .chip-oro {
+    border-color: rgb(215 187 95 / 0.45);
+    color: var(--oro-claro);
+  }
+  .chip-fz {
+    background: var(--oro-metal);
+    color: var(--sala);
+    border-color: transparent;
+    font-weight: 700;
+  }
+
+  .chip-obra {
+    color: inherit;
+    border-color: color-mix(in srgb, currentColor 28%, transparent);
+    background: color-mix(in srgb, var(--obra-fondo) 60%, transparent);
+  }
+
+  /* Estado de producción: píldora de 28 px con punto. */
+  .estado {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 28px;
+    padding: 0 12px;
+    border-radius: 999px;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    background: rgb(11 9 16 / 0.7);
+    backdrop-filter: blur(8px);
+    border: 1px solid var(--linea-2);
+  }
+  .estado::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+  .estado-vivo {
+    color: var(--pulso);
+  }
+  .estado-pronto {
+    color: var(--oro-claro);
+  }
+  .estado-archivo {
+    color: var(--texto-3);
+  }
+
+  /* Sello "Jóvenes para jóvenes". */
+  .sello-jpj {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 40px;
+    padding: 0 18px 0 6px;
+    border-radius: 999px;
+    background: rgb(255 255 255 / 0.06);
+    border: 1px solid var(--linea-2);
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+  .sello-jpj > b {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--indigo), var(--ciruela), var(--carmin));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    color: #fff;
+    letter-spacing: 0;
+  }
+
+  /* Superficies. */
+  .tarjeta {
+    position: relative;
+    background: var(--telon);
+    border: 1px solid var(--linea);
+    border-radius: 22px;
+    overflow: hidden;
+  }
+  .tarjeta-hover {
+    transition: transform 0.3s, border-color 0.3s;
+  }
+  .tarjeta-hover:hover {
+    transform: translateY(-4px);
+    border-color: var(--linea-2);
+  }
+  .glass {
+    background: rgb(23 18 31 / 0.55);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--linea-2);
+    border-radius: 20px;
+  }
+  .linea-luz {
+    height: 2px;
+    background: var(--luz);
+  }
+  .linea-oro {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgb(215 187 95 / 0.6), transparent);
+  }
+  /* Doble filete de la línea Oro (marquesina). */
+  .doble-filete {
+    border-block: 3px double rgb(215 187 95 / 0.55);
+  }
+
+  /* Haces de luz del hero, cono de reflector y grano. */
+  .haz {
+    pointer-events: none;
+    background:
+      radial-gradient(42% 60% at 8% 0%, rgb(52 15 235 / 0.55), transparent 70%),
+      radial-gradient(40% 55% at 96% 4%, rgb(210 1 34 / 0.42), transparent 70%),
+      radial-gradient(50% 50% at 60% 30%, rgb(131 8 134 / 0.28), transparent 70%);
+  }
+  .cono {
+    pointer-events: none;
+    background: conic-gradient(from 180deg at 50% 0%, transparent 160deg, rgb(244 241 248 / 0.07) 175deg, rgb(244 241 248 / 0.11) 180deg, rgb(244 241 248 / 0.07) 185deg, transparent 200deg);
+  }
+  .cono-oro {
+    pointer-events: none;
+    background: conic-gradient(from 180deg at 50% 0%, transparent 162deg, rgb(215 187 95 / 0.1) 175deg, rgb(243 227 166 / 0.16) 180deg, rgb(215 187 95 / 0.1) 185deg, transparent 198deg);
+  }
+  .grano {
+    pointer-events: none;
+    opacity: 0.07;
+    background-image: radial-gradient(rgb(255 255 255 / 0.8) 0.5px, transparent 0.6px);
+    background-size: 3px 3px;
+    mix-blend-mode: overlay;
+  }
+
+  /* Palabra en contorno (manifiesto "Jóvenes para jóvenes"). */
+  /* El contorno se pinta debajo y la letra se rellena del color de la sala: así no se
+     ven los trazos internos que tiene la fuente variable. */
+  .hueca {
+    color: var(--sala);
+    -webkit-text-stroke: 4px rgb(244 241 248 / 0.55);
+    paint-order: stroke fill;
+  }
+
+  /* Avatar de equipo: iniciales en oro claro con aro dorado. */
+  .ava {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    color: var(--oro-claro);
+    background: radial-gradient(circle at 30% 25%, #2a2236, var(--telon));
+    box-shadow: inset 0 0 0 1px rgb(215 187 95 / 0.45);
+  }
+}
+
+:focus-visible {
+  outline: 3px solid var(--lila);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+  .fb:hover,
+  .boton-compra:hover,
+  .tarjeta-hover:hover {
+    transform: none;
+  }
+}
+
+/* Franja de avisos de la obra (marquesina): se pausa al pasar el mouse o con el teclado. */
+@keyframes franja-corre {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.franja-corre {
+  animation: franja-corre 30s linear infinite;
+}
+.franja:hover .franja-corre,
+.franja:focus-within .franja-corre {
+  animation-play-state: paused;
+}

@@ -55,7 +55,7 @@ do $$ declare n int; begin
     perform admin_save_discount_code(null, 'showman', 'HACK10', 10, null, null, null, null, true, '{}', '{}');
     raise exception 'FALLO T2: fan creó un código';
   exception when others then
-    if sqlerrm not like '%Solo un admin%' then raise exception 'FALLO T2: %', sqlerrm; end if;
+    if sqlerrm not like '%Solo un admin%' and sqlerrm not like 'No tienes permiso%' then raise exception 'FALLO T2: %', sqlerrm; end if;
   end;
   select count(*) into n from discount_codes;
   if n <> 0 then raise exception 'FALLO T2: fan lee % códigos', n; end if;

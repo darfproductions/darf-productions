@@ -1,0 +1,231 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { getSession } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
+
+// Expedientes y mensualidades desde el panel (0041). La base revisa expedientes.ver y
+// mensualidades.gestionar en la obra.
+
+export type ExpState = { ok: boolean; message: string } | null;
+
+const str = (f: FormData, k: string) => String(f.get(k) ?? "").trim();
+const base = (pid: string) => `/panel/producciones/${pid}/expedientes`;
+const ok = (pid: string, uid: string | null, message: string): ExpState => {
+  revalidatePath(base(pid), "layout");
+  if (uid) revalidatePath(`/cuenta/produccion/${pid}`);
+  return { ok: true, message };
+};
+
+/** Documento que se pide: a todos, solo a menores, a un grupo o a personas específicas (0042). */
+export async function addDocType(_p: ExpState, f: FormData): Promise<ExpState> {
+  const pid = str(f, "pid");
+  const aplica = ["todos", "menores", "grupo", "personas"].includes(str(f, "aplica")) ? str(f, "aplica") : "todos";
+  const personas = f.getAll("personas").map(String).filter(Boolean);
+  if (aplica === "grupo" && !str(f, "grupo")) return { ok: false, message: "Elige el grupo." };
+  if (aplica === "personas" && !personas.length) return { ok: false, message: "Marca al menos a una persona." };
+  const supabase = await createClient();
+  const { count } = await supabase.from("member_doc_types").select("id", { count: "exact", head: true }).eq("production_id", pid);
+  const { error } = await supabase.from("member_doc_types").insert({
+    production_id: pid, nombre: str(f, "nombre"), descripcion: str(f, "descripcion") || null,
+    aplica, solo_menores: aplica === "menores", grupo: aplica === "grupo" ? str(f, "grupo") : null,
+    personas: aplica === "personas" ? personas : [], obligatorio: f.get("opcional") !== "on", orden: (count ?? 0) + 1,
+  });
+  if (error) return { ok: false, message: error.message };
+  return ok(pid, null, "Documento agregado a la lista.");
+}
+
+export async function addBasicDocs(_p: ExpState, f: FormData): Promise<ExpState> {
+  const pid = str(f, "pid");
+  const supabase = await createClient();
+  const { error } = await supabase.from("member_doc_types").insert([
+    { production_id: pid, nombre: "Reglamento firmado", aplica: "todos", solo_menores: false, obligatorio: true, orden: 1 },
+    { production_id: pid, nombre: "Permiso de madre, padre o tutor", aplica: "menores", solo_menores: true, obligatorio: true, orden: 2 },
+    { production_id: pid, nombre: "Identificación oficial (INE o acta)", aplica: "todos", solo_menores: false, obligatorio: false, orden: 3 },
+  ]);
+  if (error) return { ok: false, message: error.message };
+  return ok(pid, null, "Lista básica agregada.");
+}
+
+export async function removeDocType(_p: ExpState, f: FormData): Promise<ExpState> {
+  const pid = str(f, "pid");
+  const supabase = await createClient();
+  const { error, count } = await supabase.from("member_doc_types").delete({ count: "exact" }).eq("id", str(f, "id")).eq("production_id", pid);
+  if (error) return { ok: false, message: error.message };
+  if (!count) return { ok: false, message: "No tienes permiso." };
+  return ok(pid, null, "Quitado de la lista.");
+}
+
+export async function saveFee(_p: ExpState, f: FormData): Promise<ExpState> {
+  const pid = str(f, "pid");
+  const desde = str(f, "desde"); // "2026-09"
+  const hasta = str(f, "hasta");
+  if (!/^\d{4}-\d{2}$/.test(desde) || !/^\d{4}-\d{2}$/.test(hasta)) return { ok: false, message: "Elige el primer y el último mes." };
+  const supabase = await createClient();
+  const { error } = await supabase.from("production_fees").upsert({
+    production_id: pid, monto: Number(str(f, "monto") || 0), desde: `${desde}-01`, hasta: `${hasta}-01`, dia_limite: Number(str(f, "dia_limite") || 10),
+    inscripcion: Number(str(f, "inscripcion") || 0), cobrar: f.get("cobrar") === "on",
+  });
+  if (error) return { ok: false, message: /check/.test(error.message) ? "Revisa los meses: el último debe ser después del primero." : error.message };
+  return ok(pid, null, f.get("cobrar") === "on" ? "Pagos guardados." : "Listo: este taller no cobra nada.");
+}
+
+export async function markReviewed(_p: ExpState, f: FormData): Promise<ExpState> {
+  const pid = str(f, "pid");
+  const uid = str(f, "uid");
+  const session = await getSession();
+  const supabase = await createClient();
+  const revisar = str(f, "revisar") === "si";
+  const { error, count } = await supabase.from("member_files")
+    .update({ revisado_at: revisar ? new Date().toISOString() : null, revisado_por: revisar ? session?.userId ?? null : null }, { count: "exact" })
+    .eq("production_id", pid).eq("user_id", uid);
+  if (error) return { ok: false, message: error.message };
+  if (!count) return { ok: false, message: "Primero debe existir el expediente (que lo llene el integrante o llénalo tú)." };
+  return ok(pid, uid, revisar ? "Marcado como revisado." : "Vuelve a por revisar.");
+}
+
+export async function setDelivered(_p: ExpState, f: FormData): Promise<ExpState> {
+  const pid = str(f, "pid");
+  const uid = str(f, "uid");
+  const session = await getSession();
+  const entregado = str(f, "entregado") === "si";
+  const supabase = await createClient();
+  const { error } = await supabase.from("member_docs").upsert(
+    { production_id: pid, user_id: uid, doc_type_id: str(f, "doc"), entregado_at: entregado ? new Date().toISOString() : null, recibido_por: entregado ? session?.userId ?? null : null },
+    { onConflict: "doc_type_id,user_id" },
+  );
+  if (error) return { ok: false, message: error.message };
+  return ok(pid, uid, entregado ? "Marcado como entregado." : "Marcado como pendiente.");
+}
+
+export async function setScholarship(_p: ExpState, f: FormData): Promise<ExpState> {
+  const pid = str(f, "pid");
+  const uid = str(f, "uid");
+  const especial = str(f, "cuota_especial");
+  const supabase = await createClient();
+  const { error } = await supabase.from("member_fee_terms").upsert(
+    { production_id: pid, user_id: uid, beca: f.get("beca") === "on", cuota_especial: especial ? Number(especial) : null, sin_inscripcion: f.get("sin_inscripcion") === "on" },
+    { onConflict: "production_id,user_id" },
+  );
+  if (error) return { ok: false, message: error.message };
+  return ok(pid, uid, "Guardado.");
+}
+
+export async function addPayment(_p: ExpState, f: FormData): Promise<ExpState> {
+  const pid = str(f, "pid");
+  const uid = str(f, "uid");
+  const monto = Number(str(f, "monto"));
+  if (!(monto > 0)) return { ok: false, message: "Escribe el monto." };
+  const supabase = await createClient();
+  const { error } = await supabase.from("member_payments").insert({
+    production_id: pid, user_id: uid, periodo: str(f, "periodo"), monto, metodo: str(f, "metodo") || "efectivo", nota: str(f, "nota") || null,
+    concepto: str(f, "concepto") === "inscripcion" ? "inscripcion" : "mensualidad",
+  });
+  if (error) return { ok: false, message: error.message };
+  return ok(pid, uid, "Pago registrado.");
+}
+
+export async function removePayment(_p: ExpState, f: FormData): Promise<ExpState> {
+  const pid = str(f, "pid");
+  const uid = str(f, "uid");
+  const supabase = await createClient();
+  const { error, count } = await supabase.from("member_payments").delete({ count: "exact" }).eq("id", str(f, "id")).eq("production_id", pid);
+  if (error) return { ok: false, message: error.message };
+  if (!count) return { ok: false, message: "Ya pasaron 10 minutos: ahora solo se puede anular." };
+  return ok(pid, uid, "Pago borrado.");
+}
+
+/** Anular (0079): el pago y su folio quedan en el historial, pero ya no cuentan. */
+export async function annulPayment(_p: ExpState, f: FormData): Promise<ExpState> {
+  const pid = str(f, "pid");
+  const uid = str(f, "uid");
+  if (!str(f, "motivo")) return { ok: false, message: "Escribe por qué se anula." };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("payment_annul", { p_id: str(f, "id"), p_motivo: str(f, "motivo") });
+  if (error) return { ok: false, message: error.message };
+  return ok(pid, uid, "Pago anulado. Se le avisó a la persona.");
+}
+
+// ──────── Incidencias, advertencias y medidas (0042) ────────
+
+export async function saveDiscipline(_p: ExpState, f: FormData): Promise<ExpState> {
+  const pid = str(f, "pid");
+  const n = (k: string) => (f.get(`${k}_on`) === "on" ? Number(str(f, k) || 0) || null : null);
+  const supabase = await createClient();
+  const { error } = await supabase.from("production_discipline").upsert({
+    production_id: pid, limite_advertencias: Number(str(f, "limite") || 3),
+    auto_mensualidad_meses: n("meses"), auto_retardos: n("retardos"), auto_faltas: n("faltas"),
+    tolerancia_min: Math.min(120, Math.max(0, Number(str(f, "tolerancia") || 10) || 0)),
+  });
+  if (error) return { ok: false, message: error.message };
+  return ok(pid, null, "Reglas guardadas.");
+}
+
+export async function addIncident(_p: ExpState, f: FormData): Promise<ExpState> {
+  const pid = str(f, "pid");
+  const uid = str(f, "uid");
+  const session = await getSession();
+  if (!session) return { ok: false, message: "Tu sesión expiró." };
+  const supabase = await createClient();
+  const { error } = await supabase.from("member_incidents").insert({
+    production_id: pid, user_id: uid, tipo: str(f, "tipo") || "otro", nivel: str(f, "nivel") || "advertencia",
+    descripcion: str(f, "descripcion"), fecha: str(f, "fecha") || undefined, created_by: session.userId,
+  });
+  if (error) return { ok: false, message: error.message };
+  return ok(pid, uid, "Incidencia registrada.");
+}
+
+export async function voidIncident(_p: ExpState, f: FormData): Promise<ExpState> {
+  const pid = str(f, "pid");
+  const uid = str(f, "uid");
+  const motivo = str(f, "motivo");
+  if (!motivo) return { ok: false, message: "Escribe por qué se anula." };
+  const supabase = await createClient();
+  const { error, count } = await supabase.from("member_incidents")
+    .update({ anulada_at: new Date().toISOString(), anulada_motivo: motivo }, { count: "exact" }).eq("id", str(f, "id")).eq("production_id", pid);
+  if (error) return { ok: false, message: error.message };
+  if (!count) return { ok: false, message: "No tienes permiso." };
+  return ok(pid, uid, "Incidencia anulada (queda en el historial).");
+}
+
+export async function addMeasure(_p: ExpState, f: FormData): Promise<ExpState> {
+  const pid = str(f, "pid");
+  const uid = str(f, "uid");
+  const supabase = await createClient();
+  const { error } = await supabase.from("member_measures").insert({
+    production_id: pid, user_id: uid, medida: str(f, "medida") || "otra", descripcion: str(f, "descripcion") || null, fecha: str(f, "fecha") || undefined,
+  });
+  if (error) return { ok: false, message: error.message };
+  return ok(pid, uid, "Medida registrada.");
+}
+
+// ──────── Participación: ingreso, baja y reactivar (0044) ────────
+
+export async function setIngreso(_p: ExpState, f: FormData): Promise<ExpState> {
+  const pid = str(f, "pid");
+  const uid = str(f, "uid");
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("member_set_ingreso", { pid, uid, fecha: str(f, "fecha") });
+  if (error) return { ok: false, message: /check/.test(error.message) ? "El ingreso no puede ser después de la baja." : error.message };
+  return ok(pid, uid, "Fecha de ingreso guardada.");
+}
+
+export async function withdrawMember(_p: ExpState, f: FormData): Promise<ExpState> {
+  const pid = str(f, "pid");
+  const uid = str(f, "uid");
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("member_withdraw", { pid, uid, fecha: str(f, "fecha") || null, motivo: str(f, "motivo") });
+  if (error) return { ok: false, message: /check/.test(error.message) ? "La baja no puede ser antes de su ingreso." : error.message };
+  revalidatePath(`/producciones/${pid}`);
+  return ok(pid, uid, "Baja registrada. Su historial se conserva.");
+}
+
+export async function reactivateMember(_p: ExpState, f: FormData): Promise<ExpState> {
+  const pid = str(f, "pid");
+  const uid = str(f, "uid");
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("member_reactivate", { pid, uid });
+  if (error) return { ok: false, message: error.message };
+  revalidatePath(`/producciones/${pid}`);
+  return ok(pid, uid, "Reactivado: vuelve a los ensayos y a los créditos.");
+}

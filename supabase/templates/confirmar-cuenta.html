@@ -1,0 +1,15 @@
+<!-- Plantilla de Supabase Auth (Bloque 2). Se pega en Supabase → Authentication → Emails → Confirma tu cuenta de DARF.
+     El enlace usa token_hash para que funcione aunque se abra en otro navegador o en la app de correo. -->
+<div style="margin:0;padding:32px 16px;background:#0b0910;font-family:Montserrat,Arial,sans-serif;color:#f4f1f8">
+  <div style="max-width:520px;margin:0 auto;background:#17121f;border-radius:16px;overflow:hidden">
+    <div style="height:6px;background:linear-gradient(120deg,#340feb 0%,#830886 55%,#d20122 100%)"></div>
+    <div style="padding:32px 28px">
+      <p style="margin:0 0 4px;font-size:12px;font-weight:800;letter-spacing:3px;color:#d7bb5f">DARF PRODUCTIONS</p>
+      <h1 style="margin:0 0 16px;font-size:24px;line-height:1.2;color:#f4f1f8">Confirma tu cuenta</h1>
+      <p style="margin:0 0 24px;font-size:15px;line-height:1.6;color:#d3cddd">¡Hola! Ya casi: toca el botón para confirmar tu correo y empezar a usar tu cuenta de DARF (boletos, Fan Zone y audiciones).</p>
+      <a href="{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=email" style="display:inline-block;padding:14px 28px;border-radius:999px;background:#f4f1f8;color:#0b0910;font-weight:800;font-size:14px;text-decoration:none">Confirmar mi cuenta</a>
+      <p style="margin:24px 0 0;font-size:12px;line-height:1.6;color:#a39db0">Si tú no creaste esta cuenta, ignora este correo. El enlace vence en 24 horas.</p>
+    </div>
+  </div>
+  <p style="max-width:520px;margin:16px auto 0;font-size:11px;color:#a39db0;text-align:center">DARF Productions · Querétaro, México · contact@darfproductions.com</p>
+</div>

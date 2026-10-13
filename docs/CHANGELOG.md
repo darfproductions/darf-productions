@@ -5,6 +5,14 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-10-12 — Nueva piel con el Kit de Marca y la guía de UI (sin migraciones)
+
+- Colores exactos del kit, logos e íconos oficiales, botones en píldora, tarjetas de 22 px.
+- Marco nuevo (barra "Jóvenes para jóvenes", encabezado, menú de celular, pie), inicio,
+  página de obra (estados de venta por función, zonas con color, barra de compra en celular),
+  cartelera con Archivo y Fan Zone en el mundo Oro. El panel solo toma colores y botones.
+- Funciones nuevas de la propuesta: anotadas en `docs/DARF-2.0-UI-PENDIENTES.md`, no se muestran.
+
 ## 2026-10-06 — Códigos de descuento, galería desde el panel y boleto en PDF (migraciones 0027 y 0028)
 
 - **Códigos de descuento** (panel → producción → "Códigos de descuento"): porcentaje, zonas

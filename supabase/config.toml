@@ -418,3 +418,8 @@ enabled = true
 # secreto compartido (header x-webhook-secret) y no con un JWT de usuario.
 [functions.notify-contact]
 verify_jwt = false
+
+# Lo invoca el trigger notifications_push (pg_net, 0067) con su secreto compartido
+# (header x-push-secret, guardado en push_config), no con un JWT de usuario.
+[functions.push-send]
+verify_jwt = false

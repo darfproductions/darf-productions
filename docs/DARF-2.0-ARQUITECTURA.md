@@ -1,0 +1,289 @@
+# DARF 2.0 — Recomendación de arquitectura (Fase 1, propuesta)
+
+Estado: **decidido — Next.js** (2026-10-10). Johann aprobó instalar dependencias
+y crear `web/`; el esqueleto ya existe (ver §9). Contexto: `docs/DARF-2.0-VISION.md` §14 y
+`docs/DARF-2.0-FASE-0.md`.
+
+---
+
+## 1. El problema
+
+La web 1.0 es una sola página (`index.html`, ~1,270 líneas) con toda la lógica
+en un solo archivo (`js/app.js`, ~2,200 líneas) y sin proceso de construcción.
+Funcionó para lanzar la boletería, pero no escala a lo que pide la visión:
+
+- **No hay plantillas ni rutas reales.** Cada producción es HTML escrito a mano
+  y todas viven en la misma página (`?v=showman`). Una producción nueva no
+  puede tener su página sin programarla, ni su propia dirección
+  (`/producciones/showman`) con vista previa al compartir en redes.
+- **No hay componentes.** Botones, tarjetas y formularios se repiten a mano
+  (~500 estilos en línea); el sistema de diseño y los temas por producción
+  serían muy difíciles de mantener.
+- **El panel crecerá mucho** (editor de producción, permisos, audiciones,
+  talento). En un archivo único, un cambio en una parte puede romper otra sin
+  que se note.
+- **No hay pruebas automáticas** del lado de la web ni optimización de imágenes.
+
+## 2. Lo que juega a favor: la boletería vive en la base de datos
+
+Las reglas críticas (precio calculado en servidor, anti-doble venta, apartado
+de asientos, descuentos, aprobación, QR, check-in, permisos) están en
+Postgres: tablas, RLS y funciones `SECURITY DEFINER` (`create_seated_ticket_order`,
+`approve_order`, `check_in_ticket`, etc.). La web solo las **llama**.
+
+Consecuencia: **cambiar la tecnología de la web no obliga a reescribir la
+boletería.** La web nueva llama a las mismas funciones con los mismos datos.
+Eso reduce mucho el riesgo de la migración, siempre que:
+
+1. no se cambien las firmas de esas funciones sin una migración nueva y probada;
+2. los `qr_token` ya emitidos sigan siendo válidos;
+3. las pruebas SQL de boletería pasen antes de cada cambio (ya corren en una
+   Postgres local, ver Fase 0 §3.2.1).
+
+## 3. Opciones evaluadas
+
+| Criterio | A. Seguir sin framework (ordenar en módulos) | B. Astro | C. SvelteKit | D. **Next.js** (React) |
+|---|---|---|---|---|
+| Rutas y plantillas por producción | Manual, limitado | Excelente | Excelente | Excelente |
+| Panel administrativo grande e interactivo | Difícil | Necesita "islas" de otro framework (dos formas de trabajar) | Muy bueno | Muy bueno |
+| Integración con Supabase (sesión en servidor) | Solo navegador | Buena | Buena (oficial) | Muy buena (oficial, la más documentada) |
+| Integración con Vercel | Estática | Buena | Buena | Nativa (Vercel lo creó) |
+| Optimización de imágenes | Manual | Integrada | Manual / librería | Integrada |
+| Componentes accesibles listos para formularios y tablas | No | Pocos | Medianos | Muchos |
+| Pruebas automáticas | Posibles | Buenas | Buenas | Buenas |
+| Cantidad de documentación y ejemplos (clave para mantener con Claude) | — | Alta | Media | **La más alta** |
+| Complejidad para aprender | Baja | Baja | Baja-media | Media |
+| Riesgo de migración | Bajo, pero no resuelve el problema | Medio | Medio | Medio |
+
+**Por qué no A:** ordenar el código sin framework mejora poco y deja sin
+resolver plantillas, rutas, componentes e imágenes; habría que construir a
+mano lo que un framework ya trae.
+**Por qué no B:** Astro es ideal para sitios de contenido, pero el panel y la
+compra son aplicaciones interactivas; terminaríamos con Astro + React (dos
+modelos mentales).
+**C (SvelteKit) es una alternativa sólida** y algo más sencilla de leer; queda
+como segunda opción si se prefiere simplicidad sobre ecosistema.
+
+## 4. Recomendación
+
+**Next.js (App Router) + TypeScript + Supabase + Vercel**, con:
+
+- **Supabase** como hasta ahora: base de datos, Auth, Storage. Sesión en
+  servidor con `@supabase/ssr`. Tipos generados desde el esquema, para que un
+  cambio en la base que rompa la web se detecte antes de publicar.
+- **Sistema de diseño en código:** tokens (colores, tipografías, espacios)
+  como variables CSS; el tema de cada producción se guarda en la base y se
+  aplica sobreescribiendo solo esas variables (con validación de contraste).
+  Tailwind CSS para aplicar los tokens de forma consistente.
+- **Componentes propios accesibles** (botón, tarjeta, formulario, tabla,
+  modal, mapa de asientos), apoyados en primitivas accesibles (Radix) donde
+  convenga.
+- **Rutas reales:** `/`, `/cartelera`, `/producciones/[slug]`,
+  `/producciones/[slug]/funciones/[id]`, `/fan-zone/[slug]`, `/cuenta`,
+  `/comprar/[funcion]`, `/admin/...`.
+- **Configuración por entorno** (variables de Vercel por proyecto): URL y llave
+  pública de Supabase, número de WhatsApp, remitente de correo. El proyecto
+  DEV solo conoce DEV (se mantiene el chequeo de aislamiento).
+- **Pruebas:** pruebas SQL de boletería (Postgres local), pruebas unitarias
+  (Vitest) y pruebas de recorrido completo en navegador (Playwright) contra
+  DEV: compra, aprobación, QR, permisos.
+- **GitHub Actions** que en cada envío a `darf-2.0` corre: revisión de tipos,
+  pruebas y chequeo de aislamiento. Si algo falla, se ve antes de revisar la
+  web DEV.
+
+## 5. Cómo se haría la transición (sin tocar la 1.0)
+
+1. La app nueva vive en una carpeta `web/` dentro de `darf-2.0`. La web 1.0
+   sigue intacta en `main`; arreglos urgentes de la 1.0 se hacen en `main`
+   como hasta ahora.
+2. El proyecto Vercel `darf-2-dev` pasa a construir `web/` (cambio de
+   configuración del proyecto DEV, con aprobación).
+3. Se construye por fases (visión §16): fundamentos y diseño → contenido
+   editable y web pública → panel y permisos → boletería con su rediseño.
+   La boletería nueva se valida contra la lista de pruebas obligatorias
+   (visión §8.3) antes de considerarla lista.
+4. Lista de equivalencia: cada función de la 1.0 (§2.3 de la visión) se marca
+   cuando la 2.0 la cubre y pasó sus pruebas.
+5. Publicación final (fase final de la visión): solo con aprobación, respaldo,
+   plan de reversión y migración planificada de datos reales. Revertir =
+   volver a publicar la 1.0 desde `main`.
+
+## 6. Costos y riesgos a decidir aparte del framework
+
+- **Vercel:** verificar el plan del equipo "DARF Productions". El plan gratuito
+  (Hobby) de Vercel es para uso personal, no comercial; la venta de boletos es
+  uso comercial. Plan Pro: alrededor de USD 20 al mes por miembro (verificar
+  precio vigente). Aplica ya a la 1.0, no solo a la 2.0.
+- **Supabase producción en plan Free:** sin respaldos automáticos descargables
+  y con límites de uso. Para una boletería real se recomienda **Pro**
+  (alrededor de USD 25 al mes, verificar) **antes** de publicar la 2.0, por
+  los respaldos diarios. DEV puede seguir en Free (se pausa tras una semana
+  sin uso; se reactiva desde el panel).
+- **Dependencias:** Next.js y sus librerías se instalan con npm (requiere
+  aprobación). Se fijan versiones y se actualizan a propósito.
+- **Curva de aprendizaje:** mayor que el HTML actual; se compensa con
+  convenciones escritas (un `CLAUDE.md` del proyecto) y pruebas automáticas
+  que avisan cuando algo se rompe.
+
+## 7. Qué se necesita de Johann
+
+1. Elegir: **Next.js** (recomendado) o SvelteKit.
+2. Aprobar instalar las dependencias y crear `web/` en `darf-2.0`.
+3. Aprobar, cuando la base esté lista, que `darf-2-dev` construya `web/`.
+4. Revisar el plan de Vercel y considerar Supabase Pro para producción.
+
+## 8. Cómo se comprobará que funciona
+
+- La primera entrega de la Fase 1 es un "esqueleto" en DEV: rutas, sistema de
+  diseño aplicado a 2–3 pantallas, sesión con Supabase DEV, pruebas corriendo
+  en GitHub Actions y el chequeo de aislamiento pasando.
+- Criterio de salida de la Fase 1 (visión §16): estructura documentada y
+  pruebas básicas funcionando en DEV.
+
+## 9. Avance de la Fase 1 (2026-10-10)
+
+- `web/` creado con Next.js **16.3.8** (no la 16.4.0, publicada 4 días antes),
+  TypeScript, Tailwind 4, `@supabase/ssr` 0.12.7 y `@supabase/supabase-js`
+  2.117.3 (versiones fijas). Auditoría de dependencias de producción: 0 avisos.
+- Configuración por entorno (`NEXT_PUBLIC_*`, `web/.env.example`), franja de
+  entorno de pruebas, `proxy.ts` que refresca la sesión (en Next 16
+  "middleware" se llama "proxy").
+- Tokens de la dirección A2 en `src/app/globals.css`; temas provisionales por
+  obra en `src/lib/productions.ts`.
+- Rutas: `/` (portada, DARF primero) y `/producciones/[slug]` (plantilla única
+  que lee producción, funciones y precios de la base).
+- GitHub Actions `DARF 2.0 CI` (solo `darf-2.0`): aislamiento, tipos, lint y
+  build. Primera ejecución: **verde**.
+- Tipografía: **una sola familia, Montserrat** (decisión de Johann); titulares en
+  Montserrat Black.
+- Portada: la obra destacada es la que está en cartelera; si no hay, la más
+  reciente del archivo (por su última función con fecha; si no tiene, por fecha
+  de alta). Reglas puras en `src/lib/home-rules.ts` con pruebas Vitest (5).
+- Proyecto Vercel **`darf-2-web-dev`** (aprobado por Johann): raíz `web/`, solo
+  rama `darf-2.0`, variables solo de Supabase DEV, Vercel Authentication en
+  todos los despliegues. El proyecto `darf-2-dev` sigue sirviendo la 1.0 sobre
+  DEV para probar la boletería.
+- Pendiente: pruebas de navegador (Playwright) y pruebas SQL en CI.
+
+## 10. Estructura de la web nueva y equivalencia con la 1.0 (2026-10-10)
+
+Dirección DEV que siempre muestra lo último de `darf-2.0`:
+`https://darf-2-web-dev-git-darf-20-darf-productions.vercel.app`
+(la de "producción" del proyecto, `darf-2-web-dev-darf-productions.vercel.app`,
+quedó fija en la primera publicación porque la rama de producción del proyecto
+es `main`; opcional: cambiarla a `darf-2.0` en Vercel → Settings → Environments).
+
+| Función de la 1.0 | Web nueva | Notas |
+|---|---|---|
+| Portada | ✅ | DARF primero; obra destacada o última del archivo |
+| Cartelera / Archivo de producciones | ✅ `/cartelera`, `/producciones` | |
+| Página de cada obra | ✅ `/producciones/[slug]` | Sinopsis, canciones, videos, elenco, equipos, ficha (contenido transitorio extraído de la 1.0) |
+| Galería de fotos | ⏳ | Lee `gallery_photos` en Fase 2 (en DEV no hay fotos subidas) |
+| Fan Zone | ✅ `/fan-zone`, `/fan-zone/[slug]` | Requiere sesión, como la 1.0; videos de ensayo |
+| Audiciones | ✅ página · ⏳ envío | Registro permanente en vista previa; requiere modelo de datos (Fase 5) |
+| Contacto | ✅ `/contacto` | Guarda en `contact_messages` |
+| Entrar / registro / verificación | ✅ `/entrar`, `/auth/callback` | Correo y contraseña; Google pendiente en DEV |
+| Mi cuenta: perfil | ✅ | Nombre y teléfono |
+| Mis boletos + QR | ✅ | QR de órdenes aprobadas |
+| Boleto en PDF | ⏳ | Pendiente |
+| Compra: mapa, descuento, orden | ✅ `/comprar/[funcion]` | `create_seated_ticket_order`, `preview_discount_code`, `get_taken_seats` |
+| Pago por WhatsApp | ✅ | Solo si `NEXT_PUBLIC_DARF_WHATSAPP` está configurado (vacío en DEV) |
+| Panel staff: aprobar, mapa, taquilla, QR, vendedores, descuentos, galería, bases de datos | ⏳ Fase 3 | Mientras tanto: panel de la 1.0 en `darf-2-dev` (misma base DEV) |
+| DARFY | ⏳ Fase 6 | |
+
+## 11. Avance de la Fase 2 (2026-10-11)
+
+- Migraciones **0029** (plantilla de producción: estado, kit, ficha, actos,
+  canciones, personas, créditos con foto por obra, videos/ensayos,
+  agradecimientos, bucket `producciones`) y **0030** (número de ensayos)
+  aplicadas **solo en Supabase DEV**. Detalle en `docs/DARF-2.0-PRODUCCIONES.md`.
+- Pruebas SQL `supabase/tests/0029_production_template_test.sql` (T1–T9) pasan en
+  local y en DEV; las de boletería (0021–0028) siguen igual que antes.
+- La web lee todo de la base (`src/lib/productions.ts`,
+  `src/lib/production-content.ts`); se eliminaron `src/content/producciones.ts`
+  y los temas escritos en código.
+- Para producción: antes del lanzamiento, las obras reales deben tener kit
+  completo y pasar a `publicada`/`archivada`, porque con 0029 el público solo
+  ve obras publicadas (la 1.0 también). Va en el plan de migración final.
+
+## 12. Fase 3 · etapa 3A (2026-10-11)
+
+- Migración **0031** (solo DEV): permisos, roles de sistema (incluye Staff y
+  Maquillaje) y personalizados, `production_members`, `has_perm(obra, permiso)`,
+  bitácora `audit_log`. Pruebas `supabase/tests/0031_panel_roles_test.sql`
+  (T1–T8) en local y DEV. En DEV se corrió sin el paso "quitar miembro" porque
+  el conector pide confirmación ante un `delete`; ese paso pasa en local.
+- Panel nuevo en `web/src/app/panel/`: Inicio, Producciones, espacio de trabajo
+  por obra (Resumen y Permisos; el resto de pestañas muestra su etapa), y para
+  el Director: Usuarios, Roles y Bitácora. Reglas puras en
+  `src/lib/panel-nav.ts` y `src/lib/audit.ts` con pruebas.
+- Pendiente para 3B: que un integrante con rol vea obras en **borrador** (hoy
+  la lectura de `productions` solo deja ver borradores a staff/Director).
+
+## 13. Fase 3 · etapa 3B (2026-10-11)
+
+- Migración **0032** (DEV): cada rol edita solo lo suyo en su obra
+  (contenido, elenco, Fan Zone, publicar, venta) con revisión por columnas;
+  el equipo ve sus obras en borrador; archivos por carpeta de obra;
+  `panel_duplicate_production` (solo Director). Pruebas T1–T8 en local y DEV.
+  Resuelve el pendiente de 3A (borradores visibles para el equipo).
+- Migración **0033**: guardar listas "todo o nada" (canciones, ficha extra,
+  videos/ensayos, agradecimientos). El conector se queda esperando ante un
+  `DELETE`, así que en DEV se aplica a mano con `supabase/dev/apply_0033_dev.sql`
+  (con guardia DEV). Pruebas T1–T3 en local.
+- Panel: Nueva producción / Duplicar; por obra, **Página pública** (estado,
+  datos y ficha, kit con subida validada de logo y ambiente, colores con
+  revisión en vivo, canciones por acto, ficha extra, videos, agradecimientos),
+  **Elenco y equipos** (alta de personas sin duplicar, papel, orden, foto por
+  obra) y **Fan Zone** (ensayos y galería). `/vista-previa/[id]` usa la misma
+  plantilla pública (`src/components/ProductionView.tsx`).
+- Las imágenes viejas no se borran del Storage al reemplazarlas (limpieza
+  pendiente, sin riesgo).
+
+## 14. Fase 3 · etapa 3C (2026-10-11)
+
+- Migración **0034** (aprobada por Johann): la boletería se opera **por obra**.
+  Mismas funciones de la base y mismas reglas de venta; solo cambia la línea que
+  revisa el permiso (generada por script a partir del cuerpo exacto de cada
+  función). Permiso nuevo `funciones.gestionar` (Producción y Taquilla). Staff
+  global queda igual que hoy: ver ventas y validar QR. En DEV se aplica a mano
+  con `supabase/dev/apply_0034_dev.sql`. Pruebas 0034 T1–T7; las de boletería
+  0021–0028 siguen pasando.
+- Panel por obra → **Funciones y boletos**: ventas y órdenes (resumen,
+  ocupación por función, aprobar/rechazar, cancelar boleto), **taquilla** con
+  el mismo mapa de asientos que la compra en línea (`src/components/SeatMap.tsx`)
+  y QR al momento, **funciones y precios** (fecha o "por definir", sede, precio
+  por zona, venta por función y de la obra) y **descuentos**. Pestaña
+  **Puerta**: validar QR con la cámara (si el navegador lo soporta) o con el
+  código escrito.
+
+**Hallazgos de 3C y cómo quedaron (Johann aprobó 1 y 2 el 2026-10-11):**
+- ✅ Migración **0035** (aplicada en DEV): en puerta solo entran boletos de órdenes
+  **aprobadas**; una pendiente responde `no_aprobado` y no se marca. Pruebas
+  T1–T2 en local y DEV; 0021, 0027 y 0034 siguen pasando. La copia 1.0 de esta
+  rama (`js/app.js`, solo DEV) muestra "Sin aprobar".
+- ✅ Puerta lee QR también en iPhone con **jsQR 1.4.0** (versión fija; se carga
+  solo cuando el navegador no trae lector propio).
+- Pendiente (Fase 4): crear zonas y mapas de asientos para obras nuevas, y
+  admisión general.
+
+## 15. Fase 3 · etapa 3D: audiciones (2026-10-11)
+
+- Migración **0036** (aplicada en DEV): convocatorias por obra con personajes,
+  horarios con cupo (sin sobreventa) y preguntas configurables; inscripción por
+  RPC con cuenta, validación de edad y, si es menor, datos y autorización de
+  madre, padre o tutor; QR de inscripción; mesa de registro con número
+  consecutivo y alta rápida sin cita; evaluación por juez y ronda (canto, baile,
+  actuación, actitud 1–5 + notas); tablero consolidado y callbacks. Fotos en
+  bucket privado `audiciones`. Jueces y mesa no ven datos de contacto.
+  Pruebas T1–T8 en local (en DEV el conector pide confirmación ante "cancel";
+  la misma prueba pasó completa en la copia local).
+- Web pública: `/audiciones`, `/audiciones/[id]` (inscripción), Mi cuenta →
+  Mis audiciones (estado, número y QR).
+- Panel → Audiciones: configuración (datos, publicación, personajes, horarios,
+  preguntas), solicitudes con filtros y decisión, registro del día (QR con
+  cámara, "Llegó", alta rápida), evaluación del juez y resultados.
+- El lector de QR del panel es un componente compartido (`QrScanner`) para
+  puerta y registro.
+- Pendiente (3E): convertir a la persona seleccionada en oferta de papel y
+  crédito del elenco sin volver a capturar datos.
