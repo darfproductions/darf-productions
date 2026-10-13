@@ -3,7 +3,31 @@ import { ConfirmSubmit } from "@/components/panel/ConfirmSubmit";
 import { Card, Notice, PanelTitle, button, buttonGhost, input } from "@/components/panel/ui";
 import { listRoles, type Permission } from "@/lib/panel-data";
 import { requireDirector } from "@/lib/permissions";
-import { createRole, deleteRole, updateRolePermissions } from "./actions";
+import { CATEGORIAS_ROL, FRANJAS } from "@/lib/gafete-rules";
+import { createRole, deleteRole, updateRoleCategoria, updateRolePermissions } from "./actions";
+
+// Selector de la categoría del gafete (0087).
+function CategoriaSelect({ actual }: { actual?: string }) {
+  return (
+    <fieldset className="flex flex-col gap-2 text-sm">
+      <legend className="mb-1 font-semibold">Categoría del gafete <span className="font-normal text-texto-3">(color de la franja; la persona lleva la más alta que tenga)</span></legend>
+      <div className="flex flex-wrap gap-2">
+        {CATEGORIAS_ROL.map((c) => (
+          <label key={c.id} className="flex cursor-pointer items-center gap-2 rounded-full border border-white/20 px-3 py-1.5 has-[:checked]:border-white">
+            <input type="radio" name="categoria" value={c.id} required defaultChecked={actual === c.id} className="sr-only" />
+            <span aria-hidden="true" className="h-3 w-3 rounded-full" style={{ background: FRANJAS[c.id].fondo }} />
+            {c.label}
+          </label>
+        ))}
+      </div>
+    </fieldset>
+  );
+}
+
+const chipCategoria = (c: string) => {
+  const f = FRANJAS[c as keyof typeof FRANJAS];
+  return f ? <span className="ml-2 inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2 py-0.5 text-[11px] font-bold"><span aria-hidden="true" className="h-2.5 w-2.5 rounded-full" style={{ background: f.fondo }} />{CATEGORIAS_ROL.find((x) => x.id === c)?.label}</span> : null;
+};
 
 export const metadata: Metadata = { title: "Roles" };
 
@@ -55,6 +79,7 @@ export default async function RolesPage({ searchParams }: PageProps<"/panel/role
                 <input className={input} name="descripcion" maxLength={120} placeholder="Medidas y materiales del elenco" />
               </label>
             </div>
+            <CategoriaSelect />
             <PermissionChecks permissions={permissions} checked={new Set()} />
             <button className={`${button} self-start`}>Crear rol</button>
           </form>
@@ -68,9 +93,14 @@ export default async function RolesPage({ searchParams }: PageProps<"/panel/role
             <Card key={r.id}>
               <details>
                 <summary className="cursor-pointer">
-                  <span className="font-bold">{r.nombre}</span>
+                  <span className="font-bold">{r.nombre}</span>{chipCategoria(r.categoria)}
                   <span className="ml-2 text-sm text-texto-3">{(grants.get(r.id)?.size ?? 0)} permisos</span>
                 </summary>
+                <form action={updateRoleCategoria} className="mt-4 flex flex-col gap-3">
+                  <input type="hidden" name="id" value={r.id} />
+                  <CategoriaSelect actual={r.categoria} />
+                  <button className={`${buttonGhost} self-start`}>Guardar categoría</button>
+                </form>
                 <form action={updateRolePermissions} className="mt-4 flex flex-col gap-4">
                   <input type="hidden" name="id" value={r.id} />
                   <PermissionChecks permissions={permissions} checked={grants.get(r.id) ?? new Set()} />
@@ -92,7 +122,7 @@ export default async function RolesPage({ searchParams }: PageProps<"/panel/role
           {system.map((r) => (
             <li key={r.id}>
               <Card className="h-full">
-                <p className="font-bold">{r.nombre}</p>
+                <p className="font-bold">{r.nombre}{chipCategoria(r.categoria)}</p>
                 <p className="text-sm text-texto-3">{r.descripcion}</p>
                 <p className="mt-2 text-sm text-texto-2">
                   {[...(grants.get(r.id) ?? [])].map((p) => desc.get(p) ?? p).join(" · ") || "Sin permisos administrativos (portal del elenco en la etapa 3E)."}

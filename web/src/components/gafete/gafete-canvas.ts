@@ -37,11 +37,17 @@ export async function descargarPase(p: PaseVista, archivo: string): Promise<void
       x.fillStyle = g; x.fillRect(0, 0, W, H);
       x.strokeStyle = "rgba(215,187,95,0.6)"; x.lineWidth = 4; x.strokeRect(2, 2, W - 4, H - 4);
     }
-    x.fillStyle = fan ? "#2a2216" : "#211a2c"; x.beginPath(); x.roundRect(W / 2 - 96, 30, 192, 40, 20); x.fill();
+    // Logo arriba (sin la ranura); si es socio, el sello al lado y del mismo alto (0087).
     if (logo) {
-      const maxW = fan ? 440 : 400, maxH = fan ? 80 : 112;
+      const maxH = fan ? 80 : 112, hueco = 24;
+      const conSello = !!sello;
+      const maxW = conSello ? (fan ? 360 : 300) : fan ? 440 : 400;
       const k = Math.min(maxW / logo.width, maxH / logo.height);
-      x.drawImage(logo, (W - logo.width * k) / 2, 100 + (112 - logo.height * k) / 2, logo.width * k, logo.height * k);
+      const lw = logo.width * k, lh = logo.height * k;
+      const total = lw + (conSello ? hueco + lh : 0);
+      const x0 = (W - total) / 2, y0 = 60 + (112 - lh) / 2;
+      x.drawImage(logo, x0, y0, lw, lh);
+      if (sello) x.drawImage(sello, x0 + lw + hueco, y0, lh, lh);
     }
     // Foto redonda
     const cx = W / 2, cy = 330, r = 104;
@@ -83,14 +89,7 @@ export async function descargarPase(p: PaseVista, archivo: string): Promise<void
     } else x.fillStyle = p.banda.fondo;
     x.fillRect(0, H - 96, W, 96);
     x.fillStyle = p.banda.texto; x.font = `italic 900 46px ${fuente}`;
-    if (sello && !fan) {
-      x.fillText(p.banda.label, W / 2, H - 32);
-      x.drawImage(sello, W - 96, H - 48 - 30, 60, 60);
-    } else if (sello) {
-      const ancho = x.measureText(p.banda.label).width, s = 56, inicio = (W - (ancho + s + 18)) / 2;
-      x.drawImage(sello, inicio, H - 48 - s / 2, s, s);
-      x.textAlign = "left"; x.fillText(p.banda.label, inicio + s + 18, H - 32);
-    } else x.fillText(p.banda.label, W / 2, H - 32);
+    x.fillText(p.banda.label, W / 2, H - 32);
     return c;
   };
   const jpeg = async (c: HTMLCanvasElement) => new Uint8Array(await (await new Promise<Blob>((res, rej) => c.toBlob((b) => (b ? res(b) : rej(new Error("canvas"))), "image/jpeg", 0.92))).arrayBuffer());

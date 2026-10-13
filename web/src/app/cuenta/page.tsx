@@ -202,7 +202,10 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
           )}
         </section>
 
-        <section aria-labelledby="boletos" className="flex flex-col gap-4 lg:col-span-8">
+        {/* Columna izquierda continua (boletos, ventas, equipo…) para que no quede un hueco bajo
+            "Mis boletos" cuando la columna derecha es larga. En celular: boletos, perfil y luego lo demás. */}
+        <div className="contents lg:col-span-8 lg:flex lg:flex-col lg:gap-10">
+        <section aria-labelledby="boletos" className="order-1 flex flex-col gap-4 lg:order-none">
           <h2 id="boletos" className="titular text-2xl">Mis boletos</h2>
           {nueva && (
             <p role="status" className="rounded-xl border border-exito/40 bg-exito/10 px-4 py-3">
@@ -230,7 +233,139 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
           )}
         </section>
 
-        <aside className="flex flex-col gap-6 lg:col-span-4">
+        {miCodigo && (
+          <section aria-labelledby="mis-ventas" className="flex flex-col gap-3 order-3 lg:order-none">
+            <h2 id="mis-ventas" className="titular text-2xl">Mis ventas</h2>
+            <div className="flex flex-col gap-3 rounded-2xl bg-telon p-5">
+              <p className="text-sm text-texto-2">
+                Tu código de vendedor: <b className="font-mono text-lg tracking-widest text-texto">{miCodigo}</b>. Funciona en las obras donde estás
+                activo (tu elenco, o donde te active el equipo). Comparte tu link: quien compre desde ahí ya trae tu código.
+              </p>
+              {obrasVenta.length > 0 ? (
+                <ul className="flex flex-col divide-y divide-white/10 text-sm">
+                  {obrasVenta.map((v) => (
+                    <li key={v.production_id} className="flex flex-wrap items-center justify-between gap-2 py-2.5">
+                      <span>
+                        <b>{v.obra}</b>
+                        <span className="block text-xs text-texto-3">
+                          {v.boletos} {v.boletos === 1 ? "boleto" : "boletos"} · {formatMoney(Number(v.monto))}{v.pendientes ? ` · ${v.pendientes} por aprobar` : ""}
+                          {!v.activo && " · tu código ya no está activo aquí"}
+                        </span>
+                      </span>
+                      {v.en_venta && <CopyLink path={sellerPath(v.production_id!, miCodigo)} />}
+                    </li>
+                  ))}
+                </ul>
+              ) : <p className="text-sm text-texto-3">Aún no estás activo como vendedor en ninguna obra.</p>}
+            </div>
+          </section>
+        )}
+
+        {producciones.length > 0 && (
+          <section aria-labelledby="mis-producciones" className="flex flex-col gap-3 order-3 lg:order-none">
+            <h2 id="mis-producciones" className="titular text-2xl">Mis producciones</h2>
+            <ul className="grid gap-3 sm:grid-cols-2">
+              {producciones.map((p) => (
+                <li key={p.production_id}>
+                  <Link href={`/cuenta/produccion/${p.production_id}`} className="block rounded-2xl bg-telon p-5 hover:bg-telon-2">
+                    <p className="text-lg font-bold">{p.nombre}{avisosDe(p.production_id) > 0 && <span className="ml-2 rounded-full bg-[#be123c] px-2 py-0.5 text-xs text-white">{avisosDe(p.production_id)} {avisosDe(p.production_id) === 1 ? "aviso" : "avisos"}</span>}</p>
+                    <p className="text-sm text-texto-2">{p.papeles.join(" · ") || "Integrante"}</p>
+                    <span className="mt-2 inline-block text-sm font-bold text-violeta-claro">Avisos, ensayos, materiales y mi expediente →</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {equipos.length > 0 && (
+          <section aria-labelledby="mi-equipo" className="flex flex-col gap-3 order-3 lg:order-none">
+            <h2 id="mi-equipo" className="titular text-2xl">Mi equipo</h2>
+            <ul className="grid gap-3 sm:grid-cols-2">
+              {equipos.map((e) => {
+                const k = e.production_id ?? "general";
+                const pe = pendEquipo.get(k);
+                return (
+                  <li key={k}>
+                    <Link href={`/cuenta/equipo/${k}`} className="block rounded-2xl bg-telon p-5 hover:bg-telon-2">
+                      <p className="text-lg font-bold">{e.nombre}
+                        {pe?.notas ? <span className="ml-2 rounded-full bg-[#be123c] px-2 py-0.5 text-xs text-white">{pe.notas} {pe.notas === 1 ? "nota" : "notas"}</span> : null}
+                        {pe?.avisos ? <span className="ml-2 rounded-full bg-ciruela px-2 py-0.5 text-xs text-white">{pe.avisos} {pe.avisos === 1 ? "aviso" : "avisos"}</span> : null}
+                      </p>
+                      <p className="text-sm text-texto-2">{e.roles.join(" · ") || "Equipo DARF"}</p>
+                      <span className="mt-2 inline-block text-sm font-bold text-violeta-claro">Notas, juntas, avisos y materiales →</span>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        )}
+
+        {ofertasPendientes.length > 0 && (
+          <section aria-labelledby="ofertas" className="flex flex-col gap-3 order-3 lg:order-none">
+            <h2 id="ofertas" className="titular text-2xl">Tienes {ofertasPendientes.length === 1 ? "una oferta" : `${ofertasPendientes.length} ofertas`} de papel</h2>
+            <ul className="flex flex-col gap-3">
+              {ofertasPendientes.map((o) => (
+                <li key={o.id} className="flex flex-col gap-3 rounded-2xl border border-exito/40 bg-exito/10 p-5">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-[0.2em] text-texto-3">{o.obra}</p>
+                    <p className="text-xl font-bold">{offerLabel(o)}</p>
+                    {o.mensaje && <p className="mt-1 whitespace-pre-line text-texto-2">{o.mensaje}</p>}
+                    {o.responder_antes && <p className="mt-1 text-sm capitalize text-texto-2">Responde antes del {formatSlot(o.responder_antes)}</p>}
+                  </div>
+                  <OfferReplyForm id={o.id} label={`${offerLabel(o)} en ${o.obra}`} />
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {pendientes.length > 0 && (
+          <section aria-labelledby="invitaciones" className="flex flex-col gap-3 order-3 lg:order-none">
+            <h2 id="invitaciones" className="titular text-2xl">Te invitaron a audicionar</h2>
+            <ul className="flex flex-col gap-3">
+              {pendientes.map((i) => (
+                <li key={i.audition_id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#a48bff]/40 bg-telon p-5">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-[0.2em] text-texto-3">{i.obra ?? "Convocatoria DARF"}</p>
+                    <p className="text-lg font-bold">{i.titulo}</p>
+                    {i.inscripcion_cierra && <p className="text-sm capitalize text-texto-2">Inscripción hasta {formatSlot(i.inscripcion_cierra)}</p>}
+                  </div>
+                  <Link href={`/audiciones/${i.audition_id}`} className="boton-compra rounded-full px-5 py-2.5 text-sm font-bold">Inscribirme</Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {audiciones.length > 0 && (
+          <section aria-labelledby="mis-audiciones" className="flex flex-col gap-4 order-3 lg:order-none">
+            <h2 id="mis-audiciones" className="titular text-2xl">Mis audiciones</h2>
+            <ul className="flex flex-col gap-4">
+              {audiciones.map((a) => (
+                <li key={a.id} className="flex flex-col gap-4 rounded-2xl bg-telon p-5 sm:flex-row sm:items-center">
+                  {/* eslint-disable-next-line @next/next/no-img-element -- QR generado (data URL) */}
+                  {audQr.get(a.id) && <img src={audQr.get(a.id)} alt="QR de la audición" width={120} height={120} className="rounded-lg bg-white p-1.5" />}
+                  <div className="flex flex-1 flex-col gap-1">
+                    <p className="text-lg font-bold">{a.auditions?.titulo ?? "Audición"}</p>
+                    {a.audition_slots && <p className="text-sm capitalize text-texto-2">{formatSlot(a.audition_slots.inicia)}{a.audition_slots.sala ? ` · ${a.audition_slots.sala}` : ""}</p>}
+                    <p className="text-sm">
+                      {a.auditions?.estado === "cancelada"
+                        ? <span className="rounded-full bg-[#5a1a22] px-2.5 py-1 text-xs font-bold text-[#fecdd3]">Convocatoria cancelada</span>
+                        : <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${ESTADO_SOLICITUD[a.estado]?.cls ?? ""}`}>{ESTADO_SOLICITUD[a.estado]?.label ?? a.estado}</span>}
+                      {a.numero && <span className="ml-2">Número {a.numero}</span>}
+                    </p>
+                    <Link href={`/audiciones/${a.audition_id}`} className="mt-1 text-sm font-bold text-violeta-claro">Ver convocatoria →</Link>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+        </div>
+
+        <aside className="order-2 flex flex-col gap-6 lg:order-none lg:col-span-4 lg:self-start">
           {credencial && <div id="credencial" className="scroll-mt-24"><MiCredencial c={credencial} /></div>}
           <section aria-labelledby="perfil" className="flex flex-col gap-4 rounded-2xl bg-telon p-6">
             <h2 id="perfil" className="text-lg font-bold">Perfil</h2>
@@ -270,137 +405,6 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
             <a href="/cuenta/eliminar" className="text-sm font-semibold text-texto-3 underline hover:text-texto">Eliminar mi cuenta</a>
           </div>
         </aside>
-
-        {miCodigo && (
-          <section aria-labelledby="mis-ventas" className="flex flex-col gap-3 lg:col-span-8">
-            <h2 id="mis-ventas" className="titular text-2xl">Mis ventas</h2>
-            <div className="flex flex-col gap-3 rounded-2xl bg-telon p-5">
-              <p className="text-sm text-texto-2">
-                Tu código de vendedor: <b className="font-mono text-lg tracking-widest text-texto">{miCodigo}</b>. Funciona en las obras donde estás
-                activo (tu elenco, o donde te active el equipo). Comparte tu link: quien compre desde ahí ya trae tu código.
-              </p>
-              {obrasVenta.length > 0 ? (
-                <ul className="flex flex-col divide-y divide-white/10 text-sm">
-                  {obrasVenta.map((v) => (
-                    <li key={v.production_id} className="flex flex-wrap items-center justify-between gap-2 py-2.5">
-                      <span>
-                        <b>{v.obra}</b>
-                        <span className="block text-xs text-texto-3">
-                          {v.boletos} {v.boletos === 1 ? "boleto" : "boletos"} · {formatMoney(Number(v.monto))}{v.pendientes ? ` · ${v.pendientes} por aprobar` : ""}
-                          {!v.activo && " · tu código ya no está activo aquí"}
-                        </span>
-                      </span>
-                      {v.en_venta && <CopyLink path={sellerPath(v.production_id!, miCodigo)} />}
-                    </li>
-                  ))}
-                </ul>
-              ) : <p className="text-sm text-texto-3">Aún no estás activo como vendedor en ninguna obra.</p>}
-            </div>
-          </section>
-        )}
-
-        {producciones.length > 0 && (
-          <section aria-labelledby="mis-producciones" className="flex flex-col gap-3 lg:col-span-8">
-            <h2 id="mis-producciones" className="titular text-2xl">Mis producciones</h2>
-            <ul className="grid gap-3 sm:grid-cols-2">
-              {producciones.map((p) => (
-                <li key={p.production_id}>
-                  <Link href={`/cuenta/produccion/${p.production_id}`} className="block rounded-2xl bg-telon p-5 hover:bg-telon-2">
-                    <p className="text-lg font-bold">{p.nombre}{avisosDe(p.production_id) > 0 && <span className="ml-2 rounded-full bg-[#be123c] px-2 py-0.5 text-xs text-white">{avisosDe(p.production_id)} {avisosDe(p.production_id) === 1 ? "aviso" : "avisos"}</span>}</p>
-                    <p className="text-sm text-texto-2">{p.papeles.join(" · ") || "Integrante"}</p>
-                    <span className="mt-2 inline-block text-sm font-bold text-violeta-claro">Avisos, ensayos, materiales y mi expediente →</span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
-
-        {equipos.length > 0 && (
-          <section aria-labelledby="mi-equipo" className="flex flex-col gap-3 lg:col-span-8">
-            <h2 id="mi-equipo" className="titular text-2xl">Mi equipo</h2>
-            <ul className="grid gap-3 sm:grid-cols-2">
-              {equipos.map((e) => {
-                const k = e.production_id ?? "general";
-                const pe = pendEquipo.get(k);
-                return (
-                  <li key={k}>
-                    <Link href={`/cuenta/equipo/${k}`} className="block rounded-2xl bg-telon p-5 hover:bg-telon-2">
-                      <p className="text-lg font-bold">{e.nombre}
-                        {pe?.notas ? <span className="ml-2 rounded-full bg-[#be123c] px-2 py-0.5 text-xs text-white">{pe.notas} {pe.notas === 1 ? "nota" : "notas"}</span> : null}
-                        {pe?.avisos ? <span className="ml-2 rounded-full bg-ciruela px-2 py-0.5 text-xs text-white">{pe.avisos} {pe.avisos === 1 ? "aviso" : "avisos"}</span> : null}
-                      </p>
-                      <p className="text-sm text-texto-2">{e.roles.join(" · ") || "Equipo DARF"}</p>
-                      <span className="mt-2 inline-block text-sm font-bold text-violeta-claro">Notas, juntas, avisos y materiales →</span>
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          </section>
-        )}
-
-        {ofertasPendientes.length > 0 && (
-          <section aria-labelledby="ofertas" className="flex flex-col gap-3 lg:col-span-8">
-            <h2 id="ofertas" className="titular text-2xl">Tienes {ofertasPendientes.length === 1 ? "una oferta" : `${ofertasPendientes.length} ofertas`} de papel</h2>
-            <ul className="flex flex-col gap-3">
-              {ofertasPendientes.map((o) => (
-                <li key={o.id} className="flex flex-col gap-3 rounded-2xl border border-exito/40 bg-exito/10 p-5">
-                  <div>
-                    <p className="text-xs font-bold uppercase tracking-[0.2em] text-texto-3">{o.obra}</p>
-                    <p className="text-xl font-bold">{offerLabel(o)}</p>
-                    {o.mensaje && <p className="mt-1 whitespace-pre-line text-texto-2">{o.mensaje}</p>}
-                    {o.responder_antes && <p className="mt-1 text-sm capitalize text-texto-2">Responde antes del {formatSlot(o.responder_antes)}</p>}
-                  </div>
-                  <OfferReplyForm id={o.id} label={`${offerLabel(o)} en ${o.obra}`} />
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
-
-        {pendientes.length > 0 && (
-          <section aria-labelledby="invitaciones" className="flex flex-col gap-3 lg:col-span-8">
-            <h2 id="invitaciones" className="titular text-2xl">Te invitaron a audicionar</h2>
-            <ul className="flex flex-col gap-3">
-              {pendientes.map((i) => (
-                <li key={i.audition_id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#a48bff]/40 bg-telon p-5">
-                  <div>
-                    <p className="text-xs font-bold uppercase tracking-[0.2em] text-texto-3">{i.obra ?? "Convocatoria DARF"}</p>
-                    <p className="text-lg font-bold">{i.titulo}</p>
-                    {i.inscripcion_cierra && <p className="text-sm capitalize text-texto-2">Inscripción hasta {formatSlot(i.inscripcion_cierra)}</p>}
-                  </div>
-                  <Link href={`/audiciones/${i.audition_id}`} className="boton-compra rounded-full px-5 py-2.5 text-sm font-bold">Inscribirme</Link>
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
-
-        {audiciones.length > 0 && (
-          <section aria-labelledby="mis-audiciones" className="flex flex-col gap-4 lg:col-span-8">
-            <h2 id="mis-audiciones" className="titular text-2xl">Mis audiciones</h2>
-            <ul className="flex flex-col gap-4">
-              {audiciones.map((a) => (
-                <li key={a.id} className="flex flex-col gap-4 rounded-2xl bg-telon p-5 sm:flex-row sm:items-center">
-                  {/* eslint-disable-next-line @next/next/no-img-element -- QR generado (data URL) */}
-                  {audQr.get(a.id) && <img src={audQr.get(a.id)} alt="QR de la audición" width={120} height={120} className="rounded-lg bg-white p-1.5" />}
-                  <div className="flex flex-1 flex-col gap-1">
-                    <p className="text-lg font-bold">{a.auditions?.titulo ?? "Audición"}</p>
-                    {a.audition_slots && <p className="text-sm capitalize text-texto-2">{formatSlot(a.audition_slots.inicia)}{a.audition_slots.sala ? ` · ${a.audition_slots.sala}` : ""}</p>}
-                    <p className="text-sm">
-                      {a.auditions?.estado === "cancelada"
-                        ? <span className="rounded-full bg-[#5a1a22] px-2.5 py-1 text-xs font-bold text-[#fecdd3]">Convocatoria cancelada</span>
-                        : <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${ESTADO_SOLICITUD[a.estado]?.cls ?? ""}`}>{ESTADO_SOLICITUD[a.estado]?.label ?? a.estado}</span>}
-                      {a.numero && <span className="ml-2">Número {a.numero}</span>}
-                    </p>
-                    <Link href={`/audiciones/${a.audition_id}`} className="mt-1 text-sm font-bold text-violeta-claro">Ver convocatoria →</Link>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
       </div>
     </main>
   );

@@ -56,16 +56,16 @@ grant all on ctx to public;
 -- T1: jerarquía del gafete, sin obra.
 do $$ declare j json; begin
   j := pg_temp.gaf('00000000-0000-0000-0000-0000000000e1');
-  if j->>'papel' <> 'CEO' or j->>'franja' <> 'staff' then raise exception 'FALLO T1: CEO (%)', j; end if;
+  if j->>'papel' <> 'CEO' or j->>'franja' <> 'manager' then raise exception 'FALLO T1: CEO (%)', j; end if;
   if (j::jsonb) ? 'obra' or (j::jsonb) ? 'temporada' then raise exception 'FALLO T1: todavía trae la obra'; end if;
   j := pg_temp.gaf('00000000-0000-0000-0000-0000000000e2');
-  if j->>'papel' <> 'Dirección artística' or j->>'franja' <> 'equipo' then raise exception 'FALLO T1: director (%)', j; end if;
+  if j->>'papel' <> 'Dirección artística' or j->>'franja' <> 'direccion' then raise exception 'FALLO T1: director (%)', j; end if;
   j := pg_temp.gaf('00000000-0000-0000-0000-0000000000e3');
-  if j->>'papel' <> 'Staff' or j->>'franja' <> 'equipo' then raise exception 'FALLO T1: staff de obra (%)', j; end if;
+  if j->>'papel' <> 'Staff' or j->>'franja' <> 'staff' then raise exception 'FALLO T1: staff de obra (%)', j; end if;
   j := pg_temp.gaf('00000000-0000-0000-0000-0000000000e4');
-  if j->>'papel' <> 'Elenco' or j->>'franja' <> 'elenco' then raise exception 'FALLO T1: elenco (%)', j; end if;
+  if j->>'papel' <> 'Elenco' or j->>'franja' <> 'crew' then raise exception 'FALLO T1: elenco (%)', j; end if;
   j := pg_temp.gaf('00000000-0000-0000-0000-0000000000e7');
-  if j->>'papel' <> 'Dirección Vocal' or j->>'franja' <> 'equipo' then raise exception 'FALLO T1: crédito creativo gana a reparto (%)', j; end if;
+  if j->>'papel' <> 'Dirección Vocal' or j->>'franja' <> 'direccion' then raise exception 'FALLO T1: crédito creativo gana a reparto (%)', j; end if;
   if pg_temp.gaf('00000000-0000-0000-0000-0000000000e5') is not null then raise exception 'FALLO T1: un fan tiene gafete'; end if;
   -- La página pública dice lo mismo.
   insert into ctx values ('gceo', (select token from badges where user_id = '00000000-0000-0000-0000-0000000000e1'));

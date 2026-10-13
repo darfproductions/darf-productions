@@ -1,13 +1,25 @@
 // Gafete digital (0078). Funciones puras: gafete-rules.test.ts.
 
-export type Franja = "staff" | "elenco" | "equipo";
+/** Categoría del gafete (0087), de mayor a menor: la más alta de la persona. */
+export type Franja = "manager" | "produccion" | "direccion" | "crew" | "staff";
 
-/** Franja de abajo del gafete (kit: STAFF en pulso; elenco con la luz DARF; equipo en lila). */
+/** Colores de la banda de abajo: Manager degradado, Producción rojo y Dirección azul del logo, Crew lila,
+ *  Staff rosa. (Fan dorado y Cuenta gris están en credencial-fan-rules y credencial-rules.) */
 export const FRANJAS: Record<Franja, { label: string; fondo: string; texto: string }> = {
+  manager: { label: "MANAGER", fondo: "linear-gradient(120deg,#340feb,#830886 55%,#d20122)", texto: "#ffffff" },
+  produccion: { label: "PRODUCCIÓN", fondo: "#d20122", texto: "#ffffff" },
+  direccion: { label: "DIRECCIÓN", fondo: "#340feb", texto: "#ffffff" },
+  crew: { label: "CREW", fondo: "#a48bff", texto: "#0b0910" },
   staff: { label: "STAFF", fondo: "#ff2d87", texto: "#0b0910" },
-  elenco: { label: "ELENCO", fondo: "linear-gradient(120deg,#340feb,#830886 55%,#d20122)", texto: "#ffffff" },
-  equipo: { label: "EQUIPO", fondo: "#a48bff", texto: "#0b0910" },
 };
+
+/** Categorías que se eligen al crear un rol del panel (Manager es el Equipo DARF y el Director). */
+export const CATEGORIAS_ROL: { id: Exclude<Franja, "manager">; label: string; ayuda: string }[] = [
+  { id: "produccion", label: "Producción", ayuda: "Rojo" },
+  { id: "direccion", label: "Dirección", ayuda: "Azul" },
+  { id: "crew", label: "Crew", ayuda: "Lila" },
+  { id: "staff", label: "Staff", ayuda: "Rosa" },
+];
 
 export type GafetePublico = {
   /** 0083: la credencial es única; solo el nivel "equipo" trae papel y contacto. */
@@ -36,11 +48,11 @@ export function anioMx(hoy: Date = new Date()): string {
 
 /** Gafete del equipo y elencos (0080: el puesto más alto, sin obra; abajo "DARF Productions · año"). */
 export function paseGafete(g: { nombre: string; fotoUrl: string | null; franja: Franja; papel: string; qr?: string; codigo?: string }, hoy: Date = new Date()): PaseVista {
-  const f = FRANJAS[g.franja] ?? FRANJAS.equipo;
+  const f = FRANJAS[g.franja] ?? FRANJAS.crew;
   return {
     tema: "darf", logo: "/marca/darf-monograma.svg", logoAlt: "DARF", nombre: g.nombre, fotoUrl: g.fotoUrl,
     titulo: g.papel, pie: `DARF Productions · ${anioMx(hoy)}`,
-    banda: { ...f, degradado: g.franja === "elenco" ? DEGRADADO_LUZ : undefined }, qr: g.qr, codigo: g.codigo,
+    banda: { ...f, degradado: g.franja === "manager" ? DEGRADADO_LUZ : undefined }, qr: g.qr, codigo: g.codigo,
   };
 }
 

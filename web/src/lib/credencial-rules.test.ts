@@ -22,12 +22,12 @@ describe("credencial única (0083)", () => {
     expect(p.titulo).toBe("Socio #0007 · Fan fundador");
   });
   it("equipo: gafete; si también es socio lleva el sello", () => {
-    const g = paseCredencial({ ...base, nivel: "equipo", franja: "staff", papel: "CEO" }, hoy);
+    const g = paseCredencial({ ...base, nivel: "equipo", franja: "manager", papel: "CEO" }, hoy);
     expect(g.tema).toBe("darf");
     expect(g.titulo).toBe("CEO");
     expect(g.sello).toBeUndefined();
-    const s = paseCredencial({ ...base, nivel: "equipo", franja: "elenco", papel: "Elenco", socio }, hoy);
+    const s = paseCredencial({ ...base, nivel: "equipo", franja: "crew", papel: "Elenco", socio }, hoy);
     expect(s.sello).toBe("Socio #0007");
-    expect(s.banda.label).toBe("ELENCO");
+    expect(s.banda.label).toBe("CREW");
   });
 });

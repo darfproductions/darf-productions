@@ -17,17 +17,18 @@ export type CredencialMia = {
 };
 
 export const NIVEL: Record<Nivel, { boton: string; ayuda: string }> = {
-  equipo: { boton: "Mi gafete", ayuda: "Muéstralo al llegar a ensayos y en la entrada de los eventos, o compártelo para que tengan tu contacto." },
-  club: { boton: "Mi credencial del Club Fan", ayuda: "Muéstrala en la entrada de los eventos." },
+  equipo: { boton: "Mi credencial", ayuda: "Muéstrala al llegar a ensayos y en la entrada de los eventos, o compártela para que tengan tu contacto." },
+  club: { boton: "Mi credencial", ayuda: "Socio del Club Fan. Muéstrala en la entrada de los eventos." },
   cuenta: { boton: "Mi credencial", ayuda: "Muéstrala en la entrada de los eventos a los que te registres." },
 };
 
-export const BANDA_CUENTA: Banda = { label: "ASISTENTE", fondo: "#f4f1f8", texto: "#0b0910" };
+/** Cuenta registrada sin Club Fan (0087): gris. */
+export const BANDA_CUENTA: Banda = { label: "ASISTENTE", fondo: "#6b6675", texto: "#ffffff" };
 
 export function paseCredencial(c: CredencialMia & { nombre: string; fotoUrl: string | null; qr?: string }, hoy: Date = new Date()): PaseVista {
   const base = { nombre: c.nombre, fotoUrl: c.fotoUrl, qr: c.qr, codigo: c.codigo };
   if (c.nivel === "equipo") {
-    const p = paseGafete({ ...base, franja: c.franja ?? "equipo", papel: c.papel ?? "Equipo" }, hoy);
+    const p = paseGafete({ ...base, franja: c.franja ?? "crew", papel: c.papel ?? "Equipo" }, hoy);
     return c.socio ? { ...p, sello: `Socio ${numeroSocio(c.socio.numero)}` } : p;
   }
   if (c.nivel === "club" && c.socio) return paseCredencialFan({ ...base, ...c.socio });

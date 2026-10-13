@@ -41,7 +41,7 @@ export function MiCredencial({ c, compacto = false }: { c: MiCredencialVista; co
         <button type="button" onClick={() => setAbierto(true)} className={`fb fb-sm border ${fan ? "border-oro/60 text-oro-claro hover:bg-oro/10" : "border-linea-2 hover:bg-white/5"}`}>{n.boton} con QR →</button>
       ) : (
         <button type="button" onClick={() => setAbierto(true)} className={`flex w-full items-center gap-4 rounded-2xl border p-5 text-left ${fan ? "border-oro/40 bg-[linear-gradient(160deg,#1a1622,#0b0910)] hover:border-oro/70" : "border-linea bg-telon hover:bg-telon-2"}`}>
-          <span aria-hidden="true" className={`grid h-12 w-12 shrink-0 place-items-center rounded-xl text-xl ${fan ? "bg-[linear-gradient(135deg,#8a6b1f,#d7bb5f,#f3e3a3)]" : "bg-[linear-gradient(135deg,#340feb,#830886,#d20122)]"}`}>{fan ? "★" : "🪪"}</span>
+          <span aria-hidden="true" className={`grid h-12 w-12 shrink-0 place-items-center rounded-xl ${fan ? "bg-[linear-gradient(135deg,#8a6b1f,#d7bb5f,#f3e3a3)] text-sala" : "bg-[linear-gradient(135deg,#340feb,#830886,#d20122)] text-white"}`}><IconoCredencial /></span>
           <span className="flex flex-col gap-0.5">
             <span className={`font-bold ${fan ? "text-oro-claro" : ""}`}>{n.boton} →</span>
             <span className="text-xs text-texto-2">{n.ayuda}{c.nivel === "equipo" && c.socio ? " Incluye tu sello del Club Fan." : ""}</span>
@@ -88,5 +88,17 @@ export function MiCredencial({ c, compacto = false }: { c: MiCredencialVista; co
         document.body,
       )}
     </>
+  );
+}
+
+/** Ícono de credencial (tarjeta con foto y renglones), en lugar de emoji. */
+function IconoCredencial() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="5" width="18" height="14" rx="2.5" />
+      <circle cx="8.5" cy="11" r="2" />
+      <path d="M5.8 16c.6-1.5 1.6-2.2 2.7-2.2s2.1.7 2.7 2.2" />
+      <path d="M14 10h4M14 13h4M14 16h2.5" />
+    </svg>
   );
 }

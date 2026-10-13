@@ -42,13 +42,13 @@ export async function listMembers(productionId: string): Promise<Member[]> {
   return (data ?? []) as Member[];
 }
 
-export type Role = { id: string; nombre: string; descripcion: string | null; es_sistema: boolean; orden: number };
+export type Role = { id: string; nombre: string; descripcion: string | null; es_sistema: boolean; orden: number; categoria: "produccion" | "direccion" | "crew" | "staff" };
 export type Permission = { id: string; grupo: string; descripcion: string; orden: number };
 
 export async function listRoles(): Promise<{ roles: Role[]; permissions: Permission[]; grants: Map<string, Set<string>> }> {
   const supabase = await createClient();
   const [roles, perms, rp] = await Promise.all([
-    supabase.from("panel_roles").select("id, nombre, descripcion, es_sistema, orden").order("orden").order("nombre"),
+    supabase.from("panel_roles").select("id, nombre, descripcion, es_sistema, orden, categoria").order("orden").order("nombre"),
     supabase.from("permissions").select("id, grupo, descripcion, orden").order("orden"),
     supabase.from("role_permissions").select("role_id, permission_id"),
   ]);

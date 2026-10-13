@@ -2,7 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { CATEGORIAS_ROL } from "@/lib/gafete-rules";
 import { roleIdFromName } from "@/lib/panel-nav";
+
+/** Categoría del gafete (0087): Producción, Dirección, Crew o Staff. */
+const categoriaDe = (form: FormData) => {
+  const c = String(form.get("categoria") ?? "");
+  return CATEGORIAS_ROL.some((x) => x.id === c) ? c : null;
+};
 import { createClient } from "@/lib/supabase/server";
 
 const back = (msg: string, ok = false) => redirect(`/panel/roles?${ok ? "ok" : "error"}=${encodeURIComponent(msg)}`);
@@ -14,8 +21,10 @@ export async function createRole(form: FormData): Promise<void> {
   const perms = form.getAll("perm").map(String);
   const id = roleIdFromName(nombre);
   if (id.length < 2) back("Escribe un nombre para el rol.");
+  const categoria = categoriaDe(form);
+  if (!categoria) back("Elige en qué categoría del gafete va el rol.");
   const supabase = await createClient();
-  const { error } = await supabase.from("panel_roles").insert({ id, nombre, descripcion });
+  const { error } = await supabase.from("panel_roles").insert({ id, nombre, descripcion, categoria });
   if (error) back(error.code === "23505" ? "Ya existe un rol con ese nombre." : error.message);
   if (perms.length) {
     const { error: e2 } = await supabase.from("role_permissions").insert(perms.map((p) => ({ role_id: id, permission_id: p })));
@@ -53,4 +62,17 @@ export async function deleteRole(form: FormData): Promise<void> {
   if (error) back(error.code === "23503" ? "Quita primero a las personas que tienen este rol en alguna obra." : error.message);
   if (!count) back("No se pudo eliminar el rol.");
   back("Rol eliminado.", true);
+}
+
+/** Cambiar la categoría del gafete de un rol personalizado (los de sistema están fijos). */
+export async function updateRoleCategoria(form: FormData): Promise<void> {
+  const id = String(form.get("id") ?? "");
+  const categoria = categoriaDe(form);
+  if (!categoria) back("Elige una categoría.");
+  const supabase = await createClient();
+  const { error, count } = await supabase.from("panel_roles").update({ categoria }, { count: "exact" }).eq("id", id).eq("es_sistema", false);
+  if (error) back(error.message);
+  if (!count) back("Ese rol no se puede cambiar.");
+  revalidatePath("/panel/roles");
+  back("Categoría guardada. Los gafetes se actualizan solos.", true);
 }
