@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { BirthdayList } from "@/components/BirthdayList";
 import { Card } from "@/components/panel/ui";
+import { ListaRevision } from "@/components/panel/ListaRevision";
 import { cumplesDelMes, MESES, type Cumple } from "@/lib/account-rules";
 import { createClient } from "@/lib/supabase/server";
 import { formatPerformanceDate } from "@/lib/productions";
@@ -77,35 +78,9 @@ export default async function ProductionSummary({ params }: PageProps<"/panel/pr
         )}
       </Card>
       {lista && (
-        <Card className={`md:col-span-2 ${lista.listo ? "" : "border border-aviso/40"}`}>
-          <details open={!lista.listo} className="group">
-            <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-2">
-              <span>
-                <span className="block text-xs font-bold uppercase tracking-[0.2em] text-texto-3">Listo para vender</span>
-                <span className={`mt-1 block font-bold ${lista.listo ? "text-[#bbf7d0]" : "text-aviso"}`}>
-                  {lista.listo ? "✓ Todo listo: la obra puede vender boletos." : `Faltan ${lista.faltan} ${lista.faltan === 1 ? "cosa" : "cosas"} para vender.`}
-                </span>
-              </span>
-              <span className="text-sm font-bold text-violeta-claro group-open:hidden">Ver lista</span>
-            </summary>
-            <ul className="mt-3 grid gap-1.5">
-              {lista.puntos.map((x) => (
-                <li key={x.clave}>
-                  <Link href={x.href} className="flex items-start gap-3 rounded-lg bg-sala px-4 py-2.5 hover:bg-telon-2">
-                    <span aria-hidden="true" className={`font-black ${x.ok ? "text-[#bbf7d0]" : x.obligatorio ? "text-aviso" : "text-texto-3"}`}>{x.ok ? "✓" : x.obligatorio ? "✗" : "○"}</span>
-                    <span className="min-w-0 flex-1">
-                      <span className={x.ok ? "text-texto-2" : "font-semibold"}>{x.texto}</span>
-                      {!x.obligatorio && <span className="text-xs text-texto-3"> (opcional)</span>}
-                      <span className="sr-only">{x.ok ? ": listo" : ": pendiente"}</span>
-                      {x.detalle && !x.ok && <span className="block text-sm text-texto-3">{x.detalle}</span>}
-                    </span>
-                    {!x.ok && <span className="text-violeta-claro">→</span>}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </details>
-        </Card>
+        <ListaRevision className="md:col-span-2" titulo="Listo para vender" listo={lista.listo}
+          resumen={lista.listo ? "✓ Todo listo: la obra puede vender boletos." : `Faltan ${lista.faltan} ${lista.faltan === 1 ? "cosa" : "cosas"} para vender.`}
+          puntos={lista.puntos.map((x) => ({ ...x, nivel: x.obligatorio ? "obligatorio" : "opcional" }))} />
       )}
       <Card>
         <p className="text-xs font-bold uppercase tracking-[0.2em] text-texto-3">Kit de la plantilla</p>

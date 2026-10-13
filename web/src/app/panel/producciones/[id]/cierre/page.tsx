@@ -9,6 +9,10 @@ import { can } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
 import type { SeasonSummary } from "@/lib/season-rules";
 import { createClient } from "@/lib/supabase/server";
+import { ListaRevision } from "@/components/panel/ListaRevision";
+import { listPerformances } from "@/lib/boleteria";
+import { listaCierre } from "@/lib/cierre-lista";
+import { getPendientes } from "@/lib/panel-pendientes";
 import { closeSeason, reopenSeason } from "./actions";
 
 export const metadata: Metadata = { title: "Cierre de temporada" };
@@ -23,6 +27,33 @@ function Reactivar({ id }: { id: string }) {
       <ActionForm action={reopenSeason} hidden={{ pid: id }} confirm="¿Reactivar esta producción?" submit="Reactivar producción" submitClass="rounded-full border border-white/30 px-4 py-2 text-sm font-bold" />
     </Card>
   );
+}
+
+async function datosCierre(id: string) {
+  const supabase = await createClient();
+  const ahora = Date.now();
+  const [fs, pend, fotos, creditos] = await Promise.all([
+    listPerformances(id),
+    getPendientes(),
+    supabase.from("gallery_photos").select("id", { count: "exact", head: true }).eq("production_id", id).eq("kind", "galeria"),
+    supabase.from("production_credits").select("id", { count: "exact", head: true }).eq("production_id", id).eq("activo", true),
+  ]);
+  const canceladas = fs.filter((f) => f.cancelada_at).map((f) => f.id);
+  const { count: reembolsos } = canceladas.length
+    ? await supabase.from("orders").select("id", { count: "exact", head: true }).in("performance_id", canceladas).eq("status", "aprobado")
+    : { count: 0 };
+  const n = (tipo: string) => pend.filter((x) => x.production_id === id && x.tipo === tipo).reduce((a, x) => a + x.n, 0);
+  return listaCierre({
+    pid: id,
+    ordenesPendientes: n("ordenes"),
+    funcionesPorVenir: fs.filter((f) => !f.cancelada_at && f.starts_at && new Date(f.starts_at).getTime() > ahora).length,
+    reembolsos: reembolsos ?? 0,
+    adeudos: n("adeudos"),
+    ofertasSinResponder: n("ofertas"),
+    documentosPorRevisar: n("documentos"),
+    fotosGaleria: fotos.count ?? 0,
+    creditos: creditos.count ?? 0,
+  });
 }
 
 const fecha = (iso: string) => new Intl.DateTimeFormat("es-MX", { dateStyle: "long", timeZone: "America/Mexico_City" }).format(new Date(iso));
@@ -42,6 +73,8 @@ export default async function Cierre({ params }: PageProps<"/panel/producciones/
   ]);
   if (!p) redirect("/panel/producciones");
   const cierres = (closures.data ?? []) as Closure[];
+  // Bloque 4C: lista de lo que conviene resolver antes de cerrar.
+  const revisar = p.estado !== "archivada" ? await datosCierre(id) : null;
   const vigente = p.estado === "archivada" ? cierres.find((c) => !c.reabierto_at) ?? null : null;
   const resumen = live.data as SeasonSummary | null;
 
@@ -78,6 +111,11 @@ export default async function Cierre({ params }: PageProps<"/panel/producciones/
         {resumen ? <SeasonSummaryView s={resumen} verTaller={verTaller} /> : <p className="text-sm text-[#ff8fa3]">{live.error?.message ?? "No se pudo calcular."}</p>}
       </Card>
 
+      {revisar && (
+        <ListaRevision className="print:hidden" titulo="Antes de cerrar la temporada" listo={revisar.pendientes === 0}
+          resumen={revisar.pendientes === 0 ? "✓ Todo resuelto: puedes cerrar la temporada." : !revisar.puedeCerrar ? "Hay órdenes por aprobar: resuélvelas para poder cerrar." : `${revisar.pendientes} ${revisar.pendientes === 1 ? "cosa por revisar" : "cosas por revisar"} (no impiden cerrar).`}
+          puntos={revisar.puntos.map((x) => ({ ...x, nivel: x.bloquea ? "obligatorio" : "aviso" }))} />
+      )}
       {cierra && p.estado !== "archivada" && (
         <Card className="print:hidden">
           <h2 className="titular mb-2 text-xl">Cerrar la temporada</h2>
