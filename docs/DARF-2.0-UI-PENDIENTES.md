@@ -89,6 +89,7 @@ Diego eligió cuáles sí (ver plan del bloque). Hechas en `darf-2.0`, migracion
 | Club Fan (0095) | Página pública /club-fan con beneficios, preguntas y cómo unirse (liga en el pie de página y en la Fan Zone). En Mi cuenta, sección "Club Fan" con "Salir del Club Fan" (con confirmación): se borran sus recordatorios de preventa; boletos y lugares apartados se quedan; si vuelve, nuevo número de socio. |
 | Contacto (0096) | Filtros Sin responder · Míos · Sin asignar · Respondidos · Todos. Asignar a alguien del equipo (le llega aviso); "Responder por correo" y "WhatsApp"; "Marcar respondido" con canal y nota (queda quién y cuándo); reabrir. En la bitácora sin datos de quien escribió. |
 | Bitácora (0096) | Filtros por obra, persona, tipo de acción (grupos con nombre claro; boletos con sub-acciones) y fechas en hora de México; "Ver más" hasta 1,000 y conteo de resultados. |
+| Obra privada con audiciones (0097) | Una obra en borrador u oculta no sale en la página, pero sus convocatorias sí: muestran el nombre, logo y colores de la obra, sin liga a su página. |
 
 ## Lo que queda pendiente
 

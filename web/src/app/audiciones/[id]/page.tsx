@@ -5,9 +5,9 @@ import QRCode from "qrcode";
 import { PageHeading } from "@/components/PageHeading";
 import { getSession } from "@/lib/auth";
 import { ESTADO_CONVOCATORIA, ESTADO_SOLICITUD } from "@/lib/audition-rules";
-import { amInvited, formatSlot, getAudition, getMyApplication } from "@/lib/auditions";
+import { amInvited, formatSlot, getAudition, getAuditionObra, getMyApplication } from "@/lib/auditions";
 import { MODALIDAD } from "@/lib/audition-rules";
-import { getProduction, getTheme, themeStyle } from "@/lib/productions";
+import { getTheme, themeStyle } from "@/lib/productions";
 import { cancelMyApplication } from "./actions";
 import { ApplyForm } from "./ApplyForm";
 import { MiniAction } from "@/components/panel/MiniAction";
@@ -23,14 +23,15 @@ export async function generateMetadata({ params }: PageProps<"/audiciones/[id]">
 }
 
 // Convocatoria pública: requisitos, personajes, horarios e inscripción (con cuenta).
-// Si es de una obra, usa los colores de la obra y enlaza a su página.
+// Si es de una obra, usa los colores de la obra y enlaza a su página (si la obra es privada,
+// muestra su nombre y colores sin liga; 0097).
 export default async function AuditionPage({ params }: PageProps<"/audiciones/[id]">) {
   const { id } = await params;
   const data = await getAudition(id);
   if (!data) notFound();
   const { audition: a, roles, fields, slots } = data;
-  const [session, obra] = await Promise.all([getSession(), a.production_id ? getProduction(a.production_id) : null]);
-  const theme = obra ? getTheme(obra.production) : null;
+  const [session, obra] = await Promise.all([getSession(), a.production_id ? getAuditionObra(a.id) : null]);
+  const theme = obra ? getTheme(obra) : null;
   const [mine, invitado] = session ? await Promise.all([getMyApplication(a.id, session.userId), a.solo_invitados ? amInvited(a.id) : true]) : [null, false];
   const enLinea = a.modalidad === "en_linea";
   const abierta = a.estado === "abierta" && (!a.inscripcion_cierra || new Date(a.inscripcion_cierra) > new Date());
@@ -39,12 +40,12 @@ export default async function AuditionPage({ params }: PageProps<"/audiciones/[i
 
   return (
     <main style={themeStyle(theme)} className={`pb-10 ${theme ? "min-h-dvh bg-obra-fondo text-obra-texto" : ""}`}>
-      {obra && (
+      {obra?.publica && (
         <div className="mx-auto max-w-[1440px] px-5 pt-6 md:px-16">
-          <Link href={`/producciones/${obra.production.id}`} className="text-sm font-bold uppercase tracking-[0.2em] text-obra-acento">← {obra.production.nombre}</Link>
+          <Link href={`/producciones/${a.production_id}`} className="text-sm font-bold uppercase tracking-[0.2em] text-obra-acento">← {obra.nombre}</Link>
         </div>
       )}
-      <PageHeading eyebrow={`${obra ? obra.production.nombre : a.permanente ? "Registro permanente" : "Convocatoria general"} · Audiciones · ${ESTADO_CONVOCATORIA[a.estado] ?? a.estado}`} title={a.titulo}>
+      <PageHeading eyebrow={`${obra ? obra.nombre : a.permanente ? "Registro permanente" : "Convocatoria general"} · Audiciones · ${ESTADO_CONVOCATORIA[a.estado] ?? a.estado}`} title={a.titulo}>
         {a.descripcion}
       </PageHeading>
       <div className="mx-auto grid max-w-[1440px] gap-8 px-5 md:px-16 lg:grid-cols-12">
