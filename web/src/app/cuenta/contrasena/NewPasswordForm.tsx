@@ -1,5 +1,6 @@
 "use client";
 
+import { PASSWORD_AYUDA } from "@/lib/account-rules";
 import { PasswordInput } from "@/components/PasswordInput";
 import Link from "next/link";
 import { useActionState } from "react";
@@ -18,7 +19,7 @@ export function NewPasswordForm() {
       <label className="flex flex-col gap-1.5 text-sm font-semibold">Repítela
         <PasswordInput className={field} name="confirmar" required minLength={8} autoComplete="new-password" />
       </label>
-      <p className="text-xs text-texto-3">Al menos 8 caracteres, con letras y números.</p>
+      <p className="text-xs text-texto-3">{PASSWORD_AYUDA}</p>
       {state && <p role="alert" className="text-[#ff8fa3]">{state.message}</p>}
       <button disabled={pending} className="boton-compra rounded-full py-4 text-sm font-bold uppercase tracking-[0.1em] disabled:opacity-60">
         {pending ? "Guardando…" : "Guardar contraseña"}

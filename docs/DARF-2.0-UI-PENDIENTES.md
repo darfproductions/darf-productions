@@ -56,6 +56,7 @@ Diego eligió cuáles sí (ver plan del bloque). Hechas en `darf-2.0`, migracion
 | Eventos con costo | Precio y precio para socios (vacío = gratis). Al apartar se crea un pedido EV-XXXXXX que vence como los boletos; se paga por WhatsApp o transferencia y se aprueba en Panel → Eventos ("Ver lista"). Sin pago aprobado, la entrada no deja pasar. Cupo de los primeros N o sin límite. "Mis eventos" en Mi cuenta (0083). |
 | Equipo de cada evento | En Panel → Eventos, cada evento tiene "Equipo del evento": quien lo edita agrega personas por su correo con un papel (Organiza: abre/cierra registro, valida y aprueba pagos; Puerta: valida y marca llegadas; Cobros: aprueba o rechaza pagos). Vale solo para ese evento, también en los de DARF sin obra; esas personas ven en su panel solo sus eventos. Puerta y Taquilla de la obra también ven "Eventos" (0084). |
 | Panel más fácil | **Por hacer** en Inicio: todo lo pendiente de tus obras (boletos y pagos de eventos por aprobar, solicitudes, documentos subidos, adeudos vencidos, requiere decisión, ofertas, audiciones) agrupado por obra, cada renglón directo a la acción, y **Hoy** con botones de Puerta/Taquilla. Número de pendientes en el menú y en las pestañas. **Pestañas de la obra en 6 grupos** (Resumen, Personas, Ensayos y equipo, Boletos, Público, Más) con la activa marcada. **Buscador** (Ctrl/⌘+K): obra + sección, personas, órdenes DARF-/EV-, convocatorias y eventos. **Configuración plegada** en Expedientes, Ensayos, Funciones, Página pública y Convocatoria (0085). |
+| Contraseñas seguras | Ver/ocultar contraseña en todos los campos; contraseñas comunes o con el correo, rechazadas; el enlace de "olvidé mi contraseña" solo vale para esa cuenta, 15 minutos y una vez; al cambiarla se cierran las demás sesiones; crear cuenta ya no revela si un correo está registrado. Fotos comprimidas en el navegador antes de subir (ej. 9.6 MB → 47 KB). |
 | Ajustes de marca | Fan Zone al final del menú, logo original (DARF con PRODUCTIONS abajo), destacada también en la cartelera, logos de DARF y de la obra en los boletos. |
 
 ## Lo que queda pendiente
@@ -70,7 +71,13 @@ Diego eligió cuáles sí (ver plan del bloque). Hechas en `darf-2.0`, migracion
 ## Para el lanzamiento (lista de revisión)
 
 - **Entrar con Google:** en el proyecto de Supabase (DEV y luego el oficial) → Authentication → Providers → Google, con el Client ID y secreto de la 1.0, y agregar la dirección del sitio (`…/auth/callback`) en Google Cloud y en Supabase → URL Configuration. Probar el botón en DEV y otra vez el día de la publicación.
-- Correr en DEV los scripts `supabase/dev/apply_0074_dev.sql`, `apply_0075_dev.sql`, `apply_0076_dev.sql`, `apply_0077_dev.sql`, `apply_0078_dev.sql`, `apply_0079_dev.sql`, `apply_0080_dev.sql`, `apply_0081_dev.sql` y `apply_0082_dev.sql` (en ese orden). La 0073 ya se aplicó.
+- DEV ya tiene aplicadas todas las migraciones hasta la 0086 (verificado). El proyecto oficial necesitará las mismas, en orden, el día de la publicación.
+- **Contraseñas (Supabase → Authentication → Providers → Email / Policies), en DEV y en el oficial:**
+  - Largo mínimo **8** y "letras y números" (la página ya lo exige; así también lo exige Supabase si alguien llama directo a su servicio).
+  - **"Secure password change"** encendido y **aviso por correo** cuando cambia la contraseña o el correo ("Password changed" / "Email changed" notifications).
+  - **Protección contra contraseñas filtradas** (Leaked password protection) si el plan lo incluye.
+  - **URL Configuration:** Site URL = el dominio oficial y en Redirect URLs solo `https://<dominio>/auth/callback` (y la de DEV en DEV). Así los enlaces de los correos no pueden mandar a otro sitio.
+  - Revisar los límites de envío de correos (Rate limits) y que el correo de recuperación use la plantilla en español.
 
 ## Cómo se verificó
 - Copia local simulada (base local, PostgREST y la web en modo DEV), con funciones de prueba

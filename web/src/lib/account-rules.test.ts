@@ -5,9 +5,15 @@ const hoy = new Date(2026, 9, 12); // 12 oct 2026
 
 describe("datos de la cuenta", () => {
   it("revisa contraseña y correo", () => {
-    expect(passwordOk("abc12345")).toBe(true);
+    expect(passwordOk("abc12345")).toBe(false); // de las más comunes
+    expect(passwordOk("telon2026x")).toBe(true);
     expect(passwordOk("abcdefgh")).toBe(false);
     expect(passwordOk("a1")).toBe(false);
+    expect(passwordOk("Password123")).toBe(false); // de las más comunes
+    expect(passwordOk("darf2026")).toBe(false);
+    expect(passwordOk("anaperez99", "anaperez@gmail.com")).toBe(false); // lleva el correo
+    expect(passwordOk("Teatro-luz-7", "anaperez@gmail.com")).toBe(true);
+    expect(passwordOk("a1".repeat(40))).toBe(false); // más de 72 (límite de Supabase)
     expect(emailOk("ana@darf.mx")).toBe(true);
     expect(emailOk("ana@darf")).toBe(false);
   });

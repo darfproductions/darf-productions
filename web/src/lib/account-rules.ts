@@ -1,7 +1,23 @@
 // Mi cuenta y cumpleaños (0051). Puro, con pruebas en account-rules.test.ts.
 
 /** Mismas reglas que al registrarse: 8+ caracteres con letras y números. */
-export const passwordOk = (p: string) => p.length >= 8 && /[A-Za-z]/.test(p) && /[0-9]/.test(p);
+/** Contraseñas demasiado comunes (se adivinan en segundos aunque tengan letras y números). */
+const COMUNES = new Set([
+  "password1", "password12", "password123", "contrasena1", "contraseña1", "qwerty123", "qwerty12", "abc12345", "abcd1234", "abc123456",
+  "a1234567", "1234567a", "12345678a", "1q2w3e4r", "1q2w3e4r5t", "zaq12wsx", "iloveyou1", "teamo123", "darf1234", "darf2026",
+  "darfproductions1", "showman1", "mexico123", "admin123", "welcome1", "hola1234", "test1234", "prueba123",
+]);
+
+/** Mínimo 8, con letras y números, que no sea de las más comunes ni contenga el usuario del correo. */
+export function passwordOk(p: string, email?: string | null): boolean {
+  if (p.length < 8 || p.length > 72 || !/[A-Za-z]/.test(p) || !/[0-9]/.test(p)) return false;
+  const bajo = p.toLowerCase();
+  if (COMUNES.has(bajo)) return false;
+  const usuario = (email ?? "").split("@")[0]?.toLowerCase() ?? "";
+  return !(usuario.length >= 4 && bajo.includes(usuario));
+}
+
+export const PASSWORD_AYUDA = "Al menos 8 caracteres, con letras y números. Que no sea fácil de adivinar ni lleve tu correo.";
 
 export const emailOk = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
 

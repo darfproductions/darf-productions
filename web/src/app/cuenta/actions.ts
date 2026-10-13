@@ -1,8 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { headers } from "next/headers";
-import { emailOk, fechaNacimientoOk, passwordOk } from "@/lib/account-rules";
+import { PASSWORD_AYUDA, emailOk, fechaNacimientoOk, passwordOk } from "@/lib/account-rules";
+import { origenSitio } from "@/lib/site-origin";
 import { getSession } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
@@ -36,7 +36,7 @@ export async function changeEmail(_prev: ProfileState, form: FormData): Promise<
   const email = String(form.get("email") ?? "").trim().toLowerCase();
   if (!emailOk(email)) return { ok: false, message: "Escribe un correo válido." };
   if (email === session.email.toLowerCase()) return { ok: false, message: "Ese ya es tu correo." };
-  const origin = (await headers()).get("origin") ?? "";
+  const origin = await origenSitio();
   const supabase = await createClient();
   const { error } = await supabase.auth.updateUser({ email }, { emailRedirectTo: `${origin}/auth/callback?next=/cuenta` });
   if (error) return { ok: false, message: "No se pudo cambiar el correo. Puede que ya tenga cuenta o que debas esperar unos minutos." };
@@ -50,13 +50,16 @@ export async function changePassword(_prev: ProfileState, form: FormData): Promi
   const actual = String(form.get("actual") ?? "");
   const nueva = String(form.get("nueva") ?? "");
   if (nueva !== String(form.get("confirmar") ?? "")) return { ok: false, message: "Las contraseñas nuevas no coinciden." };
-  if (!passwordOk(nueva)) return { ok: false, message: "La contraseña nueva necesita al menos 8 caracteres, con letras y números." };
+  if (nueva === actual) return { ok: false, message: "La contraseña nueva debe ser distinta a la actual." };
+  if (!passwordOk(nueva, session.email)) return { ok: false, message: `Esa contraseña no sirve. ${PASSWORD_AYUDA}` };
   const supabase = await createClient();
   const check = await supabase.auth.signInWithPassword({ email: session.email, password: actual });
   if (check.error) return { ok: false, message: "Tu contraseña actual no es correcta." };
   const { error } = await supabase.auth.updateUser({ password: nueva });
   if (error) return { ok: false, message: "No se pudo cambiar. Usa una contraseña distinta a la actual." };
-  return { ok: true, message: "Contraseña cambiada." };
+  // Si alguien más tenía tu sesión abierta en otro aparato, se cierra.
+  await supabase.auth.signOut({ scope: "others" });
+  return { ok: true, message: "Contraseña cambiada. Cerramos tu sesión en los demás dispositivos." };
 }
 
 /** Guarda la ruta de la foto ya subida (bucket privado avatares, carpeta propia) y borra la anterior. */

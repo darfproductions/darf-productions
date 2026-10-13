@@ -1,13 +1,13 @@
 "use server";
 
-import { headers } from "next/headers";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { safeNext } from "@/lib/auth";
+import { PASSWORD_AYUDA, passwordOk } from "@/lib/account-rules";
+import { RECOVERY_COOKIE, RECOVERY_PATH, safeNext } from "@/lib/auth";
+import { origenSitio } from "@/lib/site-origin";
 import { createClient } from "@/lib/supabase/server";
 
 export type AuthState = { ok: boolean; message: string } | null;
-
-const passwordOk = (p: string) => p.length >= 8 && /[A-Za-z]/.test(p) && /[0-9]/.test(p);
 
 export async function login(_prev: AuthState, form: FormData): Promise<AuthState> {
   const email = String(form.get("email") ?? "").trim();
@@ -30,9 +30,9 @@ export async function register(_prev: AuthState, form: FormData): Promise<AuthSt
   const password = String(form.get("password") ?? "");
   if (String(form.get("sitio") ?? "")) return { ok: true, message: "Revisa tu correo para confirmar tu cuenta." }; // campo trampa para robots
   if (!nombre || !email) return { ok: false, message: "Escribe tu nombre y correo." };
-  if (!passwordOk(password)) return { ok: false, message: "La contraseña necesita al menos 8 caracteres, con letras y números." };
+  if (!passwordOk(password, email)) return { ok: false, message: `Esa contraseña no sirve. ${PASSWORD_AYUDA}` };
 
-  const origin = (await headers()).get("origin") ?? "";
+  const origin = await origenSitio();
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signUp({
     email,
@@ -40,17 +40,15 @@ export async function register(_prev: AuthState, form: FormData): Promise<AuthSt
     options: { data: { nombre }, emailRedirectTo: `${origin}/auth/callback?next=${encodeURIComponent(safeNext(String(form.get("next") ?? "")))}` },
   });
   if (error) return { ok: false, message: "No se pudo crear la cuenta. Revisa tus datos e intenta de nuevo." };
-  // Correo ya registrado: Supabase responde sin identidades para no revelar cuentas.
-  if (data.user && data.user.identities?.length === 0) {
-    return { ok: false, message: "Ese correo ya tiene cuenta. Entra con tu contraseña." };
-  }
   if (data.session) redirect(safeNext(String(form.get("next") ?? "")));
-  return { ok: true, message: `Te enviamos un enlace a ${email}. Ábrelo para confirmar tu cuenta y luego entra.` };
+  // Mismo mensaje si el correo ya tenía cuenta (Supabase tampoco lo revela): así nadie puede averiguar
+  // qué correos están registrados.
+  return { ok: true, message: `Te enviamos un enlace a ${email} para confirmar tu cuenta. Si ese correo ya tenía cuenta, entra con tu contraseña o usa “¿Olvidaste tu contraseña?”.` };
 }
 
 /** Entrar con Google (como en la 1.0). Supabase regresa a /auth/callback, que abre la sesión. */
 export async function loginGoogle(form: FormData) {
-  const origin = (await headers()).get("origin") ?? "";
+  const origin = await origenSitio();
   const next = safeNext(String(form.get("next") ?? ""));
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signInWithOAuth({
@@ -64,6 +62,7 @@ export async function loginGoogle(form: FormData) {
 export async function logout() {
   const supabase = await createClient();
   await supabase.auth.signOut();
+  (await cookies()).delete({ name: RECOVERY_COOKIE, path: RECOVERY_PATH });
   redirect("/");
 }
 
@@ -71,7 +70,7 @@ export async function logout() {
 export async function requestReset(_prev: AuthState, form: FormData): Promise<AuthState> {
   const email = String(form.get("email") ?? "").trim();
   if (!email) return { ok: false, message: "Escribe tu correo." };
-  const origin = (await headers()).get("origin") ?? "";
+  const origin = await origenSitio();
   const supabase = await createClient();
   await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${origin}/auth/callback?next=/cuenta/contrasena` });
   return { ok: true, message: `Si ${email} tiene cuenta, te llegará un enlace para poner una contraseña nueva. Revisa también tu correo no deseado.` };

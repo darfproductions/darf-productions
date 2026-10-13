@@ -1,5 +1,6 @@
 "use client";
 
+import { PASSWORD_AYUDA } from "@/lib/account-rules";
 import { PasswordInput } from "@/components/PasswordInput";
 import Link from "next/link";
 import { useActionState, useState } from "react";
@@ -71,7 +72,7 @@ export function AuthForms({ next }: { next: string }) {
           </label>
           <label className="flex flex-col gap-1.5 text-sm font-semibold">Contraseña
             <PasswordInput className={field} name="password" required minLength={8} autoComplete="new-password" aria-describedby="pw-help" />
-            <span id="pw-help" className="text-xs font-normal text-texto-3">Mínimo 8 caracteres, con letras y números.</span>
+            <span id="pw-help" className="text-xs font-normal text-texto-3">{PASSWORD_AYUDA}</span>
           </label>
           <p className="text-xs text-texto-3">Al crear tu cuenta aceptas los <a href="/terminos" target="_blank" className="underline">términos</a> y el <a href="/privacidad" target="_blank" className="underline">aviso de privacidad</a>.</p>
           {regState && !regState.ok && <p role="alert" className="text-[#ff8fa3]">{regState.message}</p>}
