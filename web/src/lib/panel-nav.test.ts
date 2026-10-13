@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { activeNav, can, canAudition, canConfigAudition, canSeeAudition, globalSections, groupMembers, hasAnyAccess, hasEventoAccess, myProductionIds, permisosEvento, productionIdFrom, panelMenu, productionTabs, roleDiff, roleIdFromName, type PanelAccessData } from "./panel-nav";
+import { activeNav, can, canAudition, canConfigAudition, canSeeAudition, globalSections, groupMembers, hasAnyAccess, hasEventoAccess, myProductionIds, permisosEvento, productionGroups, productionIdFrom, panelMenu, productionTabs, tabActiva, roleDiff, roleIdFromName, type PanelAccessData } from "./panel-nav";
 
 const director: PanelAccessData = { isDirector: true, byProduction: {} };
 const fan: PanelAccessData = { isDirector: false, byProduction: {} };
@@ -166,5 +166,30 @@ describe("equipo propio de eventos (0084)", () => {
     expect(permisosEvento(taquilla, { id: "e3", production_id: "showman" })).toEqual({ equipo: false, editar: false, puerta: false, cobros: true });
     expect(permisosEvento(contenido, { id: "e3", production_id: "showman" }).equipo).toBe(true);
     expect(permisosEvento(contenido, darf).equipo).toBe(false);
+  });
+});
+
+describe("pestañas agrupadas de la obra (0085)", () => {
+  const directorG: PanelAccessData = { isDirector: true, byProduction: {} };
+  const puertaG: PanelAccessData = { isDirector: false, byProduction: { showman: ["puerta.validar"] } };
+  const taquillaG: PanelAccessData = { isDirector: false, byProduction: { showman: ["ventas.ver", "ventas.operar", "reportes.ver"] } };
+  it("el Director ve 6 grupos y boletería dentro de Boletos", () => {
+    const g = productionGroups(directorG, "showman");
+    expect(g.map((x) => x.label)).toEqual(["Resumen", "Personas", "Ensayos y equipo", "Boletos", "Público", "Más"]);
+    expect(g.find((x) => x.id === "boletos")?.tabs.map((t) => t.label)).toEqual(["Ventas y órdenes", "Taquilla", "Funciones y precios", "Mapa de asientos", "Descuentos", "Vendedores", "Puerta"]);
+    expect(g.find((x) => x.id === "publico")?.tabs.map((t) => t.label)).toEqual(["Página pública", "Programa digital", "Fan Zone y eventos"]);
+  });
+  it("con pocos permisos, pocos grupos; la liga del grupo es su primera pestaña", () => {
+    expect(productionGroups(puertaG, "showman").map((x) => [x.id, x.path])).toEqual([["resumen", ""], ["boletos", "puerta"]]);
+    expect(productionGroups(taquillaG, "showman").map((x) => x.id)).toEqual(["resumen", "boletos", "mas"]);
+    expect(productionGroups(taquillaG, "showman").find((x) => x.id === "boletos")?.tabs.map((t) => t.id)).toEqual(["boletos", "taquilla", "vendedores"]);
+  });
+  it("pestaña activa: la ruta más larga que coincide", () => {
+    const g = productionGroups(directorG, "showman");
+    expect(tabActiva(g, "")).toEqual({ grupo: "resumen", tab: "resumen" });
+    expect(tabActiva(g, "boletos")).toEqual({ grupo: "boletos", tab: "boletos" });
+    expect(tabActiva(g, "boletos/taquilla")).toEqual({ grupo: "boletos", tab: "taquilla" });
+    expect(tabActiva(g, "expedientes/abc/")).toEqual({ grupo: "personas", tab: "expedientes" });
+    expect(tabActiva(g, "nada")).toEqual({ grupo: null, tab: null });
   });
 });

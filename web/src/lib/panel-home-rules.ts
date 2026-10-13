@@ -100,3 +100,19 @@ export function cumplesProximos<T extends { user_id: string; nombre: string; dia
     .filter((x) => x.faltan < dias)
     .sort((a, b) => a.faltan - b.faltan || a.nombre.localeCompare(b.nombre));
 }
+
+/** Pestaña de la obra donde se resuelve cada pendiente (para los números en las pestañas, 0085). */
+const PESTANA: Partial<Record<PendienteTipo, string>> = {
+  ordenes: "boletos", pagos_evento: "fanzone", solicitudes: "audiciones", solicitudes_elenco: "solicitudes", ofertas: "elenco",
+  documentos: "expedientes", adeudos: "expedientes", decision: "expedientes", evaluaciones: "evaluaciones",
+};
+
+/** Pendientes de una obra sumados por pestaña. */
+export function conteoPorPestana(xs: Pendiente[], pid: string): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const p of xs) {
+    const tab = PESTANA[p.tipo];
+    if (p.production_id === pid && tab && p.n > 0) out[tab] = (out[tab] ?? 0) + p.n;
+  }
+  return out;
+}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cuando, cumplesProximos, esHoy, ordenarPendientes, pendienteHref, pendienteTexto, porObra, totalPendientes } from "./panel-home-rules";
+import { conteoPorPestana, cuando, cumplesProximos, esHoy, ordenarPendientes, pendienteHref, pendienteTexto, porObra, totalPendientes } from "./panel-home-rules";
 
 describe("pendientes del inicio", () => {
   it("texto en singular y plural", () => {
@@ -29,6 +29,12 @@ describe("pendientes del inicio", () => {
     ];
     expect(porObra(xs).map((g) => [g.production_id, g.total, g.items.map((i) => i.tipo)])).toEqual([["mm", 5, ["ordenes", "advertencias"]], [null, 1, ["pagos_evento"]]]);
     expect(totalPendientes(xs)).toBe(6);
+  });
+  it("conteo por pestaña de la obra", () => {
+    expect(conteoPorPestana([
+      { tipo: "ordenes", production_id: "mm", n: 2 }, { tipo: "documentos", production_id: "mm", n: 1 }, { tipo: "decision", production_id: "mm", n: 1 },
+      { tipo: "advertencias", production_id: "mm", n: 5 }, { tipo: "ordenes", production_id: "hsm", n: 9 },
+    ], "mm")).toEqual({ boletos: 2, expedientes: 2 });
   });
   it("órdenes primero; sin ceros", () => {
     const r = ordenarPendientes([

@@ -138,6 +138,60 @@ export function productionTabs(a: PanelAccessData, productionId: string, conclui
   return PRODUCTION_TABS.filter((t) => (t.perms.length === 0 || canAny(a, productionId, t.perms)) && (!concluida || CONCLUIDA_TABS.includes(t.id)));
 }
 
+// ──────── Pestañas agrupadas de la obra (0085) ────────
+// Las 18 pestañas se ordenan en 6 grupos; cada grupo con sus sub-pestañas. Las rutas no cambian.
+
+export type GrupoObra = "resumen" | "personas" | "ensayos" | "boletos" | "publico" | "mas";
+export type SubTab = { id: string; label: string; path: string };
+export type GrupoTabs = { id: GrupoObra; label: string; path: string; tabs: SubTab[] };
+
+const GRUPOS: { id: GrupoObra; label: string; tabs: string[] }[] = [
+  { id: "resumen", label: "Resumen", tabs: ["resumen"] },
+  { id: "personas", label: "Personas", tabs: ["elenco", "audiciones", "expedientes", "solicitudes", "evaluaciones"] },
+  { id: "ensayos", label: "Ensayos y equipo", tabs: ["ensayos", "equipo", "materiales", "comunicados"] },
+  { id: "boletos", label: "Boletos", tabs: ["boletos", "puerta"] },
+  { id: "publico", label: "Público", tabs: ["pagina", "programa", "fanzone"] },
+  { id: "mas", label: "Más", tabs: ["reportes", "cierre", "permisos"] },
+];
+const ETIQUETA: Record<string, string> = { fanzone: "Fan Zone y eventos", elenco: "Elenco y equipos" };
+
+/** Las páginas de boletería que veo (antes eran pastillas dentro de "Funciones y boletos"). */
+export function boletosSubtabs(a: PanelAccessData, pid: string): SubTab[] {
+  return [
+    { id: "boletos", label: "Ventas y órdenes", path: "boletos", show: can(a, pid, "ventas.ver") },
+    { id: "taquilla", label: "Taquilla", path: "boletos/taquilla", show: can(a, pid, "ventas.operar") },
+    { id: "funciones", label: "Funciones y precios", path: "boletos/funciones", show: can(a, pid, "funciones.gestionar") },
+    { id: "mapa", label: "Mapa de asientos", path: "boletos/mapa", show: can(a, pid, "funciones.gestionar") },
+    { id: "descuentos", label: "Descuentos", path: "boletos/descuentos", show: can(a, pid, "descuentos.gestionar") },
+    { id: "vendedores", label: "Vendedores", path: "boletos/vendedores", show: can(a, pid, "ventas.ver") || can(a, pid, "vendedores.gestionar") },
+  ].filter((t) => t.show).map(({ id, label, path }) => ({ id, label, path }));
+}
+
+/** Grupos de pestañas que veo en una obra (solo los que tienen algo), con su primera pestaña como liga. */
+export function productionGroups(a: PanelAccessData, pid: string, concluida = false): GrupoTabs[] {
+  const mias = new Map(productionTabs(a, pid, concluida).map((t) => [t.id, t]));
+  return GRUPOS.map((g) => {
+    const tabs = g.tabs.flatMap((id): SubTab[] => {
+      const t = mias.get(id);
+      if (!t) return [];
+      if (id === "boletos") return boletosSubtabs(a, pid);
+      return [{ id, label: ETIQUETA[id] ?? t.label, path: t.path }];
+    });
+    return { id: g.id, label: g.label, path: tabs[0]?.path ?? "", tabs };
+  }).filter((g) => g.tabs.length > 0);
+}
+
+/** Qué grupo y qué pestaña están abiertos: la ruta más larga que coincide (Resumen solo exacto). */
+export function tabActiva(grupos: GrupoTabs[], sub: string): { grupo: GrupoObra | null; tab: string | null } {
+  const limpio = sub.replace(/^\/+|\/+$/g, "");
+  let mejor: { grupo: GrupoObra; tab: string; largo: number } | null = null;
+  for (const g of grupos) for (const t of g.tabs) {
+    const ok = t.path === "" ? limpio === "" : limpio === t.path || limpio.startsWith(`${t.path}/`);
+    if (ok && (!mejor || t.path.length > mejor.largo)) mejor = { grupo: g.id, tab: t.id, largo: t.path.length };
+  }
+  return mejor ? { grupo: mejor.grupo, tab: mejor.tab } : { grupo: null, tab: null };
+}
+
 export type Section = { href: string; label: string };
 
 export type NavSection = {
