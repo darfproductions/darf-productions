@@ -13,8 +13,8 @@ export function PanelTitle({ eyebrow, title, children }: { eyebrow?: string; tit
   );
 }
 
-export function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return <div className={`rounded-[22px] border border-linea bg-telon p-5 md:p-6 ${className}`}>{children}</div>;
+export function Card({ children, className = "", id }: { children: React.ReactNode; className?: string; id?: string }) {
+  return <div id={id} className={`rounded-[22px] border border-linea bg-telon p-5 md:p-6 ${className}`}>{children}</div>;
 }
 
 const ESTADOS: Record<string, string> = {

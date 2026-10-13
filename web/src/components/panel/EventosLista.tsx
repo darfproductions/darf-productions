@@ -48,7 +48,7 @@ export async function EventosLista({ pid, access }: { pid?: string | null; acces
     const llegaron = lista.filter((x) => x.llegada_at).length;
     const porPagar = lista.filter((x) => x.orden_status === "pendiente").length;
     return (
-      <li key={e.id} className="rounded-xl border border-linea p-3 text-sm">
+      <li key={e.id} id={`e-${e.id}`} className="scroll-mt-24 rounded-xl border border-linea p-3 text-sm target:border-aviso/70">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <span className="min-w-0">
             <span className="mr-1.5 rounded-full bg-oro/15 px-2 py-0.5 text-[11px] font-bold text-oro">{TIPOS_EVENTO[e.tipo].label}{e.categoria && e.titulo ? ` · ${e.categoria}` : ""}</span>

@@ -29,8 +29,9 @@ function aQuien(t: DocType, gente: Roster[]): string {
 }
 
 // Expedientes del elenco: semáforo, advertencias, documentos que se piden y mensualidad.
-export default async function Expedientes({ params }: PageProps<"/panel/producciones/[id]/expedientes">) {
+export default async function Expedientes({ params, searchParams }: PageProps<"/panel/producciones/[id]/expedientes">) {
   const { id } = await params;
+  const sp = await searchParams;
   const access = await requirePanel(`/panel/producciones/${id}/expedientes`);
   const verExp = can(access, id, "expedientes.ver");
   const verCuotas = can(access, id, "mensualidades.gestionar");
@@ -68,13 +69,33 @@ export default async function Expedientes({ params }: PageProps<"/panel/producci
   const discDe = (u: string) => ((disc.data ?? []) as Disc[]).find((d) => d.user_id === u);
   const reglas = cfg.data as { limite_advertencias: number; auto_mensualidad_meses: number | null; auto_retardos: number | null; auto_faltas: number | null; tolerancia_min?: number } | null;
   const porDecidir = gente.filter((g) => discDe(g.user_id)?.requiere_decision && !altaDe(g.user_id)?.baja_at);
+  // 0085: documentos que alguien ya subió y falta revisar (de la bandeja "Por hacer").
+  const subidos = ((docs.data ?? []) as (MemberDoc & { user_id: string })[]).filter((d) => d.subido_at && !d.entregado_at);
+  const nombreDe = (u: string) => gente.find((g) => g.user_id === u)?.nombre ?? "Integrante";
+  const tipoDe = (t: string) => tiposDoc.find((x) => x.id === t)?.nombre ?? "Documento";
   const h = { pid: id };
 
   return (
     <div className="flex flex-col gap-4">
       <ExpTabs pid={id} actual="integrantes" pagos={verCuotas && cobra} />
+      {verExp && subidos.length > 0 && (
+        <Card id="subidos" className={`scroll-mt-24 ${sp.docs === "subidos" ? "border border-aviso/50" : ""}`}>
+          <h2 className="font-bold text-aviso">Documentos subidos por revisar ({subidos.length})</h2>
+          <p className="text-sm text-texto-2">Ábrelos en el expediente de cada quien y márcalos como recibidos.</p>
+          <ul className="mt-2 flex flex-col gap-1.5 text-sm">
+            {subidos.map((d) => (
+              <li key={`${d.user_id}-${d.doc_type_id}`}>
+                <Link href={`/panel/producciones/${id}/expedientes/${d.user_id}#documentos`} className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-sala px-3 py-2 hover:bg-telon-2">
+                  <span><b>{nombreDe(d.user_id)}</b> · {tipoDe(d.doc_type_id)}</span>
+                  <span className="text-violeta-claro">Revisar →</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
       {porDecidir.length > 0 && (
-        <Card className="border border-[#ff8fa3]/40">
+        <Card id="decision" className="scroll-mt-24 border border-[#ff8fa3]/40">
           <h2 className="font-bold text-[#ff8fa3]">Requiere decisión</h2>
           <p className="text-sm text-texto-2">Llegaron al límite de advertencias. Abre su expediente y registra la medida (plática, aviso a papás, suspensión o baja).</p>
           <ul className="mt-2 flex flex-wrap gap-2 text-sm">

@@ -120,7 +120,7 @@ export default async function MemberPage({ params }: PageProps<"/panel/produccio
             <ExpedienteForm pid={id} uid={uid} f={d.person} esMenor={esMenor} />
           </Card>
 
-          <Card className="flex flex-col gap-3">
+          <Card id="documentos" className="scroll-mt-24 flex flex-col gap-3">
             <h2 className="titular text-xl">Documentos</h2>
             {d.tipos.length === 0 && <p className="text-sm text-texto-3">Aún no hay lista de documentos (se arma en Expedientes).</p>}
             <ul className="flex flex-col gap-2">

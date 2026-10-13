@@ -45,9 +45,9 @@ describe("pestañas de la obra", () => {
 
 describe("secciones generales", () => {
   it("taquilla: Inicio, Proyectos y Reportes por obra; el Director todo", () => {
-    expect(globalSections(taquillaMM).map((s) => s.label)).toEqual(["Inicio", "Proyectos", "Reportes"]);
-    expect(globalSections(juezMM).map((s) => s.label)).toEqual(["Inicio", "Proyectos"]);
-    expect(globalSections(director).map((s) => s.label)).toEqual(["Inicio", "Proyectos", "Personas", "Reportes", "Ajustes"]);
+    expect(globalSections(taquillaMM).map((s) => s.label)).toEqual(["Inicio", "Notificaciones", "Proyectos", "Reportes"]);
+    expect(globalSections(juezMM).map((s) => s.label)).toEqual(["Inicio", "Notificaciones", "Proyectos"]);
+    expect(globalSections(director).map((s) => s.label)).toEqual(["Inicio", "Notificaciones", "Proyectos", "Personas", "Reportes", "Ajustes"]);
   });
   it("subpestañas según permisos", () => {
     const t = panelMenu(taquillaMM);
@@ -118,7 +118,7 @@ describe("convocatorias de obra y generales (0037)", () => {
   });
   it("el equipo propio entra al panel y ve Audiciones en el menú", () => {
     expect(hasAnyAccess(juezGeneral)).toBe(true);
-    expect(globalSections(juezGeneral)).toEqual([{ href: "/panel", label: "Inicio" }, { href: "/panel/audiciones", label: "Proyectos" }]);
+    expect(globalSections(juezGeneral)).toEqual([{ href: "/panel", label: "Inicio" }, { href: "/panel/notificaciones", label: "Notificaciones" }, { href: "/panel/audiciones", label: "Proyectos" }]);
     expect(panelMenu(juezMM).find((s) => s.id === "proyectos")?.subs.map((x) => x.label)).toContain("Audiciones");
   });
 });

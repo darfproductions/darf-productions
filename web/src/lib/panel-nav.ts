@@ -141,7 +141,7 @@ export function productionTabs(a: PanelAccessData, productionId: string, conclui
 export type Section = { href: string; label: string };
 
 export type NavSection = {
-  id: "inicio" | "proyectos" | "personas" | "reportes" | "ajustes";
+  id: "inicio" | "notificaciones" | "proyectos" | "personas" | "reportes" | "ajustes";
   label: string;
   /** A dónde lleva la sección (su primera subpestaña). */
   href: string;
@@ -162,7 +162,11 @@ export function hasReportAccess(a: PanelAccessData): boolean {
  * Las direcciones viejas (/panel/usuarios, /panel/talento…) siguen funcionando.
  */
 export function panelMenu(a: PanelAccessData): NavSection[] {
-  const out: NavSection[] = [{ id: "inicio", label: "Inicio", href: "/panel", subs: [], match: [] }];
+  const out: NavSection[] = [
+    { id: "inicio", label: "Inicio", href: "/panel", subs: [], match: [] },
+    // 0085: las notificaciones tienen su lugar en el menú (antes solo se llegaba desde Inicio).
+    { id: "notificaciones", label: "Notificaciones", href: "/panel/notificaciones", subs: [], match: ["/panel/notificaciones"] },
+  ];
   // Quien solo está en el equipo de una convocatoria general no tiene obras: solo ve Audiciones.
   const proyectos: Section[] = a.isDirector || myProductionIds(a).length ? [{ href: "/panel/producciones", label: "Producciones" }] : [];
   if (hasAuditionAccess(a)) proyectos.push({ href: "/panel/audiciones", label: "Audiciones" });

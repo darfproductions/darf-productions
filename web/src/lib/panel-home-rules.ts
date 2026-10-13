@@ -1,39 +1,58 @@
 // Inicio del panel "Tu día" (Bloque 2, migración 0061). Funciones puras: panel-home-rules.test.ts.
 
-export type PendienteTipo = "ordenes" | "solicitudes" | "solicitudes_elenco" | "ofertas" | "documentos" | "advertencias" | "evaluaciones" | "notas_equipo" | "avisos_equipo";
-export type Pendiente = { tipo: PendienteTipo; production_id: string | null; n: number };
+export type PendienteTipo = "ordenes" | "pagos_evento" | "solicitudes" | "solicitudes_elenco" | "ofertas" | "documentos" | "adeudos" | "decision" | "advertencias" | "evaluaciones" | "notas_equipo" | "avisos_equipo";
+/** ref_id/ref_titulo (0085): la convocatoria o el evento al que se refiere, para ir directo. */
+export type Pendiente = { tipo: PendienteTipo; production_id: string | null; n: number; ref_id?: string | null; ref_titulo?: string | null };
 
 const TEXTO: Record<PendienteTipo, [string, string]> = {
-  ordenes: ["orden por aprobar", "órdenes por aprobar"],
+  ordenes: ["orden de boletos por aprobar", "órdenes de boletos por aprobar"],
+  pagos_evento: ["pago de evento por revisar", "pagos de evento por revisar"],
+  adeudos: ["persona con pagos vencidos", "personas con pagos vencidos"],
+  decision: ["persona requiere decisión (advertencias)", "personas requieren decisión (advertencias)"],
   solicitudes: ["solicitud de audición sin revisar", "solicitudes de audición sin revisar"],
   solicitudes_elenco: ["solicitud del elenco por revisar", "solicitudes del elenco por revisar"],
   ofertas: ["oferta de papel sin respuesta", "ofertas de papel sin respuesta"],
-  documentos: ["documento por recibir", "documentos por recibir"],
+  documentos: ["documento subido por revisar", "documentos subidos por revisar"],
   advertencias: ["llamada de atención esta semana", "llamadas de atención esta semana"],
   evaluaciones: ["periodo de evaluación sin publicar", "periodos de evaluación sin publicar"],
   notas_equipo: ["nota de dirección para ti", "notas de dirección para ti"],
   avisos_equipo: ["aviso del equipo sin leer", "avisos del equipo sin leer"],
 };
-const ORDEN: PendienteTipo[] = ["notas_equipo", "ordenes", "solicitudes_elenco", "solicitudes", "ofertas", "documentos", "evaluaciones", "avisos_equipo", "advertencias"];
+const ORDEN: PendienteTipo[] = ["notas_equipo", "ordenes", "pagos_evento", "solicitudes_elenco", "decision", "solicitudes", "ofertas", "documentos", "adeudos", "evaluaciones", "avisos_equipo", "advertencias"];
 
 export function pendienteTexto(p: Pendiente): string {
   return `${p.n} ${TEXTO[p.tipo][p.n === 1 ? 0 : 1]}`;
 }
 
-/** A dónde se resuelve cada pendiente. */
+/** A dónde se resuelve cada pendiente: directo a la acción (0085). */
 export function pendienteHref(p: Pendiente): string {
   if (p.tipo === "notas_equipo" || p.tipo === "avisos_equipo") return `/cuenta/equipo/${p.production_id ?? "general"}`;
+  if (p.tipo === "pagos_evento") return p.ref_id ? `/panel/eventos#e-${p.ref_id}` : "/panel/eventos";
+  if (p.tipo === "solicitudes") return p.ref_id ? `/panel/audiciones/${p.ref_id}/solicitudes` : "/panel/audiciones";
   if (!p.production_id) return "/panel/audiciones";
   const base = `/panel/producciones/${p.production_id}`;
   switch (p.tipo) {
     case "ordenes": return `${base}/boletos?estado=pendiente`;
-    case "solicitudes":
-    case "ofertas": return `${base}/audiciones`;
-    case "documentos":
+    case "ofertas": return `${base}/elenco`;
+    case "documentos": return `${base}/expedientes?docs=subidos`;
+    case "adeudos": return `${base}/expedientes/adeudos?ver=vencidos`;
+    case "decision": return `${base}/expedientes#decision`;
     case "advertencias": return `${base}/expedientes`;
     case "evaluaciones": return `${base}/evaluaciones`;
     case "solicitudes_elenco": return `${base}/solicitudes`;
   }
+}
+
+/** Pendientes agrupados por obra (null = DARF / general), en el orden de importancia. */
+export function porObra(xs: Pendiente[]): { production_id: string | null; items: Pendiente[]; total: number }[] {
+  const grupos = new Map<string | null, Pendiente[]>();
+  for (const p of ordenarPendientes(xs)) grupos.set(p.production_id, [...(grupos.get(p.production_id) ?? []), p]);
+  return [...grupos.entries()].map(([production_id, items]) => ({ production_id, items, total: items.reduce((s, x) => s + x.n, 0) }));
+}
+
+/** Total para el número del menú. */
+export function totalPendientes(xs: Pendiente[]): number {
+  return xs.reduce((s, x) => s + (x.n > 0 ? x.n : 0), 0);
 }
 
 export function ordenarPendientes(xs: Pendiente[]): Pendiente[] {
@@ -43,6 +62,11 @@ export function ordenarPendientes(xs: Pendiente[]): Pendiente[] {
 /** Fecha (año-mes-día) en Ciudad de México. */
 function diaMx(d: Date): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Mexico_City" }).format(d);
+}
+
+/** ¿Es hoy (en CDMX)? */
+export function esHoy(iso: string, ahora: Date = new Date()): boolean {
+  return diaMx(new Date(iso)) === diaMx(ahora);
 }
 
 /** "Hoy · 19:00", "Mañana · 10:00" o "jue 15 oct · 19:00". */

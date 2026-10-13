@@ -6,6 +6,8 @@ import { createClient } from "@/lib/supabase/server";
 import { formatPerformanceDate } from "@/lib/productions";
 import { getPanelProduction, listMembers, performanceSummary } from "@/lib/panel-data";
 import { can, groupMembers } from "@/lib/panel-nav";
+import { ordenarPendientes, pendienteHref, pendienteTexto } from "@/lib/panel-home-rules";
+import { getPendientes } from "@/lib/panel-pendientes";
 import { requirePanel } from "@/lib/permissions";
 import { kitMissing } from "@/lib/themes";
 
@@ -13,11 +15,14 @@ import { kitMissing } from "@/lib/themes";
 export default async function ProductionSummary({ params }: PageProps<"/panel/producciones/[id]">) {
   const { id } = await params;
   const access = await requirePanel(`/panel/producciones/${id}`);
-  const [p, funciones, miembros] = await Promise.all([
+  const [p, funciones, miembros, todos] = await Promise.all([
     getPanelProduction(id),
     performanceSummary(id),
     can(access, id, "obra.ver") ? listMembers(id) : Promise.resolve([]),
+    getPendientes(),
   ]);
+  // 0085: lo pendiente de esta obra (mismo dato que la bandeja de Inicio).
+  const porHacer = ordenarPendientes(todos.filter((x) => x.production_id === id));
   if (!p) return null;
   const faltan = kitMissing(p);
   const mes = new Date().getMonth() + 1;
@@ -27,6 +32,23 @@ export default async function ProductionSummary({ params }: PageProps<"/panel/pr
 
   return (
     <div className="grid gap-4 md:grid-cols-2">
+      <Card className={`md:col-span-2 ${porHacer.length ? "border border-aviso/40" : ""}`}>
+        <p className="text-xs font-bold uppercase tracking-[0.2em] text-texto-3">Por hacer en esta obra</p>
+        {porHacer.length === 0 ? (
+          <p className="mt-2 text-texto-2">Todo al día.</p>
+        ) : (
+          <ul className="mt-3 grid gap-1.5 sm:grid-cols-2">
+            {porHacer.map((x) => (
+              <li key={`${x.tipo}-${x.ref_id ?? ""}`}>
+                <Link href={pendienteHref(x)} className="flex items-center justify-between gap-3 rounded-lg bg-sala px-4 py-2.5 hover:bg-telon-2">
+                  <span><b className="text-aviso">{pendienteTexto(x)}</b>{x.ref_titulo ? <span className="text-sm text-texto-2"> · {x.ref_titulo}</span> : null}</span>
+                  <span className="text-violeta-claro">→</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
       <Card>
         <p className="text-xs font-bold uppercase tracking-[0.2em] text-texto-3">Kit de la plantilla</p>
         {faltan.length === 0 ? (

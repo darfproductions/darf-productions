@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import { PanelNavLinks, PanelSubTabs } from "@/components/panel/PanelNav";
 import { env } from "@/lib/env";
 import { unreadCount } from "@/lib/notifications";
+import { totalPendientes } from "@/lib/panel-home-rules";
 import { panelMenu } from "@/lib/panel-nav";
+import { getPendientes } from "@/lib/panel-pendientes";
 import { requirePanel } from "@/lib/permissions";
 
 export const metadata: Metadata = { title: { default: "Panel", template: "%s · Panel DARF" } };
@@ -12,12 +14,12 @@ export const metadata: Metadata = { title: { default: "Panel", template: "%s · 
 export default async function PanelLayout({ children }: LayoutProps<"/panel">) {
   const access = await requirePanel();
   const menu = panelMenu(access);
-  const nuevas = await unreadCount();
+  const [nuevas, pendientes] = await Promise.all([unreadCount(), getPendientes()]);
   const nombre = access.session.profile?.nombre || access.session.email;
 
   const links = (
     <>
-      <PanelNavLinks menu={menu} badges={{ inicio: nuevas }} />
+      <PanelNavLinks menu={menu} badges={{ inicio: totalPendientes(pendientes), notificaciones: nuevas }} />
       {env.panel1Url && (
         <a href={env.panel1Url} className="mt-2 rounded-lg px-3 py-2.5 text-sm text-texto-3 hover:bg-telon-2">
           Panel anterior (1.0) ↗

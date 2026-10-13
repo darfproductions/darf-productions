@@ -4,18 +4,19 @@ import { ArtFill } from "@/components/PosterArt";
 import { NotificationList } from "@/components/panel/NotificationList";
 import { describeAudit, type AuditRow } from "@/lib/audit";
 import { listNotifications } from "@/lib/notifications";
-import { listPanelProductions, pendingOrdersByProduction } from "@/lib/panel-data";
+import { listPanelProductions } from "@/lib/panel-data";
 import { can, myProductionIds } from "@/lib/panel-nav";
-import { cuando, cumplesProximos, ordenarPendientes, pendienteHref, pendienteTexto, type Pendiente } from "@/lib/panel-home-rules";
+import { cuando, cumplesProximos, esHoy, pendienteHref, pendienteTexto, porObra, totalPendientes } from "@/lib/panel-home-rules";
+import { getPendientes } from "@/lib/panel-pendientes";
 import { requirePanel } from "@/lib/permissions";
 import { getTheme } from "@/lib/productions";
 import { createClient } from "@/lib/supabase/server";
 
 type Home = {
-  pendientes: Pendiente[];
   funciones: { id: string; production_id: string; starts_at: string; venue: string | null }[];
   ensayos: { id: string; production_id: string; titulo: string; inicia: string; lugar: string | null }[];
   juntas: { id: string; production_id: string | null; titulo: string; tipo: string; inicia: string; lugar: string | null }[];
+  eventos: { id: string; production_id: string | null; titulo: string; tipo: string; inicia: string; lugar: string | null; puerta: boolean; cobros: boolean }[];
   cambios: (AuditRow & { actor_nombre: string; persona_nombre: string | null })[];
 };
 type Cumple = { user_id: string; nombre: string; dia: number; mes: number };
@@ -23,21 +24,22 @@ type Cumple = { user_id: string; nombre: string; dia: number; mes: number };
 const hace = (iso: string) =>
   new Intl.DateTimeFormat("es-MX", { dateStyle: "medium", timeStyle: "short", timeZone: "America/Mexico_City" }).format(new Date(iso));
 
-// Inicio del panel "Tu día": lo que necesita atención, lo que viene esta semana,
-// cumpleaños, cambios recientes y mis obras. Cada tarjeta aparece solo si hay algo.
+// Inicio del panel "Tu día" (0085): primero la bandeja "Por hacer" de todas mis obras (cada renglón
+// lleva directo a la acción), luego lo de hoy con sus botones (puerta, taquilla), notificaciones,
+// la semana, cumpleaños, cambios recientes y mis obras.
 export default async function PanelHome() {
   const access = await requirePanel("/panel");
   const supabase = await createClient();
   const ids = access.isDirector ? undefined : myProductionIds(access);
-  const [obras, pendientesPorObra, { data: homeData }, { data: roles }, notifs] = await Promise.all([
+  const [obras, pendientes, { data: homeData }, { data: roles }, notifs] = await Promise.all([
     listPanelProductions(ids),
-    pendingOrdersByProduction(),
+    getPendientes(),
     supabase.rpc("panel_home"),
     supabase.from("panel_roles").select("id, nombre"),
     listNotifications({ limit: 8 }),
   ]);
   const sinLeer = notifs.filter((n) => !n.read_at).length;
-  const home: Home = { pendientes: [], funciones: [], ensayos: [], juntas: [], cambios: [], ...((homeData ?? {}) as Partial<Home>) };
+  const home: Home = { funciones: [], ensayos: [], juntas: [], eventos: [], cambios: [], ...((homeData ?? {}) as Partial<Home>) };
   const nombreObra = new Map(obras.map((p) => [p.id, p.nombre]));
 
   // Cumpleaños de la semana: el Director ve todos; los demás, los de sus obras.
@@ -47,12 +49,13 @@ export default async function PanelHome() {
     : await Promise.all(activas.filter((p) => can(access, p.id, "obra.ver")).map((p) => supabase.rpc("birthdays", { pid: p.id })));
   const cumples = cumplesProximos(listas.flatMap((r) => (r.data ?? []) as Cumple[]), 7);
 
-  const pendientes = ordenarPendientes([
-    ...[...pendientesPorObra.entries()].filter(([pid]) => nombreObra.has(pid)).map(([pid, n]) => ({ tipo: "ordenes" as const, production_id: pid, n })),
-    ...home.pendientes,
-  ]);
+  const grupos = porObra(pendientes);
+  const total = totalPendientes(pendientes);
+  // La función lleva a lo que la persona puede hacer: ventas, puerta o la obra.
+  const hrefFuncion = (pid: string) => `/panel/producciones/${pid}${can(access, pid, "ventas.ver") ? "/boletos" : can(access, pid, "puerta.validar") ? "/puerta" : ""}`;
   const agenda = [
-    ...home.funciones.map((f) => ({ key: `f${f.id}`, at: f.starts_at, titulo: "Función", obra: f.production_id, lugar: f.venue, href: `/panel/producciones/${f.production_id}/boletos` })),
+    ...home.funciones.map((f) => ({ key: `f${f.id}`, at: f.starts_at, titulo: "Función", obra: f.production_id, lugar: f.venue, href: hrefFuncion(f.production_id) })),
+    ...home.eventos.map((e) => ({ key: `v${e.id}`, at: e.inicia, titulo: `Evento: ${e.titulo}`, obra: e.production_id, lugar: e.lugar, href: `/panel/eventos#e-${e.id}` })),
     ...home.ensayos.map((r) => ({ key: `e${r.id}`, at: r.inicia, titulo: r.titulo, obra: r.production_id, lugar: r.lugar, href: `/panel/producciones/${r.production_id}/ensayos` })),
     ...home.juntas.map((j) => ({ key: `j${j.id}`, at: j.inicia, titulo: j.titulo, obra: j.production_id, lugar: j.lugar, href: `/cuenta/equipo/${j.production_id ?? "general"}` })),
   ].sort((a, b) => a.at.localeCompare(b.at));
@@ -70,6 +73,9 @@ export default async function PanelHome() {
     production: (id: unknown) => nombreObra.get(String(id)) ?? String(id),
   };
 
+  const hoyFunciones = home.funciones.filter((f) => esHoy(f.starts_at));
+  const hoyEventos = home.eventos.filter((e) => esHoy(e.inicia));
+  const boton = "rounded-full border border-white/25 px-3 py-1.5 text-xs font-bold hover:border-white/60";
   const nombre = access.session.profile?.nombre?.split(" ")[0] || "";
   const obraDe = (pid: string | null, general = "Convocatoria general") => (pid ? nombreObra.get(pid) ?? pid : general);
 
@@ -78,6 +84,61 @@ export default async function PanelHome() {
       <PanelTitle eyebrow="Tu día" title={nombre ? `Hola, ${nombre}` : "Inicio"}>
         {access.isDirector ? "Tienes acceso de Director a todas las obras." : "Esto es lo que pasa en las obras en las que tienes un rol."}
       </PanelTitle>
+
+      {grupos.length > 0 ? (
+        <Card className="flex flex-col gap-4 border border-aviso/40">
+          <h2 className="titular text-xl">Por hacer <span className="ml-1 rounded-full bg-aviso px-2 py-0.5 align-middle text-xs text-sala">{total}</span></h2>
+          {grupos.map((g) => (
+            <section key={g.production_id ?? "general"} aria-label={obraDe(g.production_id, "DARF (general)")} className="flex flex-col gap-2">
+              <h3 className="flex items-baseline justify-between gap-2 text-sm font-bold uppercase tracking-[0.14em] text-texto-3">
+                {g.production_id ? <Link href={`/panel/producciones/${g.production_id}`} className="hover:text-texto">{obraDe(g.production_id)}</Link> : "DARF (general)"}
+              </h3>
+              <ul className="flex flex-col gap-1.5">
+                {g.items.map((p) => (
+                  <li key={`${p.tipo}-${p.production_id}-${p.ref_id ?? ""}`}>
+                    <Link href={pendienteHref(p)} className="flex items-center justify-between gap-3 rounded-lg bg-sala px-4 py-3 hover:bg-telon-2">
+                      <span><b className="text-aviso">{pendienteTexto(p)}</b>{p.ref_titulo ? <span className="text-sm text-texto-2"> · {p.ref_titulo}</span> : null}</span>
+                      <span className="text-violeta-claro">→</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ))}
+        </Card>
+      ) : (
+        <Card className="text-texto-2">Todo al día: no hay nada por hacer en tus obras.</Card>
+      )}
+
+      {(hoyFunciones.length > 0 || hoyEventos.length > 0) && (
+        <Card className="flex flex-col gap-3">
+          <h2 className="titular text-xl">Hoy</h2>
+          <ul className="flex flex-col divide-y divide-white/10">
+            {hoyFunciones.map((f) => {
+              const base = `/panel/producciones/${f.production_id}`;
+              return (
+                <li key={f.id} className="flex flex-wrap items-center justify-between gap-2 py-2.5">
+                  <span className="text-sm"><b>{cuando(f.starts_at)}</b> · Función · {obraDe(f.production_id)}{f.venue ? ` · ${f.venue}` : ""}</span>
+                  <span className="flex flex-wrap gap-1.5">
+                    {can(access, f.production_id, "puerta.validar") && <Link href={`${base}/puerta`} className={boton}>Puerta</Link>}
+                    {can(access, f.production_id, "ventas.operar") && <Link href={`${base}/boletos/taquilla`} className={boton}>Taquilla</Link>}
+                    {can(access, f.production_id, "ventas.ver") && <Link href={`${base}/boletos?funcion=${f.id}`} className={boton}>Órdenes</Link>}
+                  </span>
+                </li>
+              );
+            })}
+            {hoyEventos.map((e) => (
+              <li key={e.id} className="flex flex-wrap items-center justify-between gap-2 py-2.5">
+                <span className="text-sm"><b>{cuando(e.inicia)}</b> · {e.titulo} · {obraDe(e.production_id, "DARF")}{e.lugar ? ` · ${e.lugar}` : ""}</span>
+                <span className="flex flex-wrap gap-1.5">
+                  {e.puerta && e.tipo !== "en_linea" && <Link href={`/panel/eventos#e-${e.id}`} className={boton}>Validar en la entrada</Link>}
+                  {e.cobros && <Link href={`/panel/eventos#e-${e.id}`} className={boton}>Lista y pagos</Link>}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
 
       <Card className="flex flex-col gap-2">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -89,24 +150,6 @@ export default async function PanelHome() {
         </div>
         <NotificationList items={notifs} />
       </Card>
-
-      {pendientes.length > 0 ? (
-        <Card className="flex flex-col gap-3 border border-aviso/40">
-          <h2 className="titular text-xl">Pendientes</h2>
-          <ul className="flex flex-col gap-2">
-            {pendientes.map((p) => (
-              <li key={`${p.tipo}-${p.production_id}`}>
-                <Link href={pendienteHref(p)} className="flex items-center justify-between gap-3 rounded-lg bg-sala px-4 py-3 hover:bg-telon-2">
-                  <span><b className="text-aviso">{pendienteTexto(p)}</b> <span className="text-sm text-texto-3">· {obraDe(p.production_id, p.tipo.endsWith("_equipo") ? "DARF (general)" : "Convocatoria general")}</span></span>
-                  <span className="text-violeta-claro">→</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </Card>
-      ) : (
-        <Card className="text-texto-2">Todo al día: no hay pendientes en tus obras.</Card>
-      )}
 
       {(agenda.length > 0 || cumples.length > 0) && (
         <div className="grid gap-6 lg:grid-cols-2">
