@@ -16,6 +16,23 @@ cuentas de pago) · **Claude** (código, scripts y verificación de solo lectura
 - Por ahora con planes **gratis**; Supabase Pro y Vercel Pro se contratan a inicios de noviembre
   (antes de abrir la venta de boletos). Con Pro: respaldos diarios y protección de contraseñas filtradas.
 - La 1.0 (proyecto `darf-productions` y su base) queda intacta como respaldo (ver D).
+- Después del lanzamiento: se borraron las cuentas y pruebas del día y la obra Teen Beach Movie
+  (`supabase/dev/limpieza_pruebas_lanzamiento.sql`); queda solo la cuenta del Director. Se borró el
+  proyecto `darf-2-dev` de Vercel.
+
+## Cómo se publica desde el lanzamiento
+
+| Rama | Para qué |
+|---|---|
+| `darf-2.0` | Trabajo de Claude. Cada cambio deja una versión de prueba (con la franja amarilla); no toca la página pública. Ojo: usa la base oficial. |
+| `production` | Lo que está en `www.darfproductions.com` (rama de producción de `darf-2-web-dev`). |
+| `main` | La 1.0 (respaldo, proyecto `darf-productions`). **No se toca.** |
+
+1. Claude sube el cambio a `darf-2.0` y, si lleva cambios en la base, deja el script en `supabase/dev/` para que Diego lo corra **antes** de publicar.
+2. Claude prepara la solicitud en GitHub **`production` ← `darf-2.0`**; Diego revisa que diga eso y le da **Merge**.
+3. Claude verifica que la publicación quede Ready y sin franja. Si Vercel la salta ("Canceled"), se promueve
+   la versión de `darf-2.0` con **Promote to Production** aceptando recompilar con las variables de producción.
+4. Si algo falla: Vercel → Deployments → promover la versión anterior de producción.
 
 ## Cómo estaba antes del lanzamiento (revisado el 13 de octubre)
 
@@ -84,7 +101,8 @@ cuentas de pago) · **Claude** (código, scripts y verificación de solo lectura
 
 ## E. Después del lanzamiento
 
-- Borrar el proyecto `darf-2-dev` de Vercel (sin uso).
+- ~~Borrar el proyecto `darf-2-dev` de Vercel (sin uso).~~ Hecho (13 oct).
+- Contratar Supabase Pro y Vercel Pro a inicios de noviembre, antes de abrir la venta de boletos.
 - Decidir si se archiva la base vieja de la 1.0 (no se borra sin respaldo).
 - Los scripts de cambios futuros siguen usando la marca de la base ("DARF-2.0-DEV"); el nombre se queda así para no romper el candado.
 - Medir la velocidad de las páginas públicas con datos reales (pendiente del Bloque 5).
