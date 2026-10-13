@@ -27,8 +27,8 @@ cuentas de pago) · **Claude** (código, scripts y verificación de solo lectura
 4. **Entrar con Google**: Supabase → Authentication → Providers → Google, con el Client ID y secreto. En Google Cloud → Credentials, en "Authorized redirect URIs", poner la dirección que muestra esa pantalla de Supabase (termina en `/auth/v1/callback`). La de la página (`…/auth/callback`) va en Supabase, paso B3.
 5. **Captcha (Cloudflare Turnstile)**: agregar `darfproductions.com` y `www.darfproductions.com` al widget "DARF". (Se prende en Supabase el día del lanzamiento, paso B4.)
 6. **Funciones de correo** (Supabase → Edge Functions), con sus secretos en Edge Functions → Secrets (nunca en el código):
-   - `notify-contact` (avisa de mensajes de Contacto): volver a publicarla; secretos `RESEND_API_KEY`, `NOTIFY_EMAIL`, `WEBHOOK_SECRET`, opcional `NOTIFY_FROM`.
-   - `team-invite` (invitaciones al equipo por correo, 0094): publicarla; secretos `RESEND_API_KEY`, `SITE_URL=https://www.darfproductions.com`, opcional `NOTIFY_FROM`. Después, Claude te pasa una línea de SQL para conectarla (`invite_config.hook_url`).
+   - `team-invite` (invitaciones al equipo por correo, 0094): **ya publicada** (13 oct). Diego pone los secretos `RESEND_API_KEY` (llave de Resend "team-invite", Sending access), `SITE_URL=https://www.darfproductions.com` y `NOTIFY_FROM=DARF Productions <no-reply@darfproductions.com>`. Se conecta el día del lanzamiento (paso B9).
+   - `notify-contact` **no hace falta**: los mensajes de Contacto ya le avisan al Director en el panel y al teléfono.
 7. **Ensayo general en la página 2.0 actual** (la de pruebas): comprar un boleto, aprobarlo, descargar el PDF, pasarlo en Puerta, mandar un mensaje de Contacto, invitar a alguien al equipo, unirse al Club Fan. Lo que se ensucie se borra en el paso B2.
 
 ## B. El día del lanzamiento (en este orden)
@@ -51,14 +51,17 @@ cuentas de pago) · **Claude** (código, scripts y verificación de solo lectura
    - En `darf-productions` (1.0) → Settings → Domains: quitar `darfproductions.com` y `www.darfproductions.com`.
    - En `darf-2-web-dev` → Settings → Domains: agregar `www.darfproductions.com` (principal) y `darfproductions.com` (que redirija a `www`).
    - En **GoDaddy** no debería hacer falta tocar nada (ya apunta a Vercel); solo si Vercel muestra un aviso de DNS, poner exactamente los registros que indique.
-9. **Comprobar** (Diego en su teléfono + Claude con la lista de abajo).
+9. **Conectar el correo de invitaciones** (después del B8, para que las ligas ya lleven a la 2.0): en SQL Editor,
+   `update invite_config set hook_url = 'https://qgywscczyzuqinutuvak.supabase.co/functions/v1/team-invite' where id = 1;`
+10. **Comprobar** (Diego en su teléfono + Claude con la lista de abajo).
 
 ## C. Comprobación después del cambio
 
 - Sin franja amarilla de "entorno de pruebas"; `www.darfproductions.com` abre la 2.0 y `darfproductions.com` redirige.
 - Crear cuenta (llega el correo con remitente de DARF y el captcha aparece), entrar con correo y con Google, recuperar contraseña.
 - Comprar un boleto → botón de WhatsApp con el número real → aprobar en el panel → PDF → Puerta.
-- Mensaje de Contacto → llega aviso al Director (y correo si está `notify-contact`).
+- Mensaje de Contacto → llega aviso al Director (panel y teléfono).
+- Invitar al equipo un correo sin cuenta → llega el correo y en Permisos dice "correo enviado".
 - Unirse al Club Fan → socio **#0001**.
 - Compartir la liga de una obra en WhatsApp → sale la imagen.
 - `robots.txt` y `sitemap.xml` ya permiten a Google indexar.
