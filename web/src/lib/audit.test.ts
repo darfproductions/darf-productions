@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { changedFields, describeAudit, type AuditNames, type AuditRow } from "./audit";
+import { changedFields, describeAudit, tipoBitacora, TIPOS_BITACORA, type AuditNames, type AuditRow } from "./audit";
 
 const names: AuditNames = {
   person: (id) => (id === "u1" ? "Ana" : "alguien"),
@@ -73,5 +73,25 @@ describe("bitácora de taquilla y funciones (0091)", () => {
     const r = { id: 1, at: "", actor: null, registro_id: null, production_id: "mm", antes: null };
     expect(describeAudit({ ...r, tabla: "orders", accion: "cortesia", despues: { order_code: "DARF-1", motivo: "Prensa" } }, names)).toContain("Hizo cortesía la orden DARF-1");
     expect(describeAudit({ ...r, tabla: "performances", accion: "cancelar", despues: { starts_at: "2026-11-22T02:00:00Z", motivo: "Lluvia" } }, names)).toContain("Canceló la función del");
+  });
+});
+
+describe("bitácora 4C: contacto, invitaciones y tipos", () => {
+  const n = { person: (id: unknown) => (id === "u1" ? "Ana" : "alguien"), role: String, production: () => "Showman" };
+  const fila = (tabla: string, accion: string, despues: Record<string, unknown>) =>
+    ({ id: 1, at: "2026-10-13T12:00:00Z", actor: null, tabla, accion, registro_id: null, production_id: "showman", antes: despues, despues });
+  it("contacto sin datos personales", () => {
+    expect(describeAudit(fila("contact_messages", "update", { campos: ["asignado_a", "asignado_at"], asignado_a: "u1" }), n)).toBe("Asignó un mensaje de contacto a Ana");
+    expect(describeAudit(fila("contact_messages", "update", { campos: ["leido", "respondido_at"], respondido_por: "u1", respuesta_canal: "whatsapp" }), n)).toBe("Marcó respondido un mensaje de contacto (WhatsApp)");
+    expect(describeAudit(fila("contact_messages", "update", { campos: ["respondido_at"] }), n)).toBe("Reabrió un mensaje de contacto");
+  });
+  it("invitaciones al equipo", () => {
+    expect(describeAudit(fila("production_invites", "insert", {}), n)).toBe("Invitó a alguien al equipo de Showman");
+    expect(describeAudit(fila("production_invites", "update", { campos: ["cancelada_at"] }), n)).toBe("Canceló una invitación al equipo de Showman");
+  });
+  it("tipos de acción", () => {
+    expect(tipoBitacora("boletos-cortesia")).toMatchObject({ tablas: ["orders"], accion: "cortesia" });
+    expect(tipoBitacora("nada")).toBeNull();
+    expect(new Set(TIPOS_BITACORA.map((t) => t.id)).size).toBe(TIPOS_BITACORA.length);
   });
 });

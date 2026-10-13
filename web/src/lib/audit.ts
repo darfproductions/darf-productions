@@ -137,6 +137,27 @@ export function describeAudit(r: AuditRow, n: AuditNames): string {
       const de = r.antes?.precio, a = r.despues?.precio;
       return `Cambió el precio de ${zona} en ${n.production(r.production_id)}: $${Number(de ?? 0).toLocaleString("es-MX")} → $${Number(a ?? 0).toLocaleString("es-MX")}`;
     }
+    case "contact_messages": {
+      // 0096: sin datos de quien escribió.
+      const campos = (row.campos as string[] | undefined) ?? [];
+      const canal: Record<string, string> = { correo: "correo", whatsapp: "WhatsApp", telefono: "teléfono", otro: "otro medio" };
+      if (r.accion === "delete") return "Borró un mensaje de contacto";
+      if (campos.includes("respondido_at")) return row.respondido_por ? `Marcó respondido un mensaje de contacto (${canal[String(row.respuesta_canal)] ?? "otro medio"})` : "Reabrió un mensaje de contacto";
+      if (campos.includes("asignado_a")) return row.asignado_a ? `Asignó un mensaje de contacto a ${n.person(row.asignado_a)}` : "Quitó la asignación de un mensaje de contacto";
+      if (campos.includes("leido")) return "Marcó leído un mensaje de contacto";
+      return "Actualizó un mensaje de contacto";
+    }
+    case "production_invites": {
+      // 0094: sin correo ni liga.
+      const campos = (row.campos as string[] | undefined) ?? [];
+      const obra = n.production(r.production_id);
+      if (r.accion === "insert") return `Invitó a alguien al equipo de ${obra}`;
+      if (r.accion === "delete") return `Borró una invitación al equipo de ${obra}`;
+      if (campos.includes("cancelada_at")) return `Canceló una invitación al equipo de ${obra}`;
+      if (campos.includes("aceptada_at")) return `Se aceptó una invitación al equipo de ${obra}`;
+      if (campos.includes("enviado_at") || campos.includes("envio_error")) return `Se mandó por correo una invitación al equipo de ${obra}`;
+      return `Renovó una invitación al equipo de ${obra}`;
+    }
     case "discount_codes": {
       const cod = String(row.codigo ?? "");
       if (r.accion === "insert") return `Creó el código de descuento ${cod} (${String(row.percent)}%) en ${n.production(r.production_id)}`;
@@ -151,4 +172,36 @@ export function describeAudit(r: AuditRow, n: AuditNames): string {
       return `${verbo} ${cosa[0]}${donde}`;
     }
   }
+}
+
+// ─── Filtro "Tipo de acción" (Bloque 4C) ───────────────────────────────────
+// Cada tipo agrupa las tablas de la bitácora con un nombre claro. Boletos tiene sub-acciones.
+
+export type TipoBitacora = { id: string; label: string; tablas: string[]; accion?: string };
+
+export const TIPOS_BITACORA: TipoBitacora[] = [
+  { id: "permisos", label: "Permisos y roles", tablas: ["production_members", "panel_roles", "role_permissions", "profiles"] },
+  { id: "invitaciones", label: "Invitaciones al equipo", tablas: ["production_invites"] },
+  { id: "obras", label: "Obras y página", tablas: ["productions", "anuncios", "program_pages", "season_closures", "production_characters"] },
+  { id: "funciones", label: "Funciones, precios y mapa", tablas: ["performances", "precios", "seats"] },
+  { id: "boletos", label: "Boletos y órdenes (todo)", tablas: ["orders"] },
+  { id: "boletos-aprobar", label: "· Aprobar órdenes", tablas: ["orders"], accion: "aprobar" },
+  { id: "boletos-rechazar", label: "· Rechazar órdenes", tablas: ["orders"], accion: "rechazar" },
+  { id: "boletos-cancelar", label: "· Cancelar órdenes", tablas: ["orders"], accion: "cancelar" },
+  { id: "boletos-cortesia", label: "· Cortesías", tablas: ["orders"], accion: "cortesia" },
+  { id: "boletos-codigo", label: "· Códigos en taquilla", tablas: ["orders"], accion: "codigo" },
+  { id: "boletos-puerta", label: "· Entradas deshechas en Puerta", tablas: ["orders"], accion: "deshacer_entrada" },
+  { id: "descuentos", label: "Descuentos y vendedores", tablas: ["discount_codes", "seller_productions"] },
+  { id: "audiciones", label: "Audiciones y cast", tablas: ["auditions", "audition_members", "audition_invites", "audition_templates", "casting_offers"] },
+  { id: "elenco", label: "Elenco y expedientes", tablas: ["people", "member_docs", "member_incidents", "member_measures", "production_discipline", "member_requests", "member_enrollment", "pro_profiles"] },
+  { id: "pagos", label: "Pagos del taller", tablas: ["member_payments", "member_fee_terms", "production_fees"] },
+  { id: "ensayos", label: "Ensayos, materiales y comunicados", tablas: ["rehearsals", "materials", "announcements"] },
+  { id: "evaluaciones", label: "Evaluaciones del taller", tablas: ["rubric_evaluations", "rubric_periods", "rubric_teachers", "rubric_settings"] },
+  { id: "equipo", label: "Portal del equipo", tablas: ["team_members", "team_materials", "team_announcements", "team_notes", "team_meetings", "team_comments"] },
+  { id: "fanzone", label: "Fan Zone y eventos", tablas: ["fanzone_items", "fan_encuentros"] },
+  { id: "contacto", label: "Contacto", tablas: ["contact_messages"] },
+];
+
+export function tipoBitacora(id: string | null | undefined): TipoBitacora | null {
+  return TIPOS_BITACORA.find((t) => t.id === id) ?? null;
 }
