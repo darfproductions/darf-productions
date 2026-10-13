@@ -64,7 +64,6 @@ Diego eligió cuáles sí (ver plan del bloque). Hechas en `darf-2.0`, migracion
 - **Avisos por WhatsApp**: es un servicio de pago.
 - **Foto grupal en Nosotros**: cuando haya foto.
 - **Tema claro del panel "DARF Admin"**: sin decidir; el panel sigue oscuro.
-- **Componentes que ya no se usan** (por la credencial única): `components/gafete/MiGafete.tsx`, `components/fanzone/MiCredencialFan.tsx`, y `getMiGafete` / `getMiCredencialFan`. Se dejaron en su lugar; se pueden borrar con el visto bueno de Diego.
 - No se harán: lista de espera, etiquetas de función (la franja ya cubre eso), transferir boleto, pago con tarjeta u OXXO.
 
 ## Para el lanzamiento (lista de revisión)

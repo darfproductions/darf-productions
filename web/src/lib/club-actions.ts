@@ -35,16 +35,6 @@ export async function recordarPreventa(pid: string, on: boolean): Promise<{ ok: 
   return { ok: true, message: on ? "Listo: te avisamos en tu cuenta y en tu teléfono cuando abra la preventa." : "Recordatorio desactivado." };
 }
 
-/** Credencial nueva (0080): la anterior y su PDF dejan de servir. */
-export async function regenerarCredencial(): Promise<{ ok: boolean; message: string }> {
-  const supabase = await createClient();
-  const { error } = await supabase.rpc("fan_regenerar");
-  if (error) return { ok: false, message: error.message };
-  revalidatePath("/fan-zone", "layout");
-  revalidatePath("/cuenta");
-  return { ok: true, message: "Credencial nueva lista. La anterior ya no sirve." };
-}
-
 /** "Recordarme" en un evento (0081): aviso en la cuenta y al teléfono una hora antes. */
 export async function recordarEvento(id: string, on: boolean): Promise<{ ok: boolean; message: string }> {
   const supabase = await createClient();

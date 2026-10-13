@@ -9,11 +9,6 @@ export const FRANJAS: Record<Franja, { label: string; fondo: string; texto: stri
   equipo: { label: "EQUIPO", fondo: "#a48bff", texto: "#0b0910" },
 };
 
-export type GafeteMio = {
-  token: string; codigo: string; franja: Franja; papel: string;
-  compartir_telefono: boolean; compartir_correo: boolean; compartir_instagram: boolean; compartir_perfil: boolean;
-};
-
 export type GafetePublico = {
   /** 0083: la credencial es única; solo el nivel "equipo" trae papel y contacto. */
   nivel?: "equipo" | "club" | "cuenta"; socio?: { numero: number; desde: string; fundador: boolean } | null;
