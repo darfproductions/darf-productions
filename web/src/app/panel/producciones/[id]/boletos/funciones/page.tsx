@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { ActionForm } from "@/components/panel/ActionForm";
+import { AjustesSeccion } from "@/components/panel/AjustesSeccion";
 import { Card, input } from "@/components/panel/ui";
 import { listPerformances, listZones } from "@/lib/boleteria";
 import { isoToLocalMx } from "@/lib/dates";
@@ -44,9 +45,21 @@ export default async function PerformancesPage({ params }: PageProps<"/panel/pro
 
       {gestionar && (
         <>
-          {funciones.map((f) => (
-            <Card key={f.id}>
-              <p className="mb-3 font-bold capitalize">{formatPerformanceDate(f.starts_at)} {f.on_sale && <span className="ml-2 rounded-full bg-[#14532d] px-2 py-0.5 text-[11px] uppercase text-[#bbf7d0]">en venta</span>}</p>
+          {/* 0085: cada función es un renglón compacto; "Editar" despliega su formulario. */}
+          {funciones.map((f) => {
+            const precios = f.prices.map((x) => x.price);
+            return (
+            <details key={f.id} id={`f-${f.id}`} open={funciones.length === 1} className="group scroll-mt-24 rounded-[22px] border border-linea bg-telon">
+              <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-2 px-5 py-4">
+                <span className="flex flex-wrap items-center gap-2">
+                  <b className="capitalize">{formatPerformanceDate(f.starts_at)}</b>
+                  {f.on_sale ? <span className="rounded-full bg-[#14532d] px-2 py-0.5 text-[11px] uppercase text-[#bbf7d0]">en venta</span> : <span className="rounded-full bg-white/10 px-2 py-0.5 text-[11px] uppercase text-texto-3">sin venta</span>}
+                  {f.preventa_hasta && <span className="rounded-full border border-oro/40 px-2 py-0.5 text-[11px] uppercase text-oro-claro">preventa</span>}
+                  <span className="text-sm text-texto-3">{f.venue ? `${f.venue} · ` : ""}{precios.length ? `$${Math.min(...precios)}–$${Math.max(...precios)}` : "sin precios"}</span>
+                </span>
+                <span className="text-sm font-bold text-violeta-claro">Editar <span className="inline-block transition-transform group-open:rotate-180">▾</span></span>
+              </summary>
+              <div className="border-t border-linea p-5">
               <ActionForm action={updatePerformance} hidden={{ pid: id, perf: f.id }} submit="Guardar función">
                 <div className="grid gap-3 sm:grid-cols-3">
                   <label className="flex flex-col gap-1.5 text-sm font-semibold">Fecha y hora (CDMX)
@@ -78,11 +91,29 @@ export default async function PerformancesPage({ params }: PageProps<"/panel/pro
               <div className="mt-3 border-t border-white/10 pt-3">
                 <ActionForm inline action={deletePerformance} hidden={{ pid: id, perf: f.id }} confirm="¿Eliminar esta función? Solo se puede si no tiene boletos activos." submit="Eliminar función" submitClass={ghost} />
               </div>
-            </Card>
-          ))}
-          <Card className="flex flex-col gap-3">
+              </div>
+            </details>
+            );
+          })}
+          <details className="rounded-[22px] border border-linea bg-telon" open={funciones.length === 0}>
+            <summary className="cursor-pointer list-none px-5 py-4 font-bold text-violeta-claro">+ Nueva función</summary>
+            <div className="border-t border-linea p-5">
+            <ActionForm action={createPerformance} hidden={{ pid: id }} submit="Crear función">
+              <div className="grid gap-3 sm:grid-cols-3">
+                <label className="flex flex-col gap-1.5 text-sm font-semibold">Fecha y hora (CDMX)
+                  <input className={input} type="datetime-local" name="fecha" />
+                  <span className="text-xs font-normal text-texto-3">Déjala vacía si aún no hay fecha.</span>
+                </label>
+                <label className="flex flex-col gap-1.5 text-sm font-semibold sm:col-span-2">Sede (opcional)
+                  <input className={input} name="venue" />
+                </label>
+              </div>
+              <p className="text-xs text-texto-3">Los precios se copian de la función más reciente; ajústalos después.</p>
+            </ActionForm>
+            </div>
+          </details>
+          <AjustesSeccion id="zonas" titulo="⚙ Zonas de entrada general" resumen={`${zonas.filter((z) => z.cupo != null).length} zonas`}>
             <div>
-              <h2 className="titular text-xl">Zonas de entrada general</h2>
               <p className="text-sm text-texto-2">Zonas sin asiento numerado (ej. Pista: 80 lugares). El cupo vale para todas las funciones; en cada función puedes poner otro. Luego ponle precio en cada función.</p>
             </div>
             {zonas.filter((z) => z.cupo != null).map((z) => (
@@ -102,22 +133,7 @@ export default async function PerformancesPage({ params }: PageProps<"/panel/pro
                 <label className="flex flex-col gap-1.5 text-sm font-semibold sm:col-span-2">Descripción (opcional)<input className={input} name="descripcion" maxLength={200} placeholder="De pie, frente al escenario" /></label>
               </div>
             </ActionForm>
-          </Card>
-          <Card>
-            <h2 className="titular mb-3 text-xl">Nueva función</h2>
-            <ActionForm action={createPerformance} hidden={{ pid: id }} submit="Crear función">
-              <div className="grid gap-3 sm:grid-cols-3">
-                <label className="flex flex-col gap-1.5 text-sm font-semibold">Fecha y hora (CDMX)
-                  <input className={input} type="datetime-local" name="fecha" />
-                  <span className="text-xs font-normal text-texto-3">Déjala vacía si aún no hay fecha.</span>
-                </label>
-                <label className="flex flex-col gap-1.5 text-sm font-semibold sm:col-span-2">Sede (opcional)
-                  <input className={input} name="venue" />
-                </label>
-              </div>
-              <p className="text-xs text-texto-3">Los precios se copian de la función más reciente; ajústalos después.</p>
-            </ActionForm>
-          </Card>
+          </AjustesSeccion>
           {zonas.length === 0 && <Card>Esta obra no tiene zonas de precio todavía. Puedes crear zonas de entrada general arriba; un mapa de asientos nuevo se carga aparte.</Card>}
         </>
       )}

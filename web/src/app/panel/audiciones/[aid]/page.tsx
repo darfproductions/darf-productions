@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { AjustesSeccion } from "@/components/panel/AjustesSeccion";
 import { redirect } from "next/navigation";
 import { ActionForm } from "@/components/panel/ActionForm";
 import { CopyLink } from "@/components/panel/CopyLink";
@@ -67,8 +68,7 @@ export default async function AuditionConfig({ params }: PageProps<"/panel/audic
         </div>
       </Card>
 
-      <Card>
-        <h2 className="titular mb-3 text-xl">Datos</h2>
+      <AjustesSeccion id="datos" titulo="Datos">
         <ActionForm action={saveAudition} hidden={h} submit="Guardar datos">
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="flex flex-col gap-1.5 text-sm font-semibold sm:col-span-2">Título<input className={input} name="titulo" required defaultValue={a.titulo} /></label>
@@ -80,10 +80,9 @@ export default async function AuditionConfig({ params }: PageProps<"/panel/audic
             <label className="flex flex-col gap-1.5 text-sm font-semibold">Edad máxima<input className={input} type="number" min={3} max={99} name="edad_max" defaultValue={a.edad_max ?? ""} /></label>
           </div>
         </ActionForm>
-      </Card>
+      </AjustesSeccion>
 
-      <Card>
-        <h2 className="titular mb-1 text-xl">Inscripción y logística</h2>
+      <AjustesSeccion id="inscripcion-y-logistica" titulo="Inscripción y logística">
         <p className="mb-3 text-sm text-texto-2">Ajusta qué se pide al inscribirse y cómo se organiza el día.</p>
         <ActionForm action={saveOptions} hidden={h} submit="Guardar opciones">
           <div className="grid gap-4 md:grid-cols-2">
@@ -119,19 +118,18 @@ export default async function AuditionConfig({ params }: PageProps<"/panel/audic
             </div>
           </div>
         </ActionForm>
-      </Card>
+      </AjustesSeccion>
 
-      <Card className="flex flex-col gap-3">
-        <h2 className="titular text-xl">Qué califican los jueces</h2>
+      <AjustesSeccion id="que-califican-los-jueces" titulo="Qué califican los jueces">
         <p className="text-sm text-texto-2">Cada criterio se califica del 1 al 5. Escríbelos separados por coma (máximo 8). Ejemplo para aéreo: Técnica, Fuerza, Flexibilidad, Seguridad, Presencia escénica.</p>
         <ActionForm action={saveCriterios} hidden={h} submit="Guardar criterios">
           <input className={input} name="criterios" required defaultValue={criterios.map((c) => c.l).join(", ")} />
         </ActionForm>
         <p className="text-xs text-texto-3">Si cambias los criterios cuando ya hay calificaciones, las anteriores se conservan pero los jueces califican con los nuevos.</p>
-      </Card>
+      </AjustesSeccion>
 
       {a.solo_invitados && (
-        <Card className="flex flex-col gap-3">
+        <AjustesSeccion id="invitados" titulo="Invitados">
           <h2 className="titular text-xl">Invitados ({(invites.data ?? []).length})</h2>
           <p className="flex flex-wrap items-center gap-2 text-sm text-texto-2">Solo estos correos pueden inscribirse. Cada persona entra con su cuenta DARF (con ese mismo correo) y ve la invitación en Mi cuenta. Mándales el enlace: <CopyLink path={`/audiciones/${aid}`} /></p>
           <ul className="flex flex-col gap-1.5">
@@ -145,11 +143,10 @@ export default async function AuditionConfig({ params }: PageProps<"/panel/audic
           <ActionForm action={addInvites} hidden={h} submit="Invitar">
             <textarea className={`${input} min-h-20`} name="emails" required placeholder="Uno o varios correos, separados por coma o en renglones distintos" />
           </ActionForm>
-        </Card>
+        </AjustesSeccion>
       )}
 
-      <Card className="flex flex-col gap-3">
-        <h2 className="titular text-xl">Equipo de esta convocatoria</h2>
+      <AjustesSeccion id="equipo-de-esta-convocatoria" titulo="Equipo de esta convocatoria">
         <p className="text-sm text-texto-2">
           {a.production_id
             ? "El equipo de la obra ya tiene acceso según sus roles. Aquí puedes sumar personas solo para esta convocatoria (por ejemplo, un juez invitado)."
@@ -176,10 +173,9 @@ export default async function AuditionConfig({ params }: PageProps<"/panel/audic
             </div>
           </ActionForm>
         )}
-      </Card>
+      </AjustesSeccion>
 
-      <Card className="flex flex-col gap-3">
-        <h2 className="titular text-xl">Personajes</h2>
+      <AjustesSeccion id="personajes" titulo="Personajes">
         <ul className="flex flex-col gap-2">
           {(roles.data ?? []).map((r) => (
             <li key={r.id} className="flex items-start justify-between gap-3 rounded-lg bg-sala px-3 py-2">
@@ -194,10 +190,9 @@ export default async function AuditionConfig({ params }: PageProps<"/panel/audic
             <input className={input} name="descripcion" placeholder="Descripción breve (edad, tesitura, baile…)" />
           </div>
         </ActionForm>
-      </Card>
+      </AjustesSeccion>
 
-      <Card className="flex flex-col gap-3">
-        <h2 className="titular text-xl">Horarios</h2>
+      <AjustesSeccion id="horarios" titulo="Horarios">
         <ul className="flex flex-col gap-2">
           {((slots.data ?? []) as { id: string; inicia: string; sala: string | null; cupo: number; ocupados: number }[]).map((s) => (
             <li key={s.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-sala px-3 py-2 text-sm">
@@ -213,10 +208,9 @@ export default async function AuditionConfig({ params }: PageProps<"/panel/audic
             <input className={input} name="sala" placeholder="Sala (opcional)" />
           </div>
         </ActionForm>
-      </Card>
+      </AjustesSeccion>
 
-      <Card className="flex flex-col gap-3">
-        <h2 className="titular text-xl">Preguntas del formulario</h2>
+      <AjustesSeccion id="preguntas-del-formulario" titulo="Preguntas del formulario">
         <p className="text-sm text-texto-2">Nombre, teléfono y fecha de nacimiento se piden siempre; foto y horario según las opciones de arriba. Pide solo lo necesario.</p>
         <ul className="flex flex-col gap-2">
           {(fields.data ?? []).map((f) => (
@@ -234,9 +228,8 @@ export default async function AuditionConfig({ params }: PageProps<"/panel/audic
           </div>
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="obligatorio" /> Obligatoria</label>
         </ActionForm>
-      </Card>
-      <Card>
-        <h2 className="titular mb-1 text-xl">Guardar como plantilla</h2>
+      </AjustesSeccion>
+      <AjustesSeccion id="guardar-como-plantilla" titulo="Guardar como plantilla">
         <p className="mb-3 text-sm text-texto-2">Guarda las opciones, preguntas, criterios y requisitos de esta convocatoria para crear otras iguales después.</p>
         <ActionForm action={saveAsTemplate} hidden={h} submit="Guardar plantilla">
           <div className="grid gap-2 sm:grid-cols-[1fr_2fr]">
@@ -244,9 +237,8 @@ export default async function AuditionConfig({ params }: PageProps<"/panel/audic
             <input className={input} name="descripcion" maxLength={300} placeholder="Para qué sirve (opcional)" />
           </div>
         </ActionForm>
-      </Card>
-      <Card className="flex flex-col gap-4 border border-[#ff8fa3]/30">
-        <h2 className="titular text-xl text-[#ff8fa3]">Cancelar o borrar</h2>
+      </AjustesSeccion>
+      <AjustesSeccion id="cancelar-o-borrar" titulo="Cancelar o borrar">
         {a.estado !== "cancelada" && (
           <div className="flex flex-col gap-2">
             <p className="text-sm text-texto-2"><b>Cancelar</b> (si ya no se hará): se conserva todo, ya nadie puede inscribirse y {nInscritos ? `los ${nInscritos} inscritos verán` : "quien se haya inscrito verá"} “Convocatoria cancelada” en su página y en Mi cuenta. Se puede reabrir después.</p>
@@ -267,7 +259,7 @@ export default async function AuditionConfig({ params }: PageProps<"/panel/audic
             </ActionForm>
           </div>
         </details>
-      </Card>
+      </AjustesSeccion>
     </>
   );
 }

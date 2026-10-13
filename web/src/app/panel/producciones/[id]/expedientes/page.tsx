@@ -12,6 +12,7 @@ import { can } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
 import { createClient } from "@/lib/supabase/server";
 import { addBasicDocs, addDocType, removeDocType, saveDiscipline, saveFee } from "./actions";
+import { AjustesSeccion } from "@/components/panel/AjustesSeccion";
 import { ExpTabs } from "./ExpTabs";
 
 export const metadata: Metadata = { title: "Expedientes" };
@@ -145,6 +146,8 @@ export default async function Expedientes({ params, searchParams }: PageProps<"/
         {gente.length === 0 && <p className="px-5 py-4 text-texto-2">Aún no hay integrantes. Entran al aceptar una oferta (Elenco y equipos).</p>}
       </Card>
 
+      {(verExp || verDisc || verCuotas) && (
+        <AjustesSeccion resumen={[verExp && "Documentos que se piden", verDisc && "Advertencias", verCuotas && "Pagos del taller y recaudación"].filter(Boolean).join(" · ")}>
       {verExp && (
         <Card className="flex flex-col gap-3">
           <h2 className="titular text-xl">Documentos que se piden</h2>
@@ -263,6 +266,8 @@ export default async function Expedientes({ params, searchParams }: PageProps<"/
             </tbody>
           </table>
         </Card>
+      )}
+        </AjustesSeccion>
       )}
     </div>
   );

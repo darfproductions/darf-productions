@@ -1,6 +1,7 @@
 /* eslint-disable @next/next/no-img-element -- miniaturas del kit (Storage o archivos propios) */
 import type { Metadata } from "next";
 import Link from "next/link";
+import { AjustesSeccion } from "@/components/panel/AjustesSeccion";
 import { redirect } from "next/navigation";
 import { ImageUpload } from "@/components/panel/ImageUpload";
 import { Card, EstadoChip, input } from "@/components/panel/ui";
@@ -27,7 +28,16 @@ const field = (label: string, name: string, value: string | null, extra?: { plac
   </label>
 );
 
+// 0085: Estado queda abierto arriba; las demás secciones se pliegan (se abren con su pastilla o #ancla).
 function Block({ id, title, children, note }: { id: string; title: string; children: React.ReactNode; note?: string }) {
+  if (id !== "estado") {
+    return (
+      <AjustesSeccion id={id} titulo={title}>
+        {note && <p className="text-sm text-texto-2">{note}</p>}
+        {children}
+      </AjustesSeccion>
+    );
+  }
   return (
     <Card>
       <section id={id} className="flex flex-col gap-4">

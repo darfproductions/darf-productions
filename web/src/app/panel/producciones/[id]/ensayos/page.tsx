@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { AjustesSeccion } from "@/components/panel/AjustesSeccion";
 import { redirect } from "next/navigation";
 import { ActionForm } from "@/components/panel/ActionForm";
 import { Card, input } from "@/components/panel/ui";
@@ -105,26 +106,16 @@ export default async function Ensayos({ params }: PageProps<"/panel/producciones
         </details>
       </Card>
 
-      <Card className="flex flex-col gap-3">
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 className="titular text-xl">Faltas con aviso</h2>
-          <Link href={`/panel/producciones/${id}/solicitudes`} className="text-sm font-bold text-violeta-claro">
-            {porRevisar ? `${porRevisar} ${porRevisar === 1 ? "solicitud" : "solicitudes"} de falta por revisar →` : "Ver solicitudes →"}
-          </Link>
-        </div>
-        <p className="text-sm text-texto-2">El elenco pide sus faltas desde su portal. Si las apruebas, el ensayo queda como <b>justificada</b> sola. Hoy se pueden pedir hasta <b>{textoLimite(horas)}</b>.</p>
-        <ActionForm inline action={setAvisoHoras} hidden={h} submit="Guardar" submitClass="rounded-full bg-texto px-4 py-2 text-xs font-bold text-sala">
-          <label className="flex flex-wrap items-center gap-2 text-sm font-semibold">Se piden hasta
-            <select name="horas" defaultValue={String(horas)} className={`${input} py-2`}>
-              {[0, 6, 12, 24, 48, 72, 168].map((x) => <option key={x} value={x}>{textoLimite(x)}</option>)}
-            </select>
-          </label>
-        </ActionForm>
-      </Card>
+      {!!porRevisar && (
+        <Link href={`/panel/producciones/${id}/solicitudes`} className="flex items-center justify-between gap-3 rounded-[18px] border border-aviso/40 bg-telon px-5 py-3 text-sm hover:bg-telon-2">
+          <b className="text-aviso">{porRevisar} {porRevisar === 1 ? "solicitud" : "solicitudes"} de falta por revisar</b>
+          <span className="text-violeta-claro">→</span>
+        </Link>
+      )}
 
       {gente.length > 0 && (
-        <Card className="overflow-x-auto p-0 md:p-0">
-          <h2 className="titular px-5 pt-4 text-xl">Asistencia por integrante</h2>
+        <details className="overflow-x-auto rounded-[22px] border border-linea bg-telon">
+          <summary className="cursor-pointer px-5 py-4 font-bold">Asistencia por integrante</summary>
           <table className="mt-2 w-full min-w-[560px] text-sm">
             <thead className="text-left text-xs uppercase tracking-[0.12em] text-texto-3">
               <tr>{["Integrante", "Asistencia", "Presente", "Retardos", "Faltas", "Justificadas"].map((t) => <th key={t} className="px-4 py-2">{t}</th>)}</tr>
@@ -144,15 +135,27 @@ export default async function Ensayos({ params }: PageProps<"/panel/producciones
               })}
             </tbody>
           </table>
-        </Card>
+        </details>
       )}
 
       {pasados.length > 0 && (
-        <Card className="flex flex-col gap-3">
-          <h2 className="titular text-xl">Ensayos pasados</h2>
-          <ul className="flex flex-col gap-2">{pasados.map((r) => <Item key={r.id} r={r} />)}</ul>
-        </Card>
+        <details className="rounded-[22px] border border-linea bg-telon">
+          <summary className="cursor-pointer px-5 py-4 font-bold">Ensayos pasados ({pasados.length})</summary>
+          <ul className="flex flex-col gap-2 px-5 pb-5">{pasados.map((r) => <Item key={r.id} r={r} />)}</ul>
+        </details>
       )}
+
+      <AjustesSeccion resumen="Faltas con aviso">
+        <h3 className="font-bold">Faltas con aviso</h3>
+        <p className="text-sm text-texto-2">El elenco pide sus faltas desde su portal. Si las apruebas, el ensayo queda como <b>justificada</b> sola. Hoy se pueden pedir hasta <b>{textoLimite(horas)}</b>.</p>
+        <ActionForm inline action={setAvisoHoras} hidden={h} submit="Guardar" submitClass="rounded-full bg-texto px-4 py-2 text-xs font-bold text-sala">
+          <label className="flex flex-wrap items-center gap-2 text-sm font-semibold">Se piden hasta
+            <select name="horas" defaultValue={String(horas)} className={`${input} py-2`}>
+              {[0, 6, 12, 24, 48, 72, 168].map((x) => <option key={x} value={x}>{textoLimite(x)}</option>)}
+            </select>
+          </label>
+        </ActionForm>
+      </AjustesSeccion>
     </div>
   );
 }
