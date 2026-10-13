@@ -11,7 +11,9 @@ describe("póster oficial", () => {
     expect(elegir(p, "pagina")).toEqual({ path: "a/kit/p34i.jpg", info: true });
     expect(elegir(p, "tarjeta-celular")).toEqual({ path: "a/kit/p34.jpg", info: false });
     expect(elegir(p, "compartir")).toEqual({ path: "a/kit/p169i.jpg", info: true });
-    expect(elegir(p, "voy")).toEqual({ path: "a/kit/p916i.jpg", info: true });
+    // "Voy a ir" nunca usa la versión con información: con solo el 9:16 con info, toma el 3:4 limpio.
+    expect(elegir(p, "voy")).toEqual({ path: "a/kit/p34.jpg", info: false });
+    expect(elegir({ poster_9x16_info_path: "a/kit/p916i.jpg" }, "voy")).toBeNull();
     expect(elegir(p, "destacada")).toBeNull();
   });
   it("revisa la proporción", () => {

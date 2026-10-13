@@ -192,7 +192,7 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
                       <AgregarCalendario ics={`/calendario/boleto/${encodeURIComponent(o.order_code)}`}
                         evento={{ uid: `orden-${o.order_code}`, titulo: `${nombre} · DARF Productions`, inicia: o.performances.starts_at, lugar: o.performances.venue ?? prod?.venue ?? null, detalle: `Orden ${o.order_code}` }} />
                       <VoyAIr obra={nombre} funcion={formatPerformanceDate(o.performances.starts_at)} lugar={o.performances.venue ?? prod?.venue ?? null}
-                        ambiente={tema?.ambiente ?? null} poster={posterUrl(prod, "voy")} logo={tema?.logo ?? null} fondo={estilo.fondo} texto={estilo.texto} acento={estilo.acento} />
+                        ambiente={tema?.ambiente ?? null} poster={posterUrl(prod, "voy")?.url ?? null} logo={tema?.logo ?? null} fondo={estilo.fondo} texto={estilo.texto} acento={estilo.acento} />
                     </div>
                   )}
                   </div>

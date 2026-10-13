@@ -8,7 +8,7 @@ export type Formato = (typeof FORMATOS)[number];
 
 export const FORMATO_INFO: Record<Formato, { titulo: string; uso: string; ratio: number; minAncho: number; ideal: string }> = {
   "3x4": { titulo: "Póster 3:4", uso: "Póster oficial: página de la obra, tarjetas en celular, boletos y PDF.", ratio: 3 / 4, minAncho: 900, ideal: "1500×2000" },
-  "9x16": { titulo: "Historia 9:16", uso: "Historias y estados: la imagen “Voy a ir”.", ratio: 9 / 16, minAncho: 1080, ideal: "1080×1920" },
+  "9x16": { titulo: "Historia 9:16", uso: "Historias y estados: la imagen “Voy a ir” (usa la versión solo imagen).", ratio: 9 / 16, minAncho: 1080, ideal: "1080×1920" },
   "4x3": { titulo: "Destacada 4:3", uso: "Obra destacada en celular.", ratio: 4 / 3, minAncho: 1200, ideal: "1600×1200" },
   "16x9": { titulo: "Destacada 16:9", uso: "Obra destacada en computadora y al compartir la liga.", ratio: 16 / 9, minAncho: 1600, ideal: "1920×1080" },
 };
@@ -42,7 +42,8 @@ export type Uso = "voy" | "destacada-celular" | "destacada" | "tarjeta-celular" 
  *  se les pone logo ni fecha encima). null = no hay póster: usar la imagen de ambiente. */
 export function elegir(p: PosterColumns | null | undefined, uso: Uso): { path: string; info: boolean } | null {
   const orden: Record<Uso, [Formato, boolean][]> = {
-    voy: [["9x16", false], ["9x16", true], ["3x4", false]],
+    // "Voy a ir" siempre con la versión limpia: la imagen pone encima los logos, el texto y la función.
+    voy: [["9x16", false], ["3x4", false]],
     "destacada-celular": [["4x3", false], ["16x9", false]],
     destacada: [["16x9", false], ["4x3", false]],
     "tarjeta-celular": [["3x4", false]],

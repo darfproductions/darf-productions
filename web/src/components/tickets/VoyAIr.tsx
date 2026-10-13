@@ -5,8 +5,8 @@ import { logoDarf } from "@/lib/ticket-design";
 
 type Props = {
   obra: string; funcion: string; lugar: string | null; ambiente: string | null; logo: string | null; fondo: string; texto: string; acento: string;
-  /** Póster oficial (0093) elegido para "Voy a ir": 9:16 limpio, 9:16 con info o 3:4 limpio. */
-  poster?: { url: string; info: boolean } | null;
+  /** Póster oficial limpio (0093) para "Voy a ir": 9:16 o, si no hay, 3:4. Los logos y textos los pone esta imagen. */
+  poster?: string | null;
 };
 
 const W = 1080;
@@ -25,7 +25,11 @@ function cargar(src: string): Promise<HTMLImageElement | null> {
 function cubrir(ctx: CanvasRenderingContext2D, img: HTMLImageElement, x: number, y: number, w: number, h: number) {
   const r = Math.max(w / img.width, h / img.height);
   const iw = img.width * r, ih = img.height * r;
+  // Recorta a su área: si no, la imagen se sale y deja una franja detrás de los textos.
+  ctx.save();
+  ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip();
   ctx.drawImage(img, x + (w - iw) / 2, y + (h - ih) / 2, iw, ih);
+  ctx.restore();
 }
 
 /** Corta un texto en renglones que quepan en `ancho`. */
@@ -46,18 +50,7 @@ async function dibujar(p: Props): Promise<Blob | null> {
   const ctx = c.getContext("2d");
   if (!ctx) return null;
   ctx.fillStyle = p.fondo; ctx.fillRect(0, 0, W, H);
-  const [pst, darf] = await Promise.all([p.poster ? cargar(p.poster.url) : null, cargar(logoDarf(p.fondo))]);
-  // Póster 9:16 con toda la información: va completo y solo se le agrega la franja "¡Voy a ir!" arriba.
-  if (pst && p.poster?.info) {
-    cubrir(ctx, pst, 0, 0, W, H);
-    ctx.fillStyle = p.fondo; ctx.globalAlpha = 0.92; ctx.fillRect(0, 0, W, 230); ctx.globalAlpha = 1;
-    ctx.fillStyle = p.acento; ctx.textAlign = "center";
-    ctx.font = "900 92px Montserrat, Arial, sans-serif";
-    ctx.fillText("¡VOY A IR!", W / 2, 118);
-    ctx.fillStyle = p.texto; ctx.font = "700 40px Montserrat, Arial, sans-serif";
-    ctx.fillText(renglones(ctx, p.funcion, 980)[0] ?? "", W / 2, 190);
-    return new Promise((ok) => c.toBlob((b) => ok(b), "image/png"));
-  }
+  const [pst, darf] = await Promise.all([p.poster ? cargar(p.poster) : null, cargar(logoDarf(p.fondo))]);
   const [img, logo] = await Promise.all([pst ?? (p.ambiente ? cargar(p.ambiente) : null), p.logo ? cargar(p.logo) : null]);
   if (img) {
     // Un póster vertical (9:16) baja casi hasta los textos; el ambiente o el 3:4 ocupan la parte de arriba.
