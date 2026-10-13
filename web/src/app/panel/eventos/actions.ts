@@ -71,10 +71,14 @@ export async function setEvento(_p: State, f: FormData): Promise<State> {
   const pid = str(f, "pid") || null;
   const supabase = await createClient();
   const id = str(f, "id");
-  const q = str(f, "accion") === "borrar"
-    ? supabase.from("fan_encuentros").delete({ count: "exact" }).eq("id", id)
-    : supabase.from("fan_encuentros").update({ abierto: str(f, "accion") === "abrir" }, { count: "exact" }).eq("id", id);
-  const { error, count } = await q;
+  if (str(f, "accion") !== "borrar") {
+    // Abrir o cerrar el registro: quien edita el evento o quien lo organiza (0084).
+    const { error } = await supabase.rpc("evento_abrir", { eid: id, p_on: str(f, "accion") === "abrir" });
+    if (error) return { ok: false, message: error.message };
+    refrescar(pid);
+    return { ok: true, message: "Listo." };
+  }
+  const { error, count } = await supabase.from("fan_encuentros").delete({ count: "exact" }).eq("id", id);
   if (error) return { ok: false, message: error.message };
   if (!count) return { ok: false, message: "No tienes permiso." };
   refrescar(pid);
@@ -99,4 +103,21 @@ export async function marcarLlegada(_p: State, f: FormData): Promise<State> {
   if (error) return { ok: false, message: error.message };
   refrescar(str(f, "pid") || null);
   return { ok: true, message: "Listo." };
+}
+
+/** Equipo propio del evento (0084): agregar o cambiar el papel de alguien por su correo. */
+export async function ponerEquipoEvento(_p: State, f: FormData): Promise<State> {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("evento_equipo_poner", { eid: str(f, "id"), p_email: str(f, "email"), p_papel: str(f, "papel") });
+  if (error) return { ok: false, message: error.message };
+  refrescar(str(f, "pid") || null);
+  return { ok: true, message: "Listo: se le avisó y ya lo ve en su panel." };
+}
+
+export async function quitarEquipoEvento(_p: State, f: FormData): Promise<State> {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("evento_equipo_quitar", { eid: str(f, "id"), uid: str(f, "uid") });
+  if (error) return { ok: false, message: error.message };
+  refrescar(str(f, "pid") || null);
+  return { ok: true, message: "Quitado del equipo." };
 }

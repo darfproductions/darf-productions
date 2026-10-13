@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { activeNav, can, canAudition, canConfigAudition, canSeeAudition, globalSections, groupMembers, hasAnyAccess, myProductionIds, productionIdFrom, panelMenu, productionTabs, roleDiff, roleIdFromName, type PanelAccessData } from "./panel-nav";
+import { activeNav, can, canAudition, canConfigAudition, canSeeAudition, globalSections, groupMembers, hasAnyAccess, hasEventoAccess, myProductionIds, permisosEvento, productionIdFrom, panelMenu, productionTabs, roleDiff, roleIdFromName, type PanelAccessData } from "./panel-nav";
 
 const director: PanelAccessData = { isDirector: true, byProduction: {} };
 const fan: PanelAccessData = { isDirector: false, byProduction: {} };
@@ -51,7 +51,7 @@ describe("secciones generales", () => {
   });
   it("subpestañas según permisos", () => {
     const t = panelMenu(taquillaMM);
-    expect(t.find((s) => s.id === "proyectos")?.subs.map((x) => x.label)).toEqual(["Producciones"]);
+    expect(t.find((s) => s.id === "proyectos")?.subs.map((x) => x.label)).toEqual(["Producciones", "Eventos"]) // 0084: taquilla aprueba pagos de eventos;
     expect(t.find((s) => s.id === "reportes")?.href).toBe("/panel/reportes/obras");
     expect(panelMenu(juezMM).find((s) => s.id === "proyectos")?.subs.map((x) => x.label)).toEqual(["Producciones", "Audiciones"]);
     expect(panelMenu(director).find((s) => s.id === "personas")?.subs.map((x) => x.label)).toEqual(["Directorio", "Cumpleaños", "Equipo DARF", "Contacto"]);
@@ -144,5 +144,27 @@ describe("producción concluida (0066)", () => {
   it("solo quedan las pestañas de archivo", () => {
     expect(productionTabs(director, "hsm", true).map((t) => t.id)).toEqual(["resumen", "pagina", "elenco", "expedientes", "solicitudes", "fanzone", "equipo", "reportes", "cierre", "permisos"].sort((x, y) => productionTabs(director, "hsm").findIndex((t) => t.id === x) - productionTabs(director, "hsm").findIndex((t) => t.id === y)));
     expect(productionTabs(taquillaMM, "mm", true).map((t) => t.id)).toEqual(["resumen", "reportes", "cierre"]);
+  });
+});
+
+describe("equipo propio de eventos (0084)", () => {
+  const puertaEv: PanelAccessData = { isDirector: false, byProduction: {}, byEvento: { e1: "puerta" } };
+  const taquilla: PanelAccessData = { isDirector: false, byProduction: { showman: ["ventas.operar"] } };
+  const contenido: PanelAccessData = { isDirector: false, byProduction: { showman: ["fanzone.editar"] } };
+  it("entra al panel y ve Eventos solo con su papel", () => {
+    expect(hasAnyAccess(puertaEv)).toBe(true);
+    expect(hasEventoAccess(puertaEv)).toBe(true);
+    expect(panelMenu(puertaEv).find((s) => s.id === "proyectos")?.subs.map((x) => x.label)).toEqual(["Eventos"]);
+    expect(hasEventoAccess(taquilla)).toBe(true);
+    expect(hasEventoAccess({ isDirector: false, byProduction: { showman: ["obra.ver"] } })).toBe(false);
+  });
+  it("permisos por evento", () => {
+    const darf = { id: "e1", production_id: null };
+    expect(permisosEvento(puertaEv, darf)).toEqual({ equipo: false, editar: false, puerta: true, cobros: false });
+    expect(permisosEvento(puertaEv, { id: "e2", production_id: null }).puerta).toBe(false);
+    expect(permisosEvento({ ...puertaEv, byEvento: { e1: "organiza" } }, darf)).toEqual({ equipo: false, editar: true, puerta: true, cobros: true });
+    expect(permisosEvento(taquilla, { id: "e3", production_id: "showman" })).toEqual({ equipo: false, editar: false, puerta: false, cobros: true });
+    expect(permisosEvento(contenido, { id: "e3", production_id: "showman" }).equipo).toBe(true);
+    expect(permisosEvento(contenido, darf).equipo).toBe(false);
   });
 });

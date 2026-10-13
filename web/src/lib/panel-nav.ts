@@ -8,10 +8,41 @@ export type PanelAccessData = {
   byProduction: Record<string, string[]>;
   /** convocatoria → permisos por su equipo propio (0037). */
   byAudition?: Record<string, string[]>;
+  /** evento → mi papel en su equipo propio (0084). */
+  byEvento?: Record<string, PapelEvento>;
+};
+
+export type PapelEvento = "organiza" | "puerta" | "cobros";
+export const PAPELES_EVENTO: Record<PapelEvento, { label: string; ayuda: string }> = {
+  organiza: { label: "Organiza", ayuda: "Abre y cierra el registro, valida en la entrada y aprueba pagos." },
+  puerta: { label: "Puerta", ayuda: "Valida credenciales y marca llegadas." },
+  cobros: { label: "Cobros", ayuda: "Ve la lista y aprueba o rechaza pagos." },
 };
 
 export function hasAnyAccess(a: PanelAccessData): boolean {
-  return a.isDirector || Object.values(a.byProduction).some((p) => p.length > 0) || Object.values(a.byAudition ?? {}).some((p) => p.length > 0);
+  return a.isDirector || Object.values(a.byProduction).some((p) => p.length > 0) || Object.values(a.byAudition ?? {}).some((p) => p.length > 0)
+    || Object.keys(a.byEvento ?? {}).length > 0;
+}
+
+const EVENTO_PERMS = ["fanzone.editar", "puerta.validar", "ventas.operar"];
+
+/** ¿Mostrar "Eventos" en el menú? Director, quien tiene Fan Zone, puerta o taquilla en una obra, o un papel en algún evento. */
+export function hasEventoAccess(a: PanelAccessData): boolean {
+  return a.isDirector || Object.values(a.byProduction).some((p) => p.some((x) => EVENTO_PERMS.includes(x))) || Object.keys(a.byEvento ?? {}).length > 0;
+}
+
+/** Qué puedo hacer en un evento (0084): lo de la obra más mi papel en su equipo. Igual que evento_puede() en la base. */
+export function permisosEvento(a: PanelAccessData, e: { id: string; production_id: string | null }) {
+  const editor = a.isDirector || (!!e.production_id && (a.byProduction[e.production_id] ?? []).includes("fanzone.editar"));
+  const papel = a.byEvento?.[e.id];
+  const obra = (perm: string) => !!e.production_id && (a.byProduction[e.production_id] ?? []).includes(perm);
+  return {
+    /** Armar el equipo y borrar el evento. */
+    equipo: editor,
+    editar: editor || papel === "organiza",
+    puerta: editor || papel === "organiza" || papel === "puerta" || obra("puerta.validar"),
+    cobros: editor || papel === "organiza" || papel === "cobros" || obra("ventas.operar"),
+  };
 }
 
 const AUD_PERMS = ["audiciones.gestionar", "audiciones.registro", "audiciones.evaluar"];
@@ -135,8 +166,8 @@ export function panelMenu(a: PanelAccessData): NavSection[] {
   // Quien solo está en el equipo de una convocatoria general no tiene obras: solo ve Audiciones.
   const proyectos: Section[] = a.isDirector || myProductionIds(a).length ? [{ href: "/panel/producciones", label: "Producciones" }] : [];
   if (hasAuditionAccess(a)) proyectos.push({ href: "/panel/audiciones", label: "Audiciones" });
-  // Eventos (0081): el Director y quien tiene Fan Zone en alguna obra.
-  if (a.isDirector || Object.values(a.byProduction).some((p) => p.includes("fanzone.editar"))) proyectos.push({ href: "/panel/eventos", label: "Eventos" });
+  // Eventos (0081/0084): Director, Fan Zone, puerta o taquilla de una obra, o equipo de un evento.
+  if (hasEventoAccess(a)) proyectos.push({ href: "/panel/eventos", label: "Eventos" });
   out.push({ id: "proyectos", label: "Proyectos", href: proyectos[0].href, subs: proyectos, match: ["/panel/producciones", "/panel/audiciones", "/panel/eventos"] });
   if (a.isDirector) {
     out.push({

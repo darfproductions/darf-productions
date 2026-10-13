@@ -95,7 +95,7 @@ export default async function FanZoneEditor({ params }: PageProps<"/panel/produc
             </div>
             <Link href={`/panel/eventos?obra=${id}`} className="fb fb-fz fb-sm">+ Crear evento</Link>
           </div>
-          <EventosLista pid={id} />
+          <EventosLista access={access} pid={id} />
         </section>
       </Card>
       <Card>

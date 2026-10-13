@@ -4,7 +4,7 @@ import { ActionForm } from "@/components/panel/ActionForm";
 import { EventosLista } from "@/components/panel/EventosLista";
 import { Card, PanelTitle, input } from "@/components/panel/ui";
 import { ACCESO_EVENTO, CATEGORIAS, TIPOS_EVENTO, type AccesoEvento, type TipoEvento } from "@/lib/eventos-rules";
-import { can, myProductionIds } from "@/lib/panel-nav";
+import { can, hasEventoAccess, myProductionIds } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
 import { formatPerformanceDate } from "@/lib/productions";
 import { createClient } from "@/lib/supabase/server";
@@ -20,7 +20,9 @@ export default async function EventosPanel({ searchParams }: PageProps<"/panel/e
   const supabase = await createClient();
   const { data: prods } = await supabase.from("productions").select("id, nombre").order("created_at", { ascending: false });
   const obras = ((prods ?? []) as { id: string; nombre: string }[]).filter((p) => access.isDirector || (myProductionIds(access).includes(p.id) && can(access, p.id, "fanzone.editar")));
-  if (!access.isDirector && !obras.length) redirect("/panel");
+  // Puerta, taquilla o equipo de un evento (0084) entran a ver y operar sus eventos, sin crear.
+  if (!hasEventoAccess(access)) redirect("/panel");
+  const puedeCrear = access.isDirector || obras.length > 0;
   const { data: pfs } = obras.length
     ? await supabase.from("performances").select("id, production_id, starts_at").in("production_id", obras.map((o) => o.id)).not("starts_at", "is", null).order("starts_at")
     : { data: [] };
@@ -83,7 +85,7 @@ export default async function EventosPanel({ searchParams }: PageProps<"/panel/e
         Por función (foto con el elenco, tour por backstage, early access), presenciales (ensayo abierto, meet &amp; greet, showcase) o en línea (transmisión, lanzamiento, preventa). Al publicarse se avisa a los socios del Club Fan y una hora antes se recuerda a quien apartó. En la entrada se valida la credencial del Club Fan o se marca la llegada a mano.
       </PanelTitle>
 
-      <Card className="flex flex-col gap-3">
+      {puedeCrear && <Card className="flex flex-col gap-3">
         <h2 className="titular text-xl">Nuevo evento</h2>
         {bloque("funcion", (
           <>
@@ -169,11 +171,12 @@ export default async function EventosPanel({ searchParams }: PageProps<"/panel/e
             {costo}
           </>
         ))}
-      </Card>
+      </Card>}
 
       <Card className="flex flex-col gap-3">
-        <h2 className="titular text-xl">Eventos</h2>
-        <EventosLista pid={access.isDirector ? null : undefined} />
+        <h2 className="titular text-xl">{puedeCrear ? "Eventos" : "Mis eventos"}</h2>
+        {!puedeCrear && <p className="text-sm text-texto-2">Los eventos donde estás en el equipo: según tu papel validas credenciales en la entrada, revisas pagos o abres y cierras el registro.</p>}
+        <EventosLista access={access} pid={access.isDirector ? null : undefined} />
       </Card>
     </div>
   );
