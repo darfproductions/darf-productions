@@ -48,10 +48,10 @@ export default async function Eventos() {
                   <li key={e.id} className="tarjeta flex flex-col gap-2 p-5">
                     <span className={`text-sm font-bold ${st.clase}`}>{st.texto}</span>
                     <strong className="text-lg">{e.titulo}</strong>
-                    <span className="text-[12.5px] capitalize text-texto-3">{formatPerformanceDate(e.starts_at)}{e.lugar ? ` · ${e.lugar}` : ""}{e.obra ? ` · ${e.obra}` : ""}</span>
+                    <span className="text-[12.5px] text-texto-3">{formatPerformanceDate(e.starts_at)}{e.lugar ? ` · ${e.lugar}` : ""}{e.obra ? ` · ${e.obra}` : ""}</span>
                     {e.orden_codigo && <span className="font-mono text-xs text-texto-2">{e.orden_codigo}</span>}
                     {e.cancelado && e.cancelado_motivo && <p className="text-sm text-texto-2">Motivo: {e.cancelado_motivo}</p>}
-                    {!e.cancelado && e.orden_status === "pendiente" && e.orden_expira && <p className="text-sm text-aviso">Paga antes de <b>{limiteTexto(e.orden_expira)}</b>. Si no, tu lugar se libera solo.</p>}
+                    {!e.cancelado && e.orden_status === "pendiente" && e.orden_expira && <p className="text-sm text-aviso">Paga antes de <b>{limiteTexto(e.orden_expira)}</b>; si no, tu lugar se libera solo.</p>}
                     <div className="flex flex-wrap gap-2">
                       {pagar && !e.cancelado && <a href={pagar} target="_blank" rel="noopener noreferrer" className="fb fb-fz fb-sm">Pagar por WhatsApp ↗</a>}
                       {!e.cancelado && <Link href={`/eventos#e-${e.id}`} className="fb fb-o fb-sm">Ver evento</Link>}
@@ -78,7 +78,7 @@ export default async function Eventos() {
                     </div>
                     <div className="flex flex-col gap-1 px-5 py-4">
                       <strong className="text-lg">{e.obra.nombre}</strong>
-                      <span className="text-[12.5px] capitalize text-texto-3">{formatPerformanceDate(e.funcion)} · {e.boletos} {e.boletos === 1 ? "boleto" : "boletos"}</span>
+                      <span className="text-[12.5px] text-texto-3">{formatPerformanceDate(e.funcion)} · {e.boletos} {e.boletos === 1 ? "boleto" : "boletos"}</span>
                     </div>
                   </Link>
                 </li>

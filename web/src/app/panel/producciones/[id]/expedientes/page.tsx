@@ -14,6 +14,8 @@ import { createClient } from "@/lib/supabase/server";
 import { addBasicDocs, addDocType, removeDocType, saveDiscipline, saveFee } from "./actions";
 import { AjustesSeccion } from "@/components/panel/AjustesSeccion";
 import { ExpTabs } from "./ExpTabs";
+import { mayus } from "@/lib/dates";
+import { todasLasFilas } from "@/lib/supabase/paginar";
 
 export const metadata: Metadata = { title: "Expedientes" };
 
@@ -50,7 +52,7 @@ export default async function Expedientes({ params, searchParams }: PageProps<"/
     supabase.from("member_doc_types").select("id, nombre, solo_menores, obligatorio, aplica, grupo, personas, descripcion").eq("production_id", id).order("orden"),
     verExp ? supabase.from("member_docs").select("user_id, doc_type_id, archivo_path, subido_at, entregado_at").eq("production_id", id) : Promise.resolve({ data: [] }),
     supabase.from("production_fees").select("monto, desde, hasta, dia_limite, cobrar, inscripcion").eq("production_id", id).maybeSingle(),
-    verCuotas ? supabase.from("member_payments").select("user_id, periodo, monto, concepto, registrado_at, anulado_at").eq("production_id", id) : Promise.resolve({ data: [] }),
+    verCuotas ? todasLasFilas((a, b) => supabase.from("member_payments").select("user_id, periodo, monto, concepto, registrado_at, anulado_at").eq("production_id", id).order("id").range(a, b)) : Promise.resolve({ data: [] }),
     verCuotas ? supabase.from("member_fee_terms").select("user_id, beca, cuota_especial, sin_inscripcion").eq("production_id", id) : Promise.resolve({ data: [] }),
     verDisc || verCuotas ? supabase.rpc("discipline_summary", { pid: id }) : Promise.resolve({ data: [] }),
     supabase.from("production_discipline").select("*").eq("production_id", id).maybeSingle(),
@@ -260,7 +262,7 @@ export default async function Expedientes({ params, searchParams }: PageProps<"/
             </thead>
             <tbody className="divide-y divide-white/10">
               {rec.meses.map((m) => (
-                <tr key={m.mes}><td className="px-4 py-2 capitalize">{mesNombre(m.mes)}</td><td className="px-4 py-2">{pesos(m.inscripciones)}</td>
+                <tr key={m.mes}><td className="px-4 py-2">{mayus(mesNombre(m.mes))}</td><td className="px-4 py-2">{pesos(m.inscripciones)}</td>
                   <td className="px-4 py-2">{pesos(m.mensualidades)}</td><td className="px-4 py-2 font-bold">{pesos(m.total)}</td></tr>
               ))}
             </tbody>

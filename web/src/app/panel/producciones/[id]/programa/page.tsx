@@ -45,7 +45,7 @@ export default async function Programa({ params }: PageProps<"/panel/produccione
           <span className={`rounded-full px-3 py-1 font-bold ${publicado ? "bg-green-500/20 text-green-300" : "bg-white/10 text-texto-2"}`}>
             {publicado ? "Publicado" : page ? "Oculto" : "Sin crear"}
           </span>
-          <a href={`/programa/${id}`} target="_blank" rel="noreferrer" className="font-bold text-violeta-claro underline">Ver programa ↗</a>
+          {page && <a href={`/programa/${id}`} target="_blank" rel="noreferrer" className="font-bold text-violeta-claro underline">Ver programa ↗</a>}
           <ActionForm inline action={setProgramPublished} hidden={{ pid: id, publicar: publicado ? "no" : "si" }} submit={publicado ? "Ocultar" : "Publicar"} />
         </div>
       </Card>

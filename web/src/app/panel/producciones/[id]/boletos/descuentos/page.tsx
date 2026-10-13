@@ -4,7 +4,7 @@ import { ActionForm } from "@/components/panel/ActionForm";
 import { Card, input } from "@/components/panel/ui";
 import { listPerformances, listZones } from "@/lib/boleteria";
 import { isoToLocalMx } from "@/lib/dates";
-import { can } from "@/lib/panel-nav";
+import { can, salidaBoletos } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
 import { formatPerformanceDate } from "@/lib/productions";
 import { createClient } from "@/lib/supabase/server";
@@ -38,7 +38,7 @@ function CodeFields({ c, zonas, funciones }: { c?: Code; zonas: { id: string; no
       </fieldset>
       <fieldset className="flex flex-wrap gap-3 text-sm">
         <legend className="mb-1 font-semibold">Funciones (ninguna marcada = todas)</legend>
-        {funciones.map((f) => <label key={f.id} className="flex items-center gap-1.5 capitalize"><input type="checkbox" name="funcion" value={f.id} defaultChecked={c?.performance_ids.includes(f.id)} /> {formatPerformanceDate(f.starts_at)}</label>)}
+        {funciones.map((f) => <label key={f.id} className="flex items-center gap-1.5"><input type="checkbox" name="funcion" value={f.id} defaultChecked={c?.performance_ids.includes(f.id)} /> {formatPerformanceDate(f.starts_at)}</label>)}
       </fieldset>
     </>
   );
@@ -48,7 +48,7 @@ function CodeFields({ c, zonas, funciones }: { c?: Code; zonas: { id: string; no
 export default async function DiscountsPage({ params }: PageProps<"/panel/producciones/[id]/boletos/descuentos">) {
   const { id } = await params;
   const access = await requirePanel(`/panel/producciones/${id}/boletos/descuentos`);
-  if (!can(access, id, "descuentos.gestionar")) redirect(`/panel/producciones/${id}/boletos`);
+  if (!can(access, id, "descuentos.gestionar")) redirect(salidaBoletos(access, id, "boletos/descuentos"));
   const supabase = await createClient();
   const [{ data, error }, zonas, funciones] = await Promise.all([
     supabase.rpc("admin_list_discount_codes", { target_production_id: id }),

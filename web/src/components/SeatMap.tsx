@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { colorZona } from "@/lib/seatmap-rules";
+import { colorZona, textoSobre } from "@/lib/seatmap-rules";
 import { clampSeat, formatMoney, groupSeatsByRow, seatSize, ZONE_COLORS, type MapSeat } from "@/lib/tickets";
 
 export type ZonePrice = { categoryId: string; price: number; nombre: string; color?: string | null };
@@ -94,7 +94,7 @@ export function SeatMap({
                           height: size,
                           fontSize: Math.max(7, Math.round(size * 0.38)),
                           background: isSel ? "#ffffff" : isTaken ? "#3a3446" : colorByCat.get(zone!.categoryId),
-                          color: isSel ? "#0b0910" : isTaken ? "#6e6878" : "#ffffff",
+                          color: isSel ? "#0b0910" : isTaken ? "#6e6878" : textoSobre(colorByCat.get(zone!.categoryId)),
                         }}
                       >
                         {s.seat_number}

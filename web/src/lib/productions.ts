@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { themeFromKit, type KitColumns, type ProductionTheme } from "@/lib/themes";
 export { themeProblems, themeStyle, type ProductionTheme } from "@/lib/themes";
 import { clasificar, elegirPortada, ordenarObras, type ConEstado, type Featured } from "@/lib/home-rules";
+import { mayus } from "@/lib/dates";
+import { asientosOcupados } from "@/lib/ocupados";
 
 // ─── Datos de producciones ────────────────────────────────────────────────
 // Todo sale de la base (plantilla: migración 0029) con la sesión del
@@ -124,14 +126,14 @@ export async function getProduction(id: string, opts: { includeDrafts?: boolean 
 
 export function formatPerformanceDate(iso: string | null): string {
   if (!iso) return "Fecha por anunciar";
-  return new Intl.DateTimeFormat("es-MX", {
+  return mayus(new Intl.DateTimeFormat("es-MX", {
     weekday: "long",
     day: "numeric",
     month: "long",
     hour: "numeric",
     minute: "2-digit",
     timeZone: "America/Mexico_City",
-  }).format(new Date(iso));
+  }).format(new Date(iso)));
 }
 
 export function formatPrice(n: number): string {
@@ -175,7 +177,7 @@ export async function performanceOccupancy(ids: string[]): Promise<Map<string, {
     ids.map(async (id) => {
       const [cap, taken, general] = await Promise.all([
         supabase.rpc("performance_capacity", { pfid: id }),
-        supabase.rpc("get_taken_seats", { target_performance_id: id }),
+        asientosOcupados(supabase, id),
         supabase.rpc("general_availability", { target_performance_id: id }),
       ]);
       if (cap.error || taken.error || general.error) return; // sin datos: la fila no muestra estado

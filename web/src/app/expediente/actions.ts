@@ -37,7 +37,8 @@ export async function saveMemberFile(_p: FileState, f: FormData): Promise<FileSt
   if (error) return { ok: false, message: /check/.test(error.message) ? "Revisa las medidas (en centímetros)." : mensajeError(error) };
   // Si lo guarda la propia persona desde una obra, cuenta como "datos vigentes" en esa obra.
   if (f.get("confirmar") === "on") {
-    await supabase.from("member_files").upsert({ production_id: pid, user_id: uid, confirmado_at: new Date().toISOString() }, { onConflict: "production_id,user_id" });
+    const { error: e2 } = await supabase.from("member_files").upsert({ production_id: pid, user_id: uid, confirmado_at: new Date().toISOString() }, { onConflict: "production_id,user_id" });
+    if (e2) return { ok: false, message: `Tus datos se guardaron, pero no se pudo marcar como revisado en esta obra: ${mensajeError(e2)}` };
   }
   refresh(pid);
   return { ok: true, message: "Expediente guardado. Se usa en todas tus producciones." };

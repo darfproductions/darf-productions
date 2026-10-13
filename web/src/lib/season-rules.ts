@@ -8,7 +8,7 @@ export type SeasonSummary = {
   funciones: { starts_at: string | null; boletos: number; asistieron: number; ingresos: number; capacidad?: number }[];
   ventas: { ordenes: number; pendientes: number; ingresos: number; descuentos: number; ordenes_taquilla: number; boletos: number; asistieron: number };
   vendedores: { nombre: string; codigo: string; ordenes: number; monto: number }[];
-  taller: { cobrado: number; integrantes: number; activos: number };
+  taller: { cobrado: number | null; integrantes: number; activos: number };
   ensayos: { programados: number; presentes: number; faltas: number };
   elenco: Record<string, number>;
   audiciones: { convocatorias: number; solicitudes: number };

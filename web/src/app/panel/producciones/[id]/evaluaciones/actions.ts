@@ -91,12 +91,16 @@ export async function setTeacherCriteria(_p: State, f: FormData): Promise<State>
   const pid = str(f, "pid"), uid = str(f, "uid");
   const crits = f.getAll("crit").map(String).filter(Boolean);
   const supabase = await createClient();
-  const del = await supabase.from("rubric_teachers").delete().eq("production_id", pid).eq("user_id", uid);
-  if (del.error) return { ok: false, message: del.error.message };
+  // Primero agrega las nuevas y luego quita las demás: si algo falla, el maestro nunca se queda
+  // sin materias (eso lo volvería coordinador de toda la rúbrica).
   if (crits.length) {
-    const { error } = await supabase.from("rubric_teachers").insert(crits.map((c) => ({ production_id: pid, user_id: uid, criterion_id: c })));
+    const { error } = await supabase.from("rubric_teachers").upsert(crits.map((c) => ({ production_id: pid, user_id: uid, criterion_id: c })), { onConflict: "production_id,user_id,criterion_id", ignoreDuplicates: true });
     if (error) return { ok: false, message: error.message };
   }
+  let del = supabase.from("rubric_teachers").delete().eq("production_id", pid).eq("user_id", uid);
+  if (crits.length) del = del.not("criterion_id", "in", `(${crits.join(",")})`);
+  const { error: eDel } = await del;
+  if (eDel) return { ok: false, message: eDel.message };
   return done(pid, crits.length ? "Materias asignadas." : "Sin materias: este maestro coordina toda la rúbrica.");
 }
 
@@ -130,12 +134,18 @@ export async function saveEvaluation(_p: State, f: FormData): Promise<State> {
     const r = await supabase.from("rubric_scores").upsert(llenas(scores).map((s) => ({ ...s, evaluation_id: ev.id })), { onConflict: "evaluation_id,criterion_id" });
     if (r.error) return { ok: false, message: r.error.message.includes("row-level") ? "Solo puedes calificar tus materias." : r.error.message };
   }
-  if (vacias(scores).length) await supabase.from("rubric_scores").delete().eq("evaluation_id", ev.id).in("criterion_id", vacias(scores));
+  if (vacias(scores).length) {
+    const r = await supabase.from("rubric_scores").delete().eq("evaluation_id", ev.id).in("criterion_id", vacias(scores));
+    if (r.error) return { ok: false, message: r.error.message };
+  }
   if (llenas(shared).length) {
     const r = await supabase.from("rubric_shared_scores").upsert(llenas(shared).map((s) => ({ ...s, evaluation_id: ev.id, teacher_id: me.user!.id })), { onConflict: "evaluation_id,criterion_id,teacher_id" });
     if (r.error) return { ok: false, message: r.error.message };
   }
-  if (vacias(shared).length) await supabase.from("rubric_shared_scores").delete().eq("evaluation_id", ev.id).eq("teacher_id", me.user.id).in("criterion_id", vacias(shared));
+  if (vacias(shared).length) {
+    const r = await supabase.from("rubric_shared_scores").delete().eq("evaluation_id", ev.id).eq("teacher_id", me.user.id).in("criterion_id", vacias(shared));
+    if (r.error) return { ok: false, message: r.error.message };
+  }
   // Correcciones del Director general a lo de otros maestros (la base solo lo permite al Director).
   const otros = [...f.keys()].filter((k) => k.startsWith("on_")).map((k) => k.slice(3));
   for (const key of new Set(otros)) {
@@ -161,7 +171,8 @@ export async function saveEvaluation(_p: State, f: FormData): Promise<State> {
     const r = await supabase.from("rubric_notes").upsert({ evaluation_id: ev.id, teacher_id: me.user.id, comentario: nota, updated_at: new Date().toISOString() }, { onConflict: "evaluation_id,teacher_id" });
     if (r.error) return { ok: false, message: r.error.message };
   } else {
-    await supabase.from("rubric_notes").delete().eq("evaluation_id", ev.id).eq("teacher_id", me.user.id);
+    const r = await supabase.from("rubric_notes").delete().eq("evaluation_id", ev.id).eq("teacher_id", me.user.id);
+    if (r.error) return { ok: false, message: r.error.message };
   }
   revalidatePath(`/panel/producciones/${pid}/evaluaciones`, "layout");
   const next = str(f, "siguiente");

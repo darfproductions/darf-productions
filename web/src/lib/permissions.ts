@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { redirect } from "next/navigation";
 import { requireSession, type Session } from "@/lib/auth";
 import { hasAnyAccess, type PanelAccessData, type PapelEvento } from "@/lib/panel-nav";
@@ -8,6 +9,12 @@ import { createClient } from "@/lib/supabase/server";
 export type PanelAccess = PanelAccessData & { session: Session };
 
 export async function getPanelAccess(session: Session): Promise<PanelAccess> {
+  return { ...(await cargarAcceso(session.userId)), session, isDirector: session.profile?.rol === "admin" };
+}
+
+// Una sola vez por página para la misma persona (layout, encabezado y página la comparten).
+const cargarAcceso = cache(async function cargarAcceso(userId: string): Promise<Omit<PanelAccess, "session" | "isDirector">> {
+  if (!userId) return { byProduction: {}, byAudition: {}, byEvento: {} };
   const supabase = await createClient();
   const [{ data, error }, aud, ev] = await Promise.all([supabase.rpc("my_panel_access"), supabase.rpc("my_audition_access"), supabase.rpc("my_evento_access")]);
   if (error) throw new Error(`No se pudieron cargar tus permisos: ${error.message}`);
@@ -23,8 +30,8 @@ export async function getPanelAccess(session: Session): Promise<PanelAccess> {
   // Equipo propio de eventos (0084).
   const byEvento: Record<string, PapelEvento> = {};
   for (const r of (ev.data ?? []) as { encuentro_id: string; papel: PapelEvento }[]) byEvento[r.encuentro_id] = r.papel;
-  return { session, isDirector: session.profile?.rol === "admin", byProduction, byAudition, byEvento };
-}
+  return { byProduction, byAudition, byEvento };
+});
 
 /** Para páginas del panel: exige sesión y algún permiso; si no, manda a Mi cuenta. */
 export async function requirePanel(next = "/panel"): Promise<PanelAccess> {
@@ -41,13 +48,13 @@ export async function requireDirector(next: string): Promise<PanelAccess> {
   return access;
 }
 
-/** ¿La persona con sesión puede entrar al panel? (para mostrar el enlace en el menú) */
+/** ¿La persona con sesión puede entrar al panel? (para mostrar el enlace en el menú)
+ *  La misma regla que requirePanel: un staff sin permisos en ninguna obra no ve el botón. */
 export async function canSeePanel(session: Session | null): Promise<boolean> {
   if (!session) return false;
-  const rol = session.profile?.rol;
-  if (rol === "staff" || rol === "admin") return true;
-  const supabase = await createClient();
-  // Solo cuentan roles con permisos (el Integrante del elenco usa Mi cuenta, no el panel).
-  const [obra, aud, ev] = await Promise.all([supabase.rpc("my_panel_access"), supabase.rpc("my_audition_access"), supabase.rpc("my_evento_access")]);
-  return (obra.data ?? []).length + (aud.data ?? []).length + (ev.data ?? []).length > 0;
+  try {
+    return hasAnyAccess(await getPanelAccess(session));
+  } catch {
+    return false; // si fallan los permisos, la página pública sigue funcionando sin el botón
+  }
 }

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { roleDiff } from "@/lib/panel-nav";
+import { mensajeError } from "@/lib/errores";
 import { createClient } from "@/lib/supabase/server";
 
 export type MemberState = { ok: boolean; message: string } | null;
@@ -23,7 +24,7 @@ export async function addMember(_prev: MemberState, form: FormData): Promise<Mem
     const { data, error } = await supabase.rpc("panel_add_member", { pid, p_email: email, p_role: role });
     if (error) {
       revalidatePath(`/panel/producciones/${pid}`, "layout");
-      return { ok: false, message: error.message };
+      return { ok: false, message: mensajeError(error) };
     }
     (data ? nuevos : yaTenia).push(role);
   }
@@ -48,29 +49,36 @@ export async function setMemberRoles(_prev: MemberState, form: FormData): Promis
     .select("id, role_id")
     .eq("production_id", pid)
     .eq("user_id", userId);
-  if (error) return { ok: false, message: error.message };
+  if (error) return { ok: false, message: mensajeError(error) };
   const { agregar, quitar } = roleDiff((rows ?? []).map((r) => r.role_id as string), deseados);
   for (const role of agregar) {
     const { error: e } = await supabase.rpc("panel_add_member", { pid, p_email: email, p_role: role });
-    if (e) return { ok: false, message: e.message };
+    if (e) return { ok: false, message: mensajeError(e) };
   }
   if (quitar.length) {
     const ids = (rows ?? []).filter((r) => quitar.includes(r.role_id as string)).map((r) => r.id as string);
-    const { error: e } = await supabase.from("production_members").delete().in("id", ids).eq("production_id", pid);
-    if (e) return { ok: false, message: e.message };
+    const { error: e, count } = await supabase.from("production_members").delete({ count: "exact" }).in("id", ids).eq("production_id", pid);
+    if (e) return { ok: false, message: mensajeError(e) };
+    if (count !== ids.length) {
+      revalidatePath(`/panel/producciones/${pid}`, "layout");
+      return { ok: false, message: "No se pudieron quitar todos los roles: revisa tus permisos en esta obra." };
+    }
   }
   revalidatePath(`/panel/producciones/${pid}`, "layout");
   if (!agregar.length && !quitar.length) return { ok: true, message: "Sin cambios." };
   return { ok: true, message: deseados.length ? "Roles actualizados." : "Se quitó a la persona de esta obra." };
 }
 
-export async function removeMember(form: FormData): Promise<void> {
+export async function removeMember(_prev: MemberState, form: FormData): Promise<MemberState> {
   const pid = String(form.get("pid") ?? "");
   const id = String(form.get("id") ?? "");
   const supabase = await createClient();
-  // La regla RLS solo deja borrar con permisos.gestionar en la obra.
-  await supabase.from("production_members").delete().eq("id", id).eq("production_id", pid);
+  // La regla RLS solo deja borrar con permisos.gestionar en la obra: sin permiso borra 0 filas.
+  const { error, count } = await supabase.from("production_members").delete({ count: "exact" }).eq("id", id).eq("production_id", pid);
+  if (error) return { ok: false, message: mensajeError(error) };
+  if (!count) return { ok: false, message: "No tienes permiso para quitar roles en esta obra." };
   revalidatePath(`/panel/producciones/${pid}`, "layout");
+  return { ok: true, message: "Rol quitado." };
 }
 
 async function roleNames(ids: string[]): Promise<Map<string, string>> {

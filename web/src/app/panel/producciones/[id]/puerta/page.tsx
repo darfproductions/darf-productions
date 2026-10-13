@@ -44,7 +44,7 @@ export default async function DoorPage({ params }: PageProps<"/panel/produccione
               const nombre = e.titulo || e.categoria || "Evento";
               return (
                 <li key={e.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-linea px-3 py-2.5">
-                  <span><b>{nombre}</b> <span className="capitalize text-texto-3">· {formatPerformanceDate(e.cuando)}</span></span>
+                  <span><b>{nombre}</b> <span className="text-texto-3">· {formatPerformanceDate(e.cuando)}</span></span>
                   <EscanerFan pid={id} eid={e.id} titulo={nombre} botonClass="fb fb-fz fb-sm" />
                 </li>
               );

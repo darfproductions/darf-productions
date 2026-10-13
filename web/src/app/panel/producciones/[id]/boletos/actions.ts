@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { localMxToIso } from "@/lib/dates";
 import { formatMoney } from "@/lib/tickets";
 import { esMetodo } from "@/lib/ventas-rules";
+import { mensajeError } from "@/lib/errores";
 import { createClient } from "@/lib/supabase/server";
 
 // Boletería de la obra en el panel. Usa las MISMAS funciones de la base que la
@@ -232,10 +233,11 @@ export async function saveGeneralZone(_p: TicketState, f: FormData): Promise<Tic
   if (!Number.isInteger(cupo) || cupo < 1) return { ok: false, message: "El cupo debe ser un número entero mayor a 0." };
   const row = { nombre, cupo, descripcion: String(f.get("descripcion") ?? "").trim() || null, is_active: f.has("activa") ? f.getAll("activa").includes("on") : true };
   const supabase = await createClient();
-  const { error } = zid
-    ? await supabase.from("price_categories").update(row).eq("id", zid).eq("production_id", pid)
-    : await supabase.from("price_categories").insert({ ...row, production_id: pid });
-  if (error) return { ok: false, message: error.code === "23505" ? "Ya hay una zona con ese nombre." : error.message };
+  const { error, count } = zid
+    ? await supabase.from("price_categories").update(row, { count: "exact" }).eq("id", zid).eq("production_id", pid)
+    : await supabase.from("price_categories").insert({ ...row, production_id: pid }, { count: "exact" });
+  if (error) return { ok: false, message: error.code === "23505" ? "Ya hay una zona con ese nombre." : mensajeError(error) };
+  if (!count) return { ok: false, message: "No se guardó: revisa tus permisos o que la zona sea de este tipo." };
   refresh(pid);
   return { ok: true, message: zid ? "Zona guardada." : "Zona creada. Ponle precio en cada función." };
 }
@@ -277,10 +279,11 @@ export async function saveSeatZone(_p: TicketState, f: FormData): Promise<Ticket
   if (color && !/^#[0-9a-fA-F]{6}$/.test(color)) return { ok: false, message: "Color no válido." };
   const row = { nombre, color: color || null, descripcion: String(f.get("descripcion") ?? "").trim() || null };
   const supabase = await createClient();
-  const { error } = zid
-    ? await supabase.from("price_categories").update(row).eq("id", zid).eq("production_id", pid).is("cupo", null)
-    : await supabase.from("price_categories").insert({ ...row, production_id: pid });
-  if (error) return { ok: false, message: error.code === "23505" ? "Ya hay una zona con ese nombre." : error.message };
+  const { error, count } = zid
+    ? await supabase.from("price_categories").update(row, { count: "exact" }).eq("id", zid).eq("production_id", pid).is("cupo", null)
+    : await supabase.from("price_categories").insert({ ...row, production_id: pid }, { count: "exact" });
+  if (error) return { ok: false, message: error.code === "23505" ? "Ya hay una zona con ese nombre." : mensajeError(error) };
+  if (!count) return { ok: false, message: "No se guardó: revisa tus permisos o que la zona sea de este tipo." };
   refresh(pid);
   return { ok: true, message: zid ? "Zona guardada." : "Zona creada. Úsala en el mapa y ponle precio en cada función." };
 }

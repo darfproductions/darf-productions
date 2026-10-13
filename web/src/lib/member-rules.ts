@@ -1,5 +1,6 @@
 // Reglas del expediente y las mensualidades (etapa 3E, bloque 2). Puras, con pruebas.
 // La base vuelve a revisar permisos; aquí solo se calcula lo que se muestra.
+import { isoMx, partesMx } from "@/lib/dates";
 
 /** Expediente único de la persona (0042): se reusa en todas sus obras. */
 export type PersonFile = {
@@ -40,8 +41,9 @@ export function edad(nacimiento: string | null, hoy: Date = new Date()): number 
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(nacimiento ?? "");
   if (!m) return null;
   const [y, mo, d] = [Number(m[1]), Number(m[2]), Number(m[3])];
-  let e = hoy.getUTCFullYear() - y;
-  if (hoy.getUTCMonth() + 1 < mo || (hoy.getUTCMonth() + 1 === mo && hoy.getUTCDate() < d)) e--;
+  const h = partesMx(hoy);
+  let e = h.y - y;
+  if (h.m < mo || (h.m === mo && h.d < d)) e--;
   return e;
 }
 
@@ -149,7 +151,7 @@ export function mesesDePersona(desde: string, hasta: string, e?: Enrollment | nu
 /** Estado de cada mes para una persona (beca = no paga; cuota especial reemplaza el monto). */
 export function estadoCuotas(fee: Fee, persona: FeeTerms, pagos: Payment[], hoy: Date = new Date(), e?: Enrollment | null): Mes[] {
   const debe = persona.beca ? 0 : Number(persona.cuota_especial ?? fee.monto);
-  const hoyIso = hoy.toISOString().slice(0, 10);
+  const hoyIso = isoMx(hoy);
   if (fee.cobrar === false) return [];
   return mesesDePersona(fee.desde, fee.hasta, e).map((periodo) => {
     const pagado = soloMensualidad(pagos).filter((p) => p.periodo === periodo).reduce((s, p) => s + Number(p.monto), 0);
@@ -198,7 +200,7 @@ export function recaudacion(pagos: { monto: number; concepto?: string; registrad
 
 /** Cuánto debe a hoy (meses ya iniciados). */
 export function adeudo(ms: Mes[], hoy: Date = new Date()): number {
-  const hoyIso = hoy.toISOString().slice(0, 10);
+  const hoyIso = isoMx(hoy);
   return ms.filter((m) => m.periodo <= hoyIso).reduce((s, m) => s + Math.max(0, m.debe - m.pagado), 0);
 }
 

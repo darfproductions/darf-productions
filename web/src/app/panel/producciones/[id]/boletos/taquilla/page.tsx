@@ -3,7 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Card } from "@/components/panel/ui";
 import { boxOfficeData, generalAvailability, listPerformances } from "@/lib/boleteria";
-import { can } from "@/lib/panel-nav";
+import { can, salidaBoletos } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
 import { formatPerformanceDate } from "@/lib/productions";
 import { BoxOffice } from "./BoxOffice";
@@ -16,7 +16,7 @@ export default async function BoxOfficePage({ params, searchParams }: PageProps<
   const { id } = await params;
   const sp = await searchParams;
   const access = await requirePanel(`/panel/producciones/${id}/boletos/taquilla`);
-  if (!can(access, id, "ventas.operar")) redirect(`/panel/producciones/${id}/boletos`);
+  if (!can(access, id, "ventas.operar")) redirect(salidaBoletos(access, id, "boletos/taquilla"));
   // 0088: solo funciones que no han pasado (hasta 3 h después de empezar, para quien llega tarde);
   // por omisión la de hoy o la siguiente, con la misma regla que Puerta.
   const ahora = new Date();
@@ -34,7 +34,7 @@ export default async function BoxOfficePage({ params, searchParams }: PageProps<
     <>
       <div className="flex flex-wrap gap-2 text-sm">
         {funciones.map((f) => (
-          <Link key={f.id} href={`?funcion=${f.id}`} className={`rounded-full border px-3 py-1.5 font-semibold capitalize ${f.id === funcion ? "border-texto" : "border-white/20"}`}>
+          <Link key={f.id} href={`?funcion=${f.id}`} className={`rounded-full border px-3 py-1.5 font-semibold ${f.id === funcion ? "border-texto" : "border-white/20"}`}>
             {formatPerformanceDate(f.starts_at)}{f.on_sale ? "" : " · sin venta en línea"}
           </Link>
         ))}

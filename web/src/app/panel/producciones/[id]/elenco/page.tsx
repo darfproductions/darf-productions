@@ -2,7 +2,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ConfirmSubmit } from "@/components/panel/ConfirmSubmit";
 import { ImageUpload } from "@/components/panel/ImageUpload";
 import { Card, buttonGhost, input } from "@/components/panel/ui";
 import { can } from "@/lib/panel-nav";
@@ -44,6 +43,8 @@ export default async function CastEditor({ params }: PageProps<"/panel/produccio
   ]);
   const rows = (credits ?? []) as unknown as Row[];
   const armaElenco = can(access, id, "elenco.gestionar");
+  // La ficha de talento solo la abre quien arma el elenco o el Director (can_view_talent).
+  const verFicha = armaElenco || access.isDirector;
   const ofertas = armaElenco ? await listOffers(id) : [];
   const listId = "personas-darf";
 
@@ -92,28 +93,23 @@ export default async function CastEditor({ params }: PageProps<"/panel/produccio
                     </div>
                     <div className="min-w-40 flex-1">
                       <p className="font-semibold">
-                        {r.people ? <Link href={r.people.profile_id ? `/panel/talento/${r.people.profile_id}` : `/panel/talento/p/${r.people.id}`} className="hover:underline">{r.people.nombre}</Link> : "—"}
+                        {r.people ? (verFicha ? <Link href={r.people.profile_id ? `/panel/talento/${r.people.profile_id}` : `/panel/talento/p/${r.people.id}`} className="hover:underline">{r.people.nombre}</Link> : r.people.nombre) : "—"}
                         {r.people && !r.people.profile_id && <span className="ml-2 text-[10px] font-normal text-texto-3">sin cuenta</span>}
                         {!r.activo && <span className="ml-2 rounded-full bg-[#5a1a22] px-2 py-0.5 text-[10px] font-bold text-[#fecdd3]">Baja</span>}
                       </p>
                       {g.papel && (
-                        <form action={updatePapel} className="mt-1 flex max-w-sm gap-2">
-                          <input type="hidden" name="pid" value={id} />
-                          <input type="hidden" name="id" value={r.id} />
-                          <input className={`${input} min-w-0 flex-1 py-1.5 text-sm`} name="papel" defaultValue={r.papel ?? ""} aria-label={g.papel} />
-                          <button className={`${buttonGhost} py-1 text-xs`}>Guardar</button>
-                        </form>
+                        <div className="mt-1 max-w-sm">
+                          <ActionForm inline action={updatePapel} hidden={{ pid: id, id: r.id }} submit="Guardar" submitClass={`${buttonGhost} py-1 text-xs`}>
+                            <input className={`${input} min-w-0 flex-1 py-1.5 text-sm`} name="papel" defaultValue={r.papel ?? ""} aria-label={g.papel} />
+                          </ActionForm>
+                        </div>
                       )}
                     </div>
                     <ImageUpload compact productionId={id} kind="retrato" carpeta="creditos" base={r.people?.nombre ?? "retrato"} save={setCreditPhoto.bind(null, id, r.id)} label={r.foto_path ? "Cambiar foto" : "Subir foto"} />
                     <div className="flex items-center gap-1">
-                      <form action={moveCredit}><input type="hidden" name="pid" value={id} /><input type="hidden" name="id" value={r.id} /><input type="hidden" name="dir" value="up" /><button className={mini} disabled={i === 0} aria-label="Subir">↑</button></form>
-                      <form action={moveCredit}><input type="hidden" name="pid" value={id} /><input type="hidden" name="id" value={r.id} /><input type="hidden" name="dir" value="down" /><button className={mini} disabled={i === items.length - 1} aria-label="Bajar">↓</button></form>
-                      <form action={removeCredit}>
-                        <input type="hidden" name="pid" value={id} />
-                        <input type="hidden" name="id" value={r.id} />
-                        <ConfirmSubmit message={`¿Quitar a ${r.people?.nombre} de ${g.titulo.toLowerCase()}?`} className={mini}>×</ConfirmSubmit>
-                      </form>
+                      {i > 0 && <ActionForm inline action={moveCredit} hidden={{ pid: id, id: r.id, dir: "up" }} submit="↑" submitClass={mini} />}
+                      {i < items.length - 1 && <ActionForm inline action={moveCredit} hidden={{ pid: id, id: r.id, dir: "down" }} submit="↓" submitClass={mini} />}
+                      <ActionForm inline action={removeCredit} hidden={{ pid: id, id: r.id }} confirm={`¿Quitar a ${r.people?.nombre} de ${g.titulo.toLowerCase()}? Solo deja de salir en la página; si es integrante, su baja se hace en Expedientes.`} submit="×" submitClass={mini} />
                     </div>
                   </li>
                 ))}

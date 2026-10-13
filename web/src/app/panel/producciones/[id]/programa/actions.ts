@@ -64,8 +64,12 @@ export async function removeSponsor(_p: ProgState, f: FormData): Promise<ProgSta
 
 export async function setSponsorLogo(pid: string, sid: string, path: string): Promise<{ ok: boolean; message: string }> {
   const supabase = await createClient();
-  const { error } = await supabase.from("program_sponsors").update({ logo_path: path }).eq("id", sid).eq("production_id", pid);
+  const { error, count } = await supabase.from("program_sponsors").update({ logo_path: path }, { count: "exact" }).eq("id", sid).eq("production_id", pid);
   if (error) return { ok: false, message: error.message };
+  if (!count) {
+    await supabase.storage.from("producciones").remove([path]);
+    return { ok: false, message: "No tienes permiso para cambiar este logo." };
+  }
   revalidatePath(`/panel/producciones/${pid}/programa`);
   revalidatePath(`/programa/${pid}`);
   return { ok: true, message: "Logo guardado." };

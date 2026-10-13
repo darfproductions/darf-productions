@@ -1,3 +1,4 @@
+import { isoMx } from "@/lib/dates";
 import { estadoCuotas, estadoInscripcion, mesNombre, pesos, type Enrollment, type Fee, type FeeTerms, type Payment } from "@/lib/member-rules";
 
 // Recibos, adeudos y exportar (0079). Puras, con pruebas.
@@ -40,7 +41,7 @@ export function mensajeRecibo(r: Pick<Recibo, "nombre" | "folio" | "concepto" | 
 /** Lo que debe una persona a hoy: meses vencidos o pendientes ya iniciados, e inscripción. */
 export type Adeudo = { meses: { periodo: string; falta: number; vencido: boolean }[]; inscripcion: number; total: number };
 export function adeudoDetalle(fee: Fee, t: FeeTerms, pagos: Payment[], hoy: Date = new Date(), e?: Enrollment | null): Adeudo {
-  const hoyIso = hoy.toISOString().slice(0, 10);
+  const hoyIso = isoMx(hoy);
   const meses = estadoCuotas(fee, t, pagos, hoy, e)
     .filter((m) => m.periodo <= hoyIso && m.debe > m.pagado && m.estado !== "beca")
     .map((m) => ({ periodo: m.periodo, falta: m.debe - m.pagado, vencido: m.estado === "vencido" || (m.estado === "parcial" && hoyIso > `${m.periodo.slice(0, 8)}${String(fee.dia_limite).padStart(2, "0")}`) }));

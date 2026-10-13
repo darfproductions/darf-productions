@@ -7,6 +7,7 @@ import { mesNombre, pesos } from "@/lib/member-rules";
 import { can } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
 import { ExpTabs } from "../ExpTabs";
+import { mayus } from "@/lib/dates";
 
 export const metadata: Metadata = { title: "Adeudos" };
 
@@ -73,8 +74,8 @@ export default async function Adeudos({ params, searchParams }: PageProps<"/pane
                       {f.adeudo.meses.length ? (
                         <ul className="flex flex-wrap gap-1.5">
                           {f.adeudo.meses.map((m) => (
-                            <li key={m.periodo} className={`rounded-full px-2 py-0.5 text-[11px] font-bold capitalize ${m.vencido ? "bg-[#5a1a22] text-[#fecdd3]" : "bg-[#3a3346] text-texto-2"}`}>
-                              {mesNombre(m.periodo)} · {pesos(m.falta)}
+                            <li key={m.periodo} className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${m.vencido ? "bg-[#5a1a22] text-[#fecdd3]" : "bg-[#3a3346] text-texto-2"}`}>
+                              {mayus(mesNombre(m.periodo))} · {pesos(m.falta)}
                             </li>
                           ))}
                         </ul>

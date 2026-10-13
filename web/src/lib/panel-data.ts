@@ -1,3 +1,5 @@
+import { cache } from "react";
+import { redirect } from "next/navigation";
 import type { KitColumns } from "@/lib/themes";
 import { createClient } from "@/lib/supabase/server";
 
@@ -27,11 +29,11 @@ export async function listPanelProductions(ids?: string[]): Promise<PanelProduct
   return (data ?? []) as PanelProduction[];
 }
 
-export async function getPanelProduction(id: string): Promise<PanelProduction | null> {
+export const getPanelProduction = cache(async function getPanelProduction(id: string): Promise<PanelProduction | null> {
   const supabase = await createClient();
   const { data } = await supabase.from("productions").select(COLUMNS).eq("id", id).maybeSingle();
   return (data as PanelProduction | null) ?? null;
-}
+});
 
 export type Member = { id: string; user_id: string; nombre: string | null; email: string; role_id: string; role_nombre: string };
 
@@ -83,4 +85,11 @@ export async function pendingOrdersByProduction(): Promise<Map<string, number>> 
     if (pid) out.set(pid, (out.get(pid) ?? 0) + 1);
   }
   return out;
+}
+
+/** Secciones de temporada (boletería, ensayos, audiciones…): en una obra concluida regresan al Resumen,
+ *  aunque se entre por dirección (antes solo lo hacía el navegador). */
+export async function soloObraActiva(id: string): Promise<void> {
+  const p = await getPanelProduction(id);
+  if (p?.estado === "archivada") redirect(`/panel/producciones/${id}`);
 }

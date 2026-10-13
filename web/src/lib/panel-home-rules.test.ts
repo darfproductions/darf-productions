@@ -58,7 +58,7 @@ describe("fechas", () => {
     expect(cuando("2026-10-15T01:00:00Z", ahora)).toMatch(/^mié 14 oct · 19:00$/);
   });
   it("cumpleaños de la semana, sin repetir", () => {
-    const hoy = new Date(2026, 9, 12);
+    const hoy = new Date("2026-10-12T12:00:00Z");
     const xs = [
       { user_id: "a", nombre: "Ana", dia: 14, mes: 10 },
       { user_id: "b", nombre: "Beto", dia: 12, mes: 10 },

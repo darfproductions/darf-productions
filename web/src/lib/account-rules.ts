@@ -1,4 +1,5 @@
 // Mi cuenta y cumpleaños (0051). Puro, con pruebas en account-rules.test.ts.
+import { isoMx, partesMx } from "@/lib/dates";
 
 /** Mismas reglas que al registrarse: 8+ caracteres con letras y números. */
 /** Contraseñas demasiado comunes (se adivinan en segundos aunque tengan letras y números). */
@@ -26,7 +27,7 @@ export function fechaNacimientoOk(v: string, hoy: Date = new Date()): boolean {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return false;
   const d = new Date(`${v}T12:00:00Z`);
   if (Number.isNaN(d.getTime()) || d.toISOString().slice(0, 10) !== v) return false;
-  return v >= "1900-01-01" && v <= hoy.toISOString().slice(0, 10);
+  return v >= "1900-01-01" && v <= isoMx(hoy);
 }
 
 export const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
@@ -41,16 +42,16 @@ export function cumplesDelMes<T extends Cumple>(xs: T[], mes: number): T[] {
 /** Años que cumple este año (solo si se conoce el año). */
 export function cumpleAnios(nacimiento: string | null | undefined, hoy: Date = new Date()): number | null {
   if (!nacimiento) return null;
-  return hoy.getFullYear() - Number(nacimiento.slice(0, 4));
+  return partesMx(hoy).y - Number(nacimiento.slice(0, 4));
 }
 
 /** "Hoy", "Mañana", "En 5 días" o null si ya pasó este mes. */
 export function cuandoCumple(c: Pick<Cumple, "dia" | "mes">, hoy: Date = new Date()): string | null {
-  const y = hoy.getFullYear();
-  const base = new Date(y, hoy.getMonth(), hoy.getDate());
-  let d = new Date(y, c.mes - 1, c.dia);
-  if (d < base) d = new Date(y + 1, c.mes - 1, c.dia);
-  const dias = Math.round((d.getTime() - base.getTime()) / 86400000);
+  const h = partesMx(hoy);
+  const base = Date.UTC(h.y, h.m - 1, h.d);
+  let d = Date.UTC(h.y, c.mes - 1, c.dia);
+  if (d < base) d = Date.UTC(h.y + 1, c.mes - 1, c.dia);
+  const dias = Math.round((d - base) / 86400000);
   if (dias === 0) return "¡Hoy!";
   if (dias === 1) return "Mañana";
   if (dias <= 31) return `En ${dias} días`;
@@ -61,4 +62,11 @@ export function cuandoCumple(c: Pick<Cumple, "dia" | "mes">, hoy: Date = new Dat
 export function funcionPasada(startsAt: string | null, ahora: Date = new Date()): boolean {
   if (!startsAt) return false;
   return new Date(startsAt).getTime() + 6 * 3600 * 1000 < ahora.getTime();
+}
+
+/** Teléfono de contacto: 10 dígitos de México (con o sin 52/+52) o un número internacional de 10 a 13
+ *  dígitos. Se aceptan espacios, guiones y paréntesis. */
+export function telefonoOk(v: string): boolean {
+  const d = v.replace(/[\s()+.-]/g, "");
+  return /^\d{10,13}$/.test(d);
 }

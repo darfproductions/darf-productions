@@ -10,6 +10,7 @@ import { ordenarPendientes, pendienteHref, pendienteTexto } from "@/lib/panel-ho
 import { getPendientes } from "@/lib/panel-pendientes";
 import { requirePanel } from "@/lib/permissions";
 import { kitMissing } from "@/lib/themes";
+import { partesMx } from "@/lib/dates";
 
 // Resumen de la obra: estado del kit, funciones y equipo responsable.
 export default async function ProductionSummary({ params }: PageProps<"/panel/producciones/[id]">) {
@@ -25,7 +26,7 @@ export default async function ProductionSummary({ params }: PageProps<"/panel/pr
   const porHacer = ordenarPendientes(todos.filter((x) => x.production_id === id));
   if (!p) return null;
   const faltan = kitMissing(p);
-  const mes = new Date().getMonth() + 1;
+  const mes = partesMx().m;
   const cumples = can(access, id, "obra.ver")
     ? cumplesDelMes((((await (await createClient()).rpc("birthdays", { pid: id })).data ?? []) as Cumple[]), mes)
     : [];
@@ -56,14 +57,17 @@ export default async function ProductionSummary({ params }: PageProps<"/panel/pr
         ) : (
           <ul className="mt-2 flex flex-col gap-1 text-aviso">{faltan.map((f) => <li key={f}>• {f}</li>)}</ul>
         )}
-        <Link href={`/producciones/${p.id}`} className="mt-4 inline-block text-sm font-bold text-violeta-claro">Ver página pública ↗</Link>
+        {/* Una obra en borrador aún no tiene página pública (daría 404): se ve en la vista previa. */}
+        {p.estado === "borrador"
+          ? <Link href={`/vista-previa/${p.id}`} target="_blank" className="mt-4 inline-block text-sm font-bold text-violeta-claro">Vista previa ↗</Link>
+          : <Link href={`/producciones/${p.id}`} className="mt-4 inline-block text-sm font-bold text-violeta-claro">Ver página pública ↗</Link>}
       </Card>
 
       <Card>
         <p className="text-xs font-bold uppercase tracking-[0.2em] text-texto-3">Funciones</p>
         <p className="mt-2 text-2xl font-black">{funciones.total}</p>
         <p className="text-sm text-texto-2">
-          {funciones.enVenta} en venta · {funciones.proxima ? `próxima: ${formatPerformanceDate(funciones.proxima)}` : "sin próxima fecha"}
+          {funciones.enVenta} en venta · {funciones.proxima ? `próxima: ${formatPerformanceDate(funciones.proxima).toLowerCase()}` : "sin próxima fecha"}
         </p>
       </Card>
 

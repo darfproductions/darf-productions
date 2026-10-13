@@ -48,7 +48,7 @@ export default async function ApplicantPage({ params }: PageProps<"/panel/audici
           <p className="text-xl font-bold">{x.numero ? `Nº ${x.numero} · ` : ""}{x.nombre}</p>
           <p className="text-texto-2">{edad} años · <a href={`tel:${x.telefono}`} className="underline">{x.telefono}</a>{x.walk_in ? " · llegó sin cita" : ""}</p>
           <p><span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${ESTADO_SOLICITUD[x.estado]?.cls}`}>{ESTADO_SOLICITUD[x.estado]?.label}</span>{x.ronda > 1 ? ` · ronda ${x.ronda}` : ""}</p>
-          {x.audition_slots && <p className="capitalize">{formatSlot(x.audition_slots.inicia)}{x.audition_slots.sala ? ` · ${x.audition_slots.sala}` : ""}</p>}
+          {x.audition_slots && <p>{formatSlot(x.audition_slots.inicia)}{x.audition_slots.sala ? ` · ${x.audition_slots.sala}` : ""}</p>}
           {(x.roles as string[]).length > 0 && <p>Personajes: {(x.roles as string[]).map((r) => roleName.get(r)).filter(Boolean).join(", ")}</p>}
           {x.es_menor && <p className="text-aviso">Menor de edad{x.tutor_nombre ? ` · tutor: ${x.tutor_nombre} · ${x.tutor_telefono}` : " · autorización por la escuela u organización"}</p>}
           {!x.consentimiento_imagen && <p className="text-xs text-texto-3">No autorizó fotos o video.</p>}

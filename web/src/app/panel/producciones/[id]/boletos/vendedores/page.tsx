@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { ActionForm } from "@/components/panel/ActionForm";
 import { CopyLink } from "@/components/panel/CopyLink";
 import { Card, input } from "@/components/panel/ui";
-import { can } from "@/lib/panel-nav";
+import { can, salidaBoletos } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
 import { estadoVendedor, sellerPath, TIPO_VENDEDOR, type SellerRow } from "@/lib/seller-rules";
 import { createClient } from "@/lib/supabase/server";
@@ -19,7 +19,7 @@ export default async function Vendedores({ params }: PageProps<"/panel/produccio
   const { id } = await params;
   const access = await requirePanel(`/panel/producciones/${id}/boletos/vendedores`);
   const gestiona = can(access, id, "vendedores.gestionar");
-  if (!gestiona && !can(access, id, "ventas.ver")) redirect(`/panel/producciones/${id}/boletos`);
+  if (!gestiona && !can(access, id, "ventas.ver")) redirect(salidaBoletos(access, id, "boletos/vendedores"));
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("seller_list", { pid: id });
   const rows = (data ?? []) as SellerRow[];

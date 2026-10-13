@@ -206,7 +206,7 @@ export default async function PanelHome() {
         <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {obras.map((p) => {
             const t = getTheme(p);
-            const rol = access.isDirector ? "Director" : `${(access.byProduction[p.id] ?? []).length} permisos`;
+            const rol = access.isDirector ? "Director" : `${(access.byProduction[p.id] ?? []).length} ${(access.byProduction[p.id] ?? []).length === 1 ? "permiso" : "permisos"}`;
             return (
               <li key={p.id}>
                 <Link href={`/panel/producciones/${p.id}`} className="flex items-center gap-3 overflow-hidden rounded-[18px] border border-linea bg-telon pr-3 transition-transform hover:-translate-y-0.5">

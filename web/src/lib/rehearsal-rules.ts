@@ -2,6 +2,7 @@
 // quién está citado y quién toma asistencia (0043).
 
 import { TIPO_CREDITO } from "@/lib/casting-rules";
+import { mayus } from "@/lib/dates";
 
 export const ASISTENCIA: Record<string, { label: string; cls: string }> = {
   presente: { label: "Presente", cls: "bg-[#14532d] text-[#bbf7d0]" },
@@ -30,7 +31,7 @@ export function porcentaje(s: { presentes: number; retardos: number; faltas: num
 }
 
 export function fechaEnsayo(iso: string, fin?: string | null): string {
-  const f = new Intl.DateTimeFormat("es-MX", { weekday: "long", day: "numeric", month: "long", hour: "numeric", minute: "2-digit", timeZone: "America/Mexico_City" }).format(new Date(iso));
+  const f = mayus(new Intl.DateTimeFormat("es-MX", { weekday: "long", day: "numeric", month: "long", hour: "numeric", minute: "2-digit", timeZone: "America/Mexico_City" }).format(new Date(iso)));
   if (!fin) return f;
   const h = new Intl.DateTimeFormat("es-MX", { hour: "numeric", minute: "2-digit", timeZone: "America/Mexico_City" }).format(new Date(fin));
   return `${f} a ${h}`;

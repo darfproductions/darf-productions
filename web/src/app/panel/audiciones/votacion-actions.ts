@@ -67,8 +67,9 @@ export async function marcarCallback(_p: VotState, f: FormData): Promise<VotStat
   const si = todos.filter((id) => pasan.has(id));
   const no = todos.filter((id) => !pasan.has(id));
   if (si.length) {
-    const { error } = await supabase.from("audition_applications").update({ estado: "callback" }).in("id", si).eq("audition_id", aid);
+    const { error, count } = await supabase.from("audition_applications").update({ estado: "callback" }, { count: "exact" }).in("id", si).eq("audition_id", aid);
     if (error) return { ok: false, message: mensajeError(error) };
+    if (count !== si.length) return { ok: false, message: "No tienes permiso para elegir el callback de esta convocatoria." };
   }
   if (no.length) {
     const { error } = await supabase.from("audition_applications").update({ estado: "convocado" }).in("id", no).eq("audition_id", aid).eq("estado", "callback");

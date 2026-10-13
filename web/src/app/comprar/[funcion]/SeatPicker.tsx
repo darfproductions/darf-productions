@@ -10,6 +10,7 @@ import { placeOrder, type OrderResult } from "./actions";
 import { usePaso } from "@/components/PasosCompra";
 import { OrderDone } from "./OrderDone";
 import { mensajeError } from "@/lib/errores";
+import { asientosOcupados } from "@/lib/ocupados";
 
 export type { ZonePrice };
 
@@ -52,7 +53,7 @@ export function SeatPicker(props: {
     const id = setInterval(async () => {
       const sb = createClient();
       if (document.visibilityState === "hidden") return; // las vencidas las libera la base cada minuto (0068)
-      const { data } = await sb.rpc("get_taken_seats", { target_performance_id: props.performanceId });
+      const { data } = await asientosOcupados(sb, props.performanceId);
       if (!data) return;
       const ocupados = new Set(data as string[]);
       setPolled(data as string[]);

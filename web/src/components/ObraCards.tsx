@@ -5,6 +5,7 @@ import { ArtFill } from "@/components/PosterArt";
 import { lineaObra } from "@/components/ProductionCard";
 import { partesFuncion } from "@/lib/disponibilidad";
 import { formatPrice, getTheme, themeStyle, type PublicProduction } from "@/lib/productions";
+import { mayus } from "@/lib/dates";
 
 // Tarjetas de la cartelera (guía de UI · Fusión). Toman los colores de cada obra.
 
@@ -53,7 +54,7 @@ export function ObraPanoramica({ p }: { p: PublicProduction }) {
       {f && (
         <Link href={`/producciones/${p.id}#funciones`} className="glass absolute bottom-10 right-10 hidden gap-1 px-[22px] py-[18px] text-texto lg:grid">
           <span className="text-[12.5px] text-texto-3">Próxima función</span>
-          <strong className="text-lg capitalize">{f.dia} {f.numero} {f.mes} · {f.hora}</strong>
+          <strong className="text-lg">{mayus(f.dia)} {f.numero} {f.mes} · {f.hora}</strong>
         </Link>
       )}
     </article>

@@ -355,7 +355,7 @@ export async function ProductionView({
           {repertorio}
           {!c.sinopsis.length && !canciones && (
             <p className="rounded-[22px] border border-current/12 bg-obra-superficie p-6 opacity-85">
-              La sinopsis, las canciones y el elenco de esta producción se publicarán pronto.
+              Pronto publicaremos más de esta producción: sinopsis, canciones y más.
             </p>
           )}
         </div>
@@ -414,7 +414,7 @@ export async function ProductionView({
             <ul className="grid auto-rows-[150px] grid-cols-2 gap-3 md:auto-rows-[210px] md:grid-cols-4">
               {gallery.map((ph, i) => (
                 <li key={ph.id} className={`overflow-hidden rounded-[18px] ${i === 0 ? "col-span-2 row-span-2" : ""}`}>
-                  <img src={ph.url} alt="" loading="lazy" className="h-full w-full object-cover transition-transform duration-500 hover:scale-[1.04]" />
+                  <img src={ph.url} alt={`${p.nombre}: foto ${i + 1} de ${gallery.length}`} loading="lazy" className="h-full w-full object-cover transition-transform duration-500 hover:scale-[1.04]" />
                 </li>
               ))}
             </ul>

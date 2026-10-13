@@ -5,6 +5,7 @@ import { ACCEPT_EXPEDIENTE, subirAExpediente } from "@/lib/expediente-upload";
 import { fechaEnsayo } from "@/lib/rehearsal-rules";
 import { METODOS, TIPO_SOLICITUD, textoLimite, type RequestTipo } from "@/lib/request-rules";
 import { requestAbsence, submitRequest, type ReqState } from "./actions";
+import { isoMx } from "@/lib/dates";
 
 export type EnsayoOpcion = { id: string; titulo: string; inicia: string; termina: string | null; permitido: boolean; pedida: boolean };
 
@@ -94,7 +95,7 @@ function OtraForm({ pid, uid, tipo, docTipos, cuota, onDone }: { pid: string; ui
   const [subiendo, setSubiendo] = useState(false);
   const [docSel, setDocSel] = useState(docTipos[0]?.id ?? "");
   const [concepto, setConcepto] = useState<"mensualidad" | "inscripcion">("mensualidad");
-  const mesActual = new Date().toISOString().slice(0, 7);
+  const mesActual = isoMx().slice(0, 7);
   return (
     <form action={run} className="flex flex-col gap-4">
       <input type="hidden" name="pid" value={pid} />

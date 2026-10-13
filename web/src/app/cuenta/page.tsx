@@ -144,7 +144,7 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
                     ) : null}
                     <div className="min-w-0 flex-1">
                       <p className="text-lg font-bold">{nombre}</p>
-                      <p className="text-sm capitalize opacity-85">{formatPerformanceDate(o.performances?.starts_at ?? null)}</p>
+                      <p className="text-sm opacity-85">{formatPerformanceDate(o.performances?.starts_at ?? null)}</p>
                     </div>
                     <span className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-bold ${STATUS[o.status].cls}`}>{estadoOrden(o, "comprador")}</span>
                   </div>
@@ -200,7 +200,7 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
             <ul className="flex flex-col divide-y divide-white/10 text-sm">
               {notis.map((n) => (
                 <li key={n.id}>
-                  <Link href={n.href ?? "/cuenta/notificaciones"} className="flex items-start gap-3 py-2.5 hover:text-violeta-claro">
+                  <Link href={`/notificacion/${n.id}`} prefetch={false} className="flex items-start gap-3 py-2.5 hover:text-violeta-claro">
                     <span aria-hidden="true" className={`mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full ${n.read_at ? "bg-transparent" : "bg-[#a48bff]"}`} />
                     <span className="min-w-0 flex-1">
                       <span className={`block wrap-anywhere ${n.read_at ? "text-texto-3" : "font-bold"}`}>{n.titulo}</span>
@@ -235,8 +235,8 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
           })()}
           {recordatorios.map((o) => (
             <p key={o.id} role="status" className="rounded-xl border border-[#a48bff]/40 bg-[#a48bff]/10 px-4 py-3">
-              <b>{recordatorio(o.performances?.starts_at ?? null)}:</b> {o.performances?.productions?.nombre} ·{" "}
-              <span className="capitalize">{formatPerformanceDate(o.performances?.starts_at ?? null)}</span>. Toca «Ver boletos» para tener tus códigos QR a la mano.
+              <b>{recordatorio(o.performances?.starts_at ?? null)}:</b> {o.performances?.productions?.nombre} ·{""}
+              <span>{formatPerformanceDate(o.performances?.starts_at ?? null)}</span>. Toca «Ver boletos» para tener tus códigos QR a la mano.
             </p>
           ))}
           {error && <p role="alert" className="text-[#ff8fa3]">No se pudieron cargar tus boletos.</p>}
@@ -332,7 +332,7 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
                     <p className="text-xs font-bold uppercase tracking-[0.2em] text-texto-3">{o.obra}</p>
                     <p className="text-xl font-bold">{offerLabel(o)}</p>
                     {o.mensaje && <p className="mt-1 whitespace-pre-line text-texto-2">{o.mensaje}</p>}
-                    {o.responder_antes && <p className="mt-1 text-sm capitalize text-texto-2">Responde antes del {formatSlot(o.responder_antes)}</p>}
+                    {o.responder_antes && <p className="mt-1 text-sm text-texto-2">Responde antes del {formatSlot(o.responder_antes).toLowerCase()}</p>}
                   </div>
                   <OfferReplyForm id={o.id} label={`${offerLabel(o)} en ${o.obra}`} />
                 </li>
@@ -350,7 +350,7 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
                   <div>
                     <p className="text-xs font-bold uppercase tracking-[0.2em] text-texto-3">{i.obra ?? "Convocatoria DARF"}</p>
                     <p className="text-lg font-bold">{i.titulo}</p>
-                    {i.inscripcion_cierra && <p className="text-sm capitalize text-texto-2">Inscripción hasta {formatSlot(i.inscripcion_cierra)}</p>}
+                    {i.inscripcion_cierra && <p className="text-sm text-texto-2">Inscripción hasta el {formatSlot(i.inscripcion_cierra).toLowerCase()}</p>}
                   </div>
                   <Link href={`/audiciones/${i.audition_id}`} className="boton-compra rounded-full px-5 py-2.5 text-sm font-bold">Inscribirme</Link>
                 </li>
@@ -369,7 +369,7 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
                   {audQr.get(a.id) && <img src={audQr.get(a.id)} alt="QR de la audición" width={120} height={120} className="rounded-lg bg-white p-1.5" />}
                   <div className="flex flex-1 flex-col gap-1">
                     <p className="text-lg font-bold">{a.auditions?.titulo ?? "Audición"}</p>
-                    {a.audition_slots && <p className="text-sm capitalize text-texto-2">{formatSlot(a.audition_slots.inicia)}{a.audition_slots.sala ? ` · ${a.audition_slots.sala}` : ""}</p>}
+                    {a.audition_slots && <p className="text-sm text-texto-2">{formatSlot(a.audition_slots.inicia)}{a.audition_slots.sala ? ` · ${a.audition_slots.sala}` : ""}</p>}
                     <p className="text-sm">
                       {a.auditions?.estado === "cancelada"
                         ? <span className="rounded-full bg-[#5a1a22] px-2.5 py-1 text-xs font-bold text-[#fecdd3]">Convocatoria cancelada</span>

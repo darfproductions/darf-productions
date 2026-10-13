@@ -16,6 +16,8 @@ import { funcionVendible } from "@/lib/ventas-rules";
 import { GeneralPicker } from "./GeneralPicker";
 import { SeatPicker, type ZonePrice } from "./SeatPicker";
 import { mensajeError } from "@/lib/errores";
+import { todasLasFilas } from "@/lib/supabase/paginar";
+import { asientosOcupados } from "@/lib/ocupados";
 
 export const metadata: Metadata = { title: "Comprar boletos" };
 
@@ -41,8 +43,8 @@ export default async function ComprarPage({ params, searchParams }: PageProps<"/
   if (vendible && session) await supabase.rpc("expire_due_orders", { pid: p.id });
   const [seatsRes, takenRes, pricesRes] = vendible
     ? await Promise.all([
-        supabase.from("seats").select("id, seat_label, seat_row, seat_number, lado, price_category_id, is_active").eq("production_id", p.id).limit(2000),
-        supabase.rpc("get_taken_seats", { target_performance_id: f.id }),
+        todasLasFilas((a, b) => supabase.from("seats").select("id, seat_label, seat_row, seat_number, lado, price_category_id, is_active").eq("production_id", p.id).order("id").range(a, b)),
+        asientosOcupados(supabase, f.id),
         supabase.from("performance_price_categories").select("price_category_id, price, price_categories(nombre, cupo, color)").eq("performance_id", f.id),
       ])
     : [null, null, null];
@@ -67,7 +69,7 @@ export default async function ComprarPage({ params, searchParams }: PageProps<"/
   return (
     <main style={themeStyle(getTheme(p))} className="pb-10">
       <PageHeading eyebrow={`Comprar boletos · ${p.nombre}`} title={prices.length === 0 && general.length > 0 ? "Elige tus boletos" : "Elige tus asientos"}>
-        <span className="capitalize">{formatPerformanceDate(f.starts_at)}</span> · {f.venue ?? p.venue}
+        <span>{formatPerformanceDate(f.starts_at)}</span> · {f.venue ?? p.venue}
       </PageHeading>
       <div className="mx-auto max-w-[1440px] px-5 md:px-16">
         {!vendible ? (

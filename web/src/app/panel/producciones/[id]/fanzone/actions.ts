@@ -5,6 +5,7 @@ import { localMxToIso } from "@/lib/dates";
 import { FAN_CATEGORIAS, fanRow, numeroSocio } from "@/lib/fanzone-rules";
 import { horaMx, type Lectura } from "@/lib/acceso-rules";
 import { ACCESO_FAN, type AccesoFan } from "@/lib/credencial-fan-rules";
+import { mensajeError } from "@/lib/errores";
 import { createClient } from "@/lib/supabase/server";
 
 // Galería pública de la obra (tabla gallery_photos + bucket gallery, 0028).
@@ -21,16 +22,20 @@ export async function addGalleryPhoto(pid: string, path: string): Promise<{ ok: 
   return { ok: true, message: "Foto agregada a la galería." };
 }
 
-export async function removeGalleryPhoto(f: FormData): Promise<void> {
+export async function removeGalleryPhoto(_p: { ok: boolean; message: string } | null, f: FormData): Promise<{ ok: boolean; message: string } | null> {
   const pid = String(f.get("pid"));
   const id = String(f.get("id"));
   const supabase = await createClient();
   const { data } = await supabase.from("gallery_photos").select("path").eq("id", id).eq("production_id", pid).maybeSingle();
-  if (!data) return;
-  const { error } = await supabase.from("gallery_photos").delete().eq("id", id).eq("production_id", pid);
-  if (!error) await supabase.storage.from("gallery").remove([data.path as string]);
+  if (!data) return { ok: false, message: "Esa foto ya no está." };
+  // Primero el registro (con permiso); el archivo solo se borra si el registro se borró de verdad.
+  const { error, count } = await supabase.from("gallery_photos").delete({ count: "exact" }).eq("id", id).eq("production_id", pid);
+  if (error) return { ok: false, message: mensajeError(error) };
+  if (!count) return { ok: false, message: "No tienes permiso para quitar fotos de esta obra." };
+  await supabase.storage.from("gallery").remove([data.path as string]);
   revalidatePath(`/panel/producciones/${pid}/fanzone`);
   revalidatePath(`/producciones/${pid}`);
+  return { ok: true, message: "Foto quitada." };
 }
 
 // ──────── Contenidos de la Fan Zone (0052) ────────

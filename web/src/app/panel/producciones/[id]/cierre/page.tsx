@@ -33,6 +33,7 @@ export default async function Cierre({ params }: PageProps<"/panel/producciones/
   const access = await requirePanel(`/panel/producciones/${id}/cierre`);
   const cierra = can(access, id, "obra.publicar");
   if (!cierra && !can(access, id, "reportes.ver")) redirect(`/panel/producciones/${id}`);
+  const verTaller = cierra || can(access, id, "mensualidades.gestionar");
   const supabase = await createClient();
   const [p, closures, live] = await Promise.all([
     getPanelProduction(id),
@@ -57,7 +58,7 @@ export default async function Cierre({ params }: PageProps<"/panel/producciones/
             <PrintButton />
           </div>
           {vigente.notas && <p className="whitespace-pre-line rounded-lg bg-sala p-3 text-sm print:bg-transparent">{vigente.notas}</p>}
-          <SeasonSummaryView s={vigente.resumen} />
+          <SeasonSummaryView s={vigente.resumen} verTaller={verTaller} />
         </Card>
         {cierra && <Reactivar id={id} />}
       </div>
@@ -74,7 +75,7 @@ export default async function Cierre({ params }: PageProps<"/panel/producciones/
           </div>
           <PrintButton />
         </div>
-        {resumen ? <SeasonSummaryView s={resumen} /> : <p className="text-sm text-[#ff8fa3]">{live.error?.message ?? "No se pudo calcular."}</p>}
+        {resumen ? <SeasonSummaryView s={resumen} verTaller={verTaller} /> : <p className="text-sm text-[#ff8fa3]">{live.error?.message ?? "No se pudo calcular."}</p>}
       </Card>
 
       {cierra && p.estado !== "archivada" && (

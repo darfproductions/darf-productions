@@ -43,8 +43,9 @@ export async function createRehearsal(_p: RehState, f: FormData): Promise<RehSta
 export async function setRehearsalEstado(_p: RehState, f: FormData): Promise<RehState> {
   const pid = str(f, "pid");
   const supabase = await createClient();
-  const { error } = await supabase.from("rehearsals").update({ estado: str(f, "estado") }).eq("id", str(f, "id")).eq("production_id", pid);
+  const { error, count } = await supabase.from("rehearsals").update({ estado: str(f, "estado") }, { count: "exact" }).eq("id", str(f, "id")).eq("production_id", pid);
   if (error) return { ok: false, message: error.message };
+  if (!count) return { ok: false, message: "No tienes permiso para cambiar este ensayo." };
   revalidatePath(`/panel/producciones/${pid}/ensayos`, "layout");
   return { ok: true, message: str(f, "estado") === "cancelado" ? "Ensayo cancelado (los citados lo ven así)." : "Ensayo reactivado." };
 }
@@ -68,8 +69,9 @@ export async function cancelSeries(_p: RehState, f: FormData): Promise<RehState>
   const { error, count } = await supabase.from("rehearsals").update({ estado: "cancelado" }, { count: "exact" })
     .eq("production_id", pid).eq("serie_id", str(f, "serie")).gte("inicia", str(f, "desde"));
   if (error) return { ok: false, message: error.message };
+  if (!count) return { ok: false, message: "No se canceló ningún ensayo: revisa tus permisos o que la serie tenga ensayos próximos." };
   revalidatePath(`/panel/producciones/${pid}/ensayos`, "layout");
-  return { ok: true, message: `${count ?? 0} ensayos de la serie cancelados.` };
+  return { ok: true, message: `${count} ${count === 1 ? "ensayo de la serie cancelado" : "ensayos de la serie cancelados"}.` };
 }
 
 /** Con cuántas horas de anticipación se pide una falta (0070). 0 = hasta que empiece. */

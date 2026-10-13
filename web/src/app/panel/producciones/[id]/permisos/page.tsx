@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { ConfirmSubmit } from "@/components/panel/ConfirmSubmit";
+import { MiniAction } from "@/components/panel/MiniAction";
 import { Card } from "@/components/panel/ui";
 import { listMembers, listRoles } from "@/lib/panel-data";
 import { can, groupMembers } from "@/lib/panel-nav";
@@ -48,14 +48,11 @@ export default async function ProductionPermissions({ params }: PageProps<"/pane
                 <ul className="flex flex-wrap gap-2">
                   {m.roles.map((r) => (
                     <li key={r.rowId}>
-                      <form action={removeMember} className="flex items-center gap-1 rounded-full bg-telon-2 py-1 pl-3 pr-1 text-sm font-semibold">
+                      <MiniAction action={removeMember} hidden={{ pid: id, id: r.rowId }} confirm={`¿Quitar el rol ${r.role_nombre} a ${m.nombre || m.email}?`}
+                        className="flex flex-wrap items-center gap-1 rounded-full bg-telon-2 py-1 pl-3 pr-1 text-sm font-semibold"
+                        buttonClass="grid h-6 w-6 place-items-center rounded-full text-texto-3 hover:bg-white/10 hover:text-texto" label="×" ariaLabel={`Quitar ${r.role_nombre}`}>
                         {r.role_nombre}
-                        <input type="hidden" name="pid" value={id} />
-                        <input type="hidden" name="id" value={r.rowId} />
-                        <ConfirmSubmit message={`¿Quitar el rol ${r.role_nombre} a ${m.nombre || m.email}?`} className="grid h-6 w-6 place-items-center rounded-full text-texto-3 hover:bg-white/10 hover:text-texto">
-                          <span aria-label={`Quitar ${r.role_nombre}`}>×</span>
-                        </ConfirmSubmit>
-                      </form>
+                      </MiniAction>
                     </li>
                   ))}
                 </ul>

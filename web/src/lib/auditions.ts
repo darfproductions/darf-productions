@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { mayus } from "@/lib/dates";
 
 // Lecturas de audiciones (0036, 0037). Pasan por RLS: el público ve convocatorias
 // abiertas, cerradas o finalizadas; cada aspirante, solo su inscripción. Las de
@@ -110,7 +111,7 @@ export async function listMyApplications(userId: string): Promise<MyApplication[
 }
 
 export function formatSlot(iso: string): string {
-  return new Intl.DateTimeFormat("es-MX", { weekday: "long", day: "numeric", month: "long", hour: "numeric", minute: "2-digit", timeZone: "America/Mexico_City" }).format(new Date(iso));
+  return mayus(new Intl.DateTimeFormat("es-MX", { weekday: "long", day: "numeric", month: "long", hour: "numeric", minute: "2-digit", timeZone: "America/Mexico_City" }).format(new Date(iso)));
 }
 
 export type MyInvite = { audition_id: string; titulo: string; obra: string | null; inscripcion_cierra: string | null; inscrito: boolean };

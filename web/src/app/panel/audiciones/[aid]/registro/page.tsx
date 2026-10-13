@@ -91,7 +91,7 @@ export default async function DayPage({ params, searchParams }: PageProps<"/pane
           <div className="flex flex-wrap gap-2 text-xs">
             <Link href="?" className={`rounded-full border px-3 py-1.5 font-semibold ${!slot ? "border-texto" : "border-white/20"}`}>Todos ({todos.length})</Link>
             {horarios.map(([k, iso]) => (
-              <Link key={k} href={`?horario=${k}`} className={`rounded-full border px-3 py-1.5 font-semibold capitalize ${slot === k ? "border-texto" : "border-white/20"}`}>
+              <Link key={k} href={`?horario=${k}`} className={`rounded-full border px-3 py-1.5 font-semibold ${slot === k ? "border-texto" : "border-white/20"}`}>
                 {iso ? formatSlot(iso) : "Sin horario"} ({todos.filter((r) => (r.slot_id ?? "sin") === k).length})
               </Link>
             ))}
@@ -112,7 +112,7 @@ export default async function DayPage({ params, searchParams }: PageProps<"/pane
                     {r.walk_in && <span className="ml-2 text-xs text-texto-3">sin cita</span>}
                     <span className={`ml-2 rounded-full px-2 py-0.5 text-[10px] font-bold ${DAY_LABEL[st].cls}`}>{DAY_LABEL[st].label}</span>
                     <span className="block text-xs text-texto-3">
-                      {r.slot_inicia ? <span className="capitalize">{formatSlot(r.slot_inicia)}</span> : "Sin horario"}
+                      {r.slot_inicia ? <span>{formatSlot(r.slot_inicia)}</span> : "Sin horario"}
                       {r.checked_in_at && ` · llegó ${hora(r.checked_in_at)}`}
                       {r.entered_at && ` · entró ${hora(r.entered_at)}`}
                       {r.finished_at && ` · salió ${hora(r.finished_at)}${dur !== null ? ` (${dur} min)` : ""}`}

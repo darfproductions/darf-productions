@@ -20,6 +20,8 @@ import { RequestCard } from "@/components/requests/RequestCard";
 import { listRequests } from "@/lib/requests";
 import { createClient } from "@/lib/supabase/server";
 import { addIncident, addMeasure, addPayment, annulPayment, markReviewed, reactivateMember, removePayment, setDelivered, setIngreso, setScholarship, voidIncident, withdrawMember } from "../actions";
+import { isoMx } from "@/lib/dates";
+import { mayus } from "@/lib/dates";
 
 export const metadata: Metadata = { title: "Expediente" };
 
@@ -233,7 +235,7 @@ export default async function MemberPage({ params }: PageProps<"/panel/produccio
               <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                 {ms.map((m) => (
                   <li key={m.periodo} className="flex items-center justify-between rounded-lg bg-sala px-3 py-2 text-sm">
-                    <span className="capitalize">{mesNombre(m.periodo)}<span className="block text-xs text-texto-3">{pesos(m.pagado)} de {pesos(m.debe)}</span></span>
+                    <span>{mayus(mesNombre(m.periodo))}<span className="block text-xs text-texto-3">{pesos(m.pagado)} de {pesos(m.debe)}</span></span>
                     <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${MES_LABEL[m.estado].cls}`}>{MES_LABEL[m.estado].label}</span>
                   </li>
                 ))}
@@ -245,7 +247,7 @@ export default async function MemberPage({ params }: PageProps<"/panel/produccio
                     {insc.estado !== "no_aplica" && insc.estado !== "exento" && <option value="inscripcion">Inscripción</option>}
                   </select>
                   <select className={input} name="periodo" required defaultValue={ms.find((m) => m.estado !== "pagado" && m.estado !== "beca")?.periodo ?? ms[0]?.periodo} aria-label="Mes">
-                    {(ms.length ? ms.map((m) => m.periodo) : [`${new Date().toISOString().slice(0, 7)}-01`]).map((p) => <option key={p} value={p}>{mesNombre(p)}</option>)}
+                    {(ms.length ? ms.map((m) => m.periodo) : [`${isoMx().slice(0, 7)}-01`]).map((p) => <option key={p} value={p}>{mayus(mesNombre(p))}</option>)}
                   </select>
                   <input className={input} type="number" min={1} step="1" name="monto" required defaultValue={(insc.estado === "pendiente" ? insc.debe : ms[0]?.debe) || ""} placeholder="Monto" aria-label="Monto" />
                   <select className={input} name="metodo" defaultValue="efectivo" aria-label="Método">{Object.entries(METODOS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
@@ -261,7 +263,7 @@ export default async function MemberPage({ params }: PageProps<"/panel/produccio
                     return (
                       <li key={p.id} className={`flex flex-col gap-2 border-b border-white/10 py-2 ${p.anulado_at ? "opacity-70" : ""}`}>
                         <span>
-                          <span className="font-mono text-xs text-texto-3">{p.folio}</span>{" "}
+                          <span className="font-mono text-xs text-texto-3">{p.folio}</span>{""}
                           {p.anulado_at && <span className="rounded-full bg-[#5a1a22] px-2 py-0.5 text-[10px] font-bold text-[#fecdd3]">ANULADO</span>}
                           <span className="block"><b className={p.anulado_at ? "line-through" : ""}>{conceptoPago(p)}</b> · {pesos(p.monto)} · {METODOS[p.metodo]}{p.nota ? ` · ${p.nota}` : ""}</span>
                           <span className="block text-xs text-texto-3">Registrado {new Date(p.registrado_at).toLocaleString("es-MX", { timeZone: "America/Mexico_City", dateStyle: "medium", timeStyle: "short" })}{p.motivo_anulacion ? ` · Anulado: ${p.motivo_anulacion}` : ""}</span>

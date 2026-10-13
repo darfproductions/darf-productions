@@ -3,7 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Card } from "@/components/panel/ui";
 import { listOrders, listPerformances, listZones, salesSummary, seatCount, ventasActores } from "@/lib/boleteria";
-import { can } from "@/lib/panel-nav";
+import { can, salidaBoletos } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
 import { formatPerformanceDate } from "@/lib/productions";
 import { capacidadFuncion, occupancy } from "@/lib/sales";
@@ -27,24 +27,24 @@ export default async function SalesPage({ params, searchParams }: PageProps<"/pa
   const { id } = await params;
   const sp = await searchParams;
   const access = await requirePanel(`/panel/producciones/${id}/boletos`);
-  if (!can(access, id, "ventas.ver")) redirect(`/panel/producciones/${id}/boletos/funciones`);
+  if (!can(access, id, "ventas.ver")) redirect(salidaBoletos(access, id, "boletos"));
   const operar = can(access, id, "ventas.operar");
   const funcion = typeof sp.funcion === "string" ? sp.funcion : "";
   const estado = typeof sp.estado === "string" ? sp.estado : "";
+  // Desde el buscador (0085): una orden por su código, aunque sea vieja.
+  const codigo = typeof sp.codigo === "string" ? sp.codigo.trim().toUpperCase() : "";
 
   await (await createClient()).rpc("expire_due_orders", { pid: id });
   const [funciones, s, filtradas, asientos, zonas, actores] = await Promise.all([
     listPerformances(id),
     salesSummary(id),
-    listOrders(id, { funcion: funcion || undefined, estado: estado || undefined }),
+    listOrders(id, { funcion: funcion || undefined, estado: estado || undefined, codigo: codigo || undefined }),
     seatCount(id),
     listZones(id),
     ventasActores(id),
   ]);
   const quien = (uid: string | null | undefined) => (uid ? actores.get(uid) ?? "equipo" : null);
-  // Desde el buscador (0085): una orden por su código.
-  const codigo = typeof sp.codigo === "string" ? sp.codigo.trim().toUpperCase() : "";
-  const ordenes = codigo ? filtradas.filter((o) => o.order_code === codigo) : filtradas;
+  const ordenes = filtradas;
   const nombreFuncion = new Map(funciones.map((f) => [f.id, formatPerformanceDate(f.starts_at)]));
   const q = (k: string, v: string) => {
     const p = new URLSearchParams({ ...(funcion && { funcion }), ...(estado && { estado }) });
@@ -76,7 +76,7 @@ export default async function SalesPage({ params, searchParams }: PageProps<"/pa
             const v = s.porFuncion.get(f.id);
             return (
               <li key={f.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
-                <span className="font-semibold capitalize">{formatPerformanceDate(f.starts_at)}{f.on_sale ? "" : " · sin venta"}</span>
+                <span className="font-semibold">{formatPerformanceDate(f.starts_at)}{f.on_sale ? "" : " · sin venta"}</span>
                 <span className="text-texto-2">
                   Vendidos {occupancy(v?.vendidos ?? 0, capacidadFuncion(asientos, f.prices, zonas))} · apartados {v?.apartados ?? 0} · {formatMoney(v?.ingresos ?? 0)}
                 </span>
@@ -97,7 +97,7 @@ export default async function SalesPage({ params, searchParams }: PageProps<"/pa
             <span className="mx-1 text-texto-3">·</span>
             <Link href={q("funcion", "")} className={`rounded-full border px-3 py-1.5 font-semibold ${!funcion ? "border-texto" : "border-white/20"}`}>Todas las funciones</Link>
             {funciones.map((f) => (
-              <Link key={f.id} href={q("funcion", f.id)} className={`rounded-full border px-3 py-1.5 font-semibold capitalize ${funcion === f.id ? "border-texto" : "border-white/20"}`}>
+              <Link key={f.id} href={q("funcion", f.id)} className={`rounded-full border px-3 py-1.5 font-semibold ${funcion === f.id ? "border-texto" : "border-white/20"}`}>
                 {formatPerformanceDate(f.starts_at)}
               </Link>
             ))}
@@ -116,7 +116,7 @@ export default async function SalesPage({ params, searchParams }: PageProps<"/pa
                     {o.status === "pendiente" && tiempoRestante(o.expires_at ?? null) && <span className="ml-1 text-xs text-aviso">vence en {tiempoRestante(o.expires_at ?? null)}</span>}
                   </p>
                   <p className="text-sm text-texto-2">{o.buyer_nombre} · <a href={`tel:${o.buyer_telefono}`} className="underline">{o.buyer_telefono}</a></p>
-                  <p className="text-xs text-texto-3"><span className="capitalize">{nombreFuncion.get(o.performance_id)}</span> · pidió {fecha(o.created_at)}</p>
+                  <p className="text-xs text-texto-3"><span>{nombreFuncion.get(o.performance_id)}</span> · pidió {fecha(o.created_at)}</p>
                   {(o.approved_by || o.created_by_staff_id) && o.status === "aprobado" && (
                     <p className="text-xs text-texto-3">
                       {o.created_by_staff_id ? `Vendió ${quien(o.created_by_staff_id)}` : `Aprobó ${quien(o.approved_by)}`}

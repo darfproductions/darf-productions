@@ -35,7 +35,7 @@ export default async function Asistencia({ params }: PageProps<"/panel/produccio
       <div>
         <Link href={`/panel/producciones/${id}/ensayos`} className="text-sm font-bold text-violeta-claro">← Ensayos</Link>
         <p className="mt-2 text-xl font-bold">{e.titulo}{e.estado === "cancelado" && <span className="ml-2 text-sm text-[#fecdd3]">Cancelado</span>}</p>
-        <p className="text-sm capitalize text-texto-2">{fechaEnsayo(e.inicia, e.termina)}{e.lugar ? ` · ${e.lugar}` : ""} · {citados(e)}</p>
+        <p className="text-sm text-texto-2">{fechaEnsayo(e.inicia, e.termina)}{e.lugar ? ` · ${e.lugar}` : ""} · {citados(e)}</p>
         {e.notas && <p className="mt-1 whitespace-pre-line text-sm text-texto-2">{e.notas}</p>}
       </div>
       {e.estado !== "cancelado" && <CheckinGafete pid={id} rid={rid} />}

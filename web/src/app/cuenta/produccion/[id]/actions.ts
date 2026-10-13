@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getSession } from "@/lib/auth";
 import { montoValido, periodoDeMes } from "@/lib/request-rules";
 import { createClient } from "@/lib/supabase/server";
+import { mensajeError } from "@/lib/errores";
 
 // Portal del integrante: solicitudes (0070). La base valida todo (límite de la falta,
 // citado, archivo propio) y avisa a quien revisa.
@@ -69,12 +70,14 @@ export async function submitRequest(_p: ReqState, f: FormData): Promise<ReqState
 }
 
 /** Cancelar mi solicitud mientras sigue pendiente. */
-export async function cancelRequest(f: FormData): Promise<void> {
+export async function cancelRequest(_p: { ok: boolean; message: string } | null, f: FormData): Promise<{ ok: boolean; message: string } | null> {
   const session = await getSession();
-  if (!session) return;
+  if (!session) return { ok: false, message: "Tu sesión terminó. Vuelve a entrar." };
   const supabase = await createClient();
-  await supabase.rpc("request_cancel", { p_id: String(f.get("id")) });
+  const { error } = await supabase.rpc("request_cancel", { p_id: String(f.get("id")) });
+  if (error) return { ok: false, message: mensajeError(error) };
   revalidatePath(`/cuenta/produccion/${String(f.get("pid"))}`);
+  return { ok: true, message: "Solicitud cancelada." };
 }
 
 /** Marcar un comunicado como leído (la base revisa que sea para mí). */

@@ -12,6 +12,8 @@ import { capacidadFuncion, occupancy, summarizeSales } from "@/lib/sales";
 import { TIPO_VENDEDOR, type SellerRow } from "@/lib/seller-rules";
 import { createClient } from "@/lib/supabase/server";
 import { formatMoney } from "@/lib/tickets";
+import { mayus } from "@/lib/dates";
+import { todasLasFilas } from "@/lib/supabase/paginar";
 
 export const metadata: Metadata = { title: "Reportes" };
 
@@ -43,10 +45,10 @@ export default async function Reportes({ params }: PageProps<"/panel/produccione
 
   const [funciones, orders, resumen, asientos, pagos, asist, roster, auds, vend, zonas] = await Promise.all([
     verVentas ? listPerformances(id) : Promise.resolve([]),
-    verVentas ? listOrders(id) : Promise.resolve([]),
+    verVentas ? listOrders(id, { todas: true }) : Promise.resolve([]),
     verVentas ? salesSummary(id) : Promise.resolve(null),
     verVentas ? seatCount(id) : Promise.resolve(0),
-    verTaller ? supabase.from("member_payments").select("monto, concepto, registrado_at").eq("production_id", id).is("anulado_at", null) : none,
+    verTaller ? todasLasFilas((a, b) => supabase.from("member_payments").select("monto, concepto, registrado_at").eq("production_id", id).is("anulado_at", null).order("id").range(a, b)) : none,
     verAsist ? supabase.rpc("attendance_summary", { pid: id }) : none,
     verAsist ? supabase.rpc("cast_roster", { pid: id }) : none,
     verAud ? supabase.from("auditions").select("id, titulo, estado, audition_applications(estado)").eq("production_id", id).order("created_at", { ascending: false }) : none,
@@ -93,7 +95,7 @@ export default async function Reportes({ params }: PageProps<"/panel/produccione
                 const v = s.porFuncion.get(f.id);
                 return (
                   <li key={f.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
-                    <span className="font-semibold capitalize">{formatPerformanceDate(f.starts_at)}</span>
+                    <span className="font-semibold">{formatPerformanceDate(f.starts_at)}</span>
                     <span className="text-texto-2">
                       Ocupación {occupancy(v?.vendidos ?? 0, capacidadFuncion(asientos, f.prices, zonas))} · asistieron {v?.validados ?? 0} · {formatMoney(v?.ingresos ?? 0)}
                     </span>
@@ -144,7 +146,7 @@ export default async function Reportes({ params }: PageProps<"/panel/produccione
             <ul className="flex flex-col divide-y divide-white/10 text-sm">
               {rec.meses.map((m) => (
                 <li key={m.mes} className="flex justify-between gap-2 py-2">
-                  <span className="capitalize">{mesNombre(m.mes)}</span>
+                  <span>{mayus(mesNombre(m.mes))}</span>
                   <span className="text-texto-2">{pesos(m.total)}{m.inscripciones ? ` (inscripciones ${pesos(m.inscripciones)})` : ""}</span>
                 </li>
               ))}

@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { QrScanner } from "@/components/panel/QrScanner";
 import { checkIn, type CheckIn } from "./actions";
 import { etiquetaBoleto } from "./door-rules";
+import { mayus } from "@/lib/dates";
 
 const VISTA: Record<string, { bg: string; title: string }> = {
   ok: { bg: "bg-[#14532d]", title: "✓ Puede pasar" },
@@ -16,7 +17,9 @@ const VISTA: Record<string, { bg: string; title: string }> = {
 };
 
 const fecha = (iso: string) =>
-  new Intl.DateTimeFormat("es-MX", { weekday: "long", day: "numeric", month: "long", hour: "numeric", minute: "2-digit", timeZone: "America/Mexico_City" }).format(new Date(iso));
+  mayus(new Intl.DateTimeFormat("es-MX", { weekday: "long", day: "numeric", month: "long", hour: "numeric", minute: "2-digit", timeZone: "America/Mexico_City" }).format(new Date(iso)));
+
+const hora = (iso: string) => new Intl.DateTimeFormat("es-MX", { hour: "numeric", minute: "2-digit", timeZone: "America/Mexico_City" }).format(new Date(iso));
 
 // Puerta: valida boletos de la función elegida con el lector de QR del panel.
 export function DoorScanner({ funciones, inicial }: { funciones: { id: string; starts_at: string }[]; inicial: string | null }) {
@@ -28,7 +31,7 @@ export function DoorScanner({ funciones, inicial }: { funciones: { id: string; s
     <div className="flex flex-col gap-4">
       <label className="flex flex-col gap-1 text-sm font-semibold">
         Función que está entrando
-        <select value={funcion} onChange={(e) => { setFuncion(e.target.value); setRes(null); }} className="rounded-lg border border-white/10 bg-sala px-3 py-3 text-base font-bold capitalize text-texto">
+        <select value={funcion} onChange={(e) => { setFuncion(e.target.value); setRes(null); }} className="rounded-lg border border-white/10 bg-sala px-3 py-3 text-base font-bold text-texto">
           {funciones.map((f) => <option key={f.id} value={f.id}>{fecha(f.starts_at)}</option>)}
         </select>
       </label>
@@ -39,9 +42,10 @@ export function DoorScanner({ funciones, inicial }: { funciones: { id: string; s
           {"buyer_nombre" in res && res.buyer_nombre && <p className="text-lg">{res.buyer_nombre}</p>}
           {"performance_starts_at" in res && res.performance_starts_at && (
             <p className={`mt-2 ${res.result === "otra_funcion" ? "text-lg font-bold" : "text-sm opacity-90"}`}>
-              {res.result === "otra_funcion" ? "Es para: " : ""}{res.production ? `${res.production} · ` : ""}<span className="capitalize">{fecha(res.performance_starts_at)}</span>
+              {res.result === "otra_funcion" ? "Es para: " : ""}{res.production ? `${res.production} · ` : ""}<span>{fecha(res.performance_starts_at)}</span>
             </p>
           )}
+          {res.result === "ya_usado" && "checked_in_at" in res && res.checked_in_at && <p className="mt-1 text-lg font-bold">Entró a las {hora(String(res.checked_in_at))}</p>}
           {res.result === "otra_funcion" && <p className="mt-1 text-sm">No se marcó como usado. Mándalo a taquilla.</p>}
           {res.result === "error" && <p>{res.message}</p>}
         </div>

@@ -57,7 +57,7 @@ export function EncuentroCard({ e, sesion, socio, mostrarObra = true }: { e: Eve
       {accion === "pagar" && e.orden_codigo && (
         <div className="flex flex-col gap-1 rounded-[14px] border border-aviso/40 bg-aviso/10 p-3 text-[12.5px]">
           <p><b>Lugar apartado, falta tu pago.</b> Total ${Number(e.orden_monto ?? 0).toLocaleString("es-MX")} · Código <span className="font-mono font-bold">{e.orden_codigo}</span></p>
-          {e.orden_expira && <p className="text-texto-2">Paga antes de <b>{limiteTexto(e.orden_expira)}</b>. Si no, tu lugar se libera solo.</p>}
+          {e.orden_expira && <p className="text-texto-2">Paga antes de <b>{limiteTexto(e.orden_expira)}</b>; si no, tu lugar se libera solo.</p>}
         </div>
       )}
       {accion === "pagado" && <p className="text-[12.5px] font-bold text-exito">✓ Pagado · {e.orden_codigo}</p>}

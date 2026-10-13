@@ -4,6 +4,7 @@
 // formulario. Cuando se conecte una IA, este mismo contexto es lo que se le pasará.
 
 import type { EstadoPublico } from "./home-rules";
+import { conPunto } from "@/lib/dates";
 
 export type FaqItem = { id: string; pregunta: string; respuesta: string; palabras: string[]; liga: string | null };
 export type ObraInfo = {
@@ -132,7 +133,7 @@ function respuestaObra(o: ObraInfo, pregunta: string, ctx: DarfyContexto): Respu
   }
   const partes = [`${o.nombre} está en cartelera.`];
   if (o.precios && tiene(pregunta, RE_PRECIO)) partes.push(`Precios: ${o.precios}.`);
-  if (o.funciones.length) partes.push(`Próximas funciones: ${o.funciones.slice(0, 4).join("; ")}${o.funciones.length > 4 ? "; y más" : ""}.`);
+  if (o.funciones.length) partes.push(conPunto(`Próximas funciones: ${o.funciones.slice(0, 4).join("; ")}${o.funciones.length > 4 ? "; y más" : ""}`));
   if (o.precios && !tiene(pregunta, RE_PRECIO)) partes.push(`Precios: ${o.precios}.`);
   return { tipo: "dato", texto: partes.join(" "), ligas: ligaObra(o) };
 }

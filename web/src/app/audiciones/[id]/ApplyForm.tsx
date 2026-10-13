@@ -8,10 +8,11 @@ import { checkImage } from "@/lib/image-rules";
 import { createClient } from "@/lib/supabase/client";
 import { applyToAudition, type ApplyState } from "./actions";
 import { mensajeError } from "@/lib/errores";
+import { mayus } from "@/lib/dates";
 
 const field = "rounded-lg bg-sala px-3 py-3 font-normal";
 const fmt = (iso: string) =>
-  new Intl.DateTimeFormat("es-MX", { weekday: "long", day: "numeric", month: "long", hour: "numeric", minute: "2-digit", timeZone: "America/Mexico_City" }).format(new Date(iso));
+  mayus(new Intl.DateTimeFormat("es-MX", { weekday: "long", day: "numeric", month: "long", hour: "numeric", minute: "2-digit", timeZone: "America/Mexico_City" }).format(new Date(iso)));
 
 // Formulario de inscripción. Si la persona es menor (a la fecha de la audición) y la
 // convocatoria lo pide, solicita datos y autorización de su madre, padre o tutor.
@@ -104,7 +105,7 @@ export function ApplyForm(props: {
               return (
                 <label key={s.id} className={`flex items-center gap-3 rounded-lg bg-sala px-3 py-3 text-sm ${libres ? "cursor-pointer" : "opacity-50"}`}>
                   <input type="radio" name="slot_id" value={s.id} required disabled={!libres} defaultChecked={p?.slot_id === s.id} />
-                  <span><span className="font-bold capitalize">{fmt(s.inicia)}</span>{s.sala ? ` · ${s.sala}` : ""}<span className="block text-texto-3">{libres ? `${libres} lugares` : "Lleno"}</span></span>
+                  <span><span className="font-bold">{fmt(s.inicia)}</span>{s.sala ? ` · ${s.sala}` : ""}<span className="block text-texto-3">{libres ? `${libres} lugares` : "Lleno"}</span></span>
                 </label>
               );
             })}

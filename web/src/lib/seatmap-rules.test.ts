@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { colorZona, compararFilas, generarAsientos, nombreFila, resumen, validarSpec, zonaDeFila, type MapSpec } from "./seatmap-rules";
+import { colorZona, compararFilas, generarAsientos, nombreFila, resumen, textoSobre, type MapSpec, validarSpec, zonaDeFila } from "./seatmap-rules";
 
 const spec = (o: Partial<MapSpec> = {}): MapSpec => ({
   filas: "letras",
@@ -62,5 +62,13 @@ describe("validar", () => {
     expect(colorZona({ nombre: "X", color: "#000000" }, 0)).toBe("#000000");
     expect(colorZona({ nombre: "VIP" }, 3, { VIP: "#111111" })).toBe("#111111");
     expect(colorZona({ nombre: "Y" }, 1)).toBe("#14B8A6");
+  });
+});
+
+describe("texto sobre el color de la zona", () => {
+  it("negro en claros y blanco en oscuros", () => {
+    expect(textoSobre("#ffe066")).toBe("#0b0910");
+    expect(textoSobre("#340feb")).toBe("#ffffff");
+    expect(textoSobre(null)).toBe("#ffffff");
   });
 });

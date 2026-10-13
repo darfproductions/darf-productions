@@ -39,7 +39,7 @@ export default async function Transacciones() {
                   <div className="flex min-w-0 flex-col gap-1">
                     <p className="text-xs font-bold uppercase tracking-[0.16em] text-texto-3">{o.codigo} · {fecha(o.creada)}</p>
                     <p className="font-bold">{o.obra}</p>
-                    <p className="text-sm capitalize text-texto-2">{formatPerformanceDate(o.funcion)} · {o.boletos} {o.boletos === 1 ? "boleto" : "boletos"}</p>
+                    <p className="text-sm text-texto-2">{formatPerformanceDate(o.funcion)} · {o.boletos} {o.boletos === 1 ? "boleto" : "boletos"}</p>
                     {o.codigoDescuento && <p className="text-xs text-texto-3">Código {o.codigoDescuento}: −{formatMoney(o.descuento)}</p>}
                   </div>
                   <div className="flex flex-col items-start gap-1 sm:items-end">

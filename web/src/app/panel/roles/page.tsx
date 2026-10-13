@@ -94,7 +94,7 @@ export default async function RolesPage({ searchParams }: PageProps<"/panel/role
               <details>
                 <summary className="cursor-pointer">
                   <span className="font-bold">{r.nombre}</span>{chipCategoria(r.categoria)}
-                  <span className="ml-2 text-sm text-texto-3">{(grants.get(r.id)?.size ?? 0)} permisos</span>
+                  <span className="ml-2 text-sm text-texto-3">{(grants.get(r.id)?.size ?? 0)} {(grants.get(r.id)?.size ?? 0) === 1 ? "permiso" : "permisos"}</span>
                 </summary>
                 <form action={updateRoleCategoria} className="mt-4 flex flex-col gap-3">
                   <input type="hidden" name="id" value={r.id} />
@@ -125,7 +125,7 @@ export default async function RolesPage({ searchParams }: PageProps<"/panel/role
                 <p className="font-bold">{r.nombre}{chipCategoria(r.categoria)}</p>
                 <p className="text-sm text-texto-3">{r.descripcion}</p>
                 <p className="mt-2 text-sm text-texto-2">
-                  {[...(grants.get(r.id) ?? [])].map((p) => desc.get(p) ?? p).join(" · ") || "Sin permisos administrativos (portal del elenco en la etapa 3E)."}
+                  {[...(grants.get(r.id) ?? [])].map((p) => desc.get(p) ?? p).join(" · ") || "Sin permisos del panel: usa su portal en Mi cuenta."}
                 </p>
               </Card>
             </li>

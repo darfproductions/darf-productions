@@ -32,25 +32,28 @@ export async function saveFaq(_p: State, f: FormData): Promise<State> {
   if (d.liga && !d.liga.startsWith("/") && !d.liga.startsWith("https://")) return { ok: false, message: "La liga debe empezar con / o https://" };
   const supabase = await createClient();
   const id = String(f.get("id") ?? "");
-  const { error } = id ? await supabase.from("darfy_faq").update(d).eq("id", id) : await supabase.from("darfy_faq").insert(d);
+  const { error, count } = id ? await supabase.from("darfy_faq").update(d, { count: "exact" }).eq("id", id) : await supabase.from("darfy_faq").insert(d, { count: "exact" });
   if (error) return { ok: false, message: error.message };
+  if (!count) return { ok: false, message: "No se guardó: esa pregunta ya no existe o no tienes permiso." };
   if (!id && f.get("de_pendiente")) await supabase.from("darfy_unanswered").delete().eq("id", Number(f.get("de_pendiente")));
   return listo(id ? "Guardada." : "Pregunta agregada.");
 }
 
 export async function deleteFaq(_p: State, f: FormData): Promise<State> {
   const supabase = await createClient();
-  const { error } = await supabase.from("darfy_faq").delete().eq("id", String(f.get("id")));
+  const { error, count } = await supabase.from("darfy_faq").delete({ count: "exact" }).eq("id", String(f.get("id")));
   if (error) return { ok: false, message: error.message };
+  if (!count) return { ok: false, message: "No se borró: ya no existe o no tienes permiso." };
   return listo("Borrada.");
 }
 
 export async function deleteUnanswered(_p: State, f: FormData): Promise<State> {
   const supabase = await createClient();
   const id = String(f.get("id") ?? "");
-  const { error } = id === "todas"
-    ? await supabase.from("darfy_unanswered").delete().gt("id", 0)
-    : await supabase.from("darfy_unanswered").delete().eq("id", Number(id));
+  const { error, count } = id === "todas"
+    ? await supabase.from("darfy_unanswered").delete({ count: "exact" }).gt("id", 0)
+    : await supabase.from("darfy_unanswered").delete({ count: "exact" }).eq("id", Number(id));
   if (error) return { ok: false, message: error.message };
+  if (!count && id !== "todas") return { ok: false, message: "No se borró: ya no existe o no tienes permiso." };
   return listo("Listo.");
 }

@@ -77,11 +77,11 @@ do $$ declare mat uuid; mat2 uuid; n int; perf uuid; nid bigint; begin
   perform set_featured(null);
   if (select count(*) from productions where destacada) <> 0 then raise exception 'FALLO C4'; end if;
 
-  -- D1: contacto → staff global y Director, no Producción
+  -- D1: contacto → solo el Director (0090: es quien ve la bandeja); ni staff global ni Producción
   perform pg_temp.as_anon();
   insert into contact_messages (nombre, correo, mensaje) values ('Público', 'p@x.mx', 'Hola');
   perform set_config('role', 'postgres', true);
-  if pg_temp.notifs('00000000-0000-0000-0000-0000000000a1', 'contacto') <> 1 or pg_temp.notifs('00000000-0000-0000-0000-0000000000c1', 'contacto') <> 1 then raise exception 'FALLO D1a'; end if;
+  if pg_temp.notifs('00000000-0000-0000-0000-0000000000a1', 'contacto') <> 1 or pg_temp.notifs('00000000-0000-0000-0000-0000000000c1', 'contacto') <> 0 then raise exception 'FALLO D1a'; end if;
   if pg_temp.notifs('00000000-0000-0000-0000-0000000000b1', 'contacto') <> 0 then raise exception 'FALLO D1b'; end if;
 
   -- D2: orden pendiente → quien opera ventas (Producción) y Director

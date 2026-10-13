@@ -138,7 +138,7 @@ export default async function AuditionConfig({ params }: PageProps<"/panel/audic
             {a.solo_invitados
               ? "Solo estos correos pueden inscribirse. Cada persona entra con su cuenta DARF (con ese mismo correo) y ve la invitación en Mi cuenta."
               : "Convocatoria cerrada: no sale en la lista pública. Se inscribe quien tenga la liga y quien invites por correo (le llega un aviso y la ve en Mi cuenta)."}
-            {" "}Liga de inscripción: <CopyLink path={`/audiciones/${aid}`} />
+            {""}Liga de inscripción: <CopyLink path={`/audiciones/${aid}`} />
           </p>
           <ul className="flex flex-col gap-1.5">
             {(invites.data ?? []).map((i) => (
@@ -222,7 +222,7 @@ export default async function AuditionConfig({ params }: PageProps<"/panel/audic
         <ul className="flex flex-col gap-2">
           {((slots.data ?? []) as { id: string; inicia: string; sala: string | null; cupo: number; ocupados: number }[]).map((s) => (
             <li key={s.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-sala px-3 py-2 text-sm">
-              <span><b className="capitalize">{formatSlot(s.inicia)}</b>{s.sala ? ` · ${s.sala}` : ""} · {s.ocupados} de {s.cupo} ({lugares(s.cupo, s.ocupados)} libres)</span>
+              <span><b>{formatSlot(s.inicia)}</b>{s.sala ? ` · ${s.sala}` : ""} · {s.ocupados} de {s.cupo} ({lugares(s.cupo, s.ocupados)} libres)</span>
               <ActionForm inline action={removeItem} hidden={{ ...h, tabla: "audition_slots", id: s.id }} confirm={s.ocupados ? `Este horario tiene ${s.ocupados} inscritos; quedarán sin horario. ¿Quitarlo?` : "¿Quitar este horario?"} submit="Quitar" submitClass={ghost} />
             </li>
           ))}

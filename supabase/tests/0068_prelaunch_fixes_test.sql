@@ -69,7 +69,7 @@ end $$;
 -- T3: contacto con límite por correo
 do $$ declare i int; ok boolean := false; begin
   perform pg_temp.as_anon();
-  for i in 1..5 loop insert into contact_messages (nombre, correo, mensaje) values ('X', 'spam@test.local', 'hola'); end loop;
+  for i in 1..5 loop insert into contact_messages (nombre, correo, mensaje) values ('X', 'spam@test.local', 'hola ' || i); end loop;
   begin insert into contact_messages (nombre, correo, mensaje) values ('X', 'SPAM@test.local', 'hola'); exception when others then ok := true; end;
   if not ok then raise exception 'FALLO T3: sexto mensaje aceptado'; end if;
   insert into contact_messages (nombre, correo, mensaje) values ('Y', 'otro@test.local', 'hola');

@@ -57,7 +57,7 @@ export async function EventosLista({ pid, access }: { pid?: string | null; acces
             <span className="mr-1.5 rounded-full bg-oro/15 px-2 py-0.5 text-[11px] font-bold text-oro">{TIPOS_EVENTO[e.tipo].label}{e.categoria && e.titulo ? ` · ${e.categoria}` : ""}</span>
             <span className="mr-1.5 rounded-full bg-white/10 px-2 py-0.5 text-[11px] font-bold">{ACCESO_EVENTO[e.acceso].corto}</span>
             {cancelado && <span className="mr-1.5 rounded-full bg-[#5c1a26] px-2 py-0.5 text-[11px] font-bold text-[#ffb3c0]">Cancelado</span>}
-            <b className={cancelado ? "line-through opacity-70" : ""}>{nombre}</b> · <span className="capitalize">{formatPerformanceDate(e.cuando)}</span>
+            <b className={cancelado ? "line-through opacity-70" : ""}>{nombre}</b> · <span>{formatPerformanceDate(e.cuando)}</span>
             <span className="block text-xs text-texto-3">
               {pid ? "" : `${e.productions?.nombre ?? "DARF (sin obra)"} · `}
               {e.requiere_registro ? `${lista.length}${e.cupo ? ` de ${e.cupo}` : ""} registrados · registro ${e.abierto ? "abierto" : "cerrado"}` : `Sin registro${e.cupo ? ` · cupo ${e.cupo}` : ""}`}

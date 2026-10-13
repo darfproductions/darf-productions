@@ -53,7 +53,14 @@ export function DarfyChat({
     return () => window.removeEventListener("darfy:abrir", abrir);
   }, []);
 
-  if (ocultoEn.some((p) => pathname.startsWith(p))) return null;
+  // El pie de página pregunta si la burbuja está en esta página (en la compra no sale): si no, lleva a Contacto.
+  const oculto = ocultoEn.some((p) => pathname.startsWith(p));
+  useEffect(() => {
+    if (oculto) delete document.documentElement.dataset.darfy;
+    else document.documentElement.dataset.darfy = "1";
+  }, [oculto]);
+
+  if (oculto) return null;
 
   const preguntar = (q: string) => {
     const pregunta = q.trim();

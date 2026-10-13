@@ -1,6 +1,8 @@
 import type { MapSeat } from "@/lib/tickets";
 import type { SaleOrder, summarizeSales } from "@/lib/sales";
+import { todasLasFilas } from "@/lib/supabase/paginar";
 import { createClient } from "@/lib/supabase/server";
+import { asientosOcupados } from "@/lib/ocupados";
 
 // Lecturas de boletería para el panel. Pasan por RLS: cada quien ve solo su obra (0034).
 
@@ -56,18 +58,24 @@ export async function seatCount(pid: string): Promise<number> {
   return count ?? 0;
 }
 
-export async function listOrders(pid: string, opts: { funcion?: string; estado?: string } = {}): Promise<SaleOrder[]> {
+/** Órdenes de la obra, de la más nueva a la más vieja. La lista del panel muestra las 500 más
+ *  recientes (con filtros); `codigo` busca una sola en toda la historia y `todas` trae todas (Reportes). */
+export async function listOrders(pid: string, opts: { funcion?: string; estado?: string; codigo?: string; todas?: boolean } = {}): Promise<SaleOrder[]> {
   const supabase = await createClient();
   const perfIds = (await supabase.from("performances").select("id").eq("production_id", pid)).data?.map((p) => p.id as string) ?? [];
   if (!perfIds.length) return [];
-  let q = supabase
-    .from("orders")
-    .select("id, order_code, performance_id, status, buyer_nombre, buyer_telefono, total, discount_codigo, discount_amount, created_at, created_by_staff_id, expires_at, vencida_at, motivo, metodo_pago, referencia, approved_by, rejected_by, cancelada_por_comprador_at, tickets(id, is_active, checked_in_at, cancel_motivo, cancelled_by, seats(seat_label), price_categories(nombre))")
-    .in("performance_id", opts.funcion ? [opts.funcion] : perfIds)
-    .order("created_at", { ascending: false })
-    .limit(500);
-  if (opts.estado) q = q.eq("status", opts.estado);
-  const { data, error } = await q;
+  const consulta = () => {
+    let q = supabase
+      .from("orders")
+      .select("id, order_code, performance_id, status, buyer_nombre, buyer_telefono, total, discount_codigo, discount_amount, created_at, created_by_staff_id, expires_at, vencida_at, motivo, metodo_pago, referencia, approved_by, rejected_by, cancelada_por_comprador_at, tickets(id, is_active, checked_in_at, cancel_motivo, cancelled_by, seats(seat_label), price_categories(nombre))")
+      .in("performance_id", opts.funcion ? [opts.funcion] : perfIds)
+      .order("created_at", { ascending: false })
+      .order("id");
+    if (opts.estado) q = q.eq("status", opts.estado);
+    if (opts.codigo) q = q.eq("order_code", opts.codigo);
+    return q;
+  };
+  const { data, error } = opts.todas ? await todasLasFilas((a, b) => consulta().range(a, b)) : await consulta().limit(500);
   if (error) throw new Error(`No se pudieron cargar las órdenes: ${error.message}`);
   return (data ?? []).map((o) => ({
     ...(o as unknown as SaleOrder),
@@ -89,8 +97,8 @@ export async function boxOfficeData(pid: string, performanceId: string) {
   const supabase = await createClient();
   await supabase.rpc("expire_due_orders", { pid });
   const [seats, taken, prices] = await Promise.all([
-    supabase.from("seats").select("id, seat_label, seat_row, seat_number, lado, price_category_id, is_active").eq("production_id", pid).limit(2000),
-    supabase.rpc("get_taken_seats", { target_performance_id: performanceId }),
+    todasLasFilas((a, b) => supabase.from("seats").select("id, seat_label, seat_row, seat_number, lado, price_category_id, is_active").eq("production_id", pid).order("id").range(a, b)),
+    asientosOcupados(supabase, performanceId),
     supabase.from("performance_price_categories").select("price_category_id, price, price_categories(nombre, color)").eq("performance_id", performanceId),
   ]);
   return {

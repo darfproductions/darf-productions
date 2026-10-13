@@ -37,9 +37,11 @@ export async function applyToAudition(_p: ApplyState, f: FormData): Promise<Appl
   return { ok: true, message: "¡Listo! Tu inscripción quedó guardada. Tu QR para el día de la audición está abajo y en Mi cuenta." };
 }
 
-export async function cancelMyApplication(f: FormData): Promise<void> {
+export async function cancelMyApplication(_p: { ok: boolean; message: string } | null, f: FormData): Promise<{ ok: boolean; message: string } | null> {
   const supabase = await createClient();
-  await supabase.rpc("audition_cancel_mine", { app: String(f.get("app")) });
+  const { error } = await supabase.rpc("audition_cancel_mine", { app: String(f.get("app")) });
+  if (error) return { ok: false, message: mensajeError(error) };
   revalidatePath(`/audiciones/${String(f.get("aid"))}`);
   revalidatePath("/cuenta");
+  return { ok: true, message: "Inscripción cancelada." };
 }

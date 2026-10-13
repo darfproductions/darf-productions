@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { funcionPasada, cuandoCumple, cumpleAnios, cumplesDelMes, emailOk, fechaNacimientoOk, passwordOk } from "./account-rules";
+import { cuandoCumple, cumpleAnios, cumplesDelMes, emailOk, fechaNacimientoOk, funcionPasada, passwordOk, telefonoOk } from "./account-rules";
 
-const hoy = new Date(2026, 9, 12); // 12 oct 2026
+const hoy = new Date("2026-10-12T12:00:00Z"); // 12 oct 2026
 
 describe("datos de la cuenta", () => {
   it("revisa contraseña y correo", () => {
@@ -53,3 +53,13 @@ describe("funciones pasadas", () => {
     expect(funcionPasada(null, ahora)).toBe(false);
   });
 });
+
+describe("teléfono de contacto", () => {
+  it("10 dígitos, con lada o internacional", () => {
+    expect(telefonoOk("55 1234 5678")).toBe(true);
+    expect(telefonoOk("+52 (442) 123-4567")).toBe(true);
+    expect(telefonoOk("12345")).toBe(false);
+    expect(telefonoOk("hola")).toBe(false);
+  });
+});
+

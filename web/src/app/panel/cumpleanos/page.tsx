@@ -5,6 +5,7 @@ import { Card, PanelTitle } from "@/components/panel/ui";
 import { cumplesDelMes, MESES, type Cumple } from "@/lib/account-rules";
 import { requireDirector } from "@/lib/permissions";
 import { createClient } from "@/lib/supabase/server";
+import { partesMx } from "@/lib/dates";
 
 export const metadata: Metadata = { title: "Cumpleaños" };
 
@@ -12,7 +13,7 @@ export const metadata: Metadata = { title: "Cumpleaños" };
 export default async function Cumpleanos({ searchParams }: PageProps<"/panel/cumpleanos">) {
   await requireDirector("/panel/cumpleanos");
   const sp = await searchParams;
-  const actual = new Date().getMonth() + 1;
+  const actual = partesMx().m;
   const m = Number(sp.mes);
   const mes = Number.isInteger(m) && m >= 1 && m <= 12 ? m : actual;
   const supabase = await createClient();

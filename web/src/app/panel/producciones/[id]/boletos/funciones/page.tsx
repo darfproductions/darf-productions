@@ -6,7 +6,7 @@ import { Card, input } from "@/components/panel/ui";
 import { listPerformances, listZones } from "@/lib/boleteria";
 import { isoToLocalMx } from "@/lib/dates";
 import { getPanelProduction } from "@/lib/panel-data";
-import { can } from "@/lib/panel-nav";
+import { can, salidaBoletos } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
 import { formatPerformanceDate } from "@/lib/productions";
 import { createPerformance, deletePerformance, saveGeneralZone, setProductionOnSale, updatePerformance } from "../actions";
@@ -21,7 +21,7 @@ export default async function PerformancesPage({ params }: PageProps<"/panel/pro
   const access = await requirePanel(`/panel/producciones/${id}/boletos/funciones`);
   const gestionar = can(access, id, "funciones.gestionar");
   const ventas = can(access, id, "ventas.operar");
-  if (!gestionar && !ventas) redirect(`/panel/producciones/${id}/boletos`);
+  if (!gestionar && !ventas) redirect(salidaBoletos(access, id, "boletos/funciones"));
   const [p, funciones, zonas] = await Promise.all([getPanelProduction(id), listPerformances(id), listZones(id)]);
   if (!p) redirect("/panel/producciones");
 
@@ -52,7 +52,7 @@ export default async function PerformancesPage({ params }: PageProps<"/panel/pro
             <details key={f.id} id={`f-${f.id}`} open={funciones.length === 1} className="group scroll-mt-24 rounded-[22px] border border-linea bg-telon">
               <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-2 px-5 py-4">
                 <span className="flex flex-wrap items-center gap-2">
-                  <b className="capitalize">{formatPerformanceDate(f.starts_at)}</b>
+                  <b>{formatPerformanceDate(f.starts_at)}</b>
                   {f.on_sale ? <span className="rounded-full bg-[#14532d] px-2 py-0.5 text-[11px] uppercase text-[#bbf7d0]">en venta</span> : <span className="rounded-full bg-white/10 px-2 py-0.5 text-[11px] uppercase text-texto-3">sin venta</span>}
                   {f.preventa_hasta && <span className="rounded-full border border-oro/40 px-2 py-0.5 text-[11px] uppercase text-oro-claro">preventa</span>}
                   <span className="text-sm text-texto-3">{f.venue ? `${f.venue} · ` : ""}{precios.length ? `$${Math.min(...precios)}–$${Math.max(...precios)}` : "sin precios"}</span>

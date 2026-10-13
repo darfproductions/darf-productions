@@ -22,7 +22,7 @@ describe("bitácora en lenguaje sencillo", () => {
   it("cambios en una obra", () => {
     const antes = { nombre: "Mamma Mia", estado: "publicada", frase: "a", updated_at: "1" };
     expect(describeAudit({ ...base, tabla: "productions", accion: "update", antes, despues: { ...antes, estado: "archivada" } }, names)).toBe(
-      "Cambió Mamma Mia a archivada",
+      "Cambió Mamma Mia a concluida",
     );
     expect(changedFields(antes, { ...antes, frase: "b", updated_at: "2" })).toEqual(["frase"]);
   });
@@ -55,5 +55,15 @@ describe("describeAudit · ventas (0088)", () => {
     expect(describeAudit({ ...base, tabla: "orders", accion: "aprobar", despues: { order_code: "DARF-1", total: 400 } }, n)).toBe("Aprobó la orden DARF-1 de Showman por $400");
     expect(describeAudit({ ...base, tabla: "orders", accion: "cancelar_boleto", despues: { order_code: "DARF-1", lugar: "A-3", monto: 200, motivo: "Cambio" } }, n)).toBe("Canceló el boleto A-3 de la orden DARF-1 ($200) (Cambio)");
     expect(describeAudit({ ...base, tabla: "precios", accion: "precio", antes: { zona: "VIP", precio: 300 }, despues: { zona: "VIP", precio: 350 } }, n)).toBe("Cambió el precio de VIP en Showman: $300 → $350");
+  });
+});
+
+describe("bitácora de tablas sin frase propia", () => {
+  const r = (tabla: string, accion: string, production_id: string | null) =>
+    ({ id: 1, at: "", actor: null, tabla, accion, registro_id: null, production_id, antes: null, despues: null });
+  it("en español", () => {
+    expect(describeAudit(r("member_payments", "insert", "mm"), names)).toBe("Creó un pago en Mamma Mia");
+    expect(describeAudit(r("rehearsals", "delete", "mm"), names)).toBe("Borró un ensayo en Mamma Mia");
+    expect(describeAudit(r("rara", "update", null), names)).toBe("Editó un registro (rara)");
   });
 });

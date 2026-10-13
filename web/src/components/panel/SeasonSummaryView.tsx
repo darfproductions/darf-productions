@@ -15,7 +15,8 @@ function Stat({ k, v }: { k: string; v: string }) {
 const h3 = "mb-2 mt-2 font-bold";
 
 // Resumen de temporada (0053): en vivo antes de cerrar o congelado al cerrar.
-export function SeasonSummaryView({ s }: { s: SeasonSummary }) {
+/** verTaller: lo cobrado en el taller solo lo ve quien maneja mensualidades o publica la obra (no Taquilla). */
+export function SeasonSummaryView({ s, verTaller = true }: { s: SeasonSummary; verTaller?: boolean }) {
   const v = s.ventas;
   const ocup = ocupacion(v.boletos, s.asientos, s.funciones.length, s.capacidad);
   const asist = pct(v.asistieron, v.boletos);
@@ -30,7 +31,7 @@ export function SeasonSummaryView({ s }: { s: SeasonSummary }) {
         <Stat k="Ocupación" v={ocup === null ? "—" : `${ocup} %`} />
         <Stat k="Funciones" v={String(s.funciones.length)} />
         <Stat k="Descuentos dados" v={formatMoney(Number(v.descuentos))} />
-        <Stat k="Cobrado en taller" v={pesos(Number(s.taller.cobrado))} />
+        {verTaller && s.taller.cobrado != null && <Stat k="Cobrado en taller" v={pesos(Number(s.taller.cobrado))} />}
         <Stat k="Asistencia a ensayos" v={ens === null ? "—" : `${ens} %`} />
       </div>
 
@@ -39,7 +40,7 @@ export function SeasonSummaryView({ s }: { s: SeasonSummary }) {
         <ul className="flex flex-col divide-y divide-white/10 text-sm print:divide-black/10">
           {s.funciones.map((f, i) => (
             <li key={i} className="flex flex-wrap justify-between gap-2 py-1.5">
-              <span className="capitalize">{formatPerformanceDate(f.starts_at)}</span>
+              <span>{formatPerformanceDate(f.starts_at)}</span>
               <span>{f.boletos} boletos{f.capacidad ? ` de ${f.capacidad} (${pct(f.boletos, f.capacidad)} %)` : ""} · {f.asistieron} entraron · {formatMoney(Number(f.ingresos))}</span>
             </li>
           ))}

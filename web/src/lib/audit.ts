@@ -20,6 +20,22 @@ export type AuditNames = {
 };
 
 const ROL_GLOBAL: Record<string, string> = { fan: "fan", staff: "staff", admin: "Director" };
+const ESTADO_OBRA: Record<string, string> = { borrador: "borrador", publicada: "publicada", archivada: "concluida" };
+
+/** Qué es cada tabla, para los cambios que no tienen una frase propia. */
+const COSA: Record<string, [string, "o" | "a"]> = {
+  auditions: ["la convocatoria", "a"], audition_members: ["el equipo de una convocatoria", "o"], audition_invites: ["una invitación a audicionar", "a"],
+  audition_templates: ["una plantilla de convocatoria", "a"], casting_offers: ["una oferta de papel", "a"], member_docs: ["un documento del expediente", "o"],
+  member_fee_terms: ["las condiciones de pago de un integrante", "a"], production_fees: ["las mensualidades de la obra", "a"],
+  member_incidents: ["una incidencia", "a"], member_measures: ["una medida disciplinaria", "a"], production_discipline: ["las reglas de disciplina", "a"],
+  people: ["una ficha de persona", "a"], rehearsals: ["un ensayo", "o"], member_enrollment: ["la inscripción de un integrante", "a"],
+  materials: ["un material", "o"], announcements: ["un comunicado", "o"], program_pages: ["el programa de mano", "o"],
+  seller_productions: ["un vendedor", "o"], fanzone_items: ["un contenido de la Fan Zone", "o"], season_closures: ["el cierre de temporada", "o"],
+  pro_profiles: ["un perfil profesional", "o"], rubric_evaluations: ["una evaluación", "a"], rubric_periods: ["un periodo de evaluación", "o"],
+  rubric_teachers: ["las materias de un maestro", "a"], rubric_settings: ["la configuración de la rúbrica", "a"], anuncios: ["un anuncio", "o"],
+  fan_encuentros: ["un evento", "o"], member_payments: ["un pago", "o"], production_characters: ["un personaje de la obra", "o"],
+};
+const VERBO: Record<string, string> = { insert: "Creó", update: "Editó", delete: "Borró" };
 
 /** Campos de una obra que cambiaron (sin contar fechas de sistema). */
 export function changedFields(antes: Record<string, unknown> | null, despues: Record<string, unknown> | null): string[] {
@@ -50,7 +66,7 @@ export function describeAudit(r: AuditRow, n: AuditNames): string {
       if (r.accion === "insert") return `Creó la obra ${String(row.nombre)}`;
       if (r.accion === "delete") return `Eliminó la obra ${String(row.nombre)}`;
       const campos = changedFields(r.antes, r.despues);
-      if (campos.includes("estado")) return `Cambió ${String(row.nombre)} a ${String(row.estado)}`;
+      if (campos.includes("estado")) return `Cambió ${String(row.nombre)} a ${ESTADO_OBRA[String(row.estado)] ?? String(row.estado)}`;
       return campos.length
         ? `Editó ${String(row.nombre)} (${campos.join(", ")})`
         : `Guardó ${String(row.nombre)} sin cambios visibles`;
@@ -118,7 +134,12 @@ export function describeAudit(r: AuditRow, n: AuditNames): string {
       if (r.accion === "delete") return `Borró el código de descuento ${cod} en ${n.production(r.production_id)}`;
       return `Editó el código de descuento ${cod} en ${n.production(r.production_id)}`;
     }
-    default:
-      return `${r.accion} en ${r.tabla}`;
+    default: {
+      const cosa = COSA[r.tabla];
+      const donde = r.production_id ? ` en ${n.production(r.production_id)}` : "";
+      if (!cosa) return `${VERBO[r.accion] ?? "Cambió"} un registro (${r.tabla})${donde}`;
+      const verbo = r.accion === "insert" ? (cosa[0].startsWith("l") ? "Configuró" : "Creó") : VERBO[r.accion] ?? "Cambió";
+      return `${verbo} ${cosa[0]}${donde}`;
+    }
   }
 }

@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
@@ -18,8 +19,9 @@ export const RECOVERY_PATH = "/cuenta/contrasena";
 
 export type Session = { userId: string; email: string; profile: Profile | null };
 
-/** Usuario con sesión (validada contra Supabase) y su perfil; null si no hay sesión. */
-export async function getSession(): Promise<Session | null> {
+/** Usuario con sesión (validada contra Supabase) y su perfil; null si no hay sesión.
+ *  Una sola consulta por página aunque la pidan el encabezado, el layout y la página (cache de React). */
+export const getSession = cache(async function getSession(): Promise<Session | null> {
   const supabase = await createClient();
   const { data } = await supabase.auth.getUser();
   if (!data.user) return null;
@@ -29,7 +31,7 @@ export async function getSession(): Promise<Session | null> {
     .eq("id", data.user.id)
     .maybeSingle();
   return { userId: data.user.id, email: data.user.email ?? "", profile: profile as Profile | null };
-}
+});
 
 /** Para páginas que exigen sesión: si no hay, manda a /entrar y regresa después. */
 export async function requireSession(next: string): Promise<Session> {

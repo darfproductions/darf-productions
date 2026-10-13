@@ -28,7 +28,10 @@ export async function createRole(form: FormData): Promise<void> {
   if (error) back(error.code === "23505" ? "Ya existe un rol con ese nombre." : error.message);
   if (perms.length) {
     const { error: e2 } = await supabase.from("role_permissions").insert(perms.map((p) => ({ role_id: id, permission_id: p })));
-    if (e2) back(e2.message);
+    if (e2) {
+      await supabase.from("panel_roles").delete().eq("id", id);
+      back(`No se pudo crear el rol: ${e2.message}`);
+    }
   }
   revalidatePath("/panel/roles");
   back(`Rol "${nombre}" creado.`, true);
@@ -38,7 +41,8 @@ export async function updateRolePermissions(form: FormData): Promise<void> {
   const id = String(form.get("id") ?? "");
   const wanted = new Set(form.getAll("perm").map(String));
   const supabase = await createClient();
-  const { data: current } = await supabase.from("role_permissions").select("permission_id").eq("role_id", id);
+  const { data: current, error: e0 } = await supabase.from("role_permissions").select("permission_id").eq("role_id", id);
+  if (e0) back(e0.message);
   const have = new Set((current ?? []).map((r) => r.permission_id as string));
   const add = [...wanted].filter((p) => !have.has(p));
   const remove = [...have].filter((p) => !wanted.has(p));
@@ -47,8 +51,9 @@ export async function updateRolePermissions(form: FormData): Promise<void> {
     if (error) back(error.message);
   }
   if (remove.length) {
-    const { error } = await supabase.from("role_permissions").delete().eq("role_id", id).in("permission_id", remove);
+    const { error, count } = await supabase.from("role_permissions").delete({ count: "exact" }).eq("role_id", id).in("permission_id", remove);
     if (error) back(error.message);
+    if (count !== remove.length) back("No se pudieron quitar todos los permisos (los roles de sistema no se cambian).");
   }
   revalidatePath("/panel/roles");
   back("Permisos guardados.", true);

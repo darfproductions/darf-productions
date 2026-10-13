@@ -5,6 +5,7 @@ import { env } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
 import { whatsappPayUrl } from "@/lib/tickets";
 import { mensajeError } from "@/lib/errores";
+import { telefonoOk } from "@/lib/account-rules";
 
 export type OrderResult =
   | { ok: true; orderCode: string; total: number; seats: string[]; whatsappUrl: string; expiresAt: string | null }
@@ -27,6 +28,7 @@ export async function placeOrder(input: {
   const phone = input.phone.trim();
   if (!input.seatIds.length) return { ok: false, message: "Selecciona al menos un asiento." };
   if (!phone) return { ok: false, message: "Escribe tu número de teléfono." };
+  if (!telefonoOk(phone)) return { ok: false, message: "Revisa tu teléfono: escribe tus 10 dígitos (puedes incluir la lada)." };
 
   const supabase = await createClient();
   // Libera lo vencido de esa función antes de apartar (0054).
@@ -76,6 +78,7 @@ export async function placeGeneralOrder(input: {
   if (!session) return { ok: false, message: "Tu sesión expiró. Vuelve a entrar para comprar." };
   const phone = input.phone.trim();
   if (!phone) return { ok: false, message: "Escribe tu número de teléfono." };
+  if (!telefonoOk(phone)) return { ok: false, message: "Revisa tu teléfono: escribe tus 10 dígitos (puedes incluir la lada)." };
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("create_general_ticket_order", {
     target_performance_id: input.performanceId,

@@ -182,7 +182,7 @@ describe("pestañas agrupadas de la obra (0085)", () => {
   it("con pocos permisos, pocos grupos; la liga del grupo es su primera pestaña", () => {
     expect(productionGroups(puertaG, "showman").map((x) => [x.id, x.path])).toEqual([["resumen", ""], ["boletos", "puerta"]]);
     expect(productionGroups(taquillaG, "showman").map((x) => x.id)).toEqual(["resumen", "boletos", "mas"]);
-    expect(productionGroups(taquillaG, "showman").find((x) => x.id === "boletos")?.tabs.map((t) => t.id)).toEqual(["boletos", "taquilla", "vendedores"]);
+    expect(productionGroups(taquillaG, "showman").find((x) => x.id === "boletos")?.tabs.map((t) => t.id)).toEqual(["boletos", "taquilla", "funciones", "vendedores"]);
   });
   it("pestaña activa: la ruta más larga que coincide", () => {
     const g = productionGroups(directorG, "showman");

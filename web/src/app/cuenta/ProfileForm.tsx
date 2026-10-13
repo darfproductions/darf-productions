@@ -5,6 +5,7 @@ import { PasswordInput } from "@/components/PasswordInput";
 import { useActionState } from "react";
 import { Turnstile } from "@/components/Turnstile";
 import { changeEmail, changePassword, saveProfile, type ProfileState } from "./actions";
+import { isoMx } from "@/lib/dates";
 
 const field = "rounded-lg bg-sala px-3 py-3 font-normal";
 const btn = "self-start rounded-full bg-texto px-6 py-3 text-sm font-bold text-sala disabled:opacity-60";
@@ -30,7 +31,7 @@ export function ProfileForm(p: { nombres: string; apellidos: string; telefono: s
           <input className={field} name="telefono" type="tel" defaultValue={p.telefono} autoComplete="tel" />
         </label>
         <label className="flex flex-col gap-1.5 text-sm font-semibold">Fecha de nacimiento
-          <input className={field} name="fecha_nacimiento" type="date" defaultValue={p.fecha} min="1900-01-01" max={new Date().toISOString().slice(0, 10)} autoComplete="bday" />
+          <input className={field} name="fecha_nacimiento" type="date" defaultValue={p.fecha} min="1900-01-01" max={isoMx()} autoComplete="bday" />
         </label>
       </div>
       <p className="text-xs text-texto-3">Tu fecha de nacimiento es la misma de tu expediente si estás en un elenco. Tu producción solo ve el día y el mes.</p>

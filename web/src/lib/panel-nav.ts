@@ -160,11 +160,18 @@ export function boletosSubtabs(a: PanelAccessData, pid: string): SubTab[] {
   return [
     { id: "boletos", label: "Ventas y órdenes", path: "boletos", show: can(a, pid, "ventas.ver") },
     { id: "taquilla", label: "Taquilla", path: "boletos/taquilla", show: can(a, pid, "ventas.operar") },
-    { id: "funciones", label: "Funciones y precios", path: "boletos/funciones", show: can(a, pid, "funciones.gestionar") },
+    { id: "funciones", label: "Funciones y precios", path: "boletos/funciones", show: can(a, pid, "funciones.gestionar") || can(a, pid, "ventas.operar") },
     { id: "mapa", label: "Mapa de asientos", path: "boletos/mapa", show: can(a, pid, "funciones.gestionar") },
     { id: "descuentos", label: "Descuentos", path: "boletos/descuentos", show: can(a, pid, "descuentos.gestionar") },
     { id: "vendedores", label: "Vendedores", path: "boletos/vendedores", show: can(a, pid, "ventas.ver") || can(a, pid, "vendedores.gestionar") },
   ].filter((t) => t.show).map(({ id, label, path }) => ({ id, label, path }));
+}
+
+/** A dónde mandar a quien abre una página de boletería que no le toca: su primera sub-pestaña
+ *  permitida o el Resumen de la obra (nunca de regreso a /boletos, que causaba un ciclo). */
+export function salidaBoletos(a: PanelAccessData, pid: string, desde: string): string {
+  const t = boletosSubtabs(a, pid).find((x) => x.path !== desde);
+  return t ? `/panel/producciones/${pid}/${t.path}` : `/panel/producciones/${pid}`;
 }
 
 /** Grupos de pestañas que veo en una obra (solo los que tienen algo), con su primera pestaña como liga. */

@@ -10,6 +10,7 @@ import { MODALIDAD } from "@/lib/audition-rules";
 import { getProduction, getTheme, themeStyle } from "@/lib/productions";
 import { cancelMyApplication } from "./actions";
 import { ApplyForm } from "./ApplyForm";
+import { MiniAction } from "@/components/panel/MiniAction";
 
 export async function generateMetadata({ params }: PageProps<"/audiciones/[id]">): Promise<Metadata> {
   const { id } = await params;
@@ -60,11 +61,8 @@ export default async function AuditionPage({ params }: PageProps<"/audiciones/[i
                 {qr && !enLinea && <p className="text-sm text-texto-2">Muestra este QR en la mesa de registro el día de la audición.</p>}
                 {enLinea && <p className="text-sm text-texto-2">Audición en línea: el equipo revisará tus videos y te avisará el resultado aquí y en Mi cuenta.</p>}
                 {!mine.checked_in_at && ["inscrito", "convocado", "en_espera"].includes(mine.estado) && (
-                  <form action={cancelMyApplication}>
-                    <input type="hidden" name="app" value={mine.id} />
-                    <input type="hidden" name="aid" value={a.id} />
-                    <button className="mt-2 text-sm font-bold text-[#ff8fa3] underline">Cancelar mi inscripción</button>
-                  </form>
+                  <MiniAction action={cancelMyApplication} hidden={{ app: mine.id, aid: a.id }} confirm="¿Cancelar tu inscripción?" className="mt-2 flex flex-wrap items-center gap-2"
+                    buttonClass="text-sm font-bold text-[#ff8fa3] underline" label="Cancelar mi inscripción" />
                 )}
               </div>
             </div>
@@ -102,7 +100,7 @@ export default async function AuditionPage({ params }: PageProps<"/audiciones/[i
               <div><dt className="text-texto-3">Forma</dt><dd className="font-semibold">{MODALIDAD[a.modalidad]}{a.solo_invitados ? " · por invitación" : ""}</dd></div>
               {a.sede && !enLinea && <div><dt className="text-texto-3">Sede</dt><dd className="font-semibold">{a.sede}</dd></div>}
               {edades && <div><dt className="text-texto-3">Edad</dt><dd className="font-semibold">{edades}</dd></div>}
-              {a.inscripcion_cierra && <div><dt className="text-texto-3">Inscripción hasta</dt><dd className="font-semibold capitalize">{formatSlot(a.inscripcion_cierra)}</dd></div>}
+              {a.inscripcion_cierra && <div><dt className="text-texto-3">Inscripción hasta</dt><dd className="font-semibold">{formatSlot(a.inscripcion_cierra)}</dd></div>}
             </dl>
             {a.requisitos && <p className="mt-4 whitespace-pre-line text-sm text-texto-2">{a.requisitos}</p>}
           </div>

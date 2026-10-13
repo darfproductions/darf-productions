@@ -1,4 +1,5 @@
 // Inicio del panel "Tu día" (Bloque 2, migración 0061). Funciones puras: panel-home-rules.test.ts.
+import { partesMx } from "@/lib/dates";
 
 export type PendienteTipo = "ordenes" | "pagos_evento" | "solicitudes" | "solicitudes_elenco" | "ofertas" | "documentos" | "adeudos" | "decision" | "advertencias" | "evaluaciones" | "notas_equipo" | "avisos_equipo";
 /** ref_id/ref_titulo (0085): la convocatoria o el evento al que se refiere, para ir directo. */
@@ -84,11 +85,11 @@ export function cuando(iso: string, ahora: Date = new Date()): string {
 
 /** Días que faltan para el cumpleaños (0 = hoy). */
 export function diasParaCumple(c: { dia: number; mes: number }, hoy: Date = new Date()): number {
-  const y = hoy.getFullYear();
-  const base = new Date(y, hoy.getMonth(), hoy.getDate());
-  let d = new Date(y, c.mes - 1, c.dia);
-  if (d < base) d = new Date(y + 1, c.mes - 1, c.dia);
-  return Math.round((d.getTime() - base.getTime()) / 86400000);
+  const h = partesMx(hoy);
+  const base = Date.UTC(h.y, h.m - 1, h.d);
+  let d = Date.UTC(h.y, c.mes - 1, c.dia);
+  if (d < base) d = Date.UTC(h.y + 1, c.mes - 1, c.dia);
+  return Math.round((d - base) / 86400000);
 }
 
 /** Cumpleaños de los próximos `dias` días, sin repetir persona, del más cercano al más lejano. */

@@ -12,6 +12,7 @@ import { createClient } from "@/lib/supabase/server";
 import { textoLimite } from "@/lib/request-rules";
 import { avisoFaltaHoras } from "@/lib/requests";
 import { cancelSeries, createRehearsal, setAvisoHoras, setRehearsalEstado } from "./actions";
+import { isoMx } from "@/lib/dates";
 
 export const metadata: Metadata = { title: "Ensayos" };
 
@@ -34,8 +35,9 @@ export default async function Ensayos({ params }: PageProps<"/panel/producciones
   const ensayos = (reh ?? []) as Rehearsal[];
   const gente = (roster ?? []) as Roster[];
   const ahora = new Date().toISOString();
-  const proximos = ensayos.filter((r) => r.inicia >= ahora.slice(0, 10));
-  const pasados = ensayos.filter((r) => r.inicia < ahora.slice(0, 10)).reverse();
+  const hoy = isoMx();
+  const proximos = ensayos.filter((r) => isoMx(new Date(r.inicia)) >= hoy);
+  const pasados = ensayos.filter((r) => isoMx(new Date(r.inicia)) < hoy).reverse();
   const sumDe = (u: string) => ((sum ?? []) as Sum[]).find((s) => s.user_id === u);
   const h = { pid: id };
 
@@ -44,7 +46,7 @@ export default async function Ensayos({ params }: PageProps<"/panel/producciones
       <span>
         <Link href={`/panel/producciones/${id}/ensayos/${r.id}`} className="font-bold hover:underline">{r.titulo}</Link>
         {r.estado === "cancelado" && <span className="ml-2 text-xs font-bold text-[#fecdd3]">Cancelado</span>}
-        <span className="block capitalize text-texto-2">{fechaEnsayo(r.inicia, r.termina)}{r.lugar ? ` · ${r.lugar}` : ""}</span>
+        <span className="block text-texto-2">{fechaEnsayo(r.inicia, r.termina)}{r.lugar ? ` · ${r.lugar}` : ""}</span>
         <span className="block text-xs text-texto-3">Citados: {citados(r)}{r.serie_id ? " · se repite" : ""}</span>
       </span>
       <span className="flex items-center gap-2">

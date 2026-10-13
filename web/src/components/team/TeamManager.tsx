@@ -118,7 +118,7 @@ export async function TeamManager({ pid, seccion, base }: { pid: string | null; 
                     <label className="flex flex-col gap-1 text-sm font-semibold">Acuerdos <span className="font-normal text-texto-3">(uno por renglón: pendiente | responsable | fecha)</span>
                       <textarea className={`${input} min-h-20 font-mono text-xs`} name="acuerdos" defaultValue={acuerdosTexto(j.acuerdos ?? [])} placeholder="Mandar rider técnico | Staff | 20 oct" />
                     </label>
-                    <div className="flex flex-col gap-1 text-sm font-semibold">Transcript
+                    <div className="flex flex-col gap-1 text-sm font-semibold">Transcripción
                       <span className="font-normal text-texto-3">Sube el archivo (txt, pdf o Word de Zoom, Meet o Teams) o pégalo abajo.</span>
                       <TeamFileUpload pid={pid} carpeta="juntas" name="transcript_path" label={j.transcript_path ? "Reemplazar archivo" : "Subir transcript"} />
                       <textarea className={`${input} min-h-20 text-xs`} name="transcript_texto" defaultValue={j.transcript_texto ?? ""} placeholder="…o pega aquí el texto" />

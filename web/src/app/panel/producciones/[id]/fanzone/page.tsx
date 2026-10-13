@@ -1,7 +1,6 @@
 /* eslint-disable @next/next/no-img-element -- fotos desde Storage */
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { ConfirmSubmit } from "@/components/panel/ConfirmSubmit";
 import { ImageUpload } from "@/components/panel/ImageUpload";
 import { Card, input } from "@/components/panel/ui";
 import { ActionForm } from "@/components/panel/ActionForm";
@@ -15,6 +14,7 @@ import { addGalleryPhoto, moveFanzoneItem, removeFanzoneItem, removeGalleryPhoto
 import { FanzoneForm } from "./FanzoneForm";
 import Link from "next/link";
 import { EventosLista } from "@/components/panel/EventosLista";
+import { MiniAction } from "@/components/panel/MiniAction";
 
 const small = "rounded-full border border-white/25 px-2.5 py-1 text-xs font-bold hover:border-white/50 disabled:opacity-60";
 
@@ -50,7 +50,7 @@ export default async function FanZoneEditor({ params }: PageProps<"/panel/produc
                   {!it.visible && <span className="ml-2 rounded-full bg-white/10 px-2 py-0.5 text-[11px] font-bold">Oculto</span>}
                   <span className="block truncate text-xs text-texto-3">
                     {FAN_CATEGORIAS[it.categoria]} · {FAN_TIPOS[it.tipo].label}
-                    {it.disponible_desde && ` · 🔒 hasta ${formatPerformanceDate(it.disponible_desde)}`}
+                    {it.disponible_desde && ` · 🔒 hasta el ${formatPerformanceDate(it.disponible_desde).toLowerCase()}`}
                     {it.url && ` · ${dominio(it.url)}`}
                     {it.archivo_url && <> · <a href={it.archivo_url} target="_blank" rel="noreferrer" className="underline">ver archivo</a></>}
                     {it.youtube_id && <> · <a href={`https://youtu.be/${it.youtube_id}`} target="_blank" rel="noreferrer" className="underline">ver video</a></>}
@@ -109,11 +109,9 @@ export default async function FanZoneEditor({ params }: PageProps<"/panel/produc
             {gallery.map((ph) => (
               <li key={ph.id} className="relative overflow-hidden rounded-xl">
                 <img src={ph.url} alt="" className="aspect-[4/3] w-full object-cover" />
-                <form action={removeGalleryPhoto} className="absolute right-2 top-2">
-                  <input type="hidden" name="pid" value={id} />
-                  <input type="hidden" name="id" value={ph.id} />
-                  <ConfirmSubmit message="¿Quitar esta foto de la galería?" className="grid h-8 w-8 place-items-center rounded-full bg-black/70 text-sm font-bold text-white">×</ConfirmSubmit>
-                </form>
+                <MiniAction action={removeGalleryPhoto} hidden={{ pid: id, id: ph.id }} confirm="¿Quitar esta foto de la galería?"
+                  className="absolute right-2 top-2 flex flex-col items-end gap-1" label="×" ariaLabel="Quitar foto"
+                  buttonClass="grid h-8 w-8 place-items-center rounded-full bg-black/70 text-sm font-bold text-white" />
               </li>
             ))}
           </ul>

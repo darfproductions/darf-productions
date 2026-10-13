@@ -43,13 +43,13 @@ export default async function Artista({ params }: PageProps<"/artistas/[slug]">)
             {pro.instagram && <a href={`https://instagram.com/${pro.instagram}`} target="_blank" rel="noreferrer" className="rounded-full border border-white/25 px-4 py-2">Instagram ↗</a>}
             {pro.tiktok && <a href={`https://tiktok.com/@${pro.tiktok}`} target="_blank" rel="noreferrer" className="rounded-full border border-white/25 px-4 py-2">TikTok ↗</a>}
             {pro.youtube && <a href={pro.youtube} target="_blank" rel="noreferrer" className="rounded-full border border-white/25 px-4 py-2">YouTube ↗</a>}
-            {pro.reel_url && !reel && <a href={pro.reel_url} target="_blank" rel="noreferrer" className="rounded-full border border-white/25 px-4 py-2">Reel ↗</a>}
+            {pro.reel_url && !reel && <a href={pro.reel_url} target="_blank" rel="noreferrer" className="rounded-full border border-white/25 px-4 py-2">Video de muestra ↗</a>}
           </div>
         </div>
       </section>
 
       <div className="mx-auto mt-12 flex max-w-[1100px] flex-col gap-12 px-5 md:px-16">
-        {reel && <section><h2 className="titular mb-4 text-2xl">Reel</h2><YouTube id={reel} title={`Reel de ${nombre}`} /></section>}
+        {reel && <section><h2 className="titular mb-4 text-2xl">Video de muestra</h2><YouTube id={reel} title={`Video de muestra de ${nombre}`} /></section>}
 
         {obras.length > 0 && (
           <section>

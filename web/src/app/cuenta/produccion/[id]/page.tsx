@@ -19,12 +19,14 @@ import { METODOS, conceptoPago } from "@/lib/pago-rules";
 import { ASISTENCIA, fechaEnsayo, type Rehearsal } from "@/lib/rehearsal-rules";
 import { TIPO_MATERIAL, porCarpeta, signMaterials, type Material } from "@/lib/materials";
 import { RequestCard } from "@/components/requests/RequestCard";
-import { ConfirmSubmit } from "@/components/panel/ConfirmSubmit";
 import { avisoFaltaHoras, listRequests } from "@/lib/requests";
 import { puedeAvisarFalta, textoLimite, type RequestTipo } from "@/lib/request-rules";
 import { cancelRequest, markRead } from "./actions";
 import { RequestForm, type EnsayoOpcion } from "./RequestForm";
 import { createClient } from "@/lib/supabase/server";
+import { isoMx, partesMx } from "@/lib/dates";
+import { mayus } from "@/lib/dates";
+import { MiniAction } from "@/components/panel/MiniAction";
 
 export const metadata: Metadata = { title: "Mi producción" };
 
@@ -61,7 +63,7 @@ export default async function MyProduction({ params, searchParams }: PageProps<"
     supabase.from("announcement_reads").select("announcement_id").eq("user_id", session.userId),
     supabase.rpc("birthdays", { pid: id }),
   ]);
-  const mesHoy = new Date().getMonth() + 1;
+  const mesHoy = partesMx().m;
   const cumples = cumplesDelMes((cumplesRes.data ?? []) as Cumple[], mesHoy);
   const materiales = (mats.data ?? []) as Material[];
   const matUrls = await signMaterials(materiales.map((m) => m.archivo_path));
@@ -69,9 +71,9 @@ export default async function MyProduction({ params, searchParams }: PageProps<"
   const comunicados = ((anns.data ?? []) as { id: string; titulo: string; cuerpo: string; importante: boolean; created_at: string }[])
     .sort((a, b) => Number(leidos.has(a.id)) - Number(leidos.has(b.id)) || Number(b.importante) - Number(a.importante));
   const ensayos = (reh.data ?? []) as Rehearsal[];
-  const hoy = new Date().toISOString().slice(0, 10);
-  const proximos = ensayos.filter((r) => r.inicia.slice(0, 10) >= hoy);
-  const pasados = ensayos.filter((r) => r.inicia.slice(0, 10) < hoy).reverse();
+  const hoy = isoMx();
+  const proximos = ensayos.filter((r) => isoMx(new Date(r.inicia)) >= hoy);
+  const pasados = ensayos.filter((r) => isoMx(new Date(r.inicia)) < hoy).reverse();
   const asisDe = (rid: string) => ((asis.data ?? []) as { rehearsal_id: string; estado: string; minutos_tarde: number | null }[]).find((a) => a.rehearsal_id === rid);
   // Solicitud de falta vigente (pendiente o aprobada; si no, la última rechazada) de cada ensayo.
   const faltaDe = (rid: string) => {
@@ -120,7 +122,7 @@ export default async function MyProduction({ params, searchParams }: PageProps<"
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <a href="#ensayos" className="rounded-2xl bg-telon p-4">
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-texto-3">Próximo ensayo</p>
-            {siguiente ? <><p className="mt-1 font-bold capitalize">{fechaEnsayo(siguiente.inicia)}</p><p className="text-xs text-texto-2">{siguiente.titulo}{siguiente.lugar ? ` · ${siguiente.lugar}` : ""}</p></>
+            {siguiente ? <><p className="mt-1 font-bold">{fechaEnsayo(siguiente.inicia)}</p><p className="text-xs text-texto-2">{siguiente.titulo}{siguiente.lugar ? ` · ${siguiente.lugar}` : ""}</p></>
               : <p className="mt-1 text-sm text-texto-2">Sin ensayos próximos</p>}
           </a>
           <a href="#avisos" className="rounded-2xl bg-telon p-4">
@@ -196,7 +198,7 @@ export default async function MyProduction({ params, searchParams }: PageProps<"
             {proximos.map((r) => (
               <li key={r.id} className={`flex flex-col gap-1 rounded-lg bg-sala px-4 py-3 text-sm ${r.estado === "cancelado" ? "opacity-60" : ""}`}>
                 <p><b>{r.titulo}</b>{r.estado === "cancelado" && <span className="ml-2 font-bold text-[#fecdd3]">Cancelado</span>}</p>
-                <p className="capitalize text-texto-2">{fechaEnsayo(r.inicia, r.termina)}{r.lugar ? ` · ${r.lugar}` : ""}</p>
+                <p className="text-texto-2">{fechaEnsayo(r.inicia, r.termina)}{r.lugar ? ` · ${r.lugar}` : ""}</p>
                 {r.notas && <p className="whitespace-pre-line text-texto-2">{r.notas}</p>}
                 {r.estado !== "cancelado" && activa && (() => {
                   const q = faltaDe(r.id);
@@ -219,7 +221,7 @@ export default async function MyProduction({ params, searchParams }: PageProps<"
                   const a = asisDe(r.id);
                   return (
                     <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 py-1.5">
-                      <span>{r.titulo} · <span className="capitalize text-texto-3">{fechaEnsayo(r.inicia)}</span></span>
+                      <span>{r.titulo} · <span className="text-texto-3">{fechaEnsayo(r.inicia)}</span></span>
                       {a ? <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${ASISTENCIA[a.estado]?.cls}`}>{ASISTENCIA[a.estado]?.label}{a.minutos_tarde ? ` · ${a.minutos_tarde} min` : ""}</span>
                         : <span className="text-xs text-texto-3">{r.estado === "cancelado" ? "Cancelado" : "Sin registro"}</span>}
                     </li>
@@ -248,11 +250,8 @@ export default async function MyProduction({ params, searchParams }: PageProps<"
                   <li key={q.id}>
                     <RequestCard r={q} url={q.archivo_path ? solUrls.get(q.archivo_path) : undefined}>
                       {q.estado === "pendiente" && (
-                        <form action={cancelRequest} className="self-start">
-                          <input type="hidden" name="id" value={q.id} />
-                          <input type="hidden" name="pid" value={id} />
-                          <ConfirmSubmit message="¿Cancelar esta solicitud?" className="rounded-full border border-white/25 px-4 py-2 text-xs font-bold hover:border-white/50">Cancelar solicitud</ConfirmSubmit>
-                        </form>
+                        <MiniAction action={cancelRequest} hidden={{ id: q.id, pid: id }} confirm="¿Cancelar esta solicitud?" className="flex flex-wrap items-center gap-2 self-start"
+                          buttonClass="rounded-full border border-white/25 px-4 py-2 text-xs font-bold hover:border-white/50" label="Cancelar solicitud" />
                       )}
                     </RequestCard>
                   </li>
@@ -369,7 +368,7 @@ export default async function MyProduction({ params, searchParams }: PageProps<"
             <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
               {ms.map((m) => (
                 <li key={m.periodo} className="flex items-center justify-between rounded-lg bg-sala px-3 py-2 text-sm">
-                  <span className="capitalize">{mesNombre(m.periodo)}</span>
+                  <span>{mayus(mesNombre(m.periodo))}</span>
                   <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${MES_LABEL[m.estado].cls}`}>{MES_LABEL[m.estado].label}</span>
                 </li>
               ))}
@@ -381,7 +380,7 @@ export default async function MyProduction({ params, searchParams }: PageProps<"
                   {[...d.pagos].reverse().map((p) => (
                     <li key={p.id} className={`flex flex-wrap items-center justify-between gap-2 px-4 py-3 ${p.anulado_at ? "opacity-70" : ""}`}>
                       <span>
-                        <span className="font-mono text-xs text-texto-3">{p.folio}</span>{" "}
+                        <span className="font-mono text-xs text-texto-3">{p.folio}</span>{""}
                         {p.anulado_at && <span className="rounded-full bg-[#5a1a22] px-2 py-0.5 text-[10px] font-bold text-[#fecdd3]">ANULADO</span>}
                         <span className="block"><b className={p.anulado_at ? "line-through" : ""}>{conceptoPago(p)}</b> · {pesos(p.monto)} · {METODOS[p.metodo] ?? p.metodo}</span>
                         <span className="block text-xs text-texto-3">{new Date(p.registrado_at).toLocaleDateString("es-MX", { timeZone: "America/Mexico_City", day: "numeric", month: "long", year: "numeric" })}{p.motivo_anulacion ? ` · Motivo: ${p.motivo_anulacion}` : ""}</span>

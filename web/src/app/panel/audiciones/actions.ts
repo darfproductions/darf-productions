@@ -6,6 +6,7 @@ import { criteriosFromText } from "@/lib/audition-rules";
 import { EN_BLANCO, PLANTILLAS, REGISTRO_PERMANENTE, type Plantilla } from "@/lib/audition-templates";
 import { getSession } from "@/lib/auth";
 import { localMxToIso } from "@/lib/dates";
+import { mensajeError } from "@/lib/errores";
 import { createClient } from "@/lib/supabase/server";
 
 // Audiciones en el panel (0036, 0037). La base decide qué puede cada quien:
@@ -34,7 +35,8 @@ export async function createAudition(_p: AudState, f: FormData): Promise<AudStat
   let t: Plantilla = PLANTILLAS[key] ?? EN_BLANCO;
   let nombrePlantilla = PLANTILLAS[key] ? PLANTILLAS[key].label : "Personalizada";
   if (key.startsWith("tpl:")) {
-    const { data: tpl } = await supabase.from("audition_templates").select("*").eq("id", key.slice(4)).maybeSingle();
+    const { data: tpl, error: et } = await supabase.from("audition_templates").select("*").eq("id", key.slice(4)).maybeSingle();
+    if (et) return { ok: false, message: mensajeError(et) };
     if (!tpl) return { ok: false, message: "No se encontró esa plantilla." };
     // Solo las opciones conocidas: una plantilla no puede tocar otras columnas (obra, estado…).
     const guardadas = (tpl.opciones ?? {}) as Record<string, unknown>;
@@ -47,15 +49,23 @@ export async function createAudition(_p: AudState, f: FormData): Promise<AudStat
     .insert({ production_id: pid, titulo, ...t.opciones, criterios: t.criterios, requisitos: t.requisitos ?? null, plantilla: nombrePlantilla })
     .select("id")
     .single();
-  if (error) return { ok: false, message: pid ? error.message : "Solo el Director puede crear convocatorias generales." };
+  if (error) return { ok: false, message: pid ? mensajeError(error) : "Solo el Director puede crear convocatorias generales." };
+  // Si algo de lo que sigue falla, se deshace todo: no queda una convocatoria a medias.
+  const deshacer = async (msg: string): Promise<AudState> => {
+    await supabase.from("auditions").delete().eq("id", data.id);
+    return { ok: false, message: `No se pudo crear la convocatoria: ${msg}` };
+  };
   if (t.preguntas.length) {
     const { error: e2 } = await supabase.from("audition_fields").insert(t.preguntas.map((q, i) => ({
       audition_id: data.id, etiqueta: String(q.etiqueta), tipo: q.tipo, opciones: q.tipo === "opcion" ? q.opciones ?? null : null, obligatorio: !!q.obligatorio, orden: i + 1,
     })));
-    if (e2) return { ok: false, message: `La convocatoria se creó, pero no se pudieron copiar las preguntas: ${e2.message}` };
+    if (e2) return deshacer(mensajeError(e2));
   }
   // 0089: si es de una obra, trae sus personajes (en su orden de importancia).
-  if (pid) await supabase.rpc("audition_import_characters", { aid: data.id });
+  if (pid) {
+    const { error: e3 } = await supabase.rpc("audition_import_characters", { aid: data.id });
+    if (e3) return deshacer(mensajeError(e3));
+  }
   if (pid) revalidatePath(`/panel/producciones/${pid}/audiciones`);
   revalidatePath("/panel/audiciones");
   redirect(base(data.id as string));
@@ -74,7 +84,10 @@ export async function createPermanentRegistry(): Promise<AudState> {
   const { error: e2 } = await supabase.from("audition_fields").insert(t.preguntas.map((q, i) => ({
     audition_id: data.id, etiqueta: q.etiqueta, tipo: q.tipo, opciones: q.tipo === "opcion" ? q.opciones ?? null : null, obligatorio: !!q.obligatorio, orden: i + 1,
   })));
-  if (e2) return { ok: false, message: `Se creó, pero no se pudieron poner las preguntas: ${e2.message}` };
+  if (e2) {
+    await supabase.from("auditions").delete().eq("id", data.id);
+    return { ok: false, message: `No se pudo crear el Registro permanente: ${mensajeError(e2)}` };
+  }
   revalidatePath("/panel/audiciones");
   revalidatePath("/audiciones");
   redirect(base(data.id as string));
@@ -256,8 +269,9 @@ export async function setAuditionEstado(_p: AudState, f: FormData): Promise<AudS
   const aid = str(f, "aid");
   const estado = str(f, "estado");
   const supabase = await createClient();
-  const { error } = await supabase.from("auditions").update({ estado }).eq("id", aid);
-  if (error) return { ok: false, message: error.message };
+  const { error, count } = await supabase.from("auditions").update({ estado }, { count: "exact" }).eq("id", aid);
+  if (error) return { ok: false, message: mensajeError(error) };
+  if (!count) return { ok: false, message: "No tienes permiso para cambiar el estado de esta convocatoria." };
   return done(aid, estado === "abierta" ? "Convocatoria abierta: ya se puede inscribir la gente." : estado === "cancelada" ? "Convocatoria cancelada. Los inscritos lo verán en su página y en Mi cuenta." : "Estado actualizado.");
 }
 

@@ -1,6 +1,7 @@
 import type { Enrollment, Fee, FeeTerms } from "@/lib/member-rules";
 import { adeudoDetalle, type Adeudo } from "@/lib/pago-rules";
 import { createClient } from "@/lib/supabase/server";
+import { todasLasFilas } from "@/lib/supabase/paginar";
 
 // Adeudos y pagos de toda la obra (0079), para la pestaña Adeudos y para exportar.
 // Pasan por RLS: solo quien tiene mensualidades.gestionar ve los pagos de los demás.
@@ -17,7 +18,7 @@ async function base(pid: string) {
   const [roster, fee, pagos, terms, altas] = await Promise.all([
     supabase.rpc("cast_roster", { pid }),
     supabase.from("production_fees").select("monto, desde, hasta, dia_limite, cobrar, inscripcion").eq("production_id", pid).maybeSingle(),
-    supabase.from("member_payments").select("id, user_id, folio, concepto, periodo, monto, metodo, nota, registrado_at, anulado_at, motivo_anulacion").eq("production_id", pid).order("registrado_at"),
+    todasLasFilas((a, b) => supabase.from("member_payments").select("id, user_id, folio, concepto, periodo, monto, metodo, nota, registrado_at, anulado_at, motivo_anulacion").eq("production_id", pid).order("registrado_at").order("id").range(a, b)),
     supabase.from("member_fee_terms").select("user_id, beca, cuota_especial, sin_inscripcion").eq("production_id", pid),
     supabase.from("member_enrollment").select("user_id, ingreso, baja_at, baja_motivo").eq("production_id", pid),
   ]);
