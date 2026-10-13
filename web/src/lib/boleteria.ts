@@ -13,6 +13,8 @@ export type PanelPerformance = {
   on_sale: boolean;
   /** 0076: hasta cuándo solo el Club Fan puede comprar. */
   preventa_hasta: string | null;
+  cancelada_at: string | null;
+  cancelada_motivo: string | null;
   prices: { categoryId: string; nombre: string; price: number; cupo: number | null }[];
 };
 
@@ -20,7 +22,7 @@ export async function listPerformances(pid: string): Promise<PanelPerformance[]>
   const supabase = await createClient();
   const { data } = await supabase
     .from("performances")
-    .select("id, starts_at, venue, on_sale, preventa_hasta, performance_price_categories(price, cupo, price_category_id, price_categories(nombre))")
+    .select("id, starts_at, venue, on_sale, preventa_hasta, cancelada_at, cancelada_motivo, performance_price_categories(price, cupo, price_category_id, price_categories(nombre))")
     .eq("production_id", pid)
     .order("starts_at", { nullsFirst: false });
   return (data ?? []).map((p) => ({
@@ -29,6 +31,8 @@ export async function listPerformances(pid: string): Promise<PanelPerformance[]>
     venue: p.venue as string | null,
     on_sale: p.on_sale as boolean,
     preventa_hasta: (p.preventa_hasta as string | null) ?? null,
+    cancelada_at: (p.cancelada_at as string | null) ?? null,
+    cancelada_motivo: (p.cancelada_motivo as string | null) ?? null,
     prices: ((p.performance_price_categories ?? []) as unknown as { price: number; cupo: number | null; price_category_id: string; price_categories: { nombre: string } | null }[])
       .map((r) => ({ categoryId: r.price_category_id, nombre: r.price_categories?.nombre ?? "", price: Number(r.price), cupo: r.cupo }))
       .sort((a, b) => b.price - a.price),
@@ -60,7 +64,7 @@ export async function seatCount(pid: string): Promise<number> {
 
 /** Órdenes de la obra, de la más nueva a la más vieja. La lista del panel muestra las 500 más
  *  recientes (con filtros); `codigo` busca una sola en toda la historia y `todas` trae todas (Reportes). */
-export async function listOrders(pid: string, opts: { funcion?: string; estado?: string; codigo?: string; todas?: boolean } = {}): Promise<SaleOrder[]> {
+export async function listOrders(pid: string, opts: { funcion?: string; estado?: string; codigo?: string; buscar?: string; todas?: boolean } = {}): Promise<SaleOrder[]> {
   const supabase = await createClient();
   const perfIds = (await supabase.from("performances").select("id").eq("production_id", pid)).data?.map((p) => p.id as string) ?? [];
   if (!perfIds.length) return [];
@@ -73,6 +77,11 @@ export async function listOrders(pid: string, opts: { funcion?: string; estado?:
       .order("id");
     if (opts.estado) q = q.eq("status", opts.estado);
     if (opts.codigo) q = q.eq("order_code", opts.codigo);
+    if (opts.buscar) {
+      // Nombre (cualquier parte) o teléfono (al menos 4 dígitos, sin espacios ni guiones).
+      const digitos = opts.buscar.replace(/\D/g, "");
+      q = q.or([`buyer_nombre.ilike.*${opts.buscar}*`, ...(digitos.length >= 4 ? [`buyer_telefono.ilike.*${digitos}*`] : [])].join(","));
+    }
     return q;
   };
   const { data, error } = opts.todas ? await todasLasFilas((a, b) => consulta().range(a, b)) : await consulta().limit(500);

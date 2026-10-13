@@ -69,7 +69,7 @@ export async function getHomeData(): Promise<HomeData> {
   const supabase = await createClient();
   const [prods, perfs, desde] = await Promise.all([
     supabase.from("productions").select(PRODUCTION_COLUMNS).in("estado", PUBLIC_STATES),
-    supabase.from("performances").select("production_id, starts_at, on_sale"),
+    supabase.from("performances").select("production_id, starts_at, on_sale").is("cancelada_at", null),
     supabase.rpc("productions_desde"),
   ]);
   if (prods.error) throw new Error(`No se pudieron cargar las producciones: ${prods.error.message}`);
@@ -93,6 +93,7 @@ export async function getProduction(id: string, opts: { includeDrafts?: boolean 
       .from("performances")
       .select("id, starts_at, venue, on_sale, preventa_hasta")
       .eq("production_id", id)
+      .is("cancelada_at", null)
       .order("starts_at", { nullsFirst: false }),
   ]);
   if (prod.error) throw new Error(prod.error.message);

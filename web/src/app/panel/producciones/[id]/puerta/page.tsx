@@ -19,7 +19,7 @@ export default async function DoorPage({ params }: PageProps<"/panel/produccione
   const access = await requirePanel(`/panel/producciones/${id}/puerta`);
   if (!can(access, id, "puerta.validar")) redirect(`/panel/producciones/${id}`);
   const supabase = await createClient();
-  const { data } = await supabase.from("performances").select("id, starts_at").eq("production_id", id).not("starts_at", "is", null).order("starts_at");
+  const { data } = await supabase.from("performances").select("id, starts_at").eq("production_id", id).not("starts_at", "is", null).is("cancelada_at", null).order("starts_at");
   const funciones = (data ?? []) as { id: string; starts_at: string }[];
   // Eventos del Club Fan (0080): en la entrada se valida la credencial del socio.
   const { data: ev } = await supabase.from("fan_encuentros").select("id, tipo, categoria, titulo, inicia, termina, performances(starts_at)").eq("production_id", id).neq("tipo", "en_linea");
@@ -31,7 +31,7 @@ export default async function DoorPage({ params }: PageProps<"/panel/produccione
     <div className="flex flex-col gap-4">
       <Card>
         <p className="mb-4 text-sm text-texto-2">Elige la función que está entrando y apunta la cámara al QR del boleto. Cada boleto solo entra una vez y solo en su función.</p>
-        {funciones.length ? <DoorScanner funciones={funciones} inicial={funcionDePuerta(funciones, new Date())} /> : <p className="text-sm">Esta obra no tiene funciones con fecha.</p>}
+        {funciones.length ? <DoorScanner pid={id} funciones={funciones} inicial={funcionDePuerta(funciones, new Date())} /> : <p className="text-sm">Esta obra no tiene funciones con fecha.</p>}
       </Card>
       {eventos.length > 0 && (
         <Card className="flex flex-col gap-3">

@@ -6,7 +6,7 @@ import { useMemo, useState, useTransition } from "react";
 import { SeatMap, type ZonePrice } from "@/components/SeatMap";
 import { input } from "@/components/panel/ui";
 import { formatMoney, type MapSeat } from "@/lib/tickets";
-import { METODOS_PAGO } from "@/lib/ventas-rules";
+import { DespuesDeVenta, PAGO_INICIAL, PagoTaquilla, type Pago } from "./PagoTaquilla";
 import { boxOfficeSale, type SaleResult } from "../actions";
 
 const MAX_SEATS = 20;
@@ -18,7 +18,7 @@ export function BoxOffice({ pid, performanceId, seats, taken, prices }: { pid: s
   const [nombre, setNombre] = useState("");
   const [telefono, setTelefono] = useState("");
   const [vendedor, setVendedor] = useState("");
-  const [metodo, setMetodo] = useState<string>("efectivo");
+  const [pago, setPago] = useState<Pago>(PAGO_INICIAL);
   const [result, setResult] = useState<SaleResult | null>(null);
   const [pending, start] = useTransition();
   const takenSet = useMemo(() => new Set(taken), [taken]);
@@ -40,6 +40,7 @@ export function BoxOffice({ pid, performanceId, seats, taken, prices }: { pid: s
       <div className="flex flex-col gap-4 rounded-2xl bg-telon p-6">
         <p className="titular text-2xl">Venta registrada · {result.orderCode}</p>
         <p className="text-texto-2">Total {formatMoney(result.total)}. Muestra o envía estos QR al comprador; también puedes imprimir esta pantalla.</p>
+        <DespuesDeVenta pid={pid} orderCode={result.orderCode} aviso={result.aviso} />
         <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
           {result.tickets.map((t) => (
             <li key={`${t.seat}-${t.qr.slice(-24)}`} className="flex flex-col items-center gap-2 rounded-xl bg-white p-3 text-black">
@@ -48,7 +49,7 @@ export function BoxOffice({ pid, performanceId, seats, taken, prices }: { pid: s
             </li>
           ))}
         </ul>
-        <button type="button" className="self-start rounded-full bg-texto px-5 py-2.5 text-sm font-bold text-sala" onClick={() => { setResult(null); setSelected(new Set()); setNombre(""); setTelefono(""); router.refresh(); }}>
+        <button type="button" className="self-start rounded-full bg-texto px-5 py-2.5 text-sm font-bold text-sala" onClick={() => { setResult(null); setSelected(new Set()); setNombre(""); setTelefono(""); setPago(PAGO_INICIAL); router.refresh(); }}>
           Nueva venta
         </button>
       </div>
@@ -68,19 +69,15 @@ export function BoxOffice({ pid, performanceId, seats, taken, prices }: { pid: s
         <label className="flex flex-col gap-1.5 text-sm font-semibold">Nombre del comprador *<input className={input} value={nombre} onChange={(e) => setNombre(e.target.value)} /></label>
         <label className="flex flex-col gap-1.5 text-sm font-semibold">Teléfono *<input className={input} type="tel" value={telefono} onChange={(e) => setTelefono(e.target.value)} /></label>
         <label className="flex flex-col gap-1.5 text-sm font-semibold">Código de vendedor (opcional)<input className={input} value={vendedor} onChange={(e) => setVendedor(e.target.value)} /></label>
-        <label className="flex flex-col gap-1.5 text-sm font-semibold">Cómo pagó
-          <select className={input} value={metodo} onChange={(e) => setMetodo(e.target.value)}>
-            {METODOS_PAGO.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-          </select>
-        </label>
+        <PagoTaquilla pago={pago} onChange={setPago} />
         {result && !result.ok && <p role="alert" className="text-sm font-semibold text-[#ff8fa3]">{result.message}</p>}
         <button
           type="button"
           disabled={pending || !chosen.length}
           onClick={() => {
-            if (!window.confirm(`¿Registrar la venta de ${chosen.length} boleto(s) por ${formatMoney(total)}? Confirma que ya cobraste.`)) return;
+            if (!window.confirm(`¿Registrar la venta de ${chosen.length} boleto(s) por ${pago.metodo === "cortesia" ? "$0 (cortesía)" : formatMoney(total)}? Confirma que ya cobraste.`)) return;
             start(async () => {
-              const r = await boxOfficeSale({ pid, performanceId, seatIds: [...selected], nombre, telefono, vendedor, metodo });
+              const r = await boxOfficeSale({ pid, performanceId, seatIds: [...selected], nombre, telefono, vendedor, ...pago });
               setResult(r);
               if (!r.ok) router.refresh();
             });

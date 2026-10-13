@@ -20,7 +20,7 @@ export default async function BoxOfficePage({ params, searchParams }: PageProps<
   // 0088: solo funciones que no han pasado (hasta 3 h después de empezar, para quien llega tarde);
   // por omisión la de hoy o la siguiente, con la misma regla que Puerta.
   const ahora = new Date();
-  const todas = (await listPerformances(id)).filter((f): f is typeof f & { starts_at: string } => !!f.starts_at);
+  const todas = (await listPerformances(id)).filter((f): f is typeof f & { starts_at: string } => !!f.starts_at && !f.cancelada_at);
   const funciones = todas.filter((f) => new Date(f.starts_at).getTime() > ahora.getTime() - 3 * 3600_000);
   const pasadas = todas.length - funciones.length;
   const pedida = typeof sp.funcion === "string" && funciones.some((f) => f.id === sp.funcion) ? sp.funcion : null;

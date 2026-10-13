@@ -1,4 +1,5 @@
 // Reglas puras de ventas (0088): métodos de pago y cómo se nombra el estado de una orden.
+import { conPunto } from "@/lib/dates";
 
 export const METODOS_PAGO = [
   ["transferencia", "Transferencia"],
@@ -44,4 +45,20 @@ export function puedeExtender(o: OrdenEstado): boolean {
 /** ¿Se puede comprar en línea? En venta, con fecha futura y la obra no concluida (la base lo exige igual). */
 export function funcionVendible(fn: { on_sale: boolean; starts_at: string | null }, concluida: boolean, ahora: Date = new Date()): boolean {
   return fn.on_sale && !!fn.starts_at && !concluida && new Date(fn.starts_at).getTime() > ahora.getTime();
+}
+
+/** Mensajes de WhatsApp con un toque desde la orden (Bloque 4A). */
+export function mensajeOrden(tipo: "recordar" | "aprobada", o: { order_code: string; buyer_nombre: string; total: number }, d: { obra: string; funcion: string; limite?: string | null; liga: string }): string {
+  const nombre = o.buyer_nombre.split(" ")[0] || o.buyer_nombre;
+  const total = `$${Number(o.total).toLocaleString("es-MX", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+  if (tipo === "recordar") {
+    return `¡Hola ${nombre}! Te escribimos de DARF Productions por tu orden ${o.order_code} de ${d.obra} (${d.funcion}), por ${total}.` +
+      `${d.limite ? ` ${conPunto(`Tus lugares siguen apartados hasta ${d.limite}`)}` : ""} ¿Nos compartes tu comprobante de pago? ¡Gracias!`;
+  }
+  return `¡Hola ${nombre}! Tu pago de la orden ${o.order_code} quedó confirmado. Tus boletos de ${d.obra} (${d.funcion}) ya están en ${d.liga}. ¡Nos vemos en el teatro!`;
+}
+
+/** Texto de búsqueda de órdenes por nombre o teléfono, sin caracteres que rompan el filtro. */
+export function textoBusqueda(q: string): string {
+  return q.replace(/[,()*%\\]/g, " ").replace(/\s+/g, " ").trim().slice(0, 60);
 }

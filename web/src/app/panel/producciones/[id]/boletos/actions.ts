@@ -66,6 +66,16 @@ export async function cancelOrder(_p: TicketState, f: FormData): Promise<TicketS
   return { ok: true, message: `Orden cancelada. ${monto > 0 ? `Si ya había pagado, devuelve ${formatMoney(monto)}.` : ""}`.trim() };
 }
 
+/** Hacer cortesía una orden aprobada (0091): queda en $0 con motivo. */
+export async function cortesiaOrden(_p: TicketState, f: FormData): Promise<TicketState> {
+  const pid = String(f.get("pid"));
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("order_cortesia", { target_order_id: String(f.get("order")), p_motivo: motivoDe(f) ?? "" });
+  if (error) return { ok: false, message: mensajeError(error) };
+  refresh(pid);
+  return { ok: true, message: "Listo: la orden quedó como cortesía en $0." };
+}
+
 export async function extendOrder(_p: TicketState, f: FormData): Promise<TicketState> {
   const pid = String(f.get("pid"));
   const horas = Math.min(72, Math.max(1, Number(f.get("horas") ?? 24) || 24));
@@ -84,12 +94,43 @@ async function guardarPago(orderId: string | undefined, metodo: string | undefin
 }
 
 export type SaleResult =
-  | { ok: true; orderCode: string; total: number; tickets: { seat: string; qr: string }[] }
+  | { ok: true; orderCode: string; total: number; tickets: { seat: string; qr: string }[]; aviso?: string }
   | { ok: false; message: string };
 
+type Extras = { metodo?: string; codigo?: string; motivo?: string };
+
+/** Antes de vender: una cortesía necesita motivo (0091). */
+function revisaExtras(x: Extras): string | null {
+  if (x.metodo === "cortesia" && !x.motivo?.trim()) return "Escribe el motivo de la cortesía (a quién y por qué).";
+  return null;
+}
+
+/** Después de vender (0091): cortesía en $0 con motivo, o código de descuento, y el método de pago.
+ *  La venta ya quedó hecha: si algo de esto falla se avisa, sin deshacerla. */
+async function aplicaExtras(orderId: string | undefined, x: Extras): Promise<{ total?: number; aviso?: string }> {
+  if (!orderId) return {};
+  const supabase = await createClient();
+  if (x.metodo === "cortesia") {
+    const { error } = await supabase.rpc("order_cortesia", { target_order_id: orderId, p_motivo: x.motivo ?? "" });
+    if (error) return { aviso: `Se vendió, pero no quedó como cortesía: ${mensajeError(error)}. Hazlo desde Ventas y órdenes.` };
+    return { total: 0 };
+  }
+  let total: number | undefined;
+  let aviso: string | undefined;
+  if (x.codigo?.trim()) {
+    const { data, error } = await supabase.rpc("order_aplicar_codigo", { target_order_id: orderId, p_codigo: x.codigo.trim() });
+    if (error) aviso = `Se vendió sin descuento: ${mensajeError(error)}.`;
+    else total = Number((data as { total: number }).total);
+  }
+  await guardarPago(orderId, x.metodo);
+  return { total, aviso };
+}
+
 /** Venta en taquilla (queda aprobada al momento; mismo RPC que la 1.0). */
-export async function boxOfficeSale(input: { pid: string; performanceId: string; seatIds: string[]; nombre: string; telefono: string; vendedor: string; metodo?: string }): Promise<SaleResult> {
+export async function boxOfficeSale(input: { pid: string; performanceId: string; seatIds: string[]; nombre: string; telefono: string; vendedor: string } & Extras): Promise<SaleResult> {
   if (!input.nombre.trim() || !input.telefono.trim()) return { ok: false, message: "Escribe nombre y teléfono del comprador." };
+  const falta = revisaExtras(input);
+  if (falta) return { ok: false, message: falta };
   if (!input.seatIds.length) return { ok: false, message: "Elige al menos un asiento." };
   const supabase = await createClient();
   await supabase.rpc("expire_due_orders", { pid: input.pid });
@@ -102,12 +143,12 @@ export async function boxOfficeSale(input: { pid: string; performanceId: string;
   });
   if (error) return { ok: false, message: error.message };
   const r = data as { order_id?: string; order_code: string; total: number; tickets: { seat_label: string; qr_token: string }[] };
-  await guardarPago(r.order_id, input.metodo);
+  const ex = await aplicaExtras(r.order_id, input);
   const tickets = await Promise.all(
     (r.tickets ?? []).map(async (t) => ({ seat: t.seat_label, qr: await QRCode.toDataURL(t.qr_token, { margin: 1, width: 240 }) })),
   );
   refresh(input.pid);
-  return { ok: true, orderCode: r.order_code, total: Number(r.total), tickets };
+  return { ok: true, orderCode: r.order_code, total: ex.total ?? Number(r.total), tickets, aviso: ex.aviso };
 }
 
 // ──────── Funciones y precios (funciones.gestionar) ────────
@@ -170,6 +211,18 @@ export async function deletePerformance(_p: TicketState, f: FormData): Promise<T
   if (error) return { ok: false, message: error.message };
   refresh(pid);
   return { ok: true, message: "Función eliminada." };
+}
+
+/** Cancelar una función con motivo (0091): no se vende más, los apartados se cancelan y a quien
+ *  pagó con cuenta se le avisa del reembolso. Quienes compraron en taquilla se listan para llamarles. */
+export async function cancelPerformance(_p: TicketState, f: FormData): Promise<TicketState> {
+  const pid = String(f.get("pid"));
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("funcion_cancelar", { p_performance: String(f.get("perf")), p_motivo: motivoDe(f) ?? "" });
+  if (error) return { ok: false, message: mensajeError(error) };
+  refresh(pid);
+  const r = data as { apartados_cancelados: number; pagadas: number };
+  return { ok: true, message: `Función cancelada. ${r.apartados_cancelados} apartados cancelados; ${r.pagadas} ${r.pagadas === 1 ? "orden pagada" : "órdenes pagadas"} por reembolsar (abajo, la lista para contactarles).` };
 }
 
 /** Obra en venta (switch general que usa la 1.0). ventas.operar; la base exige que esté publicada. */
@@ -245,8 +298,10 @@ export async function saveGeneralZone(_p: TicketState, f: FormData): Promise<Tic
 export type GeneralSaleResult = SaleResult;
 
 /** Venta de entrada general en taquilla (aprobada al momento). */
-export async function boxOfficeGeneralSale(input: { pid: string; performanceId: string; zoneId: string; cantidad: number; nombre: string; telefono: string; vendedor: string; metodo?: string }): Promise<GeneralSaleResult> {
+export async function boxOfficeGeneralSale(input: { pid: string; performanceId: string; zoneId: string; cantidad: number; nombre: string; telefono: string; vendedor: string } & Extras): Promise<GeneralSaleResult> {
   if (!input.nombre.trim() || !input.telefono.trim()) return { ok: false, message: "Escribe nombre y teléfono del comprador." };
+  const falta = revisaExtras(input);
+  if (falta) return { ok: false, message: falta };
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("admin_create_general_order", {
     target_performance_id: input.performanceId,
@@ -258,12 +313,12 @@ export async function boxOfficeGeneralSale(input: { pid: string; performanceId: 
   });
   if (error) return { ok: false, message: error.message };
   const r = data as { order_id?: string; order_code: string; total: number; tickets: { seat_label: string; qr_token: string }[] };
-  await guardarPago(r.order_id, input.metodo);
+  const ex = await aplicaExtras(r.order_id, input);
   const tickets = await Promise.all(
     (r.tickets ?? []).map(async (t) => ({ seat: t.seat_label, qr: await QRCode.toDataURL(t.qr_token, { margin: 1, width: 240 }) })),
   );
   refresh(input.pid);
-  return { ok: true, orderCode: r.order_code, total: Number(r.total), tickets };
+  return { ok: true, orderCode: r.order_code, total: ex.total ?? Number(r.total), tickets, aviso: ex.aviso };
 }
 
 // ──────── Mapa de asientos (0062) ────────

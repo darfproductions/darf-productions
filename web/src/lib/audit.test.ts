@@ -67,3 +67,11 @@ describe("bitácora de tablas sin frase propia", () => {
     expect(describeAudit(r("rara", "update", null), names)).toBe("Editó un registro (rara)");
   });
 });
+
+describe("bitácora de taquilla y funciones (0091)", () => {
+  it("cortesía y función cancelada", () => {
+    const r = { id: 1, at: "", actor: null, registro_id: null, production_id: "mm", antes: null };
+    expect(describeAudit({ ...r, tabla: "orders", accion: "cortesia", despues: { order_code: "DARF-1", motivo: "Prensa" } }, names)).toContain("Hizo cortesía la orden DARF-1");
+    expect(describeAudit({ ...r, tabla: "performances", accion: "cancelar", despues: { starts_at: "2026-11-22T02:00:00Z", motivo: "Lluvia" } }, names)).toContain("Canceló la función del");
+  });
+});

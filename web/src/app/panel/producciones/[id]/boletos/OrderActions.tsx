@@ -2,8 +2,9 @@ import { ActionForm } from "@/components/panel/ActionForm";
 import { input } from "@/components/panel/ui";
 import type { SaleOrder } from "@/lib/sales";
 import { formatMoney } from "@/lib/tickets";
-import { METODOS_PAGO, puedeExtender } from "@/lib/ventas-rules";
-import { approveOrder, cancelOrder, cancelTicket, extendOrder, rejectOrder } from "./actions";
+import { ligaWhatsApp } from "@/lib/pago-rules";
+import { METODOS_PAGO, mensajeOrden, puedeExtender } from "@/lib/ventas-rules";
+import { approveOrder, cancelOrder, cancelTicket, cortesiaOrden, extendOrder, rejectOrder } from "./actions";
 
 const small = "rounded-full border border-white/25 px-3 py-1.5 text-xs font-bold hover:border-white/50 disabled:opacity-60";
 const campo = `${input} py-2 text-sm`;
@@ -21,11 +22,16 @@ function Motivo({ id, placeholder }: { id: string; placeholder: string }) {
 
 // Acciones de una orden (0088): aprobar con método y referencia, rechazar o cancelar con motivo,
 // cancelar un boleto y dar más tiempo a un apartado (también a uno vencido).
-export function OrderActions({ pid, o }: { pid: string; o: SaleOrder }) {
+export function OrderActions({ pid, o, obra, funcion, limite, ligaCuenta }: { pid: string; o: SaleOrder; obra: string; funcion: string; limite?: string | null; ligaCuenta: string }) {
   const activos = o.tickets.filter((t) => t.is_active);
   const h = { pid, order: o.id };
+  // WhatsApp con un toque (Bloque 4A): mensaje ya escrito al teléfono del comprador.
+  const wa = o.status === "pendiente" ? ligaWhatsApp(o.buyer_telefono, mensajeOrden("recordar", o, { obra, funcion, limite, liga: ligaCuenta }))
+    : o.status === "aprobado" && !o.created_by_staff_id ? ligaWhatsApp(o.buyer_telefono, mensajeOrden("aprobada", o, { obra, funcion, liga: ligaCuenta })) : null;
   return (
     <div className="flex flex-wrap items-start gap-2">
+      {wa && <a href={wa} target="_blank" rel="noreferrer" className={small}>{o.status === "pendiente" ? "WhatsApp: recordar pago" : "WhatsApp: avisar que se aprobó"}</a>}
+      {o.status === "aprobado" && activos.length > 0 && <a href={`/panel/producciones/${pid}/boletos/orden/${o.order_code}/pdf`} className={small}>Boletos en PDF</a>}
       {o.status === "pendiente" && (
         <details className="group">
           <summary className={`${resumen} border-transparent bg-[#22c55e] text-[#052e16]`}>Aprobar</summary>
@@ -70,6 +76,19 @@ export function OrderActions({ pid, o }: { pid: string; o: SaleOrder }) {
                 </select>
               </label>
               <Motivo id={`tm-${o.id}`} placeholder="Ej. cambio de asiento" />
+            </ActionForm>
+          </div>
+        </details>
+      )}
+      {o.status === "aprobado" && o.metodo_pago !== "cortesia" && Number(o.total) > 0 && (
+        <details>
+          <summary className={resumen}>Hacer cortesía</summary>
+          <div className={panel}>
+            <ActionForm action={cortesiaOrden} hidden={h} confirm={`¿Dejar ${o.order_code} como cortesía en $0? Si ya pagó, devuelve ${formatMoney(o.total)}.`} submit="Hacer cortesía" submitClass={small}>
+              <label htmlFor={`cz-${o.id}`} className="flex flex-col gap-1 text-xs font-semibold text-texto-2">
+                Motivo (a quién y por qué)
+                <input id={`cz-${o.id}`} name="motivo" maxLength={300} required className={campo} placeholder="Ej. prensa, patrocinador" />
+              </label>
             </ActionForm>
           </div>
         </details>

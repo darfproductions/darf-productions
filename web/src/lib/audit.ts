@@ -120,8 +120,17 @@ export function describeAudit(r: AuditRow, n: AuditNames): string {
         case "cancelar_comprador": return `El comprador canceló su apartado ${cod} de ${obra}`;
         case "extender": return `Dio más tiempo para pagar la orden ${cod} de ${obra}`;
         case "pago": return `Registró el método de pago de la orden ${cod}`;
+        case "cortesia": return `Hizo cortesía la orden ${cod} de ${obra}${motivo}`;
+        case "codigo": return `Aplicó el código ${String(row.codigo ?? "")} en taquilla a la orden ${cod} (−${dinero(row.descuento)})`;
+        case "deshacer_entrada": return `Deshizo una entrada en Puerta de la orden ${cod}`;
         default: return `Cambió la orden ${cod} de ${obra}`;
       }
+    }
+    case "performances": {
+      const cuando = (v: unknown) => (v ? new Intl.DateTimeFormat("es-MX", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit", timeZone: "America/Mexico_City" }).format(new Date(String(v))) : "");
+      if (r.accion === "cancelar") return `Canceló la función del ${cuando(row.starts_at)} de ${n.production(r.production_id)}${row.motivo ? ` (${String(row.motivo)})` : ""}`;
+      if (r.accion === "cambiar_fecha") return `Cambió la función de ${n.production(r.production_id)} del ${cuando(row.antes)} al ${cuando(row.ahora)}`;
+      return `${VERBO[r.accion] ?? "Cambió"} una función de ${n.production(r.production_id)}`;
     }
     case "precios": {
       const zona = String((r.despues ?? {}).zona ?? "una zona");

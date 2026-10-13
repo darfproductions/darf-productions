@@ -163,6 +163,7 @@ export function boletosSubtabs(a: PanelAccessData, pid: string): SubTab[] {
     { id: "funciones", label: "Funciones y precios", path: "boletos/funciones", show: can(a, pid, "funciones.gestionar") || can(a, pid, "ventas.operar") },
     { id: "mapa", label: "Mapa de asientos", path: "boletos/mapa", show: can(a, pid, "funciones.gestionar") },
     { id: "descuentos", label: "Descuentos", path: "boletos/descuentos", show: can(a, pid, "descuentos.gestionar") },
+    { id: "corte", label: "Corte de caja", path: "boletos/corte", show: can(a, pid, "ventas.ver") || can(a, pid, "reportes.ver") },
     { id: "vendedores", label: "Vendedores", path: "boletos/vendedores", show: can(a, pid, "ventas.ver") || can(a, pid, "vendedores.gestionar") },
   ].filter((t) => t.show).map(({ id, label, path }) => ({ id, label, path }));
 }

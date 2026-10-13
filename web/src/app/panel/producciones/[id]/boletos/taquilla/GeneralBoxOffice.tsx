@@ -6,7 +6,7 @@ import { useState, useTransition } from "react";
 import { input } from "@/components/panel/ui";
 import type { GeneralZone } from "@/lib/boleteria";
 import { formatMoney } from "@/lib/tickets";
-import { METODOS_PAGO } from "@/lib/ventas-rules";
+import { DespuesDeVenta, PAGO_INICIAL, PagoTaquilla, type Pago } from "./PagoTaquilla";
 import { boxOfficeGeneralSale, type GeneralSaleResult } from "../actions";
 
 // Taquilla de entrada general (0055): zona + cantidad; queda aprobada al momento.
@@ -17,7 +17,7 @@ export function GeneralBoxOffice({ pid, performanceId, zones }: { pid: string; p
   const [nombre, setNombre] = useState("");
   const [telefono, setTelefono] = useState("");
   const [vendedor, setVendedor] = useState("");
-  const [metodo, setMetodo] = useState<string>("efectivo");
+  const [pago, setPago] = useState<Pago>(PAGO_INICIAL);
   const [result, setResult] = useState<GeneralSaleResult | null>(null);
   const [pending, start] = useTransition();
   const z = zones.find((x) => x.price_category_id === zone);
@@ -27,6 +27,7 @@ export function GeneralBoxOffice({ pid, performanceId, zones }: { pid: string; p
       <div className="flex flex-col gap-4 rounded-2xl bg-telon p-6">
         <p className="titular text-2xl">Venta registrada · {result.orderCode}</p>
         <p className="text-texto-2">Total {formatMoney(result.total)}. Muestra o envía estos QR al comprador.</p>
+        <DespuesDeVenta pid={pid} orderCode={result.orderCode} aviso={result.aviso} />
         <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
           {result.tickets.map((t, i) => (
             <li key={i} className="flex flex-col items-center gap-2 rounded-xl bg-white p-3 text-black">
@@ -35,7 +36,7 @@ export function GeneralBoxOffice({ pid, performanceId, zones }: { pid: string; p
             </li>
           ))}
         </ul>
-        <button type="button" className="self-start rounded-full bg-texto px-5 py-2.5 text-sm font-bold text-sala" onClick={() => { setResult(null); setCantidad(1); setNombre(""); setTelefono(""); router.refresh(); }}>
+        <button type="button" className="self-start rounded-full bg-texto px-5 py-2.5 text-sm font-bold text-sala" onClick={() => { setResult(null); setCantidad(1); setNombre(""); setTelefono(""); setPago(PAGO_INICIAL); router.refresh(); }}>
           Nueva venta
         </button>
       </div>
@@ -61,20 +62,16 @@ export function GeneralBoxOffice({ pid, performanceId, zones }: { pid: string; p
           <label className="flex flex-col gap-1.5 text-sm font-semibold">Nombre *<input className={input} value={nombre} onChange={(e) => setNombre(e.target.value)} /></label>
           <label className="flex flex-col gap-1.5 text-sm font-semibold">Teléfono *<input className={input} type="tel" value={telefono} onChange={(e) => setTelefono(e.target.value)} /></label>
           <label className="flex flex-col gap-1.5 text-sm font-semibold">Vendedor (opcional)<input className={input} value={vendedor} onChange={(e) => setVendedor(e.target.value)} /></label>
-          <label className="flex flex-col gap-1.5 text-sm font-semibold">Cómo pagó
-            <select className={input} value={metodo} onChange={(e) => setMetodo(e.target.value)}>
-              {METODOS_PAGO.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-            </select>
-          </label>
+          <PagoTaquilla pago={pago} onChange={setPago} />
         </div>
       )}
       {result && !result.ok && <p role="alert" className="text-sm font-semibold text-[#ff8fa3]">{result.message}</p>}
       {z && (
         <button type="button" disabled={pending || z.libres === 0}
           onClick={() => {
-            if (!window.confirm(`¿Registrar ${cantidad} boleto(s) de ${z.nombre} por ${formatMoney(z.precio * cantidad)}? Confirma que ya cobraste.`)) return;
+            if (!window.confirm(`¿Registrar ${cantidad} boleto(s) de ${z.nombre} por ${pago.metodo === "cortesia" ? "$0 (cortesía)" : formatMoney(z.precio * cantidad)}? Confirma que ya cobraste.`)) return;
             start(async () => {
-              const r = await boxOfficeGeneralSale({ pid, performanceId, zoneId: zone, cantidad, nombre, telefono, vendedor, metodo });
+              const r = await boxOfficeGeneralSale({ pid, performanceId, zoneId: zone, cantidad, nombre, telefono, vendedor, ...pago });
               setResult(r);
               if (!r.ok) router.refresh();
             });

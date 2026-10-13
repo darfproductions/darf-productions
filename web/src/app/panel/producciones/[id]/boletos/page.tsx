@@ -9,8 +9,10 @@ import { formatPerformanceDate } from "@/lib/productions";
 import { capacidadFuncion, occupancy } from "@/lib/sales";
 import { formatMoney } from "@/lib/tickets";
 import { createClient } from "@/lib/supabase/server";
-import { tiempoRestante } from "@/lib/expiry-rules";
-import { estadoOrden, metodoLabel } from "@/lib/ventas-rules";
+import { limiteTexto, tiempoRestante } from "@/lib/expiry-rules";
+import { getPanelProduction } from "@/lib/panel-data";
+import { origenSitio } from "@/lib/site-origin";
+import { estadoOrden, metodoLabel, textoBusqueda } from "@/lib/ventas-rules";
 import { OrderActions } from "./OrderActions";
 
 export const metadata: Metadata = { title: "Ventas y órdenes" };
@@ -33,21 +35,25 @@ export default async function SalesPage({ params, searchParams }: PageProps<"/pa
   const estado = typeof sp.estado === "string" ? sp.estado : "";
   // Desde el buscador (0085): una orden por su código, aunque sea vieja.
   const codigo = typeof sp.codigo === "string" ? sp.codigo.trim().toUpperCase() : "";
+  // Bloque 4A: "Soy Juan, pagué ayer": buscar por nombre o teléfono en todas las órdenes.
+  const buscar = typeof sp.q === "string" ? textoBusqueda(sp.q) : "";
 
   await (await createClient()).rpc("expire_due_orders", { pid: id });
   const [funciones, s, filtradas, asientos, zonas, actores] = await Promise.all([
     listPerformances(id),
     salesSummary(id),
-    listOrders(id, { funcion: funcion || undefined, estado: estado || undefined, codigo: codigo || undefined }),
+    listOrders(id, { funcion: funcion || undefined, estado: estado || undefined, codigo: codigo || undefined, buscar: buscar || undefined }),
     seatCount(id),
     listZones(id),
     ventasActores(id),
   ]);
   const quien = (uid: string | null | undefined) => (uid ? actores.get(uid) ?? "equipo" : null);
   const ordenes = filtradas;
+  const obra = (await getPanelProduction(id))?.nombre ?? "DARF";
+  const ligaCuenta = `${await origenSitio()}/cuenta`;
   const nombreFuncion = new Map(funciones.map((f) => [f.id, formatPerformanceDate(f.starts_at)]));
   const q = (k: string, v: string) => {
-    const p = new URLSearchParams({ ...(funcion && { funcion }), ...(estado && { estado }) });
+    const p = new URLSearchParams({ ...(funcion && { funcion }), ...(estado && { estado }), ...(buscar && { q: buscar }) });
     if (v) p.set(k, v); else p.delete(k);
     const str = p.toString();
     return `/panel/producciones/${id}/boletos${str ? `?${str}` : ""}`;
@@ -103,6 +109,13 @@ export default async function SalesPage({ params, searchParams }: PageProps<"/pa
             ))}
           </div>
         </div>
+        <form className="mt-3 flex flex-wrap gap-2 px-5" role="search">
+          {funcion && <input type="hidden" name="funcion" value={funcion} />}
+          {estado && <input type="hidden" name="estado" value={estado} />}
+          <input name="q" defaultValue={buscar} aria-label="Buscar por nombre o teléfono" placeholder="Buscar por nombre o teléfono" className="min-w-0 flex-1 rounded-lg bg-sala px-3 py-2 text-sm sm:max-w-xs" />
+          <button className="rounded-full border border-white/25 px-4 py-2 text-xs font-bold hover:border-white/50">Buscar</button>
+          {buscar && <Link href={q("q", "")} className="self-center text-xs font-bold text-violeta-claro">Quitar búsqueda</Link>}
+        </form>
         {codigo && <p className="mt-3 px-5 text-sm text-texto-2">Orden <b className="font-mono">{codigo}</b> · <Link href={`/panel/producciones/${id}/boletos`} className="font-bold text-violeta-claro">Ver todas</Link></p>}
         <ul className="mt-3 divide-y divide-white/10">
           {ordenes.map((o) => (
@@ -144,7 +157,7 @@ export default async function SalesPage({ params, searchParams }: PageProps<"/pa
                   {o.tickets.filter((t) => t.cancelled_by).map((t) => `${t.seat_label ?? "General"} cancelado por ${quien(t.cancelled_by)}${t.cancel_motivo ? ` (${t.cancel_motivo})` : ""}`).join(" · ")}
                 </p>
               )}
-              {operar && <OrderActions pid={id} o={o} />}
+              {operar && <OrderActions pid={id} o={o} obra={obra} funcion={nombreFuncion.get(o.performance_id) ?? ""} limite={o.status === "pendiente" && o.expires_at ? limiteTexto(o.expires_at) : null} ligaCuenta={ligaCuenta} />}
             </li>
           ))}
           {ordenes.length === 0 && <li className="px-5 py-4 text-texto-2">No hay órdenes con este filtro.</li>}

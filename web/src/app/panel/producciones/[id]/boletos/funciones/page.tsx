@@ -3,13 +3,15 @@ import { redirect } from "next/navigation";
 import { ActionForm } from "@/components/panel/ActionForm";
 import { AjustesSeccion } from "@/components/panel/AjustesSeccion";
 import { Card, input } from "@/components/panel/ui";
-import { listPerformances, listZones } from "@/lib/boleteria";
+import { listOrders, listPerformances, listZones } from "@/lib/boleteria";
 import { isoToLocalMx } from "@/lib/dates";
 import { getPanelProduction } from "@/lib/panel-data";
 import { can, salidaBoletos } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
+import { ligaWhatsApp } from "@/lib/pago-rules";
 import { formatPerformanceDate } from "@/lib/productions";
-import { createPerformance, deletePerformance, saveGeneralZone, setProductionOnSale, updatePerformance } from "../actions";
+import { formatMoney } from "@/lib/tickets";
+import { cancelPerformance, createPerformance, deletePerformance, saveGeneralZone, setProductionOnSale, updatePerformance } from "../actions";
 
 export const metadata: Metadata = { title: "Funciones y precios" };
 
@@ -24,6 +26,8 @@ export default async function PerformancesPage({ params }: PageProps<"/panel/pro
   if (!gestionar && !ventas) redirect(salidaBoletos(access, id, "boletos/funciones"));
   const [p, funciones, zonas] = await Promise.all([getPanelProduction(id), listPerformances(id), listZones(id)]);
   if (!p) redirect("/panel/producciones");
+  // Funciones canceladas (0091): quién pagó y hay que reembolsar, con WhatsApp para avisarle.
+  const porReembolsar = new Map(await Promise.all(funciones.filter((f) => f.cancelada_at).map(async (f) => [f.id, await listOrders(id, { funcion: f.id, estado: "aprobado" })] as const)));
 
   return (
     <>
@@ -48,6 +52,34 @@ export default async function PerformancesPage({ params }: PageProps<"/panel/pro
           {/* 0085: cada función es un renglón compacto; "Editar" despliega su formulario. */}
           {funciones.map((f) => {
             const precios = f.prices.map((x) => x.price);
+            if (f.cancelada_at) {
+              const pagadas = porReembolsar.get(f.id) ?? [];
+              return (
+                <details key={f.id} id={`f-${f.id}`} className="rounded-[22px] border border-[#5a1a22] bg-telon">
+                  <summary className="flex cursor-pointer list-none flex-wrap items-center gap-2 px-5 py-4">
+                    <b className="line-through opacity-70">{formatPerformanceDate(f.starts_at)}</b>
+                    <span className="rounded-full bg-[#5a1a22] px-2 py-0.5 text-[11px] uppercase text-[#fecdd3]">cancelada</span>
+                    <span className="text-sm text-texto-3">{f.cancelada_motivo}</span>
+                    {pagadas.length > 0 && <span className="text-sm font-bold text-aviso">{pagadas.length} por reembolsar</span>}
+                  </summary>
+                  <div className="border-t border-linea p-5 text-sm">
+                    {pagadas.length === 0 ? <p className="text-texto-2">Nadie tenía boletos pagados.</p> : (
+                      <ul className="flex flex-col divide-y divide-white/10">
+                        {pagadas.map((o) => {
+                          const wa = ligaWhatsApp(o.buyer_telefono, `¡Hola ${o.buyer_nombre.split(" ")[0]}! Te escribimos de DARF Productions: se canceló la función de ${p.nombre} (${formatPerformanceDate(f.starts_at)}). ${f.cancelada_motivo ?? ""} Queremos devolverte ${formatMoney(o.total)} de tu orden ${o.order_code}. ¿A qué cuenta te lo depositamos?`);
+                          return (
+                            <li key={o.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
+                              <span><b>{o.buyer_nombre}</b> · {o.order_code} · {formatMoney(o.total)}{o.created_by_staff_id ? " · taquilla" : ""}</span>
+                              {wa ? <a href={wa} target="_blank" rel="noreferrer" className={ghost}>WhatsApp</a> : <a href={`tel:${o.buyer_telefono}`} className="underline">{o.buyer_telefono}</a>}
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
+                  </div>
+                </details>
+              );
+            }
             return (
             <details key={f.id} id={`f-${f.id}`} open={funciones.length === 1} className="group scroll-mt-24 rounded-[22px] border border-linea bg-telon">
               <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-2 px-5 py-4">
@@ -90,6 +122,16 @@ export default async function PerformancesPage({ params }: PageProps<"/panel/pro
               </ActionForm>
               <div className="mt-3 border-t border-white/10 pt-3">
                 <ActionForm inline action={deletePerformance} hidden={{ pid: id, perf: f.id }} confirm="¿Eliminar esta función? Solo se puede si no tiene boletos activos." submit="Eliminar función" submitClass={ghost} />
+                <details className="mt-3">
+                  <summary className="cursor-pointer text-sm font-bold text-[#ff8fa3]">Cancelar función (lluvia, fuerza mayor…)</summary>
+                  <div className="mt-2 max-w-md">
+                    <ActionForm action={cancelPerformance} hidden={{ pid: id, perf: f.id }} confirm="¿Cancelar esta función? Ya no se vende, los apartados se cancelan y a quien pagó le avisamos que se le reembolsará. No se puede deshacer." submit="Cancelar función" submitClass={ghost}>
+                      <label className="flex flex-col gap-1.5 text-sm font-semibold">Motivo (lo ve quien compró)
+                        <input className={input} name="motivo" required maxLength={300} placeholder="Ej. Suspensión por lluvia" />
+                      </label>
+                    </ActionForm>
+                  </div>
+                </details>
               </div>
               </div>
             </details>

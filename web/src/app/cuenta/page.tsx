@@ -44,7 +44,7 @@ type OrderRow = {
   motivo: string | null;
   cancelada_por_comprador_at: string | null;
   buyer_nombre: string;
-  performances: { starts_at: string | null; venue: string | null; production_id: string; productions: (KitColumns & { nombre: string; venue: string | null }) | null } | null;
+  performances: { starts_at: string | null; venue: string | null; production_id: string; cancelada_at?: string | null; cancelada_motivo?: string | null; productions: (KitColumns & { nombre: string; venue: string | null }) | null } | null;
   tickets: { id: string; is_active: boolean; qr_token: string; checked_in_at: string | null; seats: { seat_label: string } | null; price_categories: { nombre: string } | null }[];
 };
 
@@ -67,7 +67,7 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
   await supabase.rpc("expire_due_orders", { pid: null });
   const { data, error } = await supabase
     .from("orders")
-    .select("id, order_code, status, total, discount_amount, discount_codigo, buyer_telefono, buyer_nombre, created_at, expires_at, vencida_at, motivo, cancelada_por_comprador_at, performances(starts_at, venue, production_id, productions(nombre, venue, color_fondo, color_superficie, color_texto, color_acento, logo_path, ambiente_path, frase)), tickets(id, is_active, qr_token, checked_in_at, seats(seat_label), price_categories(nombre))")
+    .select("id, order_code, status, total, discount_amount, discount_codigo, buyer_telefono, buyer_nombre, created_at, expires_at, vencida_at, motivo, cancelada_por_comprador_at, performances(starts_at, venue, production_id, cancelada_at, cancelada_motivo, productions(nombre, venue, color_fondo, color_superficie, color_texto, color_acento, logo_path, ambiente_path, frase)), tickets(id, is_active, qr_token, checked_in_at, seats(seat_label), price_categories(nombre))")
     .eq("buyer_user_id", session.userId)
     .order("created_at", { ascending: false });
   const orders = (data ?? []) as unknown as OrderRow[];
@@ -145,6 +145,7 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
                     <div className="min-w-0 flex-1">
                       <p className="text-lg font-bold">{nombre}</p>
                       <p className="text-sm opacity-85">{formatPerformanceDate(o.performances?.starts_at ?? null)}</p>
+                      {o.performances?.cancelada_at && <p className="text-sm font-bold">Función cancelada{o.performances.cancelada_motivo ? `: ${o.performances.cancelada_motivo}` : ""}{o.status === "aprobado" ? " · te contactamos para tu reembolso" : ""}</p>}
                     </div>
                     <span className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-bold ${STATUS[o.status].cls}`}>{estadoOrden(o, "comprador")}</span>
                   </div>

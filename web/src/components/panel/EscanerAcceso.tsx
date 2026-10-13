@@ -7,6 +7,7 @@ import { createPortal } from "react-dom";
 import { QrScanner } from "@/components/panel/QrScanner";
 import type { Lectura } from "@/lib/acceso-rules";
 import { iniciales } from "@/lib/gafete-rules";
+import { bip } from "@/lib/aviso-sonido";
 
 const COLOR: Record<NonNullable<Lectura["tono"]>, string> = {
   ok: "border-exito bg-exito/15 text-exito",
@@ -15,14 +16,6 @@ const COLOR: Record<NonNullable<Lectura["tono"]>, string> = {
   error: "border-[#ff8fa3] bg-[#ff8fa3]/10 text-[#ff8fa3]",
 };
 
-function bip(ok: boolean) {
-  try {
-    const ctx = new AudioContext();
-    const o = ctx.createOscillator(); const g = ctx.createGain();
-    o.frequency.value = ok ? 880 : 220; g.gain.value = 0.08;
-    o.connect(g); g.connect(ctx.destination); o.start(); o.stop(ctx.currentTime + (ok ? 0.12 : 0.3));
-  } catch { /* sin sonido */ }
-}
 
 // Mesa de entrada a pantalla completa: la cámara (o el código escrito) lee un QR, se ve grande la
 // foto, el nombre y el resultado, con un sonido corto, y la lista de las últimas llegadas.

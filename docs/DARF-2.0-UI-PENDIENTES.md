@@ -76,6 +76,9 @@ Diego eligió cuáles sí (ver plan del bloque). Hechas en `darf-2.0`, migracion
 | Pulido: sin topes | El buscador encuentra órdenes viejas (y sin escribir "DARF-"); Reportes cuenta todas las órdenes y pagos; mapas de más de 1,000 asientos completos y ocupados sin tope; "Copiar mapa" ve todas las obras (0090). |
 | Pulido: base | Advertencias por mensualidades cada mañana (7:05) aunque nadie abra Expedientes; limpieza diaria (bitácora 24 meses, notificaciones leídas 90 días); la bitácora no guarda medidas, pagos ni incidencias, y se limpia al eliminar una cuenta; Contacto y DARFY sin repetidos; máximo 10 fotos por persona en una convocatoria abierta; "Por hacer" no pierde solicitudes al cerrar la convocatoria; índices (0090). |
 | Pulido: detalles | Abrir una notificación la marca leída; Puerta dice a qué hora entró un boleto ya usado; números de asiento legibles en zonas claras; teléfono del comprador revisado; "Pregúntale a DARFY" en la compra lleva a Contacto; galería con descripciones; bitácora en español; sin ligas a páginas que no existen (obra en borrador, programa sin crear). Sesión y permisos se piden una sola vez por página. |
+| Taquilla y órdenes (4A) | Cortesía en $0 con motivo (en taquilla o después, en la orden); códigos de descuento también en taquilla; PDF de los boletos de cualquier orden para reimprimir o mandar; buscar órdenes por nombre o teléfono; WhatsApp con un toque ("recordar pago" / "avisar que se aprobó"); pestaña **Corte de caja** por cajero y método, con lo cancelado aparte (0091). |
+| Puerta (4A) | "Entraron X de Y" en vivo, sonido y vibración al leer, buscar por nombre/teléfono/código/asiento cuando el QR no abre, marcar o deshacer una entrada, y lista de la función para Excel como plan B sin internet (0091). |
+| Funciones (4A) | "Cancelar función" con motivo: no se vende más, los apartados se cancelan, a quien pagó le llega el aviso de reembolso y el panel lista a quién devolver (con WhatsApp). Si cambia la fecha, se avisa a los compradores y el recordatorio se vuelve a mandar (0091). |
 
 ## Lo que queda pendiente
 
@@ -90,7 +93,7 @@ Diego eligió cuáles sí (ver plan del bloque). Hechas en `darf-2.0`, migracion
 ## Para el lanzamiento (lista de revisión)
 
 - **Entrar con Google:** en el proyecto de Supabase (DEV y luego el oficial) → Authentication → Providers → Google, con el Client ID y secreto de la 1.0, y agregar la dirección del sitio (`…/auth/callback`) en Google Cloud y en Supabase → URL Configuration. Probar el botón en DEV y otra vez el día de la publicación.
-- DEV ya tiene aplicadas todas las migraciones hasta la 0089 (verificado; la 0090 pendiente de correr: `supabase/dev/apply_0090_dev.sql`). El proyecto oficial necesitará las mismas, en orden, el día de la publicación.
+- DEV ya tiene aplicadas todas las migraciones hasta la 0090 (verificado; la 0091 pendiente de correr: `supabase/dev/apply_0091_dev.sql`). El proyecto oficial necesitará las mismas, en orden, el día de la publicación.
 - **Contraseñas (Supabase → Authentication → Providers → Email / Policies), en DEV y en el oficial:**
   - Largo mínimo **8** y "letras y números" (la página ya lo exige; así también lo exige Supabase si alguien llama directo a su servicio).
   - **"Secure password change"** encendido y **aviso por correo** cuando cambia la contraseña o el correo ("Password changed" / "Email changed" notifications).
