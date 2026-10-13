@@ -8,7 +8,7 @@ import { EstadoObra } from "@/components/EstadoObra";
 import { ArtFill } from "@/components/PosterArt";
 import { ProductionCard } from "@/components/ProductionCard";
 import { ETIQUETA_ESTADO, type EstadoPublico } from "@/lib/home-rules";
-import { formatPrice, getHomeData, getTheme, perfilUrl } from "@/lib/productions";
+import { formatPrice, getHomeData, getTheme, perfilUrl, posterUrl } from "@/lib/productions";
 import { createClient } from "@/lib/supabase/server";
 import { EventosInicio } from "@/components/eventos/EventosInicio";
 import { getEventosCartelera } from "@/lib/fanzone";
@@ -77,7 +77,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
               <div className="overflow-hidden rounded-[29px] bg-telon" style={{ background: currentTheme?.superficie }}>
                 <div className="relative aspect-[16/10] overflow-hidden">
                   {currentTheme ? (
-                    <ArtFill theme={currentTheme} alt={current.nombre} sizes="(min-width: 1024px) 45vw, 100vw" />
+                    <ArtFill theme={currentTheme} alt={current.nombre} sizes="(min-width: 1024px) 45vw, 100vw" imagen={posterUrl(current, "destacada")?.url} imagenMovil={posterUrl(current, "destacada-celular")?.url} />
                   ) : (
                     <h2 className="titular absolute inset-x-6 bottom-6 text-4xl">{current.nombre}</h2>
                   )}

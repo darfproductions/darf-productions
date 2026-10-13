@@ -4,7 +4,7 @@ import { EstadoObra } from "@/components/EstadoObra";
 import { ArtFill } from "@/components/PosterArt";
 import { lineaObra } from "@/components/ProductionCard";
 import { partesFuncion } from "@/lib/disponibilidad";
-import { formatPrice, getTheme, themeStyle, type PublicProduction } from "@/lib/productions";
+import { formatPrice, getTheme, posterUrl, themeStyle, type PublicProduction } from "@/lib/productions";
 import { mayus } from "@/lib/dates";
 
 // Tarjetas de la cartelera (guía de UI · Fusión). Toman los colores de cada obra.
@@ -27,9 +27,13 @@ export function SeccionObras({ id, titulo, nota, children }: { id: string; titul
 export function ObraPanoramica({ p }: { p: PublicProduction }) {
   const t = getTheme(p);
   const f = p.proxima ? partesFuncion(p.proxima) : null;
+  // Póster oficial limpio (0093): 16:9 en computadora; en celular (tarjeta alta) el 3:4.
+  const ancha = posterUrl(p, "destacada")?.url ?? t?.ambiente;
+  const movil = (posterUrl(p, "tarjeta-celular") ?? posterUrl(p, "destacada-celular"))?.url ?? ancha;
   return (
     <article style={themeStyle(t)} className="relative flex min-h-[540px] overflow-hidden rounded-[28px] border border-linea bg-obra-fondo text-obra-texto md:min-h-[560px]">
-      {t && <Image src={t.ambiente} alt="" fill sizes="(min-width: 1440px) 1312px, 100vw" className="object-cover" />}
+      {t && ancha && movil !== ancha && <Image src={movil!} alt="" fill sizes="100vw" className="object-cover md:hidden" />}
+      {t && ancha && <Image src={ancha} alt="" fill sizes="(min-width: 1440px) 1312px, 100vw" className={`object-cover ${movil !== ancha ? "hidden md:block" : ""}`} />}
       <div aria-hidden="true" className="absolute inset-0 bg-[linear-gradient(0deg,var(--obra-fondo)_35%,color-mix(in_srgb,var(--obra-fondo)_40%,transparent)_70%,transparent)] md:bg-[linear-gradient(90deg,var(--obra-fondo)_0%,color-mix(in_srgb,var(--obra-fondo)_85%,transparent)_38%,color-mix(in_srgb,var(--obra-fondo)_10%,transparent)_75%)]" />
       <div aria-hidden="true" className="cono absolute -top-72 left-[40%] hidden h-[900px] w-[640px] md:block" />
       <div className="relative flex w-full flex-col justify-end gap-6 p-6 md:max-w-[640px] md:justify-center md:p-16">
@@ -68,7 +72,7 @@ export function ObraHorizontal({ p }: { p: PublicProduction }) {
     <Link href={`/producciones/${p.id}`} className="tarjeta tarjeta-hover group grid sm:grid-cols-2">
       <div className="relative aspect-[16/10] overflow-hidden sm:aspect-auto sm:min-h-[280px]" style={{ background: t?.fondo ?? "var(--telon-2)" }}>
         <div className="absolute inset-0 transition-transform duration-700 group-hover:scale-[1.04] motion-reduce:transition-none">
-          {t ? <ArtFill theme={t} alt={p.nombre} sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw" /> : <span className="titular absolute inset-x-6 bottom-6 text-3xl">{p.nombre}</span>}
+          {t ? <ArtFill theme={t} alt={p.nombre} sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw" imagen={posterUrl(p, "destacada")?.url} imagenMovil={posterUrl(p, "destacada-celular")?.url} /> : <span className="titular absolute inset-x-6 bottom-6 text-3xl">{p.nombre}</span>}
         </div>
       </div>
       <div className="flex flex-col justify-center gap-4 p-6 md:p-9">

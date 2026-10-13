@@ -5,13 +5,14 @@ export { themeProblems, themeStyle, type ProductionTheme } from "@/lib/themes";
 import { clasificar, elegirPortada, ordenarObras, type ConEstado, type Featured } from "@/lib/home-rules";
 import { mayus } from "@/lib/dates";
 import { asientosOcupados } from "@/lib/ocupados";
+import { elegir, POSTER_COLUMNS, type PosterColumns, type Uso } from "@/lib/poster";
 
 // ─── Datos de producciones ────────────────────────────────────────────────
 // Todo sale de la base (plantilla: migración 0029) con la sesión del
 // visitante: las reglas RLS deciden qué se ve. Las páginas públicas además
 // filtran por estado, para que el staff con sesión no vea borradores ahí.
 
-export type Production = KitColumns & {
+export type Production = KitColumns & PosterColumns & {
   id: string;
   nombre: string;
   venue: string | null;
@@ -43,6 +44,12 @@ export function getTheme(p: KitColumns): ProductionTheme | null {
   return themeFromKit(p, assetUrl);
 }
 
+/** Póster oficial (0093) para ese lugar, ya como URL; null = usar la imagen de ambiente. */
+export function posterUrl(p: PosterColumns | null | undefined, uso: Uso): { url: string; info: boolean } | null {
+  const e = elegir(p, uso);
+  return e ? { url: assetUrl(e.path), info: e.info } : null;
+}
+
 export type Performance = {
   id: string;
   starts_at: string | null;
@@ -55,7 +62,7 @@ export type Performance = {
 export type ZonePrice = { nombre: string; price: number; /** Color de la zona en el mapa (0062). */ color?: string | null };
 
 const PRODUCTION_COLUMNS =
-  "id, nombre, venue, temporada, price, on_sale, concluded, destacada, created_at, estado, frase, color_fondo, color_superficie, color_texto, color_acento, logo_path, ambiente_path";
+  `id, nombre, venue, temporada, price, on_sale, concluded, destacada, created_at, estado, frase, color_fondo, color_superficie, color_texto, color_acento, logo_path, ambiente_path, ${POSTER_COLUMNS}` as const;
 
 export type PublicProduction = ConEstado<Production>;
 

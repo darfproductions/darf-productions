@@ -17,13 +17,13 @@ export type BoletoVista = {
   usado: boolean;
 };
 
-export type EstiloBoleto = { fondo: string; superficie: string; texto: string; acento: string; logo: string | null };
+export type EstiloBoleto = { fondo: string; superficie: string; texto: string; acento: string; logo: string | null; /** Póster oficial limpio 3:4 (0093), de fondo arriba. */ poster?: string | null };
 
 /** Colores de DARF para obras sin kit completo. */
 export const ESTILO_DARF: EstiloBoleto = { fondo: "#0b0910", superficie: "#17121f", texto: "#ffffff", acento: "#a48bff", logo: null }; // Kit de marca: Sala, Telón, Lila
 
-export function estiloDe(t: ProductionTheme | null): EstiloBoleto {
-  return t ? { fondo: t.fondo, superficie: t.superficie, texto: t.texto, acento: t.acento, logo: t.logo } : ESTILO_DARF;
+export function estiloDe(t: ProductionTheme | null, poster: string | null = null): EstiloBoleto {
+  return t ? { fondo: t.fondo, superficie: t.superficie, texto: t.texto, acento: t.acento, logo: t.logo, poster } : ESTILO_DARF;
 }
 
 /** Logo de DARF que se lee sobre el fondo del boleto (kit: versión para fondo claro u oscuro). */

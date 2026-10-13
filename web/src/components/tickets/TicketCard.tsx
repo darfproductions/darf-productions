@@ -2,6 +2,7 @@ import type { BoletoVista, EstiloBoleto } from "@/lib/ticket-design";
 import { contador, logoDarf } from "@/lib/ticket-design";
 
 // Boleto diseñado con el logo y los colores de la obra (Bloque 4). Mismo dibujo que el PDF.
+// Con póster oficial (0093), el póster limpio 3:4 va de fondo en la parte de arriba.
 export function TicketCard({ b, estilo, i, total }: { b: BoletoVista; estilo: EstiloBoleto; i: number; total: number }) {
   return (
     <article
@@ -9,19 +10,30 @@ export function TicketCard({ b, estilo, i, total }: { b: BoletoVista; estilo: Es
       className="mx-auto flex w-full max-w-[360px] flex-col overflow-hidden rounded-3xl shadow-2xl"
       style={{ background: estilo.fondo, color: estilo.texto }}
     >
-      {/* eslint-disable-next-line @next/next/no-img-element -- logo SVG del kit de marca */}
-      <img src={logoDarf(estilo.fondo)} alt="DARF Productions" className="mx-auto mt-5 h-7 w-auto" />
-      <div className="flex h-32 items-center justify-center px-6 pt-3">
-        {estilo.logo ? (
-          // eslint-disable-next-line @next/next/no-img-element -- logo de la obra (puede venir de Storage)
-          <img src={estilo.logo} alt={b.obra} className="max-h-full max-w-full object-contain" />
-        ) : (
-          <p className="text-center text-3xl font-black leading-tight">{b.obra}</p>
+      <div className="relative flex flex-col">
+        {estilo.poster && (
+          <div aria-hidden="true" className="absolute inset-0 overflow-hidden">
+            {/* eslint-disable-next-line @next/next/no-img-element -- póster oficial (Storage) */}
+            <img src={estilo.poster} alt="" className="h-full w-full object-cover" />
+            <div className="absolute inset-0" style={{ background: `linear-gradient(180deg, color-mix(in srgb, ${estilo.fondo} 45%, transparent), color-mix(in srgb, ${estilo.fondo} 70%, transparent) 60%, ${estilo.fondo})` }} />
+          </div>
         )}
-      </div>
-      <div className="px-6 pb-4 pt-2 text-center">
-        <p className="font-bold first-letter:uppercase">{b.funcion}</p>
-        {b.lugar && <p className="text-sm opacity-80">{b.lugar}</p>}
+        <div className="relative flex flex-col">
+          {/* eslint-disable-next-line @next/next/no-img-element -- logo SVG del kit de marca */}
+          <img src={logoDarf(estilo.fondo)} alt="DARF Productions" className="mx-auto mt-5 h-7 w-auto" />
+          <div className="flex h-32 items-center justify-center px-6 pt-3">
+            {estilo.logo ? (
+              // eslint-disable-next-line @next/next/no-img-element -- logo de la obra (puede venir de Storage)
+              <img src={estilo.logo} alt={b.obra} className="max-h-full max-w-full object-contain" />
+            ) : (
+              <p className="text-center text-3xl font-black leading-tight">{b.obra}</p>
+            )}
+          </div>
+          <div className="px-6 pb-4 pt-2 text-center">
+            <p className="font-bold first-letter:uppercase">{b.funcion}</p>
+            {b.lugar && <p className="text-sm opacity-80">{b.lugar}</p>}
+          </div>
+        </div>
       </div>
       <div className="relative mx-0 my-1 h-0 border-t-2 border-dashed" style={{ borderColor: estilo.acento }}>
         <span className="absolute -left-3 -top-3 h-6 w-6 rounded-full bg-sala" />

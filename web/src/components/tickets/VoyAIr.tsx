@@ -3,7 +3,11 @@
 import { useState } from "react";
 import { logoDarf } from "@/lib/ticket-design";
 
-type Props = { obra: string; funcion: string; lugar: string | null; ambiente: string | null; logo: string | null; fondo: string; texto: string; acento: string };
+type Props = {
+  obra: string; funcion: string; lugar: string | null; ambiente: string | null; logo: string | null; fondo: string; texto: string; acento: string;
+  /** Póster oficial (0093) elegido para "Voy a ir": 9:16 limpio, 9:16 con info o 3:4 limpio. */
+  poster?: { url: string; info: boolean } | null;
+};
 
 const W = 1080;
 const H = 1920;
@@ -42,12 +46,26 @@ async function dibujar(p: Props): Promise<Blob | null> {
   const ctx = c.getContext("2d");
   if (!ctx) return null;
   ctx.fillStyle = p.fondo; ctx.fillRect(0, 0, W, H);
-  const [amb, logo, darf] = await Promise.all([p.ambiente ? cargar(p.ambiente) : null, p.logo ? cargar(p.logo) : null, cargar(logoDarf(p.fondo))]);
-  if (amb) {
-    cubrir(ctx, amb, 0, 0, W, 1150);
-    const g = ctx.createLinearGradient(0, 700, 0, 1150);
+  const [pst, darf] = await Promise.all([p.poster ? cargar(p.poster.url) : null, cargar(logoDarf(p.fondo))]);
+  // Póster 9:16 con toda la información: va completo y solo se le agrega la franja "¡Voy a ir!" arriba.
+  if (pst && p.poster?.info) {
+    cubrir(ctx, pst, 0, 0, W, H);
+    ctx.fillStyle = p.fondo; ctx.globalAlpha = 0.92; ctx.fillRect(0, 0, W, 230); ctx.globalAlpha = 1;
+    ctx.fillStyle = p.acento; ctx.textAlign = "center";
+    ctx.font = "900 92px Montserrat, Arial, sans-serif";
+    ctx.fillText("¡VOY A IR!", W / 2, 118);
+    ctx.fillStyle = p.texto; ctx.font = "700 40px Montserrat, Arial, sans-serif";
+    ctx.fillText(renglones(ctx, p.funcion, 980)[0] ?? "", W / 2, 190);
+    return new Promise((ok) => c.toBlob((b) => ok(b), "image/png"));
+  }
+  const [img, logo] = await Promise.all([pst ?? (p.ambiente ? cargar(p.ambiente) : null), p.logo ? cargar(p.logo) : null]);
+  if (img) {
+    // Un póster vertical (9:16) baja casi hasta los textos; el ambiente o el 3:4 ocupan la parte de arriba.
+    const alto = img.height / img.width > 1.6 ? 1300 : 1150;
+    cubrir(ctx, img, 0, 0, W, alto);
+    const g = ctx.createLinearGradient(0, alto - 450, 0, alto);
     g.addColorStop(0, "rgba(0,0,0,0)"); g.addColorStop(1, p.fondo);
-    ctx.fillStyle = g; ctx.fillRect(0, 700, W, 450);
+    ctx.fillStyle = g; ctx.fillRect(0, alto - 450, W, 450);
   }
   ctx.fillStyle = p.acento;
   ctx.font = "900 120px Montserrat, Arial, sans-serif";
@@ -75,6 +93,7 @@ async function dibujar(p: Props): Promise<Blob | null> {
 
 // "Voy a ir" (Bloque 4B): imagen vertical para historias de Instagram o estados de WhatsApp con la
 // imagen de la obra, la fecha y el logo. Se arma en el teléfono, sin datos personales ni el QR.
+// Con póster oficial (0093) se usa el póster en lugar de la imagen de ambiente.
 export function VoyAIr(p: Props) {
   const [estado, setEstado] = useState<"" | "armando" | "listo" | "error">("");
   const [url, setUrl] = useState<string | null>(null);

@@ -31,9 +31,25 @@ function lineas(ctx: CanvasRenderingContext2D, texto: string, ancho: number): st
 
 const mayus = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
-function dibujar(ctx: CanvasRenderingContext2D, b: BoletoVista, e: EstiloBoleto, logo: HTMLImageElement | null, darf: HTMLImageElement | null, qr: HTMLImageElement | null, i: number, total: number, fuente: string) {
+function dibujar(ctx: CanvasRenderingContext2D, b: BoletoVista, e: EstiloBoleto, logo: HTMLImageElement | null, darf: HTMLImageElement | null, qr: HTMLImageElement | null, i: number, total: number, fuente: string, poster: HTMLImageElement | null = null) {
   ctx.fillStyle = e.fondo;
   ctx.fillRect(0, 0, W, H);
+
+  // Póster oficial (0093) de fondo arriba, velado con el color de la obra.
+  if (poster) {
+    const alto = 470, r = Math.max(W / poster.width, alto / poster.height);
+    const pw = poster.width * r, ph = poster.height * r;
+    ctx.save();
+    ctx.beginPath(); ctx.rect(0, 0, W, alto); ctx.clip();
+    ctx.drawImage(poster, (W - pw) / 2, (alto - ph) / 2, pw, ph);
+    ctx.restore();
+    ctx.globalAlpha = 0.55; ctx.fillStyle = e.fondo; ctx.fillRect(0, 0, W, alto); ctx.globalAlpha = 1;
+    if (/^#[0-9a-f]{6}$/i.test(e.fondo)) {
+      const g = ctx.createLinearGradient(0, 300, 0, alto);
+      g.addColorStop(0, `${e.fondo}00`); g.addColorStop(1, e.fondo);
+      ctx.fillStyle = g; ctx.fillRect(0, 300, W, alto - 300);
+    }
+  }
   ctx.textAlign = "center";
   ctx.textBaseline = "alphabetic";
 
@@ -113,6 +129,7 @@ async function jpeg(canvas: HTMLCanvasElement): Promise<Uint8Array> {
 export async function crearPdf(boletos: BoletoVista[], estilo: EstiloBoleto): Promise<Uint8Array> {
   const fuente = getComputedStyle(document.body).fontFamily || "sans-serif";
   let logo = estilo.logo ? await cargar(estilo.logo, true) : null;
+  let poster = estilo.poster ? await cargar(estilo.poster, true) : null;
   const darf = await cargar(logoDarf(estilo.fondo), false); // mismo origen
   const paginas: JpegPagina[] = [];
   for (let i = 0; i < boletos.length; i++) {
@@ -122,13 +139,14 @@ export async function crearPdf(boletos: BoletoVista[], estilo: EstiloBoleto): Pr
     canvas.width = W; canvas.height = H;
     const ctx = canvas.getContext("2d");
     if (!ctx) throw new Error("Canvas no disponible.");
-    dibujar(ctx, b, estilo, logo, darf, qr, i, boletos.length, fuente);
+    dibujar(ctx, b, estilo, logo, darf, qr, i, boletos.length, fuente, poster);
     let data: Uint8Array;
     try {
       data = await jpeg(canvas);
     } catch {
-      // Si el logo no se pudo usar (permiso del servidor de imágenes), sin logo.
+      // Si el logo o el póster no se pudieron usar (permiso del servidor de imágenes), sin ellos.
       logo = null;
+      poster = null;
       dibujar(ctx, b, estilo, null, darf, qr, i, boletos.length, fuente);
       data = await jpeg(canvas);
     }

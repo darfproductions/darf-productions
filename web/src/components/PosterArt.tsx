@@ -6,10 +6,19 @@ import { isLight, type ProductionTheme } from "@/lib/themes";
 // que todas las obras se vean del mismo tamaño sin importar la forma del logo.
 
 /** Tarjeta: ambiente de fondo + logo centrado en caja fija. Rellena su contenedor. */
-export function ArtFill({ theme, alt, sizes }: { theme: ProductionTheme; alt: string; sizes: string }) {
+/** Con póster oficial (0093), la versión limpia reemplaza al ambiente; `imagenMovil` se usa en celular. */
+export function ArtFill({ theme, alt, sizes, imagen, imagenMovil }: { theme: ProductionTheme; alt: string; sizes: string; imagen?: string | null; imagenMovil?: string | null }) {
+  const fondo = imagen ?? theme.ambiente;
   return (
     <>
-      <Image src={theme.ambiente} alt="" fill sizes={sizes} className="object-cover" />
+      {imagenMovil && imagenMovil !== fondo ? (
+        <>
+          <Image src={imagenMovil} alt="" fill sizes={sizes} className="object-cover md:hidden" />
+          <Image src={fondo} alt="" fill sizes={sizes} className="hidden object-cover md:block" />
+        </>
+      ) : (
+        <Image src={fondo} alt="" fill sizes={sizes} className="object-cover" />
+      )}
       {/* Velo con el color de fondo de la obra (claro u oscuro) para que el logo resalte. */}
       <div className="absolute inset-0" style={{ background: `radial-gradient(ellipse at center, color-mix(in srgb, ${theme.fondo} 30%, transparent), color-mix(in srgb, ${theme.fondo} 65%, transparent))` }} />
       <div className="absolute inset-x-[14%] inset-y-[20%]">

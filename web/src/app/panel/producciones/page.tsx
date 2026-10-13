@@ -6,6 +6,7 @@ import { ETIQUETA_ESTADO } from "@/lib/home-rules";
 import { listPanelProductions } from "@/lib/panel-data";
 import { can, myProductionIds } from "@/lib/panel-nav";
 import { getHomeData } from "@/lib/productions";
+import { elegir } from "@/lib/poster";
 import { setFeatured } from "./actions";
 import { requirePanel } from "@/lib/permissions";
 import { kitMissing } from "@/lib/themes";
@@ -16,6 +17,8 @@ export default async function PanelProductions() {
   const access = await requirePanel("/panel/producciones");
   const [obras, home] = await Promise.all([listPanelProductions(access.isDirector ? undefined : myProductionIds(access)), getHomeData()]);
   const estadoPub = new Map(home.productions.map((p) => [p.id, p.estadoPublico]));
+  // Póster oficial (0093): con la destacada 16:9 o 4:3 limpia, la portada se ve con el póster.
+  const conPoster = new Set(home.productions.filter((p) => elegir(p, "destacada")).map((p) => p.id));
   const portada = home.featured?.production ?? null;
   const destacada = obras.find((p) => p.destacada) ?? null;
 
@@ -57,6 +60,11 @@ export default async function PanelProductions() {
                     <EstadoChip estado={p.estado} />
                   </div>
                 </Link>
+                {p.estado === "publicada" && can(access, p.id, "obra.publicar") && !conPoster.has(p.id) && (
+                  <Link href={`/panel/producciones/${p.id}/pagina#poster`} className="text-xs text-texto-3 underline-offset-4 hover:underline" title="Sin póster oficial la portada usa la imagen de ambiente">
+                    Sin póster destacado
+                  </Link>
+                )}
                 {p.estado === "publicada" && can(access, p.id, "obra.publicar") && (
                   p.destacada
                     ? <span className="text-sm font-bold text-aviso" title="Destacada en la portada">★ En portada</span>

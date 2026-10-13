@@ -9,7 +9,8 @@ import { formatSlot, listMyApplications, listMyInvites } from "@/lib/auditions";
 import { listMyOffers, offerLabel } from "@/lib/casting";
 import { OfferReplyForm } from "./OfferReplyForm";
 import { env } from "@/lib/env";
-import { formatPerformanceDate, getTheme } from "@/lib/productions";
+import { formatPerformanceDate, getTheme, posterUrl } from "@/lib/productions";
+import { POSTER_COLUMNS, type PosterColumns } from "@/lib/poster";
 import type { KitColumns } from "@/lib/themes";
 import { estiloDe, type BoletoVista } from "@/lib/ticket-design";
 import { OrderTickets } from "@/components/tickets/OrderTickets";
@@ -47,7 +48,7 @@ type OrderRow = {
   motivo: string | null;
   cancelada_por_comprador_at: string | null;
   buyer_nombre: string;
-  performances: { starts_at: string | null; venue: string | null; production_id: string; cancelada_at?: string | null; cancelada_motivo?: string | null; productions: (KitColumns & { nombre: string; venue: string | null }) | null } | null;
+  performances: { starts_at: string | null; venue: string | null; production_id: string; cancelada_at?: string | null; cancelada_motivo?: string | null; productions: (KitColumns & PosterColumns & { nombre: string; venue: string | null }) | null } | null;
   tickets: { id: string; is_active: boolean; qr_token: string; checked_in_at: string | null; seats: { seat_label: string } | null; price_categories: { nombre: string } | null }[];
 };
 
@@ -70,7 +71,7 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
   await supabase.rpc("expire_due_orders", { pid: null });
   const { data, error } = await supabase
     .from("orders")
-    .select("id, order_code, status, total, discount_amount, discount_codigo, buyer_telefono, buyer_nombre, created_at, expires_at, vencida_at, motivo, cancelada_por_comprador_at, performances(starts_at, venue, production_id, cancelada_at, cancelada_motivo, productions(nombre, venue, color_fondo, color_superficie, color_texto, color_acento, logo_path, ambiente_path, frase)), tickets(id, is_active, qr_token, checked_in_at, seats(seat_label), price_categories(nombre))")
+    .select(`id, order_code, status, total, discount_amount, discount_codigo, buyer_telefono, buyer_nombre, created_at, expires_at, vencida_at, motivo, cancelada_por_comprador_at, performances(starts_at, venue, production_id, cancelada_at, cancelada_motivo, productions(nombre, venue, color_fondo, color_superficie, color_texto, color_acento, logo_path, ambiente_path, frase, ${POSTER_COLUMNS})), tickets(id, is_active, qr_token, checked_in_at, seats(seat_label), price_categories(nombre))`)
     .eq("buyer_user_id", session.userId)
     .order("created_at", { ascending: false });
   const orders = (data ?? []) as unknown as OrderRow[];
@@ -125,7 +126,7 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
               const seats = o.status === "pendiente" ? (asientosPendientes.get(o.id) ?? []) : activos.map((t) => etiqueta(t));
               const prod = o.performances?.productions ?? null;
               const tema = prod ? getTheme(prod) : null;
-              const estilo = estiloDe(tema);
+              const estilo = estiloDe(tema, posterUrl(prod, "boleto")?.url ?? null);
               const boletos: BoletoVista[] = activos.map((t) => ({
                 id: t.id,
                 obra: nombre,
@@ -191,7 +192,7 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
                       <AgregarCalendario ics={`/calendario/boleto/${encodeURIComponent(o.order_code)}`}
                         evento={{ uid: `orden-${o.order_code}`, titulo: `${nombre} · DARF Productions`, inicia: o.performances.starts_at, lugar: o.performances.venue ?? prod?.venue ?? null, detalle: `Orden ${o.order_code}` }} />
                       <VoyAIr obra={nombre} funcion={formatPerformanceDate(o.performances.starts_at)} lugar={o.performances.venue ?? prod?.venue ?? null}
-                        ambiente={tema?.ambiente ?? null} logo={tema?.logo ?? null} fondo={estilo.fondo} texto={estilo.texto} acento={estilo.acento} />
+                        ambiente={tema?.ambiente ?? null} poster={posterUrl(prod, "voy")} logo={tema?.logo ?? null} fondo={estilo.fondo} texto={estilo.texto} acento={estilo.acento} />
                     </div>
                   )}
                   </div>

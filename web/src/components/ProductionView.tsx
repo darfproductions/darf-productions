@@ -28,6 +28,7 @@ import {
   getGallery,
   getProduction,
   getTheme,
+  posterUrl,
   performanceOccupancy,
   themeStyle,
 } from "@/lib/productions";
@@ -66,6 +67,7 @@ export async function ProductionView({
 }) {
   const { production: p, performances, prices } = data;
   const theme = getTheme(p);
+  const posterPagina = posterUrl(p, "pagina");
   // 0088: una función que ya empezó deja de venderse aunque siga "en venta".
   const vendibles = performances.filter((fn) => funcionVendible(fn, p.concluded));
   const [c, gallery, ensayos, audiciones, programa, franja, ocupacion, socio, eventos, cartelera, sesion] = await Promise.all([
@@ -360,7 +362,16 @@ export async function ProductionView({
           )}
         </div>
 
-        <aside className={`flex flex-col gap-4 lg:sticky ${vistaPrevia ? "lg:top-[120px]" : "lg:top-24"}`}>
+        {/* Con póster oficial (0093) la columna ya es alta: deja de ir fija para que no se corte. */}
+        <aside className={`flex flex-col gap-4 ${posterPagina ? "" : `lg:sticky ${vistaPrevia ? "lg:top-[120px]" : "lg:top-24"}`}`}>
+          {posterPagina && (
+            <a href={posterPagina.url} target="_blank" rel="noopener" className="group block overflow-hidden rounded-[22px] border border-current/12 bg-obra-superficie">
+              <span className="relative block aspect-[3/4]">
+                <Image src={posterPagina.url} alt={`Póster oficial de ${p.nombre}`} fill sizes="(min-width: 1024px) 360px, 100vw" className="object-cover transition-transform duration-700 group-hover:scale-[1.03] motion-reduce:transition-none" />
+              </span>
+              <span className="block px-5 py-3 text-[13px] font-bold text-obra-acento">Póster oficial · ver en grande ↗</span>
+            </a>
+          )}
           {ficha.length > 0 && (
             <div className="rounded-[22px] border border-current/12 bg-obra-superficie p-7">
               <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.32em] text-obra-acento">Ficha</p>

@@ -21,7 +21,7 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   images: {
     remotePatterns: supabaseHost
-      ? [{ protocol: "https", hostname: supabaseHost, pathname: "/storage/v1/object/public/producciones/**" }]
+      ? [{ protocol: supabaseHost === "localhost" ? "http" : "https", hostname: supabaseHost, pathname: "/storage/v1/object/public/producciones/**" }]
       : [],
   },
   // Service worker (app instalable y push): siempre la versión más reciente.

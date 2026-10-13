@@ -49,7 +49,9 @@ export async function compressImage(file: File, kind: CompressKind): Promise<Com
     // Los logos con transparencia siempre se revisan: se les quitan los márgenes vacíos
     // para que en la página se vean del tamaño correcto.
     const esLogoPng = kind === "logo" && file.type !== "image/jpeg";
-    if (!esLogoPng && !hayQueComprimir(kind, { size: file.size, width: bmp.width, height: bmp.height })) { bmp.close(); return sinCambio; }
+    // El póster oficial siempre queda en JPEG: lo leen la imagen al compartir y el PDF del boleto.
+    const posterAJpeg = kind === "poster" && file.type !== "image/jpeg";
+    if (!esLogoPng && !posterAJpeg && !hayQueComprimir(kind, { size: file.size, width: bmp.width, height: bmp.height })) { bmp.close(); return sinCambio; }
     let { w, h } = destino(bmp.width, bmp.height, COMPRESS[kind].maxDim);
     let canvas = document.createElement("canvas");
     canvas.width = w;
@@ -59,7 +61,7 @@ export async function compressImage(file: File, kind: CompressKind): Promise<Com
     ctx.imageSmoothingQuality = "high";
     ctx.drawImage(bmp, 0, 0, w, h);
     bmp.close();
-    const alpha = file.type !== "image/jpeg" && tieneTransparencia(ctx, w, h);
+    const alpha = kind !== "poster" && file.type !== "image/jpeg" && tieneTransparencia(ctx, w, h);
     let recortado = false;
     if (kind === "logo" && alpha) {
       const r = recorteAlfa(cajaVisible(ctx, w, h), w, h);
@@ -74,9 +76,9 @@ export async function compressImage(file: File, kind: CompressKind): Promise<Com
         }
       }
     }
-    const tipo = formatoSalida(await soportaWebp(), alpha);
+    const tipo = kind === "poster" ? "image/jpeg" : formatoSalida(await soportaWebp(), alpha);
     const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, tipo, COMPRESS[kind].quality));
-    if (!blob || (!recortado && blob.size >= file.size)) return sinCambio;
+    if (!blob || (!recortado && !posterAJpeg && blob.size >= file.size)) return sinCambio;
     const nuevo = new File([blob], renombrar(file.name, tipo), { type: tipo });
     const nota = recortado
       ? `Logo ajustado: se quitaron los márgenes vacíos (${peso(file.size)} → ${peso(nuevo.size)})`

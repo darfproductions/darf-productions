@@ -5,6 +5,7 @@ import { leerFranja } from "@/lib/banner-form";
 import { createClient } from "@/lib/supabase/server";
 import { themeProblems } from "@/lib/themes";
 import { parseYoutube } from "@/lib/youtube";
+import { FORMATOS, columna, type Formato } from "@/lib/poster";
 
 // Editor de la página de la obra. La base decide qué puede cada quien
 // (0032: obra.editar para contenido, obra.publicar para el estado).
@@ -70,6 +71,22 @@ export async function saveKitImage(pid: string, kind: "logo" | "ambiente", path:
   if (err) return { ok: false, message: err.message };
   done(pid, "");
   return { ok: true, message: kind === "logo" ? "Logo actualizado." : "Imagen de ambiente actualizada." };
+}
+
+/** Póster oficial (0093): un formato y versión; path vacío lo quita. */
+export async function savePoster(pid: string, formato: string, info: boolean, path: string): Promise<{ ok: boolean; message: string }> {
+  if (!(FORMATOS as readonly string[]).includes(formato)) return { ok: false, message: "Formato no válido." };
+  if (path && !path.startsWith(`${pid}/kit/`)) return { ok: false, message: "Ruta de archivo no válida." };
+  const err = await update(pid, { [columna(formato as Formato, info)]: path || null });
+  if (err) return { ok: false, message: err.message };
+  done(pid, "");
+  return { ok: true, message: path ? "Póster guardado." : "Póster quitado." };
+}
+
+export async function quitarPoster(_p: EditState, f: FormData): Promise<EditState> {
+  const pid = String(f.get("pid"));
+  const r = await savePoster(pid, String(f.get("formato")), f.get("info") === "1", "");
+  return r.ok ? done(pid, r.message) : { ok: false, message: r.message };
 }
 
 const ESTADOS = ["borrador", "publicada", "archivada", "oculta", "cancelada"];

@@ -60,7 +60,7 @@ export function OrderTickets({ boletos, estilo, orden, pdfServidor }: { boletos:
           }}
           className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 overflow-y-auto bg-[#0b0910]/95 p-4 outline-none"
         >
-          <button type="button" onClick={() => setAbierto(false)} aria-label="Cerrar" className="absolute right-4 top-4 h-11 w-11 rounded-full border border-white/30 text-xl font-bold">×</button>
+          <button type="button" onClick={() => setAbierto(false)} aria-label="Cerrar" className="absolute right-4 top-4 z-10 h-11 w-11 rounded-full border border-white/30 bg-[#0b0910]/70 text-xl font-bold">×</button>
           <TicketCard b={boletos[i]} estilo={estilo} i={i} total={total} />
           {total > 1 && (
             <div className="flex items-center gap-4">

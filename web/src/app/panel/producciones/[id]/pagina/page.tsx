@@ -10,7 +10,8 @@ import { can } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
 import { assetUrl } from "@/lib/productions";
 import { kitMissing } from "@/lib/themes";
-import { saveFacts, saveGeneral, saveKitImage, saveThanks, saveVideos } from "./actions";
+import { quitarPoster, saveFacts, saveGeneral, saveKitImage, savePoster, saveThanks, saveVideos } from "./actions";
+import { ActionForm } from "@/components/panel/ActionForm";
 import { AnunciosEditor } from "@/components/anuncios/AnunciosEditor";
 import { BannerEditor } from "./BannerEditor";
 import { ColorsForm } from "./ColorsForm";
@@ -18,6 +19,8 @@ import { EditForm } from "./EditForm";
 import { EstadoPanel } from "./EstadoPanel";
 import { RowsEditor } from "./RowsEditor";
 import { SongsEditor } from "./SongsEditor";
+import { FORMATOS, FORMATO_INFO, poster } from "@/lib/poster";
+import { PosterSlot } from "./PosterSlot";
 
 export const metadata: Metadata = { title: "Página pública" };
 
@@ -123,6 +126,38 @@ export default async function PageEditor({ params }: PageProps<"/panel/produccio
                 <ImageUpload productionId={id} kind="ambiente" carpeta="kit" base="ambiente" save={saveKitImage.bind(null, id, "ambiente")} label={p.ambiente_path ? "Cambiar imagen" : "Subir imagen"} />
               </div>
             </div>
+            <section id="poster" aria-label="Póster oficial" className="flex scroll-mt-24 flex-col gap-3 rounded-lg bg-sala p-4">
+              <div>
+                <p className="font-bold">Póster oficial <span className="font-normal text-texto-3">(opcional; súbelo cuando ya exista)</span></p>
+                <p className="text-sm text-texto-3">
+                  Cada formato en dos versiones: <b>con toda la información</b> (fechas, lugar, créditos) para donde la página no pone los datos —al compartir la liga y en la página de la obra—
+                  y <b>solo imagen</b> (sin textos) para donde la página ya pone el logo y los datos encima —obra destacada, tarjetas, boletos, “Voy a ir”—. Mientras falten, se usa la imagen de ambiente.
+                </p>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                {FORMATOS.map((f) => (
+                  <div key={f} className="flex flex-col gap-2">
+                    <p className="text-sm font-bold">{FORMATO_INFO[f].titulo} <span className="font-normal text-texto-3">· ideal {FORMATO_INFO[f].ideal}</span></p>
+                    <p className="text-xs text-texto-3">{FORMATO_INFO[f].uso}</p>
+                    {[true, false].map((info) => {
+                      const ruta = poster(p, f, info);
+                      return (
+                        <div key={String(info)} className="flex flex-col gap-1.5 rounded-lg bg-telon-2 p-2">
+                          <span className="text-xs font-semibold">{info ? "Con toda la información" : "Solo imagen (sin textos)"}</span>
+                          <div className="mx-auto w-28 overflow-hidden rounded bg-sala" style={{ aspectRatio: FORMATO_INFO[f].ratio }}>
+                            {ruta ? <img src={assetUrl(ruta)} alt={`${FORMATO_INFO[f].titulo} ${info ? "con información" : "solo imagen"}`} className="h-full w-full object-cover" /> : <span className="grid h-full place-items-center text-[11px] text-texto-3">Falta</span>}
+                          </div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <PosterSlot pid={id} formato={f} info={info} tiene={!!ruta} save={savePoster.bind(null, id, f, info)} />
+                            {ruta && <ActionForm inline action={quitarPoster} hidden={{ pid: id, formato: f, info: info ? "1" : "0" }} confirm="¿Quitar esta imagen del póster?" submit="Quitar" submitClass="text-xs font-bold text-texto-3 underline" />}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
+            </section>
             <ColorsForm
               pid={id}
               initial={{ fondo: p.color_fondo ?? "#0b0910", superficie: p.color_superficie ?? "#17121f", texto: p.color_texto ?? "#f4f1f8", acento: p.color_acento ?? "#a48bff" }}

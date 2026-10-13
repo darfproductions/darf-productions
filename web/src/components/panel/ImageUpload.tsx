@@ -44,6 +44,7 @@ export function ImageUpload({
   save,
   label,
   compact,
+  revisar,
 }: {
   productionId: string;
   kind: ImageKind;
@@ -53,6 +54,8 @@ export function ImageUpload({
   save: (path: string) => Promise<Result>;
   label?: string;
   compact?: boolean;
+  /** Revisión extra de medidas (por ejemplo, la proporción de un póster). */
+  revisar?: (ancho: number, alto: number) => { errores: string[]; avisos: string[] };
 }) {
   const router = useRouter();
   const input = useRef<HTMLInputElement>(null);
@@ -68,8 +71,9 @@ export function ImageUpload({
       // Se comprime antes de subir; el tamaño máximo se revisa sobre la foto ya optimizada.
       const c = await compressImage(file, kind);
       const check = checkImage(kind, { type: file.type, size: c.file.size, ...dims });
-      if (!check.ok) {
-        setMsg({ ok: false, lines: check.errors });
+      const extra = revisar?.(dims.width, dims.height) ?? { errores: [], avisos: [] };
+      if (!check.ok || extra.errores.length) {
+        setMsg({ ok: false, lines: [...check.errors, ...extra.errores] });
         return;
       }
       const path = storagePath(productionId, carpeta, base, c.file.type);
