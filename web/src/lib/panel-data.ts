@@ -1,11 +1,12 @@
 import { cache } from "react";
 import { redirect } from "next/navigation";
 import type { KitColumns } from "@/lib/themes";
+import { POSTER_COLUMNS, type PosterColumns } from "@/lib/poster";
 import { createClient } from "@/lib/supabase/server";
 
 // Lecturas del panel. Todas pasan por RLS con la sesión de quien consulta.
 
-export type PanelProduction = KitColumns & {
+export type PanelProduction = KitColumns & PosterColumns & {
   id: string;
   destacada?: boolean;
   nombre: string;
@@ -18,7 +19,7 @@ export type PanelProduction = KitColumns & {
 };
 
 const COLUMNS =
-  "id, nombre, estado, venue, temporada, on_sale, concluded, destacada, created_at, frase, color_fondo, color_superficie, color_texto, color_acento, logo_path, ambiente_path";
+  `id, nombre, estado, venue, temporada, on_sale, concluded, destacada, created_at, frase, color_fondo, color_superficie, color_texto, color_acento, logo_path, ambiente_path, ${POSTER_COLUMNS}` as const;
 
 export async function listPanelProductions(ids?: string[]): Promise<PanelProduction[]> {
   const supabase = await createClient();

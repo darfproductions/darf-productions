@@ -10,7 +10,27 @@ import { ordenarPendientes, pendienteHref, pendienteTexto } from "@/lib/panel-ho
 import { getPendientes } from "@/lib/panel-pendientes";
 import { requirePanel } from "@/lib/permissions";
 import { kitMissing } from "@/lib/themes";
-import { partesMx } from "@/lib/dates";
+import { mayus, partesMx } from "@/lib/dates";
+import { env } from "@/lib/env";
+import { listPerformances, listZones } from "@/lib/boleteria";
+import { listoParaVender } from "@/lib/listo-vender";
+import { elegir } from "@/lib/poster";
+import { todasLasFilas } from "@/lib/supabase/paginar";
+
+const fechaCorta = (iso: string) =>
+  mayus(new Intl.DateTimeFormat("es-MX", { weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit", timeZone: "America/Mexico_City" }).format(new Date(iso)));
+
+/** Asientos activos del mapa: total, sin zona de precio y zonas que usan. */
+async function asientosDe(pid: string) {
+  const supabase = await createClient();
+  const { data } = await todasLasFilas<{ price_category_id: string | null }>((a, b) =>
+    supabase.from("seats").select("price_category_id").eq("production_id", pid).eq("is_active", true).order("id").range(a, b));
+  return {
+    total: data.length,
+    sinZona: data.filter((s) => !s.price_category_id).length,
+    zonas: [...new Set(data.map((s) => s.price_category_id).filter((z): z is string => !!z))],
+  };
+}
 
 // Resumen de la obra: estado del kit, funciones y equipo responsable.
 export default async function ProductionSummary({ params }: PageProps<"/panel/producciones/[id]">) {
@@ -26,6 +46,12 @@ export default async function ProductionSummary({ params }: PageProps<"/panel/pr
   const porHacer = ordenarPendientes(todos.filter((x) => x.production_id === id));
   if (!p) return null;
   const faltan = kitMissing(p);
+  // Bloque 4C: "Listo para vender", mientras la obra no haya terminado.
+  const vende = !p.concluded && !["archivada", "cancelada"].includes(p.estado);
+  const [fs, zs, as] = vende ? await Promise.all([listPerformances(id), listZones(id), asientosDe(id)]) : [[], [], null];
+  const lista = vende && as
+    ? listoParaVender({ pid: id, estado: p.estado, kitFaltan: faltan, funciones: fs, zonas: zs, asientos: as, whatsapp: !!env.whatsapp, posterDestacado: !!elegir(p, "destacada"), fecha: fechaCorta })
+    : null;
   const mes = partesMx().m;
   const cumples = can(access, id, "obra.ver")
     ? cumplesDelMes((((await (await createClient()).rpc("birthdays", { pid: id })).data ?? []) as Cumple[]), mes)
@@ -50,6 +76,37 @@ export default async function ProductionSummary({ params }: PageProps<"/panel/pr
           </ul>
         )}
       </Card>
+      {lista && (
+        <Card className={`md:col-span-2 ${lista.listo ? "" : "border border-aviso/40"}`}>
+          <details open={!lista.listo} className="group">
+            <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-2">
+              <span>
+                <span className="block text-xs font-bold uppercase tracking-[0.2em] text-texto-3">Listo para vender</span>
+                <span className={`mt-1 block font-bold ${lista.listo ? "text-[#bbf7d0]" : "text-aviso"}`}>
+                  {lista.listo ? "✓ Todo listo: la obra puede vender boletos." : `Faltan ${lista.faltan} ${lista.faltan === 1 ? "cosa" : "cosas"} para vender.`}
+                </span>
+              </span>
+              <span className="text-sm font-bold text-violeta-claro group-open:hidden">Ver lista</span>
+            </summary>
+            <ul className="mt-3 grid gap-1.5">
+              {lista.puntos.map((x) => (
+                <li key={x.clave}>
+                  <Link href={x.href} className="flex items-start gap-3 rounded-lg bg-sala px-4 py-2.5 hover:bg-telon-2">
+                    <span aria-hidden="true" className={`font-black ${x.ok ? "text-[#bbf7d0]" : x.obligatorio ? "text-aviso" : "text-texto-3"}`}>{x.ok ? "✓" : x.obligatorio ? "✗" : "○"}</span>
+                    <span className="min-w-0 flex-1">
+                      <span className={x.ok ? "text-texto-2" : "font-semibold"}>{x.texto}</span>
+                      {!x.obligatorio && <span className="text-xs text-texto-3"> (opcional)</span>}
+                      <span className="sr-only">{x.ok ? ": listo" : ": pendiente"}</span>
+                      {x.detalle && !x.ok && <span className="block text-sm text-texto-3">{x.detalle}</span>}
+                    </span>
+                    {!x.ok && <span className="text-violeta-claro">→</span>}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </details>
+        </Card>
+      )}
       <Card>
         <p className="text-xs font-bold uppercase tracking-[0.2em] text-texto-3">Kit de la plantilla</p>
         {faltan.length === 0 ? (
