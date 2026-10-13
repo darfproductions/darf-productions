@@ -98,7 +98,12 @@ final (Lanzamiento) y con aprobación explícita.**
    - Vercel Pro, porque el plan Hobby no permite uso comercial;
    - Supabase Pro, para tener respaldos.
 4. Respaldo completo de la base de producción.
-5. **Migración planificada de datos reales de la 1.0:**
+5. **Mudanza de la 1.0 — CAMBIÓ (Diego, 2026-10-13):** lo de la 1.0 era de prueba, así que
+   no se migra nada. La base **2.0 DEV se queda como la oficial**, vaciada con
+   `supabase/dev/limpieza_para_oficial.sql` (se quedan las 4 obras sin "(PRUEBA)", su contenido,
+   mapa y zonas, roles y permisos, DARFY y la cuenta del Director; se borra todo lo de prueba y
+   los contadores vuelven a empezar). Lo de abajo queda solo como referencia:
+   **Migración planificada de datos reales de la 1.0 (ya no aplica):**
    - cuentas;
    - órdenes y boletos;
    - vendedores;
