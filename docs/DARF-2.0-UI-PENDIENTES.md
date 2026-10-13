@@ -89,6 +89,7 @@ Diego eligió cuáles sí (ver plan del bloque). Hechas en `darf-2.0`, migracion
 | Club Fan (0095) | Página pública /club-fan con beneficios, preguntas y cómo unirse (liga en el pie de página y en la Fan Zone). En Mi cuenta, sección "Club Fan" con "Salir del Club Fan" (con confirmación): se borran sus recordatorios de preventa; boletos y lugares apartados se quedan; si vuelve, nuevo número de socio. |
 | Contacto (0096) | Filtros Sin responder · Míos · Sin asignar · Respondidos · Todos. Asignar a alguien del equipo (le llega aviso); "Responder por correo" y "WhatsApp"; "Marcar respondido" con canal y nota (queda quién y cuándo); reabrir. En la bitácora sin datos de quien escribió. |
 | Bitácora (0096) | Filtros por obra, persona, tipo de acción (grupos con nombre claro; boletos con sub-acciones) y fechas en hora de México; "Ver más" hasta 1,000 y conteo de resultados. |
+| Obra privada con audiciones (0097) | Una obra en borrador u oculta no sale en la página, pero sus convocatorias sí: muestran el nombre, logo y colores de la obra, sin liga a su página. |
 
 ## Lo que queda pendiente
 
@@ -101,6 +102,10 @@ Diego eligió cuáles sí (ver plan del bloque). Hechas en `darf-2.0`, migracion
 - No se harán: lista de espera, etiquetas de función (la franja ya cubre eso), transferir boleto, pago con tarjeta u OXXO.
 
 ## Para el lanzamiento (lista de revisión)
+
+> **Hecho el 13 de octubre de 2026** (ver `docs/DARF-2.0-LANZAMIENTO.md`): la 2.0 está en `www.darfproductions.com`
+> con la base "DARF 2.0 DEV" como oficial. Lo de abajo queda como referencia; lo único pendiente es lo que
+> depende del plan Pro (noviembre): contraseñas filtradas y respaldos diarios.
 
 - **Entrar con Google:** en el proyecto de Supabase (DEV y luego el oficial) → Authentication → Providers → Google, con el Client ID y secreto de la 1.0, y agregar la dirección del sitio (`…/auth/callback`) en Google Cloud y en Supabase → URL Configuration. Probar el botón en DEV y otra vez el día de la publicación.
 - DEV ya tiene aplicadas todas las migraciones hasta la 0096 (verificado). El proyecto oficial necesitará las mismas, en orden, el día de la publicación.

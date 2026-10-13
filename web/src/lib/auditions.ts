@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { mayus } from "@/lib/dates";
+import type { KitColumns } from "@/lib/themes";
 
 // Lecturas de audiciones (0036, 0037). Pasan por RLS: el público ve convocatorias
 // abiertas, cerradas o finalizadas; cada aspirante, solo su inscripción. Las de
@@ -36,7 +37,22 @@ const COLS =
 export async function listPublicAuditions(): Promise<Audition[]> {
   const supabase = await createClient();
   const { data } = await supabase.from("auditions").select(COLS).in("estado", ["abierta", "cerrada"]).eq("visibilidad", "publica").eq("permanente", false).order("created_at", { ascending: false });
-  return (data ?? []) as unknown as Audition[];
+  const lista = (data ?? []) as unknown as Audition[];
+  // Obra privada (borrador u oculta): RLS no deja leerla; su nombre sale de audition_obra (0097).
+  return Promise.all(lista.map(async (a) => {
+    if (!a.production_id || a.productions) return a;
+    const obra = await getAuditionObra(a.id);
+    return obra ? { ...a, productions: { nombre: obra.nombre } } : a;
+  }));
+}
+
+/** 0097: nombre y kit de la obra de una convocatoria pública, aunque la obra sea privada.
+ *  "publica" dice si su página se puede abrir. */
+export type AuditionObra = KitColumns & { nombre: string; publica: boolean };
+export async function getAuditionObra(aid: string): Promise<AuditionObra | null> {
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("audition_obra", { aid });
+  return (data as AuditionObra | null) ?? null;
 }
 
 /** El Registro permanente de talento (0064), si está abierto. */

@@ -7,7 +7,17 @@ dominio `darfproductions.com`.
 Quién hace cada paso: **Diego** (configuración de Supabase, Vercel, GoDaddy, Cloudflare, Resend y
 cuentas de pago) · **Claude** (código, scripts y verificación de solo lectura).
 
-## Cómo está hoy (revisado el 13 de octubre)
+## Estado: lanzada el 13 de octubre de 2026 ✅
+
+- B1–B9 hechos y verificados (solo lectura). `www.darfproductions.com` es la 2.0 (rama `darf-2.0`);
+  `darfproductions.com` redirige a `www`. Protección de Vercel: todo menos los dominios propios.
+- Primeras pruebas en la base: Club Fan socio #1, mensaje de Contacto con aviso al Director, invitación
+  al equipo con correo enviado, 8 tareas automáticas activas. Sin errores en Vercel.
+- Por ahora con planes **gratis**; Supabase Pro y Vercel Pro se contratan a inicios de noviembre
+  (antes de abrir la venta de boletos). Con Pro: respaldos diarios y protección de contraseñas filtradas.
+- La 1.0 (proyecto `darf-productions` y su base) queda intacta como respaldo (ver D).
+
+## Cómo estaba antes del lanzamiento (revisado el 13 de octubre)
 
 | Pieza | Estado |
 |---|---|
