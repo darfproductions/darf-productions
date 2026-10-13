@@ -4,14 +4,17 @@ import { PASSWORD_AYUDA } from "@/lib/account-rules";
 import { PasswordInput } from "@/components/PasswordInput";
 import Link from "next/link";
 import { useActionState, useState } from "react";
-import { login, loginGoogle, register, type AuthState } from "./actions";
+import { Turnstile } from "@/components/Turnstile";
+import { login, loginGoogle, register, resendConfirmation, type AuthState } from "./actions";
 
 const field = "rounded-lg bg-sala px-3 py-3 font-normal";
 
-export function AuthForms({ next }: { next: string }) {
+export function AuthForms({ next, captcha }: { next: string; captcha: string }) {
   const [tab, setTab] = useState<"entrar" | "registro">("entrar");
   const [loginState, loginAction, loginPending] = useActionState<AuthState, FormData>(login, null);
   const [regState, regAction, regPending] = useActionState<AuthState, FormData>(register, null);
+  const [reState, reAction, rePending] = useActionState<AuthState, FormData>(resendConfirmation, null);
+  const [correo, setCorreo] = useState("");
 
   return (
     <div className="flex flex-col gap-5 rounded-2xl bg-telon p-6">
@@ -41,23 +44,38 @@ export function AuthForms({ next }: { next: string }) {
           Continuar con Google
         </button>
       </form>
+      <p className="-mt-2 text-center text-xs text-texto-3">Al continuar aceptas los <a href="/terminos" target="_blank" className="underline">términos</a> y el <a href="/privacidad" target="_blank" className="underline">aviso de privacidad</a>.</p>
       <p className="flex items-center gap-3 text-xs text-texto-3 before:h-px before:flex-1 before:bg-linea-2 after:h-px after:flex-1 after:bg-linea-2">o con tu correo</p>
 
       {tab === "entrar" ? (
+        <>
         <form action={loginAction} className="flex flex-col gap-4">
           <input type="hidden" name="next" value={next} />
           <label className="flex flex-col gap-1.5 text-sm font-semibold">Correo
-            <input className={field} name="email" type="email" required autoComplete="email" />
+            <input className={field} name="email" type="email" required autoComplete="email" value={correo} onChange={(e) => setCorreo(e.target.value)} />
           </label>
           <label className="flex flex-col gap-1.5 text-sm font-semibold">Contraseña
             <PasswordInput className={field} name="password" required autoComplete="current-password" />
           </label>
           <Link href="/entrar/recuperar" className="-mt-2 self-end text-sm text-texto-2 underline">¿Olvidaste tu contraseña?</Link>
+          <Turnstile siteKey={captcha} reinicio={loginState} />
           {loginState && !loginState.ok && <p role="alert" className="text-[#ff8fa3]">{loginState.message}</p>}
           <button disabled={loginPending} className="boton-compra rounded-full py-4 text-sm font-bold uppercase tracking-[0.1em] disabled:opacity-60">
             {loginPending ? "Entrando…" : "Entrar"}
           </button>
         </form>
+        {loginState?.sinConfirmar && (
+          <form action={reAction} className="flex flex-col gap-3 rounded-xl bg-sala/60 p-4">
+            <input type="hidden" name="next" value={next} />
+            <input type="hidden" name="email" value={correo} />
+            <Turnstile siteKey={captcha} reinicio={reState} />
+            {reState && <p role={reState.ok ? "status" : "alert"} className={reState.ok ? "text-sm text-exito" : "text-sm text-[#ff8fa3]"}>{reState.message}</p>}
+            <button disabled={rePending || !correo} className="self-start text-sm font-bold text-lila underline underline-offset-4 disabled:opacity-60">
+              {rePending ? "Enviando…" : "Reenviar correo de confirmación"}
+            </button>
+          </form>
+        )}
+        </>
       ) : regState?.ok ? (
         <p role="status" className="text-lg">{regState.message}</p>
       ) : (
@@ -75,6 +93,7 @@ export function AuthForms({ next }: { next: string }) {
             <span id="pw-help" className="text-xs font-normal text-texto-3">{PASSWORD_AYUDA}</span>
           </label>
           <p className="text-xs text-texto-3">Al crear tu cuenta aceptas los <a href="/terminos" target="_blank" className="underline">términos</a> y el <a href="/privacidad" target="_blank" className="underline">aviso de privacidad</a>.</p>
+          <Turnstile siteKey={captcha} reinicio={regState} />
           {regState && !regState.ok && <p role="alert" className="text-[#ff8fa3]">{regState.message}</p>}
           <button disabled={regPending} className="boton-compra rounded-full py-4 text-sm font-bold uppercase tracking-[0.1em] disabled:opacity-60">
             {regPending ? "Creando…" : "Crear cuenta"}

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { PageHeading } from "@/components/PageHeading";
 import { SocialIcon } from "@/components/SocialIcon";
-import { CONTACT_CHANNELS, WHATSAPP_DISPLAY, type ContactChannel } from "@/content/contacto";
+import { CONTACT_CHANNELS, whatsappDisplay, type ContactChannel } from "@/content/contacto";
 import { env } from "@/lib/env";
 import { ContactForm } from "./ContactForm";
 
@@ -42,7 +42,7 @@ export default function ContactoPage() {
   const whatsapp: ContactChannel = {
     channel: "whatsapp",
     nombre: "WhatsApp",
-    handle: WHATSAPP_DISPLAY,
+    handle: whatsappDisplay(env.whatsapp) || "Pronto",
     descripcion: "Atención directa y pagos de boletos",
     href: env.whatsapp ? `https://wa.me/${env.whatsapp}` : "",
     color: "#25d366",

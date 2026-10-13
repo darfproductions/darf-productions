@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { PageHeading } from "@/components/PageHeading";
 import { getSession, safeNext } from "@/lib/auth";
+import { env } from "@/lib/env";
 import { AuthForms } from "./AuthForms";
 
 export const metadata: Metadata = { title: "Entrar" };
@@ -24,10 +25,10 @@ export default async function EntrarPage({ searchParams }: PageProps<"/entrar">)
         )}
         {sp.error === "google" && (
           <p role="alert" className="rounded-xl border border-[#ff8fa3]/40 bg-[#3a1220] px-4 py-3 text-sm">
-            No se pudo entrar con Google en este momento. Intenta de nuevo o entra con tu correo.
+            No se completó la entrada con Google (se canceló o Google no respondió). Intenta de nuevo o entra con tu correo.
           </p>
         )}
-        <AuthForms next={next} />
+        <AuthForms next={next} captcha={env.turnstileSiteKey} />
       </div>
     </main>
   );

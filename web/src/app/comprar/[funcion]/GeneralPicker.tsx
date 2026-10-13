@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useTransition } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { GeneralZone } from "@/lib/boleteria";
@@ -7,12 +8,13 @@ import { formatMoney } from "@/lib/tickets";
 import { placeGeneralOrder, type OrderResult } from "./actions";
 import { usePaso } from "@/components/PasosCompra";
 import { OrderDone } from "./OrderDone";
+import { mensajeError } from "@/lib/errores";
 
 const MAX = 10; // mismo tope que valida la base (0055)
 const field = "rounded-lg bg-sala px-3 py-3 font-normal";
 
 // Entrada general (Fase 4C): eliges zona y cuántos boletos; sin asiento. La base cuenta el cupo.
-export function GeneralPicker(props: { performanceId: string; productionName: string; zones: GeneralZone[]; defaultPhone: string; defaultSeller?: string }) {
+export function GeneralPicker(props: { performanceId: string; productionName: string; zones: GeneralZone[]; defaultPhone: string; defaultSeller?: string; sinSesion?: boolean }) {
   const [zone, setZone] = useState(props.zones.find((z) => z.libres > 0)?.price_category_id ?? "");
   const [cantidad, setCantidad] = useState(1);
   const [phone, setPhone] = useState(props.defaultPhone);
@@ -29,7 +31,7 @@ export function GeneralPicker(props: { performanceId: string; productionName: st
     setNota("");
     if (!codigo.trim()) return;
     const { data, error: e } = await createClient().rpc("preview_discount_code", { target_performance_id: props.performanceId, target_code: codigo.trim() });
-    setNota(e ? e.message : `Código ${(data as { codigo: string }).codigo}: ${(data as { percent: number }).percent}% de descuento (se confirma al apartar).`);
+    setNota(e ? mensajeError(e) : `Código ${(data as { codigo: string }).codigo}: ${(data as { percent: number }).percent}% de descuento (se confirma al apartar).`);
   }
 
   function apartar() {
@@ -87,10 +89,18 @@ export function GeneralPicker(props: { performanceId: string; productionName: st
           </div>
           {nota && <p className="text-sm text-texto-2">{nota}</p>}
           {error && <p role="alert" className="text-[#ff8fa3]">{error}</p>}
+          <p className="text-xs text-texto-3">Al apartar aceptas los <a href="/terminos" target="_blank" className="underline">términos</a> y la <a href="/reembolsos" target="_blank" className="underline">política de cambios y reembolsos</a>.</p>
+          {props.sinSesion ? (
+            <Link href={`/entrar?next=${encodeURIComponent(`/comprar/${props.performanceId}`)}`}
+              className="boton-compra self-start rounded-full px-8 py-4 text-sm font-bold uppercase tracking-[0.1em]">
+              Entrar para apartar
+            </Link>
+          ) : (
           <button type="button" onClick={apartar} disabled={pending || !phone.trim()}
             className="boton-compra self-start rounded-full px-8 py-4 text-sm font-bold uppercase tracking-[0.1em] disabled:opacity-50">
             {pending ? "Apartando…" : `Apartar ${cantidad} ${cantidad === 1 ? "lugar" : "lugares"}`}
           </button>
+          )}
         </>
       )}
       {props.zones.every((x) => x.libres === 0) && <p className="text-[#ff8fa3]">La entrada general está agotada para esta función.</p>}

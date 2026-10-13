@@ -14,7 +14,11 @@ import { ApplyForm } from "./ApplyForm";
 export async function generateMetadata({ params }: PageProps<"/audiciones/[id]">): Promise<Metadata> {
   const { id } = await params;
   const data = await getAudition(id);
-  return { title: data?.audition.titulo ?? "Audición" };
+  if (!data) return { title: "Audición" };
+  const a = data.audition;
+  const description = `Convocatoria de DARF Productions: ${a.titulo}. Requisitos, personajes, horarios e inscripción.`;
+  // Las convocatorias "solo con enlace" no se indexan.
+  return { title: a.titulo, description, openGraph: { title: a.titulo, description }, robots: a.visibilidad === "enlace" ? { index: false } : undefined };
 }
 
 // Convocatoria pública: requisitos, personajes, horarios e inscripción (con cuenta).

@@ -2,9 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { PASSWORD_AYUDA, emailOk, fechaNacimientoOk, passwordOk } from "@/lib/account-rules";
+import { errorAuthComun, tokenCaptcha } from "@/lib/captcha";
 import { origenSitio } from "@/lib/site-origin";
 import { getSession } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { mensajeError } from "@/lib/errores";
 
 export type ProfileState = { ok: boolean; message: string } | null;
 
@@ -53,8 +55,8 @@ export async function changePassword(_prev: ProfileState, form: FormData): Promi
   if (nueva === actual) return { ok: false, message: "La contraseña nueva debe ser distinta a la actual." };
   if (!passwordOk(nueva, session.email)) return { ok: false, message: `Esa contraseña no sirve. ${PASSWORD_AYUDA}` };
   const supabase = await createClient();
-  const check = await supabase.auth.signInWithPassword({ email: session.email, password: actual });
-  if (check.error) return { ok: false, message: "Tu contraseña actual no es correcta." };
+  const check = await supabase.auth.signInWithPassword({ email: session.email, password: actual, options: { captchaToken: tokenCaptcha(form) } });
+  if (check.error) return { ok: false, message: errorAuthComun(check.error.message) ?? "Tu contraseña actual no es correcta." };
   const { error } = await supabase.auth.updateUser({ password: nueva });
   if (error) return { ok: false, message: "No se pudo cambiar. Usa una contraseña distinta a la actual." };
   // Si alguien más tenía tu sesión abierta en otro aparato, se cierra.
@@ -83,7 +85,7 @@ export async function replyOffer(_prev: OfferReply, form: FormData): Promise<Off
   const acepta = String(form.get("respuesta")) === "aceptar";
   const supabase = await createClient();
   const { error } = await supabase.rpc("casting_offer_respond", { oid: String(form.get("id")), acepta });
-  if (error) return { ok: false, message: error.message };
+  if (error) return { ok: false, message: mensajeError(error) };
   revalidatePath("/cuenta");
   return { ok: true, message: acepta ? "¡Bienvenido al elenco! Ya apareces en la obra." : "Respuesta enviada. Gracias por avisar." };
 }
@@ -92,7 +94,7 @@ export async function replyOffer(_prev: OfferReply, form: FormData): Promise<Off
 export async function cancelMyOrder(_p: { ok: boolean; message: string } | null, f: FormData): Promise<{ ok: boolean; message: string }> {
   const supabase = await createClient();
   const { error } = await supabase.rpc("cancel_my_order", { target_order_id: String(f.get("order") ?? "") });
-  if (error) return { ok: false, message: error.message };
+  if (error) return { ok: false, message: mensajeError(error) };
   revalidatePath("/cuenta");
   return { ok: true, message: "Listo: cancelaste tu apartado y los lugares quedaron libres." };
 }

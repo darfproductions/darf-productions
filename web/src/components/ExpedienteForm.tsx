@@ -50,6 +50,15 @@ export function ExpedienteForm({ pid, uid, f, esMenor, propio }: { pid: string; 
         <label className={lbl}>Talla de ropa<input className={field} name="talla_ropa" defaultValue={v("talla_ropa")} placeholder="CH, M, G…" /></label>
         <label className={lbl}>Calzado (MX)<input className={field} name="talla_calzado" defaultValue={v("talla_calzado")} /></label>
       </fieldset>
+      {propio && (
+        <label className="flex items-start gap-2 text-sm text-texto-2">
+          <input type="checkbox" name="consentimiento_salud" required className="mt-1" />
+          <span>
+            Autorizo a DARF Productions a guardar mis datos de salud y medidas solo para cuidarme y preparar vestuario en mis producciones
+            {esMenor ? " (soy menor de edad y mi madre, padre o tutor lo autoriza)" : ""}. Ver el <a href="/privacidad" target="_blank" className="font-bold text-lila underline">aviso de privacidad</a>.
+          </span>
+        </label>
+      )}
       <div className="flex flex-wrap items-center gap-3">
         <button disabled={pending} className="rounded-full bg-texto px-6 py-3 text-sm font-bold text-sala disabled:opacity-60">{pending ? "Guardando…" : "Guardar expediente"}</button>
         {state && <span role={state.ok ? "status" : "alert"} className={`text-sm ${state.ok ? "text-exito" : "text-[#ff8fa3]"}`}>{state.message}</span>}

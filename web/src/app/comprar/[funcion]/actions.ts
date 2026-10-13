@@ -4,6 +4,7 @@ import { getSession } from "@/lib/auth";
 import { env } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
 import { whatsappPayUrl } from "@/lib/tickets";
+import { mensajeError } from "@/lib/errores";
 
 export type OrderResult =
   | { ok: true; orderCode: string; total: number; seats: string[]; whatsappUrl: string; expiresAt: string | null }
@@ -38,7 +39,7 @@ export async function placeOrder(input: {
     target_seller_codigo: input.sellerCode.trim() || null,
     target_discount_code: input.discountCode,
   });
-  if (error) return { ok: false, message: error.message };
+  if (error) return { ok: false, message: mensajeError(error) };
 
   const d = data as { order_code: string; total: number; seats?: string[]; discount_codigo?: string | null; discount_amount?: number | null };
   const seats = d.seats ?? [];
@@ -85,7 +86,7 @@ export async function placeGeneralOrder(input: {
     target_seller_codigo: input.sellerCode.trim() || null,
     target_discount_code: input.discountCode.trim() || null,
   });
-  if (error) return { ok: false, message: error.message };
+  if (error) return { ok: false, message: mensajeError(error) };
   const d = data as { order_code: string; total: number; seats?: string[]; discount_codigo?: string | null; discount_amount?: number | null };
   const seats = d.seats ?? [];
   const { data: ord } = await supabase.from("orders").select("expires_at").eq("order_code", d.order_code).maybeSingle();

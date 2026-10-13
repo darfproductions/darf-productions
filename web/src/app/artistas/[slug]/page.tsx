@@ -11,7 +11,9 @@ import { perfilUrl } from "@/lib/productions";
 export async function generateMetadata({ params }: PageProps<"/artistas/[slug]">): Promise<Metadata> {
   const { slug } = await params;
   const d = await getProBySlug(slug);
-  return { title: d ? d.nombre : "Artista" };
+  if (!d) return { title: "Artista" };
+  const description = `Perfil profesional de ${d.nombre} en DARF Productions.`;
+  return { title: d.nombre, description, openGraph: { title: d.nombre, description, type: "profile" } };
 }
 
 // Perfil público de un artista (0057): solo si la persona lo activó (y, si es menor, con permiso del tutor).

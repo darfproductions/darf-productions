@@ -3,6 +3,7 @@
 import { PASSWORD_AYUDA } from "@/lib/account-rules";
 import { PasswordInput } from "@/components/PasswordInput";
 import { useActionState } from "react";
+import { Turnstile } from "@/components/Turnstile";
 import { changeEmail, changePassword, saveProfile, type ProfileState } from "./actions";
 
 const field = "rounded-lg bg-sala px-3 py-3 font-normal";
@@ -53,7 +54,7 @@ export function EmailForm({ email }: { email: string }) {
   );
 }
 
-export function PasswordForm() {
+export function PasswordForm({ captcha }: { captcha: string }) {
   const [state, action, pending] = useActionState<ProfileState, FormData>(changePassword, null);
   return (
     <form action={action} className="flex flex-col gap-3">
@@ -67,6 +68,7 @@ export function PasswordForm() {
         <PasswordInput className={field} name="confirmar" required minLength={8} autoComplete="new-password" />
       </label>
       <p className="text-xs text-texto-3">{PASSWORD_AYUDA}</p>
+      <Turnstile siteKey={captcha} reinicio={state} />
       <Msg s={state} />
       <button disabled={pending} className={ghost}>{pending ? "Cambiando…" : "Cambiar contraseña"}</button>
       <p className="text-xs text-texto-3">¿No recuerdas la actual o entras con Google? <a href="/entrar/recuperar" className="underline">Pide un enlace para poner una nueva</a>.</p>

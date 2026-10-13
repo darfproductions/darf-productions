@@ -9,7 +9,15 @@ import { cleanSellerCode } from "@/lib/seller-rules";
 export async function generateMetadata({ params }: PageProps<"/producciones/[slug]">): Promise<Metadata> {
   const { slug } = await params;
   const data = await getProduction(slug);
-  return { title: data?.production.nombre ?? "Producción" };
+  if (!data) return { title: "Producción" };
+  const p = data.production;
+  const description = p.frase?.trim() || `Funciones, boletos, elenco y canciones de ${p.nombre}, una producción de DARF Productions.`;
+  return {
+    title: p.nombre,
+    description,
+    alternates: { canonical: `/producciones/${p.id}` },
+    openGraph: { title: `${p.nombre} · DARF Productions`, description, url: `/producciones/${p.id}` },
+  };
 }
 
 export default async function ProductionPage({ params, searchParams }: PageProps<"/producciones/[slug]">) {

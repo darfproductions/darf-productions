@@ -19,5 +19,10 @@ export const CONTACT_CHANNELS: ContactChannel[] = [
   { channel: "email", nombre: "Correo", handle: "contact@darfproductions.com", descripcion: "Prensa, patrocinios y colaboraciones", href: "mailto:contact@darfproductions.com", color: "#a48bff" },
 ];
 
-/** WhatsApp de atención: el número sale de la configuración del entorno (vacío en DEV). */
-export const WHATSAPP_DISPLAY = "+52 446 522 0560";
+/** Número de WhatsApp para mostrar ("+52 446 522 0560") a partir del de la configuración
+ *  (52 + 10 dígitos). Vacío si no hay número. */
+export function whatsappDisplay(n: string): string {
+  const d = n.replace(/\D/g, "");
+  if (!/^52\d{10}$/.test(d)) return d ? `+${d}` : "";
+  return `+52 ${d.slice(2, 5)} ${d.slice(5, 8)} ${d.slice(8)}`;
+}

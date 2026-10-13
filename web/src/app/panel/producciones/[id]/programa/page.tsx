@@ -1,6 +1,5 @@
 /* eslint-disable @next/next/no-img-element -- logos y QR generados */
 import type { Metadata } from "next";
-import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import QRCode from "qrcode";
 import { ActionForm } from "@/components/panel/ActionForm";
@@ -10,6 +9,7 @@ import { can } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
 import { assetUrl } from "@/lib/productions";
 import { getProgram, PROGRAM_MODES, type ProgramMode } from "@/lib/program";
+import { origenSitio } from "@/lib/site-origin";
 import { addSponsor, removeSponsor, saveProgram, setProgramMode, setProgramPublished, setSponsorLogo } from "./actions";
 import { ProgramFileUpload } from "./ProgramFileUpload";
 
@@ -27,10 +27,8 @@ export default async function Programa({ params }: PageProps<"/panel/produccione
   const access = await requirePanel(`/panel/producciones/${id}/programa`);
   if (!can(access, id, "programa.editar")) redirect(`/panel/producciones/${id}`);
   const { page, sponsors } = await getProgram(id);
-  const h = await headers();
-  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "";
-  const proto = h.get("x-forwarded-proto") ?? "https";
-  const link = `${proto}://${host}/programa/${id}`;
+  // QR impreso: siempre con la dirección oficial del sitio (en PROD, darfproductions.com).
+  const link = `${await origenSitio()}/programa/${id}`;
   const qr = await QRCode.toDataURL(link, { margin: 2, width: 600 });
   const publicado = !!page?.publicado;
   const modo: ProgramMode = page?.modo ?? "plantilla";

@@ -2,13 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { mensajeError } from "@/lib/errores";
 
 // Club Fan (0075): unirse y apartar lugar en "Foto con el elenco". La base revisa las reglas.
 
 export async function unirmeAlClub(): Promise<{ ok: boolean; message: string }> {
   const supabase = await createClient();
   const { error } = await supabase.rpc("fan_join");
-  if (error) return { ok: false, message: error.message };
+  if (error) return { ok: false, message: mensajeError(error) };
   revalidatePath("/fan-zone", "layout");
   return { ok: true, message: "¡Ya eres parte del Club Fan!" };
 }
@@ -16,7 +17,7 @@ export async function unirmeAlClub(): Promise<{ ok: boolean; message: string }> 
 export async function apartarEncuentro(id: string, on: boolean): Promise<{ ok: boolean; message: string }> {
   const supabase = await createClient();
   const { error } = await supabase.rpc("fan_encuentro_apartar", { eid: id, p_on: on });
-  if (error) return { ok: false, message: error.message };
+  if (error) return { ok: false, message: mensajeError(error) };
   revalidatePath("/fan-zone", "layout");
   revalidatePath("/eventos");
   revalidatePath("/cuenta/eventos");
@@ -30,7 +31,7 @@ export async function apartarEncuentro(id: string, on: boolean): Promise<{ ok: b
 export async function recordarPreventa(pid: string, on: boolean): Promise<{ ok: boolean; message: string }> {
   const supabase = await createClient();
   const { error } = await supabase.rpc("preventa_recordar", { pid, p_on: on });
-  if (error) return { ok: false, message: error.message };
+  if (error) return { ok: false, message: mensajeError(error) };
   revalidatePath("/fan-zone", "layout");
   return { ok: true, message: on ? "Listo: te avisamos en tu cuenta y en tu teléfono cuando abra la preventa." : "Recordatorio desactivado." };
 }
@@ -39,7 +40,7 @@ export async function recordarPreventa(pid: string, on: boolean): Promise<{ ok: 
 export async function recordarEvento(id: string, on: boolean): Promise<{ ok: boolean; message: string }> {
   const supabase = await createClient();
   const { error } = await supabase.rpc("evento_recordar", { eid: id, p_on: on });
-  if (error) return { ok: false, message: error.message };
+  if (error) return { ok: false, message: mensajeError(error) };
   revalidatePath("/fan-zone", "layout");
   revalidatePath("/eventos");
   return { ok: true, message: on ? "Listo: te avisamos una hora antes." : "Recordatorio desactivado." };

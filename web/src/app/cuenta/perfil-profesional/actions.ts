@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { httpsOrNull, LISTAS, parseList, trayectoriaDe, usuarioRed, type Habilidades, type Trayecto } from "@/lib/pro-rules";
 import { createClient } from "@/lib/supabase/server";
+import { mensajeError } from "@/lib/errores";
 
 // Perfil profesional (0057). Lo usan Mi cuenta y el panel; la base revisa quién puede editar.
 
@@ -22,7 +23,7 @@ async function ensure(pid: string) {
   const { data } = await supabase.from("pro_profiles").select("person_id").eq("person_id", pid).maybeSingle();
   if (data) return null;
   const { error } = await supabase.from("pro_profiles").insert({ person_id: pid, slug: "" });
-  return error?.message ?? null;
+  return error ? mensajeError(error) : null;
 }
 
 export async function saveProProfile(_p: State, f: FormData): Promise<State> {
@@ -54,7 +55,7 @@ export async function saveProProfile(_p: State, f: FormData): Promise<State> {
   };
   if (f.has("tutor")) row.tutor_autorizado_at = f.get("tutor") === "on" ? new Date().toISOString() : null;
   const { error, count } = await supabase.from("pro_profiles").update(row, { count: "exact" }).eq("person_id", pid);
-  if (error) return { ok: false, message: error.message };
+  if (error) return { ok: false, message: mensajeError(error) };
   if (!count) return { ok: false, message: "No tienes permiso para editar este perfil." };
   refresh();
   return { ok: true, message: "Perfil guardado." };
@@ -67,7 +68,7 @@ export async function setProRetrato(pid: string, path: string | null): Promise<{
   const supabase = await createClient();
   const { data: old } = await supabase.from("pro_profiles").select("retrato_path").eq("person_id", pid).maybeSingle();
   const { error, count } = await supabase.from("pro_profiles").update({ retrato_path: path }, { count: "exact" }).eq("person_id", pid);
-  if (error) return { ok: false, message: error.message };
+  if (error) return { ok: false, message: mensajeError(error) };
   if (!count) return { ok: false, message: "No tienes permiso." };
   if (old?.retrato_path && old.retrato_path !== path) await supabase.storage.from("perfiles").remove([old.retrato_path as string]);
   refresh();
@@ -81,7 +82,7 @@ export async function addProPhoto(pid: string, path: string): Promise<{ ok: bool
   const supabase = await createClient();
   const { count } = await supabase.from("pro_photos").select("id", { count: "exact", head: true }).eq("person_id", pid);
   const { error } = await supabase.from("pro_photos").insert({ person_id: pid, path, orden: (count ?? 0) + 1 });
-  if (error) { await supabase.storage.from("perfiles").remove([path]); return { ok: false, message: error.message }; }
+  if (error) { await supabase.storage.from("perfiles").remove([path]); return { ok: false, message: mensajeError(error) }; }
   refresh();
   return { ok: true, message: "Foto agregada." };
 }
@@ -91,7 +92,7 @@ export async function removeProPhoto(_p: State, f: FormData): Promise<State> {
   const supabase = await createClient();
   const { data } = await supabase.from("pro_photos").select("path").eq("id", str(f, "id")).eq("person_id", pid).maybeSingle();
   const { error, count } = await supabase.from("pro_photos").delete({ count: "exact" }).eq("id", str(f, "id")).eq("person_id", pid);
-  if (error) return { ok: false, message: error.message };
+  if (error) return { ok: false, message: mensajeError(error) };
   if (!count) return { ok: false, message: "No tienes permiso." };
   if (data?.path) await supabase.storage.from("perfiles").remove([data.path as string]);
   refresh();

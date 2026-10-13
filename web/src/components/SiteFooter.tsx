@@ -2,7 +2,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { AbrirDarfy } from "@/components/darfy/AbrirDarfy";
 import { SocialIcon } from "@/components/SocialIcon";
-import { CONTACT_CHANNELS, WHATSAPP_DISPLAY } from "@/content/contacto";
+import { CONTACT_CHANNELS, whatsappDisplay } from "@/content/contacto";
+import { env } from "@/lib/env";
 
 const COLUMNAS: { titulo: string; ligas: { href: string; label: string; fz?: boolean }[] }[] = [
   { titulo: "Explora", ligas: [{ href: "/producciones", label: "Producciones" }, { href: "/eventos", label: "Eventos" }, { href: "/audiciones", label: "Audiciones" }, { href: "/nosotros", label: "Nosotros" }] },
@@ -55,7 +56,7 @@ export function SiteFooter() {
         </div>
         <div className="flex flex-col gap-2 border-t border-linea pt-6 text-[12.5px] text-texto-3 md:flex-row md:justify-between">
           <span>© {new Date().getFullYear()} DARF Productions · Jóvenes para jóvenes</span>
-          <span>{correo?.handle} · {WHATSAPP_DISPLAY}</span>
+          <span>{correo?.handle}{env.whatsapp ? ` · ${whatsappDisplay(env.whatsapp)}` : ""}</span>
         </div>
       </div>
     </footer>

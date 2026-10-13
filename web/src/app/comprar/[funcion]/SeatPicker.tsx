@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { createClient } from "@/lib/supabase/client";
@@ -8,6 +9,7 @@ import { formatMoney, previewDiscount, type DiscountPreview, type MapSeat } from
 import { placeOrder, type OrderResult } from "./actions";
 import { usePaso } from "@/components/PasosCompra";
 import { OrderDone } from "./OrderDone";
+import { mensajeError } from "@/lib/errores";
 
 export type { ZonePrice };
 
@@ -23,9 +25,13 @@ export function SeatPicker(props: {
   defaultPhone: string;
   defaultSeller?: string;
   defaultSellerCheck?: { ok: boolean; text: string; code: string } | null;
+  /** Sin sesión: se ve el mapa y se elige; para apartar se entra (los asientos se conservan). */
+  sinSesion?: boolean;
+  /** Asientos elegidos antes de entrar (?asientos=…). */
+  inicial?: string[];
 }) {
   const router = useRouter();
-  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [selected, setSelected] = useState<Set<string>>(() => new Set((props.inicial ?? []).filter((id) => !props.taken.includes(id) && props.seats.some((s) => s.id === id))));
   const [phone, setPhone] = useState(props.defaultPhone);
   const [seller, setSeller] = useState(props.defaultSeller ?? "");
   // Código de vendedor: se revisa al escribirlo; uno no válido no deja comprar (0050).
@@ -85,7 +91,7 @@ export function SeatPicker(props: {
       target_performance_id: props.performanceId,
       target_code: code,
     });
-    if (e) { setDiscount(null); setDiscountMsg(e.message); return; }
+    if (e) { setDiscount(null); setDiscountMsg(mensajeError(e)); return; }
     const d = data as DiscountPreview;
     setDiscount(d);
     setCodeInput(d.codigo);
@@ -96,7 +102,7 @@ export function SeatPicker(props: {
     const code = value.trim().toUpperCase();
     if (!code) { setSellerCheck(null); return; }
     const { data, error: e } = await createClient().rpc("preview_seller_code", { target_performance_id: props.performanceId, target_code: code });
-    setSellerCheck(e ? { ok: false, text: e.message, code } : { ok: true, text: `Vendedor: ${data as string}`, code });
+    setSellerCheck(e ? { ok: false, text: mensajeError(e), code } : { ok: true, text: `Vendedor: ${data as string}`, code });
   }
 
   const sellerBad = seller.trim() !== "" && (!sellerCheck || sellerCheck.code !== seller.trim().toUpperCase() || !sellerCheck.ok);
@@ -176,6 +182,19 @@ export function SeatPicker(props: {
           </label>
 
           {error && <p role="alert" className="text-[#ff8fa3]">{error}</p>}
+          <p className="text-xs text-texto-3">Al apartar aceptas los <a href="/terminos" target="_blank" className="underline">términos</a> y la <a href="/reembolsos" target="_blank" className="underline">política de cambios y reembolsos</a>.</p>
+          {props.sinSesion ? (
+            <>
+              <Link
+                href={`/entrar?next=${encodeURIComponent(`/comprar/${props.performanceId}?asientos=${[...selected].join(",")}${seller.trim() ? `&v=${encodeURIComponent(seller.trim())}` : ""}`)}`}
+                aria-disabled={chosen.length === 0}
+                className={`boton-compra rounded-full py-4 text-center text-sm font-bold uppercase tracking-[0.1em] ${chosen.length === 0 ? "pointer-events-none opacity-50" : ""}`}
+              >
+                Entrar para apartar
+              </Link>
+              <p className="text-xs text-texto-3">Entra o crea tu cuenta gratis; tus asientos se quedan elegidos.</p>
+            </>
+          ) : (
           <button
             type="button"
             onClick={submit}
@@ -184,6 +203,7 @@ export function SeatPicker(props: {
           >
             {pending ? "Apartando…" : `Apartar ${chosen.length || ""} ${chosen.length === 1 ? "asiento" : "asientos"}`}
           </button>
+          )}
         </div>
       </aside>
       {chosen.length > 0 && (

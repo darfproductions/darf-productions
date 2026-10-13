@@ -6,22 +6,26 @@ import { PasosBarra, PasosProvider } from "@/components/PasosCompra";
 import { UnirseClub } from "@/components/fanzone/UnirseClub";
 import { enPreventa, partesFuncion } from "@/lib/disponibilidad";
 import { getCredencial } from "@/lib/fanzone";
-import { requireSession } from "@/lib/auth";
+import { getSession } from "@/lib/auth";
 import { formatPerformanceDate, getPerformanceForSale, getTheme, themeStyle } from "@/lib/productions";
-import { cleanSellerCode, withSeller } from "@/lib/seller-rules";
+import { cleanSellerCode } from "@/lib/seller-rules";
 import { createClient } from "@/lib/supabase/server";
 import type { MapSeat } from "@/lib/tickets";
 import { generalAvailability } from "@/lib/boleteria";
 import { funcionVendible } from "@/lib/ventas-rules";
 import { GeneralPicker } from "./GeneralPicker";
 import { SeatPicker, type ZonePrice } from "./SeatPicker";
+import { mensajeError } from "@/lib/errores";
 
 export const metadata: Metadata = { title: "Comprar boletos" };
 
 export default async function ComprarPage({ params, searchParams }: PageProps<"/comprar/[funcion]">) {
   const { funcion } = await params;
   const vendedor = cleanSellerCode((await searchParams).v);
-  const session = await requireSession(withSeller(`/comprar/${funcion}`, vendedor));
+  // El mapa se ve sin cuenta; para apartar se pide entrar (Bloque 2).
+  const sp = await searchParams;
+  const session = await getSession();
+  const inicial = typeof sp.asientos === "string" ? sp.asientos.split(",").filter((x) => /^[0-9a-f-]{36}$/i.test(x)).slice(0, 20) : [];
   const data = await getPerformanceForSale(funcion);
   if (!data) notFound();
   const { performance: f, production: p } = data;
@@ -34,7 +38,7 @@ export default async function ComprarPage({ params, searchParams }: PageProps<"/
 
   const supabase = await createClient();
   // Antes de mostrar el mapa se liberan los asientos de órdenes vencidas (0054).
-  if (vendible) await supabase.rpc("expire_due_orders", { pid: p.id });
+  if (vendible && session) await supabase.rpc("expire_due_orders", { pid: p.id });
   const [seatsRes, takenRes, pricesRes] = vendible
     ? await Promise.all([
         supabase.from("seats").select("id, seat_label, seat_row, seat_number, lado, price_category_id, is_active").eq("production_id", p.id).limit(2000),
@@ -54,9 +58,9 @@ export default async function ComprarPage({ params, searchParams }: PageProps<"/
     color: (r.price_categories as unknown as { color: string | null } | null)?.color ?? null,
   }));
   // Link de vendedor: el código se revisa aquí para mostrar su nombre desde el inicio.
-  const sellerRes = vendible && vendedor ? await supabase.rpc("preview_seller_code", { target_performance_id: f.id, target_code: vendedor }) : null;
+  const sellerRes = vendible && vendedor && session ? await supabase.rpc("preview_seller_code", { target_performance_id: f.id, target_code: vendedor }) : null;
   const sellerCheck = sellerRes && vendedor
-    ? (sellerRes.error ? { ok: false, text: sellerRes.error.message, code: vendedor } : { ok: true, text: `Vendedor: ${sellerRes.data as string}`, code: vendedor })
+    ? (sellerRes.error ? { ok: false, text: mensajeError(sellerRes.error), code: vendedor } : { ok: true, text: `Vendedor: ${sellerRes.data as string}`, code: vendedor })
     : null;
   const loadError = seatsRes?.error || takenRes?.error || pricesRes?.error;
 
@@ -77,7 +81,9 @@ export default async function ComprarPage({ params, searchParams }: PageProps<"/
             <img src="/marca/fan-zone-oro.svg" alt="DARF Fan Zone" className="h-8 w-auto" />
             <p className="text-2xl font-black uppercase tracking-[-0.02em]">Preventa para el <span className="txt-oro">Club Fan</span></p>
             <p className="text-texto-2">Esta función está en preventa{hasta ? ` hasta el ${hasta.dia} ${hasta.numero} ${hasta.mes}, ${hasta.hora}` : ""}. Únete gratis al Club Fan y compra antes que nadie; después se abre para todos.</p>
-            <UnirseClub />
+            {session ? <UnirseClub /> : (
+              <Link href={`/entrar?next=${encodeURIComponent(`/comprar/${f.id}`)}`} className="fb fb-fz">Entra o crea tu cuenta para unirte</Link>
+            )}
             <Link href={`/producciones/${p.id}`} className="text-sm font-bold text-texto-3 hover:text-texto">← Volver a la obra</Link>
           </div>
         ) : loadError ? (
@@ -90,7 +96,7 @@ export default async function ComprarPage({ params, searchParams }: PageProps<"/
           <PasosBarra />
           {general.length > 0 && (
             <GeneralPicker performanceId={f.id} productionName={p.nombre} zones={general}
-              defaultPhone={session.profile?.telefono ?? ""} defaultSeller={vendedor ?? ""} />
+              defaultPhone={session?.profile?.telefono ?? ""} defaultSeller={vendedor ?? ""} sinSesion={!session} />
           )}
           {prices.length > 0 && general.length > 0 && <h2 className="titular text-2xl">O elige asientos numerados</h2>}
           {prices.length > 0 && <SeatPicker
@@ -100,9 +106,11 @@ export default async function ComprarPage({ params, searchParams }: PageProps<"/
             seats={seats}
             taken={taken}
             prices={prices}
-            defaultPhone={session.profile?.telefono ?? ""}
+            defaultPhone={session?.profile?.telefono ?? ""}
             defaultSeller={vendedor ?? ""}
             defaultSellerCheck={sellerCheck}
+            sinSesion={!session}
+            inicial={inicial}
           />}
           </div>
           </PasosProvider>

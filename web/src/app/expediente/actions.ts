@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { mensajeError } from "@/lib/errores";
 import { createClient } from "@/lib/supabase/server";
 
 // Acciones del expediente que usan tanto el integrante (Mi cuenta) como la producción
@@ -21,6 +22,10 @@ const refresh = (pid: string) => {
 export async function saveMemberFile(_p: FileState, f: FormData): Promise<FileState> {
   const pid = String(f.get("pid"));
   const uid = String(f.get("uid"));
+  // Datos de salud = datos sensibles: la propia persona da su consentimiento expreso al guardar.
+  if (f.get("confirmar") === "on" && f.get("consentimiento_salud") !== "on") {
+    return { ok: false, message: "Para guardar tu expediente marca la casilla de autorización de tus datos de salud." };
+  }
   const row: Record<string, unknown> = { user_id: uid };
   for (const k of TEXTOS) row[k] = String(f.get(k) ?? "").trim() || null;
   for (const k of MEDIDAS) {
@@ -29,7 +34,7 @@ export async function saveMemberFile(_p: FileState, f: FormData): Promise<FileSt
   }
   const supabase = await createClient();
   const { error } = await supabase.from("person_files").upsert(row, { onConflict: "user_id" });
-  if (error) return { ok: false, message: /check/.test(error.message) ? "Revisa las medidas (en centímetros)." : error.message };
+  if (error) return { ok: false, message: /check/.test(error.message) ? "Revisa las medidas (en centímetros)." : mensajeError(error) };
   // Si lo guarda la propia persona desde una obra, cuenta como "datos vigentes" en esa obra.
   if (f.get("confirmar") === "on") {
     await supabase.from("member_files").upsert({ production_id: pid, user_id: uid, confirmado_at: new Date().toISOString() }, { onConflict: "production_id,user_id" });
@@ -44,7 +49,7 @@ export async function confirmVigente(_p: FileState, f: FormData): Promise<FileSt
   const uid = String(f.get("uid"));
   const supabase = await createClient();
   const { error } = await supabase.from("member_files").upsert({ production_id: pid, user_id: uid, confirmado_at: new Date().toISOString() }, { onConflict: "production_id,user_id" });
-  if (error) return { ok: false, message: error.message };
+  if (error) return { ok: false, message: mensajeError(error) };
   refresh(pid);
   return { ok: true, message: "¡Gracias! Quedó confirmado." };
 }
@@ -56,7 +61,7 @@ export async function saveDocFile(pid: string, uid: string, docTypeId: string, p
     { production_id: pid, user_id: uid, doc_type_id: docTypeId, archivo_path: path, subido_at: new Date().toISOString() },
     { onConflict: "doc_type_id,user_id" },
   );
-  if (error) return { ok: false, message: error.message };
+  if (error) return { ok: false, message: mensajeError(error) };
   refresh(pid);
   return { ok: true };
 }

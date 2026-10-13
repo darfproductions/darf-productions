@@ -46,7 +46,8 @@ Deno.serve(async (req) => {
     method: "POST",
     headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      from: "DARF Productions <onboarding@resend.dev>",
+      // Remitente del dominio verificado en Resend (Bloque 2). Antes: onboarding@resend.dev (solo pruebas).
+      from: Deno.env.get("NOTIFY_FROM") ?? "DARF Productions <no-reply@darfproductions.com>",
       to: [to],
       reply_to: String(r.correo ?? "") || undefined,
       subject: `Nuevo mensaje de contacto: ${asunto}`.replace(/[\r\n]+/g, " "),

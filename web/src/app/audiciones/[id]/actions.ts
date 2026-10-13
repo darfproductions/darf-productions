@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getSession } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { mensajeError } from "@/lib/errores";
 
 export type ApplyState = { ok: boolean; message: string } | null;
 
@@ -30,7 +31,7 @@ export async function applyToAudition(_p: ApplyState, f: FormData): Promise<Appl
   };
   const supabase = await createClient();
   const { error } = await supabase.rpc("audition_apply", { aid, p: payload });
-  if (error) return { ok: false, message: error.message };
+  if (error) return { ok: false, message: mensajeError(error) };
   revalidatePath(`/audiciones/${aid}`);
   revalidatePath("/cuenta");
   return { ok: true, message: "¡Listo! Tu inscripción quedó guardada. Tu QR para el día de la audición está abajo y en Mi cuenta." };

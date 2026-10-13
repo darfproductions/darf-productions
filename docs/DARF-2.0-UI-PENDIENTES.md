@@ -60,6 +60,14 @@ Diego eligió cuáles sí (ver plan del bloque). Hechas en `darf-2.0`, migracion
 | Ventas más seguras | No se venden funciones que ya pasaron (en línea; taquilla hasta 3 h después de empezar y nunca en obras concluidas); Taquilla abre en la función de hoy. Aprobar pide cómo pagó (efectivo, transferencia, tarjeta…) y referencia; rechazar y cancelar piden motivo, que ve el comprador. "Cancelar un boleto" y "Cancelar orden" (su precio se descuenta de los ingresos), "Dar 24 h más" o "Reactivar 24 h" a un apartado vencido si sus lugares siguen libres, y quién aprobó, vendió o canceló. El comprador puede cancelar su apartado en Mi cuenta. Todo queda en la bitácora sin datos del comprador, igual que los cambios de precio y de códigos (0088). |
 | Eventos editables | "Editar o cancelar" en cada evento: fecha, lugar, liga, cupo y precio (quien ya pagó conserva su precio). Un evento con pagos o apartados no se borra: se cancela con motivo, se avisa a los registrados y a quien pagó se le indica que se le reembolsará; en Mis eventos sale "Evento cancelado" (0088). |
 | Privacidad de retratos | La página de la obra ya no muestra el retrato del perfil profesional si la persona no lo hizo público (incluye menores sin autorización) (0088). |
+| Listo para compartir | Al pegar la liga de una obra en WhatsApp o redes sale su imagen de ambiente con "Boletos en darfproductions.com" y su descripción; imagen general de DARF para las demás páginas; mapa del sitio y reglas para buscadores (la copia DEV no se indexa). |
+| Protecciones del navegador | La página no se puede meter dentro de otro sitio (evita clics engañados en el panel), siempre por conexión segura, y solo usa la cámara propia (Puerta). |
+| Captcha (Turnstile) | Widget de Cloudflare en entrar, crear cuenta, recuperar contraseña, reenviar confirmación y cambiar contraseña; su token se pasa a Supabase. Mensajes claros si falla el captcha o hay demasiados intentos. **El captcha se prende en Supabase solo el día del lanzamiento** (ver abajo). |
+| Comprar sin cuenta | El mapa se ve y se eligen asientos sin entrar; "Entrar para apartar" pide la cuenta y regresa con los mismos asientos. Términos y política de reembolsos junto al botón. |
+| Cuentas | "Reenviar correo de confirmación"; Google cancelado ya no dice "enlace vencido" y se conserva a dónde ibas; correos de cuenta en español con enlace que sirve en cualquier navegador (`supabase/templates`). |
+| Textos legales | Responsable (Diego Andrés Romero Fernández, nombre comercial DARF Productions) y domicilio; datos sensibles con consentimiento expreso (casilla en el expediente), proveedores fuera de México, cookies, plazos de conservación y ARCO en 20 días hábiles; reembolsos y apartados alineados con el sistema. |
+| Errores en español | Un traductor único: los avisos de la base salen tal cual y los técnicos (red, sesión, permisos, archivos) en español, en compra, audiciones, Club Fan y Mi cuenta. Pantalla de error con código para soporte; indicador de "Cargando…". |
+| Dirección oficial | Ligas de correos y QR impresos (programa, gafete) usan `darfproductions.com` en producción, no el dominio desde donde se abrió. WhatsApp mostrado desde la configuración; en producción debe ser 52 + 10 dígitos o la página no compila. |
 | Ajustes de marca | Fan Zone al final del menú, logo original (DARF con PRODUCTIONS abajo), destacada también en la cartelera, logos de DARF y de la obra en los boletos. |
 
 ## Lo que queda pendiente
@@ -74,13 +82,18 @@ Diego eligió cuáles sí (ver plan del bloque). Hechas en `darf-2.0`, migracion
 ## Para el lanzamiento (lista de revisión)
 
 - **Entrar con Google:** en el proyecto de Supabase (DEV y luego el oficial) → Authentication → Providers → Google, con el Client ID y secreto de la 1.0, y agregar la dirección del sitio (`…/auth/callback`) en Google Cloud y en Supabase → URL Configuration. Probar el botón en DEV y otra vez el día de la publicación.
-- DEV ya tiene aplicadas todas las migraciones hasta la 0086 (verificado). El proyecto oficial necesitará las mismas, en orden, el día de la publicación.
+- DEV ya tiene aplicadas todas las migraciones hasta la 0087 (verificado; la 0088 pendiente de correr). El proyecto oficial necesitará las mismas, en orden, el día de la publicación.
 - **Contraseñas (Supabase → Authentication → Providers → Email / Policies), en DEV y en el oficial:**
   - Largo mínimo **8** y "letras y números" (la página ya lo exige; así también lo exige Supabase si alguien llama directo a su servicio).
   - **"Secure password change"** encendido y **aviso por correo** cuando cambia la contraseña o el correo ("Password changed" / "Email changed" notifications).
   - **Protección contra contraseñas filtradas** (Leaked password protection) si el plan lo incluye.
   - **URL Configuration:** Site URL = el dominio oficial y en Redirect URLs solo `https://<dominio>/auth/callback` (y la de DEV en DEV). Así los enlaces de los correos no pueden mandar a otro sitio.
   - Revisar los límites de envío de correos (Rate limits) y que el correo de recuperación use la plantilla en español.
+
+- **Captcha (Turnstile):** en Cloudflare → Turnstile → widget "DARF", agregar los dominios (`darfproductions.com`, `www.darfproductions.com` y el de DEV en Vercel). El día del lanzamiento, en Supabase → Authentication → Attack Protection: activar captcha con **Turnstile** y pegar la **Secret Key** (nunca en el repositorio). Antes de esa fecha no se prende.
+- **Correo propio:** Supabase → Authentication → Emails → SMTP con Resend (`smtp.resend.com`, puerto 465, usuario `resend`, la API key como contraseña), remitente `no-reply@darfproductions.com`. Pegar las plantillas de `supabase/templates` (ver `LEEME.md`).
+- **Aviso de Contacto:** la función `notify-contact` ya manda desde `no-reply@darfproductions.com` (se puede cambiar con el secreto `NOTIFY_FROM`); volver a publicarla.
+- **Vercel producción:** `NEXT_PUBLIC_DARF_WHATSAPP` = 52 + 10 dígitos; opcional `NEXT_PUBLIC_SITE_URL` (por omisión `https://darfproductions.com`). En DEV puede definirse `NEXT_PUBLIC_TURNSTILE_SITE_KEY` vacía para quitar el widget.
 
 ## Cómo se verificó
 - Copia local simulada (base local, PostgREST y la web en modo DEV), con funciones de prueba

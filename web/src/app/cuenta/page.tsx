@@ -415,7 +415,7 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
             <summary className="cursor-pointer text-lg font-bold">Correo y contraseña</summary>
             <div className="mt-4 flex flex-col gap-6">
               <EmailForm email={session.email} />
-              <PasswordForm />
+              <PasswordForm captcha={env.turnstileSiteKey} />
             </div>
           </details>
           <div className="flex flex-wrap items-center gap-4">

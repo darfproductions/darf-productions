@@ -7,6 +7,7 @@ import type { AuditionField, AuditionRole, AuditionSlot, MyApplication } from "@
 import { checkImage } from "@/lib/image-rules";
 import { createClient } from "@/lib/supabase/client";
 import { applyToAudition, type ApplyState } from "./actions";
+import { mensajeError } from "@/lib/errores";
 
 const field = "rounded-lg bg-sala px-3 py-3 font-normal";
 const fmt = (iso: string) =>
@@ -49,7 +50,7 @@ export function ApplyForm(props: {
       const ext = file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg";
       const path = `${props.aid}/${props.userId}/foto-${Date.now().toString(36)}.${ext}`;
       const { error } = await createClient().storage.from("audiciones").upload(path, file, { contentType: file.type });
-      if (error) return setFotoMsg(`No se pudo subir: ${error.message}`);
+      if (error) return setFotoMsg(`No se pudo subir: ${mensajeError(error)}`);
       setFoto(path);
       setFotoMsg(["Foto lista.", ...check.warnings].join(" "));
     } catch {
@@ -142,7 +143,7 @@ export function ApplyForm(props: {
       )}
 
       <div className="flex flex-col gap-2 text-sm sm:col-span-2">
-        <label className="flex items-start gap-2"><input type="checkbox" name="consentimiento_datos" required className="mt-1" /> <span>Autorizo a DARF Productions a usar mis datos solo para esta audición, según el <a href="/privacidad" target="_blank" className="font-semibold text-violeta-claro underline">aviso de privacidad</a>. *</span></label>
+        <label className="flex items-start gap-2"><input type="checkbox" name="consentimiento_datos" required className="mt-1" /> <span>Autorizo a DARF Productions a usar mis datos solo para esta convocatoria (en el Registro permanente, hasta que me dé de baja), según el <a href="/privacidad" target="_blank" className="font-semibold text-violeta-claro underline">aviso de privacidad</a>. *</span></label>
         <label className="flex items-start gap-2"><input type="checkbox" name="consentimiento_imagen" defaultChecked={p?.consentimiento_imagen} className="mt-1" /> Autorizo que se tomen fotos o video durante la audición para uso interno de la producción.</label>
       </div>
 
