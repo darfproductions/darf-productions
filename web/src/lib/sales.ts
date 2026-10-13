@@ -1,7 +1,7 @@
 // Resumen de ventas de una obra (puro, con pruebas en sales.test.ts).
 // Los montos reales ya los calculó la base al crear cada orden; aquí solo se suman.
 
-export type SaleTicket = { id: string; is_active: boolean; checked_in_at: string | null; seat_label: string | null };
+export type SaleTicket = { id: string; is_active: boolean; checked_in_at: string | null; seat_label: string | null; cancel_motivo?: string | null; cancelled_by?: string | null };
 export type SaleOrder = {
   id: string;
   order_code: string;
@@ -16,6 +16,13 @@ export type SaleOrder = {
   created_by_staff_id: string | null;
   expires_at?: string | null;
   vencida_at?: string | null;
+  /** 0088: motivo de rechazo o cancelación, pago y quién operó. */
+  motivo?: string | null;
+  metodo_pago?: string | null;
+  referencia?: string | null;
+  approved_by?: string | null;
+  rejected_by?: string | null;
+  cancelada_por_comprador_at?: string | null;
   tickets: SaleTicket[];
 };
 

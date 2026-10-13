@@ -12,6 +12,7 @@ import { cleanSellerCode, withSeller } from "@/lib/seller-rules";
 import { createClient } from "@/lib/supabase/server";
 import type { MapSeat } from "@/lib/tickets";
 import { generalAvailability } from "@/lib/boleteria";
+import { funcionVendible } from "@/lib/ventas-rules";
 import { GeneralPicker } from "./GeneralPicker";
 import { SeatPicker, type ZonePrice } from "./SeatPicker";
 
@@ -24,7 +25,8 @@ export default async function ComprarPage({ params, searchParams }: PageProps<"/
   const data = await getPerformanceForSale(funcion);
   if (!data) notFound();
   const { performance: f, production: p } = data;
-  const vendible = f.on_sale && !!f.starts_at && !p.concluded;
+  const vendible = funcionVendible(f, p.concluded);
+  const yaPaso = !!f.starts_at && !funcionVendible({ on_sale: true, starts_at: f.starts_at }, false);
   // Preventa del Club Fan (0076): quien no es socio puede unirse aquí mismo (la base lo exige igual).
   const preventa = vendible && enPreventa(f);
   const bloqueada = preventa && !(await getCredencial());
@@ -66,7 +68,7 @@ export default async function ComprarPage({ params, searchParams }: PageProps<"/
       <div className="mx-auto max-w-[1440px] px-5 md:px-16">
         {!vendible ? (
           <div className="rounded-2xl bg-telon p-8">
-            <p className="text-lg">Esta función no está a la venta en este momento.</p>
+            <p className="text-lg">{yaPaso ? "Esta función ya pasó." : "Esta función no está a la venta en este momento."}</p>
             <Link href={`/producciones/${p.id}`} className="mt-4 inline-block font-bold text-violeta-claro">← Volver a la obra</Link>
           </div>
         ) : bloqueada ? (

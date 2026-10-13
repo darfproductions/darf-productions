@@ -64,7 +64,7 @@ export async function crearEvento(_p: State, f: FormData): Promise<State> {
   const { error } = await supabase.from("fan_encuentros").insert(fila);
   if (error) return { ok: false, message: error.code === "42501" ? "No tienes permiso para crear eventos ahí." : error.message };
   refrescar(pid);
-  return { ok: true, message: "Evento publicado. Se avisó a los socios del Club Fan." };
+  return { ok: true, message: acceso === "club" ? "Evento publicado. Se avisó a los socios del Club Fan." : "Evento publicado." };
 }
 
 export async function setEvento(_p: State, f: FormData): Promise<State> {
@@ -83,6 +83,58 @@ export async function setEvento(_p: State, f: FormData): Promise<State> {
   if (!count) return { ok: false, message: "No tienes permiso." };
   refrescar(pid);
   return { ok: true, message: "Listo." };
+}
+
+/** Editar un evento (0088): fecha, lugar, liga, cupo, precio y notas. Quien ya pagó conserva su monto. */
+export async function editarEvento(_p: State, f: FormData): Promise<State> {
+  const pid = str(f, "pid") || null;
+  const tipo = str(f, "tipo");
+  const p: Record<string, string> = {};
+  if (f.has("titulo")) {
+    if (tipo !== "funcion" && !str(f, "titulo")) return { ok: false, message: "Escribe el nombre del evento." };
+    p.titulo = str(f, "titulo");
+  }
+  if (tipo !== "funcion") {
+    const inicia = localMxToIso(str(f, "inicia"));
+    const termina = str(f, "termina") ? localMxToIso(str(f, "termina")) : null;
+    if (!inicia) return { ok: false, message: "Elige la fecha y hora." };
+    if (termina && termina <= inicia) return { ok: false, message: "La hora de fin debe ser después del inicio." };
+    p.inicia = inicia;
+    p.termina = termina ?? "";
+  }
+  if (tipo === "presencial") p.lugar = str(f, "lugar");
+  if (tipo === "en_linea") {
+    if (!/^https:\/\/\S+$/.test(str(f, "liga"))) return { ok: false, message: "La liga debe empezar con https://" };
+    p.liga = str(f, "liga");
+  }
+  const cupo = str(f, "cupo");
+  if (cupo && (!/^\d+$/.test(cupo) || Number(cupo) < 1 || Number(cupo) > 5000)) return { ok: false, message: "El cupo va de 1 a 5000 (o déjalo vacío: sin límite)." };
+  p.cupo = cupo;
+  const precio = str(f, "precio"), precioSocio = str(f, "precio_socio");
+  if (precio && !(Number(precio) > 0 && Number(precio) <= 100000)) return { ok: false, message: "El precio va de $1 a $100,000 (o déjalo vacío: gratis)." };
+  if (precioSocio && (!precio || !(Number(precioSocio) >= 0 && Number(precioSocio) <= Number(precio)))) {
+    return { ok: false, message: precio ? "El precio para socios debe ser menor o igual al precio." : "Para poner precio de socios, pon primero el precio." };
+  }
+  p.precio = precio;
+  p.precio_socio = precioSocio;
+  p.notas = str(f, "notas");
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("evento_editar", { eid: str(f, "id"), p });
+  if (error) return { ok: false, message: error.message };
+  refrescar(pid);
+  return { ok: true, message: "Evento actualizado." };
+}
+
+/** Cancelar un evento (0088): se cierra, se avisa a los registrados y los pagos quedan para reembolso. */
+export async function cancelarEvento(_p: State, f: FormData): Promise<State> {
+  const pid = str(f, "pid") || null;
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("evento_cancelar", { eid: str(f, "id"), p_motivo: str(f, "motivo").slice(0, 300) || null });
+  if (error) return { ok: false, message: error.message };
+  refrescar(pid);
+  const r = (data ?? {}) as { avisados?: number; por_reembolsar?: number };
+  const reembolsos = r.por_reembolsar ? ` ${r.por_reembolsar} ${r.por_reembolsar === 1 ? "persona ya había pagado" : "personas ya habían pagado"}: hay que reembolsarles.` : "";
+  return { ok: true, message: `Evento cancelado. Avisamos a ${(r.avisados ?? 0) + (r.por_reembolsar ?? 0)} personas.${reembolsos}` };
 }
 
 /** Aprobar o rechazar el pago de un evento (0083). Rechazar libera el lugar. */

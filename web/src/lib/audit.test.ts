@@ -47,3 +47,13 @@ describe("bitácora del portal del equipo", () => {
       antes: null, despues: { titulo: "Bienvenidos" } }, names)).toBe('Agregó aviso al equipo "Bienvenidos" (DARF general)');
   });
 });
+
+describe("describeAudit · ventas (0088)", () => {
+  const n = { person: () => "Ana", role: () => "Taquilla", production: () => "Showman" };
+  const base = { id: 1, at: "", actor: null, registro_id: null, production_id: "showman", antes: null };
+  it("cuenta aprobar, cancelar y precios sin datos del comprador", () => {
+    expect(describeAudit({ ...base, tabla: "orders", accion: "aprobar", despues: { order_code: "DARF-1", total: 400 } }, n)).toBe("Aprobó la orden DARF-1 de Showman por $400");
+    expect(describeAudit({ ...base, tabla: "orders", accion: "cancelar_boleto", despues: { order_code: "DARF-1", lugar: "A-3", monto: 200, motivo: "Cambio" } }, n)).toBe("Canceló el boleto A-3 de la orden DARF-1 ($200) (Cambio)");
+    expect(describeAudit({ ...base, tabla: "precios", accion: "precio", antes: { zona: "VIP", precio: 300 }, despues: { zona: "VIP", precio: 350 } }, n)).toBe("Cambió el precio de VIP en Showman: $300 → $350");
+  });
+});

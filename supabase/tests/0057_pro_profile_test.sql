@@ -86,7 +86,8 @@ do $$ declare pid uuid; n int; r record; begin
   update pro_profiles set publico = false where person_id = pid;
   perform pg_temp.as_anon();
   select * into r from production_pro_info('showman') where person_id = pid;
-  if r.slug is not null or r.retrato_path is null then raise exception 'FALLO T6b: enlace sin perfil público'; end if;
+  -- 0088: sin perfil público no salen ni el enlace ni el retrato.
+  if r.slug is not null or r.retrato_path is not null then raise exception 'FALLO T6b: enlace o retrato sin perfil público'; end if;
   reset role;
 end $$;
 

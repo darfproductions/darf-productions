@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ActionForm } from "@/components/panel/ActionForm";
 import { Card } from "@/components/panel/ui";
-import { listOrders, listPerformances, listZones, salesSummary, seatCount } from "@/lib/boleteria";
+import { listOrders, listPerformances, listZones, salesSummary, seatCount, ventasActores } from "@/lib/boleteria";
 import { can } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
 import { formatPerformanceDate } from "@/lib/productions";
@@ -11,7 +10,8 @@ import { capacidadFuncion, occupancy } from "@/lib/sales";
 import { formatMoney } from "@/lib/tickets";
 import { createClient } from "@/lib/supabase/server";
 import { tiempoRestante } from "@/lib/expiry-rules";
-import { approveOrder, cancelTicket, rejectOrder } from "./actions";
+import { estadoOrden, metodoLabel } from "@/lib/ventas-rules";
+import { OrderActions } from "./OrderActions";
 
 export const metadata: Metadata = { title: "Ventas y órdenes" };
 
@@ -20,7 +20,6 @@ const ESTADO: Record<string, string> = {
   aprobado: "bg-[#14532d] text-[#bbf7d0]",
   rechazado: "bg-[#3a3346] text-texto-3",
 };
-const small = "rounded-full border border-white/25 px-3 py-1.5 text-xs font-bold hover:border-white/50 disabled:opacity-60";
 const fecha = (iso: string) => new Intl.DateTimeFormat("es-MX", { dateStyle: "medium", timeStyle: "short", timeZone: "America/Mexico_City" }).format(new Date(iso));
 
 // Ventas de la obra: resumen, ocupación por función y órdenes (aprobar/rechazar/cancelar).
@@ -34,13 +33,15 @@ export default async function SalesPage({ params, searchParams }: PageProps<"/pa
   const estado = typeof sp.estado === "string" ? sp.estado : "";
 
   await (await createClient()).rpc("expire_due_orders", { pid: id });
-  const [funciones, s, filtradas, asientos, zonas] = await Promise.all([
+  const [funciones, s, filtradas, asientos, zonas, actores] = await Promise.all([
     listPerformances(id),
     salesSummary(id),
     listOrders(id, { funcion: funcion || undefined, estado: estado || undefined }),
     seatCount(id),
     listZones(id),
+    ventasActores(id),
   ]);
+  const quien = (uid: string | null | undefined) => (uid ? actores.get(uid) ?? "equipo" : null);
   // Desde el buscador (0085): una orden por su código.
   const codigo = typeof sp.codigo === "string" ? sp.codigo.trim().toUpperCase() : "";
   const ordenes = codigo ? filtradas.filter((o) => o.order_code === codigo) : filtradas;
@@ -90,7 +91,7 @@ export default async function SalesPage({ params, searchParams }: PageProps<"/pa
         <div className="flex flex-col gap-3 px-5 pt-5">
           <h2 className="titular text-xl">Órdenes</h2>
           <div className="flex flex-wrap gap-2 text-xs">
-            {[["", "Todas"], ["pendiente", "Por aprobar"], ["aprobado", "Aprobadas"], ["rechazado", "Rechazadas"]].map(([v, l]) => (
+            {[["", "Todas"], ["pendiente", "Por aprobar"], ["aprobado", "Aprobadas"], ["rechazado", "Canceladas y vencidas"]].map(([v, l]) => (
               <Link key={v} href={q("estado", v)} className={`rounded-full border px-3 py-1.5 font-semibold ${estado === v ? "border-texto" : "border-white/20"}`}>{l}</Link>
             ))}
             <span className="mx-1 text-texto-3">·</span>
@@ -109,13 +110,22 @@ export default async function SalesPage({ params, searchParams }: PageProps<"/pa
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div>
                   <p className="font-bold">
-                    {o.order_code} <span className={`ml-1 rounded-full px-2 py-0.5 text-[11px] font-bold uppercase ${ESTADO[o.status]}`}>{o.status}</span>
+                    {o.order_code} <span className={`ml-1 rounded-full px-2 py-0.5 text-[11px] font-bold uppercase ${ESTADO[o.status]}`}>{estadoOrden(o)}</span>
                     {o.created_by_staff_id && <span className="ml-1 text-xs text-texto-3">taquilla</span>}
-                    {o.vencida_at && <span className="ml-1 text-xs font-bold text-[#ff8fa3]">vencida (no se pagó a tiempo)</span>}
+                    {o.vencida_at && <span className="ml-1 text-xs font-bold text-[#ff8fa3]">no se pagó a tiempo</span>}
                     {o.status === "pendiente" && tiempoRestante(o.expires_at ?? null) && <span className="ml-1 text-xs text-aviso">vence en {tiempoRestante(o.expires_at ?? null)}</span>}
                   </p>
                   <p className="text-sm text-texto-2">{o.buyer_nombre} · <a href={`tel:${o.buyer_telefono}`} className="underline">{o.buyer_telefono}</a></p>
-                  <p className="text-xs capitalize text-texto-3">{nombreFuncion.get(o.performance_id)} · pidió {fecha(o.created_at)}</p>
+                  <p className="text-xs text-texto-3"><span className="capitalize">{nombreFuncion.get(o.performance_id)}</span> · pidió {fecha(o.created_at)}</p>
+                  {(o.approved_by || o.created_by_staff_id) && o.status === "aprobado" && (
+                    <p className="text-xs text-texto-3">
+                      {o.created_by_staff_id ? `Vendió ${quien(o.created_by_staff_id)}` : `Aprobó ${quien(o.approved_by)}`}
+                      {metodoLabel(o.metodo_pago) && ` · ${metodoLabel(o.metodo_pago)}`}{o.referencia && ` · ref. ${o.referencia}`}
+                    </p>
+                  )}
+                  {o.status === "rechazado" && (o.motivo || o.rejected_by) && (
+                    <p className="text-xs text-texto-3">{o.rejected_by ? `${quien(o.rejected_by)}: ` : ""}{o.motivo}</p>
+                  )}
                 </div>
                 <div className="text-right">
                   <p className="text-lg font-black">{formatMoney(o.total)}</p>
@@ -124,20 +134,17 @@ export default async function SalesPage({ params, searchParams }: PageProps<"/pa
               </div>
               <ul className="flex flex-wrap gap-2 text-xs">
                 {o.tickets.map((t) => (
-                  <li key={t.id} className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 ${t.is_active ? "bg-telon-2" : "bg-telon-2 line-through opacity-60"}`}>
+                  <li key={t.id} title={t.cancel_motivo ? `Cancelado: ${t.cancel_motivo}` : undefined} className={`rounded-full px-2.5 py-1 ${t.is_active ? "bg-telon-2" : "bg-telon-2 line-through opacity-60"}`}>
                     {t.seat_label ?? "General"}{t.checked_in_at && " ✓"}
-                    {operar && t.is_active && o.status !== "rechazado" && (
-                      <ActionForm inline action={cancelTicket} hidden={{ pid: id, ticket: t.id }} confirm={`¿Cancelar el boleto ${t.seat_label}? El asiento queda libre.`} submit="×" submitClass="grid h-5 w-5 place-items-center rounded-full text-texto-3 hover:bg-white/10" />
-                    )}
                   </li>
                 ))}
               </ul>
-              {operar && o.status === "pendiente" && (
-                <div className="flex flex-wrap gap-2">
-                  <ActionForm inline action={approveOrder} hidden={{ pid: id, order: o.id }} confirm={`¿Aprobar ${o.order_code} por ${formatMoney(o.total)}? Confirma antes que recibiste el pago.`} submit="Aprobar" submitClass="rounded-full bg-[#22c55e] px-4 py-1.5 text-xs font-bold text-[#052e16] disabled:opacity-60" />
-                  <ActionForm inline action={rejectOrder} hidden={{ pid: id, order: o.id }} confirm={`¿Rechazar ${o.order_code}? Los asientos quedan libres.`} submit="Rechazar" submitClass={small} />
-                </div>
+              {o.tickets.some((t) => t.cancelled_by) && (
+                <p className="text-xs text-texto-3">
+                  {o.tickets.filter((t) => t.cancelled_by).map((t) => `${t.seat_label ?? "General"} cancelado por ${quien(t.cancelled_by)}${t.cancel_motivo ? ` (${t.cancel_motivo})` : ""}`).join(" · ")}
+                </p>
               )}
+              {operar && <OrderActions pid={id} o={o} />}
             </li>
           ))}
           {ordenes.length === 0 && <li className="px-5 py-4 text-texto-2">No hay órdenes con este filtro.</li>}

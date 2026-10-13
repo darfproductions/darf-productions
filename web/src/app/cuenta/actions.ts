@@ -87,3 +87,12 @@ export async function replyOffer(_prev: OfferReply, form: FormData): Promise<Off
   revalidatePath("/cuenta");
   return { ok: true, message: acepta ? "¡Bienvenido al elenco! Ya apareces en la obra." : "Respuesta enviada. Gracias por avisar." };
 }
+
+/** El comprador cancela su propio apartado (0088). Solo órdenes pendientes. */
+export async function cancelMyOrder(_p: { ok: boolean; message: string } | null, f: FormData): Promise<{ ok: boolean; message: string }> {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("cancel_my_order", { target_order_id: String(f.get("order") ?? "") });
+  if (error) return { ok: false, message: error.message };
+  revalidatePath("/cuenta");
+  return { ok: true, message: "Listo: cancelaste tu apartado y los lugares quedaron libres." };
+}

@@ -6,6 +6,7 @@ import { useMemo, useState, useTransition } from "react";
 import { SeatMap, type ZonePrice } from "@/components/SeatMap";
 import { input } from "@/components/panel/ui";
 import { formatMoney, type MapSeat } from "@/lib/tickets";
+import { METODOS_PAGO } from "@/lib/ventas-rules";
 import { boxOfficeSale, type SaleResult } from "../actions";
 
 const MAX_SEATS = 20;
@@ -17,6 +18,7 @@ export function BoxOffice({ pid, performanceId, seats, taken, prices }: { pid: s
   const [nombre, setNombre] = useState("");
   const [telefono, setTelefono] = useState("");
   const [vendedor, setVendedor] = useState("");
+  const [metodo, setMetodo] = useState<string>("efectivo");
   const [result, setResult] = useState<SaleResult | null>(null);
   const [pending, start] = useTransition();
   const takenSet = useMemo(() => new Set(taken), [taken]);
@@ -66,6 +68,11 @@ export function BoxOffice({ pid, performanceId, seats, taken, prices }: { pid: s
         <label className="flex flex-col gap-1.5 text-sm font-semibold">Nombre del comprador *<input className={input} value={nombre} onChange={(e) => setNombre(e.target.value)} /></label>
         <label className="flex flex-col gap-1.5 text-sm font-semibold">Teléfono *<input className={input} type="tel" value={telefono} onChange={(e) => setTelefono(e.target.value)} /></label>
         <label className="flex flex-col gap-1.5 text-sm font-semibold">Código de vendedor (opcional)<input className={input} value={vendedor} onChange={(e) => setVendedor(e.target.value)} /></label>
+        <label className="flex flex-col gap-1.5 text-sm font-semibold">Cómo pagó
+          <select className={input} value={metodo} onChange={(e) => setMetodo(e.target.value)}>
+            {METODOS_PAGO.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+          </select>
+        </label>
         {result && !result.ok && <p role="alert" className="text-sm font-semibold text-[#ff8fa3]">{result.message}</p>}
         <button
           type="button"
@@ -73,7 +80,7 @@ export function BoxOffice({ pid, performanceId, seats, taken, prices }: { pid: s
           onClick={() => {
             if (!window.confirm(`¿Registrar la venta de ${chosen.length} boleto(s) por ${formatMoney(total)}? Confirma que ya cobraste.`)) return;
             start(async () => {
-              const r = await boxOfficeSale({ pid, performanceId, seatIds: [...selected], nombre, telefono, vendedor });
+              const r = await boxOfficeSale({ pid, performanceId, seatIds: [...selected], nombre, telefono, vendedor, metodo });
               setResult(r);
               if (!r.ok) router.refresh();
             });

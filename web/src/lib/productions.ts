@@ -65,12 +65,16 @@ export type HomeData = {
 
 export async function getHomeData(): Promise<HomeData> {
   const supabase = await createClient();
-  const [prods, perfs] = await Promise.all([
+  const [prods, perfs, desde] = await Promise.all([
     supabase.from("productions").select(PRODUCTION_COLUMNS).in("estado", PUBLIC_STATES),
     supabase.from("performances").select("production_id, starts_at, on_sale"),
+    supabase.rpc("productions_desde"),
   ]);
   if (prods.error) throw new Error(`No se pudieron cargar las producciones: ${prods.error.message}`);
-  const productions = ordenarObras(clasificar((prods.data ?? []) as Production[], perfs.data ?? []));
+  // "Desde $" con el precio real de las funciones que vienen (0088), no la columna vieja de la 1.0.
+  const minimo = new Map(((desde.data ?? []) as { production_id: string; desde: number }[]).map((r) => [r.production_id, Number(r.desde)]));
+  const conPrecio = ((prods.data ?? []) as Production[]).map((p) => ({ ...p, price: minimo.get(p.id) ?? 0 }));
+  const productions = ordenarObras(clasificar(conPrecio, perfs.data ?? []));
   return { productions, featured: elegirPortada(productions) };
 }
 

@@ -16,14 +16,17 @@ import { OrderTickets } from "@/components/tickets/OrderTickets";
 import { createClient } from "@/lib/supabase/server";
 import { formatMoney, whatsappPayUrl } from "@/lib/tickets";
 import { logout } from "../entrar/actions";
+import { cancelMyOrder } from "./actions";
 import Link from "next/link";
 import { listNotifications, unreadCount } from "@/lib/notifications";
 import { AvatarUpload } from "./AvatarUpload";
 import { MiCredencial } from "@/components/credencial/MiCredencial";
+import { ActionForm } from "@/components/panel/ActionForm";
 import { getMiCredencial } from "@/lib/credencial";
 import { EmailForm, PasswordForm, ProfileForm } from "./ProfileForm";
 import { funcionPasada } from "@/lib/account-rules";
 import { limiteTexto, recordatorio, tiempoRestante } from "@/lib/expiry-rules";
+import { estadoOrden } from "@/lib/ventas-rules";
 
 export const metadata: Metadata = { title: "Mi cuenta" };
 
@@ -38,6 +41,8 @@ type OrderRow = {
   created_at: string;
   expires_at: string | null;
   vencida_at: string | null;
+  motivo: string | null;
+  cancelada_por_comprador_at: string | null;
   buyer_nombre: string;
   performances: { starts_at: string | null; venue: string | null; production_id: string; productions: (KitColumns & { nombre: string; venue: string | null }) | null } | null;
   tickets: { id: string; is_active: boolean; qr_token: string; checked_in_at: string | null; seats: { seat_label: string } | null; price_categories: { nombre: string } | null }[];
@@ -62,7 +67,7 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
   await supabase.rpc("expire_due_orders", { pid: null });
   const { data, error } = await supabase
     .from("orders")
-    .select("id, order_code, status, total, discount_amount, discount_codigo, buyer_telefono, buyer_nombre, created_at, expires_at, vencida_at, performances(starts_at, venue, production_id, productions(nombre, venue, color_fondo, color_superficie, color_texto, color_acento, logo_path, ambiente_path, frase)), tickets(id, is_active, qr_token, checked_in_at, seats(seat_label), price_categories(nombre))")
+    .select("id, order_code, status, total, discount_amount, discount_codigo, buyer_telefono, buyer_nombre, created_at, expires_at, vencida_at, motivo, cancelada_por_comprador_at, performances(starts_at, venue, production_id, productions(nombre, venue, color_fondo, color_superficie, color_texto, color_acento, logo_path, ambiente_path, frase)), tickets(id, is_active, qr_token, checked_in_at, seats(seat_label), price_categories(nombre))")
     .eq("buyer_user_id", session.userId)
     .order("created_at", { ascending: false });
   const orders = (data ?? []) as unknown as OrderRow[];
@@ -131,7 +136,7 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
                   })
                 : "";
               return (
-                <li key={o.id} className="flex flex-col overflow-hidden rounded-2xl bg-telon">
+                <li key={o.id} id={`o-${o.order_code}`} className="flex scroll-mt-24 flex-col overflow-hidden rounded-2xl bg-telon">
                   <div className="flex items-center gap-4 px-5 py-4" style={{ background: estilo.fondo, color: estilo.texto }}>
                     {estilo.logo ? (
                       // eslint-disable-next-line @next/next/no-img-element -- logo de la obra
@@ -141,13 +146,16 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
                       <p className="text-lg font-bold">{nombre}</p>
                       <p className="text-sm capitalize opacity-85">{formatPerformanceDate(o.performances?.starts_at ?? null)}</p>
                     </div>
-                    <span className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-bold ${STATUS[o.status].cls}`}>{o.vencida_at ? "Vencida" : STATUS[o.status].label}</span>
+                    <span className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-bold ${STATUS[o.status].cls}`}>{estadoOrden(o, "comprador")}</span>
                   </div>
                   <div className="flex flex-col gap-4 p-5">
                   <p className="text-sm text-texto-3">
                     Orden {o.order_code} · {seats.length} {seats.length === 1 ? "boleto" : "boletos"}{o.status === "pendiente" && seats.length ? ` (${seats.join(", ")})` : ""} · {formatMoney(Number(o.total))}{o.discount_codigo ? ` · código ${o.discount_codigo}` : ""}
                   </p>
                   {o.vencida_at && <p className="text-sm text-texto-3">No se confirmó el pago a tiempo y los asientos se liberaron. Puedes volver a comprar si sigue habiendo lugares.</p>}
+                  {o.status === "rechazado" && !o.vencida_at && !o.cancelada_por_comprador_at && (
+                    <p className="text-sm text-texto-2">{o.motivo ? <>Motivo: {o.motivo}. </> : null}Si tienes dudas, <Link href="/contacto" className="font-bold text-lila">escríbenos</Link>.</p>
+                  )}
                   {o.status === "pendiente" && o.expires_at && tiempoRestante(o.expires_at) && (
                     <p className="text-sm text-aviso">Paga antes de <b>{limiteTexto(o.expires_at)}</b> (te quedan {tiempoRestante(o.expires_at)}). Si no, los asientos se liberan solos.</p>
                   )}
@@ -157,6 +165,9 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
                     ) : (
                       <Link href="/contacto" className="self-start rounded-full bg-[#25d366] px-5 py-3 text-sm font-bold text-[#062b16]">Escríbenos para pagar</Link>
                     )
+                  )}
+                  {o.status === "pendiente" && (
+                    <ActionForm inline action={cancelMyOrder} hidden={{ order: o.id }} confirm={`¿Cancelar tu apartado ${o.order_code}? Los lugares quedan libres para alguien más.`} submit="Cancelar mi apartado" submitClass="text-sm font-bold text-texto-3 underline underline-offset-4 hover:text-texto disabled:opacity-60" />
                   )}
                   {o.status === "aprobado" && boletos.length > 0 && (
                     <OrderTickets
@@ -207,12 +218,21 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
         <div className="contents lg:col-span-8 lg:flex lg:flex-col lg:gap-10">
         <section aria-labelledby="boletos" className="order-1 flex flex-col gap-4 lg:order-none">
           <h2 id="boletos" className="titular text-2xl">Mis boletos</h2>
-          {nueva && (
-            <p role="status" className="rounded-xl border border-exito/40 bg-exito/10 px-4 py-3">
-              Tu solicitud <b>{nueva}</b> quedó guardada y tus asientos están apartados. Cuando confirmemos tu
-              pago, tus boletos con QR aparecerán aquí.
-            </p>
-          )}
+          {nueva && (() => {
+            // 0088: el aviso dice el estado real de esa orden (puede venir de "Ver boletos" de una ya pagada).
+            const o = orders.find((x) => x.order_code === nueva);
+            if (!o) return null;
+            const texto = o.status === "pendiente"
+              ? <>Tu solicitud <b>{nueva}</b> quedó guardada y tus lugares están apartados. Cuando confirmemos tu pago, tus boletos con QR aparecerán aquí.</>
+              : o.status === "aprobado"
+                ? <>Tu orden <b>{nueva}</b> ya está pagada. Toca «Ver boletos» para tener tus códigos QR.</>
+                : <>Tu orden <b>{nueva}</b> ya no está activa ({estadoOrden(o, "comprador").toLowerCase()}).</>;
+            return (
+              <p role="status" className={`rounded-xl border px-4 py-3 ${o.status === "rechazado" ? "border-white/15 bg-white/5" : "border-exito/40 bg-exito/10"}`}>
+                {texto} <a href={`#o-${nueva}`} className="font-bold text-lila">Ir a la orden ↓</a>
+              </p>
+            );
+          })()}
           {recordatorios.map((o) => (
             <p key={o.id} role="status" className="rounded-xl border border-[#a48bff]/40 bg-[#a48bff]/10 px-4 py-3">
               <b>{recordatorio(o.performances?.starts_at ?? null)}:</b> {o.performances?.productions?.nombre} ·{" "}

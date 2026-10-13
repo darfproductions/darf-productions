@@ -1,6 +1,7 @@
 import { EscanerFan } from "@/components/fanzone/EscanerFan";
 import { ActionForm } from "@/components/panel/ActionForm";
-import { marcarLlegada, ponerEquipoEvento, quitarEquipoEvento, revisarPagoEvento, setEvento } from "@/app/panel/eventos/actions";
+import { cancelarEvento, editarEvento, marcarLlegada, ponerEquipoEvento, quitarEquipoEvento, revisarPagoEvento, setEvento } from "@/app/panel/eventos/actions";
+import { isoToLocalMx } from "@/lib/dates";
 import { ACCESO_EVENTO, TIPOS_EVENTO, precioTexto, type AccesoEvento, type TipoEvento } from "@/lib/eventos-rules";
 import { tiempoRestante } from "@/lib/expiry-rules";
 import { vigenteEnPuerta } from "@/lib/acceso-rules";
@@ -16,7 +17,7 @@ const horaMx = (iso: string) => new Date(iso).toLocaleTimeString("es-MX", { time
 type Fila = {
   id: string; production_id: string | null; tipo: TipoEvento; categoria: string | null; titulo: string | null; lugar: string | null;
   inicia: string | null; termina: string | null; liga: string | null; acceso: AccesoEvento; cupo: number | null; abierto: boolean; notas: string | null;
-  requiere_registro: boolean; requiere_boleto: boolean; precio: number | null; precio_socio: number | null; performances: { starts_at: string | null } | null; productions: { nombre: string } | null;
+  requiere_registro: boolean; requiere_boleto: boolean; precio: number | null; precio_socio: number | null; cancelado_at: string | null; cancelado_motivo: string | null; performances: { starts_at: string | null } | null; productions: { nombre: string } | null;
 };
 type Persona = {
   user_id: string; nombre: string; telefono: string | null; numero: number | null; llegada_at: string | null;
@@ -31,7 +32,7 @@ type Miembro = { user_id: string; nombre: string; email: string; papel: PapelEve
 // edita el evento arma su equipo (Organiza, Puerta, Cobros).
 export async function EventosLista({ pid, access }: { pid?: string | null; access: PanelAccessData }) {
   const supabase = await createClient();
-  let q = supabase.from("fan_encuentros").select("id, production_id, tipo, categoria, titulo, lugar, inicia, termina, liga, acceso, cupo, abierto, notas, requiere_registro, requiere_boleto, precio, precio_socio, performances(starts_at), productions(nombre)");
+  let q = supabase.from("fan_encuentros").select("id, production_id, tipo, categoria, titulo, lugar, inicia, termina, liga, acceso, cupo, abierto, notas, requiere_registro, requiere_boleto, precio, precio_socio, cancelado_at, cancelado_motivo, performances(starts_at), productions(nombre)");
   if (pid) q = q.eq("production_id", pid);
   const { data } = await q;
   const filas = ((data ?? []) as unknown as Fila[]).map((e) => ({ ...e, cuando: e.performances?.starts_at ?? e.inicia }))
@@ -47,13 +48,16 @@ export async function EventosLista({ pid, access }: { pid?: string | null; acces
     const nombre = e.titulo || e.categoria || "Evento";
     const llegaron = lista.filter((x) => x.llegada_at).length;
     const porPagar = lista.filter((x) => x.orden_status === "pendiente").length;
+    const conPagos = lista.some((x) => x.orden_status === "pendiente" || x.orden_status === "aprobado");
+    const cancelado = !!e.cancelado_at;
     return (
       <li key={e.id} id={`e-${e.id}`} className="scroll-mt-24 rounded-xl border border-linea p-3 text-sm target:border-aviso/70">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <span className="min-w-0">
             <span className="mr-1.5 rounded-full bg-oro/15 px-2 py-0.5 text-[11px] font-bold text-oro">{TIPOS_EVENTO[e.tipo].label}{e.categoria && e.titulo ? ` · ${e.categoria}` : ""}</span>
             <span className="mr-1.5 rounded-full bg-white/10 px-2 py-0.5 text-[11px] font-bold">{ACCESO_EVENTO[e.acceso].corto}</span>
-            <b>{nombre}</b> · <span className="capitalize">{formatPerformanceDate(e.cuando)}</span>
+            {cancelado && <span className="mr-1.5 rounded-full bg-[#5c1a26] px-2 py-0.5 text-[11px] font-bold text-[#ffb3c0]">Cancelado</span>}
+            <b className={cancelado ? "line-through opacity-70" : ""}>{nombre}</b> · <span className="capitalize">{formatPerformanceDate(e.cuando)}</span>
             <span className="block text-xs text-texto-3">
               {pid ? "" : `${e.productions?.nombre ?? "DARF (sin obra)"} · `}
               {e.requiere_registro ? `${lista.length}${e.cupo ? ` de ${e.cupo}` : ""} registrados · registro ${e.abierto ? "abierto" : "cerrado"}` : `Sin registro${e.cupo ? ` · cupo ${e.cupo}` : ""}`}
@@ -65,11 +69,41 @@ export async function EventosLista({ pid, access }: { pid?: string | null; acces
           </span>
           <span className="flex flex-wrap items-center gap-1.5">
             {e.tipo !== "en_linea" && puede.puerta && <EscanerFan pid={e.production_id ?? ""} eid={e.id} titulo={nombre} botonClass="fb fb-fz fb-sm" />}
-            {e.requiere_registro && puede.editar && <ActionForm inline action={setEvento} hidden={{ pid: e.production_id ?? "", id: e.id, accion: e.abierto ? "cerrar" : "abrir" }} submit={e.abierto ? "Cerrar registro" : "Abrir registro"} submitClass={small} />}
-            {puede.equipo && <ActionForm inline action={setEvento} hidden={{ pid: e.production_id ?? "", id: e.id, accion: "borrar" }} confirm="¿Borrar este evento y su lista?" submit="Borrar" submitClass={small} />}
+            {!cancelado && e.requiere_registro && puede.editar && <ActionForm inline action={setEvento} hidden={{ pid: e.production_id ?? "", id: e.id, accion: e.abierto ? "cerrar" : "abrir" }} submit={e.abierto ? "Cerrar registro" : "Abrir registro"} submitClass={small} />}
+            {puede.equipo && !conPagos && <ActionForm inline action={setEvento} hidden={{ pid: e.production_id ?? "", id: e.id, accion: "borrar" }} confirm="¿Borrar este evento y su lista? No se puede deshacer." submit="Borrar" submitClass={small} />}
           </span>
         </div>
         {e.notas && <p className="mt-1 text-xs text-texto-3">{e.notas}</p>}
+        {cancelado && <p className="mt-1 text-xs text-[#ffb3c0]">Cancelado{e.cancelado_motivo ? `: ${e.cancelado_motivo}` : ""}. Se avisó a los registrados.</p>}
+        {!cancelado && puede.editar && (
+          <details className="mt-2">
+            <summary className="cursor-pointer text-xs font-bold text-lila">Editar o cancelar</summary>
+            <div className="mt-2 grid gap-4 md:grid-cols-2">
+              <ActionForm action={editarEvento} hidden={{ pid: e.production_id ?? "", id: e.id, tipo: e.tipo }} submit="Guardar cambios" submitClass={small}>
+                <label className="flex flex-col gap-1 text-xs font-semibold">{e.tipo === "funcion" ? "Qué es" : "Nombre"}<input name="titulo" defaultValue={e.titulo ?? ""} maxLength={120} className={`${input} py-2 text-sm`} /></label>
+                {e.tipo !== "funcion" && (
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <label className="flex flex-col gap-1 text-xs font-semibold">Empieza<input type="datetime-local" name="inicia" required defaultValue={isoToLocalMx(e.inicia)} className={`${input} py-2 text-sm`} /></label>
+                    <label className="flex flex-col gap-1 text-xs font-semibold">Termina (opcional)<input type="datetime-local" name="termina" defaultValue={isoToLocalMx(e.termina)} className={`${input} py-2 text-sm`} /></label>
+                  </div>
+                )}
+                {e.tipo === "presencial" && <label className="flex flex-col gap-1 text-xs font-semibold">Lugar<input name="lugar" defaultValue={e.lugar ?? ""} maxLength={160} className={`${input} py-2 text-sm`} /></label>}
+                {e.tipo === "en_linea" && <label className="flex flex-col gap-1 text-xs font-semibold">Liga<input name="liga" type="url" required defaultValue={e.liga ?? ""} className={`${input} py-2 text-sm`} /></label>}
+                <div className="grid gap-2 sm:grid-cols-3">
+                  <label className="flex flex-col gap-1 text-xs font-semibold">Cupo<input name="cupo" inputMode="numeric" defaultValue={e.cupo ?? ""} placeholder="Sin límite" className={`${input} py-2 text-sm`} /></label>
+                  <label className="flex flex-col gap-1 text-xs font-semibold">Precio<input name="precio" inputMode="decimal" defaultValue={e.precio ?? ""} placeholder="Gratis" className={`${input} py-2 text-sm`} /></label>
+                  <label className="flex flex-col gap-1 text-xs font-semibold">Socios<input name="precio_socio" inputMode="decimal" defaultValue={e.precio_socio ?? ""} placeholder="Igual" className={`${input} py-2 text-sm`} /></label>
+                </div>
+                <label className="flex flex-col gap-1 text-xs font-semibold">Notas<input name="notas" defaultValue={e.notas ?? ""} maxLength={300} className={`${input} py-2 text-sm`} /></label>
+                <p className="text-xs text-texto-3">Quien ya apartó o pagó conserva su precio.</p>
+              </ActionForm>
+              <ActionForm action={cancelarEvento} hidden={{ pid: e.production_id ?? "", id: e.id }} confirm={`¿Cancelar "${nombre}"? Se avisa a todos los registrados y se cierra el registro.`} submit="Cancelar evento" submitClass={small}>
+                <label className="flex flex-col gap-1 text-xs font-semibold">Motivo (lo ven los registrados)<input name="motivo" maxLength={300} placeholder="Ej. cambio de agenda del elenco" className={`${input} py-2 text-sm`} /></label>
+                <p className="text-xs text-texto-3">{conPagos ? "Tiene pagos o apartados: por eso no se borra. Los apartados sin pagar se cancelan; a quien ya pagó hay que reembolsarle." : "Quien se registró recibe el aviso."}</p>
+              </ActionForm>
+            </div>
+          </details>
+        )}
         {lista.length > 0 && (
           <details className="mt-2" open={porPagar > 0}>
             <summary className="cursor-pointer text-xs font-bold text-lila">Ver lista ({lista.length}){porPagar > 0 && <span className="ml-1.5 rounded-full bg-aviso/20 px-2 py-0.5 text-aviso">{porPagar} por pagar</span>}</summary>
@@ -83,7 +117,7 @@ export async function EventosLista({ pid, access }: { pid?: string | null; acces
                     {x.orden_status === "pendiente" && puede.cobros && (
                       <>
                         <span className="text-aviso">Por pagar ${Number(x.orden_monto).toLocaleString("es-MX")} · {x.orden_codigo}{tiempoRestante(x.orden_expira) ? ` · vence en ${tiempoRestante(x.orden_expira)}` : ""}</span>
-                        <ActionForm inline action={revisarPagoEvento} hidden={{ pid: e.production_id ?? "", orden: x.orden_id ?? "", aprobar: "1" }} submit="Aprobar pago" submitClass={`${small} border-exito/60 text-exito`} />
+                        <ActionForm inline action={revisarPagoEvento} hidden={{ pid: e.production_id ?? "", orden: x.orden_id ?? "", aprobar: "1" }} confirm={`¿Aprobar el pago de ${x.nombre || "esta persona"} por $${Number(x.orden_monto).toLocaleString("es-MX")}? Confirma antes que lo recibiste.`} submit="Aprobar pago" submitClass={`${small} border-exito/60 text-exito`} />
                         <ActionForm inline action={revisarPagoEvento} hidden={{ pid: e.production_id ?? "", orden: x.orden_id ?? "", aprobar: "0" }} confirm="¿Rechazar este apartado? Se libera su lugar." submit="Rechazar" submitClass={small} />
                       </>
                     )}

@@ -22,6 +22,7 @@ import { estadoPublico } from "@/lib/home-rules";
 import { getProductionContent } from "@/lib/production-content";
 import { getProgram } from "@/lib/program";
 import { withSeller } from "@/lib/seller-rules";
+import { funcionVendible } from "@/lib/ventas-rules";
 import {
   formatPrice,
   getGallery,
@@ -65,7 +66,8 @@ export async function ProductionView({
 }) {
   const { production: p, performances, prices } = data;
   const theme = getTheme(p);
-  const vendibles = performances.filter((fn) => fn.on_sale && !!fn.starts_at && !p.concluded);
+  // 0088: una función que ya empezó deja de venderse aunque siga "en venta".
+  const vendibles = performances.filter((fn) => funcionVendible(fn, p.concluded));
   const [c, gallery, ensayos, audiciones, programa, franja, ocupacion, socio, eventos, cartelera, sesion] = await Promise.all([
     getProductionContent(p.id),
     getGallery(p.id),
@@ -89,7 +91,7 @@ export async function ProductionView({
   // Próxima función que todavía se puede comprar (las funciones vienen en orden de fecha).
   const comprables = vendibles.filter((fn) => estadoDe(fn.id) !== "agotado");
   const proxima = comprables[0] ?? null;
-  const desde = prices.length ? Math.min(...prices.map((z) => z.price)) : p.price > 0 ? p.price : null;
+  const desde = prices.length ? Math.min(...prices.map((z) => z.price)) : null;
   const enVenta = vendibles.length > 0;
   // Antes del estreno, la tarjeta del hero cuenta los días que faltan.
   const estreno = p.concluded ? null : fechaEstreno(performances);
@@ -130,7 +132,7 @@ export async function ProductionView({
       {performances.length > 0 && (
         <ul className="flex flex-col gap-3.5">
           {performances.map((fn) => {
-            const vendible = fn.on_sale && !!fn.starts_at && !p.concluded;
+            const vendible = funcionVendible(fn, p.concluded);
             const est = vendible ? estadoDe(fn.id) : null;
             const pre = vendible && enPreventa(fn);
             const agotado = est === "agotado";

@@ -90,6 +90,34 @@ export function describeAudit(r: AuditRow, n: AuditNames): string {
       if (est === "cancelada") return `${quien} canceló su solicitud (${que}) en ${obra}`;
       return `Actualizó la solicitud de ${quien} (${que}) en ${obra}`;
     }
+    case "orders": {
+      // 0088: ventas, sin datos del comprador.
+      const cod = String(row.order_code ?? "una orden");
+      const obra = n.production(r.production_id);
+      const dinero = (v: unknown) => `$${Number(v ?? 0).toLocaleString("es-MX")}`;
+      const motivo = row.motivo ? ` (${String(row.motivo)})` : "";
+      switch (r.accion) {
+        case "aprobar": return `Aprobó la orden ${cod} de ${obra} por ${dinero(row.total)}`;
+        case "rechazar": return `Rechazó la orden ${cod} de ${obra}${motivo}`;
+        case "cancelar": return `Canceló la orden ${cod} de ${obra} (${dinero(row.monto)})${motivo}`;
+        case "cancelar_boleto": return `Canceló el boleto ${String(row.lugar ?? "")} de la orden ${cod} (${dinero(row.monto)})${motivo}`.replace("boleto  de", "boleto de");
+        case "cancelar_comprador": return `El comprador canceló su apartado ${cod} de ${obra}`;
+        case "extender": return `Dio más tiempo para pagar la orden ${cod} de ${obra}`;
+        case "pago": return `Registró el método de pago de la orden ${cod}`;
+        default: return `Cambió la orden ${cod} de ${obra}`;
+      }
+    }
+    case "precios": {
+      const zona = String((r.despues ?? {}).zona ?? "una zona");
+      const de = r.antes?.precio, a = r.despues?.precio;
+      return `Cambió el precio de ${zona} en ${n.production(r.production_id)}: $${Number(de ?? 0).toLocaleString("es-MX")} → $${Number(a ?? 0).toLocaleString("es-MX")}`;
+    }
+    case "discount_codes": {
+      const cod = String(row.codigo ?? "");
+      if (r.accion === "insert") return `Creó el código de descuento ${cod} (${String(row.percent)}%) en ${n.production(r.production_id)}`;
+      if (r.accion === "delete") return `Borró el código de descuento ${cod} en ${n.production(r.production_id)}`;
+      return `Editó el código de descuento ${cod} en ${n.production(r.production_id)}`;
+    }
     default:
       return `${r.accion} en ${r.tabla}`;
   }

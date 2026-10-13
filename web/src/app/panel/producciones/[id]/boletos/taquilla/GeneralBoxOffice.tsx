@@ -6,6 +6,7 @@ import { useState, useTransition } from "react";
 import { input } from "@/components/panel/ui";
 import type { GeneralZone } from "@/lib/boleteria";
 import { formatMoney } from "@/lib/tickets";
+import { METODOS_PAGO } from "@/lib/ventas-rules";
 import { boxOfficeGeneralSale, type GeneralSaleResult } from "../actions";
 
 // Taquilla de entrada general (0055): zona + cantidad; queda aprobada al momento.
@@ -16,6 +17,7 @@ export function GeneralBoxOffice({ pid, performanceId, zones }: { pid: string; p
   const [nombre, setNombre] = useState("");
   const [telefono, setTelefono] = useState("");
   const [vendedor, setVendedor] = useState("");
+  const [metodo, setMetodo] = useState<string>("efectivo");
   const [result, setResult] = useState<GeneralSaleResult | null>(null);
   const [pending, start] = useTransition();
   const z = zones.find((x) => x.price_category_id === zone);
@@ -59,6 +61,11 @@ export function GeneralBoxOffice({ pid, performanceId, zones }: { pid: string; p
           <label className="flex flex-col gap-1.5 text-sm font-semibold">Nombre *<input className={input} value={nombre} onChange={(e) => setNombre(e.target.value)} /></label>
           <label className="flex flex-col gap-1.5 text-sm font-semibold">Teléfono *<input className={input} type="tel" value={telefono} onChange={(e) => setTelefono(e.target.value)} /></label>
           <label className="flex flex-col gap-1.5 text-sm font-semibold">Vendedor (opcional)<input className={input} value={vendedor} onChange={(e) => setVendedor(e.target.value)} /></label>
+          <label className="flex flex-col gap-1.5 text-sm font-semibold">Cómo pagó
+            <select className={input} value={metodo} onChange={(e) => setMetodo(e.target.value)}>
+              {METODOS_PAGO.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+            </select>
+          </label>
         </div>
       )}
       {result && !result.ok && <p role="alert" className="text-sm font-semibold text-[#ff8fa3]">{result.message}</p>}
@@ -67,7 +74,7 @@ export function GeneralBoxOffice({ pid, performanceId, zones }: { pid: string; p
           onClick={() => {
             if (!window.confirm(`¿Registrar ${cantidad} boleto(s) de ${z.nombre} por ${formatMoney(z.precio * cantidad)}? Confirma que ya cobraste.`)) return;
             start(async () => {
-              const r = await boxOfficeGeneralSale({ pid, performanceId, zoneId: zone, cantidad, nombre, telefono, vendedor });
+              const r = await boxOfficeGeneralSale({ pid, performanceId, zoneId: zone, cantidad, nombre, telefono, vendedor, metodo });
               setResult(r);
               if (!r.ok) router.refresh();
             });

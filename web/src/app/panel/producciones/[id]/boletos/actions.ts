@@ -3,6 +3,8 @@
 import QRCode from "qrcode";
 import { revalidatePath } from "next/cache";
 import { localMxToIso } from "@/lib/dates";
+import { formatMoney } from "@/lib/tickets";
+import { esMetodo } from "@/lib/ventas-rules";
 import { createClient } from "@/lib/supabase/server";
 
 // Boletería de la obra en el panel. Usa las MISMAS funciones de la base que la
@@ -17,10 +19,17 @@ const refresh = (pid: string) => {
   revalidatePath("/producciones");
 };
 
+const motivoDe = (f: FormData) => String(f.get("motivo") ?? "").trim().slice(0, 300) || null;
+
 export async function approveOrder(_p: TicketState, f: FormData): Promise<TicketState> {
   const pid = String(f.get("pid"));
+  const metodo = String(f.get("metodo") ?? "");
   const supabase = await createClient();
-  const { error } = await supabase.rpc("approve_order", { target_order_id: String(f.get("order")) });
+  const { error } = await supabase.rpc("approve_order", {
+    target_order_id: String(f.get("order")),
+    p_metodo: esMetodo(metodo) ? metodo : null,
+    p_referencia: String(f.get("referencia") ?? "").trim() || null,
+  });
   if (error) return { ok: false, message: error.message };
   refresh(pid);
   return { ok: true, message: "Orden aprobada: los boletos ya aparecen en la cuenta del comprador." };
@@ -29,19 +38,48 @@ export async function approveOrder(_p: TicketState, f: FormData): Promise<Ticket
 export async function rejectOrder(_p: TicketState, f: FormData): Promise<TicketState> {
   const pid = String(f.get("pid"));
   const supabase = await createClient();
-  const { error } = await supabase.rpc("reject_order", { target_order_id: String(f.get("order")) });
+  const { error } = await supabase.rpc("reject_order", { target_order_id: String(f.get("order")), p_motivo: motivoDe(f) });
   if (error) return { ok: false, message: error.message };
   refresh(pid);
-  return { ok: true, message: "Orden rechazada: los asientos quedaron libres." };
+  return { ok: true, message: "Orden rechazada: los lugares quedaron libres y el comprador recibió el aviso." };
 }
 
 export async function cancelTicket(_p: TicketState, f: FormData): Promise<TicketState> {
   const pid = String(f.get("pid"));
+  const ticket = String(f.get("ticket") ?? "");
+  if (!ticket) return { ok: false, message: "Elige el boleto que quieres cancelar." };
   const supabase = await createClient();
-  const { error } = await supabase.rpc("admin_cancel_ticket", { target_ticket_id: String(f.get("ticket")) });
+  const { error } = await supabase.rpc("admin_cancel_ticket", { target_ticket_id: ticket, p_motivo: motivoDe(f) });
   if (error) return { ok: false, message: error.message };
   refresh(pid);
-  return { ok: true, message: "Boleto cancelado: el asiento quedó libre." };
+  return { ok: true, message: "Boleto cancelado: su precio se descontó de la orden y el lugar quedó libre." };
+}
+
+export async function cancelOrder(_p: TicketState, f: FormData): Promise<TicketState> {
+  const pid = String(f.get("pid"));
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("admin_cancel_order", { target_order_id: String(f.get("order")), p_motivo: motivoDe(f) });
+  if (error) return { ok: false, message: error.message };
+  refresh(pid);
+  const monto = Number((data as { monto?: number } | null)?.monto ?? 0);
+  return { ok: true, message: `Orden cancelada. ${monto > 0 ? `Si ya había pagado, devuelve ${formatMoney(monto)}.` : ""}`.trim() };
+}
+
+export async function extendOrder(_p: TicketState, f: FormData): Promise<TicketState> {
+  const pid = String(f.get("pid"));
+  const horas = Math.min(72, Math.max(1, Number(f.get("horas") ?? 24) || 24));
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("extend_order", { target_order_id: String(f.get("order")), p_horas: horas });
+  if (error) return { ok: false, message: error.message };
+  refresh(pid);
+  return { ok: true, message: `Listo: el apartado sigue ${horas} horas más y el comprador recibió el aviso.` };
+}
+
+/** Método de pago de una venta en taquilla (0088). No detiene la venta si falla. */
+async function guardarPago(orderId: string | undefined, metodo: string | undefined) {
+  if (!orderId || !metodo || !esMetodo(metodo)) return;
+  const supabase = await createClient();
+  await supabase.rpc("order_set_pago", { target_order_id: orderId, p_metodo: metodo, p_referencia: null });
 }
 
 export type SaleResult =
@@ -49,7 +87,7 @@ export type SaleResult =
   | { ok: false; message: string };
 
 /** Venta en taquilla (queda aprobada al momento; mismo RPC que la 1.0). */
-export async function boxOfficeSale(input: { pid: string; performanceId: string; seatIds: string[]; nombre: string; telefono: string; vendedor: string }): Promise<SaleResult> {
+export async function boxOfficeSale(input: { pid: string; performanceId: string; seatIds: string[]; nombre: string; telefono: string; vendedor: string; metodo?: string }): Promise<SaleResult> {
   if (!input.nombre.trim() || !input.telefono.trim()) return { ok: false, message: "Escribe nombre y teléfono del comprador." };
   if (!input.seatIds.length) return { ok: false, message: "Elige al menos un asiento." };
   const supabase = await createClient();
@@ -62,7 +100,8 @@ export async function boxOfficeSale(input: { pid: string; performanceId: string;
     target_seller_codigo: input.vendedor.trim() || null,
   });
   if (error) return { ok: false, message: error.message };
-  const r = data as { order_code: string; total: number; tickets: { seat_label: string; qr_token: string }[] };
+  const r = data as { order_id?: string; order_code: string; total: number; tickets: { seat_label: string; qr_token: string }[] };
+  await guardarPago(r.order_id, input.metodo);
   const tickets = await Promise.all(
     (r.tickets ?? []).map(async (t) => ({ seat: t.seat_label, qr: await QRCode.toDataURL(t.qr_token, { margin: 1, width: 240 }) })),
   );
@@ -204,7 +243,7 @@ export async function saveGeneralZone(_p: TicketState, f: FormData): Promise<Tic
 export type GeneralSaleResult = SaleResult;
 
 /** Venta de entrada general en taquilla (aprobada al momento). */
-export async function boxOfficeGeneralSale(input: { pid: string; performanceId: string; zoneId: string; cantidad: number; nombre: string; telefono: string; vendedor: string }): Promise<GeneralSaleResult> {
+export async function boxOfficeGeneralSale(input: { pid: string; performanceId: string; zoneId: string; cantidad: number; nombre: string; telefono: string; vendedor: string; metodo?: string }): Promise<GeneralSaleResult> {
   if (!input.nombre.trim() || !input.telefono.trim()) return { ok: false, message: "Escribe nombre y teléfono del comprador." };
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("admin_create_general_order", {
@@ -216,7 +255,8 @@ export async function boxOfficeGeneralSale(input: { pid: string; performanceId: 
     target_seller_codigo: input.vendedor.trim() || null,
   });
   if (error) return { ok: false, message: error.message };
-  const r = data as { order_code: string; total: number; tickets: { seat_label: string; qr_token: string }[] };
+  const r = data as { order_id?: string; order_code: string; total: number; tickets: { seat_label: string; qr_token: string }[] };
+  await guardarPago(r.order_id, input.metodo);
   const tickets = await Promise.all(
     (r.tickets ?? []).map(async (t) => ({ seat: t.seat_label, qr: await QRCode.toDataURL(t.qr_token, { margin: 1, width: 240 }) })),
   );

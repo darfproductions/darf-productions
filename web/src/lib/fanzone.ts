@@ -85,6 +85,8 @@ export type MiEvento = {
   id: string; titulo: string; tipo: Evento["tipo"]; obra: string | null; starts_at: string; lugar: string | null;
   orden_codigo: string | null; orden_status: "pendiente" | "aprobado" | "rechazado" | null; orden_monto: number | null;
   orden_expira: string | null; vencida: boolean | null; llegada_at: string | null;
+  /** 0088: el equipo canceló el evento. */
+  cancelado: boolean | null; cancelado_motivo: string | null;
 };
 export async function getMisEventos(): Promise<MiEvento[]> {
   const supabase = await createClient();

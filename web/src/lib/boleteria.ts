@@ -62,7 +62,7 @@ export async function listOrders(pid: string, opts: { funcion?: string; estado?:
   if (!perfIds.length) return [];
   let q = supabase
     .from("orders")
-    .select("id, order_code, performance_id, status, buyer_nombre, buyer_telefono, total, discount_codigo, discount_amount, created_at, created_by_staff_id, expires_at, vencida_at, tickets(id, is_active, checked_in_at, seats(seat_label), price_categories(nombre))")
+    .select("id, order_code, performance_id, status, buyer_nombre, buyer_telefono, total, discount_codigo, discount_amount, created_at, created_by_staff_id, expires_at, vencida_at, motivo, metodo_pago, referencia, approved_by, rejected_by, cancelada_por_comprador_at, tickets(id, is_active, checked_in_at, cancel_motivo, cancelled_by, seats(seat_label), price_categories(nombre))")
     .in("performance_id", opts.funcion ? [opts.funcion] : perfIds)
     .order("created_at", { ascending: false })
     .limit(500);
@@ -73,10 +73,12 @@ export async function listOrders(pid: string, opts: { funcion?: string; estado?:
     ...(o as unknown as SaleOrder),
     total: Number(o.total),
     discount_amount: Number(o.discount_amount ?? 0),
-    tickets: ((o.tickets ?? []) as unknown as { id: string; is_active: boolean; checked_in_at: string | null; seats: { seat_label: string } | null; price_categories: { nombre: string } | null }[]).map((t) => ({
+    tickets: ((o.tickets ?? []) as unknown as { id: string; is_active: boolean; checked_in_at: string | null; cancel_motivo: string | null; cancelled_by: string | null; seats: { seat_label: string } | null; price_categories: { nombre: string } | null }[]).map((t) => ({
       id: t.id,
       is_active: t.is_active,
       checked_in_at: t.checked_in_at,
+      cancel_motivo: t.cancel_motivo,
+      cancelled_by: t.cancelled_by,
       seat_label: t.seats?.seat_label ?? (t.price_categories ? `General · ${t.price_categories.nombre}` : null),
     })),
   }));
@@ -118,4 +120,11 @@ export async function salesSummary(pid: string): Promise<SalesSummary> {
     validados: num(d.validados), ordenesPendientes: num(d.ordenesPendientes), ordenes: num(d.ordenes),
     porFuncion: new Map(Object.entries(d.porFuncion ?? {}).map(([k, v]) => [k, { vendidos: num(v.vendidos), apartados: num(v.apartados), ingresos: num(v.ingresos), validados: num(v.validados) }])),
   };
+}
+
+/** 0088: nombres de quien aprobó, rechazó, vendió o canceló en esta obra. */
+export async function ventasActores(pid: string): Promise<Map<string, string>> {
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("ventas_actores", { pid });
+  return new Map(((data ?? []) as { id: string; nombre: string }[]).map((r) => [r.id, r.nombre]));
 }

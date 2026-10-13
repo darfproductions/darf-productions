@@ -66,6 +66,7 @@ do $$ declare vip uuid; gen uuid; otra uuid; r jsonb; perf uuid; s1 uuid; s2 uui
 
   -- T5: se vende un asiento: ya no se regenera ni se copia; se ajusta asiento por asiento
   perform set_config('role', 'postgres', true);
+  update productions set concluded = false where id = 'mm';  -- 0088: no se vende en obras concluidas
   insert into performances (production_id, starts_at, on_sale) values ('mm', now() + interval '3 days', true) returning id into perf;
   insert into performance_price_categories (performance_id, price_category_id, price) values (perf, vip, 300);
   select id into s1 from seats where production_id = 'mm' and seat_label = 'A-1';
