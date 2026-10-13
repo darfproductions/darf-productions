@@ -41,6 +41,9 @@ export default async function SalesPage({ params, searchParams }: PageProps<"/pa
     seatCount(id),
     listZones(id),
   ]);
+  // Desde el buscador (0085): una orden por su código.
+  const codigo = typeof sp.codigo === "string" ? sp.codigo.trim().toUpperCase() : "";
+  const ordenes = codigo ? filtradas.filter((o) => o.order_code === codigo) : filtradas;
   const nombreFuncion = new Map(funciones.map((f) => [f.id, formatPerformanceDate(f.starts_at)]));
   const q = (k: string, v: string) => {
     const p = new URLSearchParams({ ...(funcion && { funcion }), ...(estado && { estado }) });
@@ -99,8 +102,9 @@ export default async function SalesPage({ params, searchParams }: PageProps<"/pa
             ))}
           </div>
         </div>
+        {codigo && <p className="mt-3 px-5 text-sm text-texto-2">Orden <b className="font-mono">{codigo}</b> · <Link href={`/panel/producciones/${id}/boletos`} className="font-bold text-violeta-claro">Ver todas</Link></p>}
         <ul className="mt-3 divide-y divide-white/10">
-          {filtradas.map((o) => (
+          {ordenes.map((o) => (
             <li key={o.id} className="flex flex-col gap-2 px-5 py-4">
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div>
@@ -136,7 +140,7 @@ export default async function SalesPage({ params, searchParams }: PageProps<"/pa
               )}
             </li>
           ))}
-          {filtradas.length === 0 && <li className="px-5 py-4 text-texto-2">No hay órdenes con este filtro.</li>}
+          {ordenes.length === 0 && <li className="px-5 py-4 text-texto-2">No hay órdenes con este filtro.</li>}
           {filtradas.length >= 500 && <li className="px-5 py-4 text-sm text-texto-3">Mostrando las 500 más recientes. Usa los filtros de función y estado para ver las demás; los totales de arriba sí incluyen todas.</li>}
         </ul>
       </Card>

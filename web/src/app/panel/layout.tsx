@@ -3,7 +3,10 @@ import { PanelNavLinks, PanelSubTabs } from "@/components/panel/PanelNav";
 import { env } from "@/lib/env";
 import { unreadCount } from "@/lib/notifications";
 import { totalPendientes } from "@/lib/panel-home-rules";
-import { panelMenu } from "@/lib/panel-nav";
+import { BuscadorPanel } from "@/components/panel/BuscadorPanel";
+import { listPanelProductions } from "@/lib/panel-data";
+import type { Atajo } from "@/lib/panel-buscar-rules";
+import { myProductionIds, panelMenu, productionGroups } from "@/lib/panel-nav";
 import { getPendientes } from "@/lib/panel-pendientes";
 import { requirePanel } from "@/lib/permissions";
 
@@ -14,7 +17,19 @@ export const metadata: Metadata = { title: { default: "Panel", template: "%s · 
 export default async function PanelLayout({ children }: LayoutProps<"/panel">) {
   const access = await requirePanel();
   const menu = panelMenu(access);
-  const [nuevas, pendientes] = await Promise.all([unreadCount(), getPendientes()]);
+  const [nuevas, pendientes, obras] = await Promise.all([unreadCount(), getPendientes(), listPanelProductions(access.isDirector ? undefined : myProductionIds(access))]);
+  // Atajos del buscador (0085): secciones del menú y cada obra con sus pestañas permitidas.
+  const atajos: Atajo[] = [
+    ...menu.flatMap((s) => (s.subs.length ? s.subs : [{ href: s.href, label: s.label }]).map((x) => ({
+      tipo: "seccion", titulo: x.label, detalle: s.label === x.label ? "Panel" : s.label, href: x.href, claves: `${s.label} ${x.label}`,
+    }))),
+    ...obras.flatMap((p) => [
+      { tipo: "obra", titulo: p.nombre, detalle: "Resumen de la obra", href: `/panel/producciones/${p.id}`, claves: `${p.nombre} obra resumen` },
+      ...productionGroups(access, p.id, p.estado === "archivada").flatMap((g) => g.tabs.filter((t) => t.path).map((t) => ({
+        tipo: "seccion", titulo: `${p.nombre} → ${t.label}`, detalle: g.label, href: `/panel/producciones/${p.id}/${t.path}`, claves: `${p.nombre} ${g.label} ${t.label}`,
+      }))),
+    ]),
+  ];
   const nombre = access.session.profile?.nombre || access.session.email;
 
   const links = (
@@ -40,6 +55,7 @@ export default async function PanelLayout({ children }: LayoutProps<"/panel">) {
         </details>
       </aside>
       <div className="flex min-w-0 flex-col gap-6">
+        <BuscadorPanel atajos={atajos} />
         <PanelSubTabs menu={menu} />
         {children}
       </div>
