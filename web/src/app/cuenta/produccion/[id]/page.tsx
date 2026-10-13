@@ -27,6 +27,7 @@ import { createClient } from "@/lib/supabase/server";
 import { isoMx, partesMx } from "@/lib/dates";
 import { mayus } from "@/lib/dates";
 import { MiniAction } from "@/components/panel/MiniAction";
+import { AgregarCalendario } from "@/components/AgregarCalendario";
 
 export const metadata: Metadata = { title: "Mi producción" };
 
@@ -200,6 +201,7 @@ export default async function MyProduction({ params, searchParams }: PageProps<"
                 <p><b>{r.titulo}</b>{r.estado === "cancelado" && <span className="ml-2 font-bold text-[#fecdd3]">Cancelado</span>}</p>
                 <p className="text-texto-2">{fechaEnsayo(r.inicia, r.termina)}{r.lugar ? ` · ${r.lugar}` : ""}</p>
                 {r.notas && <p className="whitespace-pre-line text-texto-2">{r.notas}</p>}
+                {r.estado !== "cancelado" && <AgregarCalendario ics={`/calendario/ensayo/${r.id}`} evento={{ uid: `ensayo-${r.id}`, titulo: `Ensayo: ${r.titulo}`, inicia: r.inicia, termina: r.termina, lugar: r.lugar }} />}
                 {r.estado !== "cancelado" && activa && (() => {
                   const q = faltaDe(r.id);
                   if (q && q.estado !== "rechazada") {

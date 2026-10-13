@@ -79,6 +79,9 @@ Diego eligió cuáles sí (ver plan del bloque). Hechas en `darf-2.0`, migracion
 | Taquilla y órdenes (4A) | Cortesía en $0 con motivo (en taquilla o después, en la orden); códigos de descuento también en taquilla; PDF de los boletos de cualquier orden para reimprimir o mandar; buscar órdenes por nombre o teléfono; WhatsApp con un toque ("recordar pago" / "avisar que se aprobó"); pestaña **Corte de caja** por cajero y método, con lo cancelado aparte (0091). |
 | Puerta (4A) | "Entraron X de Y" en vivo, sonido y vibración al leer, buscar por nombre/teléfono/código/asiento cuando el QR no abre, marcar o deshacer una entrada, y lista de la función para Excel como plan B sin internet (0091). |
 | Funciones (4A) | "Cancelar función" con motivo: no se vende más, los apartados se cancelan, a quien pagó le llega el aviso de reembolso y el panel lista a quién devolver (con WhatsApp). Si cambia la fecha, se avisa a los compradores y el recordatorio se vuelve a mandar (0091). |
+| Avisos personales (4B) | Al elenco: comunicado nuevo, ensayo nuevo (uno por serie), cancelado o cambiado. Al aspirante: convocado, en espera, callback, seleccionado o no (en audiciones sin votación; la votación ya avisa). Se pueden apagar por tipo ("Elenco", "Audiciones") en el teléfono (0092). |
+| Para el público (4B) | "Hoy es tu función" arriba de Mi cuenta el día de la función (hora, cómo llegar, guarda tu PDF); "Agregar a mi calendario" (.ics y Google) en boletos, eventos y ensayos; "Voy a ir": imagen vertical para historias con la imagen de la obra, su logo y la fecha (sin datos personales ni QR). |
+| Descargas para Excel (4B) | Órdenes (con los filtros de la lista, todas), inscritos de una convocatoria con sus respuestas, elenco con tutores y contactos de emergencia, y asistencia a ensayos. Cada una pide su permiso. |
 
 ## Lo que queda pendiente
 
@@ -93,7 +96,7 @@ Diego eligió cuáles sí (ver plan del bloque). Hechas en `darf-2.0`, migracion
 ## Para el lanzamiento (lista de revisión)
 
 - **Entrar con Google:** en el proyecto de Supabase (DEV y luego el oficial) → Authentication → Providers → Google, con el Client ID y secreto de la 1.0, y agregar la dirección del sitio (`…/auth/callback`) en Google Cloud y en Supabase → URL Configuration. Probar el botón en DEV y otra vez el día de la publicación.
-- DEV ya tiene aplicadas todas las migraciones hasta la 0090 (verificado; la 0091 pendiente de correr: `supabase/dev/apply_0091_dev.sql`). El proyecto oficial necesitará las mismas, en orden, el día de la publicación.
+- DEV ya tiene aplicadas todas las migraciones hasta la 0091 (verificado; la 0092 pendiente de correr: `supabase/dev/apply_0092_dev.sql`). El proyecto oficial necesitará las mismas, en orden, el día de la publicación.
 - **Contraseñas (Supabase → Authentication → Providers → Email / Policies), en DEV y en el oficial:**
   - Largo mínimo **8** y "letras y números" (la página ya lo exige; así también lo exige Supabase si alguien llama directo a su servicio).
   - **"Secure password change"** encendido y **aviso por correo** cuando cambia la contraseña o el correo ("Password changed" / "Email changed" notifications).

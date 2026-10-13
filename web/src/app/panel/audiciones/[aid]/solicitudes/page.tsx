@@ -48,6 +48,7 @@ export default async function Applications({ params, searchParams }: PageProps<"
 
   return (
     <>
+      <a href={`/panel/audiciones/${aid}/exportar`} className="self-end text-sm font-bold text-violeta-claro">Descargar inscritos (Excel) ↓</a>
       <Card>
         <details>
           <summary className="cursor-pointer font-bold">+ Video general del día (por grupo o sesión completa)</summary>

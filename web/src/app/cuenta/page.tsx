@@ -27,6 +27,9 @@ import { EmailForm, PasswordForm, ProfileForm } from "./ProfileForm";
 import { funcionPasada } from "@/lib/account-rules";
 import { limiteTexto, recordatorio, tiempoRestante } from "@/lib/expiry-rules";
 import { estadoOrden } from "@/lib/ventas-rules";
+import { AgregarCalendario } from "@/components/AgregarCalendario";
+import { VoyAIr } from "@/components/tickets/VoyAIr";
+import { isoMx } from "@/lib/dates";
 
 export const metadata: Metadata = { title: "Mi cuenta" };
 
@@ -111,13 +114,18 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
   const ahora = new Date();
   const recordatorios = orders.filter((o) => o.status === "aprobado" && o.tickets.some((t) => t.is_active) && recordatorio(o.performances?.starts_at ?? null));
   const proximas = orders.filter((o) => !funcionPasada(o.performances?.starts_at ?? null, ahora));
+  // "Hoy es la función" (Bloque 4B): el día de la función, el boleto arriba de todo.
+  const hoyMx = isoMx(ahora);
+  const deHoy = orders.filter((o) => o.status === "aprobado" && o.tickets.some((t) => t.is_active) && o.performances?.starts_at && !o.performances.cancelada_at
+    && isoMx(new Date(o.performances.starts_at)) === hoyMx && !funcionPasada(o.performances.starts_at, ahora));
   const pasadas = orders.filter((o) => funcionPasada(o.performances?.starts_at ?? null, ahora));
   const renderOrder = (o: OrderRow) => {
               const nombre = o.performances?.productions?.nombre ?? "Producción";
               const activos = o.tickets.filter((t) => t.is_active);
               const seats = o.status === "pendiente" ? (asientosPendientes.get(o.id) ?? []) : activos.map((t) => etiqueta(t));
               const prod = o.performances?.productions ?? null;
-              const estilo = estiloDe(prod ? getTheme(prod) : null);
+              const tema = prod ? getTheme(prod) : null;
+              const estilo = estiloDe(tema);
               const boletos: BoletoVista[] = activos.map((t) => ({
                 id: t.id,
                 obra: nombre,
@@ -178,6 +186,14 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
                       pdfServidor={funcionPasada(o.performances?.starts_at ?? null) ? null : `/cuenta/boletos/${encodeURIComponent(o.order_code)}/pdf`}
                     />
                   )}
+                  {o.status === "aprobado" && boletos.length > 0 && o.performances?.starts_at && !o.performances.cancelada_at && !funcionPasada(o.performances.starts_at) && (
+                    <div className="flex flex-col gap-3 border-t border-white/10 pt-4">
+                      <AgregarCalendario ics={`/calendario/boleto/${encodeURIComponent(o.order_code)}`}
+                        evento={{ uid: `orden-${o.order_code}`, titulo: `${nombre} · DARF Productions`, inicia: o.performances.starts_at, lugar: o.performances.venue ?? prod?.venue ?? null, detalle: `Orden ${o.order_code}` }} />
+                      <VoyAIr obra={nombre} funcion={formatPerformanceDate(o.performances.starts_at)} lugar={o.performances.venue ?? prod?.venue ?? null}
+                        ambiente={tema?.ambiente ?? null} logo={tema?.logo ?? null} fondo={estilo.fondo} texto={estilo.texto} acento={estilo.acento} />
+                    </div>
+                  )}
                   </div>
                 </li>
               );
@@ -187,6 +203,19 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
     <main className="pb-10">
       <PageHeading eyebrow="Mi cuenta" title={`Hola, ${session.profile?.nombre || "fan DARF"}`} />
       <div className="mx-auto grid max-w-[1440px] gap-10 px-5 md:px-16 lg:grid-cols-12">
+        {deHoy.map((o) => {
+          const lugar = o.performances?.venue ?? o.performances?.productions?.venue ?? null;
+          const hora = new Intl.DateTimeFormat("es-MX", { hour: "numeric", minute: "2-digit", timeZone: "America/Mexico_City" }).format(new Date(o.performances!.starts_at!));
+          return (
+            <section key={o.id} aria-label="Hoy es tu función" className="boton-compra flex flex-col gap-3 rounded-2xl p-6 lg:col-span-12">
+              <p className="text-xs font-black uppercase tracking-[0.16em]">Hoy es tu función</p>
+              <p className="titular text-3xl">{o.performances?.productions?.nombre ?? "DARF"} · {hora}</p>
+              {lugar && <p className="text-sm">{lugar} · <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(lugar)}`} target="_blank" rel="noreferrer" className="font-bold underline">Cómo llegar</a></p>}
+              <p className="text-sm">Llega 30 minutos antes. Dentro de la sala a veces no hay señal: <b>descarga tu PDF</b> o deja abierto tu boleto.</p>
+              <a href={`#o-${o.order_code}`} className="self-start rounded-full bg-white px-5 py-2.5 text-sm font-bold text-[#0b0910]">Ver mis boletos</a>
+            </section>
+          );
+        })}
         <section aria-labelledby="notificaciones" className="flex flex-col gap-3 rounded-2xl bg-telon p-5 lg:col-span-12">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <h2 id="notificaciones" className="text-lg font-bold">

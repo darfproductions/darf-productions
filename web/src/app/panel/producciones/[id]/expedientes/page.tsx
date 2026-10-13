@@ -81,6 +81,7 @@ export default async function Expedientes({ params, searchParams }: PageProps<"/
   return (
     <div className="flex flex-col gap-4">
       <ExpTabs pid={id} actual="integrantes" pagos={verCuotas && cobra} />
+      {verExp && <a href={`/panel/producciones/${id}/expedientes/exportar/elenco`} className="self-end text-sm font-bold text-violeta-claro">Descargar elenco con tutores y emergencias (Excel) ↓</a>}
       {verExp && subidos.length > 0 && (
         <Card id="subidos" className={`scroll-mt-24 ${sp.docs === "subidos" ? "border border-aviso/50" : ""}`}>
           <h2 className="font-bold text-aviso">Documentos subidos por revisar ({subidos.length})</h2>

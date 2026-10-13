@@ -65,7 +65,10 @@ export default async function Ensayos({ params }: PageProps<"/panel/producciones
   return (
     <div className="flex flex-col gap-4">
       <Card className="flex flex-col gap-3">
-        <h2 className="titular text-xl">Próximos ensayos</h2>
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className="titular text-xl">Próximos ensayos</h2>
+          <a href={`/panel/producciones/${id}/expedientes/exportar/asistencia`} className="text-sm font-bold text-violeta-claro">Descargar asistencia (Excel) ↓</a>
+        </div>
         <ul className="flex flex-col gap-2">{proximos.map((r) => <Item key={r.id} r={r} />)}</ul>
         {proximos.length === 0 && <p className="text-sm text-texto-3">No hay ensayos próximos.</p>}
         <details>

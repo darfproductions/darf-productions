@@ -109,6 +109,7 @@ export default async function SalesPage({ params, searchParams }: PageProps<"/pa
             ))}
           </div>
         </div>
+        <a href={`/panel/producciones/${id}/boletos/exportar?${new URLSearchParams({ ...(funcion && { funcion }), ...(estado && { estado }) }).toString()}`} className="mt-1 self-start px-5 text-sm font-bold text-violeta-claro">Descargar órdenes (Excel) ↓</a>
         <form className="mt-3 flex flex-wrap gap-2 px-5" role="search">
           {funcion && <input type="hidden" name="funcion" value={funcion} />}
           {estado && <input type="hidden" name="estado" value={estado} />}

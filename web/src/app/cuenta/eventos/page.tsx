@@ -9,6 +9,7 @@ import { limiteTexto } from "@/lib/expiry-rules";
 import { getMisEventos, type MiEvento } from "@/lib/fanzone";
 import { getEventosAsistidos, getTheme } from "@/lib/historial";
 import { formatPerformanceDate } from "@/lib/productions";
+import { AgregarCalendario } from "@/components/AgregarCalendario";
 
 export const metadata: Metadata = { title: "Mis eventos" };
 
@@ -50,6 +51,7 @@ export default async function Eventos() {
                     <strong className="text-lg">{e.titulo}</strong>
                     <span className="text-[12.5px] text-texto-3">{formatPerformanceDate(e.starts_at)}{e.lugar ? ` · ${e.lugar}` : ""}{e.obra ? ` · ${e.obra}` : ""}</span>
                     {e.orden_codigo && <span className="font-mono text-xs text-texto-2">{e.orden_codigo}</span>}
+                    {!e.cancelado && e.starts_at && <AgregarCalendario ics={`/calendario/evento/${e.id}`} evento={{ uid: `evento-${e.id}`, titulo: e.titulo, inicia: e.starts_at, lugar: e.lugar }} />}
                     {e.cancelado && e.cancelado_motivo && <p className="text-sm text-texto-2">Motivo: {e.cancelado_motivo}</p>}
                     {!e.cancelado && e.orden_status === "pendiente" && e.orden_expira && <p className="text-sm text-aviso">Paga antes de <b>{limiteTexto(e.orden_expira)}</b>; si no, tu lugar se libera solo.</p>}
                     <div className="flex flex-wrap gap-2">
