@@ -103,7 +103,7 @@ Diego eligió cuáles sí (ver plan del bloque). Hechas en `darf-2.0`, migracion
 ## Para el lanzamiento (lista de revisión)
 
 - **Entrar con Google:** en el proyecto de Supabase (DEV y luego el oficial) → Authentication → Providers → Google, con el Client ID y secreto de la 1.0, y agregar la dirección del sitio (`…/auth/callback`) en Google Cloud y en Supabase → URL Configuration. Probar el botón en DEV y otra vez el día de la publicación.
-- DEV ya tiene aplicadas todas las migraciones hasta la 0095 (verificado; pendiente de correr: `supabase/dev/apply_0096_dev.sql`). El proyecto oficial necesitará las mismas, en orden, el día de la publicación.
+- DEV ya tiene aplicadas todas las migraciones hasta la 0096 (verificado). El proyecto oficial necesitará las mismas, en orden, el día de la publicación.
 - **Contraseñas (Supabase → Authentication → Providers → Email / Policies), en DEV y en el oficial:**
   - Largo mínimo **8** y "letras y números" (la página ya lo exige; así también lo exige Supabase si alguien llama directo a su servicio).
   - **"Secure password change"** encendido y **aviso por correo** cuando cambia la contraseña o el correo ("Password changed" / "Email changed" notifications).
