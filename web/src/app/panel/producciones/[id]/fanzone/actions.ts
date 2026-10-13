@@ -114,15 +114,16 @@ export async function setFanzoneDetalle(_p: State, f: FormData): Promise<State> 
 
 // ──────── Eventos (0081): se crean en Panel → Eventos (app/panel/eventos/actions.ts) ────────
 
-/** Validar la credencial del Club Fan en la entrada de un evento (fanzone.editar o puerta.validar). */
+/** Validar la credencial en la entrada de un evento (fanzone.editar o puerta.validar). Sirve cualquier
+ *  código de la persona: gafete, credencial del club o de cuenta (0083). */
 export async function validarCredencial(pid: string, eid: string, code: string): Promise<Lectura> {
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("fan_checkin", { eid, p_code: code });
   if (error) return { ok: false, message: error.message };
-  const r = data as { resultado: AccesoFan; nombre?: string; foto_path?: string | null; numero?: number; fundador?: boolean; llegada?: string };
-  if (r.resultado === "no_encontrado") return { ok: true, tono: "error", titulo: ACCESO_FAN.no_encontrado.titulo, detalle: "Revisa el código o pide a la persona que abra su credencial en la Fan Zone." };
+  const r = data as { resultado: AccesoFan; nombre?: string; foto_path?: string | null; numero?: number; fundador?: boolean; llegada?: string; nivel?: string };
+  if (r.resultado === "no_encontrado") return { ok: true, tono: "error", titulo: ACCESO_FAN.no_encontrado.titulo, detalle: "Revisa el código o pide a la persona que abra su credencial en Mi cuenta." };
   const fotoUrl = r.foto_path ? (await supabase.storage.from("avatares").createSignedUrl(r.foto_path, 600)).data?.signedUrl ?? null : null;
-  const socio = r.numero ? `Socio ${numeroSocio(r.numero)}${r.fundador ? " · Fan fundador" : ""}` : undefined;
+  const socio = [r.nivel === "equipo" ? "Equipo DARF" : null, r.numero ? `Socio ${numeroSocio(r.numero)}${r.fundador ? " · Fan fundador" : ""}` : null].filter(Boolean).join(" · ") || undefined;
   const base = { ok: true, nombre: r.nombre ?? "", fotoUrl, detalle: socio };
   if (r.resultado === "ok") {
     revalidatePath(`/panel/producciones/${pid}/fanzone`);
@@ -130,6 +131,7 @@ export async function validarCredencial(pid: string, eid: string, code: string):
     return { ...base, tono: "ok", titulo: `${ACCESO_FAN.ok.titulo} · ${horaMx(r.llegada)}`, llegada: horaMx(r.llegada) };
   }
   if (r.resultado === "ya") return { ...base, tono: "neutro", titulo: `${ACCESO_FAN.ya.titulo} a las ${horaMx(r.llegada)}` };
+  if (r.resultado === "sin_pago") return { ...base, tono: "error", titulo: ACCESO_FAN.sin_pago.titulo, detalle: "Revisa su pago en Panel → Eventos (Ver lista) y apruébalo para que pueda pasar." };
   return { ...base, tono: "error", titulo: ACCESO_FAN[r.resultado]?.titulo ?? "No puede pasar" };
 }
 

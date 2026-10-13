@@ -3,7 +3,7 @@ import Link from "next/link";
 import { getSession } from "@/lib/auth";
 import { canSeePanel } from "@/lib/permissions";
 import { avatarUrl } from "@/lib/avatar";
-import { getCredencial } from "@/lib/fanzone";
+import { esSocio } from "@/lib/credencial";
 import { MainNav } from "./MainNav";
 import { MenuCuenta } from "./MenuCuenta";
 import { MobileMenu } from "./MobileMenu";
@@ -23,12 +23,11 @@ export const NAV_LINKS = [
 export async function SiteHeader() {
   const session = await getSession();
   // Panel: staff, Director o quien tenga un rol en alguna obra (0031).
-  const [isStaff, foto, credencial] = await Promise.all([
+  const [isStaff, foto, socio] = await Promise.all([
     canSeePanel(session),
     session ? avatarUrl(session.profile?.foto_path) : Promise.resolve(null),
-    session ? getCredencial() : Promise.resolve(null),
+    session ? esSocio() : Promise.resolve(false),
   ]);
-  const socio = !!credencial;
   const account = session ? { href: "/cuenta", label: "Mi cuenta" } : { href: "/entrar", label: "Entrar" };
 
   return (

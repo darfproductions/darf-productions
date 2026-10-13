@@ -26,12 +26,14 @@ export function paseCredencialFan(c: { nombre: string; fotoUrl: string | null; n
 }
 
 /** Resultado de validar una credencial en la entrada de un evento (fan_checkin). */
-export type AccesoFan = "ok" | "ya" | "sin_lugar" | "sin_boleto" | "lleno" | "no_encontrado";
+export type AccesoFan = "ok" | "ya" | "sin_lugar" | "sin_boleto" | "sin_pago" | "no_socio" | "lleno" | "no_encontrado";
 export const ACCESO_FAN: Record<AccesoFan, { titulo: string; pasa: boolean }> = {
   ok: { titulo: "Puede pasar", pasa: true },
   ya: { titulo: "Ya había entrado", pasa: false },
   sin_lugar: { titulo: "No apartó lugar para este evento", pasa: false },
   sin_boleto: { titulo: "No tiene boleto para esta función", pasa: false },
+  sin_pago: { titulo: "Apartó lugar, pero su pago no está aprobado", pasa: false },
+  no_socio: { titulo: "Este evento es solo para el Club Fan", pasa: false },
   lleno: { titulo: "El evento ya está lleno", pasa: false },
   no_encontrado: { titulo: "Credencial no encontrada", pasa: false },
 };

@@ -78,7 +78,7 @@ end $$;
 do $$ declare j json; t text; begin
   perform pg_temp.as_user('00000000-0000-0000-0000-0000000000e5');
   j := fan_join();
-  if j->>'codigo' !~ '^FAN-[2-9A-HJ-NP-Z]{4}$' or char_length(j->>'token') < 24 then raise exception 'FALLO T2: credencial (%)', j; end if;
+  if j->>'codigo' !~ '^(DRF|FAN)-[2-9A-HJ-NP-Z]{4}$' or char_length(j->>'token') < 24 then raise exception 'FALLO T2: credencial (%)', j; end if;
   if fan_me()->>'token' <> j->>'token' then raise exception 'FALLO T2: fan_me'; end if;
   t := j->>'token';
   insert into ctx values ('t5', t), ('c5', j->>'codigo');

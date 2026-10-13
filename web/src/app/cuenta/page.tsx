@@ -19,10 +19,8 @@ import { logout } from "../entrar/actions";
 import Link from "next/link";
 import { listNotifications, unreadCount } from "@/lib/notifications";
 import { AvatarUpload } from "./AvatarUpload";
-import { MiGafete } from "@/components/gafete/MiGafete";
-import { getMiGafete } from "@/lib/gafete";
-import { MiCredencialFan } from "@/components/fanzone/MiCredencialFan";
-import { getMiCredencialFan } from "@/lib/fanzone";
+import { MiCredencial } from "@/components/credencial/MiCredencial";
+import { getMiCredencial } from "@/lib/credencial";
 import { EmailForm, PasswordForm, ProfileForm } from "./ProfileForm";
 import { funcionPasada } from "@/lib/account-rules";
 import { limiteTexto, recordatorio, tiempoRestante } from "@/lib/expiry-rules";
@@ -83,10 +81,10 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
   }
 
   // Mis audiciones (0036): solo las propias; QR mientras no haya llegado.
-  const [audiciones, invitaciones, ofertas, misObras, sinLeer, misVentas, miEquipo, equipoPend, notis, notisNuevas, gafete, credencialFan] = await Promise.all([
+  const [audiciones, invitaciones, ofertas, misObras, sinLeer, misVentas, miEquipo, equipoPend, notis, notisNuevas, credencial] = await Promise.all([
     listMyApplications(session.userId), listMyInvites(), listMyOffers(), supabase.rpc("my_productions"), supabase.rpc("my_unread_announcements"),
     supabase.rpc("my_seller"), supabase.rpc("my_team_productions"), supabase.rpc("my_team_unread"),
-    listNotifications({ limit: 3 }), unreadCount(), getMiGafete(), getMiCredencialFan(),
+    listNotifications({ limit: 3 }), unreadCount(), getMiCredencial(),
   ]);
   const equipos = (miEquipo.data ?? []) as { production_id: string | null; nombre: string; roles: string[] }[];
   const pendEquipo = new Map(((equipoPend.data ?? []) as { production_id: string | null; avisos: number; notas: number }[]).map((x) => [x.production_id ?? "general", x]));
@@ -233,8 +231,7 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
         </section>
 
         <aside className="flex flex-col gap-6 lg:col-span-4">
-          {gafete && <MiGafete g={gafete} />}
-          {credencialFan && <MiCredencialFan c={credencialFan} />}
+          {credencial && <div id="credencial" className="scroll-mt-24"><MiCredencial c={credencial} /></div>}
           <section aria-labelledby="perfil" className="flex flex-col gap-4 rounded-2xl bg-telon p-6">
             <h2 id="perfil" className="text-lg font-bold">Perfil</h2>
             <AvatarUpload uid={session.userId} url={fotoUrl} inicial={(session.profile?.nombre || session.email).slice(0, 1).toUpperCase()} />
@@ -251,8 +248,8 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
               <span className="text-xs text-texto-2">Todas tus órdenes y pagos.</span>
             </a>
             <a href="/cuenta/eventos" className="flex flex-col gap-1 rounded-2xl bg-telon p-5 hover:bg-telon-2">
-              <span className="font-bold">Eventos asistidos →</span>
-              <span className="text-xs text-texto-2">Las funciones a las que fuiste.</span>
+              <span className="font-bold">Mis eventos →</span>
+              <span className="text-xs text-texto-2">Lo que apartaste, tus pagos y las funciones a las que fuiste.</span>
             </a>
           </div>
           <a href="/cuenta/perfil-profesional" className="flex flex-col gap-1 rounded-2xl bg-telon p-6 hover:bg-telon-2">

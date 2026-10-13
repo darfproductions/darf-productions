@@ -89,9 +89,22 @@ export async function getCredencialPublica(token: string): Promise<CredencialPub
 export type EventoCartelera = {
   id: string; production_id: string | null; obra: string | null; tipo: Evento["tipo"]; categoria: string | null; titulo: string;
   lugar: string | null; starts_at: string; termina: string; acceso: Evento["acceso"]; requiere_registro: boolean; en_vivo: boolean;
+  precio: number | null; precio_socio: number | null;
 };
 export async function getEventosCartelera(limite = 6): Promise<EventoCartelera[]> {
   const supabase = await createClient();
   const { data } = await supabase.rpc("eventos_cartelera", { p_limite: limite });
   return (data ?? []) as EventoCartelera[];
+}
+
+/** Lo que aparté o pagué (0083): Mi cuenta → Mis eventos. */
+export type MiEvento = {
+  id: string; titulo: string; tipo: Evento["tipo"]; obra: string | null; starts_at: string; lugar: string | null;
+  orden_codigo: string | null; orden_status: "pendiente" | "aprobado" | "rechazado" | null; orden_monto: number | null;
+  orden_expira: string | null; vencida: boolean | null; llegada_at: string | null;
+};
+export async function getMisEventos(): Promise<MiEvento[]> {
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("mis_eventos");
+  return (data ?? []) as MiEvento[];
 }

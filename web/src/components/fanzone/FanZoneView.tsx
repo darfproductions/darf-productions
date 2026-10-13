@@ -7,8 +7,9 @@ import { FanItemCard, FanProximoCard } from "@/components/fanzone/FanItemCard";
 import { PreventaFanZone } from "@/components/fanzone/PreventaFanZone";
 import { UnirseClub } from "@/components/fanzone/UnirseClub";
 import { FAN_CATEGORIAS, type FanCategoria } from "@/lib/fanzone-rules";
-import { MiCredencialFan } from "@/components/fanzone/MiCredencialFan";
-import { fanzoneCounts, getCredencial, getEncuentros, getMiCredencialFan, getProximos, listFanzone } from "@/lib/fanzone";
+import { MiCredencial } from "@/components/credencial/MiCredencial";
+import { esSocio, getMiCredencial } from "@/lib/credencial";
+import { fanzoneCounts, getCredencial, getEncuentros, getProximos, listFanzone } from "@/lib/fanzone";
 import { getHomeData } from "@/lib/productions";
 
 const PESTANAS: (FanCategoria | "todo")[] = ["todo", "ensayo", "making", "fotos", "otro"];
@@ -22,11 +23,12 @@ const BENEFICIOS = [
 // anuncios, "Lo nuevo para ti" por categoría, lo que se desbloquea después y la foto con el elenco.
 // pid = una obra (o todas); cat = pestaña.
 export async function FanZoneView({ pid, cat, nombre }: { pid: string | null; cat?: string; nombre: string }) {
-  const [credencial, { productions }] = await Promise.all([getCredencial(), getHomeData()]);
+  // El equipo y los elencos cuentan como socios (0083) aunque no se hayan unido con número.
+  const [credencial, socio, { productions }] = await Promise.all([getCredencial(), esSocio(), getHomeData()]);
   const obraDe = new Map(productions.map((p) => [p.id, p.nombre]));
   const obraActual = pid ? productions.find((p) => p.id === pid) : null;
 
-  if (!credencial) {
+  if (!credencial && !socio) {
     return (
       <main className="pb-24">
         <section className="relative overflow-hidden border-b border-oro/25 bg-[#08070c]">
@@ -56,7 +58,7 @@ export async function FanZoneView({ pid, cat, nombre }: { pid: string | null; ca
     );
   }
 
-  const [items, proximos, encuentros, conteo, proximosTodos, miCredencial] = await Promise.all([listFanzone(pid), getProximos(pid), getEncuentros(pid), fanzoneCounts(), pid ? getProximos(null) : Promise.resolve(null), getMiCredencialFan()]);
+  const [items, proximos, encuentros, conteo, proximosTodos, miCredencial] = await Promise.all([listFanzone(pid), getProximos(pid), getEncuentros(pid), fanzoneCounts(), pid ? getProximos(null) : Promise.resolve(null), getMiCredencial()]);
   const visibles = items.filter((i) => i.visible);
   const pestana = (PESTANAS.find((p) => p === cat) ?? "todo") as FanCategoria | "todo";
   const lista = pestana === "todo" ? visibles : visibles.filter((i) => i.categoria === pestana);
@@ -80,8 +82,15 @@ export async function FanZoneView({ pid, cat, nombre }: { pid: string | null; ca
             <p className="lead max-w-xl">Aquí vive todo lo que no se ve desde la butaca: ensayos, making of, fotos con el elenco y tu acceso anticipado.</p>
           </div>
           <div className="flex flex-col items-center gap-4">
-            <Credencial nombre={nombre} c={credencial} />
-            {miCredencial && <MiCredencialFan c={miCredencial} compacto />}
+            {credencial ? (
+              <Credencial nombre={nombre} c={credencial} />
+            ) : (
+              <div className="flex max-w-[340px] flex-col items-center gap-3 rounded-[22px] border border-oro/30 p-5 text-center text-sm text-texto-2">
+                <p>Como parte del equipo DARF ya tienes acceso al Club Fan. Únete para tener tu número de socio y el sello del club en tu gafete.</p>
+                <UnirseClub />
+              </div>
+            )}
+            {miCredencial && <MiCredencial c={miCredencial} compacto />}
           </div>
         </div>
       </section>
@@ -159,7 +168,7 @@ export async function FanZoneView({ pid, cat, nombre }: { pid: string | null; ca
             <span className="chip chip-fz min-h-[26px] px-3 text-[10px] uppercase tracking-[0.14em]">Experiencia fan</span>
             <h2 id="foto-t" className="text-[clamp(1.8rem,3.4vw,2.5rem)] font-black uppercase leading-[0.95] tracking-[-0.03em]">Eventos del Club Fan</h2>
             <p className="max-w-md text-[15px] leading-relaxed text-texto-2">Foto con el elenco, tours, meet & greets y transmisiones exclusivas. Aparta tu lugar cuando lo pida y en la entrada muestra tu credencial con QR.</p>
-            {miCredencial && <MiCredencialFan c={miCredencial} compacto />}
+            {miCredencial && <MiCredencial c={miCredencial} compacto />}
             <Link href="/eventos" className="text-sm font-bold text-oro-claro underline">Ver todos los eventos →</Link>
           </div>
           {encuentros.length ? (

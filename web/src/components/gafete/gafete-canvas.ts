@@ -24,7 +24,7 @@ export async function descargarPase(p: PaseVista, archivo: string): Promise<void
   const fuente = getComputedStyle(document.body).fontFamily || "sans-serif";
   const [logo, foto, qr, sello] = await Promise.all([
     cargar(p.logo, false), p.fotoUrl ? cargar(p.fotoUrl, true) : Promise.resolve(null),
-    p.qr ? cargar(p.qr, false) : Promise.resolve(null), fan ? cargar("/marca/sello-club.svg", false) : Promise.resolve(null),
+    p.qr ? cargar(p.qr, false) : Promise.resolve(null), fan || p.sello ? cargar("/marca/sello-club.svg", false) : Promise.resolve(null),
   ]);
   const pintar = (conFoto: boolean) => {
     const c = document.createElement("canvas");
@@ -67,7 +67,14 @@ export async function descargarPase(p: PaseVista, archivo: string): Promise<void
       x.imageSmoothingEnabled = false; x.drawImage(qr, qx, qy, q, q); x.imageSmoothingEnabled = true;
     }
     if (p.codigo) { x.fillStyle = fan ? "#ecd9a0" : "#d3cddd"; x.font = `700 24px monospace`; x.fillText(p.codigo, W / 2, qy + q + 52); }
-    x.fillStyle = "#a39db0"; x.font = `600 18px ${fuente}`; x.fillText(p.pie.toUpperCase(), W / 2, qy + q + 84);
+    x.fillStyle = "#a39db0"; x.font = `600 18px ${fuente}`;
+    if (p.sello) {
+      // Equipo y socio: "DARF PRODUCTIONS · 2026 · " en gris y "CLUB FAN · SOCIO #0001" en oro.
+      const a = `${p.pie.toUpperCase()} · `, b = `CLUB FAN · ${p.sello.toUpperCase()}`;
+      const wa = x.measureText(a).width, wb = x.measureText(b).width, x0 = (W - wa - wb) / 2;
+      x.textAlign = "left"; x.fillText(a, x0, qy + q + 84);
+      x.fillStyle = ORO; x.font = `700 18px ${fuente}`; x.fillText(b, x0 + wa, qy + q + 84); x.textAlign = "center";
+    } else x.fillText(p.pie.toUpperCase(), W / 2, qy + q + 84);
     // Banda
     if (p.banda.degradado) {
       const gr = x.createLinearGradient(0, 0, W, 0);
@@ -76,7 +83,10 @@ export async function descargarPase(p: PaseVista, archivo: string): Promise<void
     } else x.fillStyle = p.banda.fondo;
     x.fillRect(0, H - 96, W, 96);
     x.fillStyle = p.banda.texto; x.font = `italic 900 46px ${fuente}`;
-    if (sello) {
+    if (sello && !fan) {
+      x.fillText(p.banda.label, W / 2, H - 32);
+      x.drawImage(sello, W - 96, H - 48 - 30, 60, 60);
+    } else if (sello) {
       const ancho = x.measureText(p.banda.label).width, s = 56, inicio = (W - (ancho + s + 18)) / 2;
       x.drawImage(sello, inicio, H - 48 - s / 2, s, s);
       x.textAlign = "left"; x.fillText(p.banda.label, inicio + s + 18, H - 32);

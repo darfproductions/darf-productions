@@ -1,21 +1,32 @@
+/* eslint-disable @next/next/no-img-element -- logos SVG del kit */
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
 import { GafeteVista } from "@/components/gafete/GafeteVista";
+import { NoValida, Verificada } from "@/components/credencial/Verificada";
+import { numeroSocio } from "@/lib/fanzone-rules";
 import { getGafetePublico } from "@/lib/gafete";
 import { paseGafete } from "@/lib/gafete-rules";
 
-export const metadata: Metadata = { title: "Gafete DARF", robots: { index: false, follow: false } };
+export const metadata: Metadata = { title: "Credencial DARF", robots: { index: false, follow: false } };
 
-// Gafete escaneado con un celular (0078): nombre, papel y solo los datos que la persona eligió.
+// Credencial escaneada con un celular. Equipo (0078): gafete con nombre, papel y solo los datos que
+// la persona eligió. Club Fan o cuenta (0083): verificación con nombre corto, sin contacto.
 export default async function GafetePublicoPage({ params }: PageProps<"/g/[token]">) {
   const { token } = await params;
   const g = await getGafetePublico(token);
-  if (!g) notFound();
+  if (!g || (g.nivel && g.nivel !== "equipo")) {
+    return (
+      <main className="flex flex-col items-center gap-6 px-5 pb-24 pt-12 text-center">
+        <img src={g?.socio ? "/marca/fan-zone-oro.svg" : "/marca/darf-monograma.svg"} alt="DARF" className="h-10 w-auto" />
+        {g ? <Verificada nombre={g.nombre} socio={g.socio ?? null} /> : <NoValida />}
+      </main>
+    );
+  }
+  const pase = paseGafete({ nombre: g.nombre, fotoUrl: g.retratoUrl, franja: g.franja, papel: g.papel });
   const algo = g.telefono || g.correo || g.instagram || g.perfil;
   const boton = "flex w-full items-center justify-center gap-2 rounded-full border border-linea-2 px-5 py-3.5 text-sm font-bold hover:border-white/50";
   return (
     <main className="flex flex-col items-center gap-6 px-5 pb-24 pt-10">
-      <GafeteVista p={paseGafete({ nombre: g.nombre, fotoUrl: g.retratoUrl, franja: g.franja, papel: g.papel })} />
+      <GafeteVista p={g.socio ? { ...pase, sello: `Socio ${numeroSocio(g.socio.numero)}` } : pase} />
       <div className="flex w-[min(340px,86vw)] flex-col gap-3">
         {algo ? (
           <>

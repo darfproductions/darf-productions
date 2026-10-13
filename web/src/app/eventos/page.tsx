@@ -3,7 +3,8 @@ import Link from "next/link";
 import { EncuentroCard } from "@/components/fanzone/EncuentroCard";
 import { PageHeading } from "@/components/PageHeading";
 import { getSession } from "@/lib/auth";
-import { getCredencial, getEncuentros, getEventosCartelera } from "@/lib/fanzone";
+import { esSocio } from "@/lib/credencial";
+import { getEncuentros, getEventosCartelera } from "@/lib/fanzone";
 import { EventoBloqueado } from "@/components/eventos/EventoBloqueado";
 
 export const metadata: Metadata = { title: "Eventos" };
@@ -12,7 +13,7 @@ export const metadata: Metadata = { title: "Eventos" };
 // los del Club Fan). Los en línea muestran la liga 15 minutos antes.
 export default async function EventosPage() {
   const [session, eventos, cartelera] = await Promise.all([getSession(), getEncuentros(null), getEventosCartelera(30)]);
-  const socio = session ? !!(await getCredencial()) : false;
+  const socio = session ? await esSocio() : false;
   // Los que aún no puede abrir (del club o con cuenta): se muestran con candado para invitar.
   const visibles = new Set(eventos.map((e) => e.id));
   const bloqueados = cartelera.filter((e) => !visibles.has(e.id));

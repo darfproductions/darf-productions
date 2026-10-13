@@ -19,7 +19,12 @@ export async function apartarEncuentro(id: string, on: boolean): Promise<{ ok: b
   if (error) return { ok: false, message: error.message };
   revalidatePath("/fan-zone", "layout");
   revalidatePath("/eventos");
-  return { ok: true, message: on ? "¡Lugar apartado! Te avisamos una hora antes." : "Liberaste tu lugar." };
+  revalidatePath("/cuenta/eventos");
+  if (!on) return { ok: true, message: "Liberaste tu lugar." };
+  // Con costo (0083): queda una orden pendiente hasta que el equipo apruebe el pago.
+  const { data: auth } = await supabase.auth.getUser();
+  const { data: o } = await supabase.from("evento_ordenes").select("status").eq("encuentro_id", id).eq("user_id", auth.user?.id ?? "").eq("status", "pendiente").maybeSingle();
+  return { ok: true, message: o ? "Lugar apartado. Paga por WhatsApp para confirmarlo." : "¡Lugar apartado! Te avisamos una hora antes." };
 }
 
 export async function recordarPreventa(pid: string, on: boolean): Promise<{ ok: boolean; message: string }> {

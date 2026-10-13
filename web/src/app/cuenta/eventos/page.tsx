@@ -3,22 +3,64 @@ import Link from "next/link";
 import { PageHeading } from "@/components/PageHeading";
 import { ArtFill } from "@/components/PosterArt";
 import { requireSession } from "@/lib/auth";
+import { env } from "@/lib/env";
+import { whatsappEventoUrl } from "@/lib/eventos-rules";
+import { limiteTexto } from "@/lib/expiry-rules";
+import { getMisEventos, type MiEvento } from "@/lib/fanzone";
 import { getEventosAsistidos, getTheme } from "@/lib/historial";
 import { formatPerformanceDate } from "@/lib/productions";
 
-export const metadata: Metadata = { title: "Eventos asistidos" };
+export const metadata: Metadata = { title: "Mis eventos" };
 
-// Eventos asistidos (bloque 5): funciones a las que entraste con tus boletos.
+const pesos = (n: number | null) => `$${Number(n ?? 0).toLocaleString("es-MX")}`;
+function estado(e: MiEvento): { texto: string; clase: string } {
+  if (e.llegada_at) return { texto: "✓ Asististe", clase: "text-exito" };
+  if (e.orden_status === "pendiente") return { texto: `Por pagar ${pesos(e.orden_monto)}`, clase: "text-aviso" };
+  if (e.orden_status === "aprobado") return { texto: Number(e.orden_monto) > 0 ? `✓ Pagado ${pesos(e.orden_monto)}` : "✓ Confirmado", clase: "text-exito" };
+  if (e.orden_status === "rechazado") return { texto: e.vencida ? "Venció sin pago" : "Cancelado", clase: "text-texto-3" };
+  return { texto: "✓ Lugar apartado", clase: "text-exito" };
+}
+
+// Mis eventos: los eventos de DARF que aparté o pagué (0083) y las funciones a las que entré
+// con mis boletos (bloque 5).
 export default async function Eventos() {
   const session = await requireSession("/cuenta/eventos");
-  const eventos = await getEventosAsistidos(session.userId);
+  const [eventos, mios] = await Promise.all([getEventosAsistidos(session.userId), getMisEventos()]);
   return (
     <main className="pb-24">
-      <PageHeading eyebrow="Mi cuenta" title="Eventos asistidos">
-        Las funciones a las que ya fuiste. Cada boleto cuenta cuando se valida en la entrada.
+      <PageHeading eyebrow="Mi cuenta" title="Mis eventos">
+        Los eventos que apartaste (y su pago) y las funciones a las que ya fuiste.
       </PageHeading>
       <div className="mx-auto flex max-w-[1440px] flex-col gap-6 px-5 md:px-16">
         <Link href="/cuenta" className="text-sm font-bold text-lila">← Mi cuenta</Link>
+        <section aria-labelledby="mios-t" className="flex flex-col gap-4">
+          <h2 id="mios-t" className="text-xl font-black">Eventos DARF</h2>
+          {mios.length === 0 ? (
+            <p className="tarjeta p-6 text-texto-2">Aún no apartas lugar en ningún evento. <Link href="/eventos" className="font-bold text-lila">Ver eventos →</Link></p>
+          ) : (
+            <ul className="grid gap-4 md:grid-cols-2">
+              {mios.map((e) => {
+                const st = estado(e);
+                const pagar = e.orden_status === "pendiente" && e.orden_codigo && env.whatsapp
+                  ? whatsappEventoUrl(env.whatsapp, { titulo: e.titulo, obra: e.obra, codigo: e.orden_codigo, monto: Number(e.orden_monto ?? 0) }) : "";
+                return (
+                  <li key={e.id} className="tarjeta flex flex-col gap-2 p-5">
+                    <span className={`text-sm font-bold ${st.clase}`}>{st.texto}</span>
+                    <strong className="text-lg">{e.titulo}</strong>
+                    <span className="text-[12.5px] capitalize text-texto-3">{formatPerformanceDate(e.starts_at)}{e.lugar ? ` · ${e.lugar}` : ""}{e.obra ? ` · ${e.obra}` : ""}</span>
+                    {e.orden_codigo && <span className="font-mono text-xs text-texto-2">{e.orden_codigo}</span>}
+                    {e.orden_status === "pendiente" && e.orden_expira && <p className="text-sm text-aviso">Paga antes de <b>{limiteTexto(e.orden_expira)}</b>. Si no, tu lugar se libera solo.</p>}
+                    <div className="flex flex-wrap gap-2">
+                      {pagar && <a href={pagar} target="_blank" rel="noopener noreferrer" className="fb fb-fz fb-sm">Pagar por WhatsApp ↗</a>}
+                      <Link href={`/eventos#e-${e.id}`} className="fb fb-o fb-sm">Ver evento</Link>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
+        <h2 className="text-xl font-black">Funciones a las que fuiste</h2>
         {eventos.length === 0 ? (
           <p className="tarjeta p-6 text-texto-2">Aquí aparecerán las funciones a las que vayas. <Link href="/producciones?estado=cartelera" className="font-bold text-lila">Ver producciones →</Link></p>
         ) : (

@@ -51,7 +51,9 @@ export function MenuCuenta({ nombre, email, fotoUrl, panel, socio }: { nombre: s
           <div className="border-t border-linea pt-1.5" />
           <Link role="menuitem" href="/cuenta" className={item}>Mi cuenta</Link>
           <Link role="menuitem" href="/cuenta#boletos" className={item}>Mis boletos</Link>
-          {socio && <Link role="menuitem" href="/fan-zone" className={`${item} !text-oro-claro`}>Mi credencial · Club Fan</Link>}
+          <Link role="menuitem" href="/cuenta#credencial" className={item}>Mi credencial</Link>
+          <Link role="menuitem" href="/cuenta/eventos" className={item}>Mis eventos</Link>
+          {socio && <Link role="menuitem" href="/fan-zone" className={`${item} !text-oro-claro`}>Fan Zone</Link>}
           {panel && <Link role="menuitem" href="/panel" className={item}>Panel</Link>}
           <div className="mt-1 border-t border-linea pt-1.5">
             <form action={logout}>

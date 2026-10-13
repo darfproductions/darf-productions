@@ -52,6 +52,8 @@ Diego eligió cuáles sí (ver plan del bloque). Hechas en `darf-2.0`, migracion
 | Eventos en portada y menú | "Eventos" en la barra de arriba (y en el menú del celular y el pie); sección "Próximos eventos" en la portada debajo de Producciones con el más cercano destacado; en `/eventos` los del club o con cuenta salen con candado para invitar a entrar o unirse (0082). |
 | Menú compacto | Cartelera se unió con Producciones (`/cartelera` redirige con su filtro); "Panel" y "Mi cuenta" pasan a un botón de cuenta con menú (Mi cuenta, Mis boletos, credencial, Panel, Cerrar sesión). En celular sigue la hamburguesa (la app tendrá su propio menú). |
 | Eventos en la obra | Sección "Eventos" en la página de cada obra (abiertos y con candado). |
+| Credencial única | Una sola credencial y un solo QR por persona, según su nivel más alto: gafete (equipo y elencos) > dorada (Club Fan) > básica (cuenta). Si alguien del equipo es socio, su gafete lleva el sello del club y "Socio #NNNN"; si un fan entra al equipo, conserva su número, sus eventos y sus lugares. Los códigos viejos (FAN-XXXX, `/f/…`) siguen sirviendo. El equipo y los elencos cuentan como socios (0083). |
+| Eventos con costo | Precio y precio para socios (vacío = gratis). Al apartar se crea un pedido EV-XXXXXX que vence como los boletos; se paga por WhatsApp o transferencia y se aprueba en Panel → Eventos ("Ver lista"). Sin pago aprobado, la entrada no deja pasar. Cupo de los primeros N o sin límite. "Mis eventos" en Mi cuenta (0083). |
 | Ajustes de marca | Fan Zone al final del menú, logo original (DARF con PRODUCTIONS abajo), destacada también en la cartelera, logos de DARF y de la obra en los boletos. |
 
 ## Lo que queda pendiente
@@ -61,6 +63,8 @@ Diego eligió cuáles sí (ver plan del bloque). Hechas en `darf-2.0`, migracion
 - **Avisos por WhatsApp**: es un servicio de pago.
 - **Foto grupal en Nosotros**: cuando haya foto.
 - **Tema claro del panel "DARF Admin"**: sin decidir; el panel sigue oscuro.
+- **Componentes que ya no se usan** (por la credencial única): `components/gafete/MiGafete.tsx`, `components/fanzone/MiCredencialFan.tsx`, y `getMiGafete` / `getMiCredencialFan`. Se dejaron en su lugar; se pueden borrar con el visto bueno de Diego.
+- **Cobro de eventos para quien solo opera ventas**: recibe el aviso del pago, pero aprueba desde Panel → Eventos, que hoy pide permiso de Fan Zone. Si hace falta, se agrega a la pestaña de boletos de la obra.
 - No se harán: lista de espera, etiquetas de función (la franja ya cubre eso), transferir boleto, pago con tarjeta u OXXO.
 
 ## Para el lanzamiento (lista de revisión)

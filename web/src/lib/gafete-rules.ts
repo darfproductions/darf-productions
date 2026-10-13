@@ -15,6 +15,8 @@ export type GafeteMio = {
 };
 
 export type GafetePublico = {
+  /** 0083: la credencial es única; solo el nivel "equipo" trae papel y contacto. */
+  nivel?: "equipo" | "club" | "cuenta"; socio?: { numero: number; desde: string; fundador: boolean } | null;
   nombre: string; franja: Franja; papel: string;
   retrato_path: string | null; telefono: string | null; correo: string | null; instagram: string | null; perfil: string | null;
 };
@@ -26,6 +28,8 @@ export type Banda = { label: string; fondo: string; texto: string; degradado?: [
 export type PaseVista = {
   tema: "darf" | "fan"; logo: string; logoAlt: string; nombre: string; fotoUrl: string | null;
   titulo: string; pie: string; banda: Banda; qr?: string; codigo?: string;
+  /** Equipo que también es socio del Club Fan (0083): "Socio #0001" y el sello del club. */
+  sello?: string;
 };
 
 const DEGRADADO_LUZ: [number, string][] = [[0, "#340feb"], [0.55, "#830886"], [1, "#d20122"]];

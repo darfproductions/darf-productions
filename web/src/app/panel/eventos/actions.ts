@@ -23,11 +23,17 @@ export async function crearEvento(_p: State, f: FormData): Promise<State> {
   const cupoTxt = str(f, "cupo");
   const cupo = cupoTxt ? Number(cupoTxt) : null;
   if (cupo !== null && (!Number.isInteger(cupo) || cupo < 1 || cupo > 5000)) return { ok: false, message: "El cupo va de 1 a 5000 (o déjalo vacío: sin límite)." };
-  const registro = f.get("registro") === "on";
-  if (registro && cupo === null && tipo !== "en_linea") return { ok: false, message: "Con registro, pon el cupo." };
+  // Costo (0083): vacío = gratis. Con costo siempre se pide registro (para tener a quién cobrarle).
+  const dinero = (k: string) => (str(f, k) ? Math.round(Number(str(f, k)) * 100) / 100 : null);
+  const precio = dinero("precio"), precioSocio = dinero("precio_socio");
+  if (precio !== null && (!Number.isFinite(precio) || precio <= 0 || precio > 100000)) return { ok: false, message: "El precio va de $1 a $100,000 (o déjalo vacío: gratis)." };
+  if (precioSocio !== null && (precio === null || !Number.isFinite(precioSocio) || precioSocio < 0 || precioSocio > precio)) {
+    return { ok: false, message: precio === null ? "Para poner precio de socios, pon primero el precio." : "El precio para socios debe ser menor o igual al precio." };
+  }
+  const registro = f.get("registro") === "on" || precio !== null;
   const supabase = await createClient();
   const fila: Record<string, unknown> = {
-    tipo, acceso, cupo, requiere_registro: registro,
+    tipo, acceso, cupo, requiere_registro: registro, precio, precio_socio: precioSocio,
     categoria: str(f, "categoria").slice(0, 60) || null,
     titulo: str(f, "titulo").slice(0, 120) || null,
     descripcion: str(f, "descripcion").slice(0, 600) || null,
@@ -73,6 +79,17 @@ export async function setEvento(_p: State, f: FormData): Promise<State> {
   if (!count) return { ok: false, message: "No tienes permiso." };
   refrescar(pid);
   return { ok: true, message: "Listo." };
+}
+
+/** Aprobar o rechazar el pago de un evento (0083). Rechazar libera el lugar. */
+export async function revisarPagoEvento(_p: State, f: FormData): Promise<State> {
+  const supabase = await createClient();
+  const aprobar = str(f, "aprobar") === "1";
+  const { error } = await supabase.rpc("evento_orden_revisar", { oid: str(f, "orden"), p_aprobar: aprobar });
+  if (error) return { ok: false, message: error.message };
+  refrescar(str(f, "pid") || null);
+  revalidatePath("/cuenta/eventos");
+  return { ok: true, message: aprobar ? "Pago aprobado. Se le avisó." : "Apartado rechazado y lugar liberado." };
 }
 
 /** Llegada a mano (para quien no trae credencial del club). */

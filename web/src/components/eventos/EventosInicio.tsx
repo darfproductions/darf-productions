@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { partesFuncion } from "@/lib/disponibilidad";
-import { ACCESO_EVENTO, TIPOS_EVENTO } from "@/lib/eventos-rules";
+import { ACCESO_EVENTO, TIPOS_EVENTO, precioTexto } from "@/lib/eventos-rules";
 import type { EventoCartelera } from "@/lib/fanzone";
 
 const club = (e: EventoCartelera) => e.acceso === "club";
@@ -12,6 +12,7 @@ function Chips({ e }: { e: EventoCartelera }) {
       <span className={club(e) ? "text-oro" : "text-lila"}>{e.categoria || TIPOS_EVENTO[e.tipo].label}</span>
       {e.en_vivo && <span className="rounded-full bg-[#d20122] px-2 py-0.5 tracking-[0.12em] text-white">En vivo</span>}
       <span className={`rounded-full border px-2 py-0.5 tracking-[0.12em] ${club(e) ? "border-oro/50 text-oro-claro" : "border-white/25 text-texto-2"}`}>{ACCESO_EVENTO[e.acceso].corto}</span>
+      {e.precio != null && <span className="rounded-full border border-white/25 px-2 py-0.5 tracking-[0.12em] text-texto">{precioTexto(e)}</span>}
     </span>
   );
 }

@@ -36,6 +36,21 @@ export default async function EventosPanel({ searchParams }: PageProps<"/panel/e
       ))}
     </fieldset>
   );
+  // Con costo (0083): se paga como los boletos y el lugar queda apartado hasta aprobar el pago.
+  const costo = (
+    <fieldset className="flex flex-col gap-2 text-sm">
+      <legend className="mb-1 font-semibold">Costo <span className="text-xs font-normal text-texto-3">Vacío = gratis</span></legend>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <label className="flex flex-col gap-1 font-semibold">Precio (MXN)
+          <input type="number" name="precio" min={1} max={100000} step="0.01" placeholder="Gratis" className={input} />
+        </label>
+        <label className="flex flex-col gap-1 font-semibold">Precio para socios del Club Fan <span className="text-xs font-normal text-texto-3">Opcional · 0 = gratis para socios</span>
+          <input type="number" name="precio_socio" min={0} max={100000} step="0.01" className={input} />
+        </label>
+      </div>
+      <p className="text-xs text-texto-3">Con costo, se pide registro: la persona aparta, paga por WhatsApp o transferencia (como los boletos) y su lugar queda apartado hasta que apruebes el pago aquí abajo. Si no paga a tiempo, se libera solo.</p>
+    </fieldset>
+  );
   const categoria = (tipo: TipoEvento, requerida = false) => (
     <label className="flex flex-col gap-1 text-sm font-semibold">Tipo de evento
       <input name="categoria" list={`cat-${tipo}`} required={requerida} maxLength={60} placeholder={CATEGORIAS[tipo][0]} className={input} />
@@ -83,7 +98,7 @@ export default async function EventosPanel({ searchParams }: PageProps<"/panel/e
               <label className="flex flex-col gap-1 text-sm font-semibold">Nombre <span className="text-xs font-normal text-texto-3">Opcional (si no, se usa el tipo)</span>
                 <input name="titulo" maxLength={120} className={input} />
               </label>
-              <label className="flex flex-col gap-1 text-sm font-semibold">Cupo
+              <label className="flex flex-col gap-1 text-sm font-semibold">Cupo <span className="text-xs font-normal text-texto-3">Los primeros N · vacío = sin límite</span>
                 <input type="number" name="cupo" min={1} max={5000} defaultValue={20} className={input} />
               </label>
             </div>
@@ -95,6 +110,7 @@ export default async function EventosPanel({ searchParams }: PageProps<"/panel/e
               <label className="flex items-center gap-2"><input type="checkbox" name="boleto" defaultChecked /> Pide boleto de esa función</label>
             </div>
             {acceso("club")}
+            {costo}
           </>
         ))}
         {bloque("presencial", (
@@ -113,7 +129,7 @@ export default async function EventosPanel({ searchParams }: PageProps<"/panel/e
               <label className="flex flex-col gap-1 text-sm font-semibold">Lugar
                 <input name="lugar" maxLength={160} placeholder="Teatro, foro, salón…" className={input} />
               </label>
-              <label className="flex flex-col gap-1 text-sm font-semibold">Cupo <span className="text-xs font-normal text-texto-3">Vacío = sin límite</span>
+              <label className="flex flex-col gap-1 text-sm font-semibold">Cupo <span className="text-xs font-normal text-texto-3">Los primeros N · vacío = sin límite</span>
                 <input type="number" name="cupo" min={1} max={5000} defaultValue={30} className={input} />
               </label>
               {obraSelect}
@@ -123,6 +139,7 @@ export default async function EventosPanel({ searchParams }: PageProps<"/panel/e
             </label>
             <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="registro" defaultChecked /> Pide registro (apartar lugar). Sin registro, entra quien llegue hasta llenar el cupo.</label>
             {acceso("club")}
+            {costo}
           </>
         ))}
         {bloque("en_linea", (
@@ -149,6 +166,7 @@ export default async function EventosPanel({ searchParams }: PageProps<"/panel/e
             </label>
             <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="registro" /> Pide registro (solo quien se registró ve la liga)</label>
             {acceso("club")}
+            {costo}
           </>
         ))}
       </Card>

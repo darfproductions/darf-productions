@@ -27,9 +27,11 @@ export function GafeteVista({ p }: { p: PaseVista }) {
         </div>
       )}
       <p className="mt-2 text-[10.5px] font-semibold uppercase tracking-[0.2em] text-texto-3">{p.pie}</p>
-      <div className="mt-4 flex w-full items-center justify-center gap-3 py-3 text-center text-[22px] font-black italic tracking-[0.08em]" style={{ background: p.banda.fondo, color: p.banda.texto }}>
+      {p.sello && <p className="mt-1 text-[10.5px] font-bold uppercase tracking-[0.2em] text-oro">Club Fan · {p.sello}</p>}
+      <div className="relative mt-4 flex w-full items-center justify-center gap-3 py-3 text-center text-[22px] font-black italic tracking-[0.08em]" style={{ background: p.banda.fondo, color: p.banda.texto }}>
         {fan && <img src="/marca/sello-club.svg" alt="" className="h-7 w-7" />}
         {p.banda.label}
+        {!fan && p.sello && <img src="/marca/sello-club.svg" alt="Socio del Club Fan" className="absolute right-4 h-8 w-8" />}
       </div>
     </article>
   );

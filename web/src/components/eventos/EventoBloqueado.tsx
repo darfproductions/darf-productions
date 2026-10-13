@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { partesFuncion } from "@/lib/disponibilidad";
-import { ACCESO_EVENTO, TIPOS_EVENTO } from "@/lib/eventos-rules";
+import { ACCESO_EVENTO, TIPOS_EVENTO, precioTexto } from "@/lib/eventos-rules";
 import type { EventoCartelera } from "@/lib/fanzone";
 
 // Evento que la persona todavía no puede abrir (del Club Fan o con cuenta), con candado y la
@@ -23,6 +23,7 @@ export function EventoBloqueado({ e, sesion, mostrarObra = true }: { e: EventoCa
           </span>
           <strong className="truncate">{e.titulo}</strong>
           <span className="text-[12.5px] text-texto-3">{f.hora}{e.tipo === "en_linea" ? " · En línea" : e.lugar ? ` · ${e.lugar}` : ""}{mostrarObra && e.obra ? ` · ${e.obra}` : ""}</span>
+          {e.precio != null && <span className="text-[12.5px] font-bold">{precioTexto(e)}</span>}
         </div>
       </div>
       <Link href={cta.href} className="fb fb-fz fb-sm self-start">{cta.label}</Link>

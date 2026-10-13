@@ -19,5 +19,6 @@ export async function regenerarGafete(): Promise<{ ok: boolean; message: string 
   const { error } = await supabase.rpc("badge_regenerar");
   if (error) return { ok: false, message: error.message };
   revalidatePath("/cuenta");
+  revalidatePath("/fan-zone", "layout");
   return { ok: true, message: "Código nuevo listo. El anterior ya no sirve." };
 }

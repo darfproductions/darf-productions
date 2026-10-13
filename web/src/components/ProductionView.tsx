@@ -16,7 +16,8 @@ import { isDev } from "@/lib/env";
 import { EncuentroCard } from "@/components/fanzone/EncuentroCard";
 import { EventoBloqueado } from "@/components/eventos/EventoBloqueado";
 import { getSession } from "@/lib/auth";
-import { fanzoneCount, getCredencial, getEncuentros, getEventosCartelera } from "@/lib/fanzone";
+import { esSocio } from "@/lib/credencial";
+import { fanzoneCount, getEncuentros, getEventosCartelera } from "@/lib/fanzone";
 import { estadoPublico } from "@/lib/home-rules";
 import { getProductionContent } from "@/lib/production-content";
 import { getProgram } from "@/lib/program";
@@ -65,7 +66,7 @@ export async function ProductionView({
   const { production: p, performances, prices } = data;
   const theme = getTheme(p);
   const vendibles = performances.filter((fn) => fn.on_sale && !!fn.starts_at && !p.concluded);
-  const [c, gallery, ensayos, audiciones, programa, franja, ocupacion, credencial, eventos, cartelera, sesion] = await Promise.all([
+  const [c, gallery, ensayos, audiciones, programa, franja, ocupacion, socio, eventos, cartelera, sesion] = await Promise.all([
     getProductionContent(p.id),
     getGallery(p.id),
     fanzoneCount(p.id),
@@ -73,12 +74,11 @@ export async function ProductionView({
     getProgram(p.id),
     getPublicBanner(p.id),
     performanceOccupancy(vendibles.map((fn) => fn.id)),
-    getCredencial(),
+    esSocio(),
     getEncuentros(p.id),
     getEventosCartelera(30),
     getSession(),
   ]);
-  const socio = !!credencial;
   // Eventos de esta obra (0081/0082): los que puede abrir y, con candado, los del club o con cuenta.
   const abiertos = new Set(eventos.map((e) => e.id));
   const bloqueados = cartelera.filter((e) => e.production_id === p.id && !abiertos.has(e.id));
