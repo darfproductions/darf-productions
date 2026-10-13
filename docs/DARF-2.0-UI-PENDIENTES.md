@@ -85,6 +85,7 @@ Diego eligió cuáles sí (ver plan del bloque). Hechas en `darf-2.0`, migracion
 | Póster oficial (0093) | Opcional (una obra puede anunciarse con sus audiciones sin póster). En Kit de marca: 3:4, 9:16, 4:3 y 16:9, cada uno "con toda la información" y "solo imagen"; revisa proporción y tamaño y lo guarda en JPG. Se usa: la versión con información al compartir la liga (16:9) y en la página de la obra (3:4); la limpia en la obra destacada (16:9 compu / 4:3 celular), tarjetas en celular (3:4), boleto y PDF (3:4 de fondo) y "Voy a ir" (9:16 limpio, o 3:4 limpio; nunca la versión con información: la imagen pone encima el logo de DARF, el de la obra, el texto y la función). Sin póster, todo sigue con la imagen de ambiente; en Producciones se marca "Sin póster destacado". |
 | Listo para vender (4C) | En el Resumen de la obra: publicada, kit completo, funciones próximas, lugares (mapa o zonas con cupo), asientos con zona, precio en cada zona de cada función, venta abierta y WhatsApp de pagos; el póster para la portada como opcional. Cada punto lleva a donde se arregla; si todo está bien queda plegado con "✓ Todo listo". |
 | Antes de cerrar la temporada (4C) | En Cierre de temporada, arriba del botón: órdenes por aprobar (lo único que impide cerrar), funciones que aún no pasan, reembolsos de funciones canceladas, mensualidades vencidas, ofertas sin respuesta, documentos por revisar, créditos y galería para la página de archivo. |
+| Invitar al equipo (0094) | En Permisos: con cuenta entra directo; sin cuenta queda invitación con "Copiar enlace", "Mandar por WhatsApp", reenviar y cancelar (vence en 30 días). Al confirmar su correo al crear la cuenta entra sola con sus roles. Correo automático con la Edge Function `team-invite` (Resend) cuando se active en `invite_config.hook_url`. Aviso de bienvenida con liga a la "Guía de tu rol" (qué puede hacer y dónde, según sus permisos). |
 
 ## Lo que queda pendiente
 
@@ -99,7 +100,7 @@ Diego eligió cuáles sí (ver plan del bloque). Hechas en `darf-2.0`, migracion
 ## Para el lanzamiento (lista de revisión)
 
 - **Entrar con Google:** en el proyecto de Supabase (DEV y luego el oficial) → Authentication → Providers → Google, con el Client ID y secreto de la 1.0, y agregar la dirección del sitio (`…/auth/callback`) en Google Cloud y en Supabase → URL Configuration. Probar el botón en DEV y otra vez el día de la publicación.
-- DEV ya tiene aplicadas todas las migraciones hasta la 0093 (verificado). El proyecto oficial necesitará las mismas, en orden, el día de la publicación.
+- DEV ya tiene aplicadas todas las migraciones hasta la 0093 (verificado; pendiente de correr: `supabase/dev/apply_0094_dev.sql`). El proyecto oficial necesitará las mismas, en orden, el día de la publicación.
 - **Contraseñas (Supabase → Authentication → Providers → Email / Policies), en DEV y en el oficial:**
   - Largo mínimo **8** y "letras y números" (la página ya lo exige; así también lo exige Supabase si alguien llama directo a su servicio).
   - **"Secure password change"** encendido y **aviso por correo** cuando cambia la contraseña o el correo ("Password changed" / "Email changed" notifications).

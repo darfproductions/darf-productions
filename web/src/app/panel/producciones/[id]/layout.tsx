@@ -33,7 +33,7 @@ export default async function ProductionWorkspace({ children, params }: LayoutPr
             {can(access, id, "obra.publicar") && <> <Link href={`/panel/producciones/${id}/cierre`} className="font-bold text-violeta-claro">Reactivar →</Link></>}
           </p>
         )}
-        {concluida && <ConcludedGuard base={`/panel/producciones/${id}`} permitidas={CONCLUIDA_TABS.map((t) => (t === "resumen" ? "" : t))} />}
+        {concluida && <ConcludedGuard base={`/panel/producciones/${id}`} permitidas={[...CONCLUIDA_TABS.map((t) => (t === "resumen" ? "" : t)), "guia"]} />}
         <ObraTabs base={`/panel/producciones/${id}`} grupos={grupos} conteo={conteo} />
       </header>
       {children}

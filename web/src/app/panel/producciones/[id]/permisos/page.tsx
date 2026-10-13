@@ -7,7 +7,13 @@ import { can, groupMembers } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
 import { AddMemberForm } from "./AddMemberForm";
 import { EditRolesForm } from "./EditRolesForm";
-import { removeMember } from "./actions";
+import { invitacionAccion, removeMember } from "./actions";
+import { InvitacionBotones } from "@/components/panel/InvitacionBotones";
+import { createClient } from "@/lib/supabase/server";
+
+type Invitacion = { id: string; email: string; roles: string[]; token: string; created_at: string; expira_at: string; enviado_at: string | null; envio_error: string | null };
+const vencio = (iso: string) => new Date(iso).getTime() < Date.now();
+const dia = (iso: string) => new Intl.DateTimeFormat("es-MX", { day: "numeric", month: "short", timeZone: "America/Mexico_City" }).format(new Date(iso));
 
 export const metadata: Metadata = { title: "Permisos de la obra" };
 
@@ -16,7 +22,16 @@ export default async function ProductionPermissions({ params }: PageProps<"/pane
   const { id } = await params;
   const access = await requirePanel(`/panel/producciones/${id}/permisos`);
   if (!can(access, id, "permisos.gestionar")) redirect(`/panel/producciones/${id}`);
-  const [miembros, { roles, permissions, grants }] = await Promise.all([listMembers(id), listRoles()]);
+  const supabase = await createClient();
+  const [miembros, { roles, permissions, grants }, inv, obra] = await Promise.all([
+    listMembers(id),
+    listRoles(),
+    supabase.from("production_invites").select("id, email, roles, token, created_at, expira_at, enviado_at, envio_error")
+      .eq("production_id", id).is("aceptada_at", null).is("cancelada_at", null).order("created_at", { ascending: false }),
+    supabase.from("productions").select("nombre").eq("id", id).maybeSingle(),
+  ]);
+  const invitaciones = (inv.data ?? []) as Invitacion[];
+  const nombreRol = new Map(roles.map((r) => [r.id, r.nombre]));
   const desc = new Map(permissions.map((p) => [p.id, p.descripcion]));
   const personas = groupMembers(miembros);
   const opciones = roles.filter((r) => r.id !== "integrante");
@@ -27,13 +42,47 @@ export default async function ProductionPermissions({ params }: PageProps<"/pane
         <div>
           <h2 className="titular text-xl">Dar acceso</h2>
           <p className="mt-1 text-sm text-texto-2">
-            La persona necesita tener cuenta en DARF. Puede tener varios roles y suma los permisos de todos
+            Escribe su correo: si ya tiene cuenta en DARF entra de inmediato; si no, queda invitada y le mandas la liga
+            (al crear su cuenta con ese correo entra sola). Puede tener varios roles y suma los permisos de todos
             (por ejemplo Mesa de registro + Puerta + Staff). Crea un rol personalizado solo si necesitas una
             combinación de permisos que ningún rol tiene.
           </p>
         </div>
         <AddMemberForm pid={id} roles={opciones} />
       </Card>
+
+      {invitaciones.length > 0 && (
+        <Card className="p-0 md:p-0">
+          <h2 className="titular px-5 pt-5 text-xl">Invitaciones pendientes ({invitaciones.length})</h2>
+          <ul className="mt-3 divide-y divide-white/10">
+            {invitaciones.map((i) => {
+              const vencida = vencio(i.expira_at);
+              const nombres = i.roles.map((r) => nombreRol.get(r) ?? r);
+              return (
+                <li key={i.id} className="flex flex-col gap-2 px-5 py-4">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="truncate font-semibold">{i.email}</p>
+                      <p className="text-sm text-texto-3">
+                        {nombres.join(", ")} · invitada el {dia(i.created_at)} ·{" "}
+                        {vencida ? <b className="text-aviso">venció</b> : `vence el ${dia(i.expira_at)}`}
+                        {" · "}{i.enviado_at ? "correo enviado" : i.envio_error ? <span className="text-aviso">{i.envio_error}</span> : "correo no enviado (manda la liga)"}
+                      </p>
+                    </div>
+                    <span className="flex flex-wrap gap-2">
+                      <MiniAction action={invitacionAccion} hidden={{ pid: id, id: i.id, accion: "reenviar" }} label="Reenviar"
+                        buttonClass="rounded-full border border-white/25 px-3 py-1.5 text-xs font-bold hover:border-white/50" />
+                      <MiniAction action={invitacionAccion} hidden={{ pid: id, id: i.id, accion: "cancelar" }} confirm={`¿Cancelar la invitación de ${i.email}? Su liga deja de servir.`} label="Cancelar"
+                        buttonClass="rounded-full px-3 py-1.5 text-xs font-bold text-texto-3 underline" />
+                    </span>
+                  </div>
+                  {!vencida && <InvitacionBotones token={i.token} obra={(obra.data?.nombre as string) ?? "la obra"} roles={nombres} />}
+                </li>
+              );
+            })}
+          </ul>
+        </Card>
+      )}
 
       <Card className="p-0 md:p-0">
         <h2 className="titular px-5 pt-5 text-xl">Equipo con acceso ({personas.length})</h2>

@@ -113,6 +113,7 @@ export default async function ProductionSummary({ params }: PageProps<"/panel/pr
       <Card className="md:col-span-2">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-texto-3">Equipo con acceso al panel</p>
+          <Link href={`/panel/producciones/${id}/guia`} className="text-sm font-bold text-violeta-claro">Guía de tu rol →</Link>
           {can(access, id, "permisos.gestionar") && (
             <Link href={`/panel/producciones/${id}/permisos`} className="text-sm font-bold text-violeta-claro">Gestionar permisos →</Link>
           )}
