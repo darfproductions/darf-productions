@@ -102,6 +102,10 @@ Diego eligió cuáles sí (ver plan del bloque). Hechas en `darf-2.0`, migracion
 
 ## Para el lanzamiento (lista de revisión)
 
+> **Hecho el 13 de octubre de 2026** (ver `docs/DARF-2.0-LANZAMIENTO.md`): la 2.0 está en `www.darfproductions.com`
+> con la base "DARF 2.0 DEV" como oficial. Lo de abajo queda como referencia; lo único pendiente es lo que
+> depende del plan Pro (noviembre): contraseñas filtradas y respaldos diarios.
+
 - **Entrar con Google:** en el proyecto de Supabase (DEV y luego el oficial) → Authentication → Providers → Google, con el Client ID y secreto de la 1.0, y agregar la dirección del sitio (`…/auth/callback`) en Google Cloud y en Supabase → URL Configuration. Probar el botón en DEV y otra vez el día de la publicación.
 - DEV ya tiene aplicadas todas las migraciones hasta la 0096 (verificado). El proyecto oficial necesitará las mismas, en orden, el día de la publicación.
 - **Contraseñas (Supabase → Authentication → Providers → Email / Policies), en DEV y en el oficial:**
