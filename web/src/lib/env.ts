@@ -44,7 +44,9 @@ export const isDev = env.darfEnv !== "PROD";
 if (env.darfEnv === "PROD" && !/^52\d{10}$/.test(env.whatsapp)) {
   throw new Error("NEXT_PUBLIC_DARF_WHATSAPP debe ser 52 + 10 dígitos (sin + ni espacios) en producción.");
 }
-const DEV_REF = "qgywscczyzuqinutuvak";
-if (env.darfEnv === "PROD" && env.supabaseUrl.includes(DEV_REF)) {
-  throw new Error("NEXT_PUBLIC_DARF_ENV=PROD pero la página apunta a Supabase DEV. Revisa las variables del proyecto en Vercel.");
+// Bloque 6 (Diego, 2026-10-13): la base "DARF 2.0 DEV" pasó a ser la oficial (lo de la 1.0 era
+// de prueba). Ahora el candado es al revés: PROD debe usar ESA base y nunca la vieja de la 1.0.
+const BASE_OFICIAL = "qgywscczyzuqinutuvak";
+if (env.darfEnv === "PROD" && !env.supabaseUrl.includes(BASE_OFICIAL)) {
+  throw new Error("NEXT_PUBLIC_DARF_ENV=PROD debe usar la base oficial de la 2.0 (proyecto DARF 2.0). Revisa las variables del proyecto en Vercel.");
 }
