@@ -12,6 +12,7 @@ import { createClient } from "@/lib/supabase/server";
 import { ActionForm } from "@/components/panel/ActionForm";
 import { ESTADO_OFERTA, listOffers, offerLabel } from "@/lib/casting";
 import { AddCreditForm } from "./AddCreditForm";
+import { Personajes } from "./Personajes";
 import { OfferForm } from "./OfferForm";
 import { withdrawOffer } from "./offer-actions";
 import { moveCredit, removeCredit, setCreditPhoto, updatePapel } from "./actions";
@@ -52,6 +53,7 @@ export default async function CastEditor({ params }: PageProps<"/panel/produccio
         Las fotos son de esta obra: súbelas de la sesión de esta producción (vertical 3:4) para que todas se vean iguales.
         Una persona puede estar en varios grupos.
       </p>
+      <Personajes pid={id} />
       {armaElenco && (
         <Card className="flex flex-col gap-3">
           <h2 className="titular text-xl">Ofertas</h2>

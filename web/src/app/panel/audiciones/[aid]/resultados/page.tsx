@@ -10,6 +10,7 @@ import { can, myProductionIds } from "@/lib/panel-nav";
 import { OfferForm } from "../../../producciones/[id]/elenco/OfferForm";
 import { createClient } from "@/lib/supabase/server";
 import { setApplicationEstado } from "../../actions";
+import { marcarCallback } from "../../votacion-actions";
 
 export const metadata: Metadata = { title: "Resultados" };
 
@@ -28,7 +29,7 @@ export default async function Results({ params, searchParams }: PageProps<"/pane
   const supabase = await createClient();
   const [{ data, error }, roles] = await Promise.all([
     supabase.rpc("audition_board_v2", { aid, p_ronda: ronda }),
-    supabase.from("audition_roles").select("nombre").eq("audition_id", aid).order("orden"),
+    supabase.from("audition_roles").select("id, nombre").eq("audition_id", aid).order("orden"),
   ]);
   const rows = ((data ?? []) as Row[]).filter((r) => !rol || r.roles?.includes(rol));
   // Ofertas de papel (3E): a qué obras puedo ofrecer y qué ofertas ya salieron de esta audición.
@@ -38,9 +39,59 @@ export default async function Results({ params, searchParams }: PageProps<"/pane
   const ofertas = (ofertasData ?? []) as { application_id: string; estado: string; tipo: string; papel: string | null }[];
   const papeles = (roles.data ?? []).map((r) => r.nombre as string);
   const h = (app: string, r: number) => ({ aid, app, ronda: String(r) });
+  // 0089: con personajes, en "Elegir callback" se ve cuántas veces marcaron a cada quien y para qué.
+  const conVotacion = papeles.length > 0 && !a.permanente;
+  const nombreRol = new Map(((roles.data ?? []) as unknown as { id?: string; nombre: string }[]).map((r) => [r.id ?? "", r.nombre]));
+  let marcas = new Map<string, { total: number; detalle: Map<string, number> }>();
+  if (conVotacion && a.fase === "seleccion_callback") {
+    const { data: pk } = await supabase.from("audition_picks").select("application_id, role_id, ensamble").eq("ronda", 1)
+      .in("application_id", rows.length ? rows.map((r) => r.id) : ["00000000-0000-0000-0000-000000000000"]);
+    marcas = new Map();
+    for (const k of (pk ?? []) as { application_id: string; role_id: string | null; ensamble: boolean }[]) {
+      const m = marcas.get(k.application_id) ?? { total: 0, detalle: new Map<string, number>() };
+      const n = k.ensamble ? "Ensamble" : nombreRol.get(k.role_id ?? "") ?? "—";
+      m.total += 1;
+      m.detalle.set(n, (m.detalle.get(n) ?? 0) + 1);
+      marcas.set(k.application_id, m);
+    }
+  }
+
+  if (conVotacion && a.fase === "seleccion_callback") {
+    const orden = [...rows].sort((x, y) => (marcas.get(y.id)?.total ?? 0) - (marcas.get(x.id)?.total ?? 0));
+    return (
+      <Card className="flex flex-col gap-4">
+        <h2 className="titular text-xl">Elegir quién pasa a callback</h2>
+        <p className="text-sm text-texto-2">Ordenados por cuántas veces los marcaron los jueces. Palomea a quienes pasan, guarda y luego da “Siguiente: Callback” arriba. Se les avisa al empezar el callback.</p>
+        <ActionForm action={marcarCallback} hidden={{ aid }} submit="Guardar quién pasa">
+          <ul className="flex flex-col divide-y divide-white/10">
+            {orden.map((r) => {
+              const m = marcas.get(r.id);
+              return (
+                <li key={r.id} className="flex flex-wrap items-center gap-3 py-2.5">
+                  <input type="hidden" name="todos" value={r.id} />
+                  <label className="flex flex-1 items-start gap-3">
+                    <input type="checkbox" name="pasa" value={r.id} defaultChecked={r.estado === "callback"} className="mt-1 h-5 w-5" />
+                    <span>
+                      <b>{r.numero ? `Nº ${r.numero} · ` : ""}{r.nombre}</b> <span className="text-texto-3">· {r.edad}</span>
+                      <span className="block text-xs text-texto-3">
+                        {m ? `${m.total} ${m.total === 1 ? "marca" : "marcas"}: ${[...m.detalle].map(([n, c]) => `${n} ×${c}`).join(", ")}` : "Ningún juez lo marcó"}
+                      </span>
+                    </span>
+                  </label>
+                </li>
+              );
+            })}
+          </ul>
+        </ActionForm>
+      </Card>
+    );
+  }
 
   return (
     <>
+      {conVotacion && (
+        <Card className="text-sm">Esta convocatoria se decide por votación: las opciones de los jueces y los votos están en <Link href={`/panel/audiciones/${aid}/votacion`} className="font-bold text-lila">Votación</Link> y el cast se arma en <Link href={`/panel/audiciones/${aid}/cast`} className="font-bold text-lila">Cast</Link>. Aquí quedan las calificaciones opcionales.</Card>
+      )}
       <div className="flex flex-wrap gap-2 text-xs">
         {[1, 2, 3].map((r) => (
           <Link key={r} href={`?ronda=${r}${rol ? `&rol=${encodeURIComponent(rol)}` : ""}`} className={`rounded-full border px-3 py-1.5 font-semibold ${r === ronda ? "border-texto" : "border-white/20"}`}>{r === 1 ? "Audición" : `Callback ${r - 1}`}</Link>

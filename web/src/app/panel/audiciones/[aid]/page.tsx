@@ -10,6 +10,7 @@ import { formatSlot } from "@/lib/auditions";
 import { isoToLocalMx } from "@/lib/dates";
 import { requireAudition } from "@/lib/panel-auditions";
 import { createClient } from "@/lib/supabase/server";
+import { editarPersonaje, importarPersonajes, moverPersonaje } from "../votacion-actions";
 import { addAuditionMember, addField, addInvites, addRole, addSlot, removeAuditionMember, removeInvite, removeItem, saveAsTemplate, saveAudition, saveCriterios, saveOptions, setAuditionEstado, deleteAudition } from "../actions";
 
 export const metadata: Metadata = { title: "Configurar audición" };
@@ -101,8 +102,10 @@ export default async function AuditionConfig({ params }: PageProps<"/panel/audic
                 </select>
                 <span className="text-xs font-normal text-texto-3">En línea: sin día presencial; los jueces califican los videos que manden (pide videos en “Preguntas del formulario”).</span>
               </label>
+              <label className={check}><input type="checkbox" name="con_callback" defaultChecked={a.con_callback} className="mt-1" />
+                <span>Habrá callback: después de la audición se elige quién pasa, se hace el callback y luego se vota.</span></label>
               <label className={check}><input type="checkbox" name="solo_invitados" defaultChecked={a.solo_invitados} className="mt-1" />
-                <span>Solo por invitación: únicamente se inscriben los correos que invites (queda “solo con enlace”).</span></label>
+                <span>Solo invitados por correo: nadie más puede inscribirse, aunque tenga la liga (queda “solo con enlace”).</span></label>
               <label className="flex flex-col gap-1.5 text-sm font-semibold">Quién la ve
                 <select className={input} name="visibilidad" defaultValue={a.visibilidad}>
                   <option value="publica">Todos: aparece en la lista de audiciones</option>
@@ -128,10 +131,15 @@ export default async function AuditionConfig({ params }: PageProps<"/panel/audic
         <p className="text-xs text-texto-3">Si cambias los criterios cuando ya hay calificaciones, las anteriores se conservan pero los jueces califican con los nuevos.</p>
       </AjustesSeccion>
 
-      {a.solo_invitados && (
-        <AjustesSeccion id="invitados" titulo="Invitados">
+      {(a.solo_invitados || a.visibilidad === "enlace") && (
+        <AjustesSeccion id="invitados" titulo="Invitados y liga">
           <h2 className="titular text-xl">Invitados ({(invites.data ?? []).length})</h2>
-          <p className="flex flex-wrap items-center gap-2 text-sm text-texto-2">Solo estos correos pueden inscribirse. Cada persona entra con su cuenta DARF (con ese mismo correo) y ve la invitación en Mi cuenta. Mándales el enlace: <CopyLink path={`/audiciones/${aid}`} /></p>
+          <p className="flex flex-wrap items-center gap-2 text-sm text-texto-2">
+            {a.solo_invitados
+              ? "Solo estos correos pueden inscribirse. Cada persona entra con su cuenta DARF (con ese mismo correo) y ve la invitación en Mi cuenta."
+              : "Convocatoria cerrada: no sale en la lista pública. Se inscribe quien tenga la liga y quien invites por correo (le llega un aviso y la ve en Mi cuenta)."}
+            {" "}Liga de inscripción: <CopyLink path={`/audiciones/${aid}`} />
+          </p>
           <ul className="flex flex-col gap-1.5">
             {(invites.data ?? []).map((i) => (
               <li key={i.id} className="flex items-center justify-between gap-2 rounded-lg bg-sala px-3 py-1.5 text-sm">
@@ -176,14 +184,32 @@ export default async function AuditionConfig({ params }: PageProps<"/panel/audic
       </AjustesSeccion>
 
       <AjustesSeccion id="personajes" titulo="Personajes">
-        <ul className="flex flex-col gap-2">
-          {(roles.data ?? []).map((r) => (
-            <li key={r.id} className="flex items-start justify-between gap-3 rounded-lg bg-sala px-3 py-2">
-              <span><b>{r.nombre}</b>{r.descripcion && <span className="block text-sm text-texto-3">{r.descripcion}</span>}</span>
-              <ActionForm inline action={removeItem} hidden={{ ...h, tabla: "audition_roles", id: r.id }} confirm={`¿Quitar a ${r.nombre}?`} submit="Quitar" submitClass={ghost} />
+        <p className="text-sm text-texto-2">El orden es la importancia: el de arriba es el más importante. Con personajes, los jueces marcan opciones por persona y al final se vota el cast.</p>
+        {a.production_id && (
+          <ActionForm inline action={importarPersonajes} hidden={h} submit="Traer personajes de la obra" submitClass={ghost} />
+        )}
+        <ol className="flex flex-col gap-2">
+          {(roles.data ?? []).map((r, i, arr) => (
+            <li key={r.id} className="flex flex-wrap items-start justify-between gap-3 rounded-lg bg-sala px-3 py-2">
+              <details className="min-w-0 flex-1">
+                <summary className="cursor-pointer"><span className="mr-2 font-mono text-xs text-texto-3">{i + 1}</span><b>{r.nombre}</b>{r.descripcion && <span className="block text-sm text-texto-3">{r.descripcion}</span>}</summary>
+                <div className="mt-2">
+                  <ActionForm action={editarPersonaje} hidden={{ ...h, id: r.id }} submit="Guardar" submitClass={ghost}>
+                    <div className="grid gap-2 sm:grid-cols-[1fr_2fr]">
+                      <input className={input} name="nombre" required defaultValue={r.nombre} aria-label="Personaje" />
+                      <input className={input} name="descripcion" defaultValue={r.descripcion ?? ""} aria-label="Descripción" />
+                    </div>
+                  </ActionForm>
+                </div>
+              </details>
+              <span className="flex items-center gap-1.5">
+                {i > 0 && <ActionForm inline action={moverPersonaje} hidden={{ ...h, id: r.id, dir: "-1" }} submit="↑" submitClass={ghost} />}
+                {i < arr.length - 1 && <ActionForm inline action={moverPersonaje} hidden={{ ...h, id: r.id, dir: "1" }} submit="↓" submitClass={ghost} />}
+                <ActionForm inline action={removeItem} hidden={{ ...h, tabla: "audition_roles", id: r.id }} confirm={`¿Quitar a ${r.nombre}?`} submit="Quitar" submitClass={ghost} />
+              </span>
             </li>
           ))}
-        </ul>
+        </ol>
         <ActionForm action={addRole} hidden={h} submit="Agregar personaje">
           <div className="grid gap-2 sm:grid-cols-[1fr_2fr]">
             <input className={input} name="nombre" required placeholder="Personaje" />

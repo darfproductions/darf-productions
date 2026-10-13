@@ -54,6 +54,8 @@ export async function createAudition(_p: AudState, f: FormData): Promise<AudStat
     })));
     if (e2) return { ok: false, message: `La convocatoria se creó, pero no se pudieron copiar las preguntas: ${e2.message}` };
   }
+  // 0089: si es de una obra, trae sus personajes (en su orden de importancia).
+  if (pid) await supabase.rpc("audition_import_characters", { aid: data.id });
   if (pid) revalidatePath(`/panel/producciones/${pid}/audiciones`);
   revalidatePath("/panel/audiciones");
   redirect(base(data.id as string));
@@ -127,6 +129,8 @@ export async function saveOptions(_p: AudState, f: FormData): Promise<AudState> 
         numeracion: str(f, "numeracion") === "previa" ? "previa" : "llegada",
         modalidad,
         solo_invitados,
+        // 0089: con callback, el "Siguiente" pasa por "Elegir callback" y "Callback" antes de votar.
+        con_callback: on("con_callback"),
       },
       { count: "exact" },
     )

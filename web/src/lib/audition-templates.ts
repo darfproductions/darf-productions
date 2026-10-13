@@ -41,7 +41,7 @@ export const PLANTILLAS: Record<string, Plantilla> = {
   },
   cerrada: {
     label: "Convocatoria cerrada", grupo: "principal",
-    descripcion: "Solo con enlace, fuera de una escuela: no aparece en la lista pública y sí pide datos del tutor a menores.",
+    descripcion: "No aparece en la lista pública: se inscribe quien tenga la liga y quien invites por correo. Pide datos del tutor a menores.",
     opciones: con({ visibilidad: "enlace" }), criterios: CRITERIOS_BASE, preguntas: [EXPERIENCIA],
   },
   // ── Forma ──

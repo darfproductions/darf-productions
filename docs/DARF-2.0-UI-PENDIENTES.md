@@ -69,6 +69,7 @@ Diego eligió cuáles sí (ver plan del bloque). Hechas en `darf-2.0`, migracion
 | Errores en español | Un traductor único: los avisos de la base salen tal cual y los técnicos (red, sesión, permisos, archivos) en español, en compra, audiciones, Club Fan y Mi cuenta. Pantalla de error con código para soporte; indicador de "Cargando…". |
 | Dirección oficial | Ligas de correos y QR impresos (programa, gafete) usan `darfproductions.com` en producción, no el dominio desde donde se abrió. WhatsApp mostrado desde la configuración; en producción debe ser 52 + 10 dígitos o la página no compila. |
 | Ajustes de marca | Fan Zone al final del menú, logo original (DARF con PRODUCTIONS abajo), destacada también en la cartelera, logos de DARF y de la obra en los boletos. |
+| Audiciones con votación | Cada obra tiene sus **personajes** en orden de importancia (Elenco y equipos) y la convocatoria los trae sola. Al crearla se elige si habrá **callback**; una barra de etapas con "Siguiente" lleva Audición → Elegir callback → Callback → Votación → Ajuste del cast → Enviado. Cada juez marca hasta **3 opciones** por persona (personaje o Ensamble); calificar del 1 al 5 queda opcional. **Votación secreta**: un voto por juez y por personaje o "Me abstengo", y quien gestiona ve "Votaron N de M". Al cerrar se arma la **propuesta** (quien gana varios se queda con el más importante, empates quedan todos, personaje vacío con pista de los más votados, Ensamble precargado); se ajusta arrastrando o con "Mover a…" y "Mandar ofertas y avisos" manda las ofertas (personaje o ensamble) y un aviso amable a quien no quedó. Convocatoria cerrada = liga + invitaciones por correo (con aviso a quien ya tiene cuenta). Las convocatorias sin personajes siguen igual (0089). |
 
 ## Lo que queda pendiente
 
@@ -82,7 +83,7 @@ Diego eligió cuáles sí (ver plan del bloque). Hechas en `darf-2.0`, migracion
 ## Para el lanzamiento (lista de revisión)
 
 - **Entrar con Google:** en el proyecto de Supabase (DEV y luego el oficial) → Authentication → Providers → Google, con el Client ID y secreto de la 1.0, y agregar la dirección del sitio (`…/auth/callback`) en Google Cloud y en Supabase → URL Configuration. Probar el botón en DEV y otra vez el día de la publicación.
-- DEV ya tiene aplicadas todas las migraciones hasta la 0087 (verificado; la 0088 pendiente de correr). El proyecto oficial necesitará las mismas, en orden, el día de la publicación.
+- DEV ya tiene aplicadas todas las migraciones hasta la 0088 (verificado; la 0089 pendiente de correr: `supabase/dev/apply_0089_dev.sql`). El proyecto oficial necesitará las mismas, en orden, el día de la publicación.
 - **Contraseñas (Supabase → Authentication → Providers → Email / Policies), en DEV y en el oficial:**
   - Largo mínimo **8** y "letras y números" (la página ya lo exige; así también lo exige Supabase si alguien llama directo a su servicio).
   - **"Secure password change"** encendido y **aviso por correo** cuando cambia la contraseña o el correo ("Password changed" / "Email changed" notifications).
