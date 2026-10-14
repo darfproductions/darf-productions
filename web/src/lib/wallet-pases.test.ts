@@ -111,5 +111,8 @@ describe("estado del boleto (se actualiza solo)", () => {
     expect(p.anulado).toBe(true);
     expect(p.secundarios[0]).toEqual({ key: "estado", label: "Estado", value: "Ya ingresó" });
     expect(p.reverso[0].value).toBe("Ya ingresó");
+    // Apple ignora campos con llave repetida en el mismo pase.
+    const llaves = [...p.cabecera, ...p.primarios, ...p.secundarios, ...p.auxiliares, ...p.reverso].map((c) => c.key);
+    expect(new Set(llaves).size).toBe(llaves.length);
   });
 });
