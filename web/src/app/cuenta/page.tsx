@@ -438,7 +438,6 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
         <aside className="order-2 flex flex-col gap-6 lg:order-none lg:col-span-4 lg:self-start">
           {credencial && <div id="credencial" className="scroll-mt-24"><MiCredencial c={credencial} wallet={wallet} /></div>}
           {credencial?.lealtad ? <BarraLealtad n={credencial.lealtad} /> : null}
-          {credencial?.fan_visitas ? <BarraLealtad n={credencial.fan_visitas} programa="fan" socio={!!credencial.socio} /> : null}
           {credencial?.socio && (
             <section aria-labelledby="club" className="flex flex-col gap-2 rounded-2xl bg-telon p-6">
               <h2 id="club" className="text-lg font-bold">Club Fan</h2>

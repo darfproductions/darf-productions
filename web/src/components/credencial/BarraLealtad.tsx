@@ -2,8 +2,8 @@
 import Link from "next/link";
 import { cuantas, medallaSrc, nivelDe, PROGRAMA, siguienteMeta, type Programa } from "@/lib/lealtad-rules";
 
-// Medallas en Mi cuenta (Diego 2026-10-14): DARF Loyalty del equipo (0103) aparece con la primera
-// producción; la de fans (0104) con la primera función o evento. Muestran la medalla (si ya la tiene),
+// Medallas (Diego 2026-10-14): DARF Loyalty del equipo (0103) en Mi cuenta, desde la primera producción;
+// la de fans (0104) solo en la Fan Zone, desde la primera función o evento. Muestran la medalla (si ya la tiene),
 // el número y la barra hacia la siguiente meta. La de fans solo se gana siendo socio del Club Fan:
 // si aún no lo es, ve su avance y la invitación a unirse.
 export function BarraLealtad({ n, programa = "equipo", socio = true }: { n: number; programa?: Programa; socio?: boolean }) {

@@ -7,6 +7,7 @@ import { FanItemCard, FanProximoCard } from "@/components/fanzone/FanItemCard";
 import { PreventaFanZone } from "@/components/fanzone/PreventaFanZone";
 import { UnirseClub } from "@/components/fanzone/UnirseClub";
 import { FAN_CATEGORIAS, type FanCategoria } from "@/lib/fanzone-rules";
+import { BarraLealtad } from "@/components/credencial/BarraLealtad";
 import { MiCredencial } from "@/components/credencial/MiCredencial";
 import { esSocio, getMiCredencial } from "@/lib/credencial";
 import { fanzoneCounts, getCredencial, getEncuentros, getProximos, listFanzone } from "@/lib/fanzone";
@@ -30,6 +31,8 @@ export async function FanZoneView({ pid, cat, nombre }: { pid: string | null; ca
   const obraActual = pid ? productions.find((p) => p.id === pid) : null;
 
   if (!credencial && !socio) {
+    // Su avance como fan (0104) también se ve aquí: la medalla se desbloquea al unirse.
+    const visitas = (await getMiCredencial())?.fan_visitas ?? 0;
     return (
       <main className="pb-24">
         <section className="relative overflow-hidden border-b border-oro/25 bg-[#08070c]">
@@ -49,6 +52,7 @@ export async function FanZoneView({ pid, cat, nombre }: { pid: string | null; ca
               </ul>
               <UnirseClub />
               <Link href="/club-fan" className="text-sm font-bold text-oro-claro underline-offset-4 hover:underline">Ver todos los beneficios <Icono nombre="flecha-der" /></Link>
+              {visitas > 0 && <div className="w-full max-w-[420px]"><BarraLealtad n={visitas} programa="fan" socio={false} /></div>}
             </div>
             <div aria-hidden="true" className="opacity-60 blur-[1px]">
               <Credencial nombre="Tu nombre" c={{ numero: 0, desde: new Date(0).toISOString(), fundador: false }} />
@@ -93,6 +97,8 @@ export async function FanZoneView({ pid, cat, nombre }: { pid: string | null; ca
               </div>
             )}
             {miCredencial && <MiCredencial c={miCredencial} compacto />}
+            {/* Medalla de fan (0104): su nivel solo se ve aquí, en la Fan Zone (Diego 2026-10-14). */}
+            {miCredencial?.fan_visitas ? <div className="w-full max-w-[400px]"><BarraLealtad n={miCredencial.fan_visitas} programa="fan" socio={!!credencial} /></div> : null}
           </div>
         </div>
       </section>
