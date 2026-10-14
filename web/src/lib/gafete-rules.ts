@@ -1,5 +1,7 @@
 // Gafete digital (0078). Funciones puras: gafete-rules.test.ts.
 
+import { medallaSrc, nivelDe } from "@/lib/lealtad-rules";
+
 /** Categoría del gafete (0087), de mayor a menor: la más alta de la persona. */
 export type Franja = "casa" | "direccion_general" | "produccion" | "direccion" | "crew" | "staff";
 
@@ -26,6 +28,8 @@ export type GafetePublico = {
   /** 0083: la credencial es única; solo el nivel "equipo" trae papel y contacto. */
   nivel?: "equipo" | "club" | "cuenta"; socio?: { numero: number; desde: string; fundador: boolean } | null;
   nombre: string; franja: Franja; papel: string; casa_desde?: number | null;
+  /** DARF Loyalty (0103): número de producciones. */
+  lealtad?: number | null;
   retrato_path: string | null; telefono: string | null; correo: string | null; instagram: string | null; perfil: string | null;
 };
 
@@ -40,6 +44,8 @@ export type PaseVista = {
   sello?: string;
   /** Casa DARF (0102): "Casa DARF · desde 2024" y su sello holográfico (va antes que el del club). */
   casa?: string;
+  /** DARF Loyalty (0103): número de producciones; desde 3 lleva medalla (va después del club). */
+  lealtad?: number | null;
 };
 
 /** Holográfico iridiscente de Casa DARF (0102): mismo trazo que el CSS de FRANJAS. */
@@ -49,11 +55,13 @@ const DEGRADADO_PLATA: [number, string][] = [[0, "#8e959e"], [0.45, "#e6e9ee"], 
 /** Degradados de las franjas que no son de un solo color (para el canvas del PDF y las imágenes de Wallet). */
 export const DEGRADADOS: Partial<Record<Franja, [number, string][]>> = { casa: DEGRADADO_HOLO, direccion_general: DEGRADADO_PLATA };
 
-/** Sellos que van junto al logo, en orden: Casa DARF y Club Fan (y después las medallas). Todos se muestran. */
-export function sellosDe(p: Pick<PaseVista, "tema" | "casa" | "sello">): { src: string; alt: string }[] {
+/** Sellos que van junto al logo, en orden: Casa DARF, Club Fan y la medalla DARF Loyalty. Todos se muestran. */
+export function sellosDe(p: Pick<PaseVista, "tema" | "casa" | "sello" | "lealtad">): { src: string; alt: string }[] {
   const out: { src: string; alt: string }[] = [];
   if (p.casa) out.push({ src: "/marca/sello-casa.svg", alt: "Casa DARF" });
   if (p.tema === "fan" || p.sello) out.push({ src: "/marca/sello-club.svg", alt: "Socio del Club Fan" });
+  const nivel = nivelDe(p.lealtad);
+  if (nivel && p.lealtad) out.push({ src: medallaSrc(p.lealtad), alt: `DARF Loyalty · ${nivel.nombre} · ${p.lealtad} producciones` });
   return out;
 }
 
@@ -63,13 +71,13 @@ export function anioMx(hoy: Date = new Date()): string {
 }
 
 /** Gafete del equipo y elencos (0080: el puesto más alto, sin obra; abajo "DARF Productions · año"). */
-export function paseGafete(g: { nombre: string; fotoUrl: string | null; franja: Franja; papel: string; qr?: string; codigo?: string; casaDesde?: number | null }, hoy: Date = new Date()): PaseVista {
+export function paseGafete(g: { nombre: string; fotoUrl: string | null; franja: Franja; papel: string; qr?: string; codigo?: string; casaDesde?: number | null; lealtad?: number | null }, hoy: Date = new Date()): PaseVista {
   const f = FRANJAS[g.franja] ?? FRANJAS.crew;
   const casa = g.franja === "casa" ? `Casa DARF · desde ${g.casaDesde ?? anioMx(hoy)}` : undefined;
   return {
     tema: "darf", logo: "/marca/darf-monograma.svg", logoAlt: "DARF", nombre: g.nombre, fotoUrl: g.fotoUrl,
     titulo: g.papel, pie: `DARF Productions · ${anioMx(hoy)}`,
-    banda: { ...f, degradado: DEGRADADOS[g.franja] }, qr: g.qr, codigo: g.codigo, ...(casa ? { casa } : {}),
+    banda: { ...f, degradado: DEGRADADOS[g.franja] }, qr: g.qr, codigo: g.codigo, ...(casa ? { casa } : {}), ...(g.lealtad ? { lealtad: g.lealtad } : {}),
   };
 }
 

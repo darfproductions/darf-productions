@@ -1,11 +1,13 @@
 /* eslint-disable @next/next/no-img-element -- logos SVG del kit, foto firmada y QR (data URL) */
 import { iniciales, sellosDe, type PaseVista } from "@/lib/gafete-rules";
+import { nivelDe } from "@/lib/lealtad-rules";
 
 // Gafete digital (referencia del kit "uso-gafete-staff"): ranura, logo, foto redonda, nombre,
 // título en oro, QR con código corto, pie y banda de color. Sirve para el gafete del equipo
 // (tema DARF) y para la credencial del Club Fan (tema dorado, 0080).
 export function GafeteVista({ p }: { p: PaseVista }) {
   const fan = p.tema === "fan";
+  const nivel = nivelDe(p.lealtad);
   return (
     <article
       aria-label={fan ? `Credencial Club Fan de ${p.nombre}` : `Gafete de ${p.nombre}`}
@@ -32,6 +34,7 @@ export function GafeteVista({ p }: { p: PaseVista }) {
       <p className="mt-2 text-[10.5px] font-semibold uppercase tracking-[0.2em] text-texto-3">{p.pie}</p>
       {p.casa && <p className="mt-1 bg-[linear-gradient(90deg,#ffb8ec,#c9b2ff,#9fe2ff,#b9ffe0,#ffe6a8)] bg-clip-text text-[10.5px] font-bold uppercase tracking-[0.2em] text-transparent">{p.casa}</p>}
       {p.sello && <p className="mt-1 text-[10.5px] font-bold uppercase tracking-[0.2em] text-oro">Club Fan · {p.sello}</p>}
+      {nivel && <p className="mt-1 text-[10.5px] font-bold uppercase tracking-[0.2em]" style={{ color: nivel.min === 50 ? "#e6e9ee" : nivel.colores[0] }}>DARF Loyalty · {nivel.nombre}</p>}
       <div className={`mt-4 flex w-full items-center justify-center py-3 text-center text-[22px] font-black italic tracking-[0.08em] ${p.casa ? "banda-holo" : ""}`} style={{ background: p.banda.fondo, color: p.banda.texto }}>
         {p.banda.label}
       </div>
