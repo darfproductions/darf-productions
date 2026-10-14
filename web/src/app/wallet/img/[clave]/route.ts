@@ -14,11 +14,17 @@ import { leerImagen } from "@/lib/wallet-imagenes";
 const FONDO = "#0b0910";
 const HERO = { w: 1032, h: 336 };
 
-async function cuadro(src: string): Promise<Buffer | null> {
-  const img = await leerImagen(src);
+/** Logo cuadrado (Google lo muestra en círculo): DARF en blanco sobre el degradado de la marca;
+ *  Fan Zone con el monograma dorado sobre fondo oscuro. */
+async function cuadro(fan: boolean): Promise<Buffer | null> {
+  const img = await leerImagen(fan ? "/marca/darf-monograma-oro.svg" : "/marca/darf-monograma.svg");
   if (!img) return null;
-  const dentro = await sharp(img, { density: 300 }).resize(460, 460, { fit: "inside" }).png().toBuffer();
-  return sharp({ create: { width: 660, height: 660, channels: 4, background: FONDO } }).composite([{ input: dentro, gravity: "center" }]).png().toBuffer();
+  const chico = await sharp(img, { density: 300 }).resize(400, 400, { fit: "inside" }).png().toBuffer();
+  const dentro = fan ? chico : await silueta(chico, "#ffffff");
+  const fondo = fan
+    ? await sharp({ create: { width: 660, height: 660, channels: 4, background: FONDO } }).png().toBuffer()
+    : Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="660" height="660"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#340feb"/><stop offset=".55" stop-color="#830886"/><stop offset="1" stop-color="#d20122"/></linearGradient></defs><rect width="100%" height="100%" fill="url(#g)"/></svg>`);
+  return sharp(fondo).composite([{ input: dentro, gravity: "center" }]).png().toBuffer();
 }
 
 async function obra(id: string): Promise<Buffer | null> {
@@ -51,8 +57,8 @@ async function banda(id: string): Promise<Buffer | null> {
 
 export async function GET(_req: Request, ctx: RouteContext<"/wallet/img/[clave]">) {
   const { clave } = await ctx.params;
-  const png = clave === "darf" ? await cuadro("/marca/darf-monograma.svg")
-    : clave === "fan" ? await cuadro("/marca/fan-zone-oro.svg")
+  const png = clave === "darf" ? await cuadro(false)
+    : clave === "fan" ? await cuadro(true)
     : clave.startsWith("obra-") ? await obra(clave.slice(5))
     : clave.startsWith("banda-") ? await banda(clave.slice(6))
     : null;

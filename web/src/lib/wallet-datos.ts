@@ -68,7 +68,7 @@ export async function boletoWallet(ticketId: string): Promise<BoletoWallet | Fal
   };
 }
 
-export type CredencialWallet = { pase: PaseWallet; fan: boolean; logo: string; foto: string | null; banda: string };
+export type CredencialWallet = { pase: PaseWallet; fan: boolean; logo: string; logoTexto?: string; foto: string | null; banda: string };
 
 /** La credencial única de la persona con sesión (0083). */
 export async function credencialWallet(): Promise<CredencialWallet | Fallo> {
@@ -80,7 +80,8 @@ export async function credencialWallet(): Promise<CredencialWallet | Fallo> {
   const pase = paseCredencialWallet({ userId: session.userId, liga: c.liga, codigo: c.codigo, pase: vista });
   const fan = vista.tema === "fan";
   const banda = c.nivel === "equipo" ? c.franja ?? "crew" : c.nivel === "club" && c.socio ? "fan" : "cuenta";
-  return { pase, fan, logo: fan ? "/marca/fan-zone-oro.svg" : "/marca/darf-horizontal-blanco.svg", foto: c.fotoUrl, banda };
+  // El logo de Fan Zone es muy ancho para Wallet: monograma dorado + texto.
+  return { pase, fan, logo: fan ? "/marca/darf-monograma-oro.svg" : "/marca/darf-horizontal-blanco.svg", logoTexto: fan ? "DARF Fan Zone" : undefined, foto: c.fotoUrl, banda };
 }
 
 export const esFallo = (x: unknown): x is Fallo => typeof x === "object" && x !== null && "error" in x && "status" in x;

@@ -10,5 +10,5 @@ export async function GET() {
   if (!c) return NextResponse.json({ error: "Apple Wallet todavía no está disponible." }, { status: 503 });
   const cr = await credencialWallet();
   if (esFallo(cr)) return NextResponse.json({ error: cr.error }, { status: cr.status });
-  return respuestaPkpass(await crearPkpass(c, cr.pase, { logo: cr.logo, foto: cr.foto }), "DARF-credencial");
+  return respuestaPkpass(await crearPkpass(c, cr.pase, { logo: cr.logo, logoTexto: cr.logoTexto, foto: cr.foto }), "DARF-credencial");
 }
