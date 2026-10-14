@@ -98,7 +98,12 @@ function armarCredencial(userId: string, c: CredencialMia, nombre: string, fotoU
   // El logo de Fan Zone es muy ancho para Wallet: monograma dorado + texto.
   const logo = fan ? "/marca/darf-monograma-oro.svg" : "/marca/darf-horizontal-blanco.svg";
   const logoTexto = fan ? "DARF Fan Zone" : undefined;
-  return { pase, fan, logo, logoTexto, foto: fotoUrl, banda, apple: { logo, logoTexto, foto: fotoUrl, banda: fan ? "fan" : null } };
+  // Equipo que también es socio del Club Fan: el sello del club (Apple junto al logo, Google en la banda).
+  const sello = !fan && !!vista.sello;
+  return {
+    pase, fan, logo, logoTexto, foto: fotoUrl, banda: sello ? `${banda}-socio` : banda,
+    apple: { logo, logoTexto, foto: fotoUrl, banda: fan ? "fan" : null, sello },
+  };
 }
 
 /** La credencial única de la persona con sesión (0083). */

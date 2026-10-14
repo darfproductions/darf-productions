@@ -71,6 +71,18 @@ export async function silueta(img: Buffer, color: string): Promise<Buffer> {
   return sharp({ create: { width, height, channels: 4, background: color } }).composite([{ input: img, blend: "dest-in" }]).png().toBuffer();
 }
 
+/** Logo y sello del Club Fan lado a lado, del mismo alto y sin fondo (gafete de quien también es socio). */
+export async function logoConSello(logo: Buffer, sello: Buffer, alto = 300): Promise<Buffer> {
+  const [a, b] = await Promise.all([
+    sharp(logo, { density: 300 }).resize({ height: alto }).png().toBuffer(),
+    sharp(sello, { density: 300 }).resize({ height: alto }).png().toBuffer(),
+  ]);
+  const [ma, mb] = await Promise.all([sharp(a).metadata(), sharp(b).metadata()]);
+  const hueco = Math.round(alto * 0.25), wa = ma.width ?? alto, wb = mb.width ?? alto;
+  return sharp({ create: { width: wa + hueco + wb, height: alto, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } })
+    .composite([{ input: a, left: 0, top: 0 }, { input: b, left: wa + hueco, top: 0 }]).png().toBuffer();
+}
+
 /** Imagen de la obra (ambiente) oscurecida con su logo al centro: franja del boleto y hero de Google. */
 export async function portadaObra(ambiente: Buffer, logo: Buffer | null, w: number, h: number): Promise<Buffer> {
   const capas: OverlayOptions[] = [{ input: Buffer.from(`<svg width="${w}" height="${h}"><rect width="100%" height="100%" fill="#000" fill-opacity="0.35"/></svg>`) }];
@@ -81,7 +93,10 @@ export async function portadaObra(ambiente: Buffer, logo: Buffer | null, w: numb
 
 /** Banda de color de la credencial (franja del gafete, oro del Club Fan o gris de cuenta) con su
  *  sello: DARF en el gafete; sello del club + logo de Fan Zone en el Club Fan. */
-export async function bandaCredencial(id: string, w: number, h: number): Promise<Buffer | null> {
+export async function bandaCredencial(clave: string, w: number, h: number): Promise<Buffer | null> {
+  // "<franja>-socio": gafete de quien también es socio del Club Fan (lleva el sello junto a DARF).
+  const socio = clave.endsWith("-socio");
+  const id = socio ? clave.slice(0, -6) : clave;
   const b: Banda | undefined = id === "fan" ? BANDA_FAN : id === "cuenta" ? BANDA_CUENTA : FRANJAS[id as Franja];
   if (!b) return null;
   const stops = b.degradado ?? DEGRADADOS[id as Franja] ?? [[0, b.fondo], [1, b.fondo]] as [number, string][];
@@ -94,6 +109,8 @@ export async function bandaCredencial(id: string, w: number, h: number): Promise
   } else {
     const logo = await leerImagen("/marca/darf-monograma.svg");
     if (logo) piezas.push(await silueta(await sharp(logo, { density: 300 }).resize(Math.round(h * 0.62), Math.round(h * 0.62), { fit: "inside" }).png().toBuffer(), b.texto));
+    const sello = socio && id !== "cuenta" ? await leerImagen("/marca/sello-club.svg") : null;
+    if (sello) piezas.push(await silueta(await sharp(sello, { density: 300 }).resize(Math.round(h * 0.62), Math.round(h * 0.62), { fit: "inside" }).png().toBuffer(), b.texto));
   }
   if (!piezas.length) return sharp(fondo).png().toBuffer();
   // Las piezas en fila, centradas.

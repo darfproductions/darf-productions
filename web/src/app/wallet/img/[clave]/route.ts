@@ -6,7 +6,7 @@ import { bandaCredencial, leerImagen, portadaObra, silueta } from "@/lib/wallet-
 
 // Imágenes PNG para Google Wallet (Google las descarga por liga pública). Solo cosas que ya son
 // públicas: logos de DARF, imagen de obras publicadas y la banda de color de la credencial.
-//   darf · fan · obra-<id> · banda-<manager|produccion|direccion|crew|staff|fan|cuenta>
+//   darf · fan · obra-<id> · banda-<manager|direccion_general|produccion|direccion|crew|staff|fan|cuenta>[-socio]
 
 const FONDO = "#0b0910";
 const HERO = { w: 1032, h: 336 };

@@ -1,6 +1,6 @@
 import { PKPass } from "passkit-generator";
 import type { WalletAppleConfig } from "@/lib/wallet-env";
-import { bandaCredencial, cubrir, contener, icono, leerImagen, portadaObra } from "@/lib/wallet-imagenes";
+import { bandaCredencial, cubrir, contener, icono, leerImagen, logoConSello, portadaObra } from "@/lib/wallet-imagenes";
 import { rgb, type Campo, type PaseWallet } from "@/lib/wallet-pases";
 
 // Apple Wallet (2026-10-14): arma y firma el .pkpass en memoria con passkit-generator.
@@ -19,6 +19,8 @@ export type ImagenesApple = {
   banda?: string | null;
   /** Foto de la credencial (gafete). */
   foto?: string | null;
+  /** Gafete de quien también es socio del Club Fan: el sello del club va junto al logo (como en la web). */
+  sello?: boolean;
 };
 
 const ICONO = "/marca/darf-monograma.svg";
@@ -75,7 +77,10 @@ export async function crearPkpass(c: WalletAppleConfig, p: PaseWallet, im: Image
   ]);
   if (!iconoSrc) throw new Error("Falta el ícono de DARF.");
   Object.assign(archivos, await icono(iconoSrc, p.colores.fondo));
-  Object.assign(archivos, await contener(logoSrc ?? iconoSrc, "logo", 160, 50));
+  // Socio del Club Fan en el gafete: monograma DARF + sello del club, del mismo alto (como la credencial web).
+  const selloSrc = im.sello ? await leerImagen("/marca/sello-club.svg") : null;
+  const logoFinal = selloSrc ? await logoConSello(iconoSrc, selloSrc) : logoSrc ?? iconoSrc;
+  Object.assign(archivos, await contener(logoFinal, "logo", 160, 50));
 
   let d: Diseno;
   if (p.tipo === "boleto") {
