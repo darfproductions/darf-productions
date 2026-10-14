@@ -112,13 +112,12 @@ Después, cuando ya lo veas funcionar: en la consola **Request publishing access
 
 ---
 
-## C. Botones oficiales
-- **Apple:** developer.apple.com/wallet/add-to-apple-wallet-guidelines → descarga los badges → el de
-  **Spanish (Latin America / Mexico)**, negro, **SVG**.
-- **Google:** developers.google.com/wallet/generic/resources/brand-guidelines → **Download button assets**
-  → **Spanish**, versión principal, **SVG**.
-
-Mándamelos como archivo. Mientras, la web usa un botón propio.
+## C. Botones oficiales ✅
+Ya están en la web (14 oct 2026), tomados del zip que mandaste, sin modificar:
+- Apple: `ESMX_Add_to_Apple_Wallet_RGB_101821.svg` → `web/public/wallet/apple-wallet-es-mx.svg`
+  ("Agregar a Apple Wallet").
+- Google: `es419_add_to_google_wallet_add-wallet-badge.svg` → `web/public/wallet/google-wallet-es-419.svg`
+  ("Agregar a la Billetera de Google", el texto oficial de Google en español de Latinoamérica).
 
 ---
 

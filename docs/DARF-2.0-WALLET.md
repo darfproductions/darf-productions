@@ -8,7 +8,8 @@
 - La hora del evento en Google va con el desfase de la Ciudad de México.
 - **Pases:** boleto (uno por asiento) y credencial única (gafete o Club Fan, 0083). El QR es el mismo
   de la web: el boleto lleva `tickets.qr_token` (Puerta no cambia) y la credencial `/g/<token>`.
-- **Botones** "Agregar a Apple Wallet / Google Wallet" en "Ver boletos" (cada boleto) y en "Mi credencial".
+- **Botones oficiales** (`web/public/wallet/apple-wallet-es-mx.svg` y `google-wallet-es-419.svg`, 44 px de alto)
+  en "Ver boletos" (cada boleto) y en "Mi credencial".
   Solo aparecen cuando las llaves de cada Wallet están en Vercel. En iPhone va primero Apple; en Android, Google.
 - **Pasos de Diego:** `docs/DARF-2.0-WALLET-PASOS.md` (Apple con Mac, Google, botones oficiales).
 - **Variables (solo servidor, Sensitive, Production y Preview):** `APPLE_PASS_TYPE_ID`, `APPLE_TEAM_ID`,
