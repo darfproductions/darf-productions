@@ -158,6 +158,8 @@ export function serialCredencial(userId: string): string {
 
 export function paseCredencialWallet(c: DatosCredencial, hoy: Date = new Date()): PaseWallet {
   const fan = c.pase.tema === "fan";
+  // Medalla de fan (0104): solo socios.
+  const medallaFan = fan || c.pase.sello ? nivelDe(c.pase.fanVisitas, "fan") : null;
   const banda = fan ? "#d7bb5f" : colorBase(c.pase.banda.fondo) ?? "#a48bff"; // oro del club
   const fondo = "#0b0910";
   const etiqueta = contraste(banda, fondo) >= 3 ? banda : "#a48bff";
@@ -177,6 +179,7 @@ export function paseCredencialWallet(c: DatosCredencial, hoy: Date = new Date())
       { key: "vigencia", label: "Vigencia", value: c.pase.pie.replace(/^DARF Productions · /, "") || anioMx(hoy) },
       ...(c.pase.casa ? [{ key: "casa", label: "Casa DARF", value: c.pase.casa.replace(/^Casa DARF · /, "") }] : []),
       ...(nivelDe(c.pase.lealtad) ? [{ key: "lealtad", label: "DARF Loyalty", value: `${nivelDe(c.pase.lealtad)!.nombre} · ${c.pase.lealtad}` }] : []),
+      ...(medallaFan ? [{ key: "fanzone", label: "DARF Fan Zone", value: `${medallaFan.nombre} · ${c.pase.fanVisitas}` }] : []),
     ],
     reverso: [
       { key: "uso", label: "Cómo se usa", value: "Muéstrala en la entrada de ensayos y eventos. Si regeneras tu código en Mi cuenta, aquí se actualiza sola." },

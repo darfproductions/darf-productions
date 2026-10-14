@@ -17,6 +17,8 @@ export type CredencialMia = {
   casa_desde?: number | null;
   /** DARF Loyalty (0103): número de producciones (medalla desde 3). */
   lealtad?: number | null;
+  /** Medalla de fan (0104): funciones y eventos a los que entró (se ve solo si es socio). */
+  fan_visitas?: number | null;
   compartir_telefono: boolean; compartir_correo: boolean; compartir_instagram: boolean; compartir_perfil: boolean;
 };
 
@@ -31,9 +33,9 @@ export const BANDA_CUENTA: Banda = { label: "SPECTATOR", fondo: "#6b6675", texto
 
 export function paseCredencial(c: CredencialMia & { nombre: string; fotoUrl: string | null; qr?: string }, hoy: Date = new Date()): PaseVista {
   const base = { nombre: c.nombre, fotoUrl: c.fotoUrl, qr: c.qr, codigo: c.codigo };
-  const lealtad = c.lealtad ? { lealtad: c.lealtad } : {};
+  const lealtad = { ...(c.lealtad ? { lealtad: c.lealtad } : {}), ...(c.fan_visitas ? { fanVisitas: c.fan_visitas } : {}) };
   if (c.nivel === "equipo") {
-    const p = paseGafete({ ...base, franja: c.franja ?? "crew", papel: c.papel ?? "Equipo", casaDesde: c.casa_desde, lealtad: c.lealtad }, hoy);
+    const p = paseGafete({ ...base, franja: c.franja ?? "crew", papel: c.papel ?? "Equipo", casaDesde: c.casa_desde, lealtad: c.lealtad, fanVisitas: c.fan_visitas }, hoy);
     return c.socio ? { ...p, sello: `Socio ${numeroSocio(c.socio.numero)}` } : p;
   }
   if (c.nivel === "club" && c.socio) return { ...paseCredencialFan({ ...base, ...c.socio }), ...lealtad };
