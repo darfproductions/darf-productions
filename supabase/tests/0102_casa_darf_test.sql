@@ -29,13 +29,23 @@ end $$;
 -- T0: el admin arma Casa DARF; nadie más puede.
 do $$ declare pe uuid; begin
   perform pg_temp.as_user('00000000-0000-0000-0000-000000000d01');
+  -- Puestos con nombre propio (no hay predeterminados).
+  if exists (select 1 from panel_roles where alcance = 'casa') then raise exception 'FALLO T0: hay puestos predeterminados'; end if;
+  insert into panel_roles (id, nombre, categoria, alcance, orden) values
+    ('casa_comunicacion', 'Comunicación', 'casa', 'casa', 1), ('casa_administracion', 'Administración', 'casa', 'casa', 2),
+    ('casa_talento', 'Talento', 'casa', 'casa', 3), ('casa_cfo', 'CFO', 'casa', 'casa', 4);
+  insert into role_permissions (role_id, permission_id)
+  select 'casa_administracion', unnest(array['casa.producciones', 'casa.personas', 'casa.roles', 'casa.reportes', 'casa.bitacora'])
+  union all select 'casa_comunicacion', unnest(array['casa.sitio', 'casa.eventos', 'casa.club', 'casa.contacto'])
+  union all select 'casa_talento', unnest(array['casa.audiciones', 'casa.personas'])
+  union all select 'casa_cfo', unnest(array['casa.reportes', 'casa.club']);
   perform casa_agregar('t102_comu@test.local', array['casa_comunicacion'], '2023-02-01');
   perform casa_agregar('t102_admon@test.local', array['casa_administracion']);
   perform casa_agregar('t102_talento@test.local', array['casa_talento']);
   if (select count(*) from casa_lista()) < 3 then raise exception 'FALLO T0: lista'; end if;
   perform pg_temp.as_user('00000000-0000-0000-0000-000000000d03');
-  if not pg_temp.falla($q$select casa_agregar('t102_dg@test.local', array['casa_direccion'])$q$) then raise exception 'FALLO T0: Administración dio un rol de casa'; end if;
-  if not pg_temp.falla($q$insert into casa_members (user_id, role_id) values ('00000000-0000-0000-0000-000000000d05', 'casa_direccion')$q$) then raise exception 'FALLO T0: insert directo'; end if;
+  if not pg_temp.falla($q$select casa_agregar('t102_dg@test.local', array['casa_cfo'])$q$) then raise exception 'FALLO T0: Administración dio un rol de casa'; end if;
+  if not pg_temp.falla($q$insert into casa_members (user_id, role_id) values ('00000000-0000-0000-0000-000000000d05', 'casa_cfo')$q$) then raise exception 'FALLO T0: insert directo'; end if;
   if not pg_temp.falla($q$update profiles set rol = 'admin' where id = '00000000-0000-0000-0000-000000000d03'$q$) then raise exception 'FALLO T0: se hizo admin'; end if;
   perform pg_temp.as_root();
   -- Alguien que solo está en Nosotros (Equipo DARF) ya no es Casa DARF.
@@ -64,7 +74,7 @@ do $$ begin
   if not has_perm('showman', 'permisos.gestionar') or not has_perm('t102-obra', 'ventas.operar') then raise exception 'FALLO T2: permisos de obra'; end if;
   if not exists (select 1 from my_panel_access() where production_id = 't102-obra' and permission_id = 'obra.publicar') then raise exception 'FALLO T2: my_panel_access'; end if;
   if exists (select 1 from my_panel_access() where permission_id like 'casa.%') then raise exception 'FALLO T2: casa en obras'; end if;
-  if not pg_temp.falla($q$select panel_add_member('t102-obra', 't102_dg@test.local', 'casa_direccion')$q$) then raise exception 'FALLO T2: rol de casa en una obra'; end if;
+  if not pg_temp.falla($q$select panel_add_member('t102-obra', 't102_dg@test.local', 'casa_cfo')$q$) then raise exception 'FALLO T2: rol de casa en una obra'; end if;
   if has_casa('casa.sitio') then raise exception 'FALLO T2: sitio'; end if;
   perform pg_temp.as_root();
   if exists (select 1 from production_members where production_id = 't102-obra' and user_id = '00000000-0000-0000-0000-000000000d03') then raise exception 'FALLO T2: quedó en el equipo'; end if;

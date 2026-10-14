@@ -38,22 +38,6 @@ alter table panel_roles drop constraint if exists panel_roles_casa_check;
 alter table panel_roles add constraint panel_roles_casa_check check ((alcance = 'casa') = (categoria = 'casa')) not valid;
 alter table panel_roles validate constraint panel_roles_casa_check;
 
--- Roles personalizados (es_sistema = false): el admin les ajusta los permisos en Ajustes → Casa DARF.
-insert into panel_roles (id, nombre, descripcion, es_sistema, orden, categoria, alcance) values
-  ('casa_direccion',     'Dirección DARF', 'Todo lo global de la empresa', false, 1, 'casa', 'casa'),
-  ('casa_administracion','Administración', 'Producciones, personas, roles de obra, reportes y bitácora', false, 2, 'casa', 'casa'),
-  ('casa_comunicacion',  'Comunicación', 'Sitio, eventos DARF, Club Fan y contacto', false, 3, 'casa', 'casa'),
-  ('casa_talento',       'Talento', 'Audiciones generales y personas', false, 4, 'casa', 'casa'),
-  ('casa_finanzas',      'Finanzas', 'Reportes generales y Club Fan', false, 5, 'casa', 'casa')
-on conflict (id) do nothing;
-insert into role_permissions (role_id, permission_id)
-select 'casa_direccion', id from permissions where id like 'casa.%'
-union all select 'casa_administracion', unnest(array['casa.producciones', 'casa.personas', 'casa.roles', 'casa.reportes', 'casa.bitacora'])
-union all select 'casa_comunicacion', unnest(array['casa.sitio', 'casa.eventos', 'casa.club', 'casa.contacto'])
-union all select 'casa_talento', unnest(array['casa.audiciones', 'casa.personas'])
-union all select 'casa_finanzas', unnest(array['casa.reportes', 'casa.club'])
-on conflict do nothing;
-
 -- Los permisos casa.* solo van en roles de casa, y los de obra solo en roles de obra.
 create or replace function role_permissions_alcance() returns trigger
 language plpgsql security definer set search_path = public as $$
@@ -95,6 +79,13 @@ create policy casa_members_read on casa_members for select to authenticated usin
 drop policy if exists casa_members_admin on casa_members;
 create policy casa_members_admin on casa_members for all to authenticated using (is_admin()) with check (is_admin());
 revoke all on casa_members from anon;
+
+-- Sin puestos predeterminados (Diego): el admin crea cada puesto con su nombre (CEO, CFO, Head of HR…) y sus
+-- permisos en Ajustes → Casa DARF. Si una versión anterior de este script dejó los 5 de ejemplo sin nadie, se quitan.
+delete from panel_roles r
+ where r.id in ('casa_direccion', 'casa_administracion', 'casa_comunicacion', 'casa_talento', 'casa_finanzas')
+   and not exists (select 1 from casa_members m where m.role_id = r.id);
+
 drop trigger if exists audit_casa_members on casa_members;
 create trigger audit_casa_members after insert or update or delete on casa_members for each row execute function audit_row();
 
@@ -102,7 +93,7 @@ create or replace function casa_members_alcance() returns trigger
 language plpgsql security definer set search_path = public as $$
 begin
   if not exists (select 1 from panel_roles where id = new.role_id and alcance = 'casa') then
-    raise exception 'Ese rol no es de Casa DARF.';
+    raise exception 'Ese puesto no es de Casa DARF.';
   end if;
   return new;
 end $$;
@@ -158,7 +149,7 @@ begin
   if not is_admin() then raise exception 'Solo el Director da roles de Casa DARF.'; end if;
   select id into uid from auth.users where lower(email) = lower(btrim(p_email));
   if uid is null then raise exception 'No hay una cuenta con ese correo. Pídele que se registre primero.'; end if;
-  if coalesce(cardinality(p_roles), 0) = 0 then raise exception 'Elige al menos un rol.'; end if;
+  if coalesce(cardinality(p_roles), 0) = 0 then raise exception 'Elige su puesto.'; end if;
   delete from casa_members where user_id = uid and role_id <> all(p_roles);
   insert into casa_members (user_id, role_id, desde)
   select uid, r, coalesce(p_desde, (select min(desde) from casa_members where user_id = uid), hoy_mx()) from unnest(p_roles) r
@@ -223,7 +214,7 @@ language plpgsql stable security definer set search_path = public as $$
 declare rol_app text; v_cargo text; v_nivel int; v_papel text; v_casa text; v_desde int;
 begin
   select rol into rol_app from profiles where id = uid;
-  -- Casa DARF: su cargo en Nosotros si lo tiene; si no, su rol de casa (el admin: Dirección DARF).
+  -- Casa DARF: su puesto (CEO, CFO…); si no tiene, su cargo en Nosotros (el admin: Dirección DARF).
   if rol_app = 'admin' or exists (select 1 from casa_members where user_id = uid) then
     select tm.cargo into v_cargo
       from team_members tm join people pe on pe.id = tm.person_id
@@ -232,7 +223,7 @@ begin
      where m.user_id = uid order by r.orden limit 1;
     select extract(year from coalesce(min(m.desde), (select created_at from profiles where id = uid)::date))::int into v_desde
       from casa_members m where m.user_id = uid;
-    return json_build_object('franja', 'casa', 'papel', coalesce(v_cargo, v_casa, 'Dirección DARF'), 'casa_desde', v_desde);
+    return json_build_object('franja', 'casa', 'papel', coalesce(v_casa, v_cargo, 'Dirección DARF'), 'casa_desde', v_desde);
   end if;
 
   -- Niveles: 1 dirección general · 2 producción · 3 dirección · 4 elenco · 5 crew · 6 staff.
@@ -1157,6 +1148,6 @@ grant execute on function has_casa(text), es_casa(uuid), mis_permisos_casa(), ca
 grant execute on function has_casa(text) to anon;
 revoke execute on function role_permissions_alcance(), production_members_alcance(), casa_members_alcance() from public, anon, authenticated;
 
-select 'Listo 0102. Casa DARF: ' || (select string_agg(nombre, ', ' order by orden) from panel_roles where alcance = 'casa')
-       || ' · ' || (select count(*) from permissions where id like 'casa.%') || ' permisos globales' as resultado;
+select 'Listo 0102. Casa DARF lista: ' || (select count(*) from permissions where id like 'casa.%')
+       || ' permisos globales · crea los puestos en Ajustes → Casa DARF' as resultado;
 commit;
