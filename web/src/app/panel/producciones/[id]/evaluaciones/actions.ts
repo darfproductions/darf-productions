@@ -79,11 +79,10 @@ export async function publishPeriod(_p: State, f: FormData): Promise<State> {
   const pid = str(f, "pid");
   const publicar = str(f, "publicar") === "si";
   const supabase = await createClient();
-  const { error, count } = await supabase.from("rubric_periods").update({ publicado_at: publicar ? new Date().toISOString() : null }, { count: "exact" })
-    .eq("id", str(f, "id")).eq("production_id", pid);
+  // 0101: solo la Dirección general (o Producción si la obra no tiene) aprueba y publica.
+  const { error } = await supabase.rpc("rubric_publicar", { per: str(f, "id"), on_: publicar });
   if (error) return { ok: false, message: error.message };
-  if (!count) return { ok: false, message: "No tienes permiso." };
-  return done(pid, publicar ? "Publicado: cada alumno ya ve su evaluación y su boleta." : "Ocultado a los alumnos.");
+  return done(pid, publicar ? "Aprobado y publicado: cada alumno ya ve su evaluación y su boleta." : "Ocultado a los alumnos.");
 }
 
 /** Materias que califica un maestro (0059). Sin materias = coordina toda la rúbrica. */
@@ -233,4 +232,22 @@ export async function resolverPropuesta(_p: State, f: FormData): Promise<State> 
   const { data, error } = await supabase.rpc("rubric_resolver", args);
   if (error) return { ok: false, message: error.message };
   return done(pid, data === "rechazada" ? "Propuesta rechazada: no cambia la calificación." : data === "corregida" ? "Corregida y aprobada: ya cuenta en la boleta." : "Aprobada: ya cuenta en la boleta.");
+}
+
+/** El maestro entrega sus calificaciones del periodo para revisión (0101): se le bloquean y avisa a quienes revisan. */
+export async function entregarCalificaciones(_p: State, f: FormData): Promise<State> {
+  const pid = str(f, "pid");
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("rubric_entregar", { per: str(f, "periodo") });
+  if (error) return { ok: false, message: error.message };
+  return done(pid, "Entregadas. Ya avisamos a quienes revisan.");
+}
+
+/** Quien revisa le regresa la entrega al maestro con una nota (se desbloquea). */
+export async function regresarEntrega(_p: State, f: FormData): Promise<State> {
+  const pid = str(f, "pid");
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("rubric_regresar", { per: str(f, "periodo"), teacher: str(f, "teacher"), p_nota: str(f, "nota") || null });
+  if (error) return { ok: false, message: error.message };
+  return done(pid, "Regresada al maestro con tu nota.");
 }

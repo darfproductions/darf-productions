@@ -8,8 +8,8 @@ values ('00000000-0000-0000-0000-000000000091', '00000000-0000-0000-0000-0000000
 
 do $$ declare j json; u uuid := '00000000-0000-0000-0000-000000000091'; begin
   -- T1: categorías de los roles del sistema.
-  -- (0100 agrega "asistente" de categoría dirección; se ignora si aún no existe)
-  if (select string_agg(id || ':' || categoria, ',' order by id) from panel_roles where es_sistema and id <> 'asistente') <>
+  -- (0100 agrega "asistente" y 0101 "direccion_general"; tienen su propia prueba)
+  if (select string_agg(id || ':' || categoria, ',' order by id) from panel_roles where es_sistema and id not in ('asistente', 'direccion_general')) <>
      'contenido:crew,direccion:direccion,integrante:crew,juez:crew,maestro:direccion,maquillaje:crew,productor:produccion,puerta:staff,registro:staff,staff:staff,taquilla:crew' then
     raise exception 'FALLO T1: categorías %', (select string_agg(id || ':' || categoria, ',' order by id) from panel_roles where es_sistema);
   end if;

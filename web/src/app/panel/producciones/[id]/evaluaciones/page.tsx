@@ -102,12 +102,24 @@ export default async function Evaluaciones({ params }: PageProps<"/panel/producc
     getRubric(id), getEvaluations(id), supabase.rpc("rubric_roster", { pid: id }), supabase.rpc("rubric_restricted", { pid: id }),
     supabase.rpc("rubric_teacher_list", { pid: id }), supabase.rpc("rubric_assistant_list", { pid: id }),
   ]);
+  const [{ data: publica }, { data: entregasRes }] = await Promise.all([
+    supabase.rpc("rubric_puede_publicar", { pid: id }),
+    supabase.from("rubric_entregas").select("period_id, estado").eq("production_id", id),
+  ]);
+  const entregas = (entregasRes ?? []) as { period_id: string; estado: string }[];
   const coordina = !restr.data;
   const maestros = (maestrosRes.data ?? []) as { user_id: string; nombre: string; criterios: string[] }[];
   const asistentes = (asistRes.data ?? []) as { user_id: string; nombre: string; criterios: string[] }[];
   const yo = maestros.find((m) => m.user_id === access.session.userId);
   const materias = criterios.filter((c) => !c.compartido);
   const alumnos = ((roster.data ?? []) as { user_id: string; activo: boolean }[]).filter((a) => a.activo);
+  const conMaterias = maestros.filter((m) => m.criterios.length > 0).length;
+  const estadoPeriodo = (p: { id: string; publicado_at: string | null }) => {
+    if (p.publicado_at) return { texto: "Publicado", cls: "text-exito" };
+    const n = entregas.filter((e) => e.period_id === p.id && e.estado === "entregada").length;
+    if (n === 0) return { texto: "En captura", cls: "text-texto-3" };
+    return { texto: `En revisión · ${n} de ${conMaterias} ${conMaterias === 1 ? "maestro entregó" : "maestros entregaron"}`, cls: "text-aviso" };
+  };
   const hechas = (pid: string) => evs.filter((e) => e.period_id === pid && completa(criterios, e.rubric_scores, e.rubric_shared_scores)).length;
 
   return (
@@ -134,20 +146,21 @@ export default async function Evaluaciones({ params }: PageProps<"/panel/producc
       <Card className="flex flex-col gap-3">
         <div>
           <h2 className="titular text-xl">Periodos</h2>
-          <p className="text-sm text-texto-2">Ej. Bimestre 1, Bimestre 2, Final. Evalúa a cada alumno y, cuando esté listo, publica: el alumno lo verá en su portal con su boleta en PDF.</p>
+          <p className="text-sm text-texto-2">Ej. Bimestre 1, Bimestre 2, Final. Cada maestro califica y <b>entrega</b> sus calificaciones; la coordinación y Producción las revisan, y la Dirección general aprueba y publica: el alumno lo verá en su portal con su boleta en PDF.</p>
+          {!publica && <p className="text-xs text-texto-3">Las boletas las aprueba y publica la Dirección general de la obra.</p>}
         </div>
         <ul className="flex flex-col divide-y divide-white/10">
           {periodos.map((p) => (
             <li key={p.id} className="flex flex-wrap items-center justify-between gap-2 py-2.5">
               <span>
                 <b>{p.nombre}</b>{" "}
-                <span className={`text-xs ${p.publicado_at ? "text-exito" : "text-texto-3"}`}>{p.publicado_at ? "Publicado" : "Sin publicar"}</span>
+                <span className={`text-xs ${estadoPeriodo(p).cls}`}>{estadoPeriodo(p).texto}</span>
                 <span className="block text-xs text-texto-3">{p.desde || p.hasta ? `${p.desde ?? "…"} a ${p.hasta ?? "…"} · ` : "Sin fechas (cuenta toda la asistencia) · "}{hechas(p.id)} de {alumnos.length} alumnos completos</span>
               </span>
               <span className="flex flex-wrap items-center gap-2">
                 <Link href={`/panel/producciones/${id}/evaluaciones/${p.id}`} className="rounded-full bg-texto px-4 py-1.5 text-xs font-bold text-sala">Evaluar</Link>
-                {coordina && <ActionForm inline action={publishPeriod} hidden={{ pid: id, id: p.id, publicar: p.publicado_at ? "no" : "si" }} submit={p.publicado_at ? "Ocultar" : "Publicar"} submitClass={small}
-                  confirm={p.publicado_at ? undefined : `¿Publicar “${p.nombre}”? Cada alumno verá su evaluación.`} />}
+                {publica && <ActionForm inline action={publishPeriod} hidden={{ pid: id, id: p.id, publicar: p.publicado_at ? "no" : "si" }} submit={p.publicado_at ? "Ocultar" : "Aprobar y publicar"} submitClass={small}
+                  confirm={p.publicado_at ? undefined : `¿Aprobar y publicar “${p.nombre}”? Cada alumno verá su evaluación y su boleta.`} />}
                 {coordina && <ActionForm inline action={removeRubricItem} hidden={{ pid: id, tipo: "periodo", id: p.id }} confirm={`¿Quitar “${p.nombre}” y todas sus evaluaciones?`} submit="Quitar" submitClass={small} />}
               </span>
               {coordina && (

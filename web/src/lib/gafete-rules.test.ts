@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { iniciales, ligaGafete, vcard } from "./gafete-rules";
+import { FRANJAS, iniciales, ligaGafete, paseGafete, vcard } from "./gafete-rules";
 
 describe("gafete", () => {
   it("iniciales y liga del QR", () => {
@@ -37,5 +37,14 @@ describe("gafete con jerarquía y credencial del Club Fan (0080)", () => {
     expect(p.pie).toBe("Club Fan · desde 2026");
     expect(p.tema).toBe("fan");
     expect(ligaCredencial("https://darf.mx/", "t0k")).toBe("https://darf.mx/f/t0k");
+  });
+});
+
+describe("franja Dirección general (0101)", () => {
+  it("tiene su propio color y etiqueta", () => {
+    expect(FRANJAS.direccion_general.label).toBe("DIRECCIÓN GENERAL");
+    const p = paseGafete({ nombre: "Diego", fotoUrl: null, franja: "direccion_general", papel: "Dirección general" });
+    expect(p.banda.fondo).toBe("#830886");
+    expect(p.banda.degradado).toBeUndefined();
   });
 });

@@ -54,7 +54,8 @@ do $$ declare per uuid; ev uuid; crit uuid; lvl uuid; n int; ext uuid; begin
   perform pg_temp.as_user('00000000-0000-0000-0000-0000000000e1');
   select count(*) into n from rubric_evaluations;
   if n <> 0 then raise exception 'FALLO T2a: ve una evaluación sin publicar'; end if;
-  perform pg_temp.as_user('00000000-0000-0000-0000-0000000000d1');
+  -- Desde 0101 publica la Dirección general (o el admin), no el maestro coordinador.
+  perform pg_temp.as_user('00000000-0000-0000-0000-0000000000a1');
   update rubric_periods set publicado_at = now() where id = per;
   perform pg_temp.as_user('00000000-0000-0000-0000-0000000000e1');
   select count(*) into n from rubric_scores s join rubric_evaluations e on e.id = s.evaluation_id where e.user_id = auth.uid();

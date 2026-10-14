@@ -1,12 +1,13 @@
 // Gafete digital (0078). Funciones puras: gafete-rules.test.ts.
 
 /** Categoría del gafete (0087), de mayor a menor: la más alta de la persona. */
-export type Franja = "manager" | "produccion" | "direccion" | "crew" | "staff";
+export type Franja = "manager" | "direccion_general" | "produccion" | "direccion" | "crew" | "staff";
 
-/** Colores de la banda de abajo: Manager degradado, Producción rojo y Dirección azul del logo, Crew lila,
+/** Colores de la banda de abajo: Manager degradado, Dirección general morado del logo (0101), Producción rojo y Dirección azul del logo, Crew lila,
  *  Staff rosa. (Fan dorado y Cuenta gris están en credencial-fan-rules y credencial-rules.) */
 export const FRANJAS: Record<Franja, { label: string; fondo: string; texto: string }> = {
   manager: { label: "MANAGER", fondo: "linear-gradient(120deg,#340feb,#830886 55%,#d20122)", texto: "#ffffff" },
+  direccion_general: { label: "DIRECCIÓN GENERAL", fondo: "#830886", texto: "#ffffff" },
   produccion: { label: "PRODUCCIÓN", fondo: "#d20122", texto: "#ffffff" },
   direccion: { label: "DIRECCIÓN", fondo: "#340feb", texto: "#ffffff" },
   crew: { label: "CREW", fondo: "#a48bff", texto: "#0b0910" },
@@ -14,7 +15,7 @@ export const FRANJAS: Record<Franja, { label: string; fondo: string; texto: stri
 };
 
 /** Categorías que se eligen al crear un rol del panel (Manager es el Equipo DARF y el Director). */
-export const CATEGORIAS_ROL: { id: Exclude<Franja, "manager">; label: string; ayuda: string }[] = [
+export const CATEGORIAS_ROL: { id: Exclude<Franja, "manager" | "direccion_general">; label: string; ayuda: string }[] = [
   { id: "produccion", label: "Producción", ayuda: "Rojo" },
   { id: "direccion", label: "Dirección", ayuda: "Azul" },
   { id: "crew", label: "Crew", ayuda: "Lila" },

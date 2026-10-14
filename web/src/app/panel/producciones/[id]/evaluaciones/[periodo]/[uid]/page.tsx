@@ -120,12 +120,19 @@ export default async function EvaluarAlumno({ params }: PageProps<"/panel/produc
     getRubric(id), getEvaluations(id, { periodo, uid }), supabase.rpc("rubric_roster", { pid: id }),
     supabase.rpc("rubric_restricted", { pid: id }), supabase.rpc("rubric_teacher_list", { pid: id }), periodExtras(periodo, uid), getPropuestas(periodo),
   ]);
+  const [{ data: publica }, { data: miEntrega }] = await Promise.all([
+    supabase.rpc("rubric_puede_publicar", { pid: id }),
+    supabase.from("rubric_entregas").select("estado").eq("period_id", periodo).eq("teacher_id", me).maybeSingle(),
+  ]);
   const alumnos = (roster.data ?? []) as { user_id: string; nombre: string; papeles: string[]; activo: boolean }[];
   const a = alumnos.find((x) => x.user_id === uid);
   const per = periodos.find((p) => p.id === periodo);
   if (!a || !per) notFound();
   const coordina = !restr.data;
-  const director = access.isDirector;
+  // Corrige lo de todos (lo compartido y comentarios de otros maestros): el admin y quien aprueba las boletas (0101).
+  const director = access.isDirector || !!publica;
+  // Con la entrega hecha, el maestro ya no cambia lo suyo (se lo regresan para editar).
+  const bloqueado = !!restr.data && !publica && miEntrega?.estado === "entregada";
   const maestros = (maestrosRes.data ?? []) as { user_id: string; nombre: string; criterios: string[] }[];
   const misMaterias = new Set(maestros.find((m) => m.user_id === me)?.criterios ?? []);
   const puede = (c: { id: string; compartido?: boolean }) => !c.compartido && (director || coordina || misMaterias.has(c.id));
@@ -139,35 +146,11 @@ export default async function EvaluarAlumno({ params }: PageProps<"/panel/produc
   const base = `/panel/producciones/${id}/evaluaciones/${periodo}`;
   const pct = extras ? asistenciaPct(extras) : null;
   const deAlumno = props.filter((q) => q.user_id === uid);
-  const pendientes = deAlumno.filter((q) => q.estado === "pendiente");
+  const pendientes = bloqueado ? [] : deAlumno.filter((q) => q.estado === "pendiente");
   const ver = (lvl: string | null | undefined, n: number | null | undefined) => [lvl ? nivelDe.get(lvl) : null, n != null ? String(n) : null].filter(Boolean).join(" · ") || "—";
 
-  return (
-    <div className="flex flex-col gap-4">
-      <Link href={base} className="text-sm font-bold text-violeta-claro"><Icono nombre="flecha-izq" /> {per.nombre}</Link>
-      <Card className="flex flex-col gap-4">
-        <div>
-          <h2 className="titular text-2xl">{a.nombre}</h2>
-          <p className="text-sm text-texto-2">{per.nombre} · {a.papeles.join(" · ") || "Integrante"}</p>
-        </div>
-        {extras && (
-          <div className="grid gap-2 text-sm sm:grid-cols-3 lg:grid-cols-6">
-            {[["Ensayos", extras.citados], ["Asistencias", extras.presentes], ["Retardos", extras.retardos], ["Faltas", extras.faltas], ["Justificadas", extras.justificadas], ["Asistencia", pct == null ? "—" : `${pct} %`]].map(([k, v]) => (
-              <div key={String(k)} className="rounded-lg bg-sala p-2"><p className="text-[10px] font-bold uppercase tracking-[0.14em] text-texto-3">{k}</p><p className="font-black">{v}</p></div>
-            ))}
-            {extras.incidencias.length > 0 && <p className="text-aviso sm:col-span-3 lg:col-span-6">{extras.incidencias.length} llamada(s) de atención en el periodo: {extras.incidencias.map((i) => i.descripcion).join(" · ")}</p>}
-          </div>
-        )}
-        {pendientes.length > 0 && (
-          <div className="flex flex-col gap-2">
-            <h3 className="font-bold">Propuestas por revisar</h3>
-            <p className="text-xs text-texto-3">Calificaciones que propuso un asistente artístico. No cuentan hasta que las apruebas; puedes corregirlas antes.</p>
-            <ul className="flex flex-col gap-2">
-              {pendientes.map((q) => <RevisarPropuesta key={q.id} q={q} pid={id} niveles={niveles} materia={criterios.find((c) => c.id === q.criterion_id)?.nombre ?? "Materia"} />)}
-            </ul>
-          </div>
-        )}
-        <ActionForm action={saveEvaluation} hidden={{ pid: id, periodo, uid, siguiente: next ?? "" }} submit="Guardar evaluación">
+  const campos = (
+    <>
           <ul className="flex flex-col gap-3">
             {criterios.map((c) => (
               <li key={c.id} className="grid gap-2 rounded-lg bg-sala p-3 sm:grid-cols-[1fr_200px_110px] sm:items-center">
@@ -224,7 +207,38 @@ export default async function EvaluarAlumno({ params }: PageProps<"/panel/produc
             </div>
           ) : null)}
           {next && <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="ir" value="siguiente" defaultChecked /> Al guardar, pasar al siguiente alumno</label>}
-        </ActionForm>
+    </>
+  );
+
+  return (
+    <div className="flex flex-col gap-4">
+      <Link href={base} className="text-sm font-bold text-violeta-claro"><Icono nombre="flecha-izq" /> {per.nombre}</Link>
+      <Card className="flex flex-col gap-4">
+        <div>
+          <h2 className="titular text-2xl">{a.nombre}</h2>
+          <p className="text-sm text-texto-2">{per.nombre} · {a.papeles.join(" · ") || "Integrante"}</p>
+        </div>
+        {extras && (
+          <div className="grid gap-2 text-sm sm:grid-cols-3 lg:grid-cols-6">
+            {[["Ensayos", extras.citados], ["Asistencias", extras.presentes], ["Retardos", extras.retardos], ["Faltas", extras.faltas], ["Justificadas", extras.justificadas], ["Asistencia", pct == null ? "—" : `${pct} %`]].map(([k, v]) => (
+              <div key={String(k)} className="rounded-lg bg-sala p-2"><p className="text-[10px] font-bold uppercase tracking-[0.14em] text-texto-3">{k}</p><p className="font-black">{v}</p></div>
+            ))}
+            {extras.incidencias.length > 0 && <p className="text-aviso sm:col-span-3 lg:col-span-6">{extras.incidencias.length} llamada(s) de atención en el periodo: {extras.incidencias.map((i) => i.descripcion).join(" · ")}</p>}
+          </div>
+        )}
+        {pendientes.length > 0 && (
+          <div className="flex flex-col gap-2">
+            <h3 className="font-bold">Propuestas por revisar</h3>
+            <p className="text-xs text-texto-3">Calificaciones que propuso un asistente artístico. No cuentan hasta que las apruebas; puedes corregirlas antes.</p>
+            <ul className="flex flex-col gap-2">
+              {pendientes.map((q) => <RevisarPropuesta key={q.id} q={q} pid={id} niveles={niveles} materia={criterios.find((c) => c.id === q.criterion_id)?.nombre ?? "Materia"} />)}
+            </ul>
+          </div>
+        )}
+        {bloqueado && <p className="rounded-lg bg-sala p-3 text-sm"><Icono nombre="candado" /> Ya entregaste tus calificaciones de este periodo. Si hay que cambiar algo, pide que te las regresen.</p>}
+        {bloqueado ? <fieldset disabled className="flex flex-col gap-3 opacity-70">{campos}</fieldset> : (
+          <ActionForm action={saveEvaluation} hidden={{ pid: id, periodo, uid, siguiente: next ?? "" }} submit="Guardar evaluación">{campos}</ActionForm>
+        )}
       </Card>
     </div>
   );
