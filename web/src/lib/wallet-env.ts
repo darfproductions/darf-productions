@@ -54,3 +54,13 @@ export function walletAppleConfig(): WalletAppleConfig | null {
 }
 
 export const walletAppleActivo = (): boolean => walletAppleConfig() !== null;
+
+/** Google Wallet en modo demo solo acepta cuentas de prueba: mientras Google no apruebe la publicación,
+ *  el botón de Google solo se le muestra al equipo (admin/staff). Cambiar a true al aprobarse. */
+export const GOOGLE_WALLET_PUBLICO = false;
+
+/** Dirección pública del sitio para las imágenes que descarga Google (las ligas de prueba de Vercel
+ *  piden iniciar sesión y Google no puede leerlas). */
+export function origenPublico(): string {
+  return (process.env.NEXT_PUBLIC_SITE_URL || "https://www.darfproductions.com").replace(/\/$/, "");
+}

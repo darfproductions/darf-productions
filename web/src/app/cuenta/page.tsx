@@ -24,7 +24,7 @@ import { AvatarUpload } from "./AvatarUpload";
 import { MiCredencial } from "@/components/credencial/MiCredencial";
 import { ActionForm } from "@/components/panel/ActionForm";
 import { getMiCredencial } from "@/lib/credencial";
-import { walletAppleActivo, walletGoogleActivo } from "@/lib/wallet-env";
+import { GOOGLE_WALLET_PUBLICO, walletAppleActivo, walletGoogleActivo } from "@/lib/wallet-env";
 import { SalirClub } from "@/components/fanzone/SalirClub";
 import { numeroSocio } from "@/lib/fanzone-rules";
 import { EmailForm, PasswordForm, ProfileForm } from "./ProfileForm";
@@ -67,7 +67,9 @@ const STATUS: Record<OrderRow["status"], { label: string; cls: string }> = {
 
 export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">) {
   const session = await requireSession("/cuenta");
-  const wallet = { apple: walletAppleActivo(), google: walletGoogleActivo() };
+  // Google en modo demo: solo el equipo ve su botón hasta que Google apruebe la publicación.
+  const equipo = session.profile?.rol === "admin" || session.profile?.rol === "staff";
+  const wallet = { apple: walletAppleActivo(), google: walletGoogleActivo() && (GOOGLE_WALLET_PUBLICO || equipo) };
   const sp = await searchParams;
   const nueva = typeof sp.orden === "string" ? sp.orden : null;
 

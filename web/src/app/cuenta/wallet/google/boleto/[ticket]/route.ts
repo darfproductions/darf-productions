@@ -3,7 +3,7 @@ import { ligaGuardar, upsert } from "@/lib/google-wallet";
 import { claseBoleto, objetoBoleto } from "@/lib/google-wallet-pases";
 import { origenSitio } from "@/lib/site-origin";
 import { boletoWallet, esFallo } from "@/lib/wallet-datos";
-import { walletGoogleConfig } from "@/lib/wallet-env";
+import { origenPublico, walletGoogleConfig } from "@/lib/wallet-env";
 
 // Boleto propio en Google Wallet: crea/actualiza la clase de la función y el objeto del boleto y
 // manda a la persona a la liga de "Guardar en Google Wallet".
@@ -13,9 +13,10 @@ export async function GET(_req: Request, ctx: RouteContext<"/cuenta/wallet/googl
   const b = await boletoWallet((await ctx.params).ticket);
   if (esFallo(b)) return NextResponse.json({ error: b.error }, { status: b.status });
   const origen = await origenSitio();
+  const img = `${origenPublico()}/wallet/img`;
   const clase = claseBoleto(c.issuerId, b.funcionId, b.pase, b.obra, b.lugar, {
-    logo: `${origen}/wallet/img/darf`,
-    hero: b.obraPublica && b.productionId ? `${origen}/wallet/img/obra-${b.productionId}` : null,
+    logo: `${img}/darf`,
+    hero: b.obraPublica && b.productionId ? `${img}/obra-${b.productionId}` : null,
   });
   const objeto = objetoBoleto(c.issuerId, clase.id, b.pase, { asiento: b.asiento, comprador: b.comprador, orden: b.orden });
   try {

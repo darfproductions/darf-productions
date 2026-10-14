@@ -59,10 +59,13 @@ export function OrderTickets({ boletos, estilo, orden, pdfServidor, wallet }: { 
             toque.current = null;
             if (Math.abs(dx) > 50) setI((x) => mover(x, dx < 0 ? 1 : -1, total));
           }}
-          className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 overflow-y-auto bg-[#0b0910]/95 p-4 outline-none"
+          // Capa con scroll y centrado "seguro" (m-auto): si el boleto no cabe en la pantalla se baja
+          // en vez de encogerse y cortar el QR.
+          className="fixed inset-0 z-50 flex overflow-y-auto overscroll-contain bg-[#0b0910] p-4 outline-none"
         >
-          <button type="button" onClick={() => setAbierto(false)} aria-label="Cerrar" className="absolute right-4 top-4 z-10 h-11 w-11 rounded-full border border-white/30 bg-[#0b0910]/70 text-xl font-bold">×</button>
-          <TicketCard b={boletos[i]} estilo={estilo} i={i} total={total} />
+          <button type="button" onClick={() => setAbierto(false)} aria-label="Cerrar" className="fixed right-4 top-4 z-10 h-11 w-11 rounded-full border border-white/30 bg-[#0b0910]/70 text-xl font-bold">×</button>
+          <div className="m-auto flex w-full shrink-0 flex-col items-center gap-4 py-12">
+          <div className="w-full shrink-0"><TicketCard b={boletos[i]} estilo={estilo} i={i} total={total} /></div>
           {total > 1 && (
             <div className="flex items-center gap-4">
               <button type="button" onClick={() => setI((x) => mover(x, -1, total))} disabled={i === 0} aria-label="Boleto anterior" className="h-12 w-12 rounded-full border border-white/30 text-xl font-bold disabled:opacity-30">←</button>
@@ -77,6 +80,7 @@ export function OrderTickets({ boletos, estilo, orden, pdfServidor, wallet }: { 
             />
           )}
           {pdfServidor && <button type="button" onClick={pdf} disabled={generando} className={btn}>{generando ? "Preparando PDF…" : "Descargar PDF"}</button>}
+          </div>
         </div>
       )}
     </>
