@@ -74,8 +74,17 @@ async function dibujar(p: Props): Promise<Blob | null> {
   const [pst, darf, qr] = await Promise.all([p.poster ? cargar(p.poster) : null, cargar(logoDarf(p.fondo)), qrUrl.then(cargar)]);
   const [img, logo] = await Promise.all([pst ?? (p.ambiente ? cargar(p.ambiente) : null), p.logo ? cargar(p.logo) : null]);
 
+  // Primero se mide lo de abajo (textos y tarjeta) para que todo quede junto, sin huecos: la imagen
+  // de la obra crece para llenar lo que sobra arriba.
+  const CARD = 270, GAP = 70, MARGEN = 60;
+  let bloque = 40 + 40; // "¡VOY A IR!" + aire
+  if (logo) bloque += (Math.min(820, (logo.width / logo.height) * 170) / logo.width) * logo.height + 70;
+  else { ctx.font = "800 80px Montserrat, Arial, sans-serif"; bloque += renglones(ctx, p.obra, 900).length * 84 + 70; }
+  ctx.font = "700 50px Montserrat, Arial, sans-serif";
+  bloque += renglones(ctx, p.funcion, 940).length * 62 - 62;
+  if (p.lugar) bloque += 60;
+  const alto = Math.max(900, Math.min(1250, H - MARGEN - CARD - GAP - bloque));
   // Imagen de la obra arriba, fundida con el color de la obra.
-  const alto = img && img.height / img.width > 1.6 ? 1120 : 1000;
   if (img) {
     cubrir(ctx, img, 0, 0, W, alto);
     const g = ctx.createLinearGradient(0, alto - 420, 0, alto);
@@ -108,10 +117,12 @@ async function dibujar(p: Props): Promise<Blob | null> {
   ctx.fillStyle = p.texto;
   ctx.font = "700 50px Montserrat, Arial, sans-serif";
   for (const l of renglones(ctx, p.funcion, 940)) { ctx.fillText(l, W / 2, y); y += 62; }
-  if (p.lugar) { ctx.font = "500 40px Montserrat, Arial, sans-serif"; ctx.globalAlpha = 0.85; ctx.fillText(p.lugar, W / 2, y + 4); ctx.globalAlpha = 1; }
+  y -= 62;
+  if (p.lugar) { y += 60; ctx.font = "500 40px Montserrat, Arial, sans-serif"; ctx.globalAlpha = 0.85; ctx.fillText(p.lugar, W / 2, y); ctx.globalAlpha = 1; }
 
   // Tarjeta de abajo: "¡Compra también tus boletos!" con el QR a la página de la obra.
-  const cx = 70, cy = 1590, cw = W - 140, ch = 270;
+  // Justo debajo del texto; si la imagen llegó a su tope, el aire que sobra queda abajo.
+  const cx = 70, cy = Math.min(y + GAP, H - MARGEN - CARD), cw = W - 140, ch = CARD;
   ctx.fillStyle = p.superficie; caja(ctx, cx, cy, cw, ch, 36); ctx.fill();
   ctx.strokeStyle = p.acento; ctx.globalAlpha = 0.6; ctx.lineWidth = 3; caja(ctx, cx, cy, cw, ch, 36); ctx.stroke(); ctx.globalAlpha = 1;
   const lado = 210, qx = cx + 30, qy = cy + 30;
