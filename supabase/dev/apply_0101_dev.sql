@@ -12,6 +12,7 @@ do $$ begin
   end if;
 end $$;
 
+
 -- ════════ Permiso para aprobar y publicar boletas ════════
 insert into permissions (id, grupo, descripcion, orden) values
   ('rubrica.aprobar', 'Elenco', 'Aprobar y publicar las boletas (revisión final de la rúbrica)', 29)
@@ -28,7 +29,14 @@ on conflict (id) do nothing;
 alter table panel_roles enable trigger panel_roles_protect;
 alter table role_permissions disable trigger role_permissions_protect;
 insert into role_permissions (role_id, permission_id) select 'direccion_general', id from permissions on conflict do nothing;
+-- Producción: operación de la obra; lo artístico, los permisos y publicar quedan para Dirección general.
+delete from role_permissions where role_id = 'productor'
+   and permission_id in ('audiciones.evaluar', 'elenco.gestionar', 'rubrica.gestionar', 'obra.publicar', 'permisos.gestionar');
 alter table role_permissions enable trigger role_permissions_protect;
+alter table panel_roles disable trigger panel_roles_protect;
+update panel_roles set descripcion = 'Operación de la obra: página, audiciones, expedientes, ensayos, materiales, boletos, reportes y equipo'
+ where id = 'productor';
+alter table panel_roles enable trigger panel_roles_protect;
 
 -- Dirección general siempre lidera ensayos (0099).
 create or replace function lider_ensayos(pid text, uid uuid) returns boolean
@@ -135,13 +143,14 @@ begin
 end $$;
 
 -- ════════ Quién aprueba y publica ════════
--- Admin, Dirección general (rubrica.aprobar) o, si la obra no tiene Dirección general, Producción.
+-- Admin, Dirección general (rubrica.aprobar) o, si la obra no tiene Dirección general, la coordinación
+-- de la rúbrica (rubrica.gestionar sin materias: Dirección artística o un maestro coordinador).
 create or replace function rubric_puede_publicar(pid text) returns boolean
 language sql stable security definer set search_path = public as $$
   select auth.uid() is not null and (
     is_admin() or has_perm(pid, 'rubrica.aprobar')
     or (not exists (select 1 from production_members where production_id = pid and role_id = 'direccion_general')
-        and exists (select 1 from production_members where production_id = pid and user_id = auth.uid() and role_id = 'productor'))
+        and rubric_coord(pid))
   )
 $$;
 
@@ -191,13 +200,13 @@ revoke all on rubric_entregas from anon;
 drop trigger if exists audit_rubric_entregas on rubric_entregas;
 create trigger audit_rubric_entregas after insert or update or delete on rubric_entregas for each row execute function audit_row();
 
--- Quienes revisan: coordinación de la rúbrica (sin materias), Producción y Dirección general.
+-- Quienes revisan: coordinación de la rúbrica (sin materias) y Dirección general.
 create or replace function rubric_revisores(pid text) returns uuid[]
 language sql stable security definer set search_path = public as $$
   select coalesce(array_agg(distinct m.user_id), '{}')
     from production_members m
    where m.production_id = pid
-     and (m.role_id in ('direccion_general', 'productor')
+     and (m.role_id = 'direccion_general'
           or (exists (select 1 from role_permissions rp where rp.role_id = m.role_id and rp.permission_id = 'rubrica.gestionar')
               and not exists (select 1 from rubric_teachers t where t.production_id = pid and t.user_id = m.user_id)))
 $$;
@@ -345,7 +354,7 @@ begin
      and r.production_id in (select pid from mias) and rubric_puede_publicar(r.production_id)
    group by r.production_id
   union all
-  -- 0101: entregas de calificaciones por revisar (coordinación, Producción y Dirección general).
+  -- 0101: entregas de calificaciones por revisar (coordinación y Dirección general).
   select 'entregas', r.production_id, null, null, count(*)::int
     from rubric_entregas en join rubric_periods r on r.id = en.period_id
    where en.estado = 'entregada' and r.publicado_at is null and rubric_active(r.production_id)
@@ -381,5 +390,6 @@ grant execute on function es_direccion_general(text), rubric_puede_publicar(text
   rubric_entregar(uuid), rubric_regresar(uuid, uuid, text), rubric_entregas_periodo(uuid) to authenticated;
 
 select 'Listo 0101. Rol: ' || (select nombre from panel_roles where id = 'direccion_general')
-       || ' · ' || (select count(*) from role_permissions where role_id = 'direccion_general') || ' permisos' as resultado;
+       || ' · ' || (select count(*) from role_permissions where role_id = 'direccion_general') || ' permisos · Producción: '
+       || (select count(*) from role_permissions where role_id = 'productor') || ' permisos' as resultado;
 commit;

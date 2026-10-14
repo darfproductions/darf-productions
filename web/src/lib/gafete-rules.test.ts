@@ -41,10 +41,11 @@ describe("gafete con jerarquía y credencial del Club Fan (0080)", () => {
 });
 
 describe("franja Dirección general (0101)", () => {
-  it("tiene su propio color y etiqueta", () => {
+  it("plata con degradado y letra oscura", () => {
     expect(FRANJAS.direccion_general.label).toBe("DIRECCIÓN GENERAL");
     const p = paseGafete({ nombre: "Diego", fotoUrl: null, franja: "direccion_general", papel: "Dirección general" });
-    expect(p.banda.fondo).toBe("#830886");
-    expect(p.banda.degradado).toBeUndefined();
+    expect(p.banda.fondo).toContain("linear-gradient");
+    expect(p.banda.degradado?.[0]).toEqual([0, "#8e959e"]);
+    expect(p.banda.texto).toBe("#0b0910");
   });
 });

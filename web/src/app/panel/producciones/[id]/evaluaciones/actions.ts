@@ -79,7 +79,7 @@ export async function publishPeriod(_p: State, f: FormData): Promise<State> {
   const pid = str(f, "pid");
   const publicar = str(f, "publicar") === "si";
   const supabase = await createClient();
-  // 0101: solo la Dirección general (o Producción si la obra no tiene) aprueba y publica.
+  // 0101: solo la Dirección general (o la coordinación si la obra no tiene) aprueba y publica.
   const { error } = await supabase.rpc("rubric_publicar", { per: str(f, "id"), on_: publicar });
   if (error) return { ok: false, message: error.message };
   return done(pid, publicar ? "Aprobado y publicado: cada alumno ya ve su evaluación y su boleta." : "Ocultado a los alumnos.");

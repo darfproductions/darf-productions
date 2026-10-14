@@ -60,10 +60,19 @@ do $$ begin
   if badge_papel('00000000-0000-0000-0000-000000000c03')->>'franja' <> 'produccion' then raise exception 'FALLO T1: franja producción'; end if;
   perform pg_temp.as_user('00000000-0000-0000-0000-000000000c04');
   if has_perm('showman', 'rubrica.aprobar') then raise exception 'FALLO T1: artística aprueba'; end if;
+  -- Producción: operación, sin papeles, permisos, publicar la obra, juzgar ni rúbrica.
+  perform pg_temp.as_user('00000000-0000-0000-0000-000000000c03');
+  if has_perm('showman', 'elenco.gestionar') or has_perm('showman', 'permisos.gestionar') or has_perm('showman', 'obra.publicar')
+     or has_perm('showman', 'audiciones.evaluar') or has_perm('showman', 'rubrica.gestionar') then raise exception 'FALLO T1: Producción conserva permisos quitados'; end if;
+  if not (has_perm('showman', 'obra.editar') and has_perm('showman', 'audiciones.gestionar') and has_perm('showman', 'expedientes.ver')
+     and has_perm('showman', 'ventas.operar') and has_perm('showman', 'equipo.gestionar') and has_perm('showman', 'funciones.gestionar')) then
+    raise exception 'FALLO T1: Producción perdió permisos que conserva';
+  end if;
+  if (select count(*) from role_permissions where role_id = 'productor') <> 20 then raise exception 'FALLO T1: Producción tiene % permisos', (select count(*) from role_permissions where role_id = 'productor'); end if;
   perform pg_temp.as_root();
 end $$;
 
--- T2: la maestra califica y entrega; se bloquea; avisa a quienes revisan; Producción corrige.
+-- T2: la maestra califica y entrega; se bloquea; avisa a quienes revisan (no a Producción); la coordinación corrige.
 do $$ declare ev uuid := (select v from ctx where k = 'ev'); canto uuid := (select v from ctx where k = 'canto'); per uuid := (select v from ctx where k = 'per'); begin
   perform pg_temp.as_user('00000000-0000-0000-0000-000000000c05');
   insert into rubric_scores (evaluation_id, criterion_id, numero) values (ev, canto, 7);
@@ -72,15 +81,18 @@ do $$ declare ev uuid := (select v from ctx where k = 'ev'); canto uuid := (sele
   if not pg_temp.falla(format('update rubric_scores set numero = 8 where evaluation_id = %L', ev)) then raise exception 'FALLO T2: cambió tras entregar'; end if;
   perform pg_temp.as_root();
   if (select count(*) from notifications where titulo = 'Calificaciones entregadas'
-        and user_id in ('00000000-0000-0000-0000-000000000c02', '00000000-0000-0000-0000-000000000c03', '00000000-0000-0000-0000-000000000c04')) <> 3 then
+        and user_id in ('00000000-0000-0000-0000-000000000c02', '00000000-0000-0000-0000-000000000c04')) <> 2 then
     raise exception 'FALLO T2: avisos a revisores';
   end if;
+  if exists (select 1 from notifications where titulo = 'Calificaciones entregadas' and user_id = '00000000-0000-0000-0000-000000000c03') then raise exception 'FALLO T2: aviso a Producción'; end if;
   if exists (select 1 from notifications where titulo = 'Calificaciones entregadas' and user_id = '00000000-0000-0000-0000-000000000c05') then raise exception 'FALLO T2: se avisó a sí misma'; end if;
   perform pg_temp.as_user('00000000-0000-0000-0000-000000000c03');
+  if exists (select 1 from panel_pendientes() where tipo = 'entregas') then raise exception 'FALLO T2: Producción ve la entrega'; end if;
+  perform pg_temp.as_user('00000000-0000-0000-0000-000000000c04');
   if (select n from panel_pendientes() where tipo = 'entregas' and production_id = 'showman') <> 1 then raise exception 'FALLO T2: pendiente'; end if;
   update rubric_scores set numero = 7.5 where evaluation_id = ev;
   perform pg_temp.as_root();
-  if (select numero from rubric_scores where evaluation_id = ev) <> 7.5 then raise exception 'FALLO T2: Producción no corrigió'; end if;
+  if (select numero from rubric_scores where evaluation_id = ev) <> 7.5 then raise exception 'FALLO T2: la coordinación no corrigió'; end if;
 end $$;
 
 -- T3: regresar desbloquea y avisa a la maestra con la nota.
@@ -95,7 +107,7 @@ do $$ declare ev uuid := (select v from ctx where k = 'ev'); per uuid := (select
   end if;
 end $$;
 
--- T4: publicar: Dirección artística no; Producción no mientras haya Dirección general; Dirección general sí.
+-- T4: publicar: con Dirección general en la obra, solo ella; sin ella, la coordinación (no Producción).
 do $$ declare per uuid := (select v from ctx where k = 'per'); begin
   perform pg_temp.as_user('00000000-0000-0000-0000-000000000c04');
   if not pg_temp.falla(format('select rubric_publicar(%L, true)', per)) then raise exception 'FALLO T4: artística publicó (rpc)'; end if;
@@ -108,9 +120,11 @@ do $$ declare per uuid := (select v from ctx where k = 'per'); begin
   if (select publicado_at from rubric_periods where id = per) is null then raise exception 'FALLO T4: no publicó'; end if;
   delete from production_members where production_id = 'showman' and role_id = 'direccion_general';
   perform pg_temp.as_user('00000000-0000-0000-0000-000000000c03');
+  if not pg_temp.falla(format('select rubric_publicar(%L, false)', per)) then raise exception 'FALLO T4: Producción sin DG publicó'; end if;
+  perform pg_temp.as_user('00000000-0000-0000-0000-000000000c04');
   perform rubric_publicar(per, false);
   perform pg_temp.as_root();
-  if (select publicado_at from rubric_periods where id = per) is not null then raise exception 'FALLO T4: Producción sin DG no pudo'; end if;
+  if (select publicado_at from rubric_periods where id = per) is not null then raise exception 'FALLO T4: la coordinación sin DG no pudo'; end if;
   insert into production_members (production_id, user_id, role_id) values ('showman', '00000000-0000-0000-0000-000000000c02', 'direccion_general');
 end $$;
 

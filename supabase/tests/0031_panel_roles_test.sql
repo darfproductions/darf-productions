@@ -20,7 +20,7 @@ end $$;
 -- El Director nombra a la productora de mm y a un juez de mm.
 do $$ begin
   perform pg_temp.as_user('00000000-0000-0000-0000-0000000000a1');
-  perform panel_add_member('mm', 'T_PROD@test.local', 'productor');
+  perform panel_add_member('mm', 'T_PROD@test.local', (select coalesce(max(id), 'productor') from panel_roles where id = 'direccion_general'));
   perform panel_add_member('mm', 't_juez@test.local', 'juez');
   reset role;
 end $$;
@@ -75,7 +75,7 @@ do $$ begin
   if not has_perm('mm', 'audiciones.evaluar') then raise exception 'FALLO T3: juez sin evaluar'; end if;
   if has_perm('mm', 'ventas.ver') or has_perm('mm', 'permisos.gestionar') then raise exception 'FALLO T3: juez de más'; end if;
   begin
-    perform panel_add_member('mm', 't_fan1@test.local', 'productor');
+    perform panel_add_member('mm', 't_fan1@test.local', (select coalesce(max(id), 'productor') from panel_roles where id = 'direccion_general'));
     raise exception 'FALLO T3: juez dio roles';
   exception when raise_exception then
     if sqlerrm not like 'No tienes permiso%' then raise exception 'FALLO T3: %', sqlerrm; end if;

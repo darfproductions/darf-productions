@@ -86,7 +86,7 @@ export default async function PageEditor({ params }: PageProps<"/panel/produccio
         ) : (
           <p className="text-sm font-semibold text-[#bbf7d0]">El kit está completo.</p>
         )}
-        {publicar ? <EstadoPanel pid={id} estado={p.estado} onSale={p.on_sale} /> : <p className="text-sm text-texto-3">Publicar o archivar lo hace Producción o el Director.</p>}
+        {publicar ? <EstadoPanel pid={id} estado={p.estado} onSale={p.on_sale} /> : <p className="text-sm text-texto-3">Publicar o archivar lo hace la Dirección general de la obra o el Director.</p>}
       </Block>
 
       {editar && (

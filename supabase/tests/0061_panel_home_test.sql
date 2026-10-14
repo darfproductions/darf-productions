@@ -24,7 +24,7 @@ end $$;
 
 do $$ declare h jsonb; begin
   perform pg_temp.as_user('00000000-0000-0000-0000-0000000000a1');
-  perform panel_add_member('showman', 't_prod@test.local', 'productor');
+  perform panel_add_member('showman', 't_prod@test.local', (select coalesce(max(id), 'productor') from panel_roles where id = 'direccion_general'));
   perform panel_add_member('showman', 't_taq@test.local', 'taquilla');
   perform panel_add_member('showman', 't_ana@test.local', 'integrante');
   perform set_config('role', 'postgres', true);
