@@ -1,5 +1,6 @@
 "use client";
 
+import { WalletBotones } from "@/components/wallet/WalletBotones";
 import { useActionState, useEffect, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
@@ -12,7 +13,7 @@ import { NIVEL, paseCredencial } from "@/lib/credencial-rules";
 // "Mi credencial" (0083): una sola por persona. Se ve como gafete (equipo y elencos, con el sello
 // del club si también es socio), credencial dorada (Club Fan) o básica (cuenta). Mismo QR para
 // ensayos y eventos; se descarga en PDF. El equipo elige qué ve quien la escanea.
-export function MiCredencial({ c, compacto = false }: { c: MiCredencialVista; compacto?: boolean }) {
+export function MiCredencial({ c, compacto = false, wallet }: { c: MiCredencialVista; compacto?: boolean; /** Wallet (2026-10-14): qué Wallets están listos. */ wallet?: { apple: boolean; google: boolean } }) {
   const router = useRouter();
   const [abierto, setAbierto] = useState(false);
   const [ajustes, setAjustes] = useState(false);
@@ -52,6 +53,7 @@ export function MiCredencial({ c, compacto = false }: { c: MiCredencialVista; co
         <div role="dialog" aria-modal="true" aria-label={n.boton} className="fixed inset-0 z-[60] flex flex-col items-center gap-5 overflow-y-auto bg-[#050407]/95 px-4 py-8 backdrop-blur">
           <button type="button" onClick={() => setAbierto(false)} className="self-end rounded-full border border-white/25 px-4 py-2 text-sm font-bold" autoFocus>Cerrar ✕</button>
           <GafeteVista p={pase} />
+          {wallet && <WalletBotones apple={wallet.apple ? "/cuenta/wallet/apple/credencial" : null} google={wallet.google ? "/cuenta/wallet/google/credencial" : null} />}
           <p className="max-w-[340px] text-center text-sm text-texto-2">Es tu único código: sirve en ensayos y en la entrada de los eventos. Sube el brillo de tu pantalla para que el QR se lea fácil.</p>
           <div className="flex flex-wrap justify-center gap-3">
             <button type="button" disabled={bajando} onClick={async () => { setBajando(true); try { await descargarPase(pase, archivo); } finally { setBajando(false); } }} className="fb fb-claro fb-sm">{bajando ? "Preparando…" : "Descargar PDF"}</button>

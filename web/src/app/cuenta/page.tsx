@@ -24,6 +24,7 @@ import { AvatarUpload } from "./AvatarUpload";
 import { MiCredencial } from "@/components/credencial/MiCredencial";
 import { ActionForm } from "@/components/panel/ActionForm";
 import { getMiCredencial } from "@/lib/credencial";
+import { GOOGLE_WALLET_PUBLICO, walletAppleActivo, walletGoogleActivo } from "@/lib/wallet-env";
 import { SalirClub } from "@/components/fanzone/SalirClub";
 import { numeroSocio } from "@/lib/fanzone-rules";
 import { EmailForm, PasswordForm, ProfileForm } from "./ProfileForm";
@@ -66,6 +67,9 @@ const STATUS: Record<OrderRow["status"], { label: string; cls: string }> = {
 
 export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">) {
   const session = await requireSession("/cuenta");
+  // Google en modo demo: solo el equipo ve su botón hasta que Google apruebe la publicación.
+  const equipo = session.profile?.rol === "admin" || session.profile?.rol === "staff";
+  const wallet = { apple: walletAppleActivo(), google: walletGoogleActivo() && (GOOGLE_WALLET_PUBLICO || equipo) };
   const sp = await searchParams;
   const nueva = typeof sp.orden === "string" ? sp.orden : null;
 
@@ -187,6 +191,7 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
                       estilo={estilo}
                       orden={o.order_code}
                       pdfServidor={funcionPasada(o.performances?.starts_at ?? null) ? null : `/cuenta/boletos/${encodeURIComponent(o.order_code)}/pdf`}
+                      wallet={wallet}
                     />
                   )}
                   {o.status === "aprobado" && boletos.length > 0 && o.performances?.starts_at && !o.performances.cancelada_at && !funcionPasada(o.performances.starts_at) && (
@@ -419,7 +424,7 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
         </div>
 
         <aside className="order-2 flex flex-col gap-6 lg:order-none lg:col-span-4 lg:self-start">
-          {credencial && <div id="credencial" className="scroll-mt-24"><MiCredencial c={credencial} /></div>}
+          {credencial && <div id="credencial" className="scroll-mt-24"><MiCredencial c={credencial} wallet={wallet} /></div>}
           {credencial?.socio && (
             <section aria-labelledby="club" className="flex flex-col gap-2 rounded-2xl bg-telon p-6">
               <h2 id="club" className="text-lg font-bold">Club Fan</h2>

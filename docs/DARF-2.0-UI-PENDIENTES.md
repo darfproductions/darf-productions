@@ -95,7 +95,7 @@ Diego eligió cuáles sí (ver plan del bloque). Hechas en `darf-2.0`, migracion
 
 - **Velocidad de páginas públicas (caché):** se dejó para después de la mudanza de datos (Bloque 5), cuando se mida con datos reales; ya se quitaron consultas repetidas de sesión y permisos.
 - **Boletín por correo** (después; necesita suscripción, confirmación y baja).
-- **Wallet** (Apple/Google): falta la cuenta de Apple Developer.
+- **Wallet** (Apple/Google): programado (ver `docs/DARF-2.0-WALLET.md`); falta que Diego ponga las llaves en Vercel y los botones oficiales.
 - **Avisos por WhatsApp**: es un servicio de pago.
 - **Foto grupal en Nosotros**: cuando haya foto.
 - **Tema claro del panel "DARF Admin"**: sin decidir; el panel sigue oscuro.
