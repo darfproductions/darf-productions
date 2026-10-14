@@ -1,9 +1,15 @@
 # DARF 2.0 — Apple Wallet y Google Wallet
 
-## Estado: llaves puestas en Vercel (Production y Preview, 14 oct); falta la prueba en teléfono
+## Estado: PUBLICADO (14 oct 2026)
+- Probado por Diego: Apple Wallet en iPhone (boleto y credencial) y Google Wallet desde la Mac (modo prueba).
+- Apple: visible para todos. Google: solo admin/staff (`GOOGLE_WALLET_PUBLICO = false` en `wallet-env.ts`)
+  hasta que Google apruebe el acceso de publicación; entonces cambiarlo a `true`.
+- Las imágenes de Google salen de `https://www.darfproductions.com/wallet/img/...` (las ligas de prueba piden login).
+- La hora del evento en Google va con el desfase de la Ciudad de México.
 - **Pases:** boleto (uno por asiento) y credencial única (gafete o Club Fan, 0083). El QR es el mismo
   de la web: el boleto lleva `tickets.qr_token` (Puerta no cambia) y la credencial `/g/<token>`.
-- **Botones** "Agregar a Apple Wallet / Google Wallet" en "Ver boletos" (cada boleto) y en "Mi credencial".
+- **Botones oficiales** (`web/public/wallet/apple-wallet-es-mx.svg` y `google-wallet-es-419.svg`, 44 px de alto)
+  en "Ver boletos" (cada boleto) y en "Mi credencial".
   Solo aparecen cuando las llaves de cada Wallet están en Vercel. En iPhone va primero Apple; en Android, Google.
 - **Pasos de Diego:** `docs/DARF-2.0-WALLET-PASOS.md` (Apple con Mac, Google, botones oficiales).
 - **Variables (solo servidor, Sensitive, Production y Preview):** `APPLE_PASS_TYPE_ID`, `APPLE_TEAM_ID`,
@@ -24,9 +30,36 @@
     actualiza (QR nuevo) cada vez que se vuelve a tocar el botón.
 - **Probado en la copia local** con certificados de prueba y un Google falso: firma del .pkpass válida,
   liga de guardar de Google, boleto ajeno 404, sin sesión 401, imágenes PNG.
-- **Pendiente (fase 2, si se pide):** que Apple actualice solo los pases guardados (boleto cancelado,
-  código regenerado). Mientras: la Puerta rechaza boletos cancelados y el pase dice "si regeneras tu
-  código, vuelve a agregarla".
+- **Actualización automática de Apple (0098):** ver la sección de abajo.
+
+## Apple Wallet se actualiza solo (0098, 14 oct 2026)
+- El `.pkpass` lleva `webServiceURL = https://www.darfproductions.com/wallet/apple` y un
+  `authenticationToken` propio del pase (no cambia al volver a descargarlo). El iPhone se registra solo.
+- **Qué lo actualiza** (triggers de la base; no se tocó ninguna función de venta):
+  - boleto: orden aprobada/rechazada/cancelada/vencida, boleto cancelado o reactivado, escaneo en la
+    Puerta y deshacer, asiento; función: fecha, hora, lugar, cancelada; obra: nombre, lugar, colores,
+    logo, imagen, póster.
+  - credencial: Club Fan (entrar/salir), credencial nueva (QR), nombre, foto, rol, equipo, créditos,
+    retrato público.
+- **Cómo se ve:** cancelado / función cancelada / ya ingresó → pase **anulado** (Apple lo marca como no
+  válido) con "Estado" al frente y atrás.
+- **Flujo:** trigger → `wallet_marcar()` sube `cambiado_at` y, si hay iPhones registrados, `pg_net` hace
+  POST a `/wallet/apple/aviso` (encabezado `x-wallet-secret`) → la página manda a Apple (APNs, HTTP/2,
+  certificado del Pass Type ID) un aviso vacío por teléfono → el iPhone pide `GET /v1/devices/…` y
+  `GET /v1/passes/…` y recibe el pase nuevo. Teléfonos que Apple rechaza (410) se dan de baja.
+- **Base:** `wallet_pases` (serial, token, cambiado_at), `wallet_registros` (iPhone ↔ pase),
+  `wallet_config` (dirección y secreto). RPCs `wallet_pase_alta` (con sesión), `wallet_dispositivo_alta/baja`,
+  `wallet_series_cambiadas`, `wallet_pase_datos`, `wallet_push_baja` (sin sesión; validan token o secreto).
+  `credencial_mia()` ahora usa `credencial_de(uid)` (misma respuesta).
+- **Web:** `lib/apns.ts`, `lib/apple-servicio.ts`, rutas `app/wallet/apple/v1/…` (registro, series,
+  pase, log) y `app/wallet/apple/aviso`. Variable nueva: `WALLET_HOOK_SECRET` (= `wallet_config.hook_secret`).
+- **Límites:** solo los pases agregados después de publicar esto se actualizan. Sin sesión no se puede
+  leer la foto privada: al actualizarse, la credencial de equipo usa el retrato público del perfil
+  profesional (si lo hay). Si Apple o pg_net fallan, el aviso se pierde pero nada se bloquea; el iPhone
+  revisa el pase al abrirlo y jalar hacia abajo.
+- **Pruebas:** `supabase/tests/0098_wallet_actualizaciones_test.sql` (alta, registro, marcas por check-in,
+  fecha, obra, cancelación, Club Fan, credencial nueva, bajas) · vitest (`apple-wallet`, `apns`,
+  `wallet-pases`) · E2E local con iPhone simulado y APNs falso (9/9).
 
 ## Cómo funciona cada uno
 

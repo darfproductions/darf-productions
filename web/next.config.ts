@@ -23,6 +23,7 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     "/cuenta/wallet/**": ["./public/marca/**", "./public/producciones/**"],
     "/wallet/img/**": ["./public/marca/**", "./public/producciones/**"],
+    "/wallet/apple/**": ["./public/marca/**", "./public/producciones/**"],
   },
   images: {
     remotePatterns: supabaseHost

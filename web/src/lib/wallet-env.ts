@@ -8,6 +8,7 @@
 //   APPLE_TEAM_ID               Team ID de la cuenta de Apple Developer
 //   APPLE_PASS_CERT / APPLE_PASS_KEY / APPLE_WWDR_CERT   PEM (tal cual o en base64)
 //   APPLE_PASS_KEY_PASSPHRASE   contraseña de la llave (si tiene)
+//   WALLET_HOOK_SECRET          secreto del aviso de la base (0098) para que los pases se actualicen solos
 
 export type CuentaServicio = { client_email: string; private_key: string; token_uri?: string };
 export type WalletGoogleConfig = { issuerId: string; cuenta: CuentaServicio; apiBase: string; tokenUri: string };
@@ -63,4 +64,10 @@ export const GOOGLE_WALLET_PUBLICO = false;
  *  piden iniciar sesión y Google no puede leerlas). */
 export function origenPublico(): string {
   return (process.env.NEXT_PUBLIC_SITE_URL || "https://www.darfproductions.com").replace(/\/$/, "");
+}
+
+/** Secreto del aviso de la base (0098, wallet_config.hook_secret): lo copia Diego a Vercel. */
+export function walletHookSecret(): string | null {
+  const s = (process.env.WALLET_HOOK_SECRET ?? "").trim();
+  return s.length >= 32 ? s : null;
 }

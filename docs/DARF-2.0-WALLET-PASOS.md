@@ -112,13 +112,25 @@ Después, cuando ya lo veas funcionar: en la consola **Request publishing access
 
 ---
 
-## C. Botones oficiales
-- **Apple:** developer.apple.com/wallet/add-to-apple-wallet-guidelines → descarga los badges → el de
-  **Spanish (Latin America / Mexico)**, negro, **SVG**.
-- **Google:** developers.google.com/wallet/generic/resources/brand-guidelines → **Download button assets**
-  → **Spanish**, versión principal, **SVG**.
+## C. Botones oficiales ✅
+Ya están en la web (14 oct 2026), tomados del zip que mandaste, sin modificar:
+- Apple: `ESMX_Add_to_Apple_Wallet_RGB_101821.svg` → `web/public/wallet/apple-wallet-es-mx.svg`
+  ("Agregar a Apple Wallet").
+- Google: `es419_add_to_google_wallet_add-wallet-badge.svg` → `web/public/wallet/google-wallet-es-419.svg`
+  ("Agregar a la Billetera de Google", el texto oficial de Google en español de Latinoamérica).
 
-Mándamelos como archivo. Mientras, la web usa un botón propio.
+---
+
+## D. Que Apple Wallet se actualice solo (0098)
+1. **Supabase → SQL Editor → New query**: pega todo `supabase/dev/apply_0098_dev.sql` → **Run**.
+   Debe decir `Listo 0098. Pases registrados: 0 · aviso: https://www.darfproductions.com/wallet/apple/aviso`.
+2. En otra consulta: `select hook_secret from wallet_config;` → **Run** → copia el valor (no me lo mandes).
+3. **Vercel → darf-2-web-dev → Settings → Environment Variables → Add**: Key `WALLET_HOOK_SECRET`,
+   Value el que copiaste, **Production** (y Preview), **Sensitive** → **Save**.
+4. Aprueba y fusiona la solicitud `production` ← `darf-2.0` (como siempre).
+5. Prueba: corre `supabase/dev/prueba_wallet_crear.sql` (boleto de prueba), agrégalo a tu iPhone desde
+   Mi cuenta y cancélalo desde el panel: en 1–2 minutos el pase dice "Cancelado". Al terminar:
+   `supabase/dev/prueba_wallet_borrar.sql`.
 
 ---
 

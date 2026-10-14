@@ -30,6 +30,8 @@ export type PaseWallet = {
   fecha?: string;
   /** Después de esto Wallet lo marca como vencido. */
   vence?: string;
+  /** Cancelado, función cancelada o ya usado: Wallet lo muestra como no válido. */
+  anulado?: boolean;
 };
 
 export type DatosBoleto = {
@@ -172,8 +174,27 @@ export function paseCredencialWallet(c: DatosCredencial, hoy: Date = new Date())
     secundarios: [{ key: "codigo", label: "Código", value: c.codigo }, ...(c.pase.sello ? [{ key: "sello", label: "Club Fan", value: c.pase.sello }] : [])],
     auxiliares: [{ key: "vigencia", label: "Vigencia", value: c.pase.pie.replace(/^DARF Productions · /, "") || anioMx(hoy) }],
     reverso: [
-      { key: "uso", label: "Cómo se usa", value: "Muéstrala en la entrada de ensayos y eventos. Si regeneras tu código en Mi cuenta, vuelve a agregarla aquí." },
+      { key: "uso", label: "Cómo se usa", value: "Muéstrala en la entrada de ensayos y eventos. Si regeneras tu código en Mi cuenta, aquí se actualiza sola." },
       { key: "web", label: "Mi cuenta", value: "darfproductions.com/cuenta" },
     ],
   };
+}
+
+export type EstadoBoleto = { anulado: boolean; motivo: string | null };
+
+/** Estado del boleto en Wallet (0098: el pase se actualiza solo). */
+export function estadoBoleto(b: {
+  status: string; activo: boolean; cancelado: boolean; funcionCancelada: boolean; ingreso: boolean;
+}): EstadoBoleto {
+  if (b.funcionCancelada) return { anulado: true, motivo: "Función cancelada" };
+  if (b.status !== "aprobado" || !b.activo || b.cancelado) return { anulado: true, motivo: "Cancelado" };
+  if (b.ingreso) return { anulado: true, motivo: "Ya ingresó" };
+  return { anulado: false, motivo: null };
+}
+
+/** El pase con su estado al frente y en el reverso (y marcado como anulado). */
+export function conEstado(p: PaseWallet, e: EstadoBoleto): PaseWallet {
+  if (!e.motivo) return p;
+  const campo = { key: "estado", label: "Estado", value: e.motivo };
+  return { ...p, anulado: e.anulado, secundarios: [campo, ...p.secundarios], reverso: [campo, ...p.reverso] };
 }

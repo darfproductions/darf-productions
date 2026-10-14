@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { paseCredencialFan } from "./credencial-fan-rules";
 import { paseGafete } from "./gafete-rules";
 import { ESTILO_DARF } from "./ticket-design";
-import { colorBase, colorEtiqueta, contraste, hex, paseBoleto, paseCredencialWallet, rgb, serialCredencial, venceBoleto } from "./wallet-pases";
+import { colorBase, colorEtiqueta, conEstado, contraste, estadoBoleto, hex, paseBoleto, paseCredencialWallet, rgb, serialCredencial, venceBoleto } from "./wallet-pases";
 
 const boleto = {
   ticketId: "11111111-1111-1111-1111-111111111111",
@@ -88,5 +88,28 @@ describe("paseCredencialWallet", () => {
     expect(serialCredencial("u1")).toBe(serialCredencial("u1"));
     expect(serialCredencial("u1")).not.toContain("u1");
     expect(serialCredencial("u1")).not.toBe(serialCredencial("u2"));
+  });
+});
+
+describe("estado del boleto (se actualiza solo)", () => {
+  const base = { status: "aprobado", activo: true, cancelado: false, funcionCancelada: false, ingreso: false };
+  it("activo: sin cambios", () => {
+    const e = estadoBoleto(base);
+    expect(e).toEqual({ anulado: false, motivo: null });
+    expect(conEstado(paseBoleto(boleto), e)).toEqual(paseBoleto(boleto));
+  });
+  it("cancelado, rechazado o vencido: anulado", () => {
+    expect(estadoBoleto({ ...base, activo: false }).motivo).toBe("Cancelado");
+    expect(estadoBoleto({ ...base, status: "rechazado" }).motivo).toBe("Cancelado");
+    expect(estadoBoleto({ ...base, cancelado: true }).anulado).toBe(true);
+  });
+  it("función cancelada gana sobre lo demás", () => {
+    expect(estadoBoleto({ ...base, activo: false, funcionCancelada: true }).motivo).toBe("Función cancelada");
+  });
+  it("ya ingresó: anulado y lo dice al frente y atrás", () => {
+    const p = conEstado(paseBoleto(boleto), estadoBoleto({ ...base, ingreso: true }));
+    expect(p.anulado).toBe(true);
+    expect(p.secundarios[0]).toEqual({ key: "estado", label: "Estado", value: "Ya ingresó" });
+    expect(p.reverso[0].value).toBe("Ya ingresó");
   });
 });
