@@ -5,6 +5,7 @@ import { NoValida, Verificada } from "@/components/credencial/Verificada";
 import { numeroSocio } from "@/lib/fanzone-rules";
 import { getGafetePublico } from "@/lib/gafete";
 import { paseGafete } from "@/lib/gafete-rules";
+import { Icono } from "@/components/Icono";
 
 export const metadata: Metadata = { title: "Credencial DARF", robots: { index: false, follow: false } };
 
@@ -31,11 +32,11 @@ export default async function GafetePublicoPage({ params }: PageProps<"/g/[token
         {algo ? (
           <>
             <a href={`/g/${token}/vcf`} className="fb fb-luz">Guardar contacto</a>
-            {g.telefono && <a href={`tel:${g.telefono.replace(/[^\d+]/g, "")}`} className={boton}>📞 {g.telefono}</a>}
+            {g.telefono && <a href={`tel:${g.telefono.replace(/[^\d+]/g, "")}`} className={boton}><Icono nombre="telefono" /> {g.telefono}</a>}
             {g.telefono && <a href={`https://wa.me/52${g.telefono.replace(/\D/g, "").slice(-10)}`} target="_blank" rel="noopener noreferrer" className={boton}>WhatsApp</a>}
-            {g.correo && <a href={`mailto:${g.correo}`} className={boton}>✉️ {g.correo}</a>}
+            {g.correo && <a href={`mailto:${g.correo}`} className={boton}><Icono nombre="sobre" /> {g.correo}</a>}
             {g.instagram && <a href={`https://instagram.com/${g.instagram.replace(/^@/, "")}`} target="_blank" rel="noopener noreferrer" className={boton}>Instagram @{g.instagram.replace(/^@/, "")}</a>}
-            {g.perfil && <a href={`/artistas/${g.perfil}`} className={boton}>Ver perfil profesional →</a>}
+            {g.perfil && <a href={`/artistas/${g.perfil}`} className={boton}>Ver perfil profesional <Icono nombre="flecha-der" /></a>}
           </>
         ) : (
           <p className="text-center text-sm text-texto-3">{g.nombre} es parte de DARF Productions.</p>

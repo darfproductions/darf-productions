@@ -7,6 +7,7 @@ import { ESTADO_OFERTA, TIPO_CREDITO } from "@/lib/casting-rules";
 import { NIVEL_INCIDENCIA, TIPO_INCIDENCIA } from "@/lib/member-rules";
 import { requirePanel } from "@/lib/permissions";
 import { createClient } from "@/lib/supabase/server";
+import { Icono } from "@/components/Icono";
 
 export const metadata: Metadata = { title: "Ficha de talento" };
 
@@ -45,7 +46,7 @@ export default async function TalentPage({ params }: PageProps<"/panel/talento/[
   return (
     <>
       <PanelTitle eyebrow="Ficha de talento" title={h.nombre ?? h.email}>{h.email}</PanelTitle>
-      {persona && <Link href={`/panel/talento/p/${persona.id}/perfil`} className="self-start rounded-full border border-white/25 px-4 py-2 text-sm font-bold">Perfil profesional →</Link>}
+      {persona && <Link href={`/panel/talento/p/${persona.id}/perfil`} className="self-start rounded-full border border-white/25 px-4 py-2 text-sm font-bold">Perfil profesional <Icono nombre="flecha-der" /></Link>}
 
       <Card>
         <h2 className="titular mb-3 text-xl">Obras ({h.obras.length})</h2>
@@ -75,8 +76,8 @@ export default async function TalentPage({ params }: PageProps<"/panel/talento/[
                 <p key={i} className="break-words"><span className="text-texto-3">{r.pregunta}:</span>{" "}
                   {/^https:\/\//.test(r.respuesta) ? <a href={r.respuesta} target="_blank" rel="noreferrer" className="text-violeta-claro underline">abrir enlace</a> : r.respuesta}</p>
               ))}
-              {a.videos.map((v, i) => <a key={i} href={v.url} target="_blank" rel="noreferrer" className="text-violeta-claro underline">{v.titulo} ↗</a>)}
-              <Link href={`/panel/audiciones/${a.audition_id}/aspirante/${a.id}`} className="text-xs font-bold text-violeta-claro">Abrir en la audición →</Link>
+              {a.videos.map((v, i) => <a key={i} href={v.url} target="_blank" rel="noreferrer" className="text-violeta-claro underline">{v.titulo} <Icono nombre="externo" /></a>)}
+              <Link href={`/panel/audiciones/${a.audition_id}/aspirante/${a.id}`} className="text-xs font-bold text-violeta-claro">Abrir en la audición <Icono nombre="flecha-der" /></Link>
             </div>
           </details>
         ))}

@@ -8,6 +8,7 @@ import { formatSlot } from "@/lib/auditions";
 import { requireAudition, signPhotos } from "@/lib/panel-auditions";
 import { createClient } from "@/lib/supabase/server";
 import { addVideo, setApplicationEstado, setSlot } from "../../actions";
+import { Icono } from "@/components/Icono";
 
 export const metadata: Metadata = { title: "Solicitudes" };
 
@@ -48,7 +49,7 @@ export default async function Applications({ params, searchParams }: PageProps<"
 
   return (
     <>
-      <a href={`/panel/audiciones/${aid}/exportar`} className="self-end text-sm font-bold text-violeta-claro">Descargar inscritos (Excel) ↓</a>
+      <a href={`/panel/audiciones/${aid}/exportar`} className="self-end text-sm font-bold text-violeta-claro">Descargar inscritos (Excel) <Icono nombre="flecha-abajo" /></a>
       <Card>
         <details>
           <summary className="cursor-pointer font-bold">+ Video general del día (por grupo o sesión completa)</summary>

@@ -2,6 +2,7 @@ import { ActionForm } from "@/components/panel/ActionForm";
 import { Card, input } from "@/components/panel/ui";
 import { createClient } from "@/lib/supabase/server";
 import { agregarPersonajeObra, borrarPersonajeObra, editarPersonajeObra, moverPersonajeObra } from "../../../audiciones/votacion-actions";
+import { Icono } from "@/components/Icono";
 
 const ghost = "rounded-full border border-white/25 px-3 py-1.5 text-xs font-bold hover:border-white/50 disabled:opacity-60";
 
@@ -30,8 +31,8 @@ export async function Personajes({ pid }: { pid: string }) {
               </div>
             </details>
             <span className="flex items-center gap-1.5">
-              {i > 0 && <ActionForm inline action={moverPersonajeObra} hidden={{ ...h, id: c.id, dir: "-1" }} submit="↑" submitClass={ghost} />}
-              {i < lista.length - 1 && <ActionForm inline action={moverPersonajeObra} hidden={{ ...h, id: c.id, dir: "1" }} submit="↓" submitClass={ghost} />}
+              {i > 0 && <ActionForm inline action={moverPersonajeObra} hidden={{ ...h, id: c.id, dir: "-1" }} submit={<Icono nombre="flecha-arriba" etiqueta="Subir" />} submitClass={ghost} />}
+              {i < lista.length - 1 && <ActionForm inline action={moverPersonajeObra} hidden={{ ...h, id: c.id, dir: "1" }} submit={<Icono nombre="flecha-abajo" etiqueta="Bajar" />} submitClass={ghost} />}
               <ActionForm inline action={borrarPersonajeObra} hidden={{ ...h, id: c.id }} confirm={`¿Quitar a ${c.nombre}? Las audiciones que ya lo tienen lo conservan.`} submit="Quitar" submitClass={ghost} />
             </span>
           </li>

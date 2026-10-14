@@ -10,6 +10,7 @@ import { requirePanel } from "@/lib/permissions";
 import { createClient } from "@/lib/supabase/server";
 import { removeMaterial } from "./actions";
 import { MaterialForm } from "./MaterialForm";
+import { Icono } from "@/components/Icono";
 
 export const metadata: Metadata = { title: "Materiales" };
 
@@ -40,7 +41,7 @@ export default async function Materiales({ params }: PageProps<"/panel/produccio
               return (
                 <li key={m.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-sala px-3 py-2.5 text-sm">
                   <span>
-                    {href ? <a href={href} target="_blank" rel="noreferrer" className="font-bold text-violeta-claro underline">{m.titulo} ↗</a> : <b>{m.titulo}</b>}
+                    {href ? <a href={href} target="_blank" rel="noreferrer" className="font-bold text-violeta-claro underline">{m.titulo} <Icono nombre="externo" /></a> : <b>{m.titulo}</b>}
                     <span className="text-texto-3"> · {TIPO_MATERIAL[m.tipo]} · {m.archivo_path ? "archivo" : "enlace"}</span>
                     {m.descripcion && <span className="block text-xs text-texto-2">{m.descripcion}</span>}
                     <span className="block text-xs text-texto-3">Para: {audienceLabel(m, nombres)}</span>

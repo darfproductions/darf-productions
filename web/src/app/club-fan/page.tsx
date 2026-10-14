@@ -4,25 +4,26 @@ import { UnirseClub } from "@/components/fanzone/UnirseClub";
 import { getSession } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { numeroSocio } from "@/lib/fanzone-rules";
+import { Icono, type IconoNombre } from "@/components/Icono";
 
 export const metadata: Metadata = {
   title: "Club Fan",
   description: "Únete gratis al Club Fan de DARF Productions: preventas, ensayos y making of, foto con el elenco, eventos exclusivos y tu credencial con número de socio.",
 };
 
-const BENEFICIOS: [string, string, string][] = [
-  ["🎟️", "Preventa de boletos", "Cuando una obra tiene preventa, el club compra antes que nadie. Te avisamos al teléfono cuando empieza."],
-  ["🎬", "Detrás del telón", "Ensayos, making of y fotos de cada producción, exclusivos en la Fan Zone."],
-  ["📸", "Foto con el elenco", "Aparta tu lugar en el encuentro con el elenco de tu función, cuando la obra lo abra."],
-  ["✨", "Eventos del club", "Eventos solo para socios, presenciales o en línea. Entras con tu credencial."],
-  ["🪪", "Tu credencial", "Credencial digital con tu número de socio y QR. Los primeros 100 son Fan fundador."],
-  ["📣", "Primero en enterarte", "Anuncios solo para el club: revelaciones de elenco, nuevas fechas y audiciones."],
+const BENEFICIOS: [IconoNombre, string, string][] = [
+  ["boleto", "Preventa de boletos", "Cuando una obra tiene preventa, el club compra antes que nadie. Te avisamos al teléfono cuando empieza."],
+  ["claqueta", "Detrás del telón", "Ensayos, making of y fotos de cada producción, exclusivos en la Fan Zone."],
+  ["camara", "Foto con el elenco", "Aparta tu lugar en el encuentro con el elenco de tu función, cuando la obra lo abra."],
+  ["destello", "Eventos del club", "Eventos solo para socios, presenciales o en línea. Entras con tu credencial."],
+  ["credencial", "Tu credencial", "Credencial digital con tu número de socio y QR. Los primeros 100 son Fan fundador."],
+  ["megafono", "Primero en enterarte", "Anuncios solo para el club: revelaciones de elenco, nuevas fechas y audiciones."],
 ];
 
 const PREGUNTAS: [string, string][] = [
   ["¿Cuánto cuesta?", "Nada. El Club Fan es gratis; solo necesitas una cuenta de DARF."],
   ["¿Qué datos usan?", "Solo los de tu cuenta (nombre y correo). Los detalles están en el Aviso de privacidad."],
-  ["¿Puedo salirme?", "Sí, cuando quieras, desde Mi cuenta → Club Fan. Tus boletos y lugares apartados se quedan; tu número de socio no se guarda."],
+  ["¿Puedo salirme?", "Sí, cuando quieras, desde Mi cuenta, en la sección Club Fan. Tus boletos y lugares apartados se quedan; tu número de socio no se guarda."],
 ];
 
 // Club Fan (Bloque 4C): página pública con los beneficios y cómo unirse. La Fan Zone es la casa del club.
@@ -55,7 +56,7 @@ export default async function ClubFanPage() {
           <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {BENEFICIOS.map(([i, t, d]) => (
               <li key={t} className="flex flex-col gap-2 rounded-[22px] border border-oro/25 bg-telon p-6">
-                <span aria-hidden="true" className="text-2xl">{i}</span>
+                <Icono nombre={i} className="h-7 w-7 text-oro-claro" />
                 <strong className="text-oro-claro">{t}</strong>
                 <span className="text-sm text-texto-2">{d}</span>
               </li>

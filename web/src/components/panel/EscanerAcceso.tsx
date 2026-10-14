@@ -8,6 +8,7 @@ import { QrScanner } from "@/components/panel/QrScanner";
 import type { Lectura } from "@/lib/acceso-rules";
 import { iniciales } from "@/lib/gafete-rules";
 import { bip } from "@/lib/aviso-sonido";
+import { Icono } from "@/components/Icono";
 
 const COLOR: Record<NonNullable<Lectura["tono"]>, string> = {
   ok: "border-exito bg-exito/15 text-exito",
@@ -58,7 +59,7 @@ export function EscanerAcceso({ boton, titulo, placeholder, ayuda, leer, botonCl
           <div className="mx-auto flex max-w-4xl flex-col gap-5">
             <div className="flex items-center justify-between gap-3">
               <p className="text-xl font-black uppercase">{titulo}</p>
-              <button type="button" onClick={() => setAbierto(false)} className="rounded-full border border-white/25 px-4 py-2 text-sm font-bold">Terminar ✕</button>
+              <button type="button" onClick={() => setAbierto(false)} className="rounded-full border border-white/25 px-4 py-2 text-sm font-bold">Terminar <Icono nombre="x" /></button>
             </div>
             <div className="grid gap-5 md:grid-cols-2">
               <QrScanner onCode={onCode} busy={busy} placeholder={placeholder} />

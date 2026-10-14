@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ActionForm } from "@/components/panel/ActionForm";
 import { FASE_LABEL, anteriorFase, botonSiguiente, fasesDe, type Fase } from "@/lib/votacion-rules";
 import { moverFase } from "../votacion-actions";
+import { Icono } from "@/components/Icono";
 
 const DONDE: Partial<Record<Fase, { href: string; texto: string }>> = {
   audicion: { href: "/evaluacion", texto: "Marca tus opciones en Evaluación" },
@@ -26,12 +27,12 @@ export function Etapas({ aid, fase, conCallback, gestiona, evalua }: { aid: stri
         {fases.map((f, k) => (
           <li key={f} aria-current={f === fase ? "step" : undefined}
             className={`rounded-full px-3 py-1.5 ${f === fase ? "bg-texto text-sala" : k < i ? "bg-white/10 text-texto-2" : "border border-white/15 text-texto-3"}`}>
-            {k < i ? "✓ " : ""}{FASE_LABEL[f]}
+            {k < i && <><Icono nombre="check" /> </>}{FASE_LABEL[f]}
           </li>
         ))}
       </ol>
       <div className="flex flex-wrap items-center gap-2">
-        {verDonde && <Link href={`/panel/audiciones/${aid}${donde.href}`} className="text-sm font-bold text-lila">{donde.texto} →</Link>}
+        {verDonde && <Link href={`/panel/audiciones/${aid}${donde.href}`} className="text-sm font-bold text-lila">{donde.texto} <Icono nombre="flecha-der" /></Link>}
         {gestiona && sig && (
           <ActionForm inline action={moverFase} hidden={{ aid, dir: "siguiente" }}
             confirm={fase === "votacion" ? "¿Cerrar la votación? Se calcula la propuesta del cast y ya no se puede votar." : `¿Pasar a la siguiente etapa?`}

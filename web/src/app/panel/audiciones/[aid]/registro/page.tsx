@@ -10,6 +10,7 @@ import { createClient } from "@/lib/supabase/server";
 import { autoOrder, walkIn } from "../../actions";
 import { Desk } from "./Desk";
 import { OrderButtons, StepButtons } from "./StepButtons";
+import { Icono } from "@/components/Icono";
 
 export const metadata: Metadata = { title: "Día de la audición" };
 
@@ -47,7 +48,7 @@ export default async function DayPage({ params, searchParams }: PageProps<"/pane
         {gestiona && a.numeracion === "previa" && (
           <Card className="flex flex-col gap-2">
             <h2 className="font-bold">Orden de la lista</h2>
-            <p className="text-sm text-texto-2">Cada quien recibe su número al inscribirse. Puedes ordenarlos por horario (y fecha de inscripción) y luego mover a alguien con ↑ ↓. Quien ya llegó conserva su número.</p>
+            <p className="text-sm text-texto-2">Cada quien recibe su número al inscribirse. Puedes ordenarlos por horario (y fecha de inscripción) y luego mover a alguien con <Icono nombre="flecha-arriba" /> <Icono nombre="flecha-abajo" />. Quien ya llegó conserva su número.</p>
             <ActionForm inline action={autoOrder} hidden={{ aid }} confirm="¿Ordenar por horario a quienes aún no llegan? Sus números pueden cambiar." submit="Ordenar por horario" submitClass="rounded-full border border-white/25 px-4 py-2 text-sm font-bold" />
           </Card>
         )}

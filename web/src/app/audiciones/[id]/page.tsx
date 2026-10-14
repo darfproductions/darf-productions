@@ -11,6 +11,7 @@ import { getTheme, themeStyle } from "@/lib/productions";
 import { cancelMyApplication } from "./actions";
 import { ApplyForm } from "./ApplyForm";
 import { MiniAction } from "@/components/panel/MiniAction";
+import { Icono } from "@/components/Icono";
 
 export async function generateMetadata({ params }: PageProps<"/audiciones/[id]">): Promise<Metadata> {
   const { id } = await params;
@@ -42,7 +43,7 @@ export default async function AuditionPage({ params }: PageProps<"/audiciones/[i
     <main style={themeStyle(theme)} className={`pb-10 ${theme ? "min-h-dvh bg-obra-fondo text-obra-texto" : ""}`}>
       {obra?.publica && (
         <div className="mx-auto max-w-[1440px] px-5 pt-6 md:px-16">
-          <Link href={`/producciones/${a.production_id}`} className="text-sm font-bold uppercase tracking-[0.2em] text-obra-acento">← {obra.nombre}</Link>
+          <Link href={`/producciones/${a.production_id}`} className="text-sm font-bold uppercase tracking-[0.2em] text-obra-acento"><Icono nombre="flecha-izq" /> {obra.nombre}</Link>
         </div>
       )}
       <PageHeading eyebrow={`${obra ? obra.nombre : a.permanente ? "Registro permanente" : "Convocatoria general"} · Audiciones · ${ESTADO_CONVOCATORIA[a.estado] ?? a.estado}`} title={a.titulo}>

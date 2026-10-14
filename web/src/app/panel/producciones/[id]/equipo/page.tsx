@@ -4,6 +4,7 @@ import { PanelTitle } from "@/components/panel/ui";
 import { seccionValida, TeamManager } from "@/components/team/TeamManager";
 import { can } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
+import { Icono } from "@/components/Icono";
 
 export const metadata: Metadata = { title: "Equipo" };
 
@@ -16,7 +17,7 @@ export default async function EquipoObra({ params, searchParams }: PageProps<"/p
   return (
     <>
       <PanelTitle eyebrow="Equipo" title="Portal del equipo">
-        Notas de dirección, juntas con su resumen, avisos y materiales para quienes tienen un rol en esta producción. Cada quien lo ve en Mi cuenta → Mi equipo.
+        Notas de dirección, juntas con su resumen, avisos y materiales para quienes tienen un rol en esta producción. Cada quien lo ve en Mi cuenta <Icono nombre="flecha-der" /> Mi equipo.
       </PanelTitle>
       <TeamManager pid={id} seccion={seccionValida(sp.seccion)} base={`/panel/producciones/${id}/equipo`} />
     </>

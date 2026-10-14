@@ -5,6 +5,7 @@ import { mover, type BoletoVista, type EstiloBoleto } from "@/lib/ticket-design"
 import { WalletBotones } from "@/components/wallet/WalletBotones";
 import { TicketCard } from "./TicketCard";
 import { descargarPdf } from "./ticket-canvas";
+import { Icono } from "@/components/Icono";
 
 const btn = "rounded-full border border-white/30 px-5 py-2.5 text-sm font-bold hover:border-white/60 disabled:opacity-60";
 
@@ -63,14 +64,14 @@ export function OrderTickets({ boletos, estilo, orden, pdfServidor, wallet }: { 
           // en vez de encogerse y cortar el QR.
           className="fixed inset-0 z-50 flex overflow-y-auto overscroll-contain bg-[#0b0910] p-4 outline-none"
         >
-          <button type="button" onClick={() => setAbierto(false)} aria-label="Cerrar" className="fixed right-4 top-4 z-10 h-11 w-11 rounded-full border border-white/30 bg-[#0b0910]/70 text-xl font-bold">×</button>
+          <button type="button" onClick={() => setAbierto(false)} aria-label="Cerrar" className="fixed right-4 top-4 z-10 h-11 w-11 rounded-full border border-white/30 bg-[#0b0910]/70 text-xl font-bold"><Icono nombre="x" /></button>
           <div className="m-auto flex w-full shrink-0 flex-col items-center gap-4 py-12">
           <div className="w-full shrink-0"><TicketCard b={boletos[i]} estilo={estilo} i={i} total={total} /></div>
           {total > 1 && (
             <div className="flex items-center gap-4">
-              <button type="button" onClick={() => setI((x) => mover(x, -1, total))} disabled={i === 0} aria-label="Boleto anterior" className="h-12 w-12 rounded-full border border-white/30 text-xl font-bold disabled:opacity-30">←</button>
+              <button type="button" onClick={() => setI((x) => mover(x, -1, total))} disabled={i === 0} aria-label="Boleto anterior" className="h-12 w-12 rounded-full border border-white/30 text-xl font-bold disabled:opacity-30"><Icono nombre="flecha-izq" /></button>
               <span className="text-sm font-semibold">{i + 1} / {total}</span>
-              <button type="button" onClick={() => setI((x) => mover(x, 1, total))} disabled={i === total - 1} aria-label="Boleto siguiente" className="h-12 w-12 rounded-full border border-white/30 text-xl font-bold disabled:opacity-30">→</button>
+              <button type="button" onClick={() => setI((x) => mover(x, 1, total))} disabled={i === total - 1} aria-label="Boleto siguiente" className="h-12 w-12 rounded-full border border-white/30 text-xl font-bold disabled:opacity-30"><Icono nombre="flecha-der" /></button>
             </div>
           )}
           {wallet && boletos[i].qr && (

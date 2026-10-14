@@ -4,6 +4,7 @@ import Link from "next/link";
 import { PageHeading } from "@/components/PageHeading";
 import { RECOVERY_COOKIE, requireSession } from "@/lib/auth";
 import { NewPasswordForm } from "./NewPasswordForm";
+import { Icono } from "@/components/Icono";
 
 export const metadata: Metadata = { title: "Contraseña nueva" };
 
@@ -20,7 +21,7 @@ export default async function ContrasenaNueva({ searchParams }: PageProps<"/cuen
         ) : valido ? <NewPasswordForm /> : (
           <p className="text-texto-2">
             Esta página es para el enlace de “¿Olvidaste tu contraseña?”. Para cambiarla sabiendo la actual, ve a{" "}
-            <Link href="/cuenta" className="underline">Mi cuenta → Correo y contraseña</Link>.
+            <Link href="/cuenta" className="underline">Mi cuenta <Icono nombre="flecha-der" /> Correo y contraseña</Link>.
           </p>
         )}
       </div>

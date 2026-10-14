@@ -11,6 +11,7 @@ import { getPendientes } from "@/lib/panel-pendientes";
 import { requirePanel } from "@/lib/permissions";
 import { getTheme } from "@/lib/productions";
 import { createClient } from "@/lib/supabase/server";
+import { Icono } from "@/components/Icono";
 
 type Home = {
   funciones: { id: string; production_id: string; starts_at: string; venue: string | null }[];
@@ -98,7 +99,7 @@ export default async function PanelHome() {
                   <li key={`${p.tipo}-${p.production_id}-${p.ref_id ?? ""}`}>
                     <Link href={pendienteHref(p)} className="flex items-center justify-between gap-3 rounded-lg bg-sala px-4 py-3 hover:bg-telon-2">
                       <span><b className="text-aviso">{pendienteTexto(p)}</b>{p.ref_titulo ? <span className="text-sm text-texto-2"> · {p.ref_titulo}</span> : null}</span>
-                      <span className="text-violeta-claro">→</span>
+                      <span className="text-violeta-claro"><Icono nombre="flecha-der" /></span>
                     </Link>
                   </li>
                 ))}
@@ -144,8 +145,8 @@ export default async function PanelHome() {
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <h2 className="titular text-xl">Notificaciones{sinLeer ? <span className="ml-2 rounded-full bg-ciruela px-2 py-0.5 align-middle text-xs text-white">{sinLeer} nuevas</span> : null}</h2>
           <span className="flex gap-4">
-            <Link href="/panel/notificaciones#telefono" className="text-sm font-bold text-violeta-claro">📱 En mi teléfono</Link>
-            <Link href="/panel/notificaciones" className="text-sm font-bold text-violeta-claro">Ver todas →</Link>
+            <Link href="/panel/notificaciones#telefono" className="text-sm font-bold text-violeta-claro"><Icono nombre="celular" /> En mi teléfono</Link>
+            <Link href="/panel/notificaciones" className="text-sm font-bold text-violeta-claro">Ver todas <Icono nombre="flecha-der" /></Link>
           </span>
         </div>
         <NotificationList items={notifs} />
@@ -179,7 +180,7 @@ export default async function PanelHome() {
                   </li>
                 ))}
               </ul>
-              {access.isDirector && <Link href="/panel/cumpleanos" className="text-sm font-bold text-violeta-claro">Ver todos →</Link>}
+              {access.isDirector && <Link href="/panel/cumpleanos" className="text-sm font-bold text-violeta-claro">Ver todos <Icono nombre="flecha-der" /></Link>}
             </Card>
           )}
         </div>
@@ -196,7 +197,7 @@ export default async function PanelHome() {
               </li>
             ))}
           </ul>
-          {access.isDirector && <Link href="/panel/bitacora" className="text-sm font-bold text-violeta-claro">Ver la bitácora completa →</Link>}
+          {access.isDirector && <Link href="/panel/bitacora" className="text-sm font-bold text-violeta-claro">Ver la bitácora completa <Icono nombre="flecha-der" /></Link>}
         </Card>
       )}
 

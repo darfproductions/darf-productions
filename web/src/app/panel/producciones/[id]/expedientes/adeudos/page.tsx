@@ -8,6 +8,7 @@ import { can } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
 import { ExpTabs } from "../ExpTabs";
 import { mayus } from "@/lib/dates";
+import { Icono } from "@/components/Icono";
 
 export const metadata: Metadata = { title: "Adeudos" };
 
@@ -33,7 +34,7 @@ export default async function Adeudos({ params, searchParams }: PageProps<"/pane
     <div className="flex flex-col gap-4">
       <ExpTabs pid={id} actual="adeudos" pagos />
       {!cobra ? (
-        <Card><p className="text-texto-2">Este taller no tiene pagos. Se configuran en Expedientes → Pagos del taller.</p></Card>
+        <Card><p className="text-texto-2">Este taller no tiene pagos. Se configuran en Expedientes <Icono nombre="flecha-der" /> Pagos del taller.</p></Card>
       ) : (
         <>
           <div className="grid grid-cols-3 gap-3">
@@ -53,8 +54,8 @@ export default async function Adeudos({ params, searchParams }: PageProps<"/pane
               ))}
             </div>
             <div className="flex flex-wrap gap-2">
-              <a href={`/panel/producciones/${id}/expedientes/exportar/adeudos`} className={`${pill} border-white/25`}>Exportar adeudos (CSV) ↓</a>
-              <a href={`/panel/producciones/${id}/expedientes/exportar/pagos`} className={`${pill} border-white/25`}>Exportar pagos (CSV) ↓</a>
+              <a href={`/panel/producciones/${id}/expedientes/exportar/adeudos`} className={`${pill} border-white/25`}>Exportar adeudos (CSV) <Icono nombre="flecha-abajo" /></a>
+              <a href={`/panel/producciones/${id}/expedientes/exportar/pagos`} className={`${pill} border-white/25`}>Exportar pagos (CSV) <Icono nombre="flecha-abajo" /></a>
             </div>
           </div>
           <Card className="overflow-x-auto p-0 md:p-0">

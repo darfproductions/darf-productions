@@ -4,6 +4,7 @@ import { Card, EstadoChip, PanelTitle } from "@/components/panel/ui";
 import { listPanelProductions } from "@/lib/panel-data";
 import { can, myProductionIds } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
+import { Icono } from "@/components/Icono";
 
 export const metadata: Metadata = { title: "Reportes por producción" };
 
@@ -24,7 +25,7 @@ export default async function ReportesPorObra() {
             <li key={p.id}>
               <Link href={`/panel/producciones/${p.id}/reportes`} className="flex items-center justify-between gap-3 px-5 py-4 hover:bg-telon-2">
                 <span className="font-bold">{p.nombre}</span>
-                <span className="flex items-center gap-3"><EstadoChip estado={p.estado} /><span className="text-violeta-claro">→</span></span>
+                <span className="flex items-center gap-3"><EstadoChip estado={p.estado} /><span className="text-violeta-claro"><Icono nombre="flecha-der" /></span></span>
               </Link>
             </li>
           ))}

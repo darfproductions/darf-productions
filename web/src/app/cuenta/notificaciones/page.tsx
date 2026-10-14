@@ -9,6 +9,7 @@ import { deleteReadNotifications, markAllNotifications } from "@/lib/notificatio
 import { listNotifications } from "@/lib/notifications";
 import { canSeePanel } from "@/lib/permissions";
 import { getPushInfo, PUSH_TIPOS, PUSH_TIPOS_CUENTA } from "@/lib/push";
+import { Icono } from "@/components/Icono";
 
 export const metadata: Metadata = { title: "Mis notificaciones" };
 
@@ -29,8 +30,8 @@ export default async function MisNotificaciones({ searchParams }: PageProps<"/cu
       </PageHeading>
       <div className="mx-auto flex max-w-[900px] flex-col gap-5 px-5 md:px-16">
         <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
-          <Link href="/cuenta" className="font-bold text-violeta-claro">← Mi cuenta</Link>
-          {panel && <Link href="/panel/notificaciones" className="font-bold text-violeta-claro">Ver en el panel →</Link>}
+          <Link href="/cuenta" className="font-bold text-violeta-claro"><Icono nombre="flecha-izq" /> Mi cuenta</Link>
+          {panel && <Link href="/panel/notificaciones" className="font-bold text-violeta-claro">Ver en el panel <Icono nombre="flecha-der" /></Link>}
         </div>
         <div className="flex flex-wrap items-center gap-2 text-sm">
           <Link href="/cuenta/notificaciones" className={sel(!soloNoLeidas)}>Todas</Link>

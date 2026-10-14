@@ -10,6 +10,7 @@ import { elegir } from "@/lib/poster";
 import { setFeatured } from "./actions";
 import { requirePanel } from "@/lib/permissions";
 import { kitMissing } from "@/lib/themes";
+import { Icono } from "@/components/Icono";
 
 export const metadata: Metadata = { title: "Producciones" };
 
@@ -67,8 +68,8 @@ export default async function PanelProductions() {
                 )}
                 {p.estado === "publicada" && can(access, p.id, "obra.publicar") && (
                   p.destacada
-                    ? <span className="text-sm font-bold text-aviso" title="Destacada en la portada">★ En portada</span>
-                    : <ActionForm inline action={setFeatured} hidden={{ pid: p.id }} submit="☆ Destacar en portada" submitClass="rounded-full border border-white/25 px-3 py-1.5 text-xs font-bold" />
+                    ? <span className="text-sm font-bold text-aviso" title="Destacada en la portada"><Icono nombre="estrella" /> En portada</span>
+                    : <ActionForm inline action={setFeatured} hidden={{ pid: p.id }} submit={<><Icono nombre="estrella-vacia" /> Destacar en portada</>} submitClass="rounded-full border border-white/25 px-3 py-1.5 text-xs font-bold" />
                 )}
               </li>
             );

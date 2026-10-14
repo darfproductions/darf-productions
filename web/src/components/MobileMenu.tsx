@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { logout } from "@/app/entrar/actions";
 import { esActiva, type NavLink } from "./MainNav";
+import { Icono } from "@/components/Icono";
 
 // Menú del celular a pantalla completa (guía de UI): secciones grandes, Fan Zone en oro y
 // Audiciones en pulso. Se cierra al navegar, con Esc o con la ✕; bloquea el scroll de atrás.
@@ -58,7 +59,7 @@ export function MobileMenu({ links, account, panel, sesion = false }: { links: N
           <div aria-hidden="true" className="haz absolute inset-0 opacity-50" />
           <div className="relative flex h-[68px] shrink-0 items-center justify-between border-b border-linea px-5">
             <span className="text-xs font-bold uppercase tracking-[0.32em] text-texto-3">Menú</span>
-            <button type="button" onClick={() => setAbierto(false)} aria-label="Cerrar menú" className="flex h-11 w-11 items-center justify-center rounded-full border border-linea-2 text-lg">✕</button>
+            <button type="button" onClick={() => setAbierto(false)} aria-label="Cerrar menú" className="flex h-11 w-11 items-center justify-center rounded-full border border-linea-2 text-lg"><Icono nombre="x" /></button>
           </div>
           <nav aria-label="Menú" className="relative flex flex-col px-5 py-4">
             {[...links, ...(panel ? [{ href: "/panel", label: "Panel" }] : [])].map((l, i) => {
@@ -74,7 +75,7 @@ export function MobileMenu({ links, account, panel, sesion = false }: { links: N
                   className="flex min-h-14 items-center justify-between border-b border-linea px-1 py-3"
                 >
                   <span className={`text-[26px] font-black uppercase tracking-[-0.02em] ${color}`}>{l.label}</span>
-                  <span aria-hidden="true" className={on ? "text-oro" : "text-texto-3"}>{on ? "●" : "→"}</span>
+                  <span aria-hidden="true" className={on ? "text-oro" : "text-texto-3"}><Icono nombre={on ? "punto" : "flecha-der"} /></span>
                 </Link>
               );
             })}

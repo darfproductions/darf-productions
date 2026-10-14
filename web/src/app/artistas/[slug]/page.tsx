@@ -7,6 +7,7 @@ import { TIPO_CREDITO } from "@/lib/casting-rules";
 import { getProBySlug } from "@/lib/pro-profile";
 import { LISTAS, reelYoutube } from "@/lib/pro-rules";
 import { perfilUrl } from "@/lib/productions";
+import { Icono } from "@/components/Icono";
 
 export async function generateMetadata({ params }: PageProps<"/artistas/[slug]">): Promise<Metadata> {
   const { slug } = await params;
@@ -40,10 +41,10 @@ export default async function Artista({ params }: PageProps<"/artistas/[slug]">)
           <h1 className="titular text-4xl md:text-6xl">{nombre}</h1>
           {pro.semblanza && <p className="whitespace-pre-line text-lg leading-relaxed text-texto-2">{pro.semblanza}</p>}
           <div className="flex flex-wrap gap-3 text-sm font-bold">
-            {pro.instagram && <a href={`https://instagram.com/${pro.instagram}`} target="_blank" rel="noreferrer" className="rounded-full border border-white/25 px-4 py-2">Instagram ↗</a>}
-            {pro.tiktok && <a href={`https://tiktok.com/@${pro.tiktok}`} target="_blank" rel="noreferrer" className="rounded-full border border-white/25 px-4 py-2">TikTok ↗</a>}
-            {pro.youtube && <a href={pro.youtube} target="_blank" rel="noreferrer" className="rounded-full border border-white/25 px-4 py-2">YouTube ↗</a>}
-            {pro.reel_url && !reel && <a href={pro.reel_url} target="_blank" rel="noreferrer" className="rounded-full border border-white/25 px-4 py-2">Video de muestra ↗</a>}
+            {pro.instagram && <a href={`https://instagram.com/${pro.instagram}`} target="_blank" rel="noreferrer" className="rounded-full border border-white/25 px-4 py-2">Instagram <Icono nombre="externo" /></a>}
+            {pro.tiktok && <a href={`https://tiktok.com/@${pro.tiktok}`} target="_blank" rel="noreferrer" className="rounded-full border border-white/25 px-4 py-2">TikTok <Icono nombre="externo" /></a>}
+            {pro.youtube && <a href={pro.youtube} target="_blank" rel="noreferrer" className="rounded-full border border-white/25 px-4 py-2">YouTube <Icono nombre="externo" /></a>}
+            {pro.reel_url && !reel && <a href={pro.reel_url} target="_blank" rel="noreferrer" className="rounded-full border border-white/25 px-4 py-2">Video de muestra <Icono nombre="externo" /></a>}
           </div>
         </div>
       </section>

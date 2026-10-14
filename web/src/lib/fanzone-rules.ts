@@ -1,4 +1,5 @@
 import { parseYoutube } from "@/lib/youtube";
+import type { IconoNombre } from "@/components/Icono";
 
 // Fan Zone ampliada (0052). Puro, con pruebas en fanzone-rules.test.ts.
 
@@ -25,12 +26,12 @@ export function numeroSocio(n: number): string {
   return `#${String(n).padStart(4, "0")}`;
 }
 
-export const FAN_TIPOS: Record<FanTipo, { label: string; help: string; icono: string }> = {
-  video: { label: "Video", help: "Enlace de YouTube (puede ser no listado).", icono: "▶" },
-  foto: { label: "Foto", help: "JPG, PNG o WebP, hasta 20 MB.", icono: "◼" },
-  documento: { label: "Documento", help: "PDF, hasta 20 MB.", icono: "▤" },
-  enlace: { label: "Enlace", help: "Cualquier página que empiece con https:// (playlist, nota, Instagram…).", icono: "↗" },
-  texto: { label: "Texto", help: "Un aviso o una nota para los fans.", icono: "¶" },
+export const FAN_TIPOS: Record<FanTipo, { label: string; help: string; icono: IconoNombre }> = {
+  video: { label: "Video", help: "Enlace de YouTube (puede ser no listado).", icono: "play" },
+  foto: { label: "Foto", help: "JPG, PNG o WebP, hasta 20 MB.", icono: "imagen" },
+  documento: { label: "Documento", help: "PDF, hasta 20 MB.", icono: "documento" },
+  enlace: { label: "Enlace", help: "Cualquier página que empiece con https:// (playlist, nota, Instagram…).", icono: "externo" },
+  texto: { label: "Texto", help: "Un aviso o una nota para los fans.", icono: "lapiz" },
 };
 
 /** Destacados primero; luego por orden y fecha. */

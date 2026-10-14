@@ -113,7 +113,7 @@ export default async function Cierre({ params }: PageProps<"/panel/producciones/
 
       {revisar && (
         <ListaRevision className="print:hidden" titulo="Antes de cerrar la temporada" listo={revisar.pendientes === 0}
-          resumen={revisar.pendientes === 0 ? "✓ Todo resuelto: puedes cerrar la temporada." : !revisar.puedeCerrar ? "Hay órdenes por aprobar: resuélvelas para poder cerrar." : `${revisar.pendientes} ${revisar.pendientes === 1 ? "cosa por revisar" : "cosas por revisar"} (no impiden cerrar).`}
+          resumen={revisar.pendientes === 0 ? "Todo resuelto: puedes cerrar la temporada." : !revisar.puedeCerrar ? "Hay órdenes por aprobar: resuélvelas para poder cerrar." : `${revisar.pendientes} ${revisar.pendientes === 1 ? "cosa por revisar" : "cosas por revisar"} (no impiden cerrar).`}
           puntos={revisar.puntos.map((x) => ({ ...x, nivel: x.bloquea ? "obligatorio" : "aviso" }))} />
       )}
       {cierra && p.estado !== "archivada" && (

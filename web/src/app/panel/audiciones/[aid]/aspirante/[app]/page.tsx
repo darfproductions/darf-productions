@@ -10,6 +10,7 @@ import { requireAudition, signPhotos } from "@/lib/panel-auditions";
 import type { Criterio } from "@/lib/audition-rules";
 import { createClient } from "@/lib/supabase/server";
 import { addVideo, removeItem } from "../../../actions";
+import { Icono } from "@/components/Icono";
 
 export const metadata: Metadata = { title: "Ficha del aspirante" };
 
@@ -52,7 +53,7 @@ export default async function ApplicantPage({ params }: PageProps<"/panel/audici
           {(x.roles as string[]).length > 0 && <p>Personajes: {(x.roles as string[]).map((r) => roleName.get(r)).filter(Boolean).join(", ")}</p>}
           {x.es_menor && <p className="text-aviso">Menor de edad{x.tutor_nombre ? ` · tutor: ${x.tutor_nombre} · ${x.tutor_telefono}` : " · autorización por la escuela u organización"}</p>}
           {!x.consentimiento_imagen && <p className="text-xs text-texto-3">No autorizó fotos o video.</p>}
-          {x.user_id && <Link href={`/panel/talento/${x.user_id}`} className="text-xs font-bold text-violeta-claro">Ficha de talento (todas sus audiciones y obras) →</Link>}
+          {x.user_id && <Link href={`/panel/talento/${x.user_id}`} className="text-xs font-bold text-violeta-claro">Ficha de talento (todas sus audiciones y obras) <Icono nombre="flecha-der" /></Link>}
         </div>
       </Card>
 
@@ -71,7 +72,7 @@ export default async function ApplicantPage({ params }: PageProps<"/panel/audici
         <ul className="flex flex-col gap-2">
           {propios.map((v) => (
             <li key={v.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-sala px-3 py-2 text-sm">
-              <a href={v.url} target="_blank" rel="noreferrer" className="font-bold text-violeta-claro underline">{v.titulo} ↗</a>
+              <a href={v.url} target="_blank" rel="noreferrer" className="font-bold text-violeta-claro underline">{v.titulo} <Icono nombre="externo" /></a>
               <span className="flex items-center gap-2 text-xs text-texto-3">{FUENTE[videoSource(v.url) ?? "otro"]}
                 <ActionForm inline action={removeItem} hidden={{ ...h, tabla: "audition_videos", id: v.id }} confirm="¿Quitar este video de la ficha? (el video sigue en YouTube o Drive)" submit="Quitar" submitClass="rounded-full border border-white/25 px-2.5 py-1 text-xs font-bold" />
               </span>
@@ -89,7 +90,7 @@ export default async function ApplicantPage({ params }: PageProps<"/panel/audici
         {delDia.length > 0 && (
           <div className="text-sm">
             <p className="mb-1 text-texto-3">Videos generales del día (por grupo):</p>
-            <ul className="flex flex-col gap-1">{delDia.map((v) => <li key={v.id}><a href={v.url} target="_blank" rel="noreferrer" className="text-violeta-claro underline">{v.titulo} ↗</a></li>)}</ul>
+            <ul className="flex flex-col gap-1">{delDia.map((v) => <li key={v.id}><a href={v.url} target="_blank" rel="noreferrer" className="text-violeta-claro underline">{v.titulo} <Icono nombre="externo" /></a></li>)}</ul>
           </div>
         )}
       </Card>

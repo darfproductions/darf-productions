@@ -22,6 +22,7 @@ import { createClient } from "@/lib/supabase/server";
 import { addIncident, addMeasure, addPayment, annulPayment, markReviewed, reactivateMember, removePayment, setDelivered, setIngreso, setScholarship, voidIncident, withdrawMember } from "../actions";
 import { isoMx } from "@/lib/dates";
 import { mayus } from "@/lib/dates";
+import { Icono } from "@/components/Icono";
 
 export const metadata: Metadata = { title: "Expediente" };
 
@@ -69,9 +70,9 @@ export default async function MemberPage({ params }: PageProps<"/panel/produccio
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <Link href={`/panel/producciones/${id}/expedientes`} className="text-sm font-bold text-violeta-claro">← Expedientes</Link>
+        <Link href={`/panel/producciones/${id}/expedientes`} className="text-sm font-bold text-violeta-claro"><Icono nombre="flecha-izq" /> Expedientes</Link>
         <p className="mt-2 text-xl font-bold">{persona.nombre} <span className="text-sm font-normal text-texto-3">· {persona.email}{e !== null ? ` · ${e} años` : ""}</span></p>
-        <p className="text-sm text-texto-2">{persona.papeles.join(", ")} · <Link href={`/panel/talento/${uid}`} className="font-bold text-violeta-claro">Ficha de talento (todo su historial) →</Link></p>
+        <p className="text-sm text-texto-2">{persona.papeles.join(", ")} · <Link href={`/panel/talento/${uid}`} className="font-bold text-violeta-claro">Ficha de talento (todo su historial) <Icono nombre="flecha-der" /></Link></p>
       </div>
 
       {d.alta && (
@@ -134,7 +135,7 @@ export default async function MemberPage({ params }: PageProps<"/panel/produccio
                     <span>
                       <b>{t.nombre}</b>{t.obligatorio ? "" : " · opcional"}
                       <span className="block text-xs text-texto-3">
-                        {doc?.entregado_at ? "✓ Entregado" : "Pendiente"}{url && <> · <a href={url} target="_blank" rel="noreferrer" className="text-violeta-claro underline">ver archivo</a></>}
+                        {doc?.entregado_at ? <><Icono nombre="check" /> Entregado</> : "Pendiente"}{url && <> · <a href={url} target="_blank" rel="noreferrer" className="text-violeta-claro underline">ver archivo</a></>}
                       </span>
                     </span>
                     <span className="flex flex-wrap items-center gap-2">
@@ -215,7 +216,7 @@ export default async function MemberPage({ params }: PageProps<"/panel/produccio
         <Card className="flex flex-col gap-3">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <h2 className="titular text-xl">Pagos</h2>
-            {d.fee && d.fee.cobrar !== false && <a href={`/panel/producciones/${id}/expedientes/${uid}/estado-de-cuenta`} className="text-sm font-bold text-violeta-claro">Estado de cuenta (PDF) ↓</a>}
+            {d.fee && d.fee.cobrar !== false && <a href={`/panel/producciones/${id}/expedientes/${uid}/estado-de-cuenta`} className="text-sm font-bold text-violeta-claro">Estado de cuenta (PDF) <Icono nombre="flecha-abajo" /></a>}
           </div>
           {!d.fee && <p className="text-sm text-texto-3">Primero define los pagos del taller (en Expedientes).</p>}
           {d.fee && d.fee.cobrar === false && <p className="text-sm text-texto-3">Este taller no tiene pagos.</p>}
@@ -270,7 +271,7 @@ export default async function MemberPage({ params }: PageProps<"/panel/produccio
                         </span>
                         <span className="flex flex-wrap items-center gap-2">
                           <a href={recibo} className={ghost}>Recibo PDF</a>
-                          {wa ? <a href={wa} target="_blank" rel="noopener noreferrer" className={ghost}>Enviar por WhatsApp ↗</a> : <span className="text-xs text-texto-3">Sin teléfono para WhatsApp</span>}
+                          {wa ? <a href={wa} target="_blank" rel="noopener noreferrer" className={ghost}>Enviar por WhatsApp <Icono nombre="externo" /></a> : <span className="text-xs text-texto-3">Sin teléfono para WhatsApp</span>}
                           {!p.anulado_at && (sePuedeBorrar(p.registrado_at)
                             ? <ActionForm inline action={removePayment} hidden={{ ...h, id: p.id }} confirm="¿Borrar este pago? Es solo para errores de captura recientes." submit="Borrar" submitClass={ghost} />
                             : (
@@ -297,7 +298,7 @@ export default async function MemberPage({ params }: PageProps<"/panel/produccio
         <Card className="flex flex-col gap-3">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <h2 className="titular text-xl">Solicitudes <span className="text-base font-normal text-texto-3">· {solicitudes.length}</span></h2>
-            <Link href={`/panel/producciones/${id}/solicitudes`} className="text-sm font-bold text-violeta-claro">Revisar solicitudes →</Link>
+            <Link href={`/panel/producciones/${id}/solicitudes`} className="text-sm font-bold text-violeta-claro">Revisar solicitudes <Icono nombre="flecha-der" /></Link>
           </div>
           <ul className="grid gap-2 lg:grid-cols-2">
             {solicitudes.map((q) => <li key={q.id} className="min-w-0"><RequestCard r={q} url={q.archivo_path ? solUrls.get(q.archivo_path) : undefined} /></li>)}

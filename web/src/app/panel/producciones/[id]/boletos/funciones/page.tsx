@@ -12,6 +12,7 @@ import { ligaWhatsApp } from "@/lib/pago-rules";
 import { formatPerformanceDate } from "@/lib/productions";
 import { formatMoney } from "@/lib/tickets";
 import { cancelPerformance, createPerformance, deletePerformance, saveGeneralZone, setProductionOnSale, updatePerformance } from "../actions";
+import { Icono } from "@/components/Icono";
 
 export const metadata: Metadata = { title: "Funciones y precios" };
 
@@ -89,7 +90,7 @@ export default async function PerformancesPage({ params }: PageProps<"/panel/pro
                   {f.preventa_hasta && <span className="rounded-full border border-oro/40 px-2 py-0.5 text-[11px] uppercase text-oro-claro">preventa</span>}
                   <span className="text-sm text-texto-3">{f.venue ? `${f.venue} · ` : ""}{precios.length ? `$${Math.min(...precios)}–$${Math.max(...precios)}` : "sin precios"}</span>
                 </span>
-                <span className="text-sm font-bold text-violeta-claro">Editar <span className="inline-block transition-transform group-open:rotate-180">▾</span></span>
+                <span className="text-sm font-bold text-violeta-claro">Editar <span className="inline-block transition-transform group-open:rotate-180"><Icono nombre="chevron-abajo" /></span></span>
               </summary>
               <div className="border-t border-linea p-5">
               <ActionForm action={updatePerformance} hidden={{ pid: id, perf: f.id }} submit="Guardar función">
@@ -154,7 +155,7 @@ export default async function PerformancesPage({ params }: PageProps<"/panel/pro
             </ActionForm>
             </div>
           </details>
-          <AjustesSeccion id="zonas" titulo="⚙ Zonas de entrada general" resumen={`${zonas.filter((z) => z.cupo != null).length} zonas`}>
+          <AjustesSeccion id="zonas" titulo="Zonas de entrada general" resumen={`${zonas.filter((z) => z.cupo != null).length} zonas`}>
             <div>
               <p className="text-sm text-texto-2">Zonas sin asiento numerado (ej. Pista: 80 lugares). El cupo vale para todas las funciones; en cada función puedes poner otro. Luego ponle precio en cada función.</p>
             </div>

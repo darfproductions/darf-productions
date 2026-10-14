@@ -6,15 +6,16 @@ import { bip } from "@/lib/aviso-sonido";
 import { mayus } from "@/lib/dates";
 import { buscarPuerta, checkIn, conteoPuerta, deshacerEntrada, type BoletoPuerta, type CheckIn, type Conteo } from "./actions";
 import { etiquetaBoleto } from "./door-rules";
+import { Icono, type IconoNombre } from "@/components/Icono";
 
-const VISTA: Record<string, { bg: string; title: string }> = {
-  ok: { bg: "bg-[#14532d]", title: "✓ Puede pasar" },
-  ya_usado: { bg: "bg-[#7c2d12]", title: "Ya se usó" },
-  cancelado: { bg: "bg-[#5a1a22]", title: "Boleto cancelado" },
-  no_aprobado: { bg: "bg-[#7c2d12]", title: "Compra sin aprobar" },
-  otra_funcion: { bg: "bg-[#5a1a22]", title: "✗ Boleto de otra función" },
-  no_encontrado: { bg: "bg-[#5a1a22]", title: "QR no válido" },
-  error: { bg: "bg-[#5a1a22]", title: "No se pudo validar" },
+const VISTA: Record<string, { bg: string; title: string; icono: IconoNombre }> = {
+  ok: { bg: "bg-[#14532d]", title: "Puede pasar", icono: "check" },
+  ya_usado: { bg: "bg-[#7c2d12]", title: "Ya se usó", icono: "alerta" },
+  cancelado: { bg: "bg-[#5a1a22]", title: "Boleto cancelado", icono: "x" },
+  no_aprobado: { bg: "bg-[#7c2d12]", title: "Compra sin aprobar", icono: "alerta" },
+  otra_funcion: { bg: "bg-[#5a1a22]", title: "Boleto de otra función", icono: "x" },
+  no_encontrado: { bg: "bg-[#5a1a22]", title: "QR no válido", icono: "x" },
+  error: { bg: "bg-[#5a1a22]", title: "No se pudo validar", icono: "alerta" },
 };
 
 const fecha = (iso: string) =>
@@ -95,7 +96,7 @@ export function DoorScanner({ pid, funciones, inicial }: { pid: string; funcione
       )}
       {res && v && (
         <div role="status" className={`rounded-2xl p-6 text-white ${v.bg}`}>
-          <p className="text-3xl font-black">{v.title}</p>
+          <p className="flex items-center gap-3 text-3xl font-black"><Icono nombre={v.icono} />{v.title}</p>
           {"seat_label" in res && res.seat_label && <p className="mt-1 text-xl font-bold">{etiquetaBoleto(res.seat_label, res.category)}</p>}
           {"buyer_nombre" in res && res.buyer_nombre && <p className="text-lg">{res.buyer_nombre}</p>}
           {"performance_starts_at" in res && res.performance_starts_at && (

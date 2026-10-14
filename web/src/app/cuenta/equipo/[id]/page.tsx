@@ -13,6 +13,7 @@ import { TeamFileUpload } from "@/components/team/TeamFileUpload";
 import { getTeamSpace, signTeamFiles, teamRoles, teamRosterPublic } from "@/lib/team";
 import { attendNote, markTeamRead, removeTeamMaterial, saveTeamMaterial } from "@/lib/team-actions";
 import { espacioPid, separarJuntas, TIPO_JUNTA } from "@/lib/team-rules";
+import { Icono } from "@/components/Icono";
 
 export const metadata: Metadata = { title: "Mi equipo" };
 
@@ -51,7 +52,7 @@ export default async function MiEquipo({ params }: PageProps<"/cuenta/equipo/[id
         {yo?.roles?.length ? `Tu rol: ${yo.roles.join(", ")}.` : gestiona ? "Lo ves porque manejas el portal del equipo." : ""}
       </PageHeading>
       <div className="mx-auto flex max-w-[1100px] flex-col gap-8 px-5 md:px-16">
-        <Link href="/cuenta" className="text-sm font-bold text-violeta-claro">← Mi cuenta</Link>
+        <Link href="/cuenta" className="text-sm font-bold text-violeta-claro"><Icono nombre="flecha-izq" /> Mi cuenta</Link>
         <ul className="grid gap-3 sm:grid-cols-3">
           <li className={caja}><span className="text-xs font-bold uppercase tracking-[0.2em] text-texto-3">Notas pendientes</span><span className="text-3xl font-black">{notasPend.length}</span></li>
           <li className={caja}><span className="text-xs font-bold uppercase tracking-[0.2em] text-texto-3">Avisos sin leer</span><span className="text-3xl font-black">{sinLeer.length}</span></li>
@@ -67,7 +68,7 @@ export default async function MiEquipo({ params }: PageProps<"/cuenta/equipo/[id
               <p className="whitespace-pre-line">{n.cuerpo}</p>
               {n.atendida_at ? (
                 <div className="flex flex-wrap items-center gap-3 text-sm">
-                  <span className="text-exito">✓ Atendida {fecha(n.atendida_at)}{n.respuesta ? ` — “${n.respuesta}”` : ""}</span>
+                  <span className="text-exito"><Icono nombre="check" /> Atendida {fecha(n.atendida_at)}{n.respuesta ? ` — “${n.respuesta}”` : ""}</span>
                   <ActionForm inline action={attendNote} hidden={{ ...h, id: n.id, deshacer: "1" }} submit="Marcar pendiente" submitClass="text-xs font-bold text-violeta-claro" />
                 </div>
               ) : (
@@ -86,17 +87,17 @@ export default async function MiEquipo({ params }: PageProps<"/cuenta/equipo/[id
             <div key={j.id} className={caja}>
               <p className="font-bold">{TIPO_JUNTA[j.tipo] ?? j.tipo}: {j.titulo} <span className="ml-2 text-xs font-normal text-texto-3">{j.estado === "realizada" ? "Realizada" : "Programada"}</span></p>
               <p className="text-sm text-texto-2">{cuando(j.inicia)}{j.lugar ? ` · ${j.lugar}` : ""}
-                {j.enlace && j.estado === "programada" && <> · <a href={j.enlace} target="_blank" rel="noreferrer" className="font-bold text-violeta-claro">Entrar a la videollamada ↗</a></>}</p>
+                {j.enlace && j.estado === "programada" && <> · <a href={j.enlace} target="_blank" rel="noreferrer" className="font-bold text-violeta-claro">Entrar a la videollamada <Icono nombre="externo" /></a></>}</p>
               {j.agenda && <p className="whitespace-pre-line text-sm"><b>Agenda:</b> {j.agenda}</p>}
               {j.resumen && <div className="text-sm"><b>Resumen</b><p className="whitespace-pre-line text-texto-2">{j.resumen}</p></div>}
               {(j.acuerdos ?? []).length > 0 && (
                 <div className="text-sm"><b>Acuerdos</b>
-                  <ul className="mt-1 flex flex-col gap-1">{j.acuerdos.map((a, k) => <li key={k}>• {a.texto}{a.responsable ? ` — ${a.responsable}` : ""}{a.fecha ? ` (${a.fecha})` : ""}</li>)}</ul>
+                  <ul className="mt-1 flex flex-col gap-1">{j.acuerdos.map((a, k) => <li key={k}><Icono nombre="punto" className="h-2 w-2 opacity-70" /> {a.texto}{a.responsable ? ` — ${a.responsable}` : ""}{a.fecha ? ` (${a.fecha})` : ""}</li>)}</ul>
                 </div>
               )}
               <div className="flex flex-wrap gap-3 text-sm font-bold">
-                {j.transcript_path && files.get(j.transcript_path) && <a href={files.get(j.transcript_path)} target="_blank" rel="noreferrer" className="text-violeta-claro">Transcript ↗</a>}
-                {j.grabacion_url && <a href={j.grabacion_url} target="_blank" rel="noreferrer" className="text-violeta-claro">Grabación ↗</a>}
+                {j.transcript_path && files.get(j.transcript_path) && <a href={files.get(j.transcript_path)} target="_blank" rel="noreferrer" className="text-violeta-claro">Transcript <Icono nombre="externo" /></a>}
+                {j.grabacion_url && <a href={j.grabacion_url} target="_blank" rel="noreferrer" className="text-violeta-claro">Grabación <Icono nombre="externo" /></a>}
               </div>
               {j.transcript_texto && <details className="text-sm"><summary className="cursor-pointer font-bold">Ver transcript</summary><p className="mt-2 max-h-96 overflow-auto whitespace-pre-line rounded-lg bg-sala p-3 text-xs text-texto-2">{j.transcript_texto}</p></details>}
             </div>
@@ -108,10 +109,10 @@ export default async function MiEquipo({ params }: PageProps<"/cuenta/equipo/[id
           {space.avisos.length === 0 && <p className="text-texto-2">No hay avisos.</p>}
           {space.avisos.map((a) => (
             <div key={a.id} className={`${caja} ${a.importante && !yaLei.has(a.id) ? "border border-aviso/50" : ""}`}>
-              <p className="font-bold">{a.importante && <span className="mr-2 text-aviso">●</span>}{a.titulo}</p>
+              <p className="font-bold">{a.importante && <span className="mr-2 text-aviso"><Icono nombre="punto" /></span>}{a.titulo}</p>
               <p className="text-xs text-texto-3">{fecha(a.created_at)}</p>
               <p className="whitespace-pre-line text-sm">{a.cuerpo}</p>
-              {yaLei.has(a.id) ? <p className="text-xs text-exito">✓ Enterado</p>
+              {yaLei.has(a.id) ? <p className="text-xs text-exito"><Icono nombre="check" /> Enterado</p>
                 : yo ? <ActionForm inline action={markTeamRead} hidden={{ ...h, id: a.id }} submit="Enterado" submitClass="rounded-full bg-texto px-4 py-2 text-sm font-bold text-sala" /> : null}
             </div>
           ))}
@@ -145,7 +146,7 @@ export default async function MiEquipo({ params }: PageProps<"/cuenta/equipo/[id
                 <div key={m.id} className="flex flex-col gap-2 rounded-lg bg-sala px-3 py-2 text-sm">
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <a href={m.url ?? files.get(m.archivo_path ?? "") ?? "#"} target="_blank" rel="noreferrer" className="hover:text-violeta-claro">
-                      <b>{m.titulo} ↗</b>
+                      <b>{m.titulo} <Icono nombre="externo" /></b>
                       <span className="block text-xs text-texto-3">Subió {nombres.get(m.created_by ?? "") ?? "el equipo"}{m.descripcion ? ` · ${m.descripcion}` : ""}</span>
                     </a>
                     {(m.created_by === session.userId || gestiona) && (

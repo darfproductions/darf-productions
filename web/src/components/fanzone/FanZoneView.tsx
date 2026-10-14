@@ -11,6 +11,7 @@ import { MiCredencial } from "@/components/credencial/MiCredencial";
 import { esSocio, getMiCredencial } from "@/lib/credencial";
 import { fanzoneCounts, getCredencial, getEncuentros, getProximos, listFanzone } from "@/lib/fanzone";
 import { getHomeData } from "@/lib/productions";
+import { Icono } from "@/components/Icono";
 
 const PESTANAS: (FanCategoria | "todo")[] = ["todo", "ensayo", "making", "fotos", "otro"];
 const BENEFICIOS = [
@@ -47,7 +48,7 @@ export async function FanZoneView({ pid, cat, nombre }: { pid: string | null; ca
                 ))}
               </ul>
               <UnirseClub />
-              <Link href="/club-fan" className="text-sm font-bold text-oro-claro underline-offset-4 hover:underline">Ver todos los beneficios →</Link>
+              <Link href="/club-fan" className="text-sm font-bold text-oro-claro underline-offset-4 hover:underline">Ver todos los beneficios <Icono nombre="flecha-der" /></Link>
             </div>
             <div aria-hidden="true" className="opacity-60 blur-[1px]">
               <Credencial nombre="Tu nombre" c={{ numero: 0, desde: new Date(0).toISOString(), fundador: false }} />
@@ -139,10 +140,10 @@ export async function FanZoneView({ pid, cat, nombre }: { pid: string | null; ca
             <p className="flex flex-wrap items-center gap-2 text-sm text-texto-3">
               Mostrando:
               {pestana !== "todo" && (
-                <Link href={liga(pid, "todo")} scroll={false} className="chip chip-oro min-h-[28px]" aria-label={`Quitar filtro ${FAN_CATEGORIAS[pestana]}`}>{FAN_CATEGORIAS[pestana]} <span aria-hidden="true">×</span></Link>
+                <Link href={liga(pid, "todo")} scroll={false} className="chip chip-oro min-h-[28px]" aria-label={`Quitar filtro ${FAN_CATEGORIAS[pestana]}`}>{FAN_CATEGORIAS[pestana]} <Icono nombre="x" /></Link>
               )}
               {obraActual && (
-                <Link href={liga(null, pestana)} scroll={false} className="chip chip-oro min-h-[28px]" aria-label={`Quitar filtro ${obraActual.nombre}`}>{obraActual.nombre} <span aria-hidden="true">×</span></Link>
+                <Link href={liga(null, pestana)} scroll={false} className="chip chip-oro min-h-[28px]" aria-label={`Quitar filtro ${obraActual.nombre}`}>{obraActual.nombre} <Icono nombre="x" /></Link>
               )}
             </p>
           )}
@@ -170,7 +171,7 @@ export async function FanZoneView({ pid, cat, nombre }: { pid: string | null; ca
             <h2 id="foto-t" className="text-[clamp(1.8rem,3.4vw,2.5rem)] font-black uppercase leading-[0.95] tracking-[-0.03em]">Eventos del Club Fan</h2>
             <p className="max-w-md text-[15px] leading-relaxed text-texto-2">Foto con el elenco, tours, meet & greets y transmisiones exclusivas. Aparta tu lugar cuando lo pida y en la entrada muestra tu credencial con QR.</p>
             {miCredencial && <MiCredencial c={miCredencial} compacto />}
-            <Link href="/eventos" className="text-sm font-bold text-oro-claro underline">Ver todos los eventos →</Link>
+            <Link href="/eventos" className="text-sm font-bold text-oro-claro underline">Ver todos los eventos <Icono nombre="flecha-der" /></Link>
           </div>
           {encuentros.length ? (
             <ul className="flex flex-col gap-3">

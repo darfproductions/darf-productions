@@ -6,6 +6,7 @@ import { lineaObra } from "@/components/ProductionCard";
 import { partesFuncion } from "@/lib/disponibilidad";
 import { formatPrice, getTheme, posterUrl, themeStyle, type PublicProduction } from "@/lib/productions";
 import { mayus } from "@/lib/dates";
+import { Icono } from "@/components/Icono";
 
 // Tarjetas de la cartelera (guía de UI · Fusión). Toman los colores de cada obra.
 
@@ -46,7 +47,7 @@ export function ObraPanoramica({ p }: { p: PublicProduction }) {
           )}
         </h3>
         <ul className="flex flex-wrap gap-2">
-          {p.temporada && <li className="chip chip-obra"><span className="text-obra-acento">✦</span>Temporada {p.temporada}</li>}
+          {p.temporada && <li className="chip chip-obra"><span className="text-obra-acento"><Icono nombre="destello" /></span>Temporada {p.temporada}</li>}
           {p.venue && <li className="chip chip-obra">{p.venue}</li>}
           {p.price > 0 && <li className="chip chip-obra num">Desde {formatPrice(p.price)}</li>}
         </ul>
@@ -79,7 +80,7 @@ export function ObraHorizontal({ p }: { p: PublicProduction }) {
         <EstadoObra estado={p.estadoPublico} texto={p.temporada ? `Próximamente · ${p.temporada}` : undefined} className="self-start" />
         <strong className="text-2xl font-black tracking-[-0.02em]">{p.nombre}</strong>
         <p className="text-[15px] leading-relaxed text-texto-2">{p.proxima || p.venue ? lineaObra(p) : "Detalles, fechas y audiciones por anunciar."}</p>
-        <span className="text-[12.5px] font-bold text-oro-claro">Conocer la obra →</span>
+        <span className="text-[12.5px] font-bold text-oro-claro">Conocer la obra <Icono nombre="flecha-der" /></span>
       </div>
     </Link>
   );

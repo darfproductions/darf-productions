@@ -1,3 +1,4 @@
+import type { IconoNombre } from "@/components/Icono";
 // Solicitudes del elenco (0070). Funciones puras: request-rules.test.ts.
 
 export type RequestTipo = "falta" | "documento" | "pago" | "otro";
@@ -11,11 +12,11 @@ export type MemberRequest = {
   ensayos: { id: string; titulo: string; inicia: string }[];
 };
 
-export const TIPO_SOLICITUD: Record<RequestTipo, { label: string; corto: string; icono: string; ayuda: string }> = {
-  falta: { label: "Avisar una falta", corto: "Falta", icono: "🕒", ayuda: "Avisa con anticipación que no podrás ir. Si la aprueban, queda justificada." },
-  documento: { label: "Enviar un documento", corto: "Documento", icono: "📄", ayuda: "Acta, identificación, cartas, permisos… en PDF o foto." },
-  pago: { label: "Comprobante de pago", corto: "Pago", icono: "💳", ayuda: "Sube tu comprobante; al aprobarlo, el pago queda registrado." },
-  otro: { label: "Tema de pagos u otra solicitud", corto: "Otra", icono: "✉", ayuda: "Becas, aclaraciones de pagos o cualquier otra cosa." },
+export const TIPO_SOLICITUD: Record<RequestTipo, { label: string; corto: string; icono: IconoNombre; ayuda: string }> = {
+  falta: { label: "Avisar una falta", corto: "Falta", icono: "reloj", ayuda: "Avisa con anticipación que no podrás ir. Si la aprueban, queda justificada." },
+  documento: { label: "Enviar un documento", corto: "Documento", icono: "documento", ayuda: "Acta, identificación, cartas, permisos… en PDF o foto." },
+  pago: { label: "Comprobante de pago", corto: "Pago", icono: "tarjeta", ayuda: "Sube tu comprobante; al aprobarlo, el pago queda registrado." },
+  otro: { label: "Tema de pagos u otra solicitud", corto: "Otra", icono: "sobre", ayuda: "Becas, aclaraciones de pagos o cualquier otra cosa." },
 };
 
 export const ESTADO_SOLICITUD: Record<RequestEstado, { label: string; cls: string }> = {

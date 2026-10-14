@@ -3,6 +3,7 @@ import Link from "next/link";
 import { PageHeading } from "@/components/PageHeading";
 import { requireSession } from "@/lib/auth";
 import { EliminarForm } from "./EliminarForm";
+import { Icono } from "@/components/Icono";
 
 export const metadata: Metadata = { title: "Eliminar mi cuenta" };
 
@@ -15,7 +16,7 @@ export default async function Eliminar() {
         Puedes borrar tu cuenta cuando quieras. Esto no se puede deshacer.
       </PageHeading>
       <div className="mx-auto flex max-w-2xl flex-col gap-6 px-5">
-        <Link href="/cuenta" className="text-sm font-bold text-lila">← Mi cuenta</Link>
+        <Link href="/cuenta" className="text-sm font-bold text-lila"><Icono nombre="flecha-izq" /> Mi cuenta</Link>
         <section className="tarjeta flex flex-col gap-3 p-6 text-[15px] leading-relaxed text-texto-2">
           <h2 className="text-lg font-bold text-texto">Qué pasa al eliminarla</h2>
           <ul className="flex list-disc flex-col gap-1.5 pl-5">

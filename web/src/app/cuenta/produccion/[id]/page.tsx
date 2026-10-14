@@ -28,6 +28,7 @@ import { isoMx, partesMx } from "@/lib/dates";
 import { mayus } from "@/lib/dates";
 import { MiniAction } from "@/components/panel/MiniAction";
 import { AgregarCalendario } from "@/components/AgregarCalendario";
+import { Icono } from "@/components/Icono";
 
 export const metadata: Metadata = { title: "Mi producción" };
 
@@ -109,7 +110,7 @@ export default async function MyProduction({ params, searchParams }: PageProps<"
     <main className="pb-10 [&_section[aria-labelledby]]:scroll-mt-16">
       <PageHeading eyebrow="Mis producciones" title={prod.nombre}>{prod.papeles.join(" · ")}</PageHeading>
       <div className="mx-auto flex max-w-[1100px] flex-col gap-6 px-5 md:px-16">
-        <Link href="/cuenta" className="text-sm font-bold text-violeta-claro">← Mi cuenta</Link>
+        <Link href="/cuenta" className="text-sm font-bold text-violeta-claro"><Icono nombre="flecha-izq" /> Mi cuenta</Link>
 
         {d.alta?.baja_at && (
           <section role="status" className="rounded-2xl border border-[#ff8fa3]/40 bg-[#ff8fa3]/10 p-5 text-sm">
@@ -179,10 +180,10 @@ export default async function MyProduction({ params, searchParams }: PageProps<"
             <ul className="flex flex-col gap-2">
               {comunicados.map((a) => (
                 <li key={a.id} className={`rounded-lg px-4 py-3 text-sm ${leidos.has(a.id) ? "bg-sala opacity-75" : a.importante ? "border border-aviso/50 bg-sala" : "border border-white/20 bg-sala"}`}>
-                  <p className="font-bold">{a.importante && <span className="mr-1 text-aviso">● Importante ·</span>} {a.titulo}</p>
+                  <p className="font-bold">{a.importante && <span className="mr-1 text-aviso"><Icono nombre="punto" /> Importante ·</span>} {a.titulo}</p>
                   <p className="text-xs text-texto-3">{new Date(a.created_at).toLocaleString("es-MX", { day: "numeric", month: "long", hour: "numeric", minute: "2-digit", timeZone: "America/Mexico_City" })}</p>
                   <p className="mt-1 whitespace-pre-line">{a.cuerpo}</p>
-                  {leidos.has(a.id) ? <p className="mt-1 text-xs text-exito">✓ Leído</p> : (
+                  {leidos.has(a.id) ? <p className="mt-1 text-xs text-exito"><Icono nombre="check" /> Leído</p> : (
                     <form action={markRead} className="mt-2"><input type="hidden" name="aid" value={a.id} /><input type="hidden" name="pid" value={id} />
                       <button className="rounded-full bg-texto px-4 py-1.5 text-xs font-bold text-sala">Enterado</button></form>
                   )}
@@ -205,11 +206,11 @@ export default async function MyProduction({ params, searchParams }: PageProps<"
                 {r.estado !== "cancelado" && activa && (() => {
                   const q = faltaDe(r.id);
                   if (q && q.estado !== "rechazada") {
-                    return <p className="text-xs font-bold text-aviso">{q.estado === "aprobada" ? "✓ Falta justificada" : "Falta solicitada · esperando respuesta"}</p>;
+                    return <p className="text-xs font-bold text-aviso">{q.estado === "aprobada" ? <><Icono nombre="check" /> Falta justificada</> : "Falta solicitada · esperando respuesta"}</p>;
                   }
                   const op = opcionesFalta.find((o) => o.id === r.id);
                   return op?.permitido
-                    ? <Link href={`?falta=${r.id}#solicitudes`} scroll={false} className="self-start text-sm font-bold text-violeta-claro">{q ? "Tu solicitud fue rechazada · volver a pedir" : "No podré ir · solicitar falta"} →</Link>
+                    ? <Link href={`?falta=${r.id}#solicitudes`} scroll={false} className="self-start text-sm font-bold text-violeta-claro">{q ? "Tu solicitud fue rechazada · volver a pedir" : "No podré ir · solicitar falta"} <Icono nombre="flecha-der" /></Link>
                     : <p className="text-xs text-texto-3">{q ? "Tu solicitud fue rechazada." : `Las faltas se avisan ${textoLimite(horasAviso)}; para este ensayo ya pasó el límite.`}</p>;
                 })()}
               </li>
@@ -312,7 +313,7 @@ export default async function MyProduction({ params, searchParams }: PageProps<"
                     const href = m.archivo_path ? matUrls.get(m.archivo_path) : m.url ?? undefined;
                     return (
                       <li key={m.id} className="rounded-lg bg-sala px-3 py-2 text-sm">
-                        {href ? <a href={href} target="_blank" rel="noreferrer" className="font-bold text-violeta-claro underline">{m.titulo} ↗</a> : <b>{m.titulo}</b>}
+                        {href ? <a href={href} target="_blank" rel="noreferrer" className="font-bold text-violeta-claro underline">{m.titulo} <Icono nombre="externo" /></a> : <b>{m.titulo}</b>}
                         <span className="text-texto-3"> · {TIPO_MATERIAL[m.tipo]}</span>
                         {m.descripcion && <span className="block text-xs text-texto-2">{m.descripcion}</span>}
                       </li>
@@ -342,7 +343,7 @@ export default async function MyProduction({ params, searchParams }: PageProps<"
                 return (
                   <li key={t.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-sala px-3 py-2.5 text-sm">
                     <span><b>{t.nombre}</b>{t.obligatorio ? "" : " · opcional"}{t.descripcion && <span className="block text-xs text-texto-2">{t.descripcion}</span>}
-                      <span className="block text-xs text-texto-3">{doc?.entregado_at ? "✓ Recibido por la producción" : doc?.archivo_path ? "Subido, falta que la producción lo revise" : "Pendiente"}
+                      <span className="block text-xs text-texto-3">{doc?.entregado_at ? <><Icono nombre="check" /> Recibido por la producción</> : doc?.archivo_path ? "Subido, falta que la producción lo revise" : "Pendiente"}
                         {url && <> · <a href={url} target="_blank" rel="noreferrer" className="text-violeta-claro underline">ver</a></>}</span>
                     </span>
                     {!doc?.entregado_at && <DocUpload pid={id} uid={session.userId} docTypeId={t.id} hay={!!doc?.archivo_path} />}
@@ -357,7 +358,7 @@ export default async function MyProduction({ params, searchParams }: PageProps<"
           <section aria-labelledby="cuotas" className="flex flex-col gap-3 rounded-2xl bg-telon p-6">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <h2 id="cuotas" className="titular text-2xl">Mis pagos</h2>
-              <a href={`/cuenta/produccion/${id}/estado-de-cuenta`} className="text-sm font-bold text-violeta-claro">Estado de cuenta (PDF) ↓</a>
+              <a href={`/cuenta/produccion/${id}/estado-de-cuenta`} className="text-sm font-bold text-violeta-claro">Estado de cuenta (PDF) <Icono nombre="flecha-abajo" /></a>
             </div>
             {insc && insc.estado !== "no_aplica" && (
               <p className="flex flex-wrap items-center gap-2 text-sm">Inscripción{insc.debe ? `: ${pesos(insc.debe)}` : ""}

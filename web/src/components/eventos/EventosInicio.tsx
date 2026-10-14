@@ -2,6 +2,7 @@ import Link from "next/link";
 import { partesFuncion } from "@/lib/disponibilidad";
 import { ACCESO_EVENTO, TIPOS_EVENTO, precioTexto } from "@/lib/eventos-rules";
 import type { EventoCartelera } from "@/lib/fanzone";
+import { Icono } from "@/components/Icono";
 
 const club = (e: EventoCartelera) => e.acceso === "club";
 const donde = (e: EventoCartelera) => (e.tipo === "en_linea" ? "En línea" : e.lugar);
@@ -28,7 +29,7 @@ export function EventosInicio({ eventos }: { eventos: EventoCartelera[] }) {
           <p className="eyebrow">Vívelo de cerca</p>
           <h2 id="eventos-t" className="h2-seccion">Próximos eventos</h2>
         </div>
-        <Link href="/eventos" className="text-sm font-bold text-texto-2 underline-offset-4 hover:text-white hover:underline">Ver todos los eventos →</Link>
+        <Link href="/eventos" className="text-sm font-bold text-texto-2 underline-offset-4 hover:text-white hover:underline">Ver todos los eventos <Icono nombre="flecha-der" /></Link>
       </div>
       {!destacado ? (
         <div className="tarjeta flex flex-col items-start gap-3 p-6 text-texto-2 md:flex-row md:items-center md:justify-between">
@@ -84,10 +85,10 @@ export function EventosInicio({ eventos }: { eventos: EventoCartelera[] }) {
             {resto.length === 0 && (
               <li className="tarjeta flex flex-col gap-2 p-5 text-sm text-texto-2">
                 <p>Los socios del Club Fan se enteran primero de cada evento y apartan su lugar antes.</p>
-                <Link href="/fan-zone" className="font-bold text-oro-claro underline">Únete gratis →</Link>
+                <Link href="/fan-zone" className="font-bold text-oro-claro underline">Únete gratis <Icono nombre="flecha-der" /></Link>
               </li>
             )}
-            {resto.length > 3 && <li><Link href="/eventos" className="text-sm font-bold text-texto-2 hover:text-white">Y {resto.length - 3} más →</Link></li>}
+            {resto.length > 3 && <li><Link href="/eventos" className="text-sm font-bold text-texto-2 hover:text-white">Y {resto.length - 3} más <Icono nombre="flecha-der" /></Link></li>}
           </ul>
         </div>
       )}

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { removePushSubscription, savePushPrefs, savePushSubscription, sendPushTest } from "@/lib/push-actions";
+import { Icono } from "@/components/Icono";
 
 type Estado = "cargando" | "sin-soporte" | "ios-instalar" | "bloqueado" | "apagado" | "encendido";
 type BeforeInstall = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> };
@@ -142,7 +143,7 @@ export function PushSettings({ publicKey, apagados, tipos, donde = "panel" }: { 
         <p className="font-bold">Notificaciones en este teléfono</p>
         {estado === "cargando" && <p className="text-sm text-texto-3">Revisando…</p>}
         {estado === "sin-soporte" && <p className="text-sm text-texto-2">Este navegador no recibe notificaciones. Prueba con Chrome, Edge, Firefox o Safari actualizado.</p>}
-        {estado === "ios-instalar" && <p className="text-sm text-texto-2">En iPhone primero instala la app (Compartir → Agregar a inicio), ábrela desde su ícono y vuelve aquí.</p>}
+        {estado === "ios-instalar" && <p className="text-sm text-texto-2">En iPhone primero instala la app (Compartir <Icono nombre="flecha-der" /> Agregar a inicio), ábrela desde su ícono y vuelve aquí.</p>}
         {estado === "bloqueado" && <p className="text-sm text-texto-2">Bloqueaste las notificaciones para esta página. Actívalas en los ajustes del navegador (el candado junto a la dirección) y vuelve a intentar.</p>}
         {estado === "apagado" && (
           <>
@@ -152,7 +153,7 @@ export function PushSettings({ publicKey, apagados, tipos, donde = "panel" }: { 
         )}
         {estado === "encendido" && (
           <>
-            <p className="text-sm text-[#86efac]">✓ Este teléfono recibe tus notificaciones.</p>
+            <p className="text-sm text-[#86efac]"><Icono nombre="check" /> Este teléfono recibe tus notificaciones.</p>
             <div className="flex flex-wrap gap-2">
               <button type="button" disabled={pending} onClick={probar} className={fantasma}>Probar</button>
               <button type="button" disabled={pending} onClick={apagar} className={fantasma}>Apagar en este teléfono</button>

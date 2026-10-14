@@ -12,6 +12,7 @@ import { formatPrice, getHomeData, getTheme, perfilUrl, posterUrl } from "@/lib/
 import { createClient } from "@/lib/supabase/server";
 import { EventosInicio } from "@/components/eventos/EventosInicio";
 import { getEventosCartelera } from "@/lib/fanzone";
+import { Icono } from "@/components/Icono";
 
 type Miembro = { id: string; nombre: string; retrato_path: string | null };
 
@@ -47,7 +48,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
         <div aria-hidden="true" className="grano absolute inset-0" />
         <div className="relative mx-auto grid max-w-[1440px] gap-12 px-5 pb-16 pt-12 md:px-16 md:pb-24 md:pt-20 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
           <div className="flex flex-col items-start gap-7">
-            <span className="sello-jpj"><b aria-hidden="true">✦</b>Jóvenes para jóvenes</span>
+            <span className="sello-jpj"><b aria-hidden="true"><Icono nombre="destello" /></b>Jóvenes para jóvenes</span>
             <h1 className="display">Teatro con <span className="txt-luz">luz propia</span></h1>
             <p className="lead max-w-xl">
               Producciones, funciones y comunidad en un solo lugar. Descubre lo que está en cartelera, revive el archivo y sé parte del elenco.

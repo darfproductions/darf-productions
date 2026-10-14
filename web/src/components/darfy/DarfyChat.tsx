@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useActionState, useEffect, useRef, useState, useTransition } from "react";
 import { contactoDarfy, preguntarDarfy, type DarfyContactState } from "@/lib/darfy-actions";
 import { whatsappAskUrl, type Liga, type Respuesta } from "@/lib/darfy-rules";
+import { Icono } from "@/components/Icono";
 
 type Mensaje = { id: number; de: "yo" | "darfy"; texto: string; ligas?: Liga[]; nose?: string };
 
@@ -85,7 +86,7 @@ export function DarfyChat({
         className={`glass fixed ${enObra ? "bottom-[112px] md:bottom-12" : "bottom-12"} right-4 z-40 flex min-h-[54px] items-center gap-2.5 rounded-full py-2 pl-2 pr-5 text-[13px] font-bold text-texto shadow-[0_24px_60px_-12px_rgb(0_0_0/0.8)] transition-transform hover:-translate-y-0.5 md:right-8`}
         aria-label="Abrir el asistente DARFY"
       >
-        <span aria-hidden="true" className="grid h-[38px] w-[38px] place-items-center rounded-full bg-[linear-gradient(135deg,#340feb,#830886,#d20122)] text-base leading-none text-white">✦</span> Pregúntale a DARFY
+        <span aria-hidden="true" className="grid h-[38px] w-[38px] place-items-center rounded-full bg-[linear-gradient(135deg,#340feb,#830886,#d20122)] text-base leading-none text-white"><Icono nombre="destello" /></span> Pregúntale a DARFY
       </button>
     );
   }
@@ -96,12 +97,12 @@ export function DarfyChat({
       className="fixed inset-x-2 bottom-10 z-40 flex max-h-[min(640px,calc(100dvh-5rem))] flex-col overflow-hidden rounded-[22px] border border-linea-2 bg-telon shadow-[0_30px_80px_rgb(0_0_0/0.6)] md:inset-x-auto md:right-8 md:w-[400px]"
     >
       <header className="luz-darf flex items-center gap-3 px-4 py-3">
-        <span aria-hidden="true" className="grid h-9 w-9 place-items-center rounded-full bg-white/15 text-lg">✦</span>
+        <span aria-hidden="true" className="grid h-9 w-9 place-items-center rounded-full bg-white/15 text-lg"><Icono nombre="destello" /></span>
         <div className="flex-1">
           <p className="font-bold leading-tight">DARFY</p>
           <p className="text-xs text-white/85">Asistente de DARF Productions</p>
         </div>
-        <button type="button" onClick={() => setAbierto(false)} className="rounded-full px-3 py-1 text-xl leading-none hover:bg-white/15" aria-label="Cerrar">×</button>
+        <button type="button" onClick={() => setAbierto(false)} className="rounded-full px-3 py-1 text-xl leading-none hover:bg-white/15" aria-label="Cerrar"><Icono nombre="x" /></button>
       </header>
 
       <div ref={lista} className="flex flex-1 flex-col gap-3 overflow-y-auto px-4 py-4" aria-live="polite">
@@ -114,7 +115,7 @@ export function DarfyChat({
               <div className="flex max-w-[88%] flex-wrap gap-2">
                 {m.ligas.map((l) => (
                   <Link key={l.href + l.label} href={l.href} onClick={() => setAbierto(false)} className="rounded-full border border-lila/50 px-3 py-1.5 text-xs font-bold text-lila hover:border-lila">
-                    {l.label} →
+                    {l.label} <Icono nombre="flecha-der" />
                   </Link>
                 ))}
               </div>

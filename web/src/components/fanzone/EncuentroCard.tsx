@@ -8,6 +8,7 @@ import { partesFuncion } from "@/lib/disponibilidad";
 import { env } from "@/lib/env";
 import { ACCESO_EVENTO, TIPOS_EVENTO, accionEvento, precioTexto, whatsappEventoUrl, type Evento } from "@/lib/eventos-rules";
 import { limiteTexto } from "@/lib/expiry-rules";
+import { Icono } from "@/components/Icono";
 
 // Un evento de DARF (0081): por función, presencial o en línea. Apartar lugar, "Recordarme",
 // entrar a la transmisión cuando llega la hora, o mostrar la credencial del club en la entrada.
@@ -41,9 +42,9 @@ export function EncuentroCard({ e, sesion, socio, mostrarObra = true }: { e: Eve
           <strong className="truncate">{e.titulo}</strong>
           <span className="text-[12.5px] text-texto-3">{f.hora}{enLinea ? " · En línea" : e.venue ? ` · ${e.venue}` : ""}{mostrarObra && e.obra ? ` · ${e.obra}` : ""}</span>
           {e.requiere_registro && e.cupo != null && !enLinea && (
-            <span className="text-[12.5px] text-oro-claro">{e.apartado ? "✓ Tienes lugar" : e.libres === 0 ? "Sin lugares" : `${e.libres} ${e.libres === 1 ? "lugar" : "lugares"}`}</span>
+            <span className="text-[12.5px] text-oro-claro">{e.apartado ? <><Icono nombre="check" /> Tienes lugar</> : e.libres === 0 ? "Sin lugares" : `${e.libres} ${e.libres === 1 ? "lugar" : "lugares"}`}</span>
           )}
-          {e.apartado && enLinea && <span className="text-[12.5px] text-oro-claro">✓ Registrado</span>}
+          {e.apartado && enLinea && <span className="text-[12.5px] text-oro-claro"><Icono nombre="check" /> Registrado</span>}
           {e.precio != null && (
             <span className="text-[12.5px] font-bold text-texto">
               {precioTexto(e)}
@@ -60,24 +61,24 @@ export function EncuentroCard({ e, sesion, socio, mostrarObra = true }: { e: Eve
           {e.orden_expira && <p className="text-texto-2">Paga antes de <b>{limiteTexto(e.orden_expira)}</b>; si no, tu lugar se libera solo.</p>}
         </div>
       )}
-      {accion === "pagado" && <p className="text-[12.5px] font-bold text-exito">✓ Pagado · {e.orden_codigo}</p>}
+      {accion === "pagado" && <p className="text-[12.5px] font-bold text-exito"><Icono nombre="check" /> Pagado · {e.orden_codigo}</p>}
       {!enLinea && accion !== "pagar" && (e.apartado || (!e.requiere_registro && e.acceso === "club")) && (
         <p className="text-[12.5px] font-bold text-oro-claro">Muestra tu credencial (con QR) en la entrada.</p>
       )}
       {!enLinea && !e.requiere_registro && e.acceso !== "club" && <p className="text-[12.5px] text-texto-2">Entrada libre{e.cupo ? ` hasta llenar el cupo (${e.cupo})` : ""}.</p>}
       {enLinea && !e.liga && <p className="text-[12.5px] text-texto-2">La liga para entrar aparece aquí 15 minutos antes.</p>}
       <div className="flex flex-wrap items-center gap-2">
-        {accion === "entrar" && <a href={`/eventos/${e.id}/entrar`} target="_blank" rel="noopener noreferrer" className="fb fb-fz fb-sm">Entrar a la transmisión ↗</a>}
+        {accion === "entrar" && <a href={`/eventos/${e.id}/entrar`} target="_blank" rel="noopener noreferrer" className="fb fb-fz fb-sm">Entrar a la transmisión <Icono nombre="externo" /></a>}
         {accion === "apartar" && <button type="button" disabled={pending} onClick={() => correr(() => apartarEncuentro(e.id, true))} className="fb fb-fz fb-sm">{pending ? "…" : e.precio != null && Number(e.mi_precio ?? 0) > 0 ? `Apartar · $${Number(e.mi_precio).toLocaleString("es-MX")}` : enLinea ? "Registrarme" : "Apartar mi lugar"}</button>}
         {accion === "pagar" && e.orden_codigo && env.whatsapp && (
-          <a href={whatsappEventoUrl(env.whatsapp, { titulo: e.titulo, obra: e.obra, codigo: e.orden_codigo, monto: Number(e.orden_monto ?? 0) })} target="_blank" rel="noopener noreferrer" className="fb fb-fz fb-sm">Pagar por WhatsApp ↗</a>
+          <a href={whatsappEventoUrl(env.whatsapp, { titulo: e.titulo, obra: e.obra, codigo: e.orden_codigo, monto: Number(e.orden_monto ?? 0) })} target="_blank" rel="noopener noreferrer" className="fb fb-fz fb-sm">Pagar por WhatsApp <Icono nombre="externo" /></a>
         )}
         {accion === "pagar" && <button type="button" disabled={pending} onClick={() => { if (window.confirm("¿Cancelar tu apartado? Se libera tu lugar.")) correr(() => apartarEncuentro(e.id, false)); }} className="text-[12.5px] font-bold text-texto-3 underline">{pending ? "…" : "Cancelar apartado"}</button>}
         {accion === "liberar" && <button type="button" disabled={pending} onClick={() => correr(() => apartarEncuentro(e.id, false))} className="fb fb-o fb-sm">{pending ? "…" : "Liberar mi lugar"}</button>}
         {accion === "recordar" && (
-          <button type="button" disabled={pending} onClick={() => correr(() => recordarEvento(e.id, !e.recordar))} aria-pressed={e.recordar} className={`fb fb-sm ${e.recordar ? "fb-o" : "fb-fz"}`}>{pending ? "…" : e.recordar ? "✓ Te recordaremos" : "Recordarme"}</button>
+          <button type="button" disabled={pending} onClick={() => correr(() => recordarEvento(e.id, !e.recordar))} aria-pressed={e.recordar} className={`fb fb-sm ${e.recordar ? "fb-o" : "fb-fz"}`}>{pending ? "…" : e.recordar ? <><Icono nombre="check" /> Te recordaremos</> : "Recordarme"}</button>
         )}
-        {accion === "boleto" && e.production_id && <Link href={`/producciones/${e.production_id}#funciones`} className="text-[12.5px] font-bold text-oro-claro underline">Necesitas boleto para esta función →</Link>}
+        {accion === "boleto" && e.production_id && <Link href={`/producciones/${e.production_id}#funciones`} className="text-[12.5px] font-bold text-oro-claro underline">Necesitas boleto para esta función <Icono nombre="flecha-der" /></Link>}
         {accion === "entrar_sesion" && <Link href="/entrar?next=/eventos" className="fb fb-o fb-sm">Entra para apartar</Link>}
         {accion === "unirse_club" && <Link href="/fan-zone" className="fb fb-o fb-sm">Únete al Club Fan</Link>}
         {accion === "lleno" && <span className="text-[12.5px] text-texto-3">Ya no hay lugares.</span>}

@@ -10,6 +10,7 @@ import { formatPerformanceDate } from "@/lib/productions";
 import { PAPELES_EVENTO, permisosEvento, type PanelAccessData, type PapelEvento } from "@/lib/panel-nav";
 import { createClient } from "@/lib/supabase/server";
 import { input } from "@/components/panel/ui";
+import { Icono } from "@/components/Icono";
 
 const small = "rounded-full border border-white/25 px-2.5 py-1 text-xs font-bold hover:border-white/50 disabled:opacity-60";
 const horaMx = (iso: string) => new Date(iso).toLocaleTimeString("es-MX", { timeZone: "America/Mexico_City", hour: "2-digit", minute: "2-digit" });
@@ -121,7 +122,7 @@ export async function EventosLista({ pid, access }: { pid?: string | null; acces
                         <ActionForm inline action={revisarPagoEvento} hidden={{ pid: e.production_id ?? "", orden: x.orden_id ?? "", aprobar: "0" }} confirm="¿Rechazar este apartado? Se libera su lugar." submit="Rechazar" submitClass={small} />
                       </>
                     )}
-                    {x.llegada_at ? <b className="text-exito">✓ {horaMx(x.llegada_at)}</b> : null}
+                    {x.llegada_at ? <b className="text-exito"><Icono nombre="check" /> {horaMx(x.llegada_at)}</b> : null}
                     {e.tipo !== "en_linea" && puede.puerta && (
                       <ActionForm inline action={marcarLlegada} hidden={{ pid: e.production_id ?? "", id: e.id, uid: x.user_id, on: x.llegada_at ? "0" : "1" }} submit={x.llegada_at ? "Quitar llegada" : "Marcar llegada"} submitClass={small} />
                     )}

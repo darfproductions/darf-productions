@@ -7,6 +7,7 @@ import { Card, PanelTitle, input } from "@/components/panel/ui";
 import { requirePanel } from "@/lib/permissions";
 import { createClient } from "@/lib/supabase/server";
 import { asignarContacto, markContactRead, reabrirContacto, responderContacto } from "./actions";
+import { Icono } from "@/components/Icono";
 
 export const metadata: Metadata = { title: "Mensajes de contacto" };
 
@@ -83,7 +84,7 @@ export default async function Contacto({ searchParams }: PageProps<"/panel/conta
             </div>
             <p className="text-sm">
               {m.respondido_at
-                ? <b className="text-[#bbf7d0]">✓ Respondido por {nombre.get(m.respondido_por ?? "") ?? "alguien del equipo"} el {fecha(m.respondido_at)} · {CANAL[m.respuesta_canal ?? ""] ?? "otro medio"}{m.respuesta_nota ? `: ${m.respuesta_nota}` : ""}</b>
+                ? <b className="text-[#bbf7d0]"><Icono nombre="check" /> Respondido por {nombre.get(m.respondido_por ?? "") ?? "alguien del equipo"} el {fecha(m.respondido_at)} · {CANAL[m.respuesta_canal ?? ""] ?? "otro medio"}{m.respuesta_nota ? `: ${m.respuesta_nota}` : ""}</b>
                 : m.asignado_a ? <span className="text-texto-2">Asignado a <b className="text-texto">{m.asignado_a === yo ? "ti" : nombre.get(m.asignado_a) ?? "alguien"}</b></span>
                 : <span className="text-aviso">Sin asignar</span>}
             </p>

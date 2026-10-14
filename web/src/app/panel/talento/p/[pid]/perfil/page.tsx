@@ -6,6 +6,7 @@ import { ProProfileEditor } from "@/components/pro/ProProfileEditor";
 import { requirePanel } from "@/lib/permissions";
 import { getPro } from "@/lib/pro-profile";
 import { createClient } from "@/lib/supabase/server";
+import { Icono } from "@/components/Icono";
 
 export const metadata: Metadata = { title: "Perfil profesional" };
 
@@ -24,7 +25,7 @@ export default async function PerfilEquipo({ params }: PageProps<"/panel/talento
   const { pro, fotos } = await getPro(pid);
   return (
     <>
-      <Link href={persona.profile_id ? `/panel/talento/${persona.profile_id}` : `/panel/talento/p/${pid}`} className="text-sm font-bold text-violeta-claro">← Ficha</Link>
+      <Link href={persona.profile_id ? `/panel/talento/${persona.profile_id}` : `/panel/talento/p/${pid}`} className="text-sm font-bold text-violeta-claro"><Icono nombre="flecha-izq" /> Ficha</Link>
       <PanelTitle eyebrow="Perfil profesional" title={persona.nombre as string}>
         Lo llena la persona desde Mi cuenta; aquí el equipo puede corregirlo y registrar el permiso del tutor si es menor.
       </PanelTitle>

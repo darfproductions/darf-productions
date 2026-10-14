@@ -4,6 +4,7 @@ import Link from "next/link";
 import { PageHeading } from "@/components/PageHeading";
 import { perfilUrl } from "@/lib/productions";
 import { createClient } from "@/lib/supabase/server";
+import { Icono } from "@/components/Icono";
 
 export const metadata: Metadata = { title: "Conoce al equipo", description: "El equipo directivo de DARF Productions." };
 
@@ -64,7 +65,7 @@ export default async function Nosotros() {
                     <p className="text-xl font-bold">{m.nombre}</p>
                     <p className="text-sm font-bold uppercase tracking-[0.14em] text-violeta-claro">{m.cargo}</p>
                     {m.semblanza && <p className="mt-1 line-clamp-3 text-sm text-texto-2">{m.semblanza}</p>}
-                    {m.slug && <span className="mt-1 text-sm font-bold text-texto-2 group-hover:text-white">Ver perfil →</span>}
+                    {m.slug && <span className="mt-1 text-sm font-bold text-texto-2 group-hover:text-white">Ver perfil <Icono nombre="flecha-der" /></span>}
                   </div>
                 </>
               );

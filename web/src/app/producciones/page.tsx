@@ -5,6 +5,7 @@ import { PageHeading } from "@/components/PageHeading";
 import { ProductionCard } from "@/components/ProductionCard";
 import { agrupar, ETIQUETA_ESTADO, type EstadoPublico } from "@/lib/home-rules";
 import { getHomeData } from "@/lib/productions";
+import { Icono } from "@/components/Icono";
 
 export const metadata: Metadata = { title: "Producciones" };
 
@@ -62,7 +63,7 @@ export default async function ProduccionesPage({ searchParams }: PageProps<"/pro
           ) : (
             <div className="tarjeta flex flex-col items-start gap-4 p-8">
               <p className="text-lg">No hay boletos a la venta en este momento.</p>
-              {filtro === "cartelera" && <Link href="/producciones" className="font-bold text-lila hover:underline">Ver todas las producciones →</Link>}
+              {filtro === "cartelera" && <Link href="/producciones" className="font-bold text-lila hover:underline">Ver todas las producciones <Icono nombre="flecha-der" /></Link>}
             </div>
           ))}
 

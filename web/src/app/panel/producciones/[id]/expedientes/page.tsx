@@ -16,6 +16,7 @@ import { AjustesSeccion } from "@/components/panel/AjustesSeccion";
 import { ExpTabs } from "./ExpTabs";
 import { mayus } from "@/lib/dates";
 import { todasLasFilas } from "@/lib/supabase/paginar";
+import { Icono } from "@/components/Icono";
 
 export const metadata: Metadata = { title: "Expedientes" };
 
@@ -81,7 +82,7 @@ export default async function Expedientes({ params, searchParams }: PageProps<"/
   return (
     <div className="flex flex-col gap-4">
       <ExpTabs pid={id} actual="integrantes" pagos={verCuotas && cobra} />
-      {verExp && <a href={`/panel/producciones/${id}/expedientes/exportar/elenco`} className="self-end text-sm font-bold text-violeta-claro">Descargar elenco con tutores y emergencias (Excel) ↓</a>}
+      {verExp && <a href={`/panel/producciones/${id}/expedientes/exportar/elenco`} className="self-end text-sm font-bold text-violeta-claro">Descargar elenco con tutores y emergencias (Excel) <Icono nombre="flecha-abajo" /></a>}
       {verExp && subidos.length > 0 && (
         <Card id="subidos" className={`scroll-mt-24 ${sp.docs === "subidos" ? "border border-aviso/50" : ""}`}>
           <h2 className="font-bold text-aviso">Documentos subidos por revisar ({subidos.length})</h2>
@@ -91,7 +92,7 @@ export default async function Expedientes({ params, searchParams }: PageProps<"/
               <li key={`${d.user_id}-${d.doc_type_id}`}>
                 <Link href={`/panel/producciones/${id}/expedientes/${d.user_id}#documentos`} className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-sala px-3 py-2 hover:bg-telon-2">
                   <span><b>{nombreDe(d.user_id)}</b> · {tipoDe(d.doc_type_id)}</span>
-                  <span className="text-violeta-claro">Revisar →</span>
+                  <span className="text-violeta-claro">Revisar <Icono nombre="flecha-der" /></span>
                 </Link>
               </li>
             ))}
@@ -250,7 +251,7 @@ export default async function Expedientes({ params, searchParams }: PageProps<"/
         <Card className="overflow-x-auto p-0 md:p-0">
           <div className="flex flex-wrap items-baseline justify-between gap-2 px-5 pt-4">
             <h2 className="titular text-xl">Recaudación</h2>
-            <a href={`/panel/producciones/${id}/expedientes/exportar/pagos`} className="text-sm font-bold text-violeta-claro">Exportar pagos (CSV) ↓</a>
+            <a href={`/panel/producciones/${id}/expedientes/exportar/pagos`} className="text-sm font-bold text-violeta-claro">Exportar pagos (CSV) <Icono nombre="flecha-abajo" /></a>
           </div>
           <div className="grid grid-cols-3 gap-3 px-5 py-3 text-center">
             <div><p className="text-xl font-black">{pesos(rec.inscripciones)}</p><p className="text-xs text-texto-3">Inscripciones</p></div>

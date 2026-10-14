@@ -135,7 +135,7 @@ export function describeAudit(r: AuditRow, n: AuditNames): string {
     case "precios": {
       const zona = String((r.despues ?? {}).zona ?? "una zona");
       const de = r.antes?.precio, a = r.despues?.precio;
-      return `Cambió el precio de ${zona} en ${n.production(r.production_id)}: $${Number(de ?? 0).toLocaleString("es-MX")} → $${Number(a ?? 0).toLocaleString("es-MX")}`;
+      return `Cambió el precio de ${zona} en ${n.production(r.production_id)}: de $${Number(de ?? 0).toLocaleString("es-MX")} a $${Number(a ?? 0).toLocaleString("es-MX")}`;
     }
     case "contact_messages": {
       // 0096: sin datos de quien escribió.

@@ -4,7 +4,7 @@ import { useActionState } from "react";
 
 type State = { ok: boolean; message: string } | null;
 
-// Botón chico (×, ↑, chip) que llama a una acción del servidor. No muestra nada si sale bien
+// Botón chico (quitar, subir, chip) que llama a una acción del servidor. No muestra nada si sale bien
 // (la página se actualiza sola), pero si falla dice por qué en vez de quedarse callado.
 export function MiniAction({
   action,

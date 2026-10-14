@@ -8,6 +8,7 @@ import { requireDirector } from "@/lib/permissions";
 import { createClient } from "@/lib/supabase/server";
 import { linkAccount, mergePeople } from "../talento/actions";
 import { changeGlobalRole } from "../usuarios/actions";
+import { Icono } from "@/components/Icono";
 
 export const metadata: Metadata = { title: "Directorio" };
 
@@ -45,7 +46,7 @@ export default async function Directorio({ searchParams }: PageProps<"/panel/per
           <ul className="flex flex-col gap-2">
             {sugerencias.map((x) => (
               <li key={`${x.person_id}-${x.user_id}`} className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-sala px-3 py-2 text-sm">
-                <span className="min-w-0 wrap-anywhere"><b>{x.persona}</b> <span className="text-texto-3">↔</span> {x.cuenta} <span className="text-texto-3">· {x.email} · {x.motivo}</span></span>
+                <span className="min-w-0 wrap-anywhere"><b>{x.persona}</b> <span className="text-texto-3"><Icono nombre="intercambio" /></span> {x.cuenta} <span className="text-texto-3">· {x.email} · {x.motivo}</span></span>
                 <ActionForm inline action={linkAccount} hidden={{ id: x.person_id, email: x.email }} confirm={`¿Ligar la ficha de ${x.persona} a la cuenta ${x.email}?`} submit="Ligar" submitClass="rounded-full bg-texto px-3 py-1.5 text-xs font-bold text-sala" />
               </li>
             ))}
@@ -91,7 +92,7 @@ export default async function Directorio({ searchParams }: PageProps<"/panel/per
                     <input className={`${input} w-52 max-w-full py-1 text-xs`} name="email" type="email" required placeholder="Correo de su cuenta" />
                   </ActionForm>
                 ) : null}
-                <Link href={p.fichaHref} className="text-xs font-bold text-violeta-claro">Ficha →</Link>
+                <Link href={p.fichaHref} className="text-xs font-bold text-violeta-claro">Ficha <Icono nombre="flecha-der" /></Link>
               </span>
             </li>
           ))}

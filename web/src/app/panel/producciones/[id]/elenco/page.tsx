@@ -15,6 +15,7 @@ import { Personajes } from "./Personajes";
 import { OfferForm } from "./OfferForm";
 import { withdrawOffer } from "./offer-actions";
 import { moveCredit, removeCredit, setCreditPhoto, updatePapel } from "./actions";
+import { Icono } from "@/components/Icono";
 
 export const metadata: Metadata = { title: "Elenco y equipos" };
 
@@ -107,9 +108,9 @@ export default async function CastEditor({ params }: PageProps<"/panel/produccio
                     </div>
                     <ImageUpload compact productionId={id} kind="retrato" carpeta="creditos" base={r.people?.nombre ?? "retrato"} save={setCreditPhoto.bind(null, id, r.id)} label={r.foto_path ? "Cambiar foto" : "Subir foto"} />
                     <div className="flex items-center gap-1">
-                      {i > 0 && <ActionForm inline action={moveCredit} hidden={{ pid: id, id: r.id, dir: "up" }} submit="↑" submitClass={mini} />}
-                      {i < items.length - 1 && <ActionForm inline action={moveCredit} hidden={{ pid: id, id: r.id, dir: "down" }} submit="↓" submitClass={mini} />}
-                      <ActionForm inline action={removeCredit} hidden={{ pid: id, id: r.id }} confirm={`¿Quitar a ${r.people?.nombre} de ${g.titulo.toLowerCase()}? Solo deja de salir en la página; si es integrante, su baja se hace en Expedientes.`} submit="×" submitClass={mini} />
+                      {i > 0 && <ActionForm inline action={moveCredit} hidden={{ pid: id, id: r.id, dir: "up" }} submit={<Icono nombre="flecha-arriba" etiqueta="Subir" />} submitClass={mini} />}
+                      {i < items.length - 1 && <ActionForm inline action={moveCredit} hidden={{ pid: id, id: r.id, dir: "down" }} submit={<Icono nombre="flecha-abajo" etiqueta="Bajar" />} submitClass={mini} />}
+                      <ActionForm inline action={removeCredit} hidden={{ pid: id, id: r.id }} confirm={`¿Quitar a ${r.people?.nombre} de ${g.titulo.toLowerCase()}? Solo deja de salir en la página; si es integrante, su baja se hace en Expedientes.`} submit={<Icono nombre="x" etiqueta="Quitar" />} submitClass={mini} />
                     </div>
                   </li>
                 ))}

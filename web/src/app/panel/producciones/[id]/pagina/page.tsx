@@ -21,6 +21,7 @@ import { RowsEditor } from "./RowsEditor";
 import { SongsEditor } from "./SongsEditor";
 import { FORMATOS, FORMATO_INFO, poster } from "@/lib/poster";
 import { PosterSlot } from "./PosterSlot";
+import { Icono } from "@/components/Icono";
 
 export const metadata: Metadata = { title: "Página pública" };
 
@@ -72,7 +73,7 @@ export default async function PageEditor({ params }: PageProps<"/panel/produccio
         {[["estado", "Estado"], ["datos", "Datos y ficha"], ["kit", "Kit visual"], ["franja", "Franja de avisos"], ["anuncios", "Anuncios"], ["canciones", "Canciones"], ["extra", "Ficha extra"], ["videos", "Videos"], ["gracias", "Agradecimientos"]]
           .filter(([k]) => editar || k === "estado")
           .map(([k, l]) => <a key={k} href={`#${k}`} className="rounded-full border border-white/20 px-3 py-1.5 font-semibold hover:border-white/50">{l}</a>)}
-        <Link href={`/vista-previa/${id}`} target="_blank" className="rounded-full bg-texto px-3 py-1.5 font-bold text-sala">Vista previa ↗</Link>
+        <Link href={`/vista-previa/${id}`} target="_blank" className="rounded-full bg-texto px-3 py-1.5 font-bold text-sala">Vista previa <Icono nombre="externo" /></Link>
       </nav>
 
       <Block id="estado" title="Estado y publicación" note="El público solo ve obras publicadas o archivadas. Nada se borra al ocultar, archivar o cancelar.">
@@ -80,7 +81,7 @@ export default async function PageEditor({ params }: PageProps<"/panel/produccio
         {faltan.length > 0 ? (
           <div className="rounded-lg bg-sala p-3 text-sm">
             <p className="font-bold text-aviso">Para publicar falta:</p>
-            <ul className="mt-1 text-texto-2">{faltan.map((f) => <li key={f}>• {f}</li>)}</ul>
+            <ul className="mt-1 text-texto-2">{faltan.map((f) => <li key={f}><Icono nombre="punto" className="h-2 w-2 opacity-70" /> {f}</li>)}</ul>
           </div>
         ) : (
           <p className="text-sm font-semibold text-[#bbf7d0]">El kit está completo.</p>

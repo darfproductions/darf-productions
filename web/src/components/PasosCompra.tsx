@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useId, useMemo, useState } from "react";
+import { Icono } from "@/components/Icono";
 
 // Pasos de la compra (guía de UI): 1 Función · 2 Lugares · 3 Tus datos · 4 Pago y boletos.
 // El pago sigue siendo por transferencia y WhatsApp (sin cargo por servicio). Cada selector
@@ -57,7 +58,7 @@ export function PasosBarra() {
           <li key={nombre} aria-current={aqui ? "step" : undefined} className="flex flex-col gap-2">
             <span className={`h-1 rounded-full ${hecho || aqui ? "bg-[linear-gradient(90deg,var(--indigo),var(--ciruela),var(--carmin))]" : "bg-white/12"}`} />
             <span className={`flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em] ${aqui ? "text-texto" : hecho ? "text-texto-2" : "text-texto-3"}`}>
-              <span className={`grid h-5 w-5 shrink-0 place-items-center rounded-full text-[10px] ${aqui ? "bg-texto text-sala" : hecho ? "bg-white/15" : "border border-white/20"}`}>{hecho ? "✓" : n}</span>
+              <span className={`grid h-5 w-5 shrink-0 place-items-center rounded-full text-[10px] ${aqui ? "bg-texto text-sala" : hecho ? "bg-white/15" : "border border-white/20"}`}>{hecho ? <Icono nombre="check" /> : n}</span>
               <span className={aqui ? "truncate" : "hidden truncate sm:inline"}>{nombre}</span>
             </span>
           </li>

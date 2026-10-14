@@ -9,6 +9,7 @@ import { ASISTENCIA, citados, fechaEnsayo, type Rehearsal } from "@/lib/rehearsa
 import { createClient } from "@/lib/supabase/server";
 import { CheckinGafete } from "./CheckinGafete";
 import { Mark } from "./Mark";
+import { Icono } from "@/components/Icono";
 
 export const metadata: Metadata = { title: "Asistencia" };
 
@@ -33,7 +34,7 @@ export default async function Asistencia({ params }: PageProps<"/panel/produccio
     <div className="flex flex-col gap-4">
       <AutoRefresh seconds={30} />
       <div>
-        <Link href={`/panel/producciones/${id}/ensayos`} className="text-sm font-bold text-violeta-claro">← Ensayos</Link>
+        <Link href={`/panel/producciones/${id}/ensayos`} className="text-sm font-bold text-violeta-claro"><Icono nombre="flecha-izq" /> Ensayos</Link>
         <p className="mt-2 text-xl font-bold">{e.titulo}{e.estado === "cancelado" && <span className="ml-2 text-sm text-[#fecdd3]">Cancelado</span>}</p>
         <p className="text-sm text-texto-2">{fechaEnsayo(e.inicia, e.termina)}{e.lugar ? ` · ${e.lugar}` : ""} · {citados(e)}</p>
         {e.notas && <p className="mt-1 whitespace-pre-line text-sm text-texto-2">{e.notas}</p>}
@@ -50,7 +51,7 @@ export default async function Asistencia({ params }: PageProps<"/panel/produccio
               <span>
                 <b>{x.nombre}</b> <span className="text-xs text-texto-3">{x.papeles.join(", ")}</span>
                 {x.estado === "retardo" && x.minutos_tarde && <span className="ml-2 text-xs text-aviso">{x.minutos_tarde} min</span>}
-                {x.nota === "Gafete" && <span className="ml-2 text-xs text-texto-3">🪪 gafete</span>}
+                {x.nota === "Gafete" && <span className="ml-2 text-xs text-texto-3"><Icono nombre="credencial" /> gafete</span>}
                 {x.aviso && <span className="block text-xs text-[#a48bff]">{x.aviso}</span>}
               </span>
               <Mark pid={id} rid={rid} uid={x.user_id} actual={x.estado} />
@@ -59,7 +60,7 @@ export default async function Asistencia({ params }: PageProps<"/panel/produccio
           {lista.length === 0 && <li className="px-4 py-3 text-texto-2">Nadie citado (o aún no hay integrantes).</li>}
         </ul>
       </Card>
-      <p className="text-xs text-texto-3">Los retardos y faltas sin justificar generan advertencias automáticas según las reglas de la obra (Expedientes → Advertencias).</p>
+      <p className="text-xs text-texto-3">Los retardos y faltas sin justificar generan advertencias automáticas según las reglas de la obra (Expedientes <Icono nombre="flecha-der" /> Advertencias).</p>
     </div>
   );
 }

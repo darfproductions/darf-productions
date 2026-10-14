@@ -4,6 +4,7 @@ import { SocialIcon } from "@/components/SocialIcon";
 import { CONTACT_CHANNELS, whatsappDisplay, type ContactChannel } from "@/content/contacto";
 import { env } from "@/lib/env";
 import { ContactForm } from "./ContactForm";
+import { Icono } from "@/components/Icono";
 
 export const metadata: Metadata = { title: "Contacto" };
 
@@ -21,7 +22,7 @@ function ChannelCard({ c, disabledNote }: { c: ContactChannel; disabledNote?: st
         <span className="truncate font-semibold" style={{ color: c.color }}>{c.handle}</span>
         <span className="break-words text-sm text-texto-3">{disabledNote ?? c.descripcion}</span>
       </span>
-      <span aria-hidden="true" className="ml-auto text-2xl text-texto-3 transition-transform group-hover:translate-x-1 group-hover:text-white">→</span>
+      <span aria-hidden="true" className="ml-auto text-2xl text-texto-3 transition-transform group-hover:translate-x-1 group-hover:text-white"><Icono nombre="flecha-der" /></span>
     </>
   );
   const cls = "group flex min-w-0 items-center gap-4 rounded-2xl border border-white/10 bg-telon p-5 transition-all";

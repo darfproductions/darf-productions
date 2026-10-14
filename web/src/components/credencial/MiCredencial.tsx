@@ -9,6 +9,7 @@ import { descargarPase } from "@/components/gafete/gafete-canvas";
 import { guardarCompartir, regenerarGafete } from "@/lib/gafete-actions";
 import type { MiCredencialVista } from "@/lib/credencial";
 import { NIVEL, paseCredencial } from "@/lib/credencial-rules";
+import { Icono } from "@/components/Icono";
 
 // "Mi credencial" (0083): una sola por persona. Se ve como gafete (equipo y elencos, con el sello
 // del club si también es socio), credencial dorada (Club Fan) o básica (cuenta). Mismo QR para
@@ -39,26 +40,26 @@ export function MiCredencial({ c, compacto = false, wallet }: { c: MiCredencialV
   return (
     <>
       {compacto ? (
-        <button type="button" onClick={() => setAbierto(true)} className={`fb fb-sm border ${fan ? "border-oro/60 text-oro-claro hover:bg-oro/10" : "border-linea-2 hover:bg-white/5"}`}>{n.boton} con QR →</button>
+        <button type="button" onClick={() => setAbierto(true)} className={`fb fb-sm border ${fan ? "border-oro/60 text-oro-claro hover:bg-oro/10" : "border-linea-2 hover:bg-white/5"}`}>{n.boton} con QR <Icono nombre="flecha-der" /></button>
       ) : (
         <button type="button" onClick={() => setAbierto(true)} className={`flex w-full items-center gap-4 rounded-2xl border p-5 text-left ${fan ? "border-oro/40 bg-[linear-gradient(160deg,#1a1622,#0b0910)] hover:border-oro/70" : "border-linea bg-telon hover:bg-telon-2"}`}>
           <span aria-hidden="true" className={`grid h-12 w-12 shrink-0 place-items-center rounded-xl ${fan ? "bg-[linear-gradient(135deg,#8a6b1f,#d7bb5f,#f3e3a3)] text-sala" : "bg-[linear-gradient(135deg,#340feb,#830886,#d20122)] text-white"}`}><IconoCredencial /></span>
           <span className="flex flex-col gap-0.5">
-            <span className={`font-bold ${fan ? "text-oro-claro" : ""}`}>{n.boton} →</span>
+            <span className={`font-bold ${fan ? "text-oro-claro" : ""}`}>{n.boton} <Icono nombre="flecha-der" /></span>
             <span className="text-xs text-texto-2">{n.ayuda}{c.nivel === "equipo" && c.socio ? " Incluye tu sello del Club Fan." : ""}</span>
           </span>
         </button>
       )}
       {abierto && createPortal(
         <div role="dialog" aria-modal="true" aria-label={n.boton} className="fixed inset-0 z-[60] flex flex-col items-center gap-5 overflow-y-auto bg-[#050407]/95 px-4 py-8 backdrop-blur">
-          <button type="button" onClick={() => setAbierto(false)} className="self-end rounded-full border border-white/25 px-4 py-2 text-sm font-bold" autoFocus>Cerrar ✕</button>
+          <button type="button" onClick={() => setAbierto(false)} className="self-end rounded-full border border-white/25 px-4 py-2 text-sm font-bold" autoFocus>Cerrar <Icono nombre="x" /></button>
           <GafeteVista p={pase} />
           {wallet && <WalletBotones apple={wallet.apple ? "/cuenta/wallet/apple/credencial" : null} google={wallet.google ? "/cuenta/wallet/google/credencial" : null} />}
           <p className="max-w-[340px] text-center text-sm text-texto-2">Es tu único código: sirve en ensayos y en la entrada de los eventos. Sube el brillo de tu pantalla para que el QR se lea fácil.</p>
           <div className="flex flex-wrap justify-center gap-3">
             <button type="button" disabled={bajando} onClick={async () => { setBajando(true); try { await descargarPase(pase, archivo); } finally { setBajando(false); } }} className="fb fb-claro fb-sm">{bajando ? "Preparando…" : "Descargar PDF"}</button>
             {c.nivel === "equipo" && <button type="button" onClick={() => setAjustes(!ajustes)} aria-expanded={ajustes} className="fb fb-o fb-sm">Qué compartir</button>}
-            <a href={c.liga} target="_blank" rel="noreferrer" className="fb fb-o fb-sm">Ver cómo la ven ↗</a>
+            <a href={c.liga} target="_blank" rel="noreferrer" className="fb fb-o fb-sm">Ver cómo la ven <Icono nombre="externo" /></a>
           </div>
           {ajustes && c.nivel === "equipo" && (
             <div className="flex w-[min(420px,92vw)] flex-col gap-4 rounded-[22px] border border-linea-2 bg-telon p-5 text-sm">

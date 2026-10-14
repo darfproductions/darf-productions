@@ -9,6 +9,7 @@ import { getEvaluations, getRubric, periodExtras } from "@/lib/rubric";
 import { asistenciaPct, promedio, siguiente, type Nivel } from "@/lib/rubric-rules";
 import { createClient } from "@/lib/supabase/server";
 import { saveEvaluation } from "../../actions";
+import { Icono } from "@/components/Icono";
 
 export const metadata: Metadata = { title: "Evaluar alumno" };
 
@@ -59,7 +60,7 @@ export default async function EvaluarAlumno({ params }: PageProps<"/panel/produc
 
   return (
     <div className="flex flex-col gap-4">
-      <Link href={base} className="text-sm font-bold text-violeta-claro">← {per.nombre}</Link>
+      <Link href={base} className="text-sm font-bold text-violeta-claro"><Icono nombre="flecha-izq" /> {per.nombre}</Link>
       <Card className="flex flex-col gap-4">
         <div>
           <h2 className="titular text-2xl">{a.nombre}</h2>

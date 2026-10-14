@@ -13,6 +13,7 @@ import { textoLimite } from "@/lib/request-rules";
 import { avisoFaltaHoras } from "@/lib/requests";
 import { cancelSeries, createRehearsal, setAvisoHoras, setRehearsalEstado } from "./actions";
 import { isoMx } from "@/lib/dates";
+import { Icono } from "@/components/Icono";
 
 export const metadata: Metadata = { title: "Ensayos" };
 
@@ -67,7 +68,7 @@ export default async function Ensayos({ params }: PageProps<"/panel/producciones
       <Card className="flex flex-col gap-3">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <h2 className="titular text-xl">Próximos ensayos</h2>
-          <a href={`/panel/producciones/${id}/expedientes/exportar/asistencia`} className="text-sm font-bold text-violeta-claro">Descargar asistencia (Excel) ↓</a>
+          <a href={`/panel/producciones/${id}/expedientes/exportar/asistencia`} className="text-sm font-bold text-violeta-claro">Descargar asistencia (Excel) <Icono nombre="flecha-abajo" /></a>
         </div>
         <ul className="flex flex-col gap-2">{proximos.map((r) => <Item key={r.id} r={r} />)}</ul>
         {proximos.length === 0 && <p className="text-sm text-texto-3">No hay ensayos próximos.</p>}
@@ -114,7 +115,7 @@ export default async function Ensayos({ params }: PageProps<"/panel/producciones
       {!!porRevisar && (
         <Link href={`/panel/producciones/${id}/solicitudes`} className="flex items-center justify-between gap-3 rounded-[18px] border border-aviso/40 bg-telon px-5 py-3 text-sm hover:bg-telon-2">
           <b className="text-aviso">{porRevisar} {porRevisar === 1 ? "solicitud" : "solicitudes"} de falta por revisar</b>
-          <span className="text-violeta-claro">→</span>
+          <span className="text-violeta-claro"><Icono nombre="flecha-der" /></span>
         </Link>
       )}
 

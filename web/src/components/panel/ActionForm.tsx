@@ -18,7 +18,7 @@ export function ActionForm({
   action: (prev: State, f: FormData) => Promise<State>;
   hidden?: Record<string, string>;
   confirm?: string;
-  submit: string;
+  submit: React.ReactNode;
   submitClass?: string;
   children?: React.ReactNode;
   inline?: boolean;

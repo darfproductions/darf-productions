@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import type { DayStatus } from "@/lib/audition-rules";
 import { deskCheckin, deskStep, swapOrder } from "../../actions";
+import { Icono } from "@/components/Icono";
 
 const main = "rounded-full bg-texto px-3 py-1.5 text-xs font-bold text-sala disabled:opacity-60";
 const ghost = "rounded-full border border-white/25 px-2.5 py-1.5 text-xs font-bold hover:border-white/50 disabled:opacity-60";
@@ -27,7 +28,7 @@ export function StepButtons({ aid, app, nombre, status }: { aid: string; app: st
       {status === "en_sala" && <button type="button" disabled={pending} className={main} onClick={() => run(() => deskStep(aid, app, "termino"))}>Terminó</button>}
       {(status === "en_sala" || status === "termino") && (
         <button type="button" disabled={pending} className={ghost} title="Deshacer el último paso" aria-label="Deshacer el último paso"
-          onClick={() => window.confirm(`¿Deshacer el último paso de ${nombre}?`) && run(() => deskStep(aid, app, "deshacer"))}>↶</button>
+          onClick={() => window.confirm(`¿Deshacer el último paso de ${nombre}?`) && run(() => deskStep(aid, app, "deshacer"))}><Icono nombre="deshacer" /></button>
       )}
     </span>
   );
@@ -44,8 +45,8 @@ export function OrderButtons({ aid, app, prev, next }: { aid: string; app: strin
   });
   return (
     <span className="flex shrink-0 gap-1">
-      <button type="button" disabled={pending || !prev} className={ghost} aria-label="Subir" onClick={() => prev && swap(prev)}>↑</button>
-      <button type="button" disabled={pending || !next} className={ghost} aria-label="Bajar" onClick={() => next && swap(next)}>↓</button>
+      <button type="button" disabled={pending || !prev} className={ghost} aria-label="Subir" onClick={() => prev && swap(prev)}><Icono nombre="flecha-arriba" /></button>
+      <button type="button" disabled={pending || !next} className={ghost} aria-label="Bajar" onClick={() => next && swap(next)}><Icono nombre="flecha-abajo" /></button>
     </span>
   );
 }

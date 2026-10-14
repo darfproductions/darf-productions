@@ -9,6 +9,7 @@ import { ScoreForm } from "./ScoreForm";
 import { PickForm } from "./PickForm";
 import { getSession } from "@/lib/auth";
 import { rondaDeFase } from "@/lib/votacion-rules";
+import { Icono } from "@/components/Icono";
 
 export const metadata: Metadata = { title: "Evaluación" };
 
@@ -69,7 +70,7 @@ export default async function Judging({ params, searchParams }: PageProps<"/pane
                   <p className="font-bold">{r.nombre}</p>
                   <p className="text-sm text-texto-3">{r.edad} años</p>
                   {r.roles && <p className="text-xs text-texto-2">{r.roles.join(", ")}</p>}
-                  {(r.enlaces ?? []).map((v, i) => <a key={i} href={v.url} target="_blank" rel="noreferrer" className="mt-1 block text-xs text-violeta-claro underline">{v.titulo} ↗</a>)}
+                  {(r.enlaces ?? []).map((v, i) => <a key={i} href={v.url} target="_blank" rel="noreferrer" className="mt-1 block text-xs text-violeta-claro underline">{v.titulo} <Icono nombre="externo" /></a>)}
                 </div>
               </div>
               <div className="flex flex-1 flex-col gap-3">

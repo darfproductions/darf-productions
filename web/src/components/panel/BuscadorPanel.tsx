@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { buscarPanel } from "@/lib/panel-buscar";
 import { TIPO_RESULTADO, buscarAtajos, type Atajo, type Resultado } from "@/lib/panel-buscar-rules";
+import { Icono } from "@/components/Icono";
 
 // Buscador del panel (0085): Ctrl/⌘+K o el botón de arriba. Primero las secciones (obra + pestaña,
 // sin ir a la base) y luego personas, órdenes (DARF-/EV-), convocatorias y eventos según tus permisos.
@@ -50,7 +51,7 @@ export function BuscadorPanel({ atajos }: { atajos: Atajo[] }) {
         onClick={() => setAbierto(true)}
         className="flex w-full items-center justify-between gap-3 rounded-xl border border-linea bg-telon px-4 py-2.5 text-left text-sm text-texto-3 hover:border-linea-2 print:hidden"
       >
-        <span>🔎 Buscar obra, sección, persona, orden…</span>
+        <span><Icono nombre="lupa" /> Buscar obra, sección, persona, orden…</span>
         <kbd className="hidden rounded border border-linea-2 px-1.5 py-0.5 text-[11px] font-bold text-texto-2 sm:inline">Ctrl K</kbd>
       </button>
       {abierto && createPortal(
@@ -90,7 +91,7 @@ export function BuscadorPanel({ atajos }: { atajos: Atajo[] }) {
               {q.trim() && !lista.length && <li className="px-3 py-3 text-sm text-texto-3">{buscando ? "Buscando…" : "Sin resultados."}</li>}
               {!q.trim() && <li className="px-3 py-3 text-sm text-texto-3">Escribe el nombre de una obra y una sección, una persona o el código de una orden.</li>}
             </ul>
-            <p className="hidden border-t border-linea px-5 py-2 text-[11px] text-texto-3 sm:block">↑ ↓ para moverte · Enter para abrir · Esc para cerrar</p>
+            <p className="hidden border-t border-linea px-5 py-2 text-[11px] text-texto-3 sm:block"><Icono nombre="flecha-arriba" /> <Icono nombre="flecha-abajo" /> para moverte · Enter para abrir · Esc para cerrar</p>
           </div>
         </div>,
         document.body,

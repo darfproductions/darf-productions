@@ -6,6 +6,7 @@ import { edad } from "@/lib/member-rules";
 import { requireSession } from "@/lib/auth";
 import { getPro } from "@/lib/pro-profile";
 import { createClient } from "@/lib/supabase/server";
+import { Icono } from "@/components/Icono";
 
 export const metadata: Metadata = { title: "Perfil profesional" };
 
@@ -22,7 +23,7 @@ export default async function MiPerfilProfesional() {
         Lo que verán directores y público de ti como artista. Es distinto de tu foto personal de la cuenta.
       </PageHeading>
       <div className="mx-auto flex max-w-[900px] flex-col gap-4 px-5">
-        <Link href="/cuenta" className="text-sm font-bold text-violeta-claro">← Mi cuenta</Link>
+        <Link href="/cuenta" className="text-sm font-bold text-violeta-claro"><Icono nombre="flecha-izq" /> Mi cuenta</Link>
         {error || !pid ? <p className="text-[#ff8fa3]">No se pudo abrir tu perfil. Intenta de nuevo.</p> : (
           <ProProfileEditor pid={pid as string} nombre={session.profile?.nombre || session.email} pro={pro} fotos={fotos} team={false} esMenor={e !== null && e < 18} />
         )}

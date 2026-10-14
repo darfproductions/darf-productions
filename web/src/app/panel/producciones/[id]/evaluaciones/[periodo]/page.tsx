@@ -7,6 +7,7 @@ import { requirePanel } from "@/lib/permissions";
 import { getEvaluations, getRubric } from "@/lib/rubric";
 import { completa, filasBoleta, promedio } from "@/lib/rubric-rules";
 import { createClient } from "@/lib/supabase/server";
+import { Icono } from "@/components/Icono";
 
 export const metadata: Metadata = { title: "Evaluar" };
 
@@ -24,7 +25,7 @@ export default async function Periodo({ params }: PageProps<"/panel/producciones
   const base = `/panel/producciones/${id}/evaluaciones`;
   return (
     <div className="flex flex-col gap-4">
-      <Link href={base} className="text-sm font-bold text-violeta-claro">← Evaluaciones</Link>
+      <Link href={base} className="text-sm font-bold text-violeta-claro"><Icono nombre="flecha-izq" /> Evaluaciones</Link>
       <Card className="flex flex-col gap-3">
         <h2 className="titular text-xl">{per.nombre} {per.publicado_at && <span className="text-sm font-normal text-exito">· publicado</span>}</h2>
         {criterios.length === 0 && <p className="text-sm text-aviso">Primero agrega criterios a la rúbrica.</p>}
