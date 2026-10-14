@@ -179,3 +179,58 @@ export async function saveEvaluation(_p: State, f: FormData): Promise<State> {
   if (f.get("ir") === "siguiente" && next) redirect(`/panel/producciones/${pid}/evaluaciones/${periodo}/${next}`);
   return { ok: true, message: "Evaluación guardada." };
 }
+
+/** Materias en las que un asistente artístico propone calificaciones (0100). Sin materias = no propone. */
+export async function setAsistenteMaterias(_p: State, f: FormData): Promise<State> {
+  const pid = str(f, "pid"), uid = str(f, "uid");
+  const crits = f.getAll("crit").map(String).filter(Boolean);
+  const supabase = await createClient();
+  if (crits.length) {
+    const { error } = await supabase.from("rubric_assistants").upsert(crits.map((c) => ({ production_id: pid, user_id: uid, criterion_id: c })), { onConflict: "production_id,user_id,criterion_id", ignoreDuplicates: true });
+    if (error) return { ok: false, message: error.message.includes("row-level") ? "Solo la coordinación asigna materias." : error.message };
+  }
+  let del = supabase.from("rubric_assistants").delete().eq("production_id", pid).eq("user_id", uid);
+  if (crits.length) del = del.not("criterion_id", "in", `(${crits.join(",")})`);
+  const { error: eDel } = await del;
+  if (eDel) return { ok: false, message: eDel.message };
+  return done(pid, crits.length ? "Materias asignadas." : "Sin materias: este asistente no propone calificaciones.");
+}
+
+/** El asistente propone (o cambia mientras siga pendiente) la calificación de un alumno en una materia suya. */
+export async function proponerCalificacion(_p: State, f: FormData): Promise<State> {
+  const pid = str(f, "pid"), periodo = str(f, "periodo"), uid = str(f, "uid"), crit = str(f, "crit");
+  const n = numeroDe(str(f, "numero"));
+  if (!n.ok) return { ok: false, message: "La calificación va de 0 a 10." };
+  const level = str(f, "nivel") || null;
+  if (!level && n.n == null) return { ok: false, message: "Elige un nivel o escribe un número." };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("rubric_proponer", { per: periodo, uid, crit, p_level: level, p_numero: n.n, p_comentario: str(f, "comentario") || null });
+  if (error) return { ok: false, message: error.message };
+  return done(pid, "Propuesta enviada. El maestro de la materia la revisa.");
+}
+
+export async function retirarPropuesta(_p: State, f: FormData): Promise<State> {
+  const pid = str(f, "pid");
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("rubric_proposal_retirar", { qid: str(f, "qid") });
+  if (error) return { ok: false, message: error.message };
+  return done(pid, "Propuesta retirada.");
+}
+
+/** El maestro de la materia aprueba tal cual, corrige y aprueba, o rechaza una propuesta. */
+export async function resolverPropuesta(_p: State, f: FormData): Promise<State> {
+  const pid = str(f, "pid");
+  const accion = str(f, "accion");
+  const supabase = await createClient();
+  const args: { qid: string; p_aceptar: boolean; p_level?: string | null; p_numero?: number | null } = { qid: str(f, "qid"), p_aceptar: accion !== "rechazar" };
+  if (accion === "corregir") {
+    const n = numeroDe(str(f, "numero"));
+    if (!n.ok) return { ok: false, message: "La calificación va de 0 a 10." };
+    args.p_level = str(f, "nivel") || null;
+    args.p_numero = n.n;
+    if (!args.p_level && args.p_numero == null) return { ok: false, message: "Elige un nivel o escribe un número." };
+  }
+  const { data, error } = await supabase.rpc("rubric_resolver", args);
+  if (error) return { ok: false, message: error.message };
+  return done(pid, data === "rechazada" ? "Propuesta rechazada: no cambia la calificación." : data === "corregida" ? "Corregida y aprobada: ya cuenta en la boleta." : "Aprobada: ya cuenta en la boleta.");
+}

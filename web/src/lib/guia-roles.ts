@@ -18,6 +18,7 @@ const GUIA: [string, PasoGuia][] = [
   ["materiales.ver", { titulo: "Materiales", que: "Consultar los materiales de la obra.", path: "materiales" }],
   ["comunicados.enviar", { titulo: "Comunicados", que: "Mandar comunicados al elenco (les llega aviso al teléfono).", path: "comunicados" }],
   ["rubrica.gestionar", { titulo: "Evaluaciones del taller", que: "Definir criterios, evaluar y publicar boletas.", path: "evaluaciones" }],
+  ["rubrica.proponer", { titulo: "Proponer calificaciones", que: "Calificar a los alumnos en tus materias del taller. Tu propuesta la aprueba o corrige el maestro de la materia.", consejo: "Hasta que se aprueba, el alumno no la ve.", path: "evaluaciones" }],
   ["funciones.gestionar", { titulo: "Funciones y precios", que: "Crear funciones, zonas y precios, y abrir o cerrar la venta.", path: "boletos/funciones" }],
   ["ventas.ver", { titulo: "Órdenes", que: "Ver las órdenes de boletos y cómo va la venta.", path: "boletos" }],
   ["ventas.operar", { titulo: "Taquilla", que: "Aprobar o rechazar pagos y vender en taquilla.", consejo: "Al final del día, revisa el corte de caja.", path: "boletos/taquilla" }],

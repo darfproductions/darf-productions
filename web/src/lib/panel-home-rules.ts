@@ -1,7 +1,7 @@
 // Inicio del panel "Tu día" (Bloque 2, migración 0061). Funciones puras: panel-home-rules.test.ts.
 import { partesMx } from "@/lib/dates";
 
-export type PendienteTipo = "ordenes" | "pagos_evento" | "solicitudes" | "solicitudes_elenco" | "ofertas" | "documentos" | "adeudos" | "decision" | "advertencias" | "evaluaciones" | "notas_equipo" | "avisos_equipo";
+export type PendienteTipo = "ordenes" | "pagos_evento" | "solicitudes" | "solicitudes_elenco" | "ofertas" | "documentos" | "adeudos" | "decision" | "advertencias" | "evaluaciones" | "propuestas" | "notas_equipo" | "avisos_equipo";
 /** ref_id/ref_titulo (0085): la convocatoria o el evento al que se refiere, para ir directo. */
 export type Pendiente = { tipo: PendienteTipo; production_id: string | null; n: number; ref_id?: string | null; ref_titulo?: string | null };
 
@@ -16,10 +16,11 @@ const TEXTO: Record<PendienteTipo, [string, string]> = {
   documentos: ["documento subido por revisar", "documentos subidos por revisar"],
   advertencias: ["llamada de atención esta semana", "llamadas de atención esta semana"],
   evaluaciones: ["periodo de evaluación sin publicar", "periodos de evaluación sin publicar"],
+  propuestas: ["calificación propuesta por revisar", "calificaciones propuestas por revisar"],
   notas_equipo: ["nota de dirección para ti", "notas de dirección para ti"],
   avisos_equipo: ["aviso del equipo sin leer", "avisos del equipo sin leer"],
 };
-const ORDEN: PendienteTipo[] = ["notas_equipo", "ordenes", "pagos_evento", "solicitudes_elenco", "decision", "solicitudes", "ofertas", "documentos", "adeudos", "evaluaciones", "avisos_equipo", "advertencias"];
+const ORDEN: PendienteTipo[] = ["notas_equipo", "ordenes", "pagos_evento", "solicitudes_elenco", "decision", "solicitudes", "ofertas", "documentos", "adeudos", "propuestas", "evaluaciones", "avisos_equipo", "advertencias"];
 
 export function pendienteTexto(p: Pendiente): string {
   return `${p.n} ${TEXTO[p.tipo][p.n === 1 ? 0 : 1]}`;
@@ -39,7 +40,8 @@ export function pendienteHref(p: Pendiente): string {
     case "adeudos": return `${base}/expedientes/adeudos?ver=vencidos`;
     case "decision": return `${base}/expedientes#decision`;
     case "advertencias": return `${base}/expedientes`;
-    case "evaluaciones": return `${base}/evaluaciones`;
+    case "evaluaciones":
+    case "propuestas": return `${base}/evaluaciones`;
     case "solicitudes_elenco": return `${base}/solicitudes`;
   }
 }
@@ -105,7 +107,7 @@ export function cumplesProximos<T extends { user_id: string; nombre: string; dia
 /** Pestaña de la obra donde se resuelve cada pendiente (para los números en las pestañas, 0085). */
 const PESTANA: Partial<Record<PendienteTipo, string>> = {
   ordenes: "boletos", pagos_evento: "fanzone", solicitudes: "audiciones", solicitudes_elenco: "solicitudes", ofertas: "elenco",
-  documentos: "expedientes", adeudos: "expedientes", decision: "expedientes", evaluaciones: "evaluaciones",
+  documentos: "expedientes", adeudos: "expedientes", decision: "expedientes", evaluaciones: "evaluaciones", propuestas: "evaluaciones",
 };
 
 /** Pendientes de una obra sumados por pestaña. */

@@ -54,3 +54,30 @@ export async function boletaData(pid: string, periodo: string, uid: string, alum
     filas, promedio: promedio(filas), comentario: ev.comentario, extras,
   };
 }
+
+/** Propuesta de calificación de un asistente artístico (0100): no cuenta hasta que el maestro la aprueba. */
+export type Propuesta = {
+  id: string; user_id: string; criterion_id: string; proposed_by: string; asistente: string;
+  level_id: string | null; numero: number | null; comentario: string | null; estado: "pendiente" | "aprobada" | "corregida" | "rechazada"; updated_at: string;
+};
+
+export const ESTADO_PROPUESTA: Record<Propuesta["estado"], { label: string; cls: string }> = {
+  pendiente: { label: "Por revisar", cls: "text-aviso" },
+  aprobada: { label: "Aprobada", cls: "text-exito" },
+  corregida: { label: "Corregida y aprobada", cls: "text-exito" },
+  rechazada: { label: "No aprobada", cls: "text-[#fecdd3]" },
+};
+
+/** Las mías (asistente) y las de las materias que puedo calificar (maestro o coordinación). */
+export async function getPropuestas(periodo: string): Promise<Propuesta[]> {
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("rubric_propuestas", { per: periodo });
+  return ((data ?? []) as Propuesta[]).map((p) => ({ ...p, numero: p.numero == null ? null : Number(p.numero) }));
+}
+
+/** Materias que me tocan como asistente artístico en esta obra. */
+export async function misMateriasAsistente(pid: string, uid: string): Promise<string[]> {
+  const supabase = await createClient();
+  const { data } = await supabase.from("rubric_assistants").select("criterion_id").eq("production_id", pid).eq("user_id", uid);
+  return (data ?? []).map((r) => r.criterion_id as string);
+}

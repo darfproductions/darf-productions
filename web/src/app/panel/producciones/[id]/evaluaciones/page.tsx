@@ -5,10 +5,10 @@ import { ActionForm } from "@/components/panel/ActionForm";
 import { Card, input } from "@/components/panel/ui";
 import { can } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
-import { getEvaluations, getRubric } from "@/lib/rubric";
+import { getEvaluations, getRubric, misMateriasAsistente } from "@/lib/rubric";
 import { completa } from "@/lib/rubric-rules";
 import { createClient } from "@/lib/supabase/server";
-import { publishPeriod, removeRubricItem, saveRubricItem, seedRubric, setTeacherCriteria, toggleRubric } from "./actions";
+import { publishPeriod, removeRubricItem, saveRubricItem, seedRubric, setAsistenteMaterias, setTeacherCriteria, toggleRubric } from "./actions";
 
 export const metadata: Metadata = { title: "Evaluaciones" };
 
@@ -51,13 +51,42 @@ function Lista({ pid, tipo, titulo, ayuda, items, conDescripcion, edita }: {
   );
 }
 
+// Asistente artístico (0100): ve sus materias y los periodos para proponer calificaciones.
+async function InicioAsistente({ id, uid, activa }: { id: string; uid: string; activa: boolean }) {
+  if (!activa) return <Card className="text-sm text-texto-2">Las evaluaciones están apagadas en esta obra.</Card>;
+  const [{ criterios, periodos }, mias] = await Promise.all([getRubric(id), misMateriasAsistente(id, uid)]);
+  const nombres = criterios.filter((c) => mias.includes(c.id)).map((c) => c.nombre);
+  return (
+    <div className="flex flex-col gap-4">
+      <Card className="text-sm">
+        {nombres.length ? <>Propones calificaciones en: <b>{nombres.join(", ")}</b>. </> : <>Aún no tienes materias asignadas: pídeselas a la coordinación del taller. </>}
+        El maestro de cada materia aprueba o corrige tu propuesta; hasta entonces no cuenta en la boleta.
+      </Card>
+      <Card className="flex flex-col gap-3">
+        <h2 className="titular text-xl">Periodos</h2>
+        <ul className="flex flex-col divide-y divide-white/10">
+          {periodos.map((p) => (
+            <li key={p.id} className="flex flex-wrap items-center justify-between gap-2 py-2.5">
+              <span><b>{p.nombre}</b> <span className={`text-xs ${p.publicado_at ? "text-exito" : "text-texto-3"}`}>{p.publicado_at ? "Publicado (ya no se proponen)" : "Abierto"}</span></span>
+              {!p.publicado_at && nombres.length > 0 && <Link href={`/panel/producciones/${id}/evaluaciones/${p.id}`} className="rounded-full bg-texto px-4 py-1.5 text-xs font-bold text-sala">Proponer</Link>}
+            </li>
+          ))}
+          {periodos.length === 0 && <li className="py-2 text-sm text-texto-3">Aún no hay periodos.</li>}
+        </ul>
+      </Card>
+    </div>
+  );
+}
+
 // Rúbrica del taller: criterios, niveles y periodos; avance de evaluación y publicación.
 export default async function Evaluaciones({ params }: PageProps<"/panel/producciones/[id]/evaluaciones">) {
   const { id } = await params;
   const access = await requirePanel(`/panel/producciones/${id}/evaluaciones`);
-  if (!can(access, id, "rubrica.gestionar")) redirect(`/panel/producciones/${id}`);
+  const gestiona = can(access, id, "rubrica.gestionar");
+  if (!gestiona && !can(access, id, "rubrica.proponer")) redirect(`/panel/producciones/${id}`);
   const supabase = await createClient();
   const { data: activa } = await supabase.rpc("rubric_active", { pid: id });
+  if (!gestiona) return <InicioAsistente id={id} uid={access.session.userId} activa={!!activa} />;
   const encender = access.isDirector || can(access, id, "obra.publicar");
   if (!activa) {
     return (
@@ -69,12 +98,13 @@ export default async function Evaluaciones({ params }: PageProps<"/panel/producc
       </Card>
     );
   }
-  const [{ criterios, niveles, periodos }, evs, roster, restr, maestrosRes] = await Promise.all([
+  const [{ criterios, niveles, periodos }, evs, roster, restr, maestrosRes, asistRes] = await Promise.all([
     getRubric(id), getEvaluations(id), supabase.rpc("rubric_roster", { pid: id }), supabase.rpc("rubric_restricted", { pid: id }),
-    supabase.rpc("rubric_teacher_list", { pid: id }),
+    supabase.rpc("rubric_teacher_list", { pid: id }), supabase.rpc("rubric_assistant_list", { pid: id }),
   ]);
   const coordina = !restr.data;
   const maestros = (maestrosRes.data ?? []) as { user_id: string; nombre: string; criterios: string[] }[];
+  const asistentes = (asistRes.data ?? []) as { user_id: string; nombre: string; criterios: string[] }[];
   const yo = maestros.find((m) => m.user_id === access.session.userId);
   const materias = criterios.filter((c) => !c.compartido);
   const alumnos = ((roster.data ?? []) as { user_id: string; activo: boolean }[]).filter((a) => a.activo);
@@ -163,6 +193,30 @@ export default async function Evaluaciones({ params }: PageProps<"/panel/producc
               </li>
             ))}
             {maestros.length === 0 && <li className="text-sm text-texto-3">Aún no hay nadie con el rol Maestro en esta obra.</li>}
+          </ul>
+        </Card>
+      )}
+
+      {coordina && (
+        <Card className="flex flex-col gap-3">
+          <div>
+            <h2 className="titular text-xl">Asistentes y materias</h2>
+            <p className="text-sm text-texto-2">Los asistentes artísticos (de dirección vocal, de coreografía…) proponen calificaciones solo en las materias que les asignes. El maestro de la materia las aprueba, las corrige o las rechaza; hasta entonces no cuentan. Para que aparezca aquí, dale el rol Asistente artístico en Permisos.</p>
+          </div>
+          <ul className="flex flex-col gap-3">
+            {asistentes.map((m) => (
+              <li key={m.user_id} className="rounded-lg bg-sala p-3">
+                <ActionForm action={setAsistenteMaterias} hidden={{ pid: id, uid: m.user_id }} submit="Guardar materias" submitClass={small}>
+                  <p className="font-bold">{m.nombre} {!m.criterios.length && <span className="text-xs font-normal text-texto-3">· sin materias (no propone)</span>}</p>
+                  <div className="flex flex-wrap gap-3 text-sm">
+                    {materias.map((c) => (
+                      <label key={c.id} className="flex items-center gap-1.5"><input type="checkbox" name="crit" value={c.id} defaultChecked={m.criterios.includes(c.id)} /> {c.nombre}</label>
+                    ))}
+                  </div>
+                </ActionForm>
+              </li>
+            ))}
+            {asistentes.length === 0 && <li className="text-sm text-texto-3">Aún no hay nadie con el rol Asistente artístico en esta obra.</li>}
           </ul>
         </Card>
       )}
