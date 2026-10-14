@@ -15,7 +15,7 @@ export function GafeteVista({ p }: { p: PaseVista }) {
       className={`relative flex w-[min(340px,86vw)] shrink-0 flex-col items-center overflow-hidden rounded-[26px] border text-texto shadow-[0_40px_100px_-30px_rgb(0_0_0/0.9)] ${fan ? "border-oro/50 bg-[radial-gradient(120%_70%_at_50%_0%,rgb(215_187_95/0.28),transparent_60%),linear-gradient(170deg,#1a1622,#0b0910)] shadow-[0_30px_90px_-30px_rgb(215_187_95/0.45)]" : "border-linea-2 bg-sala"}`}
     >
       {/* El logo arriba al centro y debajo, en fila, sus sellos: Club Fan · DARF Loyalty · Casa DARF. */}
-      <img src={p.logo} alt={p.logoAlt} className={`mt-6 w-auto ${fan ? "h-10 max-w-[190px]" : "h-14"}`} />
+      <img src={p.logo} alt={p.logoAlt} className={`mt-6 w-auto ${fan ? "h-10 max-w-[190px]" : "h-16 max-w-[200px]"}`} />
       {sellos.length > 0 && (
         <div className="mt-3 flex items-center justify-center gap-3">
           {sellos.map((s) => <img key={s.src} src={s.src} alt={s.alt} className="h-12 w-12" />)}

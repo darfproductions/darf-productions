@@ -43,8 +43,8 @@ describe("DARF Loyalty (0103)", () => {
     expect(sellosDe({ ...p, lealtad: 2 }).map((s) => s.src)).not.toContain("/medalla/2");
   });
 
-  it("Google: DARF al centro y la medalla lo más al centro posible", () => {
-    expect(filaGoogle(["club", "lealtad", "casa"])).toEqual(["club", "darf", "lealtad", "casa"]);
+  it("Google: DARF al centro y la medalla lo más al centro posible; con tres sellos, sin logo", () => {
+    expect(filaGoogle(["club", "lealtad", "casa"])).toEqual(["club", "lealtad", "casa"]);
     expect(filaGoogle(["club", "lealtad"])).toEqual(["club", "darf", "lealtad"]);
     expect(filaGoogle(["lealtad", "casa"])).toEqual(["lealtad", "darf", "casa"]);
     expect(filaGoogle(["club", "casa"])).toEqual(["club", "darf", "casa"]);

@@ -38,7 +38,7 @@ export function paseCredencial(c: CredencialMia & { nombre: string; fotoUrl: str
   }
   if (c.nivel === "club" && c.socio) return { ...paseCredencialFan({ ...base, ...c.socio }), ...lealtad };
   return {
-    tema: "darf", logo: "/marca/darf-monograma.svg", logoAlt: "DARF", ...base,
+    tema: "darf", logo: "/marca/darf-principal.svg", logoAlt: "DARF Productions", ...base,
     titulo: "Cuenta DARF", pie: `DARF Productions · desde ${anioMx(c.desde ? new Date(c.desde) : hoy)}`, banda: BANDA_CUENTA, ...lealtad,
   };
 }

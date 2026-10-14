@@ -74,9 +74,10 @@ export function sellosApple(s: Sello[]): Sello[] {
   return [...s].sort((a, b) => orden[a.id] - orden[b.id]);
 }
 
-/** Franja de Google Wallet: DARF al centro y los sellos a los lados, la medalla lo más al centro posible
- *  (con todos: Club · DARF · Lealtad · Casa). */
+/** Franja de Google Wallet: DARF al centro y los sellos a los lados, la medalla lo más al centro posible.
+ *  Con los tres sellos ya no va el logo: Club · Lealtad · Casa (Diego 2026-10-14). */
 export function filaGoogle<T extends string>(ids: T[]): (T | "darf")[] {
+  if (ids.length >= 3) return ids;
   const izq: T[] = ids.filter((i) => i === "club");
   const der: T[] = ids.filter((i) => i !== "club");
   if (!izq.length && der.length > 1) izq.push(der.shift()!);
@@ -93,7 +94,7 @@ export function paseGafete(g: { nombre: string; fotoUrl: string | null; franja: 
   const f = FRANJAS[g.franja] ?? FRANJAS.crew;
   const casa = g.franja === "casa" ? `Casa DARF · desde ${g.casaDesde ?? anioMx(hoy)}` : undefined;
   return {
-    tema: "darf", logo: "/marca/darf-monograma.svg", logoAlt: "DARF", nombre: g.nombre, fotoUrl: g.fotoUrl,
+    tema: "darf", logo: "/marca/darf-principal.svg", logoAlt: "DARF Productions", nombre: g.nombre, fotoUrl: g.fotoUrl,
     titulo: g.papel, pie: `DARF Productions · ${anioMx(hoy)}`,
     banda: { ...f, degradado: DEGRADADOS[g.franja] }, qr: g.qr, codigo: g.codigo, ...(casa ? { casa } : {}), ...(g.lealtad ? { lealtad: g.lealtad } : {}),
   };

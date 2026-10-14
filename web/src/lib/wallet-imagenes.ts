@@ -122,7 +122,7 @@ export async function bandaCredencial(clave: string, w: number, h: number): Prom
       medalla ? pieza(medalla, h * 0.72, h * 0.72) : null,
     ]);
   } else {
-    // DARF al centro y sus sellos a los lados (Club · DARF · Lealtad · Casa).
+    // DARF al centro y sus sellos a los lados; con los tres sellos, sin logo (Club · Lealtad · Casa).
     const ids = [
       ...(socio && id !== "cuenta" ? ["club" as const] : []),
       ...(medalla ? ["lealtad" as const] : []),
