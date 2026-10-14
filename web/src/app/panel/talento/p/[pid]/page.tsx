@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { ActionForm } from "@/components/panel/ActionForm";
 import { Card, PanelTitle, input } from "@/components/panel/ui";
 import { TIPO_CREDITO } from "@/lib/casting-rules";
+import { casa } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
 import { createClient } from "@/lib/supabase/server";
 import { linkAccount } from "../../actions";
@@ -36,7 +37,7 @@ export default async function PersonPage({ params }: PageProps<"/panel/talento/p
           ))}
         </ul>
       </Card>
-      {access.isDirector && (
+      {casa(access, "casa.personas") && (
         <Card>
           <h2 className="titular mb-1 text-xl">Ligar a su cuenta</h2>
           <p className="mb-3 text-sm text-texto-2">Si esta persona ya tiene cuenta en la página, escribe su correo: sus obras, audiciones y compras quedarán en una sola ficha.</p>

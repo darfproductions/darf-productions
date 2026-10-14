@@ -45,14 +45,16 @@ export async function listMembers(productionId: string): Promise<Member[]> {
   return (data ?? []) as Member[];
 }
 
-export type Role = { id: string; nombre: string; descripcion: string | null; es_sistema: boolean; orden: number; categoria: "produccion" | "direccion" | "crew" | "staff" };
+export type Role = { id: string; nombre: string; descripcion: string | null; es_sistema: boolean; orden: number; categoria: "casa" | "direccion_general" | "produccion" | "direccion" | "crew" | "staff" };
 export type Permission = { id: string; grupo: string; descripcion: string; orden: number };
 
-export async function listRoles(): Promise<{ roles: Role[]; permissions: Permission[]; grants: Map<string, Set<string>> }> {
+/** Roles y permisos de las obras o, con "casa", los de Casa DARF (0102). */
+export async function listRoles(alcance: "obra" | "casa" = "obra"): Promise<{ roles: Role[]; permissions: Permission[]; grants: Map<string, Set<string>> }> {
   const supabase = await createClient();
+  const permisos = supabase.from("permissions").select("id, grupo, descripcion, orden").order("orden");
   const [roles, perms, rp] = await Promise.all([
-    supabase.from("panel_roles").select("id, nombre, descripcion, es_sistema, orden, categoria").order("orden").order("nombre"),
-    supabase.from("permissions").select("id, grupo, descripcion, orden").order("orden"),
+    supabase.from("panel_roles").select("id, nombre, descripcion, es_sistema, orden, categoria").eq("alcance", alcance).order("orden").order("nombre"),
+    alcance === "casa" ? permisos.like("id", "casa.%") : permisos.not("id", "like", "casa.%"),
     supabase.from("role_permissions").select("role_id, permission_id"),
   ]);
   const grants = new Map<string, Set<string>>();

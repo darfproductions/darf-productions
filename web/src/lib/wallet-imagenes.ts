@@ -109,7 +109,8 @@ export async function bandaCredencial(clave: string, w: number, h: number): Prom
   } else {
     const logo = await leerImagen("/marca/darf-monograma.svg");
     if (logo) piezas.push(await silueta(await sharp(logo, { density: 300 }).resize(Math.round(h * 0.62), Math.round(h * 0.62), { fit: "inside" }).png().toBuffer(), b.texto));
-    const sello = socio && id !== "cuenta" ? await leerImagen("/marca/sello-club.svg") : null;
+    // Casa DARF lleva su sello; quien es del equipo y socio, el del club.
+    const sello = id === "casa" ? await leerImagen("/marca/sello-casa.svg") : socio && id !== "cuenta" ? await leerImagen("/marca/sello-club.svg") : null;
     if (sello) piezas.push(await silueta(await sharp(sello, { density: 300 }).resize(Math.round(h * 0.62), Math.round(h * 0.62), { fit: "inside" }).png().toBuffer(), b.texto));
   }
   if (!piezas.length) return sharp(fondo).png().toBuffer();

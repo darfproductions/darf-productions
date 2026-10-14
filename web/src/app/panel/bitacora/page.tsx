@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Card, PanelTitle, input } from "@/components/panel/ui";
 import { describeAudit, tipoBitacora, TIPOS_BITACORA, type AuditRow } from "@/lib/audit";
 import { localMxToIso } from "@/lib/dates";
-import { requireDirector } from "@/lib/permissions";
+import { requireCasa } from "@/lib/permissions";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Bitácora" };
@@ -20,7 +20,7 @@ const siguiente = (d: string) => new Date(Date.parse(`${d}T12:00:00Z`) + 8640000
 // Solo el Director: quién cambió qué y cuándo. Nadie la puede editar ni borrar.
 // Bloque 4C: filtros por obra, persona, tipo de acción y fechas (hora de México), y "Ver más".
 export default async function AuditPage({ searchParams }: PageProps<"/panel/bitacora">) {
-  await requireDirector("/panel/bitacora");
+  await requireCasa("casa.bitacora", "/panel/bitacora");
   const sp = await searchParams;
   const val = (k: string) => (typeof sp[k] === "string" ? (sp[k] as string) : "");
   const obra = val("obra");

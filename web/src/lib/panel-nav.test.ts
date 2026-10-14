@@ -193,3 +193,28 @@ describe("pestañas agrupadas de la obra (0085)", () => {
     expect(tabActiva(g, "nada")).toEqual({ grupo: null, tab: null });
   });
 });
+
+describe("Casa DARF (0102)", () => {
+  const base = { isDirector: false, byProduction: {} as Record<string, string[]> };
+  const subs = (a: Parameters<typeof panelMenu>[0], id: string) => panelMenu(a).find((s) => s.id === id)?.subs.map((x) => x.href) ?? [];
+  it("Comunicación ve sitio, DARFY, contacto y eventos DARF; no reportes ni Casa DARF", () => {
+    const a = { ...base, casa: ["casa.sitio", "casa.eventos", "casa.club", "casa.contacto"] };
+    expect(hasAnyAccess(a)).toBe(true);
+    expect(subs(a, "ajustes")).toEqual(["/panel/ajustes/sitio", "/panel/ajustes/darfy"]);
+    expect(subs(a, "personas")).toEqual(["/panel/contacto"]);
+    expect(panelMenu(a).some((s) => s.id === "reportes")).toBe(false);
+    expect(hasEventoAccess(a)).toBe(true);
+    expect(permisosEvento(a, { id: "e1", production_id: null }).editar).toBe(true);
+    expect(permisosEvento(a, { id: "e2", production_id: "hsm" }).editar).toBe(false);
+  });
+  it("Talento configura audiciones generales pero no las de una obra", () => {
+    const a = { ...base, casa: ["casa.audiciones", "casa.personas"] };
+    expect(canConfigAudition(a, { id: "g", production_id: null })).toBe(true);
+    expect(canConfigAudition(a, { id: "o", production_id: "hsm" })).toBe(false);
+    expect(subs(a, "personas")).toEqual(["/panel/personas", "/panel/cumpleanos"]);
+  });
+  it("solo el Director ve Ajustes → Casa DARF", () => {
+    expect(subs({ isDirector: true, byProduction: {} }, "ajustes")[0]).toBe("/panel/ajustes/casa");
+    expect(subs({ ...base, casa: ["casa.roles"] }, "ajustes")).toEqual(["/panel/roles"]);
+  });
+});

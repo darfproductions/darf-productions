@@ -19,8 +19,8 @@ export type ImagenesApple = {
   banda?: string | null;
   /** Foto de la credencial (gafete). */
   foto?: string | null;
-  /** Gafete de quien también es socio del Club Fan: el sello del club va junto al logo (como en la web). */
-  sello?: boolean;
+  /** Sello junto al logo (como en la web): el de Casa DARF (0102) o el del Club Fan si es del equipo y socio. */
+  sello?: string | null;
 };
 
 const ICONO = "/marca/darf-monograma.svg";
@@ -77,8 +77,8 @@ export async function crearPkpass(c: WalletAppleConfig, p: PaseWallet, im: Image
   ]);
   if (!iconoSrc) throw new Error("Falta el ícono de DARF.");
   Object.assign(archivos, await icono(iconoSrc, p.colores.fondo));
-  // Socio del Club Fan en el gafete: monograma DARF + sello del club, del mismo alto (como la credencial web).
-  const selloSrc = im.sello ? await leerImagen("/marca/sello-club.svg") : null;
+  // Casa DARF o socio del Club Fan: monograma DARF + su sello, del mismo alto (como la credencial web).
+  const selloSrc = im.sello ? await leerImagen(im.sello) : null;
   const logoFinal = selloSrc ? await logoConSello(iconoSrc, selloSrc) : logoSrc ?? iconoSrc;
   Object.assign(archivos, await contener(logoFinal, "logo", 160, 50));
 

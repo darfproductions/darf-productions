@@ -4,6 +4,7 @@ import { AnunciosEditor } from "@/components/anuncios/AnunciosEditor";
 import { Card, PanelTitle } from "@/components/panel/ui";
 import { saveSiteBanner } from "@/lib/anuncio-panel-actions";
 import { getSiteBanner } from "@/lib/banner";
+import { casa } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
 import { BannerEditor } from "../../producciones/[id]/pagina/BannerEditor";
 
@@ -13,7 +14,7 @@ export const metadata: Metadata = { title: "Sitio" };
 // (inicio y Fan Zone). Solo el Director.
 export default async function SitioAjustes() {
   const access = await requirePanel("/panel/ajustes/sitio");
-  if (!access.isDirector) redirect("/panel");
+  if (!casa(access, "casa.sitio")) redirect("/panel");
   const banner = await getSiteBanner();
   return (
     <>

@@ -10,7 +10,19 @@ export type PanelAccessData = {
   byAudition?: Record<string, string[]>;
   /** evento → mi papel en su equipo propio (0084). */
   byEvento?: Record<string, PapelEvento>;
+  /** Permisos globales de Casa DARF (0102): casa.producciones, casa.sitio… El Director los tiene todos. */
+  casa?: string[];
 };
+
+/** ¿Tengo este permiso de Casa DARF? (0102; el Director siempre). */
+export function casa(a: PanelAccessData, perm: string): boolean {
+  return a.isDirector || (a.casa ?? []).includes(perm);
+}
+
+/** ¿Soy de Casa DARF? (cualquier permiso global) */
+export function esCasa(a: PanelAccessData): boolean {
+  return a.isDirector || (a.casa ?? []).length > 0;
+}
 
 export type PapelEvento = "organiza" | "puerta" | "cobros";
 export const PAPELES_EVENTO: Record<PapelEvento, { label: string; ayuda: string }> = {
@@ -20,7 +32,7 @@ export const PAPELES_EVENTO: Record<PapelEvento, { label: string; ayuda: string 
 };
 
 export function hasAnyAccess(a: PanelAccessData): boolean {
-  return a.isDirector || Object.values(a.byProduction).some((p) => p.length > 0) || Object.values(a.byAudition ?? {}).some((p) => p.length > 0)
+  return esCasa(a) || Object.values(a.byProduction).some((p) => p.length > 0) || Object.values(a.byAudition ?? {}).some((p) => p.length > 0)
     || Object.keys(a.byEvento ?? {}).length > 0;
 }
 
@@ -28,12 +40,13 @@ const EVENTO_PERMS = ["fanzone.editar", "puerta.validar", "ventas.operar"];
 
 /** ¿Mostrar "Eventos" en el menú? Director, quien tiene Fan Zone, puerta o taquilla en una obra, o un papel en algún evento. */
 export function hasEventoAccess(a: PanelAccessData): boolean {
-  return a.isDirector || Object.values(a.byProduction).some((p) => p.some((x) => EVENTO_PERMS.includes(x))) || Object.keys(a.byEvento ?? {}).length > 0;
+  return casa(a, "casa.eventos") || Object.values(a.byProduction).some((p) => p.some((x) => EVENTO_PERMS.includes(x))) || Object.keys(a.byEvento ?? {}).length > 0;
 }
 
 /** Qué puedo hacer en un evento (0084): lo de la obra más mi papel en su equipo. Igual que evento_puede() en la base. */
 export function permisosEvento(a: PanelAccessData, e: { id: string; production_id: string | null }) {
-  const editor = a.isDirector || (!!e.production_id && (a.byProduction[e.production_id] ?? []).includes("fanzone.editar"));
+  // Eventos DARF (sin obra): Casa DARF con casa.eventos (0102).
+  const editor = a.isDirector || (e.production_id ? (a.byProduction[e.production_id] ?? []).includes("fanzone.editar") : casa(a, "casa.eventos"));
   const papel = a.byEvento?.[e.id];
   const obra = (perm: string) => !!e.production_id && (a.byProduction[e.production_id] ?? []).includes(perm);
   return {
@@ -51,13 +64,15 @@ type AudRef = { id: string; production_id: string | null; permanente?: boolean }
 
 /** ¿Gestiona audiciones en alguna obra? (puede trabajar el Registro permanente, 0064) */
 export function managesProductionAuditions(a: PanelAccessData): boolean {
-  return a.isDirector || Object.values(a.byProduction).some((p) => p.includes("audiciones.gestionar"));
+  return casa(a, "casa.audiciones") || Object.values(a.byProduction).some((p) => p.includes("audiciones.gestionar"));
 }
 
 /** Permiso sobre una convocatoria: el de su obra (general: solo el Director), el de su equipo propio
  *  o, en el Registro permanente, gestionar y calificar para quien gestiona audiciones en alguna obra. */
 export function canAudition(a: PanelAccessData, aud: AudRef, perm: string): boolean {
   if (a.isDirector) return true;
+  // Generales y registro permanente: Casa DARF con casa.audiciones (0102).
+  if (!aud.production_id && casa(a, "casa.audiciones")) return true;
   if (aud.production_id && can(a, aud.production_id, perm)) return true;
   if (aud.permanente && (perm === "audiciones.gestionar" || perm === "audiciones.evaluar") && managesProductionAuditions(a)) return true;
   return (a.byAudition?.[aud.id] ?? []).includes(perm);
@@ -66,6 +81,7 @@ export function canAudition(a: PanelAccessData, aud: AudRef, perm: string): bool
 /** Configurar la convocatoria (datos, preguntas, equipo, borrarla): la regla de siempre; el permanente, solo el Director. */
 export function canConfigAudition(a: PanelAccessData, aud: AudRef): boolean {
   if (a.isDirector) return true;
+  if (!aud.production_id && casa(a, "casa.audiciones")) return true;
   if (aud.production_id && can(a, aud.production_id, "audiciones.gestionar")) return true;
   return (a.byAudition?.[aud.id] ?? []).includes("audiciones.gestionar");
 }
@@ -76,7 +92,7 @@ export function canSeeAudition(a: PanelAccessData, aud: AudRef): boolean {
 
 /** ¿Mostrar "Audiciones" en el menú general? */
 export function hasAuditionAccess(a: PanelAccessData): boolean {
-  return a.isDirector
+  return casa(a, "casa.audiciones")
     || Object.values(a.byProduction).some((p) => p.some((x) => AUD_PERMS.includes(x)))
     || Object.values(a.byAudition ?? {}).some((p) => p.length > 0);
 }
@@ -215,7 +231,7 @@ export type NavSection = {
 
 /** ¿Tengo reportes de al menos una obra? */
 export function hasReportAccess(a: PanelAccessData): boolean {
-  return a.isDirector || Object.values(a.byProduction).some((p) => p.includes("reportes.ver"));
+  return casa(a, "casa.reportes") || Object.values(a.byProduction).some((p) => p.includes("reportes.ver"));
 }
 
 /**
@@ -230,29 +246,38 @@ export function panelMenu(a: PanelAccessData): NavSection[] {
     { id: "notificaciones", label: "Notificaciones", href: "/panel/notificaciones", subs: [], match: ["/panel/notificaciones"] },
   ];
   // Quien solo está en el equipo de una convocatoria general no tiene obras: solo ve Audiciones.
-  const proyectos: Section[] = a.isDirector || myProductionIds(a).length ? [{ href: "/panel/producciones", label: "Producciones" }] : [];
+  const proyectos: Section[] = a.isDirector || casa(a, "casa.producciones") || myProductionIds(a).length ? [{ href: "/panel/producciones", label: "Producciones" }] : [];
   if (hasAuditionAccess(a)) proyectos.push({ href: "/panel/audiciones", label: "Audiciones" });
   // Eventos (0081/0084): Director, Fan Zone, puerta o taquilla de una obra, o equipo de un evento.
   if (hasEventoAccess(a)) proyectos.push({ href: "/panel/eventos", label: "Eventos" });
-  out.push({ id: "proyectos", label: "Proyectos", href: proyectos[0].href, subs: proyectos, match: ["/panel/producciones", "/panel/audiciones", "/panel/eventos"] });
-  if (a.isDirector) {
+  // Casa DARF sin obras ni audiciones (p. ej. solo Roles o Bitácora) no ve Proyectos.
+  if (proyectos.length) out.push({ id: "proyectos", label: "Proyectos", href: proyectos[0].href, subs: proyectos, match: ["/panel/producciones", "/panel/audiciones", "/panel/eventos"] });
+  // Personas y Ajustes: cada subpestaña con su permiso de Casa DARF (0102).
+  const personas: Section[] = [
+    ...(casa(a, "casa.personas") ? [{ href: "/panel/personas", label: "Directorio" }, { href: "/panel/cumpleanos", label: "Cumpleaños" }] : []),
+    ...(casa(a, "casa.equipo") ? [{ href: "/panel/personas/equipo", label: "Equipo DARF" }] : []),
+    ...(casa(a, "casa.contacto") ? [{ href: "/panel/contacto", label: "Contacto" }] : []),
+  ];
+  if (personas.length) {
     out.push({
-      id: "personas", label: "Personas", href: "/panel/personas",
-      subs: [{ href: "/panel/personas", label: "Directorio" }, { href: "/panel/cumpleanos", label: "Cumpleaños" }, { href: "/panel/personas/equipo", label: "Equipo DARF" }, { href: "/panel/contacto", label: "Contacto" }],
+      id: "personas", label: "Personas", href: personas[0].href, subs: personas,
       match: ["/panel/personas", "/panel/talento", "/panel/usuarios", "/panel/cumpleanos", "/panel/contacto"],
     });
   }
   if (hasReportAccess(a)) {
-    const subs: Section[] = a.isDirector ? [{ href: "/panel/reportes", label: "General" }] : [];
+    const subs: Section[] = casa(a, "casa.reportes") ? [{ href: "/panel/reportes", label: "General" }] : [];
     subs.push({ href: "/panel/reportes/obras", label: "Por producción" });
     out.push({ id: "reportes", label: "Reportes", href: subs[0].href, subs, match: ["/panel/reportes"] });
   }
-  if (a.isDirector) {
-    out.push({
-      id: "ajustes", label: "Ajustes", href: "/panel/roles",
-      subs: [{ href: "/panel/roles", label: "Roles y permisos" }, { href: "/panel/ajustes/sitio", label: "Sitio" }, { href: "/panel/ajustes/darfy", label: "DARFY" }, { href: "/panel/bitacora", label: "Bitácora" }],
-      match: ["/panel/roles", "/panel/bitacora", "/panel/ajustes"],
-    });
+  const ajustes: Section[] = [
+    ...(a.isDirector ? [{ href: "/panel/ajustes/casa", label: "Casa DARF" }] : []),
+    ...(casa(a, "casa.roles") ? [{ href: "/panel/roles", label: "Roles y permisos" }] : []),
+    ...(casa(a, "casa.sitio") ? [{ href: "/panel/ajustes/sitio", label: "Sitio" }] : []),
+    ...(casa(a, "casa.contacto") ? [{ href: "/panel/ajustes/darfy", label: "DARFY" }] : []),
+    ...(casa(a, "casa.bitacora") ? [{ href: "/panel/bitacora", label: "Bitácora" }] : []),
+  ];
+  if (ajustes.length) {
+    out.push({ id: "ajustes", label: "Ajustes", href: ajustes[0].href, subs: ajustes, match: ["/panel/roles", "/panel/bitacora", "/panel/ajustes"] });
   }
   return out;
 }

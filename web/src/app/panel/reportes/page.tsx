@@ -3,7 +3,7 @@ import Link from "next/link";
 import { PrintButton } from "@/components/PrintButton";
 import { Card, EstadoChip, PanelTitle } from "@/components/panel/ui";
 import { pesos } from "@/lib/member-rules";
-import { requireDirector } from "@/lib/permissions";
+import { requireCasa } from "@/lib/permissions";
 import { ocupacion, pct, totales, type OverviewRow } from "@/lib/season-rules";
 import { createClient } from "@/lib/supabase/server";
 import { formatMoney } from "@/lib/tickets";
@@ -21,7 +21,7 @@ function Stat({ k, v }: { k: string; v: string }) {
 
 // Reporte general (solo el Director): todas las obras juntas y los vendedores de todas.
 export default async function ReporteGeneral({ searchParams }: PageProps<"/panel/reportes">) {
-  await requireDirector("/panel/reportes");
+  await requireCasa("casa.reportes", "/panel/reportes");
   const sp = await searchParams;
   const filtro = typeof sp.estado === "string" ? sp.estado : "";
   const supabase = await createClient();

@@ -6,7 +6,7 @@ import { totalPendientes } from "@/lib/panel-home-rules";
 import { BuscadorPanel } from "@/components/panel/BuscadorPanel";
 import { listPanelProductions } from "@/lib/panel-data";
 import type { Atajo } from "@/lib/panel-buscar-rules";
-import { myProductionIds, panelMenu, productionGroups } from "@/lib/panel-nav";
+import { esCasa, myProductionIds, panelMenu, productionGroups } from "@/lib/panel-nav";
 import { getPendientes } from "@/lib/panel-pendientes";
 import { requirePanel } from "@/lib/permissions";
 import { Icono } from "@/components/Icono";
@@ -48,7 +48,7 @@ export default async function PanelLayout({ children }: LayoutProps<"/panel">) {
     <div className="mx-auto grid max-w-[1440px] gap-6 px-5 pb-16 pt-8 md:px-16 md:pt-12 lg:grid-cols-[220px_minmax(0,1fr)] print:block print:pt-0">
       <aside className="lg:sticky lg:top-6 lg:self-start print:hidden">
         <p className="mb-1 hidden px-3 text-xs font-bold uppercase tracking-[0.24em] text-texto-3 lg:block">Panel</p>
-        <p className="mb-3 hidden truncate px-3 text-sm text-texto-3 lg:block">{nombre}{access.isDirector ? " · Director" : ""}</p>
+        <p className="mb-3 hidden truncate px-3 text-sm text-texto-3 lg:block">{nombre}{access.isDirector ? " · Director" : esCasa(access) ? " · Casa DARF" : ""}</p>
         <nav aria-label="Panel" className="hidden flex-col lg:flex">{links}</nav>
         <details className="rounded-2xl bg-telon lg:hidden">
           <summary className="cursor-pointer list-none px-4 py-3 font-bold">Menú del panel <Icono nombre="chevron-abajo" /></summary>

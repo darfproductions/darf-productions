@@ -1,12 +1,12 @@
 // Gafete digital (0078). Funciones puras: gafete-rules.test.ts.
 
 /** Categoría del gafete (0087), de mayor a menor: la más alta de la persona. */
-export type Franja = "manager" | "direccion_general" | "produccion" | "direccion" | "crew" | "staff";
+export type Franja = "casa" | "direccion_general" | "produccion" | "direccion" | "crew" | "staff";
 
-/** Colores de la banda de abajo: Manager degradado, Dirección general plata (0101), Producción rojo y Dirección azul del logo, Crew lila,
+/** Colores de la banda de abajo: Casa DARF holográfica (0102), Dirección general plata (0101), Producción rojo y Dirección azul del logo, Crew lila,
  *  Staff rosa. (Fan dorado y Cuenta gris están en credencial-fan-rules y credencial-rules.) */
 export const FRANJAS: Record<Franja, { label: string; fondo: string; texto: string }> = {
-  manager: { label: "MANAGER", fondo: "linear-gradient(120deg,#340feb,#830886 55%,#d20122)", texto: "#ffffff" },
+  casa: { label: "CASA DARF", fondo: "linear-gradient(115deg,#ffb8ec 0%,#c9b2ff 25%,#9fe2ff 50%,#b9ffe0 72%,#ffe6a8 100%)", texto: "#1a1030" },
   direccion_general: { label: "DIRECCIÓN GENERAL", fondo: "linear-gradient(120deg,#8e959e,#e6e9ee 45%,#b8bec7 70%,#f4f6f8)", texto: "#0b0910" },
   produccion: { label: "PRODUCCIÓN", fondo: "#d20122", texto: "#ffffff" },
   direccion: { label: "DIRECCIÓN", fondo: "#340feb", texto: "#ffffff" },
@@ -14,8 +14,8 @@ export const FRANJAS: Record<Franja, { label: string; fondo: string; texto: stri
   staff: { label: "STAFF", fondo: "#ff2d87", texto: "#0b0910" },
 };
 
-/** Categorías que se eligen al crear un rol del panel (Manager es el Equipo DARF y el Director). */
-export const CATEGORIAS_ROL: { id: Exclude<Franja, "manager" | "direccion_general">; label: string; ayuda: string }[] = [
+/** Categorías que se eligen al crear un rol de obra (Casa DARF y Dirección general son de sistema). */
+export const CATEGORIAS_ROL: { id: Exclude<Franja, "casa" | "direccion_general">; label: string; ayuda: string }[] = [
   { id: "produccion", label: "Producción", ayuda: "Rojo" },
   { id: "direccion", label: "Dirección", ayuda: "Azul" },
   { id: "crew", label: "Crew", ayuda: "Lila" },
@@ -25,7 +25,7 @@ export const CATEGORIAS_ROL: { id: Exclude<Franja, "manager" | "direccion_genera
 export type GafetePublico = {
   /** 0083: la credencial es única; solo el nivel "equipo" trae papel y contacto. */
   nivel?: "equipo" | "club" | "cuenta"; socio?: { numero: number; desde: string; fundador: boolean } | null;
-  nombre: string; franja: Franja; papel: string;
+  nombre: string; franja: Franja; papel: string; casa_desde?: number | null;
   retrato_path: string | null; telefono: string | null; correo: string | null; instagram: string | null; perfil: string | null;
 };
 
@@ -38,13 +38,16 @@ export type PaseVista = {
   titulo: string; pie: string; banda: Banda; qr?: string; codigo?: string;
   /** Equipo que también es socio del Club Fan (0083): "Socio #0001" y el sello del club. */
   sello?: string;
+  /** Casa DARF (0102): "Casa DARF · desde 2024" y su sello holográfico (va antes que el del club). */
+  casa?: string;
 };
 
-const DEGRADADO_LUZ: [number, string][] = [[0, "#340feb"], [0.55, "#830886"], [1, "#d20122"]];
+/** Holográfico iridiscente de Casa DARF (0102): mismo trazo que el CSS de FRANJAS. */
+const DEGRADADO_HOLO: [number, string][] = [[0, "#ffb8ec"], [0.25, "#c9b2ff"], [0.5, "#9fe2ff"], [0.72, "#b9ffe0"], [1, "#ffe6a8"]];
 /** Plata metálica de Dirección general (0101): mismo trazo que el CSS de FRANJAS. */
 const DEGRADADO_PLATA: [number, string][] = [[0, "#8e959e"], [0.45, "#e6e9ee"], [0.7, "#b8bec7"], [1, "#f4f6f8"]];
 /** Degradados de las franjas que no son de un solo color (para el canvas del PDF y las imágenes de Wallet). */
-export const DEGRADADOS: Partial<Record<Franja, [number, string][]>> = { manager: DEGRADADO_LUZ, direccion_general: DEGRADADO_PLATA };
+export const DEGRADADOS: Partial<Record<Franja, [number, string][]>> = { casa: DEGRADADO_HOLO, direccion_general: DEGRADADO_PLATA };
 
 /** Año en curso en CDMX (vigencia del gafete). */
 export function anioMx(hoy: Date = new Date()): string {
@@ -52,12 +55,13 @@ export function anioMx(hoy: Date = new Date()): string {
 }
 
 /** Gafete del equipo y elencos (0080: el puesto más alto, sin obra; abajo "DARF Productions · año"). */
-export function paseGafete(g: { nombre: string; fotoUrl: string | null; franja: Franja; papel: string; qr?: string; codigo?: string }, hoy: Date = new Date()): PaseVista {
+export function paseGafete(g: { nombre: string; fotoUrl: string | null; franja: Franja; papel: string; qr?: string; codigo?: string; casaDesde?: number | null }, hoy: Date = new Date()): PaseVista {
   const f = FRANJAS[g.franja] ?? FRANJAS.crew;
+  const casa = g.franja === "casa" ? `Casa DARF · desde ${g.casaDesde ?? anioMx(hoy)}` : undefined;
   return {
     tema: "darf", logo: "/marca/darf-monograma.svg", logoAlt: "DARF", nombre: g.nombre, fotoUrl: g.fotoUrl,
     titulo: g.papel, pie: `DARF Productions · ${anioMx(hoy)}`,
-    banda: { ...f, degradado: DEGRADADOS[g.franja] }, qr: g.qr, codigo: g.codigo,
+    banda: { ...f, degradado: DEGRADADOS[g.franja] }, qr: g.qr, codigo: g.codigo, ...(casa ? { casa } : {}),
   };
 }
 

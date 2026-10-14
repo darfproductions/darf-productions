@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ActionForm } from "@/components/panel/ActionForm";
 import { Card, PanelTitle, buttonGhost, input } from "@/components/panel/ui";
+import { casa } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
 import { createClient } from "@/lib/supabase/server";
 import { deleteFaq, deleteUnanswered, saveFaq } from "./actions";
@@ -53,7 +54,7 @@ function FaqFields({ f, pregunta }: { f?: Faq; pregunta?: string }) {
 // Las obras, funciones, precios y audiciones las toma solo de la página (no hay que escribirlas).
 export default async function DarfyAjustes({ searchParams }: PageProps<"/panel/ajustes/darfy">) {
   const access = await requirePanel("/panel/ajustes/darfy");
-  if (!["staff", "admin"].includes(access.session.profile?.rol ?? "")) redirect("/panel");
+  if (!["staff", "admin"].includes(access.session.profile?.rol ?? "") && !casa(access, "casa.contacto")) redirect("/panel");
   const sp = await searchParams;
   const supabase = await createClient();
   const [faqRes, pendRes] = await Promise.all([

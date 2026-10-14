@@ -24,7 +24,8 @@ export async function descargarPase(p: PaseVista, archivo: string): Promise<void
   const fuente = getComputedStyle(document.body).fontFamily || "sans-serif";
   const [logo, foto, qr, sello] = await Promise.all([
     cargar(p.logo, false), p.fotoUrl ? cargar(p.fotoUrl, true) : Promise.resolve(null),
-    p.qr ? cargar(p.qr, false) : Promise.resolve(null), fan || p.sello ? cargar("/marca/sello-club.svg", false) : Promise.resolve(null),
+    p.qr ? cargar(p.qr, false) : Promise.resolve(null),
+    p.casa ? cargar("/marca/sello-casa.svg", false) : fan || p.sello ? cargar("/marca/sello-club.svg", false) : Promise.resolve(null),
   ]);
   const pintar = (conFoto: boolean) => {
     const c = document.createElement("canvas");
@@ -74,7 +75,14 @@ export async function descargarPase(p: PaseVista, archivo: string): Promise<void
     }
     if (p.codigo) { x.fillStyle = fan ? "#ecd9a0" : "#d3cddd"; x.font = `700 24px monospace`; x.fillText(p.codigo, W / 2, qy + q + 52); }
     x.fillStyle = "#a39db0"; x.font = `600 18px ${fuente}`;
-    if (p.sello) {
+    if (p.casa) {
+      // Casa DARF (0102): la línea en los colores holográficos.
+      const t = p.casa.toUpperCase(), wt = x.measureText(t).width;
+      const gr = x.createLinearGradient((W - wt) / 2, 0, (W + wt) / 2, 0);
+      ["#ffb8ec", "#c9b2ff", "#9fe2ff", "#b9ffe0", "#ffe6a8"].forEach((col, i) => gr.addColorStop(i / 4, col));
+      x.fillStyle = gr; x.font = `700 18px ${fuente}`; x.fillText(t, W / 2, qy + q + 84);
+      x.fillStyle = "#a39db0"; x.font = `600 18px ${fuente}`;
+    } else if (p.sello) {
       // Equipo y socio: "DARF PRODUCTIONS · 2026 · " en gris y "CLUB FAN · SOCIO #0001" en oro.
       const a = `${p.pie.toUpperCase()} · `, b = `CLUB FAN · ${p.sello.toUpperCase()}`;
       const wa = x.measureText(a).width, wb = x.measureText(b).width, x0 = (W - wa - wb) / 2;

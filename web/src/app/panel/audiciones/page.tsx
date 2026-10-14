@@ -5,7 +5,7 @@ import { ActionForm } from "@/components/panel/ActionForm";
 import { Card, PanelTitle } from "@/components/panel/ui";
 import { ESTADO_CONVOCATORIA } from "@/lib/audition-rules";
 import { listPanelAuditions, type PanelAudition } from "@/lib/panel-auditions";
-import { hasAuditionAccess } from "@/lib/panel-nav";
+import { casa, hasAuditionAccess } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
 import { createClient } from "@/lib/supabase/server";
 import { createPermanentRegistry, deleteTemplate } from "./actions";
@@ -42,11 +42,11 @@ export default async function AuditionsHome() {
       <PanelTitle eyebrow="Proyectos" title="Audiciones">
         Convocatorias generales (sin obra, como un llamado de bailarines) y las de cada producción.
       </PanelTitle>
-      {(permanente || access.isDirector) && (
+      {(permanente || casa(access, "casa.audiciones")) && (
         <section className="flex flex-col gap-3">
           <h2 className="titular text-xl">Registro permanente</h2>
           {permanente ? (
-            <Link href={`/panel/audiciones/${permanente.id}${access.isDirector ? "" : "/solicitudes"}`} className="block rounded-2xl border border-[#a48bff]/40 bg-telon p-5 hover:bg-telon-2">
+            <Link href={`/panel/audiciones/${permanente.id}${casa(access, "casa.audiciones") ? "" : "/solicitudes"}`} className="block rounded-2xl border border-[#a48bff]/40 bg-telon p-5 hover:bg-telon-2">
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-texto-3">Siempre abierto · en línea · {ESTADO_CONVOCATORIA[permanente.estado] ?? permanente.estado}</p>
               <p className="mt-1 text-lg font-bold">{permanente.titulo}</p>
               <p className="mt-1 text-sm text-texto-2">El talento deja su perfil y videos aunque no haya convocatoria. Lo ven y califican el Director y quien gestiona audiciones en alguna producción.</p>
@@ -63,7 +63,7 @@ export default async function AuditionsHome() {
         <h2 className="titular text-xl">Generales</h2>
         {generales.map((a) => <Item key={a.id} a={a} />)}
         {generales.length === 0 && <Card>No hay convocatorias generales.</Card>}
-        {access.isDirector && (
+        {casa(access, "casa.audiciones") && (
           <Card>
             <h3 className="titular mb-3 text-lg">Nueva convocatoria general</h3>
             <NewAuditionForm pid={null} />
@@ -84,7 +84,7 @@ export default async function AuditionsHome() {
               {(plantillas ?? []).map((t) => (
                 <li key={t.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-sala px-3 py-2 text-sm">
                   <span><b>{t.nombre}</b>{t.descripcion && <span className="text-texto-3"> · {t.descripcion}</span>}</span>
-                  {(access.isDirector || t.created_by === access.session.userId) && (
+                  {(casa(access, "casa.audiciones") || t.created_by === access.session.userId) && (
                     <ActionForm inline action={deleteTemplate} hidden={{ id: t.id as string }} confirm={`¿Borrar la plantilla “${t.nombre}”? Las convocatorias creadas con ella no cambian.`} submit="Borrar" submitClass="rounded-full border border-white/25 px-3 py-1.5 text-xs font-bold" />
                   )}
                 </li>

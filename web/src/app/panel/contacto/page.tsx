@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { ActionForm } from "@/components/panel/ActionForm";
 import { MiniAction } from "@/components/panel/MiniAction";
 import { Card, PanelTitle, input } from "@/components/panel/ui";
+import { casa } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
 import { createClient } from "@/lib/supabase/server";
 import { asignarContacto, markContactRead, reabrirContacto, responderContacto } from "./actions";
@@ -38,7 +39,7 @@ function whatsapp(tel: string | null, nombre: string): string | null {
 // asignar a alguien del equipo, marcar quién respondió y por dónde, y filtros.
 export default async function Contacto({ searchParams }: PageProps<"/panel/contacto">) {
   const access = await requirePanel("/panel/contacto");
-  if (!["staff", "admin"].includes(access.session.profile?.rol ?? "")) redirect("/panel");
+  if (!["staff", "admin"].includes(access.session.profile?.rol ?? "") && !casa(access, "casa.contacto")) redirect("/panel");
   const sp = await searchParams;
   const vista: Vista = VISTAS.some((v) => v.id === sp.ver) ? (sp.ver as Vista) : "pendientes";
   const yo = access.session.userId;

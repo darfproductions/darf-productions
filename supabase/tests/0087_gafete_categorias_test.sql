@@ -8,7 +8,7 @@ values ('00000000-0000-0000-0000-000000000091', '00000000-0000-0000-0000-0000000
 
 do $$ declare j json; u uuid := '00000000-0000-0000-0000-000000000091'; begin
   -- T1: categorías de los roles del sistema.
-  -- (0100 agrega "asistente" y 0101 "direccion_general"; tienen su propia prueba)
+  -- (0100 agrega "asistente", 0101 "direccion_general" y 0102 los de Casa DARF; tienen su propia prueba)
   if (select string_agg(id || ':' || categoria, ',' order by id) from panel_roles where es_sistema and id not in ('asistente', 'direccion_general')) <>
      'contenido:crew,direccion:direccion,integrante:crew,juez:crew,maestro:direccion,maquillaje:crew,productor:produccion,puerta:staff,registro:staff,staff:staff,taquilla:crew' then
     raise exception 'FALLO T1: categorías %', (select string_agg(id || ':' || categoria, ',' order by id) from panel_roles where es_sistema);
@@ -39,7 +39,7 @@ do $$ declare j json; u uuid := '00000000-0000-0000-0000-000000000091'; begin
   if j->>'franja' <> 'staff' or j->>'papel' <> 'Staff DARF' then raise exception 'FALLO T4: staff DARF %', j; end if;
   update profiles set rol = 'admin' where id = '00000000-0000-0000-0000-000000000093';
   j := badge_papel('00000000-0000-0000-0000-000000000093');
-  if j->>'franja' <> 'manager' or j->>'papel' <> 'Dirección general' then raise exception 'FALLO T4: Director %', j; end if;
+  if j->>'franja' not in ('manager', 'casa') or j->>'papel' not in ('Dirección general', 'Dirección DARF') then raise exception 'FALLO T4: Director %', j; end if;
 end $$;
 
 select 'OK 0087' as resultado;
