@@ -195,6 +195,7 @@ export function estadoBoleto(b: {
 /** El pase con su estado al frente y en el reverso (y marcado como anulado). */
 export function conEstado(p: PaseWallet, e: EstadoBoleto): PaseWallet {
   if (!e.motivo) return p;
+  // Apple pide llaves únicas en todo el pase: el del reverso lleva otra.
   const campo = { key: "estado", label: "Estado", value: e.motivo };
-  return { ...p, anulado: e.anulado, secundarios: [campo, ...p.secundarios], reverso: [campo, ...p.reverso] };
+  return { ...p, anulado: e.anulado, secundarios: [campo, ...p.secundarios], reverso: [{ ...campo, key: "estado-detalle" }, ...p.reverso] };
 }
