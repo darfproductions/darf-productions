@@ -3,7 +3,8 @@ import path from "node:path";
 import sharp, { type OverlayOptions } from "sharp";
 import { BANDA_CUENTA } from "@/lib/credencial-rules";
 import { BANDA_FAN } from "@/lib/credencial-fan-rules";
-import { DEGRADADOS, FRANJAS, type Banda, type Franja } from "@/lib/gafete-rules";
+import { DEGRADADOS, FRANJAS, filaGoogle, type Banda, type Franja } from "@/lib/gafete-rules";
+import { medallaPng } from "@/lib/medalla";
 
 // Imágenes de los pases de Wallet (solo servidor). Las de la web viven en public/ (se leen del disco:
 // next.config incluye public/marca y public/producciones en estas rutas) y las de Storage por URL.
@@ -13,6 +14,9 @@ import { DEGRADADOS, FRANJAS, type Banda, type Franja } from "@/lib/gafete-rules
 export async function leerImagen(src: string | null | undefined): Promise<Buffer | null> {
   if (!src) return null;
   try {
+    // Medalla DARF Loyalty (0103): se dibuja aquí mismo con su número.
+    const m = /^\/medalla\/(\d{1,3})$/.exec(src);
+    if (m) return await medallaPng(Number(m[1]));
     if (src.startsWith("/")) {
       const limpio = path.normalize(src).replace(/^([/\\])+/, "");
       if (limpio.startsWith("..")) return null;
@@ -92,30 +96,42 @@ export async function portadaObra(ambiente: Buffer, logo: Buffer | null, w: numb
 /** Banda de color de la credencial (franja del gafete, oro del Club Fan o gris de cuenta) con su
  *  sello: DARF en el gafete; sello del club + logo de Fan Zone en el Club Fan. */
 export async function bandaCredencial(clave: string, w: number, h: number): Promise<Buffer | null> {
-  // "<franja>-socio": gafete de quien también es socio del Club Fan (lleva el sello junto a DARF).
-  const socio = clave.endsWith("-socio");
-  const id = socio ? clave.slice(0, -6) : clave;
+  // "<franja>[-socio][-l<n>]": gafete de quien también es socio del Club Fan (lleva el sello junto a DARF)
+  // y con la medalla DARF Loyalty de n producciones (0103).
+  const lm = /-l(\d{1,3})$/.exec(clave);
+  const sinMedalla = lm ? clave.slice(0, lm.index) : clave;
+  const socio = sinMedalla.endsWith("-socio");
+  const id = socio ? sinMedalla.slice(0, -6) : sinMedalla;
   const b: Banda | undefined = id === "fan" ? BANDA_FAN : id === "cuenta" ? BANDA_CUENTA : FRANJAS[id as Franja];
   if (!b) return null;
   const stops = b.degradado ?? DEGRADADOS[id as Franja] ?? [[0, b.fondo], [1, b.fondo]] as [number, string][];
   const fondo = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="0.35">${stops.map(([o, c]) => `<stop offset="${o}" stop-color="${c}"/>`).join("")}</linearGradient></defs><rect width="100%" height="100%" fill="url(#g)"/></svg>`);
-  const piezas: Buffer[] = [];
+  // Todo en silueta del color del texto de la banda, del mismo alto: se ve parejo.
+  const pieza = async (src: string, ancho: number, alto: number) => {
+    const img = await leerImagen(src);
+    return img ? silueta(await sharp(img, { density: 300 }).resize(Math.round(ancho), Math.round(alto), { fit: "inside" }).png().toBuffer(), b.texto) : null;
+  };
+  const lado = h * 0.62;
+  const medalla = lm ? `/medalla/${lm[1]}` : null;
+  let fila: (Buffer | null)[];
   if (id === "fan") {
-    const [sello, marca] = await Promise.all([leerImagen("/marca/sello-club.svg"), leerImagen("/marca/fan-zone-oro.svg")]);
-    if (sello) piezas.push(await silueta(await sharp(sello, { density: 300 }).resize(Math.round(h * 0.72), Math.round(h * 0.72), { fit: "inside" }).png().toBuffer(), b.texto));
-    if (marca) piezas.push(await silueta(await sharp(marca, { density: 300 }).resize(Math.round(w * 0.5), Math.round(h * 0.26), { fit: "inside" }).png().toBuffer(), b.texto));
-  } else {
-    const logo = await leerImagen("/marca/darf-monograma.svg");
-    if (logo) piezas.push(await silueta(await sharp(logo, { density: 300 }).resize(Math.round(h * 0.62), Math.round(h * 0.62), { fit: "inside" }).png().toBuffer(), b.texto));
-    // Todos sus sellos junto a DARF: Casa DARF y, si es socio, el del club.
-    const sellos = await Promise.all([
-      id === "casa" ? leerImagen("/marca/sello-casa.svg") : null,
-      socio && id !== "cuenta" ? leerImagen("/marca/sello-club.svg") : null,
+    // Club Fan: sello del club, logo de Fan Zone al centro y la medalla.
+    fila = await Promise.all([
+      pieza("/marca/sello-club.svg", h * 0.72, h * 0.72),
+      pieza("/marca/fan-zone-oro.svg", w * (medalla ? 0.4 : 0.5), h * 0.26),
+      medalla ? pieza(medalla, h * 0.72, h * 0.72) : null,
     ]);
-    for (const sello of sellos) {
-      if (sello) piezas.push(await silueta(await sharp(sello, { density: 300 }).resize(Math.round(h * 0.62), Math.round(h * 0.62), { fit: "inside" }).png().toBuffer(), b.texto));
-    }
+  } else {
+    // DARF al centro y sus sellos a los lados; con los tres sellos, sin logo (Club · Lealtad · Casa).
+    const ids = [
+      ...(socio && id !== "cuenta" ? ["club" as const] : []),
+      ...(medalla ? ["lealtad" as const] : []),
+      ...(id === "casa" ? ["casa" as const] : []),
+    ];
+    const src = { darf: "/marca/darf-monograma.svg", club: "/marca/sello-club.svg", casa: "/marca/sello-casa.svg", lealtad: medalla ?? "" };
+    fila = await Promise.all(filaGoogle(ids).map((k) => pieza(src[k], lado, lado)));
   }
+  const piezas = fila.filter((x): x is Buffer => !!x);
   if (!piezas.length) return sharp(fondo).png().toBuffer();
   // Las piezas en fila, centradas.
   const medidas = await Promise.all(piezas.map((p) => sharp(p).metadata()));

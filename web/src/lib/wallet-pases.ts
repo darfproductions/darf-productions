@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { anioMx, type PaseVista } from "@/lib/gafete-rules";
+import { nivelDe } from "@/lib/lealtad-rules";
 import { isLight } from "@/lib/themes";
 import type { EstiloBoleto } from "@/lib/ticket-design";
 
@@ -175,6 +176,7 @@ export function paseCredencialWallet(c: DatosCredencial, hoy: Date = new Date())
     auxiliares: [
       { key: "vigencia", label: "Vigencia", value: c.pase.pie.replace(/^DARF Productions · /, "") || anioMx(hoy) },
       ...(c.pase.casa ? [{ key: "casa", label: "Casa DARF", value: c.pase.casa.replace(/^Casa DARF · /, "") }] : []),
+      ...(nivelDe(c.pase.lealtad) ? [{ key: "lealtad", label: "DARF Loyalty", value: `${nivelDe(c.pase.lealtad)!.nombre} · ${c.pase.lealtad}` }] : []),
     ],
     reverso: [
       { key: "uso", label: "Cómo se usa", value: "Muéstrala en la entrada de ensayos y eventos. Si regeneras tu código en Mi cuenta, aquí se actualiza sola." },

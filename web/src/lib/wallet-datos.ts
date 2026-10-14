@@ -4,7 +4,8 @@ import { getSession } from "@/lib/auth";
 import { getMiCredencial } from "@/lib/credencial";
 import { paseCredencial, type CredencialMia } from "@/lib/credencial-rules";
 import { origen } from "@/lib/gafete";
-import { ligaGafete, sellosDe } from "@/lib/gafete-rules";
+import { ligaGafete, sellosApple, sellosDe } from "@/lib/gafete-rules";
+import { nivelDe } from "@/lib/lealtad-rules";
 import { POSTER_COLUMNS } from "@/lib/poster";
 import { assetUrl, getTheme, posterUrl, type Production } from "@/lib/productions";
 import { createClient } from "@/lib/supabase/server";
@@ -98,10 +99,13 @@ function armarCredencial(userId: string, c: CredencialMia, nombre: string, fotoU
   // El logo de Fan Zone es muy ancho para Wallet: monograma dorado + texto.
   const logo = fan ? "/marca/darf-monograma-oro.svg" : "/marca/darf-horizontal-blanco.svg";
   const logoTexto = fan ? "DARF Fan Zone" : undefined;
-  // Todos los sellos junto al logo (Apple) y en la banda (Google): Casa DARF (0102) y Club Fan si es socio.
-  const sellos = fan ? [] : sellosDe(vista).map((s) => s.src);
+  // Todos los sellos junto al logo (Apple) y en la banda (Google): Casa DARF (0102), Club Fan si es socio y
+  // la medalla DARF Loyalty (0103). La credencial del club ya trae su sello en la banda: solo suma la medalla.
+  // Apple: el DARF cuadrado en la esquina y luego la medalla, Casa DARF y el club.
+  const sellos = sellosApple(sellosDe(vista)).filter((s) => !fan || s.id === "lealtad").map((s) => s.src);
+  const medalla = nivelDe(vista.lealtad) ? `-l${vista.lealtad}` : "";
   return {
-    pase, fan, logo, logoTexto, foto: fotoUrl, banda: !fan && vista.sello ? `${banda}-socio` : banda,
+    pase, fan, logo, logoTexto, foto: fotoUrl, banda: `${!fan && vista.sello ? `${banda}-socio` : banda}${medalla}`,
     apple: { logo, logoTexto, foto: fotoUrl, banda: fan ? "fan" : null, sellos },
   };
 }

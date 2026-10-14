@@ -21,9 +21,11 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   // Wallet (2026-10-14): las rutas de los pases leen logos e imágenes de public/ desde el disco.
   outputFileTracingIncludes: {
-    "/cuenta/wallet/**": ["./public/marca/**", "./public/producciones/**"],
-    "/wallet/img/**": ["./public/marca/**", "./public/producciones/**"],
-    "/wallet/apple/**": ["./public/marca/**", "./public/producciones/**"],
+    // DARF Loyalty (0103): la medalla se dibuja con Montserrat (assets/fuentes).
+    "/cuenta/wallet/**": ["./public/marca/**", "./public/producciones/**", "./assets/fuentes/**"],
+    "/wallet/img/**": ["./public/marca/**", "./public/producciones/**", "./assets/fuentes/**"],
+    "/wallet/apple/**": ["./public/marca/**", "./public/producciones/**", "./assets/fuentes/**"],
+    "/medalla/**": ["./assets/fuentes/**"],
   },
   images: {
     remotePatterns: supabaseHost

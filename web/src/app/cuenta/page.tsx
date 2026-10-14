@@ -23,6 +23,7 @@ import Link from "next/link";
 import { listNotifications, unreadCount } from "@/lib/notifications";
 import { AvatarUpload } from "./AvatarUpload";
 import { MiCredencial } from "@/components/credencial/MiCredencial";
+import { BarraLealtad } from "@/components/credencial/BarraLealtad";
 import { ActionForm } from "@/components/panel/ActionForm";
 import { getMiCredencial } from "@/lib/credencial";
 import { GOOGLE_WALLET_PUBLICO, walletAppleActivo, walletGoogleActivo } from "@/lib/wallet-env";
@@ -436,6 +437,7 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
 
         <aside className="order-2 flex flex-col gap-6 lg:order-none lg:col-span-4 lg:self-start">
           {credencial && <div id="credencial" className="scroll-mt-24"><MiCredencial c={credencial} wallet={wallet} /></div>}
+          {credencial?.lealtad ? <BarraLealtad n={credencial.lealtad} /> : null}
           {credencial?.socio && (
             <section aria-labelledby="club" className="flex flex-col gap-2 rounded-2xl bg-telon p-6">
               <h2 id="club" className="text-lg font-bold">Club Fan</h2>
