@@ -1,5 +1,5 @@
 -- DARF 2.0 — SOLO PARA EL PROYECTO SUPABASE "DARF 2.0 DEV" (la base oficial de la 2.0).
--- 0101: Cargo "Dirección general" y revisión de calificaciones antes de publicar. Requiere 0100.
+-- 0101: Cargo "Dirección general", permisos de Producción, rol "Estilismo" y revisión de calificaciones. Requiere 0100.
 -- Si la base no es DEV, aborta. Se corre completa en Supabase → SQL Editor.
 begin;
 do $$ begin
@@ -36,6 +36,9 @@ alter table role_permissions enable trigger role_permissions_protect;
 alter table panel_roles disable trigger panel_roles_protect;
 update panel_roles set descripcion = 'Operación de la obra: página, audiciones, expedientes, ensayos, materiales, boletos, reportes y equipo'
  where id = 'productor';
+-- "Maquillaje" ahora se llama "Estilismo" (Diego): mismo id, mismos permisos, quien lo tiene lo conserva.
+update panel_roles set nombre = 'Estilismo', descripcion = 'Vestuario, maquillaje y peinado: ve la obra y los materiales'
+ where id = 'maquillaje';
 alter table panel_roles enable trigger panel_roles_protect;
 
 -- Dirección general siempre lidera ensayos (0099).

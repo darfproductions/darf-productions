@@ -68,6 +68,7 @@ do $$ begin
      and has_perm('showman', 'ventas.operar') and has_perm('showman', 'equipo.gestionar') and has_perm('showman', 'funciones.gestionar')) then
     raise exception 'FALLO T1: Producción perdió permisos que conserva';
   end if;
+  if (select nombre from panel_roles where id = 'maquillaje') <> 'Estilismo' then raise exception 'FALLO T1: Estilismo'; end if;
   if (select count(*) from role_permissions where role_id = 'productor') <> 20 then raise exception 'FALLO T1: Producción tiene % permisos', (select count(*) from role_permissions where role_id = 'productor'); end if;
   perform pg_temp.as_root();
 end $$;

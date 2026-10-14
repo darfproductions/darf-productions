@@ -6,6 +6,7 @@
 -- la coordinación de la rúbrica y Dirección general revisan y corrigen o se las regresan con una nota; la
 -- aprobación final y la publicación son de Dirección general (o de la coordinación si la obra no tiene una).
 -- Producción deja de manejar papeles, permisos, publicar la obra, juzgar audiciones y la rúbrica (Diego).
+-- El rol "Maquillaje" pasa a llamarse "Estilismo".
 
 -- ════════ Permiso para aprobar y publicar boletas ════════
 insert into permissions (id, grupo, descripcion, orden) values
@@ -30,6 +31,9 @@ alter table role_permissions enable trigger role_permissions_protect;
 alter table panel_roles disable trigger panel_roles_protect;
 update panel_roles set descripcion = 'Operación de la obra: página, audiciones, expedientes, ensayos, materiales, boletos, reportes y equipo'
  where id = 'productor';
+-- "Maquillaje" ahora se llama "Estilismo" (Diego): mismo id, mismos permisos, quien lo tiene lo conserva.
+update panel_roles set nombre = 'Estilismo', descripcion = 'Vestuario, maquillaje y peinado: ve la obra y los materiales'
+ where id = 'maquillaje';
 alter table panel_roles enable trigger panel_roles_protect;
 
 -- Dirección general siempre lidera ensayos (0099).
