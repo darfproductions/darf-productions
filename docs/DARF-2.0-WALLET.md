@@ -1,6 +1,6 @@
 # DARF 2.0 — Apple Wallet y Google Wallet
 
-## Estado: PROGRAMADO, falta que Diego ponga las llaves (2026-10-14)
+## Estado: llaves puestas en Vercel (Production y Preview, 14 oct); falta la prueba en teléfono
 - **Pases:** boleto (uno por asiento) y credencial única (gafete o Club Fan, 0083). El QR es el mismo
   de la web: el boleto lleva `tickets.qr_token` (Puerta no cambia) y la credencial `/g/<token>`.
 - **Botones** "Agregar a Apple Wallet / Google Wallet" en "Ver boletos" (cada boleto) y en "Mi credencial".
