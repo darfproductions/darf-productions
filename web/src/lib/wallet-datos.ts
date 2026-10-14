@@ -6,6 +6,7 @@ import { POSTER_COLUMNS } from "@/lib/poster";
 import { assetUrl, getTheme, posterUrl, type Production } from "@/lib/productions";
 import { createClient } from "@/lib/supabase/server";
 import { estiloDe } from "@/lib/ticket-design";
+import { isLight } from "@/lib/themes";
 import { paseBoleto, paseCredencialWallet, type PaseWallet } from "@/lib/wallet-pases";
 
 // Datos de los pases de Wallet para la persona con sesión (solo servidor; pasa por RLS).
@@ -22,8 +23,8 @@ export type BoletoWallet = {
   pase: PaseWallet;
   obra: string; lugar: string | null; funcionId: string; asiento: string; comprador: string; orden: string;
   productionId: string | null; obraPublica: boolean;
-  /** Imágenes locales o https para Apple. */
-  logo: string; strip: string | null;
+  /** Imágenes locales o https para Apple: logo de DARF y la obra (ambiente + su logo). */
+  logo: string; imagenObra: { ambiente: string | null; logo: string | null };
 };
 
 export type Fallo = { error: string; status: number };
@@ -63,8 +64,8 @@ export async function boletoWallet(ticketId: string): Promise<BoletoWallet | Fal
   return {
     pase, obra, lugar, funcionId: f.id, asiento, comprador: o.buyer_nombre, orden: o.order_code,
     productionId: prod?.id ?? null, obraPublica: !!prod && ["publicada", "archivada"].includes(prod.estado),
-    logo: tema?.logo ?? "/marca/darf-horizontal-blanco.svg",
-    strip: prod?.ambiente_path ? assetUrl(prod.ambiente_path) : poster,
+    logo: isLight(pase.colores.fondo) ? "/marca/darf-horizontal.svg" : "/marca/darf-horizontal-blanco.svg",
+    imagenObra: { ambiente: prod?.ambiente_path ? assetUrl(prod.ambiente_path) : poster, logo: tema?.logo ?? null },
   };
 }
 

@@ -1,29 +1,46 @@
 import { PKPass } from "passkit-generator";
 import type { WalletAppleConfig } from "@/lib/wallet-env";
-import { cubrir, contener, icono, leerImagen } from "@/lib/wallet-imagenes";
+import { bandaCredencial, cubrir, contener, icono, leerImagen, portadaObra } from "@/lib/wallet-imagenes";
 import { rgb, type Campo, type PaseWallet } from "@/lib/wallet-pases";
 
 // Apple Wallet (2026-10-14): arma y firma el .pkpass en memoria con passkit-generator.
-// Boleto = eventTicket (franja con la imagen de la obra); credencial = generic (con foto).
+// Boleto = eventTicket: logo de DARF arriba y la franja con la imagen y el logo de la obra.
+// Credencial: Club Fan = storeCard con franja dorada (sello + Fan Zone); gafete = generic con foto.
 
 export type ImagenesApple = {
-  /** Logo de arriba (obra o DARF). */
+  /** Logo de arriba a la izquierda (DARF). */
   logo: string;
-  /** Imagen ancha del boleto (ambiente o póster). */
-  strip?: string | null;
-  /** Foto de la credencial. */
-  foto?: string | null;
   /** Texto junto al logo (solo si el logo no lo lleva ya). */
   logoTexto?: string;
+  /** Boleto: imagen de ambiente de la obra (con su logo encima) como franja. */
+  obra?: { ambiente: string | null; logo: string | null } | null;
+  /** Credencial con franja de color (Club Fan): id de la banda (fan, crew, …). */
+  banda?: string | null;
+  /** Foto de la credencial (gafete). */
+  foto?: string | null;
 };
 
 const ICONO = "/marca/darf-monograma.svg";
 
 const campos = (cs: Campo[]) => cs.map((c) => ({ key: c.key, label: c.label, value: c.value }));
 
+export type Diseno = {
+  /** eventTicket = boleto · storeCard = credencial con franja (Club Fan) · generic = gafete con foto. */
+  estilo: "eventTicket" | "storeCard" | "generic";
+  logoTexto?: string;
+  /** La franja ya lleva el nombre (logo de la obra o banda del club): el campo grande se mueve abajo. */
+  franjaConNombre?: boolean;
+};
+
 /** pass.json sin barcodes ni fechas (eso lo pone la librería). Exportada para las pruebas. */
-export function passJson(c: Pick<WalletAppleConfig, "passTypeId" | "teamId">, p: PaseWallet, logoTexto?: string): Record<string, unknown> {
-  const estilo = p.tipo === "boleto" ? "eventTicket" : "generic";
+export function passJson(c: Pick<WalletAppleConfig, "passTypeId" | "teamId">, p: PaseWallet, d: Diseno): Record<string, unknown> {
+  const frente = d.franjaConNombre && d.estilo === "storeCard"
+    // Club Fan: la franja dorada es la protagonista; el nombre pasa a la fila de abajo.
+    ? { primaryFields: [], secondaryFields: campos([...p.primarios, ...p.secundarios]) }
+    : d.franjaConNombre
+      // Boleto: el logo de la obra ya está en la franja.
+      ? { primaryFields: [], secondaryFields: campos(p.secundarios) }
+      : { primaryFields: campos(p.primarios), secondaryFields: campos(p.secundarios) };
   return {
     formatVersion: 1,
     passTypeIdentifier: c.passTypeId,
@@ -31,15 +48,14 @@ export function passJson(c: Pick<WalletAppleConfig, "passTypeId" | "teamId">, p:
     serialNumber: p.serial,
     organizationName: "DARF Productions",
     description: p.descripcion,
-    ...(logoTexto ? { logoText: logoTexto } : {}),
+    ...(d.logoTexto ? { logoText: d.logoTexto } : {}),
     foregroundColor: rgb(p.colores.texto),
     backgroundColor: rgb(p.colores.fondo),
     labelColor: rgb(p.colores.etiqueta),
     sharingProhibited: true,
-    [estilo]: {
+    [d.estilo]: {
       headerFields: campos(p.cabecera),
-      primaryFields: campos(p.primarios),
-      secondaryFields: campos(p.secundarios),
+      ...frente,
       auxiliaryFields: campos(p.auxiliares),
       backFields: campos(p.reverso),
     },
@@ -47,16 +63,29 @@ export function passJson(c: Pick<WalletAppleConfig, "passTypeId" | "teamId">, p:
 }
 
 export async function crearPkpass(c: WalletAppleConfig, p: PaseWallet, im: ImagenesApple): Promise<Buffer> {
-  const archivos: Record<string, Buffer> = {
-    "pass.json": Buffer.from(JSON.stringify(passJson(c, p, im.logoTexto))),
-  };
-  const [iconoSrc, logoSrc, stripSrc, fotoSrc] = await Promise.all([leerImagen(ICONO), leerImagen(im.logo), leerImagen(im.strip), leerImagen(im.foto)]);
+  const archivos: Record<string, Buffer> = {};
+  const [iconoSrc, logoSrc, ambSrc, logoObraSrc, fotoSrc] = await Promise.all([
+    leerImagen(ICONO), leerImagen(im.logo), leerImagen(im.obra?.ambiente), leerImagen(im.obra?.logo), leerImagen(im.foto),
+  ]);
   if (!iconoSrc) throw new Error("Falta el ícono de DARF.");
   Object.assign(archivos, await icono(iconoSrc, p.colores.fondo));
-  const logo = logoSrc ?? iconoSrc;
-  Object.assign(archivos, await contener(logo, "logo", 160, 50));
-  if (p.tipo === "boleto" && stripSrc) Object.assign(archivos, await cubrir(stripSrc, "strip", 375, 98));
-  if (p.tipo === "credencial" && fotoSrc) Object.assign(archivos, await cubrir(fotoSrc, "thumbnail", 90, 90));
+  Object.assign(archivos, await contener(logoSrc ?? iconoSrc, "logo", 160, 50));
+
+  let d: Diseno;
+  if (p.tipo === "boleto") {
+    // Franja del boleto: 375×98 pt; se arma en @3x y se reduce.
+    if (ambSrc) Object.assign(archivos, await cubrir(await portadaObra(ambSrc, logoObraSrc, 1125, 294), "strip", 375, 98));
+    d = { estilo: "eventTicket", logoTexto: im.logoTexto, franjaConNombre: !!(ambSrc && logoObraSrc) };
+  } else if (im.banda) {
+    // Club Fan: storeCard con franja 375×144 pt (oro, sello y logo de Fan Zone).
+    const banda = await bandaCredencial(im.banda, 1125, 432);
+    if (banda) Object.assign(archivos, await cubrir(banda, "strip", 375, 144));
+    d = { estilo: "storeCard", logoTexto: im.logoTexto, franjaConNombre: !!banda };
+  } else {
+    if (fotoSrc) Object.assign(archivos, await cubrir(fotoSrc, "thumbnail", 90, 90));
+    d = { estilo: "generic", logoTexto: im.logoTexto };
+  }
+  archivos["pass.json"] = Buffer.from(JSON.stringify(passJson(c, p, d)));
 
   const pase = new PKPass(archivos, {
     wwdr: c.wwdr, signerCert: c.cert, signerKey: c.key, signerKeyPassphrase: c.passphrase,

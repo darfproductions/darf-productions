@@ -10,5 +10,5 @@ export async function GET(_req: Request, ctx: RouteContext<"/cuenta/wallet/apple
   if (!c) return NextResponse.json({ error: "Apple Wallet todavía no está disponible." }, { status: 503 });
   const b = await boletoWallet((await ctx.params).ticket);
   if (esFallo(b)) return NextResponse.json({ error: b.error }, { status: b.status });
-  return respuestaPkpass(await crearPkpass(c, b.pase, { logo: b.logo, strip: b.strip }), `DARF-${b.orden}`);
+  return respuestaPkpass(await crearPkpass(c, b.pase, { logo: b.logo, obra: b.imagenObra }), `DARF-${b.orden}`);
 }
