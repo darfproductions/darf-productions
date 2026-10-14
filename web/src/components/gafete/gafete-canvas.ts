@@ -42,12 +42,12 @@ export async function descargarPase(p: PaseVista, archivo: string): Promise<void
     // Logo arriba al centro y, debajo, la fila de sellos (Club Fan · DARF Loyalty · Casa DARF).
     if (logo) {
       const con = sellos.length > 0;
-      const maxH = fan ? (con ? 70 : 80) : con ? 92 : 112, maxW = fan ? 440 : 400;
+      const maxH = fan ? (con ? 62 : 80) : con ? 70 : 112, maxW = fan ? 440 : 400;
       const k = Math.min(maxW / logo.width, maxH / logo.height);
       const lw = logo.width * k, lh = logo.height * k;
-      x.drawImage(logo, (W - lw) / 2, con ? 36 + (92 - lh) / 2 : 60 + (112 - lh) / 2, lw, lh);
-      const lado = 72, hueco = 22, x0 = (W - sellos.length * lado - (sellos.length - 1) * hueco) / 2;
-      sellos.forEach((s, i) => x.drawImage(s, x0 + i * (lado + hueco), 142, lado, lado));
+      x.drawImage(logo, (W - lw) / 2, con ? 36 + (70 - lh) / 2 : 60 + (112 - lh) / 2, lw, lh);
+      const lado = 96, hueco = 26, x0 = (W - sellos.length * lado - (sellos.length - 1) * hueco) / 2;
+      sellos.forEach((s, i) => x.drawImage(s, x0 + i * (lado + hueco), 120, lado, lado));
     }
     // Foto redonda
     const cx = W / 2, cy = 330, r = 104;
