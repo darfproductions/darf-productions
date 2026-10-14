@@ -90,6 +90,7 @@ Diego eligió cuáles sí (ver plan del bloque). Hechas en `darf-2.0`, migracion
 | Contacto (0096) | Filtros Sin responder · Míos · Sin asignar · Respondidos · Todos. Asignar a alguien del equipo (le llega aviso); "Responder por correo" y "WhatsApp"; "Marcar respondido" con canal y nota (queda quién y cuándo); reabrir. En la bitácora sin datos de quien escribió. |
 | Bitácora (0096) | Filtros por obra, persona, tipo de acción (grupos con nombre claro; boletos con sub-acciones) y fechas en hora de México; "Ver más" hasta 1,000 y conteo de resultados. |
 | Obra privada con audiciones (0097) | Una obra en borrador u oculta no sale en la página, pero sus convocatorias sí: muestran el nombre, logo y colores de la obra, sin liga a su página. |
+| Ensayos con equipo y encargados (0099) | A cada ensayo se cita, además del elenco, al **equipo de producción** (por persona o "todo el equipo"; o un ensayo solo del equipo). Se les toma asistencia y aplican las advertencias. **Encargados**: el primero que llega abre el ensayo desde Mi cuenta (el mismo día, desde 1 h antes) y queda presente; los demás encargados pasan lista en cuanto alguien los escanea. **Cerrar lista** marca falta a quien no llegó. **Producción, dirección y maestros** (roles de categoría producción/dirección) siempre pueden ver y pasar lista, varios a la vez; se ve quién marcó a cada quien. Escáner **automático con pausa**: tras cada lectura se detiene 2 s y un QR ya leído solo dice "Ya registrado". |
 
 ## Lo que queda pendiente
 

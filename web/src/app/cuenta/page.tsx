@@ -36,6 +36,7 @@ import { AgregarCalendario } from "@/components/AgregarCalendario";
 import { VoyAIr } from "@/components/tickets/VoyAIr";
 import { isoMx } from "@/lib/dates";
 import { Icono } from "@/components/Icono";
+import { MisEnsayosEquipo, type MiEnsayoEquipo } from "@/components/ensayos/MisEnsayosEquipo";
 
 export const metadata: Metadata = { title: "Mi cuenta" };
 
@@ -104,6 +105,7 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
     supabase.rpc("my_seller"), supabase.rpc("my_team_productions"), supabase.rpc("my_team_unread"),
     listNotifications({ limit: 3 }), unreadCount(), getMiCredencial(),
   ]);
+  const misEnsayosEquipo = ((await supabase.rpc("mis_ensayos_equipo")).data ?? []) as MiEnsayoEquipo[];
   const equipos = (miEquipo.data ?? []) as { production_id: string | null; nombre: string; roles: string[] }[];
   const pendEquipo = new Map(((equipoPend.data ?? []) as { production_id: string | null; avisos: number; notas: number }[]).map((x) => [x.production_id ?? "general", x]));
   const ventas = (misVentas.data ?? []) as MySale[];
@@ -366,6 +368,8 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
             </ul>
           </section>
         )}
+
+        <MisEnsayosEquipo ensayos={misEnsayosEquipo} />
 
         {ofertasPendientes.length > 0 && (
           <section aria-labelledby="ofertas" className="flex flex-col gap-3 order-3 lg:order-none">

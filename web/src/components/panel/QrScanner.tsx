@@ -2,31 +2,43 @@
 
 import { useEffect, useRef, useState } from "react";
 import { input } from "@/components/panel/ui";
+import { decidir, estadoInicial, PAUSA_MS, registrar } from "@/lib/escaner-rules";
 
 type Detector = { detect: (src: CanvasImageSource) => Promise<{ rawValue: string }[]> };
 declare global {
   interface Window { BarcodeDetector?: new (opts: { formats: string[] }) => Detector }
 }
 
-// Lector de QR del panel (puerta de funciones y mesa de registro de audiciones):
-// cámara del celular con el lector del navegador o jsQR (iPhone), o código escrito.
-// Avisa con onCode; no lee el mismo código dos veces seguidas en 4 segundos.
-export function QrScanner({ onCode, busy, placeholder = "Código del QR" }: { onCode: (code: string) => void; busy?: boolean; placeholder?: string }) {
+// Lector de QR (puerta de funciones, registro de audiciones, ensayos y eventos): cámara del celular con
+// el lector del navegador o jsQR (iPhone), o código escrito. Automático con pausa (2026-10-14): después
+// de cada lectura se detiene un momento mientras se ve el resultado y no lee nada mientras se procesa;
+// un código ya leído en esta sesión llama a onRepetido (si se da) en lugar de mandarse otra vez.
+export function QrScanner({ onCode, onRepetido, busy, placeholder = "Código del QR" }: {
+  onCode: (code: string) => void; onRepetido?: (code: string) => void; busy?: boolean; placeholder?: string;
+}) {
   const video = useRef<HTMLVideoElement>(null);
   const [camara, setCamara] = useState<"off" | "on" | "sin-soporte">("off");
   const [manual, setManual] = useState("");
-  const ultimo = useRef<{ token: string; at: number } | null>(null);
-  const cb = useRef(onCode);
+  const [pausado, setPausado] = useState(false);
+  const estado = useRef(estadoInicial());
+  const ocupado = useRef(!!busy);
+  const cb = useRef({ onCode, onRepetido });
   useEffect(() => {
-    cb.current = onCode;
-  }, [onCode]);
+    cb.current = { onCode, onRepetido };
+    ocupado.current = !!busy;
+  }, [onCode, onRepetido, busy]);
 
-  function emitir(token: string, repetir = false) {
+  function emitir(token: string, manualmente = false) {
+    if (!manualmente && ocupado.current) return;
+    const ahora = Date.now();
+    const que = decidir(estado.current, token, ahora, manualmente);
+    if (que === "ignorar") return;
+    registrar(estado.current, token, ahora);
+    setPausado(true);
+    setTimeout(() => setPausado(false), PAUSA_MS);
     const t = token.trim();
-    if (!t) return;
-    if (!repetir && ultimo.current && ultimo.current.token === t && Date.now() - ultimo.current.at < 4000) return;
-    ultimo.current = { token: t, at: Date.now() };
-    cb.current(t);
+    if (que === "repetido" && cb.current.onRepetido) cb.current.onRepetido(t);
+    else cb.current.onCode(t);
   }
 
   useEffect(() => {
@@ -78,7 +90,16 @@ export function QrScanner({ onCode, busy, placeholder = "Código del QR" }: { on
 
   return (
     <div className="flex flex-col gap-3">
-      {camara === "on" && <video ref={video} playsInline muted className="aspect-square w-full max-w-md rounded-2xl bg-black object-cover" />}
+      {camara === "on" && (
+        <div className="relative w-full max-w-md">
+          <video ref={video} playsInline muted className="aspect-square w-full rounded-2xl bg-black object-cover" />
+          {(pausado || busy) && (
+            <span className="absolute inset-x-0 bottom-3 mx-auto w-fit rounded-full bg-black/75 px-4 py-2 text-sm font-bold text-white">
+              {busy ? "Revisando…" : "Listo · siguiente persona"}
+            </span>
+          )}
+        </div>
+      )}
       <div className="flex flex-wrap gap-2">
         {camara !== "on" ? (
           <button type="button" className="rounded-full bg-texto px-5 py-3 text-sm font-bold text-sala" onClick={() => setCamara("mediaDevices" in navigator ? "on" : "sin-soporte")}>Abrir cámara</button>

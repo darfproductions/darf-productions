@@ -8,7 +8,7 @@ export type IconoNombre =
   | "engrane" | "candado" | "boleto" | "sobre" | "play" | "pausa" | "mascaras" | "claqueta" | "camara"
   | "credencial" | "megafono" | "celular" | "telefono" | "tarjeta" | "documento" | "contrato" | "reloj"
   | "destello" | "foco" | "estrella" | "estrella-vacia" | "calendario" | "lupa" | "personas" | "lapiz"
-  | "campana" | "imagen" | "descargar" | "compartir";
+  | "campana" | "imagen" | "descargar" | "compartir" | "lista";
 
 const RELLENO = { fill: "currentColor", stroke: "none" } as const;
 
@@ -89,6 +89,7 @@ const TRAZOS: Record<IconoNombre, React.ReactNode> = {
   campana: <path d="M6 16v-5a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20.5a2 2 0 0 0 4 0" />,
   imagen: <><rect x="3.5" y="5" width="17" height="14" rx="2" /><circle cx="9" cy="10" r="1.5" /><path d="M4 17l5-5 4 4 2.5-2.5 4.5 4.5" /></>,
   descargar: <path d="M12 4v11M7 10l5 5 5-5M5 19.5h14" />,
+  lista: <><rect x="5" y="4.5" width="14" height="16.5" rx="2" /><path d="M9 4.5V3.5h6v1M8.5 10l1.2 1.2 2.3-2.4M13.5 10.2H16M8.5 15l1.2 1.2 2.3-2.4M13.5 15.2H16" /></>,
   compartir: <path d="M12 15V4M8 8l4-4 4 4M6 12v6.5A1.5 1.5 0 0 0 7.5 20h9a1.5 1.5 0 0 0 1.5-1.5V12" />,
 };
 
