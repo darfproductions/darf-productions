@@ -33,6 +33,8 @@
 - **Actualización automática de Apple (0098):** ver la sección de abajo.
 
 ## Apple Wallet se actualiza solo (0098, 14 oct 2026)
+- **PUBLICADO y probado en producción** (PR #7 y #8): Diego canceló un boleto de prueba y sus 2 dispositivos
+  bajaron el pase anulado ~2 s después (iOS lo pasa a "pases vencidos"). Prueba borrada; base limpia.
 - El `.pkpass` lleva `webServiceURL = https://www.darfproductions.com/wallet/apple` y un
   `authenticationToken` propio del pase (no cambia al volver a descargarlo). El iPhone se registra solo.
 - **Qué lo actualiza** (triggers de la base; no se tocó ninguna función de venta):
