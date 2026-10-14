@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ActionForm } from "@/components/panel/ActionForm";
 import { Card, PanelTitle, button, input } from "@/components/panel/ui";
-import { requireDirector } from "@/lib/permissions";
+import { requireCasa } from "@/lib/permissions";
 import { createClient } from "@/lib/supabase/server";
 import { addTeamMember, removeTeamMember, saveTeamMember } from "./actions";
 import { Icono } from "@/components/Icono";
@@ -17,7 +17,7 @@ const ghost = "rounded-full border border-white/25 px-4 py-2 text-sm font-bold h
 
 // Equipo DARF (solo el Director): quién sale en "Conoce al equipo" (/nosotros), con su cargo y orden.
 export default async function EquipoDarf({ searchParams }: PageProps<"/panel/personas/equipo">) {
-  await requireDirector("/panel/personas/equipo");
+  await requireCasa("casa.equipo", "/panel/personas/equipo");
   const sp = await searchParams;
   const q = typeof sp.q === "string" ? sp.q : "";
   const supabase = await createClient();

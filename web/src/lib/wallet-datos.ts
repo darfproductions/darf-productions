@@ -4,7 +4,7 @@ import { getSession } from "@/lib/auth";
 import { getMiCredencial } from "@/lib/credencial";
 import { paseCredencial, type CredencialMia } from "@/lib/credencial-rules";
 import { origen } from "@/lib/gafete";
-import { ligaGafete } from "@/lib/gafete-rules";
+import { ligaGafete, sellosDe } from "@/lib/gafete-rules";
 import { POSTER_COLUMNS } from "@/lib/poster";
 import { assetUrl, getTheme, posterUrl, type Production } from "@/lib/productions";
 import { createClient } from "@/lib/supabase/server";
@@ -98,11 +98,11 @@ function armarCredencial(userId: string, c: CredencialMia, nombre: string, fotoU
   // El logo de Fan Zone es muy ancho para Wallet: monograma dorado + texto.
   const logo = fan ? "/marca/darf-monograma-oro.svg" : "/marca/darf-horizontal-blanco.svg";
   const logoTexto = fan ? "DARF Fan Zone" : undefined;
-  // Equipo que también es socio del Club Fan: el sello del club (Apple junto al logo, Google en la banda).
-  const sello = !fan && !!vista.sello;
+  // Todos los sellos junto al logo (Apple) y en la banda (Google): Casa DARF (0102) y Club Fan si es socio.
+  const sellos = fan ? [] : sellosDe(vista).map((s) => s.src);
   return {
-    pase, fan, logo, logoTexto, foto: fotoUrl, banda: sello ? `${banda}-socio` : banda,
-    apple: { logo, logoTexto, foto: fotoUrl, banda: fan ? "fan" : null, sello },
+    pase, fan, logo, logoTexto, foto: fotoUrl, banda: !fan && vista.sello ? `${banda}-socio` : banda,
+    apple: { logo, logoTexto, foto: fotoUrl, banda: fan ? "fan" : null, sellos },
   };
 }
 

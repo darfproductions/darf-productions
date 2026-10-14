@@ -9,6 +9,7 @@ import { MODALIDAD, lugares, type Criterio } from "@/lib/audition-rules";
 import { formatSlot } from "@/lib/auditions";
 import { isoToLocalMx } from "@/lib/dates";
 import { requireAudition } from "@/lib/panel-auditions";
+import { casa } from "@/lib/panel-nav";
 import { createClient } from "@/lib/supabase/server";
 import { editarPersonaje, importarPersonajes, moverPersonaje } from "../votacion-actions";
 import { addAuditionMember, addField, addInvites, addRole, addSlot, removeAuditionMember, removeInvite, removeItem, saveAsTemplate, saveAudition, saveCriterios, saveOptions, setAuditionEstado, deleteAudition } from "../actions";
@@ -34,7 +35,7 @@ export default async function AuditionConfig({ params }: PageProps<"/panel/audic
   // Registro permanente: solo el Director lo configura; los demás van directo a las solicitudes.
   if (!config) redirect(`/panel/audiciones/${aid}/solicitudes`);
   // ¿Puede armar el equipo propio? Obra: quien da permisos en ella. General: el Director.
-  const armaEquipo = access.isDirector || (!!a.production_id && (access.byProduction[a.production_id] ?? []).includes("permisos.gestionar"));
+  const armaEquipo = access.isDirector || (!a.production_id && casa(access, "casa.audiciones")) || (!!a.production_id && (access.byProduction[a.production_id] ?? []).includes("permisos.gestionar"));
   const supabase = await createClient();
   const [roles, slots, fields, team, teamRoles, invites, inscritos] = await Promise.all([
     supabase.from("audition_roles").select("id, nombre, descripcion").eq("audition_id", aid).order("orden"),

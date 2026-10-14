@@ -3,7 +3,7 @@ import Link from "next/link";
 import { BirthdayList } from "@/components/BirthdayList";
 import { Card, PanelTitle } from "@/components/panel/ui";
 import { cumplesDelMes, MESES, type Cumple } from "@/lib/account-rules";
-import { requireDirector } from "@/lib/permissions";
+import { requireCasa } from "@/lib/permissions";
 import { createClient } from "@/lib/supabase/server";
 import { partesMx } from "@/lib/dates";
 
@@ -11,7 +11,7 @@ export const metadata: Metadata = { title: "Cumpleaños" };
 
 // Cumpleaños de todas las cuentas que pusieron su fecha (solo el Director).
 export default async function Cumpleanos({ searchParams }: PageProps<"/panel/cumpleanos">) {
-  await requireDirector("/panel/cumpleanos");
+  await requireCasa("casa.personas", "/panel/cumpleanos");
   const sp = await searchParams;
   const actual = partesMx().m;
   const m = Number(sp.mes);

@@ -56,7 +56,7 @@ grant all on ctx to public;
 -- T1: jerarquía del gafete, sin obra.
 do $$ declare j json; begin
   j := pg_temp.gaf('00000000-0000-0000-0000-0000000000e1');
-  if j->>'papel' <> 'CEO' or j->>'franja' <> 'manager' then raise exception 'FALLO T1: CEO (%)', j; end if;
+  if j->>'papel' <> 'CEO' or j->>'franja' not in ('manager', 'casa') then raise exception 'FALLO T1: CEO (%)', j; end if;
   if (j::jsonb) ? 'obra' or (j::jsonb) ? 'temporada' then raise exception 'FALLO T1: todavía trae la obra'; end if;
   j := pg_temp.gaf('00000000-0000-0000-0000-0000000000e2');
   if j->>'papel' <> 'Dirección artística' or j->>'franja' <> 'direccion' then raise exception 'FALLO T1: director (%)', j; end if;

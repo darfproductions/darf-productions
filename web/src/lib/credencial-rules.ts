@@ -13,6 +13,8 @@ export type Socio = { numero: number; desde: string; fundador: boolean };
 export type CredencialMia = {
   token: string; codigo: string; nivel: Nivel; desde: string | null;
   franja: Franja | null; papel: string | null; socio: Socio | null;
+  /** Casa DARF (0102): año desde que es parte (sello del gafete). */
+  casa_desde?: number | null;
   compartir_telefono: boolean; compartir_correo: boolean; compartir_instagram: boolean; compartir_perfil: boolean;
 };
 
@@ -28,7 +30,7 @@ export const BANDA_CUENTA: Banda = { label: "SPECTATOR", fondo: "#6b6675", texto
 export function paseCredencial(c: CredencialMia & { nombre: string; fotoUrl: string | null; qr?: string }, hoy: Date = new Date()): PaseVista {
   const base = { nombre: c.nombre, fotoUrl: c.fotoUrl, qr: c.qr, codigo: c.codigo };
   if (c.nivel === "equipo") {
-    const p = paseGafete({ ...base, franja: c.franja ?? "crew", papel: c.papel ?? "Equipo" }, hoy);
+    const p = paseGafete({ ...base, franja: c.franja ?? "crew", papel: c.papel ?? "Equipo", casaDesde: c.casa_desde }, hoy);
     return c.socio ? { ...p, sello: `Socio ${numeroSocio(c.socio.numero)}` } : p;
   }
   if (c.nivel === "club" && c.socio) return paseCredencialFan({ ...base, ...c.socio });

@@ -48,7 +48,7 @@ do $$ declare j json; begin
   if (badge_mio()->>'token') <> j->>'token' then raise exception 'FALLO T1: cambió el token'; end if;
   insert into ctx values ('t1', j->>'token'), ('c1', j->>'codigo');
   perform pg_temp.as_user('00000000-0000-0000-0000-0000000000c4');
-  if badge_mio()->>'franja' <> 'manager' then raise exception 'FALLO T1: el Director no es manager'; end if; -- 0087
+  if badge_mio()->>'franja' not in ('manager', 'casa') then raise exception 'FALLO T1: el Director no es manager'; end if; -- 0087
   perform pg_temp.as_user('00000000-0000-0000-0000-0000000000c2');
   insert into ctx values ('t2', badge_mio()->>'token');
   perform pg_temp.as_user('00000000-0000-0000-0000-0000000000c5');

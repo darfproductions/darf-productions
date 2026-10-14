@@ -4,7 +4,7 @@ import { Card, EstadoChip, PanelTitle } from "@/components/panel/ui";
 import { ActionForm } from "@/components/panel/ActionForm";
 import { ETIQUETA_ESTADO } from "@/lib/home-rules";
 import { listPanelProductions } from "@/lib/panel-data";
-import { can, myProductionIds } from "@/lib/panel-nav";
+import { can, casa, myProductionIds } from "@/lib/panel-nav";
 import { getHomeData } from "@/lib/productions";
 import { elegir } from "@/lib/poster";
 import { setFeatured } from "./actions";
@@ -28,7 +28,7 @@ export default async function PanelProductions() {
       <PanelTitle eyebrow="Proyectos" title="Producciones">
         Cada obra tiene su espacio de trabajo: contenido, audiciones, elenco, funciones y permisos.
       </PanelTitle>
-      {access.isDirector && (
+      {casa(access, "casa.producciones") && (
         <Link href="/panel/producciones/nueva" className="self-start rounded-full bg-texto px-5 py-2.5 text-sm font-bold text-sala">
           + Nueva producción o duplicar
         </Link>

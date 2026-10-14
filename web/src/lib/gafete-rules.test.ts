@@ -24,11 +24,13 @@ describe("gafete", () => {
 describe("gafete con jerarquía y credencial del Club Fan (0080)", () => {
   it("el gafete ya no dice la obra: abajo va DARF Productions y el año de CDMX", async () => {
     const { paseGafete } = await import("./gafete-rules");
-    const p = paseGafete({ nombre: "Diego", fotoUrl: null, franja: "manager", papel: "CEO" }, new Date("2027-01-01T03:00:00Z"));
+    const p = paseGafete({ nombre: "Diego", fotoUrl: null, franja: "casa", papel: "CEO", casaDesde: 2019 }, new Date("2027-01-01T03:00:00Z"));
     expect(p.titulo).toBe("CEO");
     expect(p.pie).toBe("DARF Productions · 2026"); // 31 de diciembre en CDMX
-    expect(p.banda.label).toBe("MANAGER");
-    expect(paseGafete({ nombre: "Ana", fotoUrl: null, franja: "manager", papel: "CEO" }).banda.degradado?.length).toBe(3);
+    expect(p.banda.label).toBe("CASA DARF");
+    expect(p.casa).toBe("Casa DARF · desde 2019");
+    expect(paseGafete({ nombre: "Ana", fotoUrl: null, franja: "casa", papel: "CEO" }).banda.degradado?.length).toBe(5);
+    expect(paseGafete({ nombre: "Ana", fotoUrl: null, franja: "crew", papel: "Elenco" }).casa).toBeUndefined();
   });
   it("credencial del Club Fan: número, fundador, año de alta y liga /f/", async () => {
     const { paseCredencialFan, ligaCredencial } = await import("./credencial-fan-rules");
@@ -47,5 +49,15 @@ describe("franja Dirección general (0101)", () => {
     expect(p.banda.fondo).toContain("linear-gradient");
     expect(p.banda.degradado?.[0]).toEqual([0, "#8e959e"]);
     expect(p.banda.texto).toBe("#0b0910");
+  });
+});
+
+describe("sellos del gafete (0102)", () => {
+  it("Casa DARF y Club Fan van los dos, en ese orden", async () => {
+    const { sellosDe } = await import("./gafete-rules");
+    expect(sellosDe({ tema: "darf", casa: "Casa DARF · desde 2023", sello: "Socio #0001" }).map((s) => s.alt)).toEqual(["Casa DARF", "Socio del Club Fan"]);
+    expect(sellosDe({ tema: "darf", casa: "Casa DARF · desde 2023" }).length).toBe(1);
+    expect(sellosDe({ tema: "fan" }).map((s) => s.alt)).toEqual(["Socio del Club Fan"]);
+    expect(sellosDe({ tema: "darf" })).toEqual([]);
   });
 });

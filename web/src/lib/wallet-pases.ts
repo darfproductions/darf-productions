@@ -172,7 +172,10 @@ export function paseCredencialWallet(c: DatosCredencial, hoy: Date = new Date())
     cabecera: [{ key: "banda", label: fan ? "Club" : "Credencial", value: c.pase.banda.label }],
     primarios: [{ key: "nombre", label: c.pase.titulo, value: c.pase.nombre || "Sin nombre" }],
     secundarios: [{ key: "codigo", label: "Código", value: c.codigo }, ...(c.pase.sello ? [{ key: "sello", label: "Club Fan", value: c.pase.sello }] : [])],
-    auxiliares: [{ key: "vigencia", label: "Vigencia", value: c.pase.pie.replace(/^DARF Productions · /, "") || anioMx(hoy) }],
+    auxiliares: [
+      { key: "vigencia", label: "Vigencia", value: c.pase.pie.replace(/^DARF Productions · /, "") || anioMx(hoy) },
+      ...(c.pase.casa ? [{ key: "casa", label: "Casa DARF", value: c.pase.casa.replace(/^Casa DARF · /, "") }] : []),
+    ],
     reverso: [
       { key: "uso", label: "Cómo se usa", value: "Muéstrala en la entrada de ensayos y eventos. Si regeneras tu código en Mi cuenta, aquí se actualiza sola." },
       { key: "web", label: "Mi cuenta", value: "darfproductions.com/cuenta" },

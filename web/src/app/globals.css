@@ -491,3 +491,16 @@ body {
 .franja:focus-within .franja-corre {
   animation-play-state: paused;
 }
+
+/* Casa DARF (0102): la franja holográfica del gafete con un brillo que recorre (no con movimiento reducido). */
+.banda-holo {
+  background-size: 220% 100% !important;
+  animation: banda-holo 6s ease-in-out infinite alternate;
+}
+@keyframes banda-holo {
+  from { background-position: 0% 50%; }
+  to { background-position: 100% 50%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .banda-holo { animation: none; }
+}

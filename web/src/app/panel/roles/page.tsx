@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { ConfirmSubmit } from "@/components/panel/ConfirmSubmit";
 import { Card, Notice, PanelTitle, button, buttonGhost, input } from "@/components/panel/ui";
 import { listRoles, type Permission } from "@/lib/panel-data";
-import { requireDirector } from "@/lib/permissions";
+import { requireCasa } from "@/lib/permissions";
 import { CATEGORIAS_ROL, FRANJAS } from "@/lib/gafete-rules";
 import { createRole, deleteRole, updateRoleCategoria, updateRolePermissions } from "./actions";
 
@@ -26,7 +26,7 @@ function CategoriaSelect({ actual }: { actual?: string }) {
 
 const chipCategoria = (c: string) => {
   const f = FRANJAS[c as keyof typeof FRANJAS];
-  return f ? <span className="ml-2 inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2 py-0.5 text-[11px] font-bold"><span aria-hidden="true" className="h-2.5 w-2.5 rounded-full" style={{ background: f.fondo }} />{CATEGORIAS_ROL.find((x) => x.id === c)?.label ?? (c === "direccion_general" ? "Dirección general" : c)}</span> : null;
+  return f ? <span className="ml-2 inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2 py-0.5 text-[11px] font-bold"><span aria-hidden="true" className="h-2.5 w-2.5 rounded-full" style={{ background: f.fondo }} />{CATEGORIAS_ROL.find((x) => x.id === c)?.label ?? (c === "direccion_general" ? "Dirección general" : c === "casa" ? "Casa DARF" : c)}</span> : null;
 };
 
 export const metadata: Metadata = { title: "Roles" };
@@ -52,7 +52,7 @@ function PermissionChecks({ permissions, checked }: { permissions: Permission[];
 
 // Solo el Director: roles de sistema (fijos) y personalizados (ej. "Vestuario").
 export default async function RolesPage({ searchParams }: PageProps<"/panel/roles">) {
-  await requireDirector("/panel/roles");
+  await requireCasa("casa.roles", "/panel/roles");
   const sp = await searchParams;
   const { roles, permissions, grants } = await listRoles();
   const desc = new Map(permissions.map((p) => [p.id, p.descripcion]));

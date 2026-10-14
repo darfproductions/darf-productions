@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
 import { BackLink, Card, PanelTitle } from "@/components/panel/ui";
 import { listPanelProductions } from "@/lib/panel-data";
-import { requireDirector } from "@/lib/permissions";
+import { requireCasa } from "@/lib/permissions";
 import { CreateForm, DuplicateForm } from "./NewForms";
 
 export const metadata: Metadata = { title: "Nueva producción" };
 
 // Crear una obra desde cero o a partir de otra (nueva temporada). Solo el Director.
 export default async function NewProduction() {
-  await requireDirector("/panel/producciones/nueva");
+  await requireCasa("casa.producciones", "/panel/producciones/nueva");
   const obras = await listPanelProductions();
   return (
     <>

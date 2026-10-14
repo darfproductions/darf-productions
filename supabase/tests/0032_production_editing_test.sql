@@ -160,7 +160,7 @@ do $$ declare n int; begin
     perform panel_duplicate_production('mm', 'mm-2027', 'Mamma Mia 2027', '2027');
     raise exception 'FALLO T8: productora duplicó';
   exception when raise_exception then
-    if sqlerrm not like 'Solo el Director%' then raise exception 'FALLO T8: %', sqlerrm; end if;
+    if sqlerrm not like 'Solo el Director%' and sqlerrm not like 'Solo Casa DARF%' then raise exception 'FALLO T8: %', sqlerrm; end if;
   end;
   perform pg_temp.as_user('00000000-0000-0000-0000-0000000000a1');
   perform panel_duplicate_production('mm', 'mm-2027', 'Mamma Mia 2027', '2027', true, true, false);

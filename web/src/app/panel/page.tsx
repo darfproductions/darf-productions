@@ -5,7 +5,7 @@ import { NotificationList } from "@/components/panel/NotificationList";
 import { describeAudit, type AuditRow } from "@/lib/audit";
 import { listNotifications } from "@/lib/notifications";
 import { listPanelProductions } from "@/lib/panel-data";
-import { can, myProductionIds } from "@/lib/panel-nav";
+import { can, casa, myProductionIds } from "@/lib/panel-nav";
 import { cuando, cumplesProximos, esHoy, pendienteHref, pendienteTexto, porObra, totalPendientes } from "@/lib/panel-home-rules";
 import { getPendientes } from "@/lib/panel-pendientes";
 import { requirePanel } from "@/lib/permissions";
@@ -43,9 +43,9 @@ export default async function PanelHome() {
   const home: Home = { funciones: [], ensayos: [], juntas: [], eventos: [], cambios: [], ...((homeData ?? {}) as Partial<Home>) };
   const nombreObra = new Map(obras.map((p) => [p.id, p.nombre]));
 
-  // Cumpleaños de la semana: el Director ve todos; los demás, los de sus obras.
+  // Cumpleaños de la semana: Casa DARF (personas) ve todos; los demás, los de sus obras.
   const activas = obras.filter((p) => p.estado !== "archivada");
-  const listas = access.isDirector
+  const listas = casa(access, "casa.personas")
     ? [await supabase.rpc("birthdays")]
     : await Promise.all(activas.filter((p) => can(access, p.id, "obra.ver")).map((p) => supabase.rpc("birthdays", { pid: p.id })));
   const cumples = cumplesProximos(listas.flatMap((r) => (r.data ?? []) as Cumple[]), 7);
@@ -180,7 +180,7 @@ export default async function PanelHome() {
                   </li>
                 ))}
               </ul>
-              {access.isDirector && <Link href="/panel/cumpleanos" className="text-sm font-bold text-violeta-claro">Ver todos <Icono nombre="flecha-der" /></Link>}
+              {casa(access, "casa.personas") && <Link href="/panel/cumpleanos" className="text-sm font-bold text-violeta-claro">Ver todos <Icono nombre="flecha-der" /></Link>}
             </Card>
           )}
         </div>
@@ -197,7 +197,7 @@ export default async function PanelHome() {
               </li>
             ))}
           </ul>
-          {access.isDirector && <Link href="/panel/bitacora" className="text-sm font-bold text-violeta-claro">Ver la bitácora completa <Icono nombre="flecha-der" /></Link>}
+          {casa(access, "casa.bitacora") && <Link href="/panel/bitacora" className="text-sm font-bold text-violeta-claro">Ver la bitácora completa <Icono nombre="flecha-der" /></Link>}
         </Card>
       )}
 
@@ -207,7 +207,7 @@ export default async function PanelHome() {
         <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {obras.map((p) => {
             const t = getTheme(p);
-            const rol = access.isDirector ? "Director" : `${(access.byProduction[p.id] ?? []).length} ${(access.byProduction[p.id] ?? []).length === 1 ? "permiso" : "permisos"}`;
+            const rol = access.isDirector ? "Director" : casa(access, "casa.producciones") ? "Casa DARF" : `${(access.byProduction[p.id] ?? []).length} ${(access.byProduction[p.id] ?? []).length === 1 ? "permiso" : "permisos"}`;
             return (
               <li key={p.id}>
                 <Link href={`/panel/producciones/${p.id}`} className="flex items-center gap-3 overflow-hidden rounded-[18px] border border-linea bg-telon pr-3 transition-transform hover:-translate-y-0.5">

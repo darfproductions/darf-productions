@@ -71,16 +71,14 @@ export async function silueta(img: Buffer, color: string): Promise<Buffer> {
   return sharp({ create: { width, height, channels: 4, background: color } }).composite([{ input: img, blend: "dest-in" }]).png().toBuffer();
 }
 
-/** Logo y sello del Club Fan lado a lado, del mismo alto y sin fondo (gafete de quien también es socio). */
-export async function logoConSello(logo: Buffer, sello: Buffer, alto = 300): Promise<Buffer> {
-  const [a, b] = await Promise.all([
-    sharp(logo, { density: 300 }).resize({ height: alto }).png().toBuffer(),
-    sharp(sello, { density: 300 }).resize({ height: alto }).png().toBuffer(),
-  ]);
-  const [ma, mb] = await Promise.all([sharp(a).metadata(), sharp(b).metadata()]);
-  const hueco = Math.round(alto * 0.25), wa = ma.width ?? alto, wb = mb.width ?? alto;
-  return sharp({ create: { width: wa + hueco + wb, height: alto, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } })
-    .composite([{ input: a, left: 0, top: 0 }, { input: b, left: wa + hueco, top: 0 }]).png().toBuffer();
+/** Logo y sus sellos (Casa DARF, Club Fan…) en fila, del mismo alto y sin fondo. */
+export async function logoConSellos(logo: Buffer, sellos: Buffer[], alto = 300): Promise<Buffer> {
+  const piezas = await Promise.all([logo, ...sellos].map((x) => sharp(x, { density: 300 }).resize({ height: alto }).png().toBuffer()));
+  const anchos = await Promise.all(piezas.map(async (x) => (await sharp(x).metadata()).width ?? alto));
+  const hueco = Math.round(alto * 0.25);
+  let x = 0;
+  const capas = piezas.map((input, i) => { const c = { input, left: x, top: 0 }; x += anchos[i] + hueco; return c; });
+  return sharp({ create: { width: x - hueco, height: alto, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } }).composite(capas).png().toBuffer();
 }
 
 /** Imagen de la obra (ambiente) oscurecida con su logo al centro: franja del boleto y hero de Google. */
@@ -109,8 +107,14 @@ export async function bandaCredencial(clave: string, w: number, h: number): Prom
   } else {
     const logo = await leerImagen("/marca/darf-monograma.svg");
     if (logo) piezas.push(await silueta(await sharp(logo, { density: 300 }).resize(Math.round(h * 0.62), Math.round(h * 0.62), { fit: "inside" }).png().toBuffer(), b.texto));
-    const sello = socio && id !== "cuenta" ? await leerImagen("/marca/sello-club.svg") : null;
-    if (sello) piezas.push(await silueta(await sharp(sello, { density: 300 }).resize(Math.round(h * 0.62), Math.round(h * 0.62), { fit: "inside" }).png().toBuffer(), b.texto));
+    // Todos sus sellos junto a DARF: Casa DARF y, si es socio, el del club.
+    const sellos = await Promise.all([
+      id === "casa" ? leerImagen("/marca/sello-casa.svg") : null,
+      socio && id !== "cuenta" ? leerImagen("/marca/sello-club.svg") : null,
+    ]);
+    for (const sello of sellos) {
+      if (sello) piezas.push(await silueta(await sharp(sello, { density: 300 }).resize(Math.round(h * 0.62), Math.round(h * 0.62), { fit: "inside" }).png().toBuffer(), b.texto));
+    }
   }
   if (!piezas.length) return sharp(fondo).png().toBuffer();
   // Las piezas en fila, centradas.

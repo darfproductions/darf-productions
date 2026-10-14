@@ -5,6 +5,7 @@ import { Card, PanelTitle } from "@/components/panel/ui";
 import { ESTADO_SOLICITUD, score } from "@/lib/audition-rules";
 import { ESTADO_OFERTA, TIPO_CREDITO } from "@/lib/casting-rules";
 import { NIVEL_INCIDENCIA, TIPO_INCIDENCIA } from "@/lib/member-rules";
+import { casa } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
 import { createClient } from "@/lib/supabase/server";
 import { Icono } from "@/components/Icono";
@@ -35,10 +36,10 @@ export default async function TalentPage({ params }: PageProps<"/panel/talento/[
   if (error || !data) notFound();
   const altaDe = (pid: string) => ((altas ?? []) as { production_id: string; ingreso: string; baja_at: string | null; baja_motivo: string | null }[]).find((a) => a.production_id === pid);
   const h = data as H;
-  const { data: inc } = access.isDirector
+  const { data: inc } = casa(access, "casa.personas")
     ? await supabase.from("member_incidents").select("id, production_id, tipo, nivel, descripcion, fecha, anulada_at, productions(nombre)").eq("user_id", uid).order("fecha", { ascending: false })
     : { data: [] };
-  const { data: compras } = access.isDirector ? await supabase.rpc("talent_purchases", { uid }) : { data: [] };
+  const { data: compras } = casa(access, "casa.personas") ? await supabase.rpc("talent_purchases", { uid }) : { data: [] };
   const misCompras = (compras ?? []) as { order_code: string; obra: string; funcion: string; estado: string; total: number; boletos: number; asistio: number; created_at: string }[];
   const { data: persona } = await supabase.from("people").select("id").eq("profile_id", uid).maybeSingle();
   const incidencias = (inc ?? []) as unknown as { id: string; production_id: string; tipo: string; nivel: string; descripcion: string; fecha: string; anulada_at: string | null; productions: { nombre: string } | null }[];
@@ -54,7 +55,7 @@ export default async function TalentPage({ params }: PageProps<"/panel/talento/[
           {h.obras.map((o, i) => (
             <li key={i}><b>{o.obra}</b> · {TIPO_CREDITO[o.tipo] ?? o.tipo}{o.papel ? ` · ${o.papel}` : ""}
               {altaDe(o.production_id)?.baja_at && <span className="ml-2 text-xs font-bold text-[#fecdd3]">Baja el {new Date(`${altaDe(o.production_id)!.baja_at}T12:00:00Z`).toLocaleDateString("es-MX")}: {altaDe(o.production_id)!.baja_motivo}</span>}
-              {access.isDirector && <> · <Link href={`/panel/producciones/${o.production_id}/expedientes/${uid}`} className="text-violeta-claro">expediente</Link></>}</li>
+              {casa(access, "casa.personas") && <> · <Link href={`/panel/producciones/${o.production_id}/expedientes/${uid}`} className="text-violeta-claro">expediente</Link></>}</li>
           ))}
           {h.obras.length === 0 && <li className="text-texto-3">Aún sin obras.</li>}
         </ul>
@@ -96,7 +97,7 @@ export default async function TalentPage({ params }: PageProps<"/panel/talento/[
         </Card>
       )}
 
-      {access.isDirector && (
+      {casa(access, "casa.personas") && (
         <Card>
           <h2 className="titular mb-3 text-xl">Como público: compras y funciones ({misCompras.length})</h2>
           <ul className="flex flex-col gap-1.5 text-sm">
@@ -109,7 +110,7 @@ export default async function TalentPage({ params }: PageProps<"/panel/talento/[
         </Card>
       )}
 
-      {access.isDirector && (
+      {casa(access, "casa.personas") && (
         <Card>
           <h2 className="titular mb-3 text-xl">Incidencias en todas las obras</h2>
           <ul className="flex flex-col gap-1.5 text-sm">

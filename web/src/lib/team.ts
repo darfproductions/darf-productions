@@ -54,7 +54,7 @@ export async function signTeamFiles(paths: (string | null)[]): Promise<Map<strin
 /** Roles del panel (sin Integrante), para elegir a quién va algo. */
 export async function teamRoles(): Promise<{ id: string; nombre: string }[]> {
   const supabase = await createClient();
-  const { data } = await supabase.from("panel_roles").select("id, nombre").neq("id", "integrante").order("orden");
+  const { data } = await supabase.from("panel_roles").select("id, nombre").neq("id", "integrante").eq("alcance", "obra").order("orden");
   return (data ?? []) as { id: string; nombre: string }[];
 }
 

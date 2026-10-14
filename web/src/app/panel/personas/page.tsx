@@ -4,7 +4,7 @@ import { ActionForm } from "@/components/panel/ActionForm";
 import { ConfirmSubmit } from "@/components/panel/ConfirmSubmit";
 import { Card, Notice, PanelTitle, button, input } from "@/components/panel/ui";
 import { FILTROS, filtroValido, unirDirectorio, type CuentaUsuario, type FichaPersona } from "@/lib/directory-rules";
-import { requireDirector } from "@/lib/permissions";
+import { requireCasa } from "@/lib/permissions";
 import { createClient } from "@/lib/supabase/server";
 import { linkAccount, mergePeople } from "../talento/actions";
 import { changeGlobalRole } from "../usuarios/actions";
@@ -15,7 +15,7 @@ export const metadata: Metadata = { title: "Directorio" };
 // Directorio (solo el Director): Talento y Usuarios en una sola lista.
 // Cada persona abre su ficha; aquí se cambia su rol general, se liga su cuenta y se unen duplicados.
 export default async function Directorio({ searchParams }: PageProps<"/panel/personas">) {
-  const access = await requireDirector("/panel/personas");
+  const access = await requireCasa("casa.personas", "/panel/personas");
   const sp = await searchParams;
   const q = typeof sp.q === "string" ? sp.q : "";
   const filtro = filtroValido(sp.filtro);
@@ -76,7 +76,7 @@ export default async function Directorio({ searchParams }: PageProps<"/panel/per
                 <span className="block text-xs text-texto-3">{p.obras.join(", ") || "Sin créditos"}{p.creditos ? ` · ${p.creditos} créditos` : ""}</span>
               </span>
               <span className="flex min-w-0 flex-wrap items-center gap-2">
-                {p.userId && p.rol ? (
+                {p.userId && p.rol && access.isDirector ? (
                   <form action={changeGlobalRole} className="flex items-center gap-2">
                     <input type="hidden" name="id" value={p.userId} />
                     <input type="hidden" name="q" value={q} />
