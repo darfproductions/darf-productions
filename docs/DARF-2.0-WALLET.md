@@ -1,19 +1,32 @@
-# DARF 2.0 — Apple Wallet y Google Wallet (investigación, 2026-10-12)
+# DARF 2.0 — Apple Wallet y Google Wallet
 
-## Estado: EN PAUSA (decisión de Diego, 2026-10-12)
-Se retoma cuando Apple apruebe la cuenta de Apple Developer (ya pagada) y la página esté lanzada.
-- Google: cuenta de emisor creada, **Issuer ID 3388000000023203308** (no es secreto). Se usará el
-  mismo proyecto de Google Cloud del inicio de sesión con Google. Falta: habilitar Wallet API,
-  cuenta de servicio `darf-wallet`, invitarla como Developer, cuentas de prueba, variables en Vercel.
-- Falta el **botón oficial "Agregar a Google Wallet"** (SVG en español de las guías de marca de
-  Google): pedírselo a Diego, desde aquí no se puede descargar.
-- Código ya listo (sin usarse aún): `web/src/lib/wallet-env.ts` (variables solo de servidor) y
-  `web/src/lib/google-wallet.ts` (JWT RS256 con crypto de Node, token OAuth, upsert de clases y
-  objetos, liga de guardar). Falta: contenido de los pases, rutas, botones y pruebas.
-
-Objetivo: botones **"Agregar a Apple Wallet"** y **"Agregar a Google Wallet"** para lo que hoy
-ya tiene QR en la web: gafete (0078), boletos y credencial del Club Fan (0075).
-El QR de cada pase es el mismo que ya usamos (puerta y "Checar con gafete" no cambian).
+## Estado: PROGRAMADO, falta que Diego ponga las llaves (2026-10-14)
+- **Pases:** boleto (uno por asiento) y credencial única (gafete o Club Fan, 0083). El QR es el mismo
+  de la web: el boleto lleva `tickets.qr_token` (Puerta no cambia) y la credencial `/g/<token>`.
+- **Botones** "Agregar a Apple Wallet / Google Wallet" en "Ver boletos" (cada boleto) y en "Mi credencial".
+  Solo aparecen cuando las llaves de cada Wallet están en Vercel. En iPhone va primero Apple; en Android, Google.
+- **Pasos de Diego:** `docs/DARF-2.0-WALLET-PASOS.md` (Apple con Mac, Google, botones oficiales).
+- **Variables (solo servidor, Sensitive, Production y Preview):** `APPLE_PASS_TYPE_ID`, `APPLE_TEAM_ID`,
+  `APPLE_PASS_CERT`, `APPLE_PASS_KEY`, `APPLE_PASS_KEY_PASSPHRASE`, `APPLE_WWDR_CERT` (PEM tal cual o en
+  base64) · `GOOGLE_WALLET_ISSUER_ID` (3388000000023203308), `GOOGLE_WALLET_CREDENTIALS` (JSON).
+- **Código:**
+  - `web/src/lib/wallet-pases.ts` (contenido común, puro, con pruebas) ·
+    `apple-wallet.ts` (.pkpass firmado con passkit-generator) · `google-wallet-pases.ts` (clases y objetos) ·
+    `wallet-imagenes.ts` (PNG con sharp) · `wallet-datos.ts` (lecturas con sesión y RLS).
+  - Rutas: `/cuenta/wallet/apple/boleto/<ticket>`, `/cuenta/wallet/apple/credencial`,
+    `/cuenta/wallet/google/boleto/<ticket>`, `/cuenta/wallet/google/credencial` (solo lo propio; boletos
+    aprobados, activos y de funciones por venir) · `/wallet/img/<clave>` (PNG públicos para Google:
+    `darf`, `fan`, `obra-<id>` de obras publicadas, `banda-<franja|fan|cuenta>`).
+  - Diseño: boleto con los colores del kit, logo de la obra, imagen de ambiente, fecha y hora de México,
+    asiento, lugar, orden y nombre; aparece en la pantalla de bloqueo y vence 6 h después de la función.
+    Credencial en fondo DARF con el color de su banda, foto, nombre, papel o "Socio #0001", código y vigencia.
+  - Google: una clase por función y un objeto por boleto; la credencial es un objeto por cuenta y se
+    actualiza (QR nuevo) cada vez que se vuelve a tocar el botón.
+- **Probado en la copia local** con certificados de prueba y un Google falso: firma del .pkpass válida,
+  liga de guardar de Google, boleto ajeno 404, sin sesión 401, imágenes PNG.
+- **Pendiente (fase 2, si se pide):** que Apple actualice solo los pases guardados (boleto cancelado,
+  código regenerado). Mientras: la Puerta rechaza boletos cancelados y el pase dice "si regeneras tu
+  código, vuelve a agregarla".
 
 ## Cómo funciona cada uno
 

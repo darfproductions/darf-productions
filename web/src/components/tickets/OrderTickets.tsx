@@ -2,13 +2,14 @@
 
 import { useRef, useState } from "react";
 import { mover, type BoletoVista, type EstiloBoleto } from "@/lib/ticket-design";
+import { WalletBotones } from "@/components/wallet/WalletBotones";
 import { TicketCard } from "./TicketCard";
 import { descargarPdf } from "./ticket-canvas";
 
 const btn = "rounded-full border border-white/30 px-5 py-2.5 text-sm font-bold hover:border-white/60 disabled:opacity-60";
 
 // "Ver boletos": ventana con un boleto diseñado por asiento, con flechas; y descarga en PDF.
-export function OrderTickets({ boletos, estilo, orden, pdfServidor }: { boletos: BoletoVista[]; estilo: EstiloBoleto; orden: string; pdfServidor: string | null }) {
+export function OrderTickets({ boletos, estilo, orden, pdfServidor, wallet }: { boletos: BoletoVista[]; estilo: EstiloBoleto; orden: string; pdfServidor: string | null; /** Wallet (2026-10-14): qué Wallets están listos. */ wallet?: { apple: boolean; google: boolean } }) {
   const [abierto, setAbierto] = useState(false);
   const [i, setI] = useState(0);
   const [generando, setGenerando] = useState(false);
@@ -68,6 +69,12 @@ export function OrderTickets({ boletos, estilo, orden, pdfServidor }: { boletos:
               <span className="text-sm font-semibold">{i + 1} / {total}</span>
               <button type="button" onClick={() => setI((x) => mover(x, 1, total))} disabled={i === total - 1} aria-label="Boleto siguiente" className="h-12 w-12 rounded-full border border-white/30 text-xl font-bold disabled:opacity-30">→</button>
             </div>
+          )}
+          {wallet && boletos[i].qr && (
+            <WalletBotones
+              apple={wallet.apple ? `/cuenta/wallet/apple/boleto/${boletos[i].id}` : null}
+              google={wallet.google ? `/cuenta/wallet/google/boleto/${boletos[i].id}` : null}
+            />
           )}
           {pdfServidor && <button type="button" onClick={pdf} disabled={generando} className={btn}>{generando ? "Preparando PDF…" : "Descargar PDF"}</button>}
         </div>

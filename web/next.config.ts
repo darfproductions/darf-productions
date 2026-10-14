@@ -19,6 +19,11 @@ const seguridad = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // Wallet (2026-10-14): las rutas de los pases leen logos e imágenes de public/ desde el disco.
+  outputFileTracingIncludes: {
+    "/cuenta/wallet/**": ["./public/marca/**", "./public/producciones/**"],
+    "/wallet/img/**": ["./public/marca/**", "./public/producciones/**"],
+  },
   images: {
     remotePatterns: supabaseHost
       ? [
