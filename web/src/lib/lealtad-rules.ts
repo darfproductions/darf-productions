@@ -4,20 +4,18 @@
 
 export type NivelLealtad = {
   min: number; nombre: string; piedra: string;
-  /** Piedra: brillo, cuerpo y sombra (degradado radial de la medalla). */
-  colores: [string, string, string];
-  /** Color del aro con las letras y del número. */
-  aro: string; texto: string;
+  /** Color de la piedra sobre fondo oscuro, claro → medio (trazo, letras y número de la medalla). */
+  linea: [string, string];
 };
 
 export const NIVELES_LEALTAD: NivelLealtad[] = [
-  { min: 3, nombre: "Rookie", piedra: "Cuarzo rosa", colores: ["#ffd3df", "#e0839f", "#9c4763"], aro: "#6b2a45", texto: "#ffffff" },
-  { min: 5, nombre: "Rising Star", piedra: "Turquesa", colores: ["#c9fbf4", "#3fd0c3", "#127a74"], aro: "#0b4f4b", texto: "#ffffff" },
-  { min: 10, nombre: "Lead", piedra: "Esmeralda", colores: ["#b8f5cf", "#1fb36a", "#08603a"], aro: "#053d25", texto: "#ffffff" },
-  { min: 15, nombre: "Headliner", piedra: "Zafiro", colores: ["#b9cbff", "#2f5bea", "#0f2a8a"], aro: "#0a1c5e", texto: "#ffffff" },
-  { min: 20, nombre: "Showstopper", piedra: "Amatista", colores: ["#e9c9ff", "#9b4dde", "#4f1d86"], aro: "#341259", texto: "#ffffff" },
-  { min: 30, nombre: "Legend", piedra: "Rubí", colores: ["#ffc2cb", "#e0153d", "#7d0019"], aro: "#55000f", texto: "#ffffff" },
-  { min: 50, nombre: "Hall of Fame", piedra: "Diamante negro", colores: ["#6b6f7a", "#24262d", "#050507"], aro: "#000000", texto: "#ffffff" },
+  { min: 3, nombre: "Rookie", piedra: "Cuarzo rosa", linea: ["#ffd9e4", "#f19bb6"] },
+  { min: 5, nombre: "Rising Star", piedra: "Turquesa", linea: ["#c9fbf4", "#3fd0c3"] },
+  { min: 10, nombre: "Lead", piedra: "Esmeralda", linea: ["#c4f7d8", "#2ecf7f"] },
+  { min: 15, nombre: "Headliner", piedra: "Zafiro", linea: ["#d0dcff", "#6b8cff"] },
+  { min: 20, nombre: "Showstopper", piedra: "Amatista", linea: ["#ecd6ff", "#b07cf0"] },
+  { min: 30, nombre: "Legend", piedra: "Rubí", linea: ["#ffd0d7", "#ff3b5c"] },
+  { min: 50, nombre: "Hall of Fame", piedra: "Diamante negro", linea: ["#ffffff", "#8d939d"] },
 ];
 
 /** Nivel de quien lleva `n` producciones (null antes de 3). */
