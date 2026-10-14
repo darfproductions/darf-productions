@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { paseCredencialFan } from "./credencial-fan-rules";
-import { claseBoleto, idGoogle, objetoBoleto, objetoCredencial } from "./google-wallet-pases";
+import { claseBoleto, idGoogle, isoMx, objetoBoleto, objetoCredencial } from "./google-wallet-pases";
 import { paseBoleto, paseCredencialWallet } from "./wallet-pases";
 
 const ISS = "3388000000023203308";
@@ -16,9 +16,12 @@ describe("Google Wallet", () => {
   });
   it("clase por función con obra, lugar, fecha, logo y color", () => {
     const c = claseBoleto(ISS, "f1", p, "Showman", "Teatro", { logo: "https://x/logo.png", hero: "https://x/hero.png" });
-    expect(c).toMatchObject({ id: `${ISS}.funcion-f1`, reviewStatus: "UNDER_REVIEW", hexBackgroundColor: "#13235c", dateTime: { start: p.fecha } });
+    expect(c).toMatchObject({ id: `${ISS}.funcion-f1`, reviewStatus: "UNDER_REVIEW", hexBackgroundColor: "#13235c", dateTime: { start: "2026-11-14T20:00:00-06:00" } });
     expect(c.eventName.defaultValue.value).toBe("Showman");
     expect(c.heroImage?.sourceUri.uri).toBe("https://x/hero.png");
+  });
+  it("la hora va en hora de México (no UTC)", () => {
+    expect(isoMx("2026-10-21T03:00:00Z")).toBe("2026-10-20T21:00:00-06:00");
   });
   it("objeto por boleto con el mismo QR de la puerta y vencimiento", () => {
     const o = objetoBoleto(ISS, `${ISS}.funcion-f1`, p, { asiento: "B-12", comprador: "Ana", orden: "DARF-AB12CD" });
