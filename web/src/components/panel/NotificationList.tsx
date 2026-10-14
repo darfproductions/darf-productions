@@ -2,8 +2,9 @@ import Link from "next/link";
 import { ActionForm } from "@/components/panel/ActionForm";
 import { deleteNotification, markNotification } from "@/lib/notification-actions";
 import type { Notificacion } from "@/lib/notifications";
+import { Icono, type IconoNombre } from "@/components/Icono";
 
-const ICONO: Record<string, string> = { contacto: "✉", audicion: "🎭", orden: "🎟", oferta: "📜", documento: "📄", ausencia: "🕒", solicitud: "📝", equipo: "👥", cambio: "⚙", prueba: "🔔", boletos: "🎫", elenco: "🎬", pago: "💳", anuncio: "📣", fanzone: "⭐" };
+const ICONO: Record<string, IconoNombre> = { contacto: "sobre", audicion: "mascaras", orden: "boleto", oferta: "contrato", documento: "documento", ausencia: "reloj", solicitud: "lapiz", equipo: "personas", cambio: "engrane", prueba: "campana", boletos: "boleto", elenco: "claqueta", pago: "tarjeta", anuncio: "megafono", fanzone: "estrella" };
 const fecha = (iso: string) => new Intl.DateTimeFormat("es-MX", { dateStyle: "medium", timeStyle: "short", timeZone: "America/Mexico_City" }).format(new Date(iso));
 const mini = "text-xs font-bold text-texto-3 hover:text-texto";
 
@@ -17,7 +18,7 @@ export function NotificationList({ items }: { items: Notificacion[] }) {
         return (
           <li key={n.id} className="flex items-start gap-3 py-3">
             <span aria-hidden="true" className={`mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full ${nueva ? "bg-[#a48bff]" : "bg-transparent"}`} />
-            <span aria-hidden="true" className="w-5 shrink-0 text-center">{ICONO[n.tipo] ?? "•"}</span>
+            <span aria-hidden="true" className="w-5 shrink-0 text-center"><Icono nombre={ICONO[n.tipo] ?? "campana"} /></span>
             <div className="min-w-0 flex-1">
               {n.href ? (
                 <Link href={`/notificacion/${n.id}`} prefetch={false} className={`block wrap-anywhere hover:text-violeta-claro ${nueva ? "font-bold text-texto" : "text-texto-3"}`}>{n.titulo}</Link>

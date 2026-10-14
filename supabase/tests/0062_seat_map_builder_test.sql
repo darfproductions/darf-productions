@@ -25,7 +25,7 @@ $$;
 
 do $$ declare vip uuid; gen uuid; otra uuid; r jsonb; perf uuid; s1 uuid; s2 uuid; n int; showman_n int; begin
   perform pg_temp.as_user('00000000-0000-0000-0000-0000000000a1');
-  perform panel_add_member('mm', 't_prod@test.local', 'productor');
+  perform panel_add_member('mm', 't_prod@test.local', (select coalesce(max(id), 'productor') from panel_roles where id = 'direccion_general'));
   perform panel_add_member('mm', 't_taq@test.local', 'puerta');
 
   perform pg_temp.as_user('00000000-0000-0000-0000-0000000000b1');

@@ -1,5 +1,5 @@
-// "Agregar al calendario" (Bloque 4): archivo .ics (Apple, Outlook, cualquier app) y liga de Google
-// Calendar para funciones, eventos y ensayos. Puro, con pruebas en calendario.test.ts.
+// "Agregar al calendario" (Bloque 4): archivo .ics (Apple, cualquier app) y ligas de Google Calendar y
+// Outlook (personal o Microsoft 365) para funciones, eventos y ensayos. Puro, con pruebas en calendario.test.ts.
 
 export type EventoCal = {
   uid: string;
@@ -73,4 +73,20 @@ export function ligaGoogle(e: EventoCal, horas = 2.5): string {
   const det = [e.detalle, e.url].filter(Boolean).join("\n");
   if (det) p.set("details", det);
   return `https://calendar.google.com/calendar/render?${p.toString()}`;
+}
+
+/** Liga para agregarlo en Outlook: cuenta personal (Outlook.com, Hotmail) o de trabajo/escuela (Microsoft 365). */
+export function ligaOutlook(e: EventoCal, cuenta: "personal" | "trabajo" = "personal", horas = 2.5): string {
+  const p = new URLSearchParams({
+    path: "/calendar/action/compose",
+    rru: "addevent",
+    subject: e.titulo,
+    startdt: new Date(e.inicia).toISOString(),
+    enddt: fin(e, horas).toISOString(),
+  });
+  if (e.lugar) p.set("location", e.lugar);
+  const det = [e.detalle, e.url].filter(Boolean).join("\n");
+  if (det) p.set("body", det);
+  const host = cuenta === "trabajo" ? "outlook.office.com" : "outlook.live.com";
+  return `https://${host}/calendar/0/action/compose?${p.toString()}`;
 }

@@ -7,6 +7,7 @@ import { LISTAS, TESITURAS, type ProProfile } from "@/lib/pro-rules";
 import { perfilUrl } from "@/lib/productions";
 import { ProPhotoUpload } from "./ProPhotoUpload";
 import { TrayectoriaRows } from "./TrayectoriaRows";
+import { Icono } from "@/components/Icono";
 
 const card = "flex flex-col gap-3 rounded-2xl bg-telon p-6";
 const small = "rounded-full border border-white/25 px-3 py-1.5 text-xs font-bold";
@@ -85,7 +86,7 @@ export function ProProfileEditor({ pid, nombre, pro, fotos, team, esMenor }: {
               <p className="rounded-lg bg-sala p-3 text-sm text-aviso">Eres menor de edad: tu perfil solo será público cuando la producción registre el permiso de tu madre, padre o tutor.{pro?.tutor_autorizado_at ? " (Ya está registrado.)" : ""}</p>
             )
           )}
-          {pro && <p className="text-sm text-texto-2">Ahora: {publico ? <a href={`/artistas/${pro.slug}`} className="font-bold text-violeta-claro underline">público ↗</a> : "privado"}</p>}
+          {pro && <p className="text-sm text-texto-2">Ahora: {publico ? <a href={`/artistas/${pro.slug}`} className="font-bold text-violeta-claro underline">público <Icono nombre="externo" /></a> : "privado"}</p>}
         </section>
       </ActionForm>
 
@@ -95,7 +96,7 @@ export function ProProfileEditor({ pid, nombre, pro, fotos, team, esMenor }: {
           {fotos.map((f) => (
             <li key={f.id} className="relative overflow-hidden rounded-xl">
               <img src={perfilUrl(f.path)} alt="" className="aspect-[4/5] w-full object-cover" />
-              <span className="absolute right-2 top-2"><ActionForm inline action={removeProPhoto} hidden={{ pid, id: f.id }} confirm="¿Quitar esta foto?" submit="×" submitClass={`${small} bg-black/70`} /></span>
+              <span className="absolute right-2 top-2"><ActionForm inline action={removeProPhoto} hidden={{ pid, id: f.id }} confirm="¿Quitar esta foto?" submit={<Icono nombre="x" etiqueta="Quitar" />} submitClass={`${small} bg-black/70`} /></span>
             </li>
           ))}
         </ul>

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { input } from "@/components/panel/ui";
 import type { Trayecto } from "@/lib/pro-rules";
+import { Icono } from "@/components/Icono";
 
 const vacia: Trayecto = { obra: "", papel: "", compania: "", anio: "" };
 
@@ -17,7 +18,7 @@ export function TrayectoriaRows({ initial }: { initial: Trayecto[] }) {
           <input className={input} name="t_papel" defaultValue={r.papel} placeholder="Papel" aria-label="Papel" />
           <input className={input} name="t_compania" defaultValue={r.compania} placeholder="Compañía o teatro" aria-label="Compañía" />
           <input className={input} name="t_anio" defaultValue={r.anio} placeholder="Año" inputMode="numeric" maxLength={4} aria-label="Año" />
-          <button type="button" onClick={() => setRows((x) => x.filter((_, j) => j !== i))} className="rounded-full border border-white/20 px-3 text-sm" aria-label="Quitar">×</button>
+          <button type="button" onClick={() => setRows((x) => x.filter((_, j) => j !== i))} className="rounded-full border border-white/20 px-3 text-sm" aria-label="Quitar"><Icono nombre="x" /></button>
         </div>
       ))}
       <button type="button" onClick={() => setRows((x) => [...x, vacia])} className="self-start text-sm font-bold text-violeta-claro">+ Agregar obra</button>

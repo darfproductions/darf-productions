@@ -12,6 +12,7 @@ import { acuerdosTexto, espacioId, teamAudienceLabel, TIPO_JUNTA } from "@/lib/t
 import { MaterialComments } from "./MaterialComments";
 import { PeopleChecks, TeamAudienceFields } from "./TeamAudienceFields";
 import { TeamFileUpload } from "./TeamFileUpload";
+import { Icono } from "@/components/Icono";
 
 const quitar = "text-xs font-bold text-[#ff8fa3]";
 const fecha = (iso: string) => new Intl.DateTimeFormat("es-MX", { dateStyle: "medium", timeStyle: "short", timeZone: "America/Mexico_City" }).format(new Date(iso));
@@ -43,7 +44,7 @@ export async function TeamManager({ pid, seccion, base }: { pid: string | null; 
             {s.label}{s.id === "notas" && pendientes ? ` (${pendientes})` : ""}
           </Link>
         ))}
-        <Link href={`/cuenta/equipo/${esp}`} className="ml-auto text-sm font-bold text-violeta-claro">Ver como lo ve el equipo ↗</Link>
+        <Link href={`/cuenta/equipo/${esp}`} className="ml-auto text-sm font-bold text-violeta-claro">Ver como lo ve el equipo <Icono nombre="externo" /></Link>
       </nav>
 
       {seccion === "notas" && (
@@ -73,7 +74,7 @@ export async function TeamManager({ pid, seccion, base }: { pid: string | null; 
                 </p>
                 <p className="whitespace-pre-line">{n.cuerpo}</p>
                 {n.atendida_at ? (
-                  <p className="text-xs text-exito">✓ Atendida por {persona.get(n.atendida_por ?? "") ?? "alguien del equipo"} · {fecha(n.atendida_at)}{n.respuesta ? ` — “${n.respuesta}”` : ""}</p>
+                  <p className="text-xs text-exito"><Icono nombre="check" /> Atendida por {persona.get(n.atendida_por ?? "") ?? "alguien del equipo"} · {fecha(n.atendida_at)}{n.respuesta ? ` — “${n.respuesta}”` : ""}</p>
                 ) : <p className="text-xs text-aviso">Pendiente</p>}
                 <ActionForm inline action={removeTeamNote} hidden={{ ...h, id: n.id }} confirm="¿Borrar esta nota?" submit="Borrar" submitClass={quitar} />
               </div>
@@ -106,7 +107,7 @@ export async function TeamManager({ pid, seccion, base }: { pid: string | null; 
                 <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${j.estado === "realizada" ? "bg-[#14532d] text-[#bbf7d0]" : "bg-telon-2 text-texto-2"}`}>{j.estado === "realizada" ? "Realizada" : "Programada"}</span>
               </div>
               <p className="text-sm text-texto-2">{cuando(j.inicia)}{j.lugar ? ` · ${j.lugar}` : ""} · {teamAudienceLabel(j, rolNombre, persona)}
-                {j.enlace && <> · <a href={j.enlace} target="_blank" rel="noreferrer" className="font-bold text-violeta-claro">Videollamada ↗</a></>}</p>
+                {j.enlace && <> · <a href={j.enlace} target="_blank" rel="noreferrer" className="font-bold text-violeta-claro">Videollamada <Icono nombre="externo" /></a></>}</p>
               {j.agenda && <p className="whitespace-pre-line text-sm"><b>Agenda:</b> {j.agenda}</p>}
               <details className="rounded-xl bg-sala p-4" open={j.estado === "programada" && new Date(j.inicia) < new Date()}>
                 <summary className="cursor-pointer text-sm font-bold">{j.estado === "realizada" ? "Editar resumen y transcript" : "Cerrar la junta: resumen, acuerdos y transcript"}</summary>
@@ -127,7 +128,7 @@ export async function TeamManager({ pid, seccion, base }: { pid: string | null; 
                   </ActionForm>
                 </div>
               </details>
-              {j.transcript_path && files.get(j.transcript_path) && <a href={files.get(j.transcript_path)} className="text-sm font-bold text-violeta-claro">Abrir transcript ↗</a>}
+              {j.transcript_path && files.get(j.transcript_path) && <a href={files.get(j.transcript_path)} className="text-sm font-bold text-violeta-claro">Abrir transcript <Icono nombre="externo" /></a>}
               <ActionForm inline action={removeMeeting} hidden={{ ...h, id: j.id }} confirm="¿Borrar esta junta?" submit="Borrar junta" submitClass={quitar} />
             </Card>
           ))}
@@ -150,7 +151,7 @@ export async function TeamManager({ pid, seccion, base }: { pid: string | null; 
             const leidos = lect.filter((x) => x.leido_at).length;
             return (
               <Card key={a.id} className="flex flex-col gap-2">
-                <p className="font-bold">{a.importante && <span className="mr-2 text-[#ff8fa3]">●</span>}{a.titulo}</p>
+                <p className="font-bold">{a.importante && <span className="mr-2 text-[#ff8fa3]"><Icono nombre="punto" /></span>}{a.titulo}</p>
                 <p className="text-xs text-texto-3">{fecha(a.created_at)} · {teamAudienceLabel(a, rolNombre, persona)} · {leidos} de {lect.length} enterados</p>
                 <p className="whitespace-pre-line text-sm">{a.cuerpo}</p>
                 {lect.some((x) => !x.leido_at) && <p className="text-xs text-texto-3">Faltan: {lect.filter((x) => !x.leido_at).map((x) => x.nombre).join(", ")}</p>}
@@ -186,7 +187,7 @@ export async function TeamManager({ pid, seccion, base }: { pid: string | null; 
               {xs.map((m) => (
                 <div key={m.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-sala px-3 py-2 text-sm">
                   <span>
-                    <a href={m.url ?? files.get(m.archivo_path ?? "") ?? "#"} target="_blank" rel="noreferrer" className="font-bold hover:text-violeta-claro">{m.titulo} ↗</a>
+                    <a href={m.url ?? files.get(m.archivo_path ?? "") ?? "#"} target="_blank" rel="noreferrer" className="font-bold hover:text-violeta-claro">{m.titulo} <Icono nombre="externo" /></a>
                     <span className="block text-xs text-texto-3">{teamAudienceLabel(m, rolNombre, persona)} · subió {persona.get(m.created_by ?? "") ?? "alguien del equipo"}{m.descripcion ? ` · ${m.descripcion}` : ""}</span>
                   </span>
                   <ActionForm inline action={removeTeamMaterial} hidden={{ ...h, id: m.id }} confirm="¿Quitar este material?" submit="Quitar" submitClass={quitar} />

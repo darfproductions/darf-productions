@@ -14,7 +14,7 @@ export async function GET(_req: Request, ctx: RouteContext<"/panel/producciones/
   if (error) return NextResponse.json({ error: "No autorizado o la función no existe." }, { status: 403 });
   const filas = (data ?? []) as Fila[];
   const cuerpo = csv([
-    ["Nombre", "Teléfono", "Lugar", "Orden", "Entró", "✓"],
+    ["Nombre", "Teléfono", "Lugar", "Orden", "Entró", "Marca"],
     ...filas.map((f) => [f.buyer_nombre, f.buyer_telefono, f.lugar, f.order_code, f.checked_in_at ? hora(f.checked_in_at) : "", ""]),
   ]);
   return new NextResponse(cuerpo, {

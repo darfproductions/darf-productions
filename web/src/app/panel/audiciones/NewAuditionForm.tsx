@@ -3,6 +3,7 @@ import { input } from "@/components/panel/ui";
 import { EN_BLANCO, GRUPOS, PLANTILLAS } from "@/lib/audition-templates";
 import { createClient } from "@/lib/supabase/server";
 import { createAudition } from "./actions";
+import { Icono } from "@/components/Icono";
 
 const card = "flex cursor-pointer gap-2 rounded-xl border border-white/15 p-3 text-sm has-[:checked]:border-white has-[:checked]:bg-white/5";
 
@@ -39,7 +40,7 @@ export async function NewAuditionForm({ pid }: { pid: string | null }) {
           </details>
         )}
         <details className="rounded-xl bg-sala/60 p-3">
-          <summary className="cursor-pointer text-sm font-bold">Ver más plantillas ▾</summary>
+          <summary className="cursor-pointer text-sm font-bold">Ver más plantillas <Icono nombre="chevron-abajo" /></summary>
           {GRUPOS.map((g) => (
             <div key={g.id} className="mt-3">
               <p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-texto-3">{g.label}</p>

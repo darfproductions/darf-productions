@@ -9,6 +9,7 @@ import type { Atajo } from "@/lib/panel-buscar-rules";
 import { myProductionIds, panelMenu, productionGroups } from "@/lib/panel-nav";
 import { getPendientes } from "@/lib/panel-pendientes";
 import { requirePanel } from "@/lib/permissions";
+import { Icono } from "@/components/Icono";
 
 export const metadata: Metadata = { title: { default: "Panel", template: "%s · Panel DARF" } };
 
@@ -26,7 +27,7 @@ export default async function PanelLayout({ children }: LayoutProps<"/panel">) {
     ...obras.flatMap((p) => [
       { tipo: "obra", titulo: p.nombre, detalle: "Resumen de la obra", href: `/panel/producciones/${p.id}`, claves: `${p.nombre} obra resumen` },
       ...productionGroups(access, p.id, p.estado === "archivada").flatMap((g) => g.tabs.filter((t) => t.path).map((t) => ({
-        tipo: "seccion", titulo: `${p.nombre} → ${t.label}`, detalle: g.label, href: `/panel/producciones/${p.id}/${t.path}`, claves: `${p.nombre} ${g.label} ${t.label}`,
+        tipo: "seccion", titulo: `${p.nombre} · ${t.label}`, detalle: g.label, href: `/panel/producciones/${p.id}/${t.path}`, claves: `${p.nombre} ${g.label} ${t.label}`,
       }))),
     ]),
   ];
@@ -37,7 +38,7 @@ export default async function PanelLayout({ children }: LayoutProps<"/panel">) {
       <PanelNavLinks menu={menu} badges={{ inicio: totalPendientes(pendientes), notificaciones: nuevas }} />
       {env.panel1Url && (
         <a href={env.panel1Url} className="mt-2 rounded-lg px-3 py-2.5 text-sm text-texto-3 hover:bg-telon-2">
-          Panel anterior (1.0) ↗
+          Panel anterior (1.0) <Icono nombre="externo" />
         </a>
       )}
     </>
@@ -50,7 +51,7 @@ export default async function PanelLayout({ children }: LayoutProps<"/panel">) {
         <p className="mb-3 hidden truncate px-3 text-sm text-texto-3 lg:block">{nombre}{access.isDirector ? " · Director" : ""}</p>
         <nav aria-label="Panel" className="hidden flex-col lg:flex">{links}</nav>
         <details className="rounded-2xl bg-telon lg:hidden">
-          <summary className="cursor-pointer list-none px-4 py-3 font-bold">Menú del panel ▾</summary>
+          <summary className="cursor-pointer list-none px-4 py-3 font-bold">Menú del panel <Icono nombre="chevron-abajo" /></summary>
           <nav aria-label="Panel" className="flex flex-col px-2 pb-3">{links}</nav>
         </details>
       </aside>

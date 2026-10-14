@@ -11,6 +11,21 @@ import { createClient } from "@/lib/supabase/server";
 export type RehState = { ok: boolean; message: string } | null;
 
 const str = (f: FormData, k: string) => String(f.get(k) ?? "").trim();
+const UUID = /^[0-9a-f-]{36}$/;
+
+/** Equipo de producción citado y encargados del ensayo (0099). */
+function equipoDe(f: FormData) {
+  const lista = (k: string) => [...new Set(f.getAll(k).map(String).filter((x) => UUID.test(x)))];
+  return { equipo: lista("equipo"), equipo_todos: f.get("equipo_todos") === "on", encargados: lista("encargados") };
+}
+
+/** Rutas donde se ve la lista de un ensayo (panel y la del encargado en Mi cuenta). */
+function refrescar(pid: string, rid: string) {
+  revalidatePath(`/panel/producciones/${pid}/ensayos/${rid}`);
+  revalidatePath(`/panel/producciones/${pid}/ensayos`);
+  revalidatePath(`/cuenta/ensayo/${rid}`);
+  revalidatePath("/cuenta");
+}
 
 /** Crea un ensayo o, con "Repetir", uno por cada día elegido de la semana entre dos fechas. */
 export async function createRehearsal(_p: RehState, f: FormData): Promise<RehState> {
@@ -22,11 +37,13 @@ export async function createRehearsal(_p: RehState, f: FormData): Promise<RehSta
   const dias = f.getAll("dias").map(Number);
   const fechas = repetir ? fechasRecurrentes(fecha, str(f, "hasta"), dias) : [fecha];
   if (repetir && !fechas.length) return { ok: false, message: "Elige los días de la semana y hasta qué fecha se repite." };
-  const convocatoria = ["todos", "grupos", "personas"].includes(str(f, "convocatoria")) ? str(f, "convocatoria") : "todos";
+  const convocatoria = ["todos", "grupos", "personas", "ninguno"].includes(str(f, "convocatoria")) ? str(f, "convocatoria") : "todos";
   const grupos = f.getAll("grupos").map(String);
   const personas = f.getAll("personas").map(String);
+  const { equipo, equipo_todos, encargados } = equipoDe(f);
   if (convocatoria === "grupos" && !grupos.length) return { ok: false, message: "Marca al menos un grupo." };
   if (convocatoria === "personas" && !personas.length) return { ok: false, message: "Marca al menos a una persona." };
+  if (convocatoria === "ninguno" && !equipo_todos && !equipo.length) return { ok: false, message: "Si no citas al elenco, marca a alguien del equipo de producción." };
   const serie = repetir ? crypto.randomUUID() : null;
   const supabase = await createClient();
   const { error } = await supabase.from("rehearsals").insert(fechas.map((dia) => ({
@@ -34,6 +51,7 @@ export async function createRehearsal(_p: RehState, f: FormData): Promise<RehSta
     inicia: localMxToIso(`${dia}T${str(f, "hora")}`), termina: fin ? localMxToIso(`${dia}T${fin}`) : null,
     lugar: str(f, "lugar") || null, notas: str(f, "notas") || null, serie_id: serie,
     convocatoria, grupos: convocatoria === "grupos" ? grupos : [], personas: convocatoria === "personas" ? personas : [],
+    equipo, equipo_todos, encargados,
   })));
   if (error) return { ok: false, message: /termina/.test(error.message) ? "La hora de fin debe ser después del inicio." : error.message };
   revalidatePath(`/panel/producciones/${pid}/ensayos`);
@@ -50,16 +68,57 @@ export async function setRehearsalEstado(_p: RehState, f: FormData): Promise<Reh
   return { ok: true, message: str(f, "estado") === "cancelado" ? "Ensayo cancelado (los citados lo ven así)." : "Ensayo reactivado." };
 }
 
-/** Marcar asistencia de una persona (presente, retardo con minutos, falta o justificada). */
+/** Marcar asistencia de una persona (presente, retardo con minutos, falta o justificada). La base revisa
+ *  quién puede (dirección, maestros, producción o el encargado con el ensayo abierto) y guarda quién marcó. */
 export async function markAttendance(pid: string, rid: string, uid: string, estado: string, minutos?: number): Promise<{ ok: boolean; message?: string }> {
   const supabase = await createClient();
-  const { error } = await supabase.from("rehearsal_attendance").upsert(
-    { rehearsal_id: rid, user_id: uid, estado, minutos_tarde: estado === "retardo" ? minutos || null : null, marcado_at: new Date().toISOString() },
-    { onConflict: "rehearsal_id,user_id" },
-  );
+  const { error } = await supabase.rpc("ensayo_marcar", { rid, uid, p_estado: estado, p_minutos: estado === "retardo" ? minutos || 1 : null });
   if (error) return { ok: false, message: error.message };
-  revalidatePath(`/panel/producciones/${pid}/ensayos/${rid}`);
+  refrescar(pid, rid);
   return { ok: true };
+}
+
+/** El encargado abre el ensayo (el mismo día, desde 1 h antes) y queda presente. */
+export async function abrirEnsayo(pid: string, rid: string): Promise<{ ok: boolean; message: string }> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("ensayo_abrir", { rid });
+  if (error) return { ok: false, message: error.message };
+  refrescar(pid, rid);
+  return (data as { resultado: string }).resultado === "ya_abierto"
+    ? { ok: false, message: "El ensayo ya lo abrió otro encargado. Pídele que escanee tu QR para que puedas pasar lista." }
+    : { ok: true, message: "Ensayo abierto. Ya puedes pasar lista." };
+}
+
+/** Cerrar lista: quienes no llegaron quedan como falta. */
+export async function cerrarLista(_p: RehState, f: FormData): Promise<RehState> {
+  const pid = str(f, "pid"), rid = str(f, "rid");
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("ensayo_cerrar", { rid });
+  if (error) return { ok: false, message: error.message };
+  refrescar(pid, rid);
+  const n = (data as { faltas: number }).faltas;
+  return { ok: true, message: n ? `Lista cerrada: ${n} ${n === 1 ? "falta" : "faltas"}.` : "Lista cerrada: llegaron todos." };
+}
+
+export async function reabrirLista(_p: RehState, f: FormData): Promise<RehState> {
+  const pid = str(f, "pid"), rid = str(f, "rid");
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("ensayo_reabrir", { rid });
+  if (error) return { ok: false, message: error.message };
+  refrescar(pid, rid);
+  return { ok: true, message: "Lista abierta otra vez." };
+}
+
+/** Cambiar el equipo citado y los encargados de un ensayo que ya existe. */
+export async function setEquipoEnsayo(_p: RehState, f: FormData): Promise<RehState> {
+  const pid = str(f, "pid"), rid = str(f, "rid");
+  const datos = equipoDe(f);
+  const supabase = await createClient();
+  const { error, count } = await supabase.from("rehearsals").update(datos, { count: "exact" }).eq("id", rid).eq("production_id", pid);
+  if (error) return { ok: false, message: /solo_equipo/.test(error.message) ? "Este ensayo es solo del equipo: deja al menos a una persona del equipo." : error.message };
+  if (!count) return { ok: false, message: "No tienes permiso para cambiar este ensayo." };
+  refrescar(pid, rid);
+  return { ok: true, message: "Guardado." };
 }
 
 /** Cancela este ensayo y los siguientes de la misma serie (los pasados no se tocan). */
@@ -99,7 +158,7 @@ export async function checkinGafete(pid: string, rid: string, code: string): Pro
   if (error) return { ok: false, message: error.message };
   const r = data as { resultado: CheckinResult["resultado"]; nombre?: string; foto_path?: string | null; minutos?: number | null; llegada?: string; estado?: string };
   const fotoUrl = r.foto_path ? (await supabase.storage.from("avatares").createSignedUrl(r.foto_path, 600)).data?.signedUrl ?? null : null;
-  if (r.resultado === "presente" || r.resultado === "retardo") revalidatePath(`/panel/producciones/${pid}/ensayos/${rid}`);
+  if (r.resultado === "presente" || r.resultado === "retardo") refrescar(pid, rid);
   return { ok: true, resultado: r.resultado, nombre: r.nombre, fotoUrl, minutos: r.minutos ?? null, llegada: r.llegada, estado: r.estado };
 }
 

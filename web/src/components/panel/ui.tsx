@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Icono } from "@/components/Icono";
 
 // Piezas visuales comunes del panel. Toman los tokens del Kit de Marca (globals.css):
 // el panel conserva su acomodo oscuro; aquí solo cambia la piel.
@@ -50,5 +51,5 @@ export const button = "rounded-full bg-texto px-5 py-2.5 text-sm font-bold text-
 export const buttonGhost = "rounded-full border border-linea-2 px-4 py-2 text-sm font-bold hover:border-white/50 disabled:opacity-60";
 
 export function BackLink({ href, children }: { href: string; children: React.ReactNode }) {
-  return <Link href={href} className="text-sm font-bold text-lila hover:text-[#c6b8ff]">← {children}</Link>;
+  return <Link href={href} className="text-sm font-bold text-lila hover:text-[#c6b8ff]"><Icono nombre="flecha-izq" /> {children}</Link>;
 }

@@ -117,7 +117,7 @@ export const PRODUCTION_TABS: Tab[] = [
   { id: "materiales", label: "Materiales", path: "materiales", perms: ["materiales.gestionar", "materiales.ver"], etapa: null },
   { id: "comunicados", label: "Comunicados", path: "comunicados", perms: ["comunicados.enviar"], etapa: null },
   { id: "equipo", label: "Equipo", path: "equipo", perms: ["equipo.gestionar"], etapa: null },
-  { id: "evaluaciones", label: "Evaluaciones", path: "evaluaciones", perms: ["rubrica.gestionar"], etapa: null },
+  { id: "evaluaciones", label: "Evaluaciones", path: "evaluaciones", perms: ["rubrica.gestionar", "rubrica.proponer"], etapa: null },
   { id: "boletos", label: "Funciones y boletos", path: "boletos", perms: ["ventas.ver", "ventas.operar", "funciones.gestionar", "descuentos.gestionar", "vendedores.gestionar"], etapa: null },
   { id: "puerta", label: "Puerta", path: "puerta", perms: ["puerta.validar"], etapa: null },
   { id: "programa", label: "Programa digital", path: "programa", perms: ["programa.editar"], etapa: null },

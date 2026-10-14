@@ -29,7 +29,7 @@ $$;
 
 do $$ declare mat uuid; mat2 uuid; n int; perf uuid; nid bigint; begin
   perform pg_temp.as_user('00000000-0000-0000-0000-0000000000a1');
-  perform panel_add_member('showman', 't_prod@test.local', 'productor');
+  perform panel_add_member('showman', 't_prod@test.local', (select coalesce(max(id), 'productor') from panel_roles where id = 'direccion_general'));
   perform panel_add_member('showman', 't_maestro@test.local', 'maestro');
   perform panel_add_member('showman', 't_staff@test.local', 'staff');
   perform set_config('role', 'postgres', true);

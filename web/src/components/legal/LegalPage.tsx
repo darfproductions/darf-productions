@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { PageHeading } from "@/components/PageHeading";
 import type { LegalDoc } from "@/content/legal";
+import { Icono } from "@/components/Icono";
 
 const OTROS = [
   { href: "/privacidad", label: "Aviso de privacidad" },
@@ -23,7 +24,7 @@ export function LegalPage({ doc }: { doc: LegalDoc }) {
         </article>
         <nav aria-label="Documentos legales" className="flex flex-wrap gap-3 text-sm">
           {OTROS.filter((o) => o.href !== `/${doc.slug}`).map((o) => (
-            <Link key={o.href} href={o.href} className="rounded-full border border-white/20 px-4 py-2 font-semibold hover:border-white/50">{o.label} →</Link>
+            <Link key={o.href} href={o.href} className="rounded-full border border-white/20 px-4 py-2 font-semibold hover:border-white/50">{o.label} <Icono nombre="flecha-der" /></Link>
           ))}
         </nav>
       </div>

@@ -17,6 +17,7 @@ import { listPerformances, listZones } from "@/lib/boleteria";
 import { listoParaVender } from "@/lib/listo-vender";
 import { elegir } from "@/lib/poster";
 import { todasLasFilas } from "@/lib/supabase/paginar";
+import { Icono } from "@/components/Icono";
 
 const fechaCorta = (iso: string) =>
   mayus(new Intl.DateTimeFormat("es-MX", { weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit", timeZone: "America/Mexico_City" }).format(new Date(iso)));
@@ -70,7 +71,7 @@ export default async function ProductionSummary({ params }: PageProps<"/panel/pr
               <li key={`${x.tipo}-${x.ref_id ?? ""}`}>
                 <Link href={pendienteHref(x)} className="flex items-center justify-between gap-3 rounded-lg bg-sala px-4 py-2.5 hover:bg-telon-2">
                   <span><b className="text-aviso">{pendienteTexto(x)}</b>{x.ref_titulo ? <span className="text-sm text-texto-2"> · {x.ref_titulo}</span> : null}</span>
-                  <span className="text-violeta-claro">→</span>
+                  <span className="text-violeta-claro"><Icono nombre="flecha-der" /></span>
                 </Link>
               </li>
             ))}
@@ -79,7 +80,7 @@ export default async function ProductionSummary({ params }: PageProps<"/panel/pr
       </Card>
       {lista && (
         <ListaRevision className="md:col-span-2" titulo="Listo para vender" listo={lista.listo}
-          resumen={lista.listo ? "✓ Todo listo: la obra puede vender boletos." : `Faltan ${lista.faltan} ${lista.faltan === 1 ? "cosa" : "cosas"} para vender.`}
+          resumen={lista.listo ? "Todo listo: la obra puede vender boletos." : `Faltan ${lista.faltan} ${lista.faltan === 1 ? "cosa" : "cosas"} para vender.`}
           puntos={lista.puntos.map((x) => ({ ...x, nivel: x.obligatorio ? "obligatorio" : "opcional" }))} />
       )}
       <Card>
@@ -87,12 +88,12 @@ export default async function ProductionSummary({ params }: PageProps<"/panel/pr
         {faltan.length === 0 ? (
           <p className="mt-2 font-semibold text-[#bbf7d0]">Completo: la obra se puede publicar.</p>
         ) : (
-          <ul className="mt-2 flex flex-col gap-1 text-aviso">{faltan.map((f) => <li key={f}>• {f}</li>)}</ul>
+          <ul className="mt-2 flex flex-col gap-1 text-aviso">{faltan.map((f) => <li key={f}><Icono nombre="punto" className="h-2 w-2 opacity-70" /> {f}</li>)}</ul>
         )}
         {/* Una obra en borrador aún no tiene página pública (daría 404): se ve en la vista previa. */}
         {p.estado === "borrador"
-          ? <Link href={`/vista-previa/${p.id}`} target="_blank" className="mt-4 inline-block text-sm font-bold text-violeta-claro">Vista previa ↗</Link>
-          : <Link href={`/producciones/${p.id}`} className="mt-4 inline-block text-sm font-bold text-violeta-claro">Ver página pública ↗</Link>}
+          ? <Link href={`/vista-previa/${p.id}`} target="_blank" className="mt-4 inline-block text-sm font-bold text-violeta-claro">Vista previa <Icono nombre="externo" /></Link>
+          : <Link href={`/producciones/${p.id}`} className="mt-4 inline-block text-sm font-bold text-violeta-claro">Ver página pública <Icono nombre="externo" /></Link>}
       </Card>
 
       <Card>
@@ -113,9 +114,9 @@ export default async function ProductionSummary({ params }: PageProps<"/panel/pr
       <Card className="md:col-span-2">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-texto-3">Equipo con acceso al panel</p>
-          <Link href={`/panel/producciones/${id}/guia`} className="text-sm font-bold text-violeta-claro">Guía de tu rol →</Link>
+          <Link href={`/panel/producciones/${id}/guia`} className="text-sm font-bold text-violeta-claro">Guía de tu rol <Icono nombre="flecha-der" /></Link>
           {can(access, id, "permisos.gestionar") && (
-            <Link href={`/panel/producciones/${id}/permisos`} className="text-sm font-bold text-violeta-claro">Gestionar permisos →</Link>
+            <Link href={`/panel/producciones/${id}/permisos`} className="text-sm font-bold text-violeta-claro">Gestionar permisos <Icono nombre="flecha-der" /></Link>
           )}
         </div>
         {miembros.length === 0 ? (

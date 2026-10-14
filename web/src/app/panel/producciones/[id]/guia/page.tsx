@@ -4,6 +4,7 @@ import { Card } from "@/components/panel/ui";
 import { guiaDe } from "@/lib/guia-roles";
 import { requirePanel } from "@/lib/permissions";
 import { createClient } from "@/lib/supabase/server";
+import { Icono } from "@/components/Icono";
 
 export const metadata: Metadata = { title: "Guía de tu rol" };
 
@@ -35,9 +36,9 @@ export default async function GuiaRol({ params }: PageProps<"/panel/producciones
         {pasos.map((p) => (
           <li key={p.titulo}>
             <Link href={p.href} className="flex h-full flex-col gap-1 rounded-2xl bg-telon p-5 hover:bg-telon-2">
-              <span className="flex items-center justify-between gap-2 font-bold">{p.titulo}<span className="text-violeta-claro">→</span></span>
+              <span className="flex items-center justify-between gap-2 font-bold">{p.titulo}<span className="text-violeta-claro"><Icono nombre="flecha-der" /></span></span>
               <span className="text-sm text-texto-2">{p.que}</span>
-              {p.consejo && <span className="text-sm text-texto-3">💡 {p.consejo}</span>}
+              {p.consejo && <span className="text-sm text-texto-3"><Icono nombre="foco" /> {p.consejo}</span>}
             </Link>
           </li>
         ))}

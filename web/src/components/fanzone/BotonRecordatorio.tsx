@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { recordarPreventa } from "@/lib/club-actions";
+import { Icono } from "@/components/Icono";
 
 // "Activar recordatorio" de la preventa de una obra (0076).
 export function BotonRecordatorio({ pid, activo }: { pid: string; activo: boolean }) {
@@ -23,7 +24,7 @@ export function BotonRecordatorio({ pid, activo }: { pid: string; activo: boolea
         }
         className={`fb fb-sm ${on ? "fb-oro" : "fb-fz"}`}
       >
-        {pending ? "…" : on ? "✓ Recordatorio activo" : "Activar recordatorio"}
+        {pending ? "…" : on ? <><Icono nombre="check" /> Recordatorio activo</> : "Activar recordatorio"}
       </button>
       {msg && <p role="status" className="text-xs text-texto-3">{msg}</p>}
     </div>

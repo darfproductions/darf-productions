@@ -3,7 +3,7 @@ import path from "node:path";
 import sharp, { type OverlayOptions } from "sharp";
 import { BANDA_CUENTA } from "@/lib/credencial-rules";
 import { BANDA_FAN } from "@/lib/credencial-fan-rules";
-import { FRANJAS, type Banda, type Franja } from "@/lib/gafete-rules";
+import { DEGRADADOS, FRANJAS, type Banda, type Franja } from "@/lib/gafete-rules";
 
 // Imágenes de los pases de Wallet (solo servidor). Las de la web viven en public/ (se leen del disco:
 // next.config incluye public/marca y public/producciones en estas rutas) y las de Storage por URL.
@@ -78,14 +78,13 @@ export async function portadaObra(ambiente: Buffer, logo: Buffer | null, w: numb
   return sharp(ambiente).resize(w, h, { fit: "cover", position: "attention" }).composite(capas).png().toBuffer();
 }
 
-const LUZ: [number, string][] = [[0, "#340feb"], [0.55, "#830886"], [1, "#d20122"]];
 
 /** Banda de color de la credencial (franja del gafete, oro del Club Fan o gris de cuenta) con su
  *  sello: DARF en el gafete; sello del club + logo de Fan Zone en el Club Fan. */
 export async function bandaCredencial(id: string, w: number, h: number): Promise<Buffer | null> {
   const b: Banda | undefined = id === "fan" ? BANDA_FAN : id === "cuenta" ? BANDA_CUENTA : FRANJAS[id as Franja];
   if (!b) return null;
-  const stops = b.degradado ?? (id === "manager" ? LUZ : [[0, b.fondo], [1, b.fondo]] as [number, string][]);
+  const stops = b.degradado ?? DEGRADADOS[id as Franja] ?? [[0, b.fondo], [1, b.fondo]] as [number, string][];
   const fondo = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="0.35">${stops.map(([o, c]) => `<stop offset="${o}" stop-color="${c}"/>`).join("")}</linearGradient></defs><rect width="100%" height="100%" fill="url(#g)"/></svg>`);
   const piezas: Buffer[] = [];
   if (id === "fan") {

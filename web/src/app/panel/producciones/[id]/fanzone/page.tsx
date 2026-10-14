@@ -15,6 +15,7 @@ import { FanzoneForm } from "./FanzoneForm";
 import Link from "next/link";
 import { EventosLista } from "@/components/panel/EventosLista";
 import { MiniAction } from "@/components/panel/MiniAction";
+import { Icono } from "@/components/Icono";
 
 const small = "rounded-full border border-white/25 px-2.5 py-1 text-xs font-bold hover:border-white/50 disabled:opacity-60";
 
@@ -44,21 +45,21 @@ export default async function FanZoneEditor({ params }: PageProps<"/panel/produc
             {items.map((it, i) => (
               <li key={it.id} className={`flex flex-wrap items-center justify-between gap-2 py-2.5 ${it.visible ? "" : "opacity-60"}`}>
                 <span className="min-w-0 flex-1">
-                  <span className="mr-1 text-texto-3">{FAN_TIPOS[it.tipo].icono}</span>
+                  <span className="mr-1 text-texto-3"><Icono nombre={FAN_TIPOS[it.tipo].icono} /></span>
                   <b>{it.titulo}</b>
                   {it.destacado && <span className="ml-2 rounded-full bg-aviso/20 px-2 py-0.5 text-[11px] font-bold text-aviso">Destacado</span>}
                   {!it.visible && <span className="ml-2 rounded-full bg-white/10 px-2 py-0.5 text-[11px] font-bold">Oculto</span>}
                   <span className="block truncate text-xs text-texto-3">
                     {FAN_CATEGORIAS[it.categoria]} · {FAN_TIPOS[it.tipo].label}
-                    {it.disponible_desde && ` · 🔒 hasta el ${formatPerformanceDate(it.disponible_desde).toLowerCase()}`}
+                    {it.disponible_desde && <> · <Icono nombre="candado" /> hasta el {formatPerformanceDate(it.disponible_desde).toLowerCase()}</>}
                     {it.url && ` · ${dominio(it.url)}`}
                     {it.archivo_url && <> · <a href={it.archivo_url} target="_blank" rel="noreferrer" className="underline">ver archivo</a></>}
                     {it.youtube_id && <> · <a href={`https://youtu.be/${it.youtube_id}`} target="_blank" rel="noreferrer" className="underline">ver video</a></>}
                   </span>
                 </span>
                 <span className="flex flex-wrap items-center gap-1.5">
-                  {i > 0 && items[i - 1].destacado === it.destacado && <ActionForm inline action={moveFanzoneItem} hidden={h(it.id, { dir: "arriba" })} submit="↑" submitClass={small} />}
-                  {i < items.length - 1 && items[i + 1].destacado === it.destacado && <ActionForm inline action={moveFanzoneItem} hidden={h(it.id, { dir: "abajo" })} submit="↓" submitClass={small} />}
+                  {i > 0 && items[i - 1].destacado === it.destacado && <ActionForm inline action={moveFanzoneItem} hidden={h(it.id, { dir: "arriba" })} submit={<Icono nombre="flecha-arriba" etiqueta="Subir" />} submitClass={small} />}
+                  {i < items.length - 1 && items[i + 1].destacado === it.destacado && <ActionForm inline action={moveFanzoneItem} hidden={h(it.id, { dir: "abajo" })} submit={<Icono nombre="flecha-abajo" etiqueta="Bajar" />} submitClass={small} />}
                   <ActionForm inline action={setFanzoneFlag} hidden={h(it.id, { campo: "destacado", valor: it.destacado ? "no" : "si" })} submit={it.destacado ? "Quitar destacado" : "Destacar"} submitClass={small} />
                   <ActionForm inline action={setFanzoneFlag} hidden={h(it.id, { campo: "visible", valor: it.visible ? "no" : "si" })} submit={it.visible ? "Ocultar" : "Mostrar"} submitClass={small} />
                   <details className="relative">
@@ -91,7 +92,7 @@ export default async function FanZoneEditor({ params }: PageProps<"/panel/produc
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <div>
               <h2 className="titular text-xl">Eventos de esta obra</h2>
-              <p className="mt-1 text-sm text-texto-2">Foto con el elenco, tours, early access, ensayos abiertos, transmisiones… Se crean en Panel → Eventos. En la entrada se valida la credencial del Club Fan (también desde Puerta).</p>
+              <p className="mt-1 text-sm text-texto-2">Foto con el elenco, tours, early access, ensayos abiertos, transmisiones… Se crean en Panel <Icono nombre="flecha-der" /> Eventos. En la entrada se valida la credencial del Club Fan (también desde Puerta).</p>
             </div>
             <Link href={`/panel/eventos?obra=${id}`} className="fb fb-fz fb-sm">+ Crear evento</Link>
           </div>
@@ -110,7 +111,7 @@ export default async function FanZoneEditor({ params }: PageProps<"/panel/produc
               <li key={ph.id} className="relative overflow-hidden rounded-xl">
                 <img src={ph.url} alt="" className="aspect-[4/3] w-full object-cover" />
                 <MiniAction action={removeGalleryPhoto} hidden={{ pid: id, id: ph.id }} confirm="¿Quitar esta foto de la galería?"
-                  className="absolute right-2 top-2 flex flex-col items-end gap-1" label="×" ariaLabel="Quitar foto"
+                  className="absolute right-2 top-2 flex flex-col items-end gap-1" label={<Icono nombre="x" />} ariaLabel="Quitar foto"
                   buttonClass="grid h-8 w-8 place-items-center rounded-full bg-black/70 text-sm font-bold text-white" />
               </li>
             ))}

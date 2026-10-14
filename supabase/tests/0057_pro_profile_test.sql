@@ -52,7 +52,7 @@ do $$ declare pid uuid; n int; r record; begin
   if pro_is_public(pid) then raise exception 'FALLO T3a: menor público sin permiso'; end if;
   insert into production_credits (production_id, person_id, tipo, papel, activo) values ('showman', pid, 'reparto', 'Jenny', true);
   perform pg_temp.as_user('00000000-0000-0000-0000-0000000000a1');
-  perform panel_add_member('showman', 't_cont@test.local', 'productor');
+  perform panel_add_member('showman', 't_cont@test.local', (select coalesce(max(id), 'productor') from panel_roles where id = 'direccion_general'));
   perform pg_temp.as_user('00000000-0000-0000-0000-0000000000d1');
   update pro_profiles set tutor_autorizado_at = now() where person_id = pid;
   reset role;

@@ -12,6 +12,7 @@ import { requireAudition } from "@/lib/panel-auditions";
 import { createClient } from "@/lib/supabase/server";
 import { editarPersonaje, importarPersonajes, moverPersonaje } from "../votacion-actions";
 import { addAuditionMember, addField, addInvites, addRole, addSlot, removeAuditionMember, removeInvite, removeItem, saveAsTemplate, saveAudition, saveCriterios, saveOptions, setAuditionEstado, deleteAudition } from "../actions";
+import { Icono } from "@/components/Icono";
 
 export const metadata: Metadata = { title: "Configurar audición" };
 
@@ -57,7 +58,7 @@ export default async function AuditionConfig({ params }: PageProps<"/panel/audic
       <Card className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="titular text-xl">Publicación</h2>
-          {a.estado !== "borrador" && <Link href={`/audiciones/${aid}`} target="_blank" className="text-sm font-bold text-violeta-claro">Ver página pública ↗</Link>}
+          {a.estado !== "borrador" && <Link href={`/audiciones/${aid}`} target="_blank" className="text-sm font-bold text-violeta-claro">Ver página pública <Icono nombre="externo" /></Link>}
         </div>
         {a.visibilidad === "enlace" && (
           <p className="flex flex-wrap items-center gap-2 text-sm text-texto-2">Solo con enlace: no aparece en la lista pública. Comparte el enlace con quienes deben inscribirse. <CopyLink path={`/audiciones/${aid}`} /></p>
@@ -203,8 +204,8 @@ export default async function AuditionConfig({ params }: PageProps<"/panel/audic
                 </div>
               </details>
               <span className="flex items-center gap-1.5">
-                {i > 0 && <ActionForm inline action={moverPersonaje} hidden={{ ...h, id: r.id, dir: "-1" }} submit="↑" submitClass={ghost} />}
-                {i < arr.length - 1 && <ActionForm inline action={moverPersonaje} hidden={{ ...h, id: r.id, dir: "1" }} submit="↓" submitClass={ghost} />}
+                {i > 0 && <ActionForm inline action={moverPersonaje} hidden={{ ...h, id: r.id, dir: "-1" }} submit={<Icono nombre="flecha-arriba" etiqueta="Subir" />} submitClass={ghost} />}
+                {i < arr.length - 1 && <ActionForm inline action={moverPersonaje} hidden={{ ...h, id: r.id, dir: "1" }} submit={<Icono nombre="flecha-abajo" etiqueta="Bajar" />} submitClass={ghost} />}
                 <ActionForm inline action={removeItem} hidden={{ ...h, tabla: "audition_roles", id: r.id }} confirm={`¿Quitar a ${r.nombre}?`} submit="Quitar" submitClass={ghost} />
               </span>
             </li>

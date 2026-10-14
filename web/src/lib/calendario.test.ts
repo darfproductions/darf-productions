@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { archivoIcs, escaparIcs, ligaGoogle } from "./calendario";
+import { archivoIcs, escaparIcs, ligaGoogle, ligaOutlook } from "./calendario";
 
 const e = { uid: "orden-1", titulo: "Showman, función", inicia: "2026-11-22T02:00:00Z", lugar: "Teatro; Querétaro", url: "https://darfproductions.com/cuenta" };
 
@@ -20,5 +20,15 @@ describe("agregar al calendario", () => {
   });
   it("escapa saltos de línea", () => {
     expect(escaparIcs("a\nb")).toBe("a\\nb");
+  });
+  it("liga de Outlook: personal y de trabajo o escuela", () => {
+    const u = new URL(ligaOutlook(e));
+    expect(u.host).toBe("outlook.live.com");
+    expect(u.searchParams.get("subject")).toBe("Showman, función");
+    expect(u.searchParams.get("startdt")).toBe("2026-11-22T02:00:00.000Z");
+    expect(u.searchParams.get("enddt")).toBe("2026-11-22T04:30:00.000Z");
+    expect(u.searchParams.get("location")).toBe("Teatro; Querétaro");
+    expect(u.searchParams.get("rru")).toBe("addevent");
+    expect(new URL(ligaOutlook(e, "trabajo")).host).toBe("outlook.office.com");
   });
 });

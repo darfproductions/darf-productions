@@ -32,6 +32,7 @@ import {
   performanceOccupancy,
   themeStyle,
 } from "@/lib/productions";
+import { Icono } from "@/components/Icono";
 
 // Plantilla única de la página de obra (pública y vista previa del panel), con la guía de UI.
 // Todo sale de la base: venta (funciones, precios, cupo) y contenido (migración 0029).
@@ -202,7 +203,7 @@ export async function ProductionView({
             <h3 className="text-[22px] font-extrabold tracking-[-0.02em]">Zonas</h3>
             {proxima && (
               <Link href={withSeller(`/comprar/${proxima.id}`, vendedor)} className="text-[13px] font-bold text-obra-acento hover:underline">
-                Ver mapa del teatro →
+                Ver mapa del teatro <Icono nombre="flecha-der" />
               </Link>
             )}
           </div>
@@ -274,7 +275,7 @@ export async function ProductionView({
             {theme?.tagline && <p className="text-lg font-medium leading-snug md:text-2xl">{theme.tagline}</p>}
             <ul className="flex flex-wrap gap-2">
               <li className="chip chip-obra">{{ archivo: "Producción concluida", cartelera: "En cartelera", proximamente: "Próximamente" }[estado]}</li>
-              {p.temporada && <li className="chip chip-obra"><span className="text-obra-acento">✦</span>Temporada {p.temporada}</li>}
+              {p.temporada && <li className="chip chip-obra"><span className="text-obra-acento"><Icono nombre="destello" /></span>Temporada {p.temporada}</li>}
               {p.venue && <li className="chip chip-obra">{p.venue}</li>}
               {duracion && <li className="chip chip-obra">{duracion}</li>}
             </ul>
@@ -351,7 +352,7 @@ export async function ProductionView({
                 {eventos.map((e) => <EncuentroCard key={e.id} e={e} sesion={!!sesion} socio={socio} mostrarObra={false} />)}
                 {bloqueados.map((e) => <EventoBloqueado key={e.id} e={e} sesion={!!sesion} mostrarObra={false} />)}
               </ul>
-              <Link href="/eventos" className="self-start text-sm font-bold underline-offset-4 opacity-80 hover:underline hover:opacity-100">Ver todos los eventos de DARF →</Link>
+              <Link href="/eventos" className="self-start text-sm font-bold underline-offset-4 opacity-80 hover:underline hover:opacity-100">Ver todos los eventos de DARF <Icono nombre="flecha-der" /></Link>
             </Bloque>
           )}
           {repertorio}
@@ -369,7 +370,7 @@ export async function ProductionView({
               <span className="relative block aspect-[3/4]">
                 <Image src={posterPagina.url} alt={`Póster oficial de ${p.nombre}`} fill sizes="(min-width: 1024px) 360px, 100vw" className="object-cover transition-transform duration-700 group-hover:scale-[1.03] motion-reduce:transition-none" />
               </span>
-              <span className="block px-5 py-3 text-[13px] font-bold text-obra-acento">Póster oficial · ver en grande ↗</span>
+              <span className="block px-5 py-3 text-[13px] font-bold text-obra-acento">Póster oficial · ver en grande <Icono nombre="externo" /></span>
             </a>
           )}
           {ficha.length > 0 && (
@@ -383,7 +384,7 @@ export async function ProductionView({
                   </div>
                 ))}
               </dl>
-              <Link href="/producciones" className="mt-4 block text-[13px] font-bold text-obra-acento hover:underline">← Todas las producciones</Link>
+              <Link href="/producciones" className="mt-4 block text-[13px] font-bold text-obra-acento hover:underline"><Icono nombre="flecha-izq" /> Todas las producciones</Link>
             </div>
           )}
           <Link
@@ -399,7 +400,7 @@ export async function ProductionView({
             <span className="fb fb-fz fb-sm mt-1 justify-self-start">{ensayos > 0 ? "Entrar a la Fan Zone" : "Únete a la Fan Zone"}</span>
           </Link>
           {!ficha.length && (
-            <Link href="/producciones" className="px-1 text-[13px] font-bold text-obra-acento hover:underline">← Todas las producciones</Link>
+            <Link href="/producciones" className="px-1 text-[13px] font-bold text-obra-acento hover:underline"><Icono nombre="flecha-izq" /> Todas las producciones</Link>
           )}
         </aside>
       </div>

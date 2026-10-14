@@ -38,7 +38,7 @@ do $$ declare n int; fid uuid; oid uuid; s jsonb; perid uuid; cid uuid; begin
 
   perform pg_temp.as_user('00000000-0000-0000-0000-0000000000a1');
   perform panel_add_member('showman', 't_ana@test.local', 'integrante');
-  perform panel_add_member('showman', 't_cont@test.local', 'productor');
+  perform panel_add_member('showman', 't_cont@test.local', (select coalesce(max(id), 'productor') from panel_roles where id = 'direccion_general'));
   perform panel_add_member('showman', 't_taq@test.local', 'taquilla');
 
   -- T1: el resumen no duplica montos (300, 2 boletos, 1 asistió)

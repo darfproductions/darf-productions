@@ -10,6 +10,7 @@ import { EditRolesForm } from "./EditRolesForm";
 import { invitacionAccion, removeMember } from "./actions";
 import { InvitacionBotones } from "@/components/panel/InvitacionBotones";
 import { createClient } from "@/lib/supabase/server";
+import { Icono } from "@/components/Icono";
 
 type Invitacion = { id: string; email: string; roles: string[]; token: string; created_at: string; expira_at: string; enviado_at: string | null; envio_error: string | null };
 const vencio = (iso: string) => new Date(iso).getTime() < Date.now();
@@ -99,7 +100,7 @@ export default async function ProductionPermissions({ params }: PageProps<"/pane
                     <li key={r.rowId}>
                       <MiniAction action={removeMember} hidden={{ pid: id, id: r.rowId }} confirm={`¿Quitar el rol ${r.role_nombre} a ${m.nombre || m.email}?`}
                         className="flex flex-wrap items-center gap-1 rounded-full bg-telon-2 py-1 pl-3 pr-1 text-sm font-semibold"
-                        buttonClass="grid h-6 w-6 place-items-center rounded-full text-texto-3 hover:bg-white/10 hover:text-texto" label="×" ariaLabel={`Quitar ${r.role_nombre}`}>
+                        buttonClass="grid h-6 w-6 place-items-center rounded-full text-texto-3 hover:bg-white/10 hover:text-texto" label={<Icono nombre="x" />} ariaLabel={`Quitar ${r.role_nombre}`}>
                         {r.role_nombre}
                       </MiniAction>
                     </li>

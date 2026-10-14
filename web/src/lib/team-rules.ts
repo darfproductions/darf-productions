@@ -38,7 +38,7 @@ export type Acuerdo = { texto: string; responsable?: string; fecha?: string };
 export function parseAcuerdos(texto: string): Acuerdo[] {
   return texto
     .split(/\r?\n/)
-    .map((l) => l.trim().replace(/^[-•*]\s*/, ""))
+    .map((l) => l.trim().replace(/^[-\u2022*]\s*/, ""))
     .filter(Boolean)
     .slice(0, 60)
     .map((l) => {

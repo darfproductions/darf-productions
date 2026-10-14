@@ -1,12 +1,13 @@
 // Gafete digital (0078). Funciones puras: gafete-rules.test.ts.
 
 /** Categoría del gafete (0087), de mayor a menor: la más alta de la persona. */
-export type Franja = "manager" | "produccion" | "direccion" | "crew" | "staff";
+export type Franja = "manager" | "direccion_general" | "produccion" | "direccion" | "crew" | "staff";
 
-/** Colores de la banda de abajo: Manager degradado, Producción rojo y Dirección azul del logo, Crew lila,
+/** Colores de la banda de abajo: Manager degradado, Dirección general plata (0101), Producción rojo y Dirección azul del logo, Crew lila,
  *  Staff rosa. (Fan dorado y Cuenta gris están en credencial-fan-rules y credencial-rules.) */
 export const FRANJAS: Record<Franja, { label: string; fondo: string; texto: string }> = {
   manager: { label: "MANAGER", fondo: "linear-gradient(120deg,#340feb,#830886 55%,#d20122)", texto: "#ffffff" },
+  direccion_general: { label: "DIRECCIÓN GENERAL", fondo: "linear-gradient(120deg,#8e959e,#e6e9ee 45%,#b8bec7 70%,#f4f6f8)", texto: "#0b0910" },
   produccion: { label: "PRODUCCIÓN", fondo: "#d20122", texto: "#ffffff" },
   direccion: { label: "DIRECCIÓN", fondo: "#340feb", texto: "#ffffff" },
   crew: { label: "CREW", fondo: "#a48bff", texto: "#0b0910" },
@@ -14,7 +15,7 @@ export const FRANJAS: Record<Franja, { label: string; fondo: string; texto: stri
 };
 
 /** Categorías que se eligen al crear un rol del panel (Manager es el Equipo DARF y el Director). */
-export const CATEGORIAS_ROL: { id: Exclude<Franja, "manager">; label: string; ayuda: string }[] = [
+export const CATEGORIAS_ROL: { id: Exclude<Franja, "manager" | "direccion_general">; label: string; ayuda: string }[] = [
   { id: "produccion", label: "Producción", ayuda: "Rojo" },
   { id: "direccion", label: "Dirección", ayuda: "Azul" },
   { id: "crew", label: "Crew", ayuda: "Lila" },
@@ -40,6 +41,10 @@ export type PaseVista = {
 };
 
 const DEGRADADO_LUZ: [number, string][] = [[0, "#340feb"], [0.55, "#830886"], [1, "#d20122"]];
+/** Plata metálica de Dirección general (0101): mismo trazo que el CSS de FRANJAS. */
+const DEGRADADO_PLATA: [number, string][] = [[0, "#8e959e"], [0.45, "#e6e9ee"], [0.7, "#b8bec7"], [1, "#f4f6f8"]];
+/** Degradados de las franjas que no son de un solo color (para el canvas del PDF y las imágenes de Wallet). */
+export const DEGRADADOS: Partial<Record<Franja, [number, string][]>> = { manager: DEGRADADO_LUZ, direccion_general: DEGRADADO_PLATA };
 
 /** Año en curso en CDMX (vigencia del gafete). */
 export function anioMx(hoy: Date = new Date()): string {
@@ -52,7 +57,7 @@ export function paseGafete(g: { nombre: string; fotoUrl: string | null; franja: 
   return {
     tema: "darf", logo: "/marca/darf-monograma.svg", logoAlt: "DARF", nombre: g.nombre, fotoUrl: g.fotoUrl,
     titulo: g.papel, pie: `DARF Productions · ${anioMx(hoy)}`,
-    banda: { ...f, degradado: g.franja === "manager" ? DEGRADADO_LUZ : undefined }, qr: g.qr, codigo: g.codigo,
+    banda: { ...f, degradado: DEGRADADOS[g.franja] }, qr: g.qr, codigo: g.codigo,
   };
 }
 

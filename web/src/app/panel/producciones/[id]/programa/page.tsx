@@ -12,6 +12,7 @@ import { getProgram, PROGRAM_MODES, type ProgramMode } from "@/lib/program";
 import { origenSitio } from "@/lib/site-origin";
 import { addSponsor, removeSponsor, saveProgram, setProgramMode, setProgramPublished, setSponsorLogo } from "./actions";
 import { ProgramFileUpload } from "./ProgramFileUpload";
+import { Icono } from "@/components/Icono";
 
 export const metadata: Metadata = { title: "Programa" };
 
@@ -45,7 +46,7 @@ export default async function Programa({ params }: PageProps<"/panel/produccione
           <span className={`rounded-full px-3 py-1 font-bold ${publicado ? "bg-green-500/20 text-green-300" : "bg-white/10 text-texto-2"}`}>
             {publicado ? "Publicado" : page ? "Oculto" : "Sin crear"}
           </span>
-          {page && <a href={`/programa/${id}`} target="_blank" rel="noreferrer" className="font-bold text-violeta-claro underline">Ver programa ↗</a>}
+          {page && <a href={`/programa/${id}`} target="_blank" rel="noreferrer" className="font-bold text-violeta-claro underline">Ver programa <Icono nombre="externo" /></a>}
           <ActionForm inline action={setProgramPublished} hidden={{ pid: id, publicar: publicado ? "no" : "si" }} submit={publicado ? "Ocultar" : "Publicar"} />
         </div>
       </Card>
@@ -69,7 +70,7 @@ export default async function Programa({ params }: PageProps<"/panel/produccione
           <div className="flex flex-col gap-2 rounded-lg bg-sala p-3 text-sm">
             <p className="font-bold">Archivo del programa</p>
             {page?.archivo_path
-              ? <a href={assetUrl(page.archivo_path)} target="_blank" rel="noreferrer" className="text-violeta-claro underline">Ver archivo actual ↗</a>
+              ? <a href={assetUrl(page.archivo_path)} target="_blank" rel="noreferrer" className="text-violeta-claro underline">Ver archivo actual <Icono nombre="externo" /></a>
               : <p className="text-texto-3">Aún no subes el archivo.</p>}
             <ProgramFileUpload pid={id} hay={!!page?.archivo_path} />
           </div>

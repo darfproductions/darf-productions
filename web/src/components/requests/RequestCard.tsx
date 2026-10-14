@@ -1,6 +1,7 @@
 import { mesNombre, pesos } from "@/lib/member-rules";
 import { fechaEnsayo } from "@/lib/rehearsal-rules";
 import { ESTADO_SOLICITUD, METODOS, TIPO_SOLICITUD, resumenSolicitud, type MemberRequest } from "@/lib/request-rules";
+import { Icono } from "@/components/Icono";
 
 const mayus = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 const fecha = (iso: string) =>
@@ -14,7 +15,7 @@ export function RequestCard({ r, url, persona, children }: { r: MemberRequest; u
       <header className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="text-xs font-bold uppercase tracking-[0.14em] text-texto-3">
-            <span aria-hidden="true">{TIPO_SOLICITUD[r.tipo].icono} </span>{TIPO_SOLICITUD[r.tipo].corto} · {fecha(r.created_at)}
+            <Icono nombre={TIPO_SOLICITUD[r.tipo].icono} /> {TIPO_SOLICITUD[r.tipo].corto} · {fecha(r.created_at)}
           </p>
           <p className="wrap-anywhere text-base font-bold">{persona ? `${persona} · ` : ""}{resumenSolicitud(r, mesNombre)}</p>
         </div>
@@ -22,7 +23,7 @@ export function RequestCard({ r, url, persona, children }: { r: MemberRequest; u
       </header>
       {r.ensayos.length > 0 && (
         <ul className="flex flex-col gap-0.5 text-texto-2">
-          {r.ensayos.map((e) => <li key={e.id}>• {e.titulo} · {mayus(fechaEnsayo(e.inicia))}</li>)}
+          {r.ensayos.map((e) => <li key={e.id}><Icono nombre="punto" className="h-2 w-2 opacity-70" /> {e.titulo} · {mayus(fechaEnsayo(e.inicia))}</li>)}
         </ul>
       )}
       {r.tipo === "pago" && (
@@ -32,7 +33,7 @@ export function RequestCard({ r, url, persona, children }: { r: MemberRequest; u
         </p>
       )}
       {r.motivo && <p className="whitespace-pre-line wrap-anywhere">{r.motivo}</p>}
-      {r.archivo_path && (url ? <a href={url} target="_blank" rel="noreferrer" className="self-start font-bold text-violeta-claro underline">Ver archivo ↗</a>
+      {r.archivo_path && (url ? <a href={url} target="_blank" rel="noreferrer" className="self-start font-bold text-violeta-claro underline">Ver archivo <Icono nombre="externo" /></a>
         : <span className="text-texto-3">Archivo adjunto</span>)}
       {r.respuesta && (
         <p className={`rounded-lg px-3 py-2 ${r.estado === "rechazada" ? "bg-[#5a1a22]/50" : "bg-white/5"}`}>

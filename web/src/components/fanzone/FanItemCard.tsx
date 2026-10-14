@@ -2,6 +2,7 @@
 import { dominio, FAN_CATEGORIAS, type FanCategoria } from "@/lib/fanzone-rules";
 import type { FanItemVista, FanProximo } from "@/lib/fanzone";
 import { VideoLite } from "./VideoLite";
+import { Icono } from "@/components/Icono";
 
 const fecha = (iso: string) => new Intl.DateTimeFormat("es-MX", { day: "numeric", month: "long", timeZone: "America/Mexico_City" }).format(new Date(iso));
 const ETIQUETA: Record<FanCategoria, string> = { ensayo: "Ensayo", making: "Making of", fotos: "Fotos", otro: "Fan Zone" };
@@ -55,8 +56,8 @@ export function FanItemCard({ it, obra }: { it: FanItemVista; obra?: string }) {
     <a href={href ?? "#"} target="_blank" rel="noreferrer" className={`${caja} tarjeta-hover`}>
       <div className="relative grid aspect-video place-items-center bg-[radial-gradient(70%_60%_at_50%_40%,rgb(215_187_95/0.18),transparent_70%),#120f17]">
         <Chip c={it.categoria} />
-        <span aria-hidden="true" className="text-4xl text-oro">{it.tipo === "documento" ? "▤" : "↗"}</span>
-        <span className="absolute bottom-3 right-3 text-[11px] font-bold text-oro-claro">{it.tipo === "documento" ? "Abrir PDF ↗" : "Ir al enlace ↗"}</span>
+        <span aria-hidden="true" className="text-4xl text-oro"><Icono nombre={it.tipo === "documento" ? "documento" : "externo"} /></span>
+        <span className="absolute bottom-3 right-3 text-[11px] font-bold text-oro-claro">{it.tipo === "documento" ? "Abrir PDF" : "Ir al enlace"} <Icono nombre="externo" /></span>
       </div>
       {pie}
     </a>
@@ -69,7 +70,7 @@ export function FanProximoCard({ p, obra }: { p: FanProximo; obra?: string }) {
     <article className="tarjeta flex h-full flex-col border-oro/20" aria-label={`${p.titulo}: se desbloquea el ${fecha(p.disponible_desde)}`}>
       <div className="grid aspect-video place-items-center bg-[linear-gradient(160deg,#1a1622,#0b0910)]">
         <div className="flex flex-col items-center gap-2 text-center">
-          <span aria-hidden="true" className="text-2xl text-oro">🔒</span>
+          <span aria-hidden="true" className="text-2xl text-oro"><Icono nombre="candado" /></span>
           <span className="text-[10.5px] font-bold uppercase tracking-[0.24em] text-oro">Se desbloquea el {fecha(p.disponible_desde)}</span>
         </div>
       </div>

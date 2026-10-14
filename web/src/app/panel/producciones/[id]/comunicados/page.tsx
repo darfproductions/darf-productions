@@ -8,6 +8,7 @@ import { can } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
 import { createClient } from "@/lib/supabase/server";
 import { removeAnnouncement, sendAnnouncement } from "./actions";
+import { Icono } from "@/components/Icono";
 
 export const metadata: Metadata = { title: "Comunicados" };
 
@@ -49,7 +50,7 @@ export default async function Comunicados({ params }: PageProps<"/panel/producci
           <Card key={a.id} className={`flex flex-col gap-2 ${a.importante ? "border border-aviso/40" : ""}`}>
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div>
-                <p className="text-lg font-bold">{a.importante && <span className="mr-2 text-aviso">●</span>}{a.titulo}</p>
+                <p className="text-lg font-bold">{a.importante && <span className="mr-2 text-aviso"><Icono nombre="punto" /></span>}{a.titulo}</p>
                 <p className="text-xs text-texto-3">{fmt(a.created_at)} · Para: {audienceLabel(a, nombres)}</p>
               </div>
               <ActionForm inline action={removeAnnouncement} hidden={{ pid: id, id: a.id }} confirm="¿Quitar este comunicado? Deja de verse en los portales." submit="Quitar" submitClass="rounded-full border border-white/25 px-3 py-1.5 text-xs font-bold" />

@@ -26,7 +26,7 @@ function CategoriaSelect({ actual }: { actual?: string }) {
 
 const chipCategoria = (c: string) => {
   const f = FRANJAS[c as keyof typeof FRANJAS];
-  return f ? <span className="ml-2 inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2 py-0.5 text-[11px] font-bold"><span aria-hidden="true" className="h-2.5 w-2.5 rounded-full" style={{ background: f.fondo }} />{CATEGORIAS_ROL.find((x) => x.id === c)?.label}</span> : null;
+  return f ? <span className="ml-2 inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2 py-0.5 text-[11px] font-bold"><span aria-hidden="true" className="h-2.5 w-2.5 rounded-full" style={{ background: f.fondo }} />{CATEGORIAS_ROL.find((x) => x.id === c)?.label ?? (c === "direccion_general" ? "Dirección general" : c)}</span> : null;
 };
 
 export const metadata: Metadata = { title: "Roles" };

@@ -6,6 +6,7 @@ import { fechaEnsayo } from "@/lib/rehearsal-rules";
 import { METODOS, TIPO_SOLICITUD, textoLimite, type RequestTipo } from "@/lib/request-rules";
 import { requestAbsence, submitRequest, type ReqState } from "./actions";
 import { isoMx } from "@/lib/dates";
+import { Icono } from "@/components/Icono";
 
 export type EnsayoOpcion = { id: string; titulo: string; inicia: string; termina: string | null; permitido: boolean; pedida: boolean };
 
@@ -32,7 +33,7 @@ function Archivo({ pid, uid, onBusy }: { pid: string; uid: string; onBusy: (b: b
       <input type="hidden" name="archivo" value={path} />
       <label className="flex cursor-pointer flex-wrap items-center gap-3 rounded-lg border border-dashed border-white/25 bg-sala px-3 py-3 hover:border-white/50">
         <span className="rounded-full bg-texto px-4 py-1.5 text-xs font-bold text-sala">{busy ? "Subiendo…" : path ? "Cambiar archivo" : "Elegir archivo"}</span>
-        <span className="min-w-0 wrap-anywhere text-texto-2">{path ? `✓ ${nombre}` : "Ningún archivo"}</span>
+        <span className="min-w-0 wrap-anywhere text-texto-2">{path ? <><Icono nombre="check" /> {nombre}</> : "Ningún archivo"}</span>
         <input type="file" accept={ACCEPT_EXPEDIENTE} className="sr-only" disabled={busy}
           onChange={(e) => { const f = e.target.files?.[0]; if (f) void subir(f); e.target.value = ""; }} />
       </label>
@@ -173,12 +174,12 @@ export function RequestForm({ pid, uid, ensayos, horas, docTipos, cuota, inicial
         {tipos.map((t) => (
           <button key={t} type="button" onClick={() => { setTipo(t); setHecho(null); }} aria-pressed={tipo === t}
             className={`flex min-h-24 flex-col items-start gap-1 rounded-xl border p-3 text-left text-sm transition-colors ${tipo === t ? "border-violeta-claro bg-ciruela/20" : "border-white/10 bg-sala hover:border-white/30"}`}>
-            <span aria-hidden="true" className="text-xl">{TIPO_SOLICITUD[t].icono}</span>
+            <Icono nombre={TIPO_SOLICITUD[t].icono} className="h-6 w-6" />
             <b className="leading-tight">{TIPO_SOLICITUD[t].label}</b>
           </button>
         ))}
       </div>
-      {hecho && <p role="status" className="rounded-lg bg-[#14532d]/60 px-4 py-3 text-sm font-semibold text-[#bbf7d0]">✓ {hecho}</p>}
+      {hecho && <p role="status" className="rounded-lg bg-[#14532d]/60 px-4 py-3 text-sm font-semibold text-[#bbf7d0]"><Icono nombre="check" /> {hecho}</p>}
       {tipo && <p className="text-sm text-texto-2">{TIPO_SOLICITUD[tipo].ayuda}</p>}
       {tipo === "falta" && <FaltaForm key={`f${vuelta}`} pid={pid} ensayos={ensayos} horas={horas} marcado={inicial.falta} onDone={listo} />}
       {tipo && tipo !== "falta" && <OtraForm key={`${tipo}${vuelta}`} pid={pid} uid={uid} tipo={tipo} docTipos={docTipos} cuota={cuota} onDone={listo} />}

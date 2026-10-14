@@ -8,6 +8,7 @@ import { CuentaRegresiva } from "@/components/CuentaRegresiva";
 import { avisame } from "@/lib/anuncio-actions";
 import { TIPOS_ANUNCIO } from "@/lib/anuncio-rules";
 import type { AnuncioVista } from "@/lib/anuncios";
+import { Icono } from "@/components/Icono";
 
 export type TonoAnuncio = "sitio" | "obra" | "fanzone";
 
@@ -62,7 +63,7 @@ export function AnuncioCard({ a, tono, conCuenta }: { a: AnuncioVista; tono: Ton
 
       {delClub && (
         <p className="rounded-[16px] border border-oro/30 p-4 text-sm">
-          🔒 Esto es solo para el Club Fan. <Link href="/fan-zone" className="font-bold text-oro-claro underline">Únete gratis a la Fan Zone</Link>
+          <Icono nombre="candado" /> Esto es solo para el Club Fan. <Link href="/fan-zone" className="font-bold text-oro-claro underline">Únete gratis a la Fan Zone</Link>
         </p>
       )}
 
@@ -71,13 +72,13 @@ export function AnuncioCard({ a, tono, conCuenta }: { a: AnuncioVista; tono: Ton
           a.enlace.startsWith("/") ? (
             <Link href={a.enlace} className={`fb fb-sm ${tono === "fanzone" ? "fb-fz" : "fb-luz"}`}>{a.boton || "Ver más"}</Link>
           ) : (
-            <a href={a.enlace} target="_blank" rel="noopener noreferrer" className={`fb fb-sm ${tono === "fanzone" ? "fb-fz" : "fb-luz"}`}>{a.boton || "Ver más"} ↗</a>
+            <a href={a.enlace} target="_blank" rel="noopener noreferrer" className={`fb fb-sm ${tono === "fanzone" ? "fb-fz" : "fb-luz"}`}>{a.boton || "Ver más"} <Icono nombre="externo" /></a>
           )
         )}
         {esperando && a.registro && (
           conCuenta ? (
             <button type="button" onClick={toggle} disabled={pending} aria-pressed={apuntado} className={`fb fb-sm ${apuntado ? (tono === "obra" ? "fb-obra" : "fb-o") : tono === "fanzone" ? "fb-fz" : "fb-luz"}`}>
-              {pending ? "…" : apuntado ? "✓ Te avisaremos" : "Avísame"}
+              {pending ? "…" : apuntado ? <><Icono nombre="check" /> Te avisaremos</> : "Avísame"}
             </button>
           ) : (
             <Link href={`/entrar?next=${encodeURIComponent(path)}`} className={`fb fb-sm ${tono === "fanzone" ? "fb-fz" : "fb-luz"}`}>Entra para que te avisemos</Link>

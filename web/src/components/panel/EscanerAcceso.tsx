@@ -8,6 +8,7 @@ import { QrScanner } from "@/components/panel/QrScanner";
 import type { Lectura } from "@/lib/acceso-rules";
 import { iniciales } from "@/lib/gafete-rules";
 import { bip } from "@/lib/aviso-sonido";
+import { Icono } from "@/components/Icono";
 
 const COLOR: Record<NonNullable<Lectura["tono"]>, string> = {
   ok: "border-exito bg-exito/15 text-exito",
@@ -29,6 +30,8 @@ export function EscanerAcceso({ boton, titulo, placeholder, ayuda, leer, botonCl
   const [busy, setBusy] = useState(false);
   const [ultimo, setUltimo] = useState<Lectura | null>(null);
   const [lista, setLista] = useState<Lectura[]>([]);
+  // Lo ya leído en esta sesión: si el mismo QR vuelve, solo se muestra "Ya registrado" (sin ir a la base).
+  const [leidos] = useState(() => new Map<string, Lectura>());
 
   useEffect(() => {
     if (!abierto) return;
@@ -41,12 +44,19 @@ export function EscanerAcceso({ boton, titulo, placeholder, ayuda, leer, botonCl
     setBusy(true);
     try {
       const r = await leer(code);
+      if (r.ok && (r.llegada || r.tono === "neutro")) leidos.set(code, r);
       setUltimo(r);
       bip(r.ok && !!r.llegada);
       if (r.ok && r.llegada) { setLista((l) => [r, ...l].slice(0, 8)); router.refresh(); }
     } finally {
       setBusy(false);
     }
+  }
+
+  function onRepetido(code: string) {
+    const prev = leidos.get(code);
+    if (!prev) return void onCode(code);
+    setUltimo({ ...prev, tono: "neutro", titulo: prev.llegada ? `Ya registrado · ${prev.llegada}` : prev.titulo, llegada: undefined, detalle: undefined });
   }
 
   const persona = ultimo?.ok && ultimo.nombre !== undefined;
@@ -58,10 +68,10 @@ export function EscanerAcceso({ boton, titulo, placeholder, ayuda, leer, botonCl
           <div className="mx-auto flex max-w-4xl flex-col gap-5">
             <div className="flex items-center justify-between gap-3">
               <p className="text-xl font-black uppercase">{titulo}</p>
-              <button type="button" onClick={() => setAbierto(false)} className="rounded-full border border-white/25 px-4 py-2 text-sm font-bold">Terminar ✕</button>
+              <button type="button" onClick={() => setAbierto(false)} className="rounded-full border border-white/25 px-4 py-2 text-sm font-bold">Terminar <Icono nombre="x" /></button>
             </div>
             <div className="grid gap-5 md:grid-cols-2">
-              <QrScanner onCode={onCode} busy={busy} placeholder={placeholder} />
+              <QrScanner onCode={onCode} onRepetido={onRepetido} busy={busy} placeholder={placeholder} />
               <div className="flex flex-col gap-4">
                 {ultimo && (
                   <div role="status" className={`flex items-center gap-4 rounded-[22px] border-2 p-5 ${COLOR[ultimo.ok ? ultimo.tono ?? "neutro" : "error"]}`}>

@@ -10,6 +10,7 @@ import { TIPO_SOLICITUD, type RequestEstado, type RequestTipo } from "@/lib/requ
 import { listRequests } from "@/lib/requests";
 import { createClient } from "@/lib/supabase/server";
 import { ReviewForm } from "./ReviewForm";
+import { Icono } from "@/components/Icono";
 
 export const metadata: Metadata = { title: "Solicitudes del elenco" };
 
@@ -52,19 +53,19 @@ export default async function Solicitudes({ params, searchParams }: PageProps<"/
         <nav aria-label="Tipo" className="flex flex-wrap gap-2 text-xs">
           <Link href={qs(estado, null)} className={chip(!tipo)}>Todos los tipos</Link>
           {(Object.keys(TIPO_SOLICITUD) as RequestTipo[]).map((t) => (
-            <Link key={t} href={qs(estado, t)} className={chip(tipo === t)}>{TIPO_SOLICITUD[t].icono} {TIPO_SOLICITUD[t].corto}</Link>
+            <Link key={t} href={qs(estado, t)} className={chip(tipo === t)}><Icono nombre={TIPO_SOLICITUD[t].icono} /> {TIPO_SOLICITUD[t].corto}</Link>
           ))}
         </nav>
       </Card>
 
       {lista.length === 0 ? (
-        <Card className="text-sm text-texto-2">{estado === "pendiente" ? "No hay solicitudes por revisar. ✓" : "No hay solicitudes con este filtro."}</Card>
+        <Card className="text-sm text-texto-2">{estado === "pendiente" ? <>No hay solicitudes por revisar. <Icono nombre="check" /></> : "No hay solicitudes con este filtro."}</Card>
       ) : (
         <ul className="grid gap-3 lg:grid-cols-2">
           {lista.map((r) => (
             <li key={r.id} className="min-w-0">
               <RequestCard r={r} url={r.archivo_path ? urls.get(r.archivo_path) : undefined} persona={nombre.get(r.user_id) ?? "Integrante"}>
-                {verFicha && <Link href={`/panel/producciones/${id}/expedientes/${r.user_id}`} className="self-start text-xs font-bold text-violeta-claro">Ver su ficha →</Link>}
+                {verFicha && <Link href={`/panel/producciones/${id}/expedientes/${r.user_id}`} className="self-start text-xs font-bold text-violeta-claro">Ver su ficha <Icono nombre="flecha-der" /></Link>}
                 {r.estado === "pendiente" && <ReviewForm pid={id} id={r.id} tipo={r.tipo} monto={r.monto} conDoc={!!r.doc_type_id} />}
               </RequestCard>
             </li>

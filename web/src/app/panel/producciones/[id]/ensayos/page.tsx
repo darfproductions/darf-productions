@@ -13,6 +13,8 @@ import { textoLimite } from "@/lib/request-rules";
 import { avisoFaltaHoras } from "@/lib/requests";
 import { cancelSeries, createRehearsal, setAvisoHoras, setRehearsalEstado } from "./actions";
 import { isoMx } from "@/lib/dates";
+import { Icono } from "@/components/Icono";
+import { EquipoEncargados } from "@/components/ensayos/EquipoEncargados";
 
 export const metadata: Metadata = { title: "Ensayos" };
 
@@ -25,13 +27,15 @@ export default async function Ensayos({ params }: PageProps<"/panel/producciones
   const access = await requirePanel(`/panel/producciones/${id}/ensayos`);
   if (!can(access, id, "ensayos.gestionar")) redirect(`/panel/producciones/${id}`);
   const supabase = await createClient();
-  const [{ data: reh }, { data: roster }, { data: sum }, horas, { count: porRevisar }] = await Promise.all([
+  const [{ data: reh }, { data: roster }, { data: sum }, horas, { count: porRevisar }, { data: team }] = await Promise.all([
     supabase.from("rehearsals").select("*").eq("production_id", id).order("inicia"),
     supabase.rpc("cast_roster", { pid: id }),
     supabase.rpc("attendance_summary", { pid: id }),
     avisoFaltaHoras(id),
     supabase.from("member_requests").select("id", { count: "exact", head: true }).eq("production_id", id).eq("tipo", "falta").eq("estado", "pendiente"),
+    supabase.rpc("equipo_ensayos", { pid: id }),
   ]);
+  const equipo = ((team ?? []) as { user_id: string; nombre: string; roles: string[] }[]).map((x) => ({ user_id: x.user_id, nombre: x.nombre, papeles: x.roles, detalle: x.roles.join(", ") }));
   const ensayos = (reh ?? []) as Rehearsal[];
   const gente = (roster ?? []) as Roster[];
   const ahora = new Date().toISOString();
@@ -47,7 +51,8 @@ export default async function Ensayos({ params }: PageProps<"/panel/producciones
         <Link href={`/panel/producciones/${id}/ensayos/${r.id}`} className="font-bold hover:underline">{r.titulo}</Link>
         {r.estado === "cancelado" && <span className="ml-2 text-xs font-bold text-[#fecdd3]">Cancelado</span>}
         <span className="block text-texto-2">{fechaEnsayo(r.inicia, r.termina)}{r.lugar ? ` · ${r.lugar}` : ""}</span>
-        <span className="block text-xs text-texto-3">Citados: {citados(r)}{r.serie_id ? " · se repite" : ""}</span>
+        <span className="block text-xs text-texto-3">Citados: {citados(r)}{r.serie_id ? " · se repite" : ""}{r.encargados?.length ? ` · ${r.encargados.length === 1 ? "1 encargado" : `${r.encargados.length} encargados`}` : ""}</span>
+        {r.abierto_at && <span className="block text-xs text-exito"><Icono nombre="check" /> Abierto{r.cerrado_at ? " · lista cerrada" : ""}</span>}
       </span>
       <span className="flex items-center gap-2">
         <Link href={`/panel/producciones/${id}/ensayos/${r.id}`} className="rounded-full bg-texto px-3 py-1.5 text-xs font-bold text-sala">Asistencia</Link>
@@ -67,7 +72,7 @@ export default async function Ensayos({ params }: PageProps<"/panel/producciones
       <Card className="flex flex-col gap-3">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <h2 className="titular text-xl">Próximos ensayos</h2>
-          <a href={`/panel/producciones/${id}/expedientes/exportar/asistencia`} className="text-sm font-bold text-violeta-claro">Descargar asistencia (Excel) ↓</a>
+          <a href={`/panel/producciones/${id}/expedientes/exportar/asistencia`} className="text-sm font-bold text-violeta-claro">Descargar asistencia (Excel) <Icono nombre="flecha-abajo" /></a>
         </div>
         <ul className="flex flex-col gap-2">{proximos.map((r) => <Item key={r.id} r={r} />)}</ul>
         {proximos.length === 0 && <p className="text-sm text-texto-3">No hay ensayos próximos.</p>}
@@ -105,7 +110,9 @@ export default async function Ensayos({ params }: PageProps<"/panel/producciones
                     </label>
                   ))}
                 </div>
+                <label className="flex items-center gap-2"><input type="radio" name="convocatoria" value="ninguno" /> Nadie del elenco (solo el equipo de abajo)</label>
               </fieldset>
+              <EquipoEncargados equipo={equipo} elenco={gente} />
             </ActionForm>
           </div>
         </details>
@@ -114,19 +121,19 @@ export default async function Ensayos({ params }: PageProps<"/panel/producciones
       {!!porRevisar && (
         <Link href={`/panel/producciones/${id}/solicitudes`} className="flex items-center justify-between gap-3 rounded-[18px] border border-aviso/40 bg-telon px-5 py-3 text-sm hover:bg-telon-2">
           <b className="text-aviso">{porRevisar} {porRevisar === 1 ? "solicitud" : "solicitudes"} de falta por revisar</b>
-          <span className="text-violeta-claro">→</span>
+          <span className="text-violeta-claro"><Icono nombre="flecha-der" /></span>
         </Link>
       )}
 
-      {gente.length > 0 && (
+      {gente.length + equipo.length > 0 && (
         <details className="overflow-x-auto rounded-[22px] border border-linea bg-telon">
-          <summary className="cursor-pointer px-5 py-4 font-bold">Asistencia por integrante</summary>
+          <summary className="cursor-pointer px-5 py-4 font-bold">Asistencia por persona</summary>
           <table className="mt-2 w-full min-w-[560px] text-sm">
             <thead className="text-left text-xs uppercase tracking-[0.12em] text-texto-3">
-              <tr>{["Integrante", "Asistencia", "Presente", "Retardos", "Faltas", "Justificadas"].map((t) => <th key={t} className="px-4 py-2">{t}</th>)}</tr>
+              <tr>{["Persona", "Asistencia", "Presente", "Retardos", "Faltas", "Justificadas"].map((t) => <th key={t} className="px-4 py-2">{t}</th>)}</tr>
             </thead>
             <tbody className="divide-y divide-white/10">
-              {gente.map((g) => {
+              {[...gente, ...equipo.filter((x) => !gente.some((g) => g.user_id === x.user_id) && sumDe(x.user_id))].map((g) => {
                 const s = sumDe(g.user_id) ?? { presentes: 0, retardos: 0, faltas: 0, justificadas: 0 };
                 const pct = porcentaje(s);
                 return (

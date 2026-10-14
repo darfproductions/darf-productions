@@ -2,6 +2,7 @@ import Link from "next/link";
 import { EstadoObra } from "@/components/EstadoObra";
 import { ArtFill } from "@/components/PosterArt";
 import { getTheme, posterUrl, type PublicProduction } from "@/lib/productions";
+import { Icono } from "@/components/Icono";
 
 const fecha = (iso: string) =>
   new Intl.DateTimeFormat("es-MX", { day: "numeric", month: "long", year: "numeric", timeZone: "America/Mexico_City" }).format(new Date(iso));
@@ -31,10 +32,10 @@ export function ProductionCard({ p, sizes = "(min-width: 768px) 45vw, 100vw", ct
         <span className="flex min-w-0 flex-col gap-1">
           <span className="truncate text-lg font-extrabold md:text-xl">{p.nombre}</span>
           <span className="truncate text-[12.5px] text-texto-3">{lineaObra(p)}</span>
-          {cta && <span className="pt-1 text-[12.5px] font-bold text-oro-claro">{cta} →</span>}
+          {cta && <span className="pt-1 text-[12.5px] font-bold text-oro-claro">{cta} <Icono nombre="flecha-der" /></span>}
         </span>
         {!cta && (
-          <span aria-hidden="true" className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-linea-2 transition-colors group-hover:border-white/50">→</span>
+          <span aria-hidden="true" className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-linea-2 transition-colors group-hover:border-white/50"><Icono nombre="flecha-der" /></span>
         )}
       </div>
     </Link>

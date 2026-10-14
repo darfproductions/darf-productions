@@ -13,14 +13,31 @@ export const ASISTENCIA: Record<string, { label: string; cls: string }> = {
 
 export type Rehearsal = {
   id: string; titulo: string; inicia: string; termina: string | null; lugar: string | null; notas: string | null;
-  convocatoria: "todos" | "grupos" | "personas"; grupos: string[]; personas: string[]; estado: string; serie_id?: string | null;
+  convocatoria: "todos" | "grupos" | "personas" | "ninguno"; grupos: string[]; personas: string[]; estado: string; serie_id?: string | null;
+  /** 0099: equipo de producción citado, encargados que abren y pasan lista. */
+  equipo?: string[]; equipo_todos?: boolean; encargados?: string[];
+  abierto_at?: string | null; abierto_por?: string | null; cerrado_at?: string | null;
 };
 
-/** "Todo el elenco" / "Ensamble y Crew" / "3 personas". */
-export function citados(r: Pick<Rehearsal, "convocatoria" | "grupos" | "personas">): string {
-  if (r.convocatoria === "grupos") return r.grupos.map((g) => TIPO_CREDITO[g] ?? g).join(" y ");
-  if (r.convocatoria === "personas") return r.personas.length === 1 ? "1 persona" : `${r.personas.length} personas`;
-  return "Todo el elenco";
+const personas = (n: number) => (n === 1 ? "1 persona" : `${n} personas`);
+
+/** "Todo el elenco" / "Ensamble y Crew" / "3 personas", más el equipo de producción si se citó (0099). */
+export function citados(r: Pick<Rehearsal, "convocatoria" | "grupos" | "personas" | "equipo" | "equipo_todos">): string {
+  const elenco = r.convocatoria === "grupos" ? r.grupos.map((g) => TIPO_CREDITO[g] ?? g).join(" y ")
+    : r.convocatoria === "personas" ? personas(r.personas.length)
+    : r.convocatoria === "ninguno" ? null
+    : "Todo el elenco";
+  const equipo = r.equipo_todos ? "todo el equipo de producción"
+    : r.equipo?.length ? `equipo: ${personas(r.equipo.length)}` : null;
+  if (!elenco) return equipo ? equipo.charAt(0).toUpperCase() + equipo.slice(1) : "Nadie";
+  return equipo ? `${elenco} y ${equipo}` : elenco;
+}
+
+/** ¿El encargado ya puede abrir? El mismo día (hora de México) y desde 1 h antes (0099; la base lo revisa igual). */
+export function puedeAbrirYa(inicia: string, ahora: Date = new Date()): boolean {
+  const dia = (d: Date) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Mexico_City" }).format(d);
+  const i = new Date(inicia);
+  return dia(i) === dia(ahora) && ahora.getTime() >= i.getTime() - 3600_000;
 }
 
 /** Porcentaje de asistencia (presente y retardo cuentan como asistió; justificada no cuenta en contra). */

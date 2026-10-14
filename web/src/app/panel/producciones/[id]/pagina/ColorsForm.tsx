@@ -5,6 +5,7 @@ import { contrastRatio } from "@/lib/kit-rules";
 import { themeProblems } from "@/lib/themes";
 import { saveColors } from "./actions";
 import { EditForm } from "./EditForm";
+import { Icono } from "@/components/Icono";
 
 const CAMPOS = [
   { k: "fondo", label: "Fondo", ayuda: "El color de toda la página (claro u oscuro)." },
@@ -40,7 +41,7 @@ export function ColorsForm({ pid, initial }: { pid: string; initial: Record<"fon
         acento/fondo {contrastRatio(c.acento, c.fondo).toFixed(1)}:1
       </p>
       {problems.length > 0 ? (
-        <ul className="text-sm font-semibold text-aviso">{problems.map((p) => <li key={p}>• {p}</li>)}</ul>
+        <ul className="text-sm font-semibold text-aviso">{problems.map((p) => <li key={p}><Icono nombre="punto" className="h-2 w-2 opacity-70" /> {p}</li>)}</ul>
       ) : (
         <p className="text-sm font-semibold text-[#bbf7d0]">Se lee bien: cumple las reglas de la plantilla.</p>
       )}

@@ -9,7 +9,8 @@ import { formatSlot, listMyApplications, listMyInvites } from "@/lib/auditions";
 import { listMyOffers, offerLabel } from "@/lib/casting";
 import { OfferReplyForm } from "./OfferReplyForm";
 import { env } from "@/lib/env";
-import { formatPerformanceDate, getTheme, posterUrl } from "@/lib/productions";
+import { assetUrl, formatPerformanceDate, getTheme, posterUrl } from "@/lib/productions";
+import { origenSitio } from "@/lib/site-origin";
 import { POSTER_COLUMNS, type PosterColumns } from "@/lib/poster";
 import type { KitColumns } from "@/lib/themes";
 import { estiloDe, type BoletoVista } from "@/lib/ticket-design";
@@ -34,6 +35,8 @@ import { estadoOrden } from "@/lib/ventas-rules";
 import { AgregarCalendario } from "@/components/AgregarCalendario";
 import { VoyAIr } from "@/components/tickets/VoyAIr";
 import { isoMx } from "@/lib/dates";
+import { Icono } from "@/components/Icono";
+import { MisEnsayosEquipo, type MiEnsayoEquipo } from "@/components/ensayos/MisEnsayosEquipo";
 
 export const metadata: Metadata = { title: "Mi cuenta" };
 
@@ -51,7 +54,7 @@ type OrderRow = {
   motivo: string | null;
   cancelada_por_comprador_at: string | null;
   buyer_nombre: string;
-  performances: { starts_at: string | null; venue: string | null; production_id: string; cancelada_at?: string | null; cancelada_motivo?: string | null; productions: (KitColumns & PosterColumns & { nombre: string; venue: string | null }) | null } | null;
+  performances: { starts_at: string | null; venue: string | null; production_id: string; cancelada_at?: string | null; cancelada_motivo?: string | null; productions: (KitColumns & PosterColumns & { nombre: string; venue: string | null; estado?: string }) | null } | null;
   tickets: { id: string; is_active: boolean; qr_token: string; checked_in_at: string | null; seats: { seat_label: string } | null; price_categories: { nombre: string } | null }[];
 };
 
@@ -74,10 +77,11 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
   const nueva = typeof sp.orden === "string" ? sp.orden : null;
 
   const supabase = await createClient();
+  const sitio = await origenSitio();
   await supabase.rpc("expire_due_orders", { pid: null });
   const { data, error } = await supabase
     .from("orders")
-    .select(`id, order_code, status, total, discount_amount, discount_codigo, buyer_telefono, buyer_nombre, created_at, expires_at, vencida_at, motivo, cancelada_por_comprador_at, performances(starts_at, venue, production_id, cancelada_at, cancelada_motivo, productions(nombre, venue, color_fondo, color_superficie, color_texto, color_acento, logo_path, ambiente_path, frase, ${POSTER_COLUMNS})), tickets(id, is_active, qr_token, checked_in_at, seats(seat_label), price_categories(nombre))`)
+    .select(`id, order_code, status, total, discount_amount, discount_codigo, buyer_telefono, buyer_nombre, created_at, expires_at, vencida_at, motivo, cancelada_por_comprador_at, performances(starts_at, venue, production_id, cancelada_at, cancelada_motivo, productions(nombre, venue, estado, color_fondo, color_superficie, color_texto, color_acento, logo_path, ambiente_path, frase, ${POSTER_COLUMNS})), tickets(id, is_active, qr_token, checked_in_at, seats(seat_label), price_categories(nombre))`)
     .eq("buyer_user_id", session.userId)
     .order("created_at", { ascending: false });
   const orders = (data ?? []) as unknown as OrderRow[];
@@ -101,6 +105,7 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
     supabase.rpc("my_seller"), supabase.rpc("my_team_productions"), supabase.rpc("my_team_unread"),
     listNotifications({ limit: 3 }), unreadCount(), getMiCredencial(),
   ]);
+  const misEnsayosEquipo = ((await supabase.rpc("mis_ensayos_equipo")).data ?? []) as MiEnsayoEquipo[];
   const equipos = (miEquipo.data ?? []) as { production_id: string | null; nombre: string; roles: string[] }[];
   const pendEquipo = new Map(((equipoPend.data ?? []) as { production_id: string | null; avisos: number; notas: number }[]).map((x) => [x.production_id ?? "general", x]));
   const ventas = (misVentas.data ?? []) as MySale[];
@@ -199,7 +204,11 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
                       <AgregarCalendario ics={`/calendario/boleto/${encodeURIComponent(o.order_code)}`}
                         evento={{ uid: `orden-${o.order_code}`, titulo: `${nombre} · DARF Productions`, inicia: o.performances.starts_at, lugar: o.performances.venue ?? prod?.venue ?? null, detalle: `Orden ${o.order_code}` }} />
                       <VoyAIr obra={nombre} funcion={formatPerformanceDate(o.performances.starts_at)} lugar={o.performances.venue ?? prod?.venue ?? null}
-                        ambiente={tema?.ambiente ?? null} poster={posterUrl(prod, "voy")?.url ?? null} logo={tema?.logo ?? null} fondo={estilo.fondo} texto={estilo.texto} acento={estilo.acento} />
+                        ambiente={tema?.ambiente ?? (prod?.ambiente_path ? assetUrl(prod.ambiente_path) : null)} poster={posterUrl(prod, "voy")?.url ?? null}
+                        logo={tema?.logo ?? (prod?.logo_path ? assetUrl(prod.logo_path) : null)}
+                        fondo={prod?.color_fondo ?? estilo.fondo} superficie={prod?.color_superficie ?? estilo.superficie}
+                        texto={prod?.color_texto ?? estilo.texto} acento={prod?.color_acento ?? estilo.acento}
+                        liga={prod && ["publicada", "archivada"].includes(prod.estado ?? "") ? `${sitio}/producciones/${o.performances.production_id}` : sitio} />
                     </div>
                   )}
                   </div>
@@ -230,8 +239,8 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
               Notificaciones{notisNuevas > 0 && <span className="ml-2 rounded-full bg-ciruela px-2 py-0.5 align-middle text-xs text-white">{notisNuevas} {notisNuevas === 1 ? "nueva" : "nuevas"}</span>}
             </h2>
             <span className="flex flex-wrap gap-4 text-sm font-bold">
-              <Link href="/cuenta/notificaciones#telefono" className="text-violeta-claro">📱 Activar en mi teléfono</Link>
-              {notis.length > 0 && <Link href="/cuenta/notificaciones" className="text-violeta-claro">Ver todas →</Link>}
+              <Link href="/cuenta/notificaciones#telefono" className="text-violeta-claro"><Icono nombre="celular" /> Activar en mi teléfono</Link>
+              {notis.length > 0 && <Link href="/cuenta/notificaciones" className="text-violeta-claro">Ver todas <Icono nombre="flecha-der" /></Link>}
             </span>
           </div>
           {notis.length === 0 ? <p className="text-sm text-texto-2">No tienes notificaciones. Aquí te avisamos cuando se aprueben tus boletos, antes de tu función y cuando respondan tus solicitudes.</p> : (
@@ -267,7 +276,7 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
                 : <>Tu orden <b>{nueva}</b> ya no está activa ({estadoOrden(o, "comprador").toLowerCase()}).</>;
             return (
               <p role="status" className={`rounded-xl border px-4 py-3 ${o.status === "rechazado" ? "border-white/15 bg-white/5" : "border-exito/40 bg-exito/10"}`}>
-                {texto} <a href={`#o-${nueva}`} className="font-bold text-lila">Ir a la orden ↓</a>
+                {texto} <a href={`#o-${nueva}`} className="font-bold text-lila">Ir a la orden <Icono nombre="flecha-abajo" /></a>
               </p>
             );
           })()}
@@ -328,7 +337,7 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
                   <Link href={`/cuenta/produccion/${p.production_id}`} className="block rounded-2xl bg-telon p-5 hover:bg-telon-2">
                     <p className="text-lg font-bold">{p.nombre}{avisosDe(p.production_id) > 0 && <span className="ml-2 rounded-full bg-[#be123c] px-2 py-0.5 text-xs text-white">{avisosDe(p.production_id)} {avisosDe(p.production_id) === 1 ? "aviso" : "avisos"}</span>}</p>
                     <p className="text-sm text-texto-2">{p.papeles.join(" · ") || "Integrante"}</p>
-                    <span className="mt-2 inline-block text-sm font-bold text-violeta-claro">Avisos, ensayos, materiales y mi expediente →</span>
+                    <span className="mt-2 inline-block text-sm font-bold text-violeta-claro">Avisos, ensayos, materiales y mi expediente <Icono nombre="flecha-der" /></span>
                   </Link>
                 </li>
               ))}
@@ -351,7 +360,7 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
                         {pe?.avisos ? <span className="ml-2 rounded-full bg-ciruela px-2 py-0.5 text-xs text-white">{pe.avisos} {pe.avisos === 1 ? "aviso" : "avisos"}</span> : null}
                       </p>
                       <p className="text-sm text-texto-2">{e.roles.join(" · ") || "Equipo DARF"}</p>
-                      <span className="mt-2 inline-block text-sm font-bold text-violeta-claro">Notas, juntas, avisos y materiales →</span>
+                      <span className="mt-2 inline-block text-sm font-bold text-violeta-claro">Notas, juntas, avisos y materiales <Icono nombre="flecha-der" /></span>
                     </Link>
                   </li>
                 );
@@ -359,6 +368,8 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
             </ul>
           </section>
         )}
+
+        <MisEnsayosEquipo ensayos={misEnsayosEquipo} />
 
         {ofertasPendientes.length > 0 && (
           <section aria-labelledby="ofertas" className="flex flex-col gap-3 order-3 lg:order-none">
@@ -414,7 +425,7 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
                         : <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${ESTADO_SOLICITUD[a.estado]?.cls ?? ""}`}>{ESTADO_SOLICITUD[a.estado]?.label ?? a.estado}</span>}
                       {a.numero && <span className="ml-2">Número {a.numero}</span>}
                     </p>
-                    <Link href={`/audiciones/${a.audition_id}`} className="mt-1 text-sm font-bold text-violeta-claro">Ver convocatoria →</Link>
+                    <Link href={`/audiciones/${a.audition_id}`} className="mt-1 text-sm font-bold text-violeta-claro">Ver convocatoria <Icono nombre="flecha-der" /></Link>
                   </div>
                 </li>
               ))}
@@ -444,16 +455,16 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
           </section>
           <div className="grid grid-cols-2 gap-3">
             <a href="/cuenta/transacciones" className="flex flex-col gap-1 rounded-2xl bg-telon p-5 hover:bg-telon-2">
-              <span className="font-bold">Transacciones →</span>
+              <span className="font-bold">Transacciones <Icono nombre="flecha-der" /></span>
               <span className="text-xs text-texto-2">Todas tus órdenes y pagos.</span>
             </a>
             <a href="/cuenta/eventos" className="flex flex-col gap-1 rounded-2xl bg-telon p-5 hover:bg-telon-2">
-              <span className="font-bold">Mis eventos →</span>
+              <span className="font-bold">Mis eventos <Icono nombre="flecha-der" /></span>
               <span className="text-xs text-texto-2">Lo que apartaste, tus pagos y las funciones a las que fuiste.</span>
             </a>
           </div>
           <a href="/cuenta/perfil-profesional" className="flex flex-col gap-1 rounded-2xl bg-telon p-6 hover:bg-telon-2">
-            <span className="text-lg font-bold">Perfil profesional →</span>
+            <span className="text-lg font-bold">Perfil profesional <Icono nombre="flecha-der" /></span>
             <span className="text-sm text-texto-2">Retrato, semblanza, trayectoria, habilidades y reel. Puedes hacerlo público.</span>
           </a>
           <details className="rounded-2xl bg-telon p-6">

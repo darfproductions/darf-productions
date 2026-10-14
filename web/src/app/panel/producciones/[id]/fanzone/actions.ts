@@ -136,7 +136,7 @@ export async function validarCredencial(pid: string, eid: string, code: string):
     return { ...base, tono: "ok", titulo: `${ACCESO_FAN.ok.titulo} · ${horaMx(r.llegada)}`, llegada: horaMx(r.llegada) };
   }
   if (r.resultado === "ya") return { ...base, tono: "neutro", titulo: `${ACCESO_FAN.ya.titulo} a las ${horaMx(r.llegada)}` };
-  if (r.resultado === "sin_pago") return { ...base, tono: "error", titulo: ACCESO_FAN.sin_pago.titulo, detalle: "Revisa su pago en Panel → Eventos (Ver lista) y apruébalo para que pueda pasar." };
+  if (r.resultado === "sin_pago") return { ...base, tono: "error", titulo: ACCESO_FAN.sin_pago.titulo, detalle: "Revisa su pago en el panel, en Eventos (Ver lista), y apruébalo para que pueda pasar." };
   return { ...base, tono: "error", titulo: ACCESO_FAN[r.resultado]?.titulo ?? "No puede pasar" };
 }
 

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { PageHeading } from "@/components/PageHeading";
 import { ESTADO_CONVOCATORIA } from "@/lib/audition-rules";
 import { formatSlot, getPermanentRegistry, listPublicAuditions } from "@/lib/auditions";
+import { Icono } from "@/components/Icono";
 
 export const metadata: Metadata = { title: "Audiciones" };
 
@@ -37,7 +38,7 @@ export default async function AudicionesPage() {
                     <p className="text-xs font-bold uppercase tracking-[0.2em] text-texto-3">{a.productions?.nombre ?? "Convocatoria general"} · {ESTADO_CONVOCATORIA[a.estado]}</p>
                     <p className="mt-1 text-xl font-bold">{a.titulo}</p>
                     {a.inscripcion_cierra && <p className="mt-1 text-sm text-texto-2">Inscripción hasta el {formatSlot(a.inscripcion_cierra).toLowerCase()}</p>}
-                    <span className="mt-3 inline-block text-sm font-bold text-violeta-claro">{a.estado === "abierta" ? "Ver e inscribirme →" : "Ver detalles →"}</span>
+                    <span className="mt-3 inline-block text-sm font-bold text-violeta-claro">{a.estado === "abierta" ? "Ver e inscribirme" : "Ver detalles"} <Icono nombre="flecha-der" /></span>
                   </Link>
                 </li>
               ))}
@@ -57,7 +58,7 @@ export default async function AudicionesPage() {
               <ul className="flex flex-wrap gap-2">
                 {ESPECIALIDADES.map((e) => <li key={e} className="rounded-full border border-white/20 px-3 py-1.5 text-sm">{e}</li>)}
               </ul>
-              <Link href={`/audiciones/${permanente.id}`} className="self-start rounded-full bg-texto px-6 py-4 text-sm font-bold uppercase tracking-[0.1em] text-sala">Registrarme →</Link>
+              <Link href={`/audiciones/${permanente.id}`} className="self-start rounded-full bg-texto px-6 py-4 text-sm font-bold uppercase tracking-[0.1em] text-sala">Registrarme <Icono nombre="flecha-der" /></Link>
             </div>
           ) : (
             <p className="rounded-2xl bg-telon p-6 text-texto-2">Muy pronto podrás dejarnos tu perfil aquí.</p>

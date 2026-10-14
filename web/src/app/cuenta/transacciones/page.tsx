@@ -5,6 +5,7 @@ import { requireSession } from "@/lib/auth";
 import { getTransacciones } from "@/lib/historial";
 import { formatPerformanceDate } from "@/lib/productions";
 import { formatMoney } from "@/lib/tickets";
+import { Icono } from "@/components/Icono";
 
 export const metadata: Metadata = { title: "Transacciones" };
 
@@ -27,9 +28,9 @@ export default async function Transacciones() {
         Todas tus órdenes de boletos: pagadas, pendientes y canceladas.
       </PageHeading>
       <div className="mx-auto flex max-w-[1100px] flex-col gap-6 px-5 md:px-16">
-        <Link href="/cuenta" className="text-sm font-bold text-lila">← Mi cuenta</Link>
+        <Link href="/cuenta" className="text-sm font-bold text-lila"><Icono nombre="flecha-izq" /> Mi cuenta</Link>
         {lista.length === 0 ? (
-          <p className="tarjeta p-6 text-texto-2">Todavía no tienes compras. <Link href="/producciones?estado=cartelera" className="font-bold text-lila">Ver producciones →</Link></p>
+          <p className="tarjeta p-6 text-texto-2">Todavía no tienes compras. <Link href="/producciones?estado=cartelera" className="font-bold text-lila">Ver producciones <Icono nombre="flecha-der" /></Link></p>
         ) : (
           <>
             <p className="text-sm text-texto-2">{lista.length} {lista.length === 1 ? "orden" : "órdenes"} · Pagado en total <b className="num text-texto">{formatMoney(pagado)}</b></p>
@@ -45,7 +46,7 @@ export default async function Transacciones() {
                   <div className="flex flex-col items-start gap-1 sm:items-end">
                     <b className="num text-lg">{formatMoney(o.total)}</b>
                     <span className={`text-xs font-bold ${ESTADO[o.status]?.c ?? ""}`}>{o.status === "rechazado" && o.vencida ? "Venció sin pago" : ESTADO[o.status]?.t}</span>
-                    {o.status !== "rechazado" && <Link href={`/cuenta?orden=${o.codigo}`} className="text-xs font-bold text-lila">Ver boletos →</Link>}
+                    {o.status !== "rechazado" && <Link href={`/cuenta?orden=${o.codigo}`} className="text-xs font-bold text-lila">Ver boletos <Icono nombre="flecha-der" /></Link>}
                   </div>
                 </li>
               ))}

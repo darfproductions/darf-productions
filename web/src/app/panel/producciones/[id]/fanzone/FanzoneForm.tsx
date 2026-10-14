@@ -7,6 +7,7 @@ import { input } from "@/components/panel/ui";
 import { categoriaSugerida, FAN_CATEGORIAS, FAN_TIPOS, type FanCategoria, type FanTipo } from "@/lib/fanzone-rules";
 import { createClient } from "@/lib/supabase/client";
 import { addFanzoneItem } from "./actions";
+import { Icono } from "@/components/Icono";
 
 const FOTO = ["image/jpeg", "image/png", "image/webp"];
 
@@ -56,7 +57,7 @@ export function FanzoneForm({ pid }: { pid: string }) {
         {(Object.keys(FAN_TIPOS) as FanTipo[]).map((t) => (
           <label key={t} className={`cursor-pointer rounded-full border px-3 py-1.5 text-sm font-semibold ${tipo === t ? "border-texto bg-white/10" : "border-white/20"}`}>
             <input type="radio" name="tipo" value={t} checked={tipo === t} onChange={() => setTipo(t)} className="sr-only" />
-            {FAN_TIPOS[t].icono} {FAN_TIPOS[t].label}
+            <Icono nombre={FAN_TIPOS[t].icono} /> {FAN_TIPOS[t].label}
           </label>
         ))}
       </div>

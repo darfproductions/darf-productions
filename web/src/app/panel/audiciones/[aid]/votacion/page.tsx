@@ -5,6 +5,7 @@ import { Card } from "@/components/panel/ui";
 import { requireAudition, signPhotos } from "@/lib/panel-auditions";
 import { createClient } from "@/lib/supabase/server";
 import { votar } from "../../votacion-actions";
+import { Icono } from "@/components/Icono";
 
 export const metadata: Metadata = { title: "Votación" };
 
@@ -41,7 +42,7 @@ export default async function Votacion({ params }: PageProps<"/panel/audiciones/
         <Card key={r.id} className="flex flex-col gap-3">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <h2 className="titular text-xl"><span className="mr-2 font-mono text-sm text-texto-3">{i + 1}</span>{r.nombre}</h2>
-            {r.mi_voto && <span className="text-xs font-bold text-exito">{r.mi_voto === "abstencion" ? "Te abstuviste" : "✓ Ya votaste"}</span>}
+            {r.mi_voto && <span className="text-xs font-bold text-exito">{r.mi_voto === "abstencion" ? "Te abstuviste" : <><Icono nombre="check" /> Ya votaste</>}</span>}
           </div>
           {r.descripcion && <p className="text-sm text-texto-3">{r.descripcion}</p>}
           {r.candidatos.length === 0 ? <p className="text-sm text-texto-3">Ningún juez marcó a alguien para este personaje.</p> : (

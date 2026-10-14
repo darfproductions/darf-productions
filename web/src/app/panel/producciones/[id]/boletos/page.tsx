@@ -14,6 +14,7 @@ import { getPanelProduction } from "@/lib/panel-data";
 import { origenSitio } from "@/lib/site-origin";
 import { estadoOrden, metodoLabel, textoBusqueda } from "@/lib/ventas-rules";
 import { OrderActions } from "./OrderActions";
+import { Icono } from "@/components/Icono";
 
 export const metadata: Metadata = { title: "Ventas y órdenes" };
 
@@ -109,7 +110,7 @@ export default async function SalesPage({ params, searchParams }: PageProps<"/pa
             ))}
           </div>
         </div>
-        <a href={`/panel/producciones/${id}/boletos/exportar?${new URLSearchParams({ ...(funcion && { funcion }), ...(estado && { estado }) }).toString()}`} className="mt-1 self-start px-5 text-sm font-bold text-violeta-claro">Descargar órdenes (Excel) ↓</a>
+        <a href={`/panel/producciones/${id}/boletos/exportar?${new URLSearchParams({ ...(funcion && { funcion }), ...(estado && { estado }) }).toString()}`} className="mt-1 self-start px-5 text-sm font-bold text-violeta-claro">Descargar órdenes (Excel) <Icono nombre="flecha-abajo" /></a>
         <form className="mt-3 flex flex-wrap gap-2 px-5" role="search">
           {funcion && <input type="hidden" name="funcion" value={funcion} />}
           {estado && <input type="hidden" name="estado" value={estado} />}
@@ -149,7 +150,7 @@ export default async function SalesPage({ params, searchParams }: PageProps<"/pa
               <ul className="flex flex-wrap gap-2 text-xs">
                 {o.tickets.map((t) => (
                   <li key={t.id} title={t.cancel_motivo ? `Cancelado: ${t.cancel_motivo}` : undefined} className={`rounded-full px-2.5 py-1 ${t.is_active ? "bg-telon-2" : "bg-telon-2 line-through opacity-60"}`}>
-                    {t.seat_label ?? "General"}{t.checked_in_at && " ✓"}
+                    {t.seat_label ?? "General"}{t.checked_in_at && <> <Icono nombre="check" etiqueta="Ya entró" /></>}
                   </li>
                 ))}
               </ul>

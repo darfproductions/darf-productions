@@ -25,7 +25,7 @@ do $$ begin
   perform panel_add_member('t_new', 't_cont@test.local', 'contenido');
   perform panel_add_member('t_new', 't_dir@test.local', 'direccion');
   perform panel_add_member('showman', 't_taq@test.local', 'taquilla');
-  perform panel_add_member('t_new', 't_prod@test.local', 'productor');
+  perform panel_add_member('t_new', 't_prod@test.local', (select coalesce(max(id), 'productor') from panel_roles where id = 'direccion_general'));
   reset role;
 end $$;
 

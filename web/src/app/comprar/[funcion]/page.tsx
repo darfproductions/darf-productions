@@ -18,6 +18,7 @@ import { SeatPicker, type ZonePrice } from "./SeatPicker";
 import { mensajeError } from "@/lib/errores";
 import { todasLasFilas } from "@/lib/supabase/paginar";
 import { asientosOcupados } from "@/lib/ocupados";
+import { Icono } from "@/components/Icono";
 
 export const metadata: Metadata = { title: "Comprar boletos" };
 
@@ -75,7 +76,7 @@ export default async function ComprarPage({ params, searchParams }: PageProps<"/
         {!vendible ? (
           <div className="rounded-2xl bg-telon p-8">
             <p className="text-lg">{yaPaso ? "Esta función ya pasó." : "Esta función no está a la venta en este momento."}</p>
-            <Link href={`/producciones/${p.id}`} className="mt-4 inline-block font-bold text-violeta-claro">← Volver a la obra</Link>
+            <Link href={`/producciones/${p.id}`} className="mt-4 inline-block font-bold text-violeta-claro"><Icono nombre="flecha-izq" /> Volver a la obra</Link>
           </div>
         ) : bloqueada ? (
           <div className="flex max-w-2xl flex-col items-start gap-4 rounded-[22px] border border-oro/40 bg-[#120f17] p-8">
@@ -86,7 +87,7 @@ export default async function ComprarPage({ params, searchParams }: PageProps<"/
             {session ? <UnirseClub /> : (
               <Link href={`/entrar?next=${encodeURIComponent(`/comprar/${f.id}`)}`} className="fb fb-fz">Entra o crea tu cuenta para unirte</Link>
             )}
-            <Link href={`/producciones/${p.id}`} className="text-sm font-bold text-texto-3 hover:text-texto">← Volver a la obra</Link>
+            <Link href={`/producciones/${p.id}`} className="text-sm font-bold text-texto-3 hover:text-texto"><Icono nombre="flecha-izq" /> Volver a la obra</Link>
           </div>
         ) : loadError ? (
           <p role="alert" className="rounded-2xl bg-telon p-8">No se pudo cargar el mapa de asientos. Recarga la página.</p>

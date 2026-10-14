@@ -81,8 +81,8 @@ export async function compressImage(file: File, kind: CompressKind): Promise<Com
     if (!blob || (!recortado && !posterAJpeg && blob.size >= file.size)) return sinCambio;
     const nuevo = new File([blob], renombrar(file.name, tipo), { type: tipo });
     const nota = recortado
-      ? `Logo ajustado: se quitaron los márgenes vacíos (${peso(file.size)} → ${peso(nuevo.size)})`
-      : `Foto optimizada: ${peso(file.size)} → ${peso(nuevo.size)}`;
+      ? `Logo ajustado: se quitaron los márgenes vacíos (de ${peso(file.size)} a ${peso(nuevo.size)})`
+      : `Foto optimizada: de ${peso(file.size)} a ${peso(nuevo.size)}`;
     return { file: nuevo, antes: file.size, despues: nuevo.size, nota };
   } catch {
     return sinCambio;

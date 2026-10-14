@@ -5,6 +5,7 @@ import { Card, PanelTitle, button, input } from "@/components/panel/ui";
 import { requireDirector } from "@/lib/permissions";
 import { createClient } from "@/lib/supabase/server";
 import { addTeamMember, removeTeamMember, saveTeamMember } from "./actions";
+import { Icono } from "@/components/Icono";
 
 export const metadata: Metadata = { title: "Equipo DARF" };
 
@@ -34,7 +35,7 @@ export default async function EquipoDarf({ searchParams }: PageProps<"/panel/per
         Solo el Director general edita el equipo que sale en la página pública <Link href="/nosotros" className="font-bold text-violeta-claro">Conoce al equipo</Link>. La foto, la semblanza y el enlace salen de su perfil profesional, solo si es público. El cargo también es el puesto que sale en su gafete (por encima de su papel en cualquier obra).
       </PanelTitle>
       <Link href="/panel/personas/equipo/portal" className="flex flex-col gap-1 rounded-2xl bg-telon p-5 hover:bg-telon-2">
-        <span className="font-bold">Portal general del equipo →</span>
+        <span className="font-bold">Portal general del equipo <Icono nombre="flecha-der" /></span>
         <span className="text-sm text-texto-2">Avisos, material, juntas y notas para todo el equipo de DARF, no solo de una producción.</span>
       </Link>
 
@@ -48,11 +49,11 @@ export default async function EquipoDarf({ searchParams }: PageProps<"/panel/per
               <p className="font-bold">
                 {m.people?.nombre ?? "Persona"}{" "}
                 <span className="text-xs font-semibold text-texto-3">
-                  · {pro?.publico ? <Link href={`/artistas/${pro.slug}`} className="text-violeta-claro">perfil público ↗</Link> : "perfil profesional no público (sale solo nombre y cargo)"}
+                  · {pro?.publico ? <Link href={`/artistas/${pro.slug}`} className="text-violeta-claro">perfil público <Icono nombre="externo" /></Link> : "perfil profesional no público (sale solo nombre y cargo)"}
                 </span>
               </p>
               <p className="text-sm">
-                <Link href={`/panel/talento/p/${m.person_id}/perfil`} className="font-bold text-violeta-claro">Editar su perfil profesional →</Link>
+                <Link href={`/panel/talento/p/${m.person_id}/perfil`} className="font-bold text-violeta-claro">Editar su perfil profesional <Icono nombre="flecha-der" /></Link>
                 <span className="text-texto-3"> (foto, semblanza, trayectoria y si es público; así su nombre se vuelve clic en los créditos de cada producción)</span>
               </p>
               <div className="flex flex-wrap items-end gap-2">
