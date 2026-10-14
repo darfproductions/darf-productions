@@ -49,6 +49,14 @@ const DEGRADADO_PLATA: [number, string][] = [[0, "#8e959e"], [0.45, "#e6e9ee"], 
 /** Degradados de las franjas que no son de un solo color (para el canvas del PDF y las imágenes de Wallet). */
 export const DEGRADADOS: Partial<Record<Franja, [number, string][]>> = { casa: DEGRADADO_HOLO, direccion_general: DEGRADADO_PLATA };
 
+/** Sellos que van junto al logo, en orden: Casa DARF y Club Fan (y después las medallas). Todos se muestran. */
+export function sellosDe(p: Pick<PaseVista, "tema" | "casa" | "sello">): { src: string; alt: string }[] {
+  const out: { src: string; alt: string }[] = [];
+  if (p.casa) out.push({ src: "/marca/sello-casa.svg", alt: "Casa DARF" });
+  if (p.tema === "fan" || p.sello) out.push({ src: "/marca/sello-club.svg", alt: "Socio del Club Fan" });
+  return out;
+}
+
 /** Año en curso en CDMX (vigencia del gafete). */
 export function anioMx(hoy: Date = new Date()): string {
   return new Intl.DateTimeFormat("en-CA", { year: "numeric", timeZone: "America/Mexico_City" }).format(hoy);

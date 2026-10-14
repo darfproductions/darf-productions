@@ -1,6 +1,6 @@
 "use client";
 
-import { iniciales, type PaseVista } from "@/lib/gafete-rules";
+import { iniciales, sellosDe, type PaseVista } from "@/lib/gafete-rules";
 import { pdfConImagenes } from "@/lib/ticket-design";
 
 // Gafete o credencial del Club Fan en PDF: se dibuja en un canvas (mismo diseño que GafeteVista)
@@ -22,11 +22,12 @@ function cargar(src: string, cors: boolean): Promise<HTMLImageElement | null> {
 export async function descargarPase(p: PaseVista, archivo: string): Promise<void> {
   const fan = p.tema === "fan";
   const fuente = getComputedStyle(document.body).fontFamily || "sans-serif";
-  const [logo, foto, qr, sello] = await Promise.all([
+  const [logo, foto, qr, ...sellosImg] = await Promise.all([
     cargar(p.logo, false), p.fotoUrl ? cargar(p.fotoUrl, true) : Promise.resolve(null),
     p.qr ? cargar(p.qr, false) : Promise.resolve(null),
-    p.casa ? cargar("/marca/sello-casa.svg", false) : fan || p.sello ? cargar("/marca/sello-club.svg", false) : Promise.resolve(null),
+    ...sellosDe(p).map((s) => cargar(s.src, false)),
   ]);
+  const sellos = sellosImg.filter((s): s is HTMLImageElement => !!s);
   const pintar = (conFoto: boolean) => {
     const c = document.createElement("canvas");
     c.width = W; c.height = H;
@@ -38,17 +39,16 @@ export async function descargarPase(p: PaseVista, archivo: string): Promise<void
       x.fillStyle = g; x.fillRect(0, 0, W, H);
       x.strokeStyle = "rgba(215,187,95,0.6)"; x.lineWidth = 4; x.strokeRect(2, 2, W - 4, H - 4);
     }
-    // Logo arriba (sin la ranura); si es socio, el sello al lado y del mismo alto (0087).
+    // Logo arriba (sin la ranura) y todos sus sellos al lado, del mismo alto (Casa DARF, Club Fan…).
     if (logo) {
       const maxH = fan ? 80 : 112, hueco = 24;
-      const conSello = !!sello;
-      const maxW = conSello ? (fan ? 360 : 300) : fan ? 440 : 400;
+      const maxW = sellos.length ? (fan ? 360 : 300) - (sellos.length - 1) * 80 : fan ? 440 : 400;
       const k = Math.min(maxW / logo.width, maxH / logo.height);
       const lw = logo.width * k, lh = logo.height * k;
-      const total = lw + (conSello ? hueco + lh : 0);
+      const total = lw + sellos.length * (hueco + lh);
       const x0 = (W - total) / 2, y0 = 60 + (112 - lh) / 2;
       x.drawImage(logo, x0, y0, lw, lh);
-      if (sello) x.drawImage(sello, x0 + lw + hueco, y0, lh, lh);
+      sellos.forEach((s, i) => x.drawImage(s, x0 + lw + hueco + i * (hueco + lh), y0, lh, lh));
     }
     // Foto redonda
     const cx = W / 2, cy = 330, r = 104;

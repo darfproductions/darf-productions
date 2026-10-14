@@ -51,3 +51,13 @@ describe("franja Dirección general (0101)", () => {
     expect(p.banda.texto).toBe("#0b0910");
   });
 });
+
+describe("sellos del gafete (0102)", () => {
+  it("Casa DARF y Club Fan van los dos, en ese orden", async () => {
+    const { sellosDe } = await import("./gafete-rules");
+    expect(sellosDe({ tema: "darf", casa: "Casa DARF · desde 2023", sello: "Socio #0001" }).map((s) => s.alt)).toEqual(["Casa DARF", "Socio del Club Fan"]);
+    expect(sellosDe({ tema: "darf", casa: "Casa DARF · desde 2023" }).length).toBe(1);
+    expect(sellosDe({ tema: "fan" }).map((s) => s.alt)).toEqual(["Socio del Club Fan"]);
+    expect(sellosDe({ tema: "darf" })).toEqual([]);
+  });
+});
