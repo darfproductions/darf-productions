@@ -6,6 +6,7 @@ import { rgb, type Campo, type PaseWallet } from "@/lib/wallet-pases";
 // Apple Wallet (2026-10-14): arma y firma el .pkpass en memoria con passkit-generator.
 // Boleto = eventTicket: logo de DARF arriba y la franja con la imagen y el logo de la obra.
 // Credencial: Club Fan = storeCard con franja dorada (sello + Fan Zone); gafete = generic con foto.
+// Con `servicio` (0098) el pase lleva webServiceURL + authenticationToken y se actualiza solo.
 
 export type ImagenesApple = {
   /** Logo de arriba a la izquierda (DARF). */
@@ -32,8 +33,11 @@ export type Diseno = {
   franjaConNombre?: boolean;
 };
 
+/** Web service de PassKit (0098): con esto el iPhone se registra y el pase se actualiza solo. */
+export type ServicioApple = { url: string; token: string };
+
 /** pass.json sin barcodes ni fechas (eso lo pone la librería). Exportada para las pruebas. */
-export function passJson(c: Pick<WalletAppleConfig, "passTypeId" | "teamId">, p: PaseWallet, d: Diseno): Record<string, unknown> {
+export function passJson(c: Pick<WalletAppleConfig, "passTypeId" | "teamId">, p: PaseWallet, d: Diseno, servicio?: ServicioApple | null): Record<string, unknown> {
   const frente = d.franjaConNombre && d.estilo === "storeCard"
     // Club Fan: la franja dorada es la protagonista; el nombre pasa a la fila de abajo.
     ? { primaryFields: [], secondaryFields: campos([...p.primarios, ...p.secundarios]) }
@@ -53,6 +57,8 @@ export function passJson(c: Pick<WalletAppleConfig, "passTypeId" | "teamId">, p:
     backgroundColor: rgb(p.colores.fondo),
     labelColor: rgb(p.colores.etiqueta),
     sharingProhibited: true,
+    ...(servicio ? { webServiceURL: servicio.url, authenticationToken: servicio.token } : {}),
+    ...(p.anulado ? { voided: true } : {}),
     [d.estilo]: {
       headerFields: campos(p.cabecera),
       ...frente,
@@ -62,7 +68,7 @@ export function passJson(c: Pick<WalletAppleConfig, "passTypeId" | "teamId">, p:
   };
 }
 
-export async function crearPkpass(c: WalletAppleConfig, p: PaseWallet, im: ImagenesApple): Promise<Buffer> {
+export async function crearPkpass(c: WalletAppleConfig, p: PaseWallet, im: ImagenesApple, servicio?: ServicioApple | null): Promise<Buffer> {
   const archivos: Record<string, Buffer> = {};
   const [iconoSrc, logoSrc, ambSrc, logoObraSrc, fotoSrc] = await Promise.all([
     leerImagen(ICONO), leerImagen(im.logo), leerImagen(im.obra?.ambiente), leerImagen(im.obra?.logo), leerImagen(im.foto),
@@ -85,7 +91,7 @@ export async function crearPkpass(c: WalletAppleConfig, p: PaseWallet, im: Image
     if (fotoSrc) Object.assign(archivos, await cubrir(fotoSrc, "thumbnail", 90, 90));
     d = { estilo: "generic", logoTexto: im.logoTexto };
   }
-  archivos["pass.json"] = Buffer.from(JSON.stringify(passJson(c, p, d)));
+  archivos["pass.json"] = Buffer.from(JSON.stringify(passJson(c, p, d, servicio)));
 
   const pase = new PKPass(archivos, {
     wwdr: c.wwdr, signerCert: c.cert, signerKey: c.key, signerKeyPassphrase: c.passphrase,
