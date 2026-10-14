@@ -10,6 +10,18 @@ const texto = (value: string) => ({ defaultValue: { language: LANG, value } });
 const imagen = (uri: string, desc: string) => ({ sourceUri: { uri }, contentDescription: texto(desc) });
 const modulos = (cs: Campo[]) => cs.map((c) => ({ id: c.key, header: c.label, body: c.value }));
 
+/** Fecha con la hora y el desfase de la Ciudad de México ("2026-10-20T21:00:00-06:00"):
+ *  Google muestra la hora tal como viene, así que en UTC saldría la hora equivocada. */
+export function isoMx(iso: string): string {
+  const d = new Date(iso);
+  const partes = Object.fromEntries(new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Mexico_City", year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23", timeZoneName: "longOffset",
+  }).formatToParts(d).map((x) => [x.type, x.value]));
+  const desfase = (partes.timeZoneName ?? "GMT").replace("GMT", "") || "+00:00";
+  return `${partes.year}-${partes.month}-${partes.day}T${partes.hour}:${partes.minute}:${partes.second}${desfase}`;
+}
+
 export type ImagenesGoogle = { logo: string; hero?: string | null };
 
 export function idGoogle(issuerId: string, sufijo: string): string {
@@ -23,7 +35,7 @@ export function claseBoleto(issuerId: string, funcionId: string, p: PaseWallet, 
     reviewStatus: "UNDER_REVIEW",
     eventName: texto(obra),
     ...(lugar ? { venue: { name: texto(lugar), address: texto(lugar) } } : {}),
-    ...(p.fecha ? { dateTime: { start: p.fecha } } : {}),
+    ...(p.fecha ? { dateTime: { start: isoMx(p.fecha) } } : {}),
     logo: imagen(im.logo, obra),
     ...(im.hero ? { heroImage: imagen(im.hero, obra) } : {}),
     hexBackgroundColor: p.colores.fondo,
