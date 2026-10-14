@@ -1,6 +1,11 @@
 # DARF 2.0 — Apple Wallet y Google Wallet
 
-## Estado: llaves puestas en Vercel (Production y Preview, 14 oct); falta la prueba en teléfono
+## Estado: PUBLICADO (14 oct 2026)
+- Probado por Diego: Apple Wallet en iPhone (boleto y credencial) y Google Wallet desde la Mac (modo prueba).
+- Apple: visible para todos. Google: solo admin/staff (`GOOGLE_WALLET_PUBLICO = false` en `wallet-env.ts`)
+  hasta que Google apruebe el acceso de publicación; entonces cambiarlo a `true`.
+- Las imágenes de Google salen de `https://www.darfproductions.com/wallet/img/...` (las ligas de prueba piden login).
+- La hora del evento en Google va con el desfase de la Ciudad de México.
 - **Pases:** boleto (uno por asiento) y credencial única (gafete o Club Fan, 0083). El QR es el mismo
   de la web: el boleto lleva `tickets.qr_token` (Puerta no cambia) y la credencial `/g/<token>`.
 - **Botones** "Agregar a Apple Wallet / Google Wallet" en "Ver boletos" (cada boleto) y en "Mi credencial".
