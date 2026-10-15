@@ -61,12 +61,16 @@ export default async function AuditPage({ searchParams }: PageProps<"/panel/bita
     ? await supabase.from("profiles").select("id, nombre").in("id", [...ids])
     : { data: [] as { id: string; nombre: string | null }[] };
   const personName = new Map((people ?? []).map((p) => [p.id, p.nombre || "Sin nombre"]));
+  const fichaIds = [...new Set(log.filter((r) => r.tabla === "people").map((r) => String(((r.despues ?? r.antes ?? {}) as Record<string, unknown>).id ?? "")).filter(Boolean))];
+  const { data: fichas } = fichaIds.length ? await supabase.from("people").select("id, nombre").in("id", fichaIds) : { data: [] as { id: string; nombre: string }[] };
+  const fichaName = new Map((fichas ?? []).map((p) => [p.id as string, p.nombre as string]));
   const prodName = new Map((prods ?? []).map((p) => [p.id as string, p.nombre as string]));
   const roleName = new Map((roles ?? []).map((r) => [r.id as string, r.nombre as string]));
   const names = {
     person: (id: unknown) => personName.get(String(id)) ?? "una cuenta",
     role: (id: unknown) => roleName.get(String(id)) ?? String(id),
     production: (id: unknown) => prodName.get(String(id)) ?? String(id),
+    ficha: (id: unknown) => fichaName.get(String(id)) ?? "una persona",
   };
   const filtros = !!(obra || persona || tipo || desde || hasta);
   const masLiga = () => {

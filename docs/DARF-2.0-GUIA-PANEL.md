@@ -68,6 +68,9 @@ general: lo que hacía ahora lo cubren los puestos de Casa DARF y los roles de c
 - **Alguien se registró dos veces** y sus créditos quedaron en la cuenta que no usa: en el Directorio, en su
   fila, **"Cambiar cuenta"** → busca su nombre y elige la cuenta buena (la que dice "sin ficha"). La ficha y
   sus créditos pasan a esa cuenta.
+- **Nombre en los créditos**: sale de la **ficha** de la persona, no de su cuenta (si cambia su nombre en Mi cuenta,
+  los créditos no cambian). Para cambiarlo: abre su ficha → **"Editar nombre"**. Cambia en todas sus obras, el
+  programa y su perfil profesional, y queda en la Bitácora. Lo puede hacer el admin y Casa DARF con permiso de personas.
 - **Buscar por nombre**: en todos los lugares donde agregas a alguien (Casa DARF, Permisos, ofertas de papel,
   equipo de audiciones y de eventos, vendedores, ligar cuenta) puedes escribir el nombre en vez del correo.
   La lista muestra el correo a medias (por ejemplo "cam***er@gmail.com") para distinguir cuentas.
