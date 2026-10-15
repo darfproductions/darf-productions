@@ -14,7 +14,7 @@ import { AddCreditForm } from "./AddCreditForm";
 import { Personajes } from "./Personajes";
 import { OfferForm } from "./OfferForm";
 import { withdrawOffer } from "./offer-actions";
-import { moveCredit, publishAllCast, removeCredit, setCreditPhoto, setCreditPublicado, updatePapel } from "./actions";
+import { moveCredit, publishAllCast, removeCredit, setCreditPhoto, setCreditPublicado, setSoloCredito, updatePapel } from "./actions";
 import { Icono } from "@/components/Icono";
 
 export const metadata: Metadata = { title: "Elenco y equipos" };
@@ -32,7 +32,7 @@ const GRUPOS = [
 
 const ELENCO = new Set(["reparto", "ensamble"]);
 
-type Row = { id: string; tipo: string; papel: string | null; foto_path: string | null; orden: number; activo: boolean; publicado: boolean; people: { id: string; nombre: string; profile_id: string | null } | null };
+type Row = { id: string; tipo: string; papel: string | null; foto_path: string | null; orden: number; activo: boolean; publicado: boolean; solo_credito: boolean; people: { id: string; nombre: string; profile_id: string | null } | null };
 
 const mini = "grid h-8 w-8 place-items-center rounded-full border border-white/20 text-sm hover:border-white/50 disabled:opacity-40";
 
@@ -43,7 +43,7 @@ export default async function CastEditor({ params }: PageProps<"/panel/produccio
   if (!can(access, id, "elenco.gestionar") && !can(access, id, "obra.editar")) redirect(`/panel/producciones/${id}`);
   const supabase = await createClient();
   const [{ data: credits }, { data: people }] = await Promise.all([
-    supabase.from("production_credits").select("id, tipo, papel, foto_path, orden, people(id, nombre, profile_id), activo, publicado").eq("production_id", id).order("orden").order("id"),
+    supabase.from("production_credits").select("id, tipo, papel, foto_path, orden, people(id, nombre, profile_id), activo, publicado, solo_credito").eq("production_id", id).order("orden").order("id"),
     supabase.from("people").select("nombre").order("nombre").limit(2000),
   ]);
   const rows = (credits ?? []) as unknown as Row[];
@@ -110,6 +110,7 @@ export default async function CastEditor({ params }: PageProps<"/panel/produccio
                       <p className="font-semibold">
                         {r.people ? (verFicha ? <Link href={r.people.profile_id ? `/panel/talento/${r.people.profile_id}` : `/panel/talento/p/${r.people.id}`} className="hover:underline">{r.people.nombre}</Link> : r.people.nombre) : "—"}
                         {r.people && !r.people.profile_id && <span className="ml-2 text-[10px] font-normal text-texto-3">sin cuenta</span>}
+                        {r.solo_credito && <span className="ml-2 rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-bold text-texto-2">Solo crédito · no entra a ensayos</span>}
                         {ELENCO.has(r.tipo) && !r.publicado && <span className="ml-2 rounded-full bg-[#4a3b10] px-2 py-0.5 text-[10px] font-bold text-[#fde68a]">No publicado</span>}
                         {!r.activo && <span className="ml-2 rounded-full bg-[#5a1a22] px-2 py-0.5 text-[10px] font-bold text-[#fecdd3]">Baja</span>}
                       </p>
@@ -122,6 +123,12 @@ export default async function CastEditor({ params }: PageProps<"/panel/produccio
                       )}
                     </div>
                     <ImageUpload compact productionId={id} kind="retrato" carpeta="creditos" base={r.people?.nombre ?? "retrato"} save={setCreditPhoto.bind(null, id, r.id)} label={r.foto_path ? "Cambiar foto" : "Subir foto"} />
+                    {ELENCO.has(r.tipo) && (
+                      <ActionForm inline action={setSoloCredito} hidden={{ pid: id, id: r.id, solo: r.solo_credito ? "0" : "1" }}
+                        confirm={r.solo_credito ? `¿${r.people?.nombre} vuelve a ser integrante (ensayos, expediente, gafete)?` : `¿Marcar a ${r.people?.nombre} como solo crédito? Sale en la página, pero no la citan a ensayos ni le cuentan faltas.`}
+                        submit={r.solo_credito ? "Hacer integrante" : "Solo crédito"}
+                        submitClass="rounded-full border border-white/25 px-3 py-1 text-xs font-bold" />
+                    )}
                     {ELENCO.has(r.tipo) && (
                       <ActionForm inline action={setCreditPublicado} hidden={{ pid: id, id: r.id, publicado: r.publicado ? "0" : "1" }}
                         confirm={r.publicado ? `¿Quitar a ${r.people?.nombre} de la página? Sigue en el elenco y con su acceso.` : undefined}

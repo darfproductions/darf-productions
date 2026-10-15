@@ -5,6 +5,16 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-10-15 — Asistencia histórica y "Solo crédito" (migración 0109)
+
+- `rehearsal_attendance_ficha`: asistencia guardada por ficha mientras no hay cuenta; al ligar la cuenta pasa sola
+  a `rehearsal_attendance` con `historico = true` y recorre su ingreso al primer ensayo registrado.
+- Lo histórico no genera ni cuenta para advertencias automáticas (`rehearsal_auto_warnings`).
+- `production_credits.solo_credito`: crédito de Reparto/Ensamble sin rol integrante (producción que sale de personaje).
+- `people_merge` conserva la asistencia histórica.
+- Script de datos `supabase/dev/carga_asistencia_showman_2026-10-15.sql`: 19 ensayos de Showman (8 pasados y 11 siguientes),
+  asistencia de los 8 pasados, 4 bajas y 10 de producción como solo crédito.
+
 ## 2026-10-15 — Editar el nombre de una ficha (sin migración)
 
 - Ficha de persona (con o sin cuenta) → "Editar nombre": es el nombre de los créditos en todas sus obras.

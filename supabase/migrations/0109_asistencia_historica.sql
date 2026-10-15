@@ -122,3 +122,49 @@ begin
   delete from people where id = quitar;
   perform asistencia_ficha_pasar(keep);
 end $function$;
+
+-- ──────── "Solo crédito": producción que sale de personaje (Diego 2026-10-15) ────────
+-- Su crédito de Reparto o Ensamble sale en la página, pero no la hace integrante: no la citan a ensayos
+-- ni le cuentan faltas. Al marcarlo se le quita el rol integrante de esa obra (si no tiene otro papel normal).
+alter table production_credits add column if not exists solo_credito boolean not null default false;
+
+create or replace function elenco_dar_acceso(p_credit uuid) returns void
+language plpgsql security definer set search_path = public as $$
+declare c production_credits; uid uuid;
+begin
+  select * into c from production_credits where id = p_credit;
+  if not found or not c.activo or c.solo_credito or c.tipo not in ('reparto', 'ensamble') then return; end if;
+  select profile_id into uid from people where id = c.person_id;
+  if uid is null then return; end if;
+  if not exists (select 1 from productions where id = c.production_id
+                  and estado in ('borrador', 'publicada') and not coalesce(concluded, false)) then return; end if;
+  insert into production_members (production_id, user_id, role_id)
+  values (c.production_id, uid, 'integrante') on conflict do nothing;
+end $$;
+
+create or replace function credito_solo_credito() returns trigger
+language plpgsql security definer set search_path = public as $$
+declare uid uuid;
+begin
+  if new.solo_credito is not distinct from old.solo_credito then return null; end if;
+  if not new.solo_credito then
+    perform elenco_dar_acceso(new.id);
+    return null;
+  end if;
+  select profile_id into uid from people where id = new.person_id;
+  if uid is null then return null; end if;
+  if exists (select 1 from production_credits c where c.production_id = new.production_id and c.person_id = new.person_id
+              and c.id <> new.id and c.activo and not c.solo_credito and c.tipo in ('reparto', 'ensamble')) then
+    return null;
+  end if;
+  delete from production_members where production_id = new.production_id and user_id = uid and role_id = 'integrante';
+  -- Su alta se borra si no tiene pagos registrados (si los tiene, se queda para no perderlos).
+  if not exists (select 1 from member_payments where production_id = new.production_id and user_id = uid) then
+    delete from member_enrollment where production_id = new.production_id and user_id = uid;
+  end if;
+  return null;
+end $$;
+
+drop trigger if exists credito_solo_credito on production_credits;
+create trigger credito_solo_credito after update of solo_credito on production_credits
+  for each row execute function credito_solo_credito();

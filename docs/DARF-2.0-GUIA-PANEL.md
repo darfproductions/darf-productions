@@ -55,6 +55,14 @@ general: lo que hacía ahora lo cubren los puestos de Casa DARF y los roles de c
 - Si agregas a alguien en **Reparto o Ensamble** y su ficha ya tiene cuenta, queda solo como **integrante**
   (portal del elenco, ensayos, expediente). Si aún no tiene cuenta, entra en cuanto se ligue su cuenta.
   Staff, crew y los equipos solo quedan en créditos; sus permisos se dan en Permisos.
+- **Solo crédito**: para gente de producción que sale de personaje. En su fila de Reparto o Ensamble toca
+  **"Solo crédito"**: sale en la página con su personaje, pero no es integrante (no la citan a ensayos ni le
+  cuentan faltas). "Hacer integrante" lo regresa.
+- **Entró tarde al taller**: al agregar a alguien, su ingreso es el día en que entra como integrante. Si entró
+  antes o después, cámbialo en Panel → la obra → Expedientes → su expediente → **"Cambiar ingreso"**: los ensayos
+  y mensualidades anteriores no le cuentan. (Staff y equipos no llevan ingreso: su acceso se da en Permisos.)
+- **Asistencia de antes de usar la página**: se carga por script en su ficha y pasa sola a su cuenta cuando se
+  registra. Es solo registro: no genera advertencias.
 - **Ofertas de papel**: a quien hizo audición y tiene cuenta. Al aceptarla en Mi cuenta queda solo como
   integrante (con su crédito y su ficha). Así es como entra el elenco en las siguientes producciones.
 - **Elenco que ya estaba antes de tener cuenta**: que se registren y luego, en Panel → Personas →

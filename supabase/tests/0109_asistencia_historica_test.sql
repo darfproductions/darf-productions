@@ -37,3 +37,28 @@ do $$ begin
   insert into rehearsal_attendance (rehearsal_id, user_id, estado) values ('00000000-0000-0000-0000-00000000e914', '00000000-0000-0000-0000-000000000e91', 'falta');
   if exists (select 1 from member_incidents where production_id = 't109_obra') then raise exception 'FALLO T2'; end if;
 end $$;
+
+-- T3: "Solo crédito" quita el rol integrante; al quitarlo, lo devuelve.
+do $$ declare cid uuid; begin
+  select id into cid from production_credits where production_id = 't109_obra' and person_id = '00000000-0000-0000-0000-00000000e901';
+  update production_credits set solo_credito = true where id = cid;
+  if exists (select 1 from production_members where production_id = 't109_obra' and user_id = '00000000-0000-0000-0000-000000000e91' and role_id = 'integrante') then
+    raise exception 'FALLO T3: sigue integrante';
+  end if;
+  update production_credits set solo_credito = false where id = cid;
+  if not exists (select 1 from production_members where production_id = 't109_obra' and user_id = '00000000-0000-0000-0000-000000000e91' and role_id = 'integrante') then
+    raise exception 'FALLO T3: no volvió';
+  end if;
+end $$;
+
+-- T4: una ficha nueva marcada como solo crédito no se vuelve integrante al ligar su cuenta.
+do $$ begin
+  insert into auth.users (id, instance_id, aud, role, email) values
+    ('00000000-0000-0000-0000-000000000e92', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 't109_b@test.local');
+  insert into people (id, nombre) values ('00000000-0000-0000-0000-00000000e902', 'Beto Producción');
+  insert into production_credits (production_id, person_id, tipo, papel, solo_credito) values ('t109_obra', '00000000-0000-0000-0000-00000000e902', 'reparto', 'Cameo', true);
+  update people set profile_id = '00000000-0000-0000-0000-000000000e92' where id = '00000000-0000-0000-0000-00000000e902';
+  if exists (select 1 from production_members where production_id = 't109_obra' and user_id = '00000000-0000-0000-0000-000000000e92') then
+    raise exception 'FALLO T4';
+  end if;
+end $$;

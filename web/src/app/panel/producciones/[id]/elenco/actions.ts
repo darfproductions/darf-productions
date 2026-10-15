@@ -132,3 +132,16 @@ export async function publishAllCast(_p: CreditState, f: FormData): Promise<Cred
   refresh(pid);
   return { ok: true, message: count ? `Publicado: ${count === 1 ? "1 persona" : `${count} personas`}.` : "Todo el elenco ya estaba publicado." };
 }
+
+/** 0109: "Solo crédito": sale en la página pero no es integrante (producción que sale de personaje). */
+export async function setSoloCredito(_p: CreditState, f: FormData): Promise<CreditState> {
+  const pid = String(f.get("pid"));
+  const id = String(f.get("id"));
+  const solo = f.get("solo") === "1";
+  const supabase = await createClient();
+  const { error, count } = await supabase.from("production_credits").update({ solo_credito: solo }, { count: "exact" }).eq("id", id).eq("production_id", pid);
+  if (error) return { ok: false, message: mensajeError(error) };
+  if (!count) return { ok: false, message: SIN_PERMISO };
+  refresh(pid);
+  return { ok: true, message: solo ? "Listo: solo crédito, ya no entra a ensayos." : "Listo: vuelve a ser integrante." };
+}
