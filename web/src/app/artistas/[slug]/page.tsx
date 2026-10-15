@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 import { YouTube } from "@/components/YouTube";
 import { TIPO_CREDITO } from "@/lib/casting-rules";
 import { getProBySlug } from "@/lib/pro-profile";
-import { LISTAS, reelYoutube } from "@/lib/pro-rules";
+import { LISTAS, ordenarTrayectoria, reelYoutube } from "@/lib/pro-rules";
 import { perfilUrl } from "@/lib/productions";
 import { Icono } from "@/components/Icono";
 
@@ -32,7 +32,7 @@ export default async function Artista({ params }: PageProps<"/artistas/[slug]">)
   return (
     <main className="pb-16">
       <section className="mx-auto grid max-w-[1100px] gap-8 px-5 pt-6 md:grid-cols-[280px_1fr] md:px-16">
-        <div className="overflow-hidden rounded-2xl bg-telon">
+        <div className="self-start overflow-hidden rounded-2xl bg-telon md:sticky md:top-24">
           {pro.retrato_path ? <img src={perfilUrl(pro.retrato_path)} alt={`Retrato de ${nombre}`} className="aspect-[4/5] w-full object-cover" />
             : <div className="grid aspect-[4/5] place-items-center text-6xl font-black">{nombre.slice(0, 1)}</div>}
         </div>
@@ -69,7 +69,7 @@ export default async function Artista({ params }: PageProps<"/artistas/[slug]">)
           <section>
             <h2 className="titular mb-4 text-2xl">Trayectoria</h2>
             <ul className="flex flex-col divide-y divide-white/10">
-              {pro.trayectoria.map((t, i) => (
+              {ordenarTrayectoria(pro.trayectoria).map((t, i) => (
                 <li key={i} className="flex flex-wrap justify-between gap-2 py-2.5">
                   <span><b>{t.obra}</b>{t.papel && <span className="text-texto-2"> · {t.papel}</span>}</span>
                   <span className="text-sm text-texto-3">{[t.compania, t.anio].filter(Boolean).join(" · ")}</span>
