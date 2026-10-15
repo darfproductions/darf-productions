@@ -285,7 +285,7 @@ export async function ProductionView({
               {videos.length > 0 && (
                 <a href="#videos" className="fb fb-obra">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4v16l13-8z" /></svg>
-                  Ver tráiler
+                  {videos.length === 1 ? "Ver video" : "Ver videos"}
                 </a>
               )}
               {audiciones.length > 0 && (
