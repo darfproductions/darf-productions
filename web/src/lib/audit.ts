@@ -17,6 +17,8 @@ export type AuditNames = {
   person: (id: unknown) => string;
   role: (id: unknown) => string;
   production: (id: unknown) => string;
+  /** Nombre actual de una ficha de persona (la bitácora guarda solo su id). */
+  ficha?: (id: unknown) => string;
 };
 
 const ROL_GLOBAL: Record<string, string> = { fan: "fan", staff: "staff", admin: "Director" };
@@ -157,6 +159,16 @@ export function describeAudit(r: AuditRow, n: AuditNames): string {
       if (campos.includes("aceptada_at")) return `Se aceptó una invitación al equipo de ${obra}`;
       if (campos.includes("enviado_at") || campos.includes("envio_error")) return `Se mandó por correo una invitación al equipo de ${obra}`;
       return `Renovó una invitación al equipo de ${obra}`;
+    }
+    case "people": {
+      // La bitácora guarda la ficha sin datos (privado): se muestra su nombre actual.
+      const quien = n.ficha?.(row.id) ?? "una persona";
+      const campos = (row.campos as string[] | undefined) ?? [];
+      if (r.accion === "insert") return `Creó la ficha de ${quien}`;
+      if (r.accion === "delete") return "Borró una ficha de persona";
+      if (campos.includes("nombre")) return `Cambió el nombre en los créditos: ahora es ${quien}`;
+      if (campos.includes("profile_id")) return `Ligó o cambió la cuenta de la ficha de ${quien}`;
+      return `Actualizó la ficha de ${quien}`;
     }
     case "production_credits": {
       // 0108: solo se registra publicar o despublicar a alguien del Reparto o Ensamble.

@@ -10,6 +10,7 @@ import { requirePanel } from "@/lib/permissions";
 import { createClient } from "@/lib/supabase/server";
 import { Icono } from "@/components/Icono";
 
+import { NombreFicha } from "../NombreFicha";
 export const metadata: Metadata = { title: "Ficha de talento" };
 
 type H = {
@@ -41,12 +42,13 @@ export default async function TalentPage({ params }: PageProps<"/panel/talento/[
     : { data: [] };
   const { data: compras } = casa(access, "casa.personas") ? await supabase.rpc("talent_purchases", { uid }) : { data: [] };
   const misCompras = (compras ?? []) as { order_code: string; obra: string; funcion: string; estado: string; total: number; boletos: number; asistio: number; created_at: string }[];
-  const { data: persona } = await supabase.from("people").select("id").eq("profile_id", uid).maybeSingle();
+  const { data: persona } = await supabase.from("people").select("id, nombre").eq("profile_id", uid).maybeSingle();
   const incidencias = (inc ?? []) as unknown as { id: string; production_id: string; tipo: string; nivel: string; descripcion: string; fecha: string; anulada_at: string | null; productions: { nombre: string } | null }[];
 
   return (
     <>
       <PanelTitle eyebrow="Ficha de talento" title={h.nombre ?? h.email}>{h.email}</PanelTitle>
+      {persona && casa(access, "casa.personas") && <NombreFicha id={persona.id as string} nombre={persona.nombre as string} />}
       {persona && <Link href={`/panel/talento/p/${persona.id}/perfil`} className="self-start rounded-full border border-white/25 px-4 py-2 text-sm font-bold">Perfil profesional <Icono nombre="flecha-der" /></Link>}
 
       <Card>

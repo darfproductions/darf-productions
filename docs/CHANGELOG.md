@@ -5,6 +5,12 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-10-15 — Editar el nombre de una ficha (sin migración)
+
+- Ficha de persona (con o sin cuenta) → "Editar nombre": es el nombre de los créditos en todas sus obras.
+  Solo admin y Casa DARF con `casa.personas`. La Bitácora muestra "Cambió el nombre en los créditos: ahora es …".
+- Script de datos `supabase/dev/carga_creditos_2026-10-15.sql`: staff de HSM y MM, personajes y reparto de Showman.
+
 ## 2026-10-15 — Avisos y bitácora del elenco sin publicar (migración 0108)
 
 - Bandeja "Por hacer" del panel: "N personas del elenco sin publicar" por obra viva (para quien arma el elenco),

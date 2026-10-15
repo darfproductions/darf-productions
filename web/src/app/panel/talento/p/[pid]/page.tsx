@@ -10,6 +10,7 @@ import { createClient } from "@/lib/supabase/server";
 import { linkAccount } from "../../actions";
 import { Icono } from "@/components/Icono";
 import { BuscarCuenta } from "@/components/panel/BuscarCuenta";
+import { NombreFicha } from "../../NombreFicha";
 
 export const metadata: Metadata = { title: "Ficha de persona" };
 
@@ -29,6 +30,7 @@ export default async function PersonPage({ params }: PageProps<"/panel/talento/p
   return (
     <>
       <PanelTitle eyebrow="Ficha de persona" title={h.nombre}>Sin cuenta en la página todavía.</PanelTitle>
+      {casa(access, "casa.personas") && <NombreFicha id={h.id} nombre={h.nombre} />}
       <Link href={`/panel/talento/p/${pid}/perfil`} className="self-start rounded-full border border-white/25 px-4 py-2 text-sm font-bold">Perfil profesional <Icono nombre="flecha-der" /></Link>
       <Card>
         <h2 className="titular mb-3 text-xl">Obras ({h.obras.length})</h2>

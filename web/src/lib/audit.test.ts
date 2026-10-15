@@ -26,6 +26,11 @@ describe("bitácora en lenguaje sencillo", () => {
     );
     expect(changedFields(antes, { ...antes, frase: "b", updated_at: "2" })).toEqual(["frase"]);
   });
+  it("cambio de nombre de una ficha", () => {
+    const fila = { ...base, tabla: "people", accion: "update", antes: { id: "p" }, despues: { id: "p", campos: ["nombre"], privado: true } };
+    expect(describeAudit(fila, { ...names, ficha: () => "María Haro Maya" })).toBe("Cambió el nombre en los créditos: ahora es María Haro Maya");
+    expect(describeAudit(fila, names)).toBe("Cambió el nombre en los créditos: ahora es una persona");
+  });
   it("0108: publicar y despublicar al elenco", () => {
     const fila = (accion: string, d: Record<string, unknown>) => ({ ...base, tabla: "production_credits", accion, production_id: "mm", despues: d });
     expect(describeAudit(fila("publicar", { persona: "Ana", papel: "Donna", tipo: "reparto" }), names)).toBe("Publicó a Ana como Donna en Mamma Mia");
