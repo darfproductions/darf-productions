@@ -383,6 +383,22 @@ begin
   end loop;
 end $$;
 
+-- ════════ 6. Registrar pagos por ficha desde la tabla de Cuotas ════════
+-- Para quien aún no tiene cuenta (los de cuenta se registran directo en member_payments).
+create or replace function pago_ficha_registrar(pid text, p_person uuid, p_concepto text, p_periodo date, p_monto numeric, p_metodo text)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if not has_perm(pid, 'mensualidades.gestionar') then raise exception 'No autorizado'; end if;
+  if not exists (select 1 from production_credits where production_id = pid and person_id = p_person) then
+    raise exception 'Esa persona no es de esta obra.';
+  end if;
+  insert into member_payments_ficha (production_id, person_id, concepto, periodo, monto, metodo, nota)
+  values (pid, p_person, p_concepto, date_trunc('month', p_periodo)::date, p_monto, coalesce(p_metodo, 'otro'), 'Registrado en Cuotas')
+  on conflict (production_id, person_id, concepto, periodo) do nothing;
+end $$;
+revoke all on function pago_ficha_registrar(text, uuid, text, date, numeric, text) from public, anon;
+grant execute on function pago_ficha_registrar(text, uuid, text, date, numeric, text) to authenticated;
+
 commit;
 
 select 'Listo 0112. Personajes: ' || (select count(*) from production_characters)

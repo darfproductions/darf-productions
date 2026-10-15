@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { getSession } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { mensajeError } from "@/lib/errores";
+import { leerCasilla } from "@/lib/pago-tabla";
 
 // Expedientes y mensualidades desde el panel (0041). La base revisa expedientes.ver y
 // mensualidades.gestionar en la obra.
@@ -228,4 +230,37 @@ export async function reactivateMember(_p: ExpState, f: FormData): Promise<ExpSt
   if (error) return { ok: false, message: error.message };
   revalidatePath(`/producciones/${pid}`);
   return ok(pid, uid, "Reactivado: vuelve a los ensayos y a los créditos.");
+}
+
+/** Prender o apagar los pagos de esta obra (0112). Apagados: no se cobra nada, sin adeudos ni recordatorios. */
+export async function toggleCobro(_p: ExpState, f: FormData): Promise<ExpState> {
+  const pid = str(f, "pid");
+  const on = str(f, "on") === "1";
+  const supabase = await createClient();
+  const { error, count } = await supabase.from("production_fees").update({ cobrar: on }, { count: "exact" }).eq("production_id", pid);
+  if (error) return { ok: false, message: mensajeError(error) };
+  if (!count) return { ok: false, message: on ? "Primero llena los montos y meses abajo y guarda." : "No tienes permiso para cambiar los pagos." };
+  return ok(pid, null, on ? "Pagos encendidos." : "Pagos apagados: no se cobra nada en esta obra.");
+}
+
+/** Tabla de pagos (0112): registra de una vez todas las casillas marcadas, cada una con su recibo. */
+export async function savePagosTabla(_p: ExpState, f: FormData): Promise<ExpState> {
+  const pid = str(f, "pid");
+  const metodo = ["efectivo", "transferencia", "tarjeta", "otro"].includes(str(f, "metodo")) ? str(f, "metodo") : "efectivo";
+  const marcados = f.getAll("pago").map(String).map(leerCasilla).filter((x): x is NonNullable<typeof x> => !!x);
+  if (!marcados.length) return { ok: false, message: "Marca al menos un pago." };
+  if (marcados.length > 300) return { ok: false, message: "Son demasiados pagos de una vez (máximo 300)." };
+  const supabase = await createClient();
+  const cuentas = marcados.filter((m) => m.quien === "u");
+  if (cuentas.length) {
+    const { error } = await supabase.from("member_payments").insert(cuentas.map((m) => ({
+      production_id: pid, user_id: m.id, periodo: m.periodo, monto: m.monto, metodo, concepto: m.concepto, nota: "Registrado en Cuotas",
+    })));
+    if (error) return { ok: false, message: mensajeError(error) };
+  }
+  for (const m of marcados.filter((x) => x.quien === "f")) {
+    const { error } = await supabase.rpc("pago_ficha_registrar", { pid, p_person: m.id, p_concepto: m.concepto, p_periodo: m.periodo, p_monto: m.monto, p_metodo: metodo });
+    if (error) return { ok: false, message: mensajeError(error) };
+  }
+  return ok(pid, null, `${marcados.length === 1 ? "1 pago registrado" : `${marcados.length} pagos registrados`}. ${cuentas.length ? "Les llegó su recibo." : ""}`.trim());
 }
