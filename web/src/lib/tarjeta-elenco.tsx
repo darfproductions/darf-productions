@@ -60,13 +60,18 @@ export async function tarjetaPng(d: DatosTarjeta): Promise<Buffer> {
             : <div style={{ width: w, height: fotoAlto, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 360, fontWeight: 900, color: d.colores.acento }}>{inicial}</div>}
           <div style={{ position: "absolute", left: 0, bottom: 0, width: w, height: 420, display: "flex", backgroundImage: `linear-gradient(180deg, transparent, ${d.colores.fondo})` }} />
         </div>
-        <div style={{ position: "absolute", left: 0, bottom: 0, width: w, display: "flex", flexDirection: "column", alignItems: "center", padding: `0 60px ${historia ? 110 : 64}px` }}>
+        <div style={{ position: "absolute", left: 0, bottom: 0, width: w, display: "flex", flexDirection: "column", alignItems: "center", padding: `0 60px ${historia ? 100 : 52}px` }}>
           {logo
             ? <img src={logo} style={{ maxWidth: 820, maxHeight: historia ? 320 : 240, objectFit: "contain" }} alt="" />
             : <span style={{ fontSize: 72, fontWeight: 900, letterSpacing: 4 }}>{d.obra.toUpperCase()}</span>}
           <span style={{ marginTop: historia ? 36 : 26, fontSize: historia ? 50 : 44, fontWeight: 800, letterSpacing: 8, color: d.colores.acento, textAlign: "center" }}>{d.papel.toUpperCase()}</span>
           <span style={{ marginTop: 10, fontSize: tamNombre, fontWeight: 900, textAlign: "center", lineHeight: 1.05 }}>{d.nombre}</span>
-          {darf ? <img src={darf} style={{ marginTop: historia ? 110 : 70, width: 320, objectFit: "contain" }} alt="" /> : <span style={{ marginTop: 70, fontSize: 34, fontWeight: 900 }}>DARF PRODUCTIONS</span>}
+          {darf ? <img src={darf} style={{ marginTop: historia ? 70 : 44, width: 380, objectFit: "contain" }} alt="" /> : <span style={{ marginTop: 44, fontSize: 38, fontWeight: 900 }}>DARF PRODUCTIONS</span>}
+          {/* Leyenda con el estilo de la banda del gafete: negra, itálica y espaciada (satori no trae itálica: se inclina). */}
+          <div style={{ marginTop: historia ? 34 : 24, display: "flex", padding: "10px 34px", background: d.colores.acento, transform: "skewX(-10deg)" }}>
+            <span style={{ fontSize: historia ? 34 : 30, fontWeight: 900, letterSpacing: 4, color: d.colores.fondo }}>ADQUIERE TUS BOLETOS</span>
+          </div>
+          <span style={{ marginTop: 14, fontSize: historia ? 30 : 26, fontWeight: 800, letterSpacing: 2 }}>darfproductions.com</span>
         </div>
       </div>
     ),
