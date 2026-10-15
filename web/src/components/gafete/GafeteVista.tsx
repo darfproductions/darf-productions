@@ -8,6 +8,7 @@ import { nivelDe } from "@/lib/lealtad-rules";
 export function GafeteVista({ p }: { p: PaseVista }) {
   const fan = p.tema === "fan";
   const nivel = nivelDe(p.lealtad);
+  const nivelFan = fan || p.sello ? nivelDe(p.fanVisitas, "fan") : null;
   const sellos = sellosDe(p);
   return (
     <article
@@ -37,6 +38,7 @@ export function GafeteVista({ p }: { p: PaseVista }) {
       <p className="mt-2 text-[10.5px] font-semibold uppercase tracking-[0.2em] text-texto-3">{p.pie}</p>
       {p.casa && <p className="mt-1 bg-[linear-gradient(90deg,#ffb8ec,#c9b2ff,#9fe2ff,#b9ffe0,#ffe6a8)] bg-clip-text text-[10.5px] font-bold uppercase tracking-[0.2em] text-transparent">{p.casa}</p>}
       {p.sello && <p className="mt-1 text-[10.5px] font-bold uppercase tracking-[0.2em] text-oro">Club Fan · {p.sello}</p>}
+      {nivelFan && <p className="mt-1 text-[10.5px] font-bold uppercase tracking-[0.2em]" style={{ color: nivelFan.linea[0] }}>Fan Zone · {nivelFan.nombre}</p>}
       {nivel && <p className="mt-1 text-[10.5px] font-bold uppercase tracking-[0.2em]" style={{ color: nivel.linea[0] }}>DARF Loyalty · {nivel.nombre}</p>}
       <div className={`mt-4 flex w-full items-center justify-center py-3 text-center text-[22px] font-black italic tracking-[0.08em] ${p.casa ? "banda-holo" : ""}`} style={{ background: p.banda.fondo, color: p.banda.texto }}>
         {p.banda.label}

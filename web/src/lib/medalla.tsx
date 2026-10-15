@@ -2,10 +2,10 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { ImageResponse } from "next/og";
-import { nivelDe, type NivelLealtad } from "@/lib/lealtad-rules";
+import { nivelDe, PROGRAMA, type NivelLealtad, type Programa } from "@/lib/lealtad-rules";
 
 // Medalla DARF Loyalty (0103), solo servidor, con el trazo de los sellos del Club y de Casa DARF: el aro con
-// "DARF LOYALTY · NIVEL" y al centro el número exacto de producciones en Montserrat (la letra del logo), en el
+// "DARF LOYALTY · NIVEL" (equipo) o "DARF FAN ZONE · NIVEL" (fans, 0104) y al centro el número exacto de producciones en Montserrat (la letra del logo), en el
 // color de la piedra del nivel. Es un
 // PNG porque el número cambia con cada obra; la misma imagen sirve para la web, el PDF y Wallet.
 
@@ -21,8 +21,9 @@ function cargarFuentes() {
 /** Destello de cuatro puntas (Hall of Fame). */
 const ESTRELLA = "M50 0 C53 38 62 47 100 50 C62 53 53 62 50 100 C47 62 38 53 0 50 C38 47 47 38 50 0 Z";
 
-function letrasDelAro(nivel: NivelLealtad, lado: number, rAro: number, color: string) {
-  const letras = [...`DARF LOYALTY · ${nivel.nombre.toUpperCase()} · `.repeat(2)];
+function letrasDelAro(aro: string, nivel: NivelLealtad, lado: number, rAro: number, color: string) {
+  const frase = `${aro} · ${nivel.nombre.toUpperCase()} · `;
+  const letras = [...frase.repeat(frase.length > 30 ? 1 : 2)];
   const tam = Math.min(lado * 0.056, (2 * Math.PI * rAro) / (letras.length * 0.86));
   const c = lado / 2;
   return letras.map((l, i) => (
@@ -34,8 +35,8 @@ function letrasDelAro(nivel: NivelLealtad, lado: number, rAro: number, color: st
 }
 
 /** PNG cuadrado de la medalla para `n` producciones (null antes del primer nivel). */
-export async function medallaPng(n: number, lado = 512): Promise<Buffer | null> {
-  const nivel = nivelDe(n);
+export async function medallaPng(n: number, lado = 512, prog: Programa = "equipo"): Promise<Buffer | null> {
+  const nivel = nivelDe(n, prog);
   if (!nivel) return null;
   const hof = nivel.min === 50;
   const c = lado / 2;
@@ -54,7 +55,7 @@ export async function medallaPng(n: number, lado = 512): Promise<Buffer | null> 
     (
       <div style={{ width: lado, height: lado, display: "flex", position: "relative" }}>
         <img src={fondo} width={lado} height={lado} style={{ position: "absolute", left: 0, top: 0 }} alt="" />
-        {letrasDelAro(nivel, lado, lado * 0.405, medio)}
+        {letrasDelAro(PROGRAMA[prog].aro, nivel, lado, lado * 0.405, medio)}
         {destellos.map((d, i) => (
           <svg key={i} width={lado * d.s} height={lado * d.s} viewBox="0 0 100 100"
             style={{ position: "absolute", left: lado * d.x - (lado * d.s) / 2, top: lado * d.y - (lado * d.s) / 2 }}>

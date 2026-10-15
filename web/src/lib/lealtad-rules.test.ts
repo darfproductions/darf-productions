@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { medallaSrc, nivelDe, siguienteMeta, textoLealtad } from "@/lib/lealtad-rules";
-import { filaGoogle, paseGafete, sellosApple, sellosDe } from "@/lib/gafete-rules";
+import { leerMedalla, medallaSrc, nivelDe, siguienteMeta, textoLealtad } from "@/lib/lealtad-rules";
+import { filaGoogle, paseGafete, sellosApple, sellosDe, sellosFuera } from "@/lib/gafete-rules";
 import { paseCredencial } from "@/lib/credencial-rules";
 
 describe("DARF Loyalty (0103)", () => {
@@ -43,12 +43,9 @@ describe("DARF Loyalty (0103)", () => {
     expect(sellosDe({ ...p, lealtad: 2 }).map((s) => s.src)).not.toContain("/medalla/2");
   });
 
-  it("Google: DARF al centro y la medalla lo más al centro posible; con tres sellos, sin logo", () => {
-    expect(filaGoogle(["club", "lealtad", "casa"])).toEqual(["club", "lealtad", "casa"]);
-    expect(filaGoogle(["club", "lealtad"])).toEqual(["club", "darf", "lealtad"]);
-    expect(filaGoogle(["lealtad", "casa"])).toEqual(["lealtad", "darf", "casa"]);
+  it("Google: con un sello, DARF primero; con dos, DARF al centro", () => {
     expect(filaGoogle(["club", "casa"])).toEqual(["club", "darf", "casa"]);
-    expect(filaGoogle(["lealtad"])).toEqual(["darf", "lealtad"]);
+    expect(filaGoogle(["club"])).toEqual(["darf", "club"]);
     expect(filaGoogle([])).toEqual(["darf"]);
   });
 
@@ -58,5 +55,32 @@ describe("DARF Loyalty (0103)", () => {
     const fan = paseCredencial({ ...base, nivel: "club", socio: { numero: 1, desde: "2026-01-01", fundador: true } });
     expect(sellosDe(fan).at(-1)?.src).toBe("/medalla/5");
     expect(sellosDe(paseCredencial({ ...base, nivel: "cuenta", socio: null })).map((s) => s.src)).toEqual(["/medalla/5"]);
+  });
+
+  it("fans (0104): butacas en metales, mismas metas", () => {
+    expect(nivelDe(2, "fan")).toBeNull();
+    expect(nivelDe(3, "fan")?.nombre).toBe("Balcony");
+    expect(nivelDe(7, "fan")?.material).toBe("Plata");
+    expect(nivelDe(50, "fan")?.nombre).toBe("Standing Ovation");
+    expect(siguienteMeta(7, "fan")).toMatchObject({ faltan: 3, nivel: { nombre: "Orchestra" } });
+    expect(textoLealtad(1, "fan")).toBeNull();
+    expect(textoLealtad(12, "fan")).toBe("Orchestra · 12 visitas");
+    expect(medallaSrc(12, "fan")).toBe("/medalla/f12");
+    expect(leerMedalla("/medalla/f12")).toEqual({ prog: "fan", n: 12 });
+    expect(leerMedalla("/medalla/12")).toEqual({ prog: "equipo", n: 12 });
+    expect(leerMedalla("/medalla/x12")).toBeNull();
+  });
+
+  it("la medalla de fan solo se ve siendo socio, entre el club y la del equipo", () => {
+    const g = paseGafete({ nombre: "Ana", fotoUrl: null, franja: "casa", papel: "CMO", lealtad: 12, fanVisitas: 7 });
+    expect(sellosDe(g).map((s) => s.id)).toEqual(["lealtad", "casa"]);
+    const socio = { ...g, sello: "Socio #0001" };
+    expect(sellosDe(socio).map((s) => s.id)).toEqual(["club", "fan", "lealtad", "casa"]);
+    expect(sellosApple(sellosDe(socio)).map((s) => s.id)).toEqual(["lealtad", "fan", "casa", "club"]);
+  });
+
+  it("Wallet y PDF: sin medallas, solo Club Fan y Casa DARF", () => {
+    const p = { ...paseGafete({ nombre: "Ana", fotoUrl: null, franja: "casa", papel: "CMO", lealtad: 12, fanVisitas: 7 }), sello: "Socio #0001" };
+    expect(sellosFuera(sellosDe(p)).map((s) => s.id)).toEqual(["club", "casa"]);
   });
 });

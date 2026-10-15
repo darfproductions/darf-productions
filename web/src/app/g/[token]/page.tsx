@@ -22,7 +22,7 @@ export default async function GafetePublicoPage({ params }: PageProps<"/g/[token
       </main>
     );
   }
-  const pase = paseGafete({ nombre: g.nombre, fotoUrl: g.retratoUrl, franja: g.franja, papel: g.papel, casaDesde: g.casa_desde, lealtad: g.lealtad });
+  const pase = paseGafete({ nombre: g.nombre, fotoUrl: g.retratoUrl, franja: g.franja, papel: g.papel, casaDesde: g.casa_desde, lealtad: g.lealtad, fanVisitas: g.fan_visitas });
   const algo = g.telefono || g.correo || g.instagram || g.perfil;
   const boton = "flex w-full items-center justify-center gap-2 rounded-full border border-linea-2 px-5 py-3.5 text-sm font-bold hover:border-white/50";
   return (
