@@ -50,6 +50,8 @@ general: lo que hacía ahora lo cubren los puestos de Casa DARF y los roles de c
   Cuando quieras anunciarlos, toca **Publicar** en cada persona (para soltarlos poco a poco) o **Publicar todo el
   elenco**. **Despublicar** la vuelve a ocultar. La **vista previa** de la obra sí los muestra. Los demás equipos
   (creativo, producción, staff, crew, técnico) salen en cuanto los agregas.
+  Si alguien queda sin publicar (por ejemplo, porque aceptó una oferta), lo verás en **Por hacer** del Inicio del
+  panel y en **Listo para vender**. Cada publicar o despublicar queda en la **Bitácora**.
 - Si agregas a alguien en **Reparto o Ensamble** y su ficha ya tiene cuenta, queda solo como **integrante**
   (portal del elenco, ensayos, expediente). Si aún no tiene cuenta, entra en cuanto se ligue su cuenta.
   Staff, crew y los equipos solo quedan en créditos; sus permisos se dan en Permisos.

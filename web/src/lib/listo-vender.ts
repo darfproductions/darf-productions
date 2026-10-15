@@ -21,6 +21,8 @@ export type DatosVenta = {
   asientos: { total: number; sinZona: number; zonas: string[] };
   whatsapp: boolean;
   posterDestacado: boolean;
+  /** 0108: Reparto y Ensamble aún sin publicar (no impide vender). */
+  elencoSinPublicar?: number;
   /** Fecha corta para los mensajes ("sáb 18 oct, 7:00 p.m."). */
   fecha: (iso: string) => string;
   ahora?: Date;
@@ -58,6 +60,9 @@ export function listoParaVender(d: DatosVenta): { puntos: Punto[]; listo: boolea
       detalle: d.whatsapp ? undefined : "Es un ajuste del sitio: pídeselo a quien administra la página.", href: `${base}/boletos` },
     { clave: "poster", texto: "Póster oficial para la portada (16:9 o 4:3, solo imagen)", ok: d.posterDestacado, obligatorio: false,
       detalle: d.posterDestacado ? undefined : "Sin él, la portada usa la imagen de ambiente.", href: `${base}/pagina#poster` },
+    { clave: "elenco", texto: "Todo el Reparto y Ensamble está publicado", ok: !d.elencoSinPublicar, obligatorio: false,
+      detalle: d.elencoSinPublicar ? `${d.elencoSinPublicar === 1 ? "1 persona sin publicar" : `${d.elencoSinPublicar} personas sin publicar`}: no salen en la página.` : undefined,
+      href: `${base}/elenco` },
   ];
   const faltan = puntos.filter((p) => p.obligatorio && !p.ok).length;
   return { puntos, listo: faltan === 0, faltan };

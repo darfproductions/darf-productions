@@ -158,6 +158,15 @@ export function describeAudit(r: AuditRow, n: AuditNames): string {
       if (campos.includes("enviado_at") || campos.includes("envio_error")) return `Se mandó por correo una invitación al equipo de ${obra}`;
       return `Renovó una invitación al equipo de ${obra}`;
     }
+    case "production_credits": {
+      // 0108: solo se registra publicar o despublicar a alguien del Reparto o Ensamble.
+      const quien = String(row.persona ?? "alguien");
+      const como = row.papel ? ` como ${String(row.papel)}` : row.tipo === "ensamble" ? " en el Ensamble" : "";
+      const obra = n.production(r.production_id);
+      if (r.accion === "publicar") return `Publicó a ${quien}${como} en ${obra}`;
+      if (r.accion === "despublicar") return `Quitó de la página a ${quien}${como} en ${obra}`;
+      return `Cambió el elenco de ${obra}`;
+    }
     case "discount_codes": {
       const cod = String(row.codigo ?? "");
       if (r.accion === "insert") return `Creó el código de descuento ${cod} (${String(row.percent)}%) en ${n.production(r.production_id)}`;
@@ -193,7 +202,7 @@ export const TIPOS_BITACORA: TipoBitacora[] = [
   { id: "boletos-puerta", label: "· Entradas deshechas en Puerta", tablas: ["orders"], accion: "deshacer_entrada" },
   { id: "descuentos", label: "Descuentos y vendedores", tablas: ["discount_codes", "seller_productions"] },
   { id: "audiciones", label: "Audiciones y cast", tablas: ["auditions", "audition_members", "audition_invites", "audition_templates", "casting_offers"] },
-  { id: "elenco", label: "Elenco y expedientes", tablas: ["people", "member_docs", "member_incidents", "member_measures", "production_discipline", "member_requests", "member_enrollment", "pro_profiles"] },
+  { id: "elenco", label: "Elenco y expedientes", tablas: ["people", "production_credits", "member_docs", "member_incidents", "member_measures", "production_discipline", "member_requests", "member_enrollment", "pro_profiles"] },
   { id: "pagos", label: "Pagos del taller", tablas: ["member_payments", "member_fee_terms", "production_fees"] },
   { id: "ensayos", label: "Ensayos, materiales y comunicados", tablas: ["rehearsals", "materials", "announcements"] },
   { id: "evaluaciones", label: "Evaluaciones del taller", tablas: ["rubric_evaluations", "rubric_periods", "rubric_teachers", "rubric_settings"] },
