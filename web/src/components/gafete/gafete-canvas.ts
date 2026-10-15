@@ -1,6 +1,6 @@
 "use client";
 
-import { iniciales, sellosDe, type PaseVista } from "@/lib/gafete-rules";
+import { iniciales, sellosDe, sellosFuera, type PaseVista } from "@/lib/gafete-rules";
 import { pdfConImagenes } from "@/lib/ticket-design";
 
 // Gafete o credencial del Club Fan en PDF: se dibuja en un canvas (mismo diseño que GafeteVista)
@@ -25,7 +25,7 @@ export async function descargarPase(p: PaseVista, archivo: string): Promise<void
   const [logo, foto, qr, ...sellosImg] = await Promise.all([
     cargar(p.logo, false), p.fotoUrl ? cargar(p.fotoUrl, true) : Promise.resolve(null),
     p.qr ? cargar(p.qr, false) : Promise.resolve(null),
-    ...sellosDe(p).map((s) => cargar(s.src, false)),
+    ...sellosFuera(sellosDe(p)).map((s) => cargar(s.src, false)),
   ]);
   const sellos = sellosImg.filter((s): s is HTMLImageElement => !!s);
   const pintar = (conFoto: boolean) => {
@@ -39,7 +39,7 @@ export async function descargarPase(p: PaseVista, archivo: string): Promise<void
       x.fillStyle = g; x.fillRect(0, 0, W, H);
       x.strokeStyle = "rgba(215,187,95,0.6)"; x.lineWidth = 4; x.strokeRect(2, 2, W - 4, H - 4);
     }
-    // Logo arriba al centro y, debajo, la fila de sellos (Club Fan · DARF Loyalty · Casa DARF).
+    // Logo arriba al centro y, debajo, la fila de sellos (Club Fan · Casa DARF; las medallas solo en la página).
     if (logo) {
       const con = sellos.length > 0;
       const maxH = fan ? (con ? 62 : 80) : con ? 70 : 112, maxW = fan ? 440 : 400;

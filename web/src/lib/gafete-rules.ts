@@ -75,6 +75,12 @@ export function sellosDe(p: Pick<PaseVista, "tema" | "casa" | "sello" | "lealtad
   return out;
 }
 
+/** Fuera de la página (Wallet y PDF) no van las medallas, solo los sellos del Club Fan y de Casa DARF:
+ *  las medallas se ven solo en la app o la página (Diego 2026-10-15). */
+export function sellosFuera(s: Sello[]): Sello[] {
+  return s.filter((x) => x.id === "club" || x.id === "casa");
+}
+
 /** Apple Wallet: el DARF cuadrado en la esquina y después los sellos, la medalla primero. */
 export function sellosApple(s: Sello[]): Sello[] {
   const orden = { lealtad: 0, fan: 1, casa: 2, club: 3 };
