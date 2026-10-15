@@ -20,12 +20,18 @@ export default async function Directorio({ searchParams }: PageProps<"/panel/per
   const q = typeof sp.q === "string" ? sp.q : "";
   const filtro = filtroValido(sp.filtro);
   const supabase = await createClient();
-  const [{ data: fichas }, { data: cuentas, error }, { data: sug }] = await Promise.all([
+  const [{ data: fichas }, { data: cuentas, error }, { data: sug }, casaRes, puestosRes] = await Promise.all([
     supabase.rpc("people_directory", { q: q || null }),
     supabase.rpc("admin_list_users", { q: q || null }),
     supabase.rpc("people_link_suggestions"),
+    // Puestos de Casa DARF (0102): solo el admin los ve.
+    access.isDirector ? supabase.rpc("casa_lista") : Promise.resolve({ data: null }),
+    access.isDirector ? supabase.from("panel_roles").select("id, nombre").eq("alcance", "casa") : Promise.resolve({ data: null }),
   ]);
-  const filas = unirDirectorio((fichas ?? []) as FichaPersona[], (cuentas ?? []) as CuentaUsuario[], filtro);
+  const nombrePuesto = new Map(((puestosRes.data ?? []) as { id: string; nombre: string }[]).map((r) => [r.id, r.nombre]));
+  const casa = Object.fromEntries(((casaRes.data ?? []) as { user_id: string; roles: string[] }[])
+    .map((m) => [m.user_id, m.roles.map((r) => nombrePuesto.get(r) ?? r)]));
+  const filas = unirDirectorio((fichas ?? []) as FichaPersona[], (cuentas ?? []) as CuentaUsuario[], filtro, casa);
   const fichasLista = (fichas ?? []) as FichaPersona[];
   const sugerencias = (sug ?? []) as { person_id: string; persona: string; user_id: string; email: string; cuenta: string; motivo: string }[];
   const qs = (f: string) => `/panel/personas?${new URLSearchParams({ ...(q ? { q } : {}), ...(f !== "todos" ? { filtro: f } : {}) })}`;
@@ -33,7 +39,7 @@ export default async function Directorio({ searchParams }: PageProps<"/panel/per
   return (
     <>
       <PanelTitle eyebrow="Personas" title="Directorio">
-        Todas las personas de DARF: elenco, equipos y cuentas registradas. Abre la ficha para ver su historial. El rol general aplica a toda la plataforma; para dar acceso a una sola obra usa la pestaña Permisos de esa obra.
+        Todas las personas de DARF: elenco, equipos y cuentas registradas. Abre la ficha para ver su historial. "Admin (dueño)" lo puede todo; las demás son "Cuenta". Para dar acceso a toda la empresa usa Ajustes, en Casa DARF; para una sola obra, la pestaña Permisos de esa obra.
       </PanelTitle>
       {typeof sp.error === "string" && <Notice>{sp.error}</Notice>}
       {sp.ok === "1" && <Notice ok>Rol actualizado.</Notice>}
@@ -73,6 +79,9 @@ export default async function Directorio({ searchParams }: PageProps<"/panel/per
                 <Link href={p.fichaHref} className="font-bold hover:text-violeta-claro">{p.nombre}</Link>
                 {p.userId === access.session.userId && <span className="ml-2 text-xs text-texto-3">(tú)</span>}
                 {p.email ? <span className="text-texto-3"> · {p.email}</span> : <span className="text-xs text-aviso"> · sin cuenta</span>}
+                {p.casa.map((c) => (
+                  <span key={c} className="ml-2 inline-block rounded-full bg-[linear-gradient(90deg,#ffb8ec,#c9b2ff,#9fe2ff,#b9ffe0,#ffe6a8)] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-[#1a1030]">Casa DARF · {c}</span>
+                ))}
                 <span className="block text-xs text-texto-3">{p.obras.join(", ") || "Sin créditos"}{p.creditos ? ` · ${p.creditos} créditos` : ""}</span>
               </span>
               <span className="flex min-w-0 flex-wrap items-center gap-2">
@@ -81,9 +90,9 @@ export default async function Directorio({ searchParams }: PageProps<"/panel/per
                     <input type="hidden" name="id" value={p.userId} />
                     <input type="hidden" name="q" value={q} />
                     <select name="rol" defaultValue={p.rol} className={`${input} py-1.5 text-xs`} aria-label={`Rol general de ${p.nombre}`}>
-                      <option value="fan">Fan</option>
-                      <option value="staff">Staff</option>
-                      <option value="admin">Director</option>
+                      <option value="fan">Cuenta</option>
+                      <option value="admin">Admin (dueño)</option>
+                      {p.rol === "staff" && <option value="staff" disabled>Staff (antiguo)</option>}
                     </select>
                     <ConfirmSubmit message={`¿Cambiar el rol general de ${p.nombre}?`} className="rounded-full border border-white/25 px-3 py-1 text-xs font-bold">Guardar</ConfirmSubmit>
                   </form>

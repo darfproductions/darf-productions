@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
-const ROLES = ["fan", "staff", "admin"];
+// "staff" ya no se asigna (2026-10-15): el acceso global va por Casa DARF y el de una obra por sus Permisos.
+const ROLES = ["fan", "admin"];
 
 // Cambia el rol general de una cuenta. La base solo lo permite al Director y
 // nunca deja la plataforma sin Director (0031).

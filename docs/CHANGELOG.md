@@ -5,6 +5,31 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-10-15 — Directorio sin "Staff" y Google Wallet para todos (sin migraciones)
+
+- **Directorio**: el rol general queda en "Cuenta" o "Admin (dueño)". "Staff" ya no se asigna (nadie lo
+  tenía y daba acceso a datos de compradores de todas las obras); lo cubren Casa DARF y los roles de obra.
+  Se ve el puesto de Casa DARF de cada cuenta y el filtro "Casa DARF y admin".
+- **Google Wallet**: Google aprobó la publicación; el botón ya no está limitado al equipo.
+- Guía nueva en `docs/DARF-2.0-GUIA-PANEL.md`.
+
+## 2026-10-14/15 — Medallas, Casa DARF y Dirección general (migraciones 0099–0104)
+
+- **0099 Ensayos**: también se cita al equipo de producción; encargados que abren el ensayo y pasan lista.
+- **0100 Asistente artístico** y propuestas de calificación en la rúbrica.
+- **0101 Dirección general de la obra**: todo dentro de su obra, gafete plateado; revisa, regresa y publica
+  las calificaciones (al entregarse se bloquean). Producción queda con 20 permisos; Maquillaje → Estilismo.
+- **0102 Casa DARF**: puestos globales de la empresa con nombre propio (sin predeterminados); 11 permisos
+  `casa.*` que sustituyen al "solo el Director" en producciones, sitio, eventos, audiciones, club, personas,
+  equipo, contacto, reportes, roles y bitácora. Gafete holográfico con sello. Seis puestos se crean con
+  `supabase/dev/casa_puestos_dev.sql`.
+- **0103 DARF Loyalty**: `lealtad_producciones` cuenta obras en equipo o elenco (sin canceladas ni bajas).
+  Niveles en piedras preciosas desde 3; medalla generada con el número exacto; barra en Mi cuenta.
+- **0104 Medalla de fans**: `fan_visitas` cuenta funciones con boleto propio escaneado y eventos de Fan Zone
+  con llegada. Niveles de butaca en metales; solo socios; se ve solo en la Fan Zone.
+- **Credencial**: logo DARF Productions arriba y sellos en fila. Las medallas solo en la página; PDF y Wallet
+  llevan solo Club Fan y Casa DARF.
+
 ## 2026-10-12 — Nueva piel con el Kit de Marca y la guía de UI (sin migraciones)
 
 - Colores exactos del kit, logos e íconos oficiales, botones en píldora, tarjetas de 22 px.

@@ -71,7 +71,7 @@ const STATUS: Record<OrderRow["status"], { label: string; cls: string }> = {
 
 export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">) {
   const session = await requireSession("/cuenta");
-  // Google en modo demo: solo el equipo ve su botón hasta que Google apruebe la publicación.
+  // Google Wallet: publicado (2026-10-15) para todos; con GOOGLE_WALLET_PUBLICO en false solo lo vería el equipo.
   const equipo = session.profile?.rol === "admin" || session.profile?.rol === "staff";
   const wallet = { apple: walletAppleActivo(), google: walletGoogleActivo() && (GOOGLE_WALLET_PUBLICO || equipo) };
   const sp = await searchParams;
