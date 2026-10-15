@@ -1,5 +1,6 @@
 "use server";
 
+import { correoDeCampo } from "@/lib/cuentas";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 
@@ -26,7 +27,7 @@ export async function setSellerActive(_p: State, f: FormData): Promise<State> {
 export async function addAccountSeller(_p: State, f: FormData): Promise<State> {
   const pid = str(f, "pid");
   const supabase = await createClient();
-  const { data, error } = await supabase.rpc("seller_add_account", { pid, mail: str(f, "email") });
+  const { data, error } = await supabase.rpc("seller_add_account", { pid, mail: await correoDeCampo(supabase, str(f, "email")) });
   if (error) return { ok: false, message: error.message };
   return done(pid, `Activado. Su código es ${data as string}.`);
 }

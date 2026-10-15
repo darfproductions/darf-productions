@@ -14,6 +14,7 @@ import { createClient } from "@/lib/supabase/server";
 import { editarPersonaje, importarPersonajes, moverPersonaje } from "../votacion-actions";
 import { addAuditionMember, addField, addInvites, addRole, addSlot, removeAuditionMember, removeInvite, removeItem, saveAsTemplate, saveAudition, saveCriterios, saveOptions, setAuditionEstado, deleteAudition } from "../actions";
 import { Icono } from "@/components/Icono";
+import { BuscarCuenta } from "@/components/panel/BuscarCuenta";
 
 export const metadata: Metadata = { title: "Configurar audición" };
 
@@ -173,7 +174,7 @@ export default async function AuditionConfig({ params }: PageProps<"/panel/audic
         </ul>
         {armaEquipo && (
           <ActionForm action={addAuditionMember} hidden={h} submit="Agregar al equipo">
-            <input className={`${input} max-w-md`} name="email" type="email" required placeholder="correo@ejemplo.com (debe tener cuenta DARF)" />
+            <BuscarCuenta className="max-w-md" placeholder="Nombre o correo (debe tener cuenta DARF)" />
             <div className="flex flex-wrap gap-2">
               {opcionesRol.map((r) => (
                 <label key={r.id} className="flex items-center gap-2 rounded-full border border-white/20 px-3 py-1.5 text-sm has-[:checked]:border-white">

@@ -4,7 +4,9 @@ import { Card, Notice, PanelTitle, button, buttonGhost, input } from "@/componen
 import { listRoles, type Permission, type Role } from "@/lib/panel-data";
 import { requireDirector } from "@/lib/permissions";
 import { createClient } from "@/lib/supabase/server";
-import { borrarRolCasa, crearRolCasa, guardarMiembro, guardarPermisosCasa, quitarMiembro } from "./actions";
+import Link from "next/link";
+import { borrarRolCasa, crearRolCasa, guardarMiembro, guardarPermisosCasa, nosotrosMiembro, quitarMiembro } from "./actions";
+import { BuscarCuenta } from "@/components/panel/BuscarCuenta";
 
 export const metadata: Metadata = { title: "Casa DARF" };
 
@@ -41,8 +43,12 @@ export default async function CasaDarf({ searchParams }: PageProps<"/panel/ajust
   await requireDirector("/panel/ajustes/casa");
   const sp = await searchParams;
   const supabase = await createClient();
-  const [{ roles, permissions, grants }, lista] = await Promise.all([listRoles("casa"), supabase.rpc("casa_lista")]);
+  const [{ roles, permissions, grants }, lista, vis] = await Promise.all([
+    listRoles("casa"), supabase.rpc("casa_lista"), supabase.from("casa_members").select("user_id, en_nosotros"),
+  ]);
   const miembros = (lista.data ?? []) as Miembro[];
+  // 0105: quién sale en "Conoce al equipo" (basta con que uno de sus puestos lo tenga).
+  const enNosotros = new Set(((vis.data ?? []) as { user_id: string; en_nosotros: boolean }[]).filter((x) => x.en_nosotros).map((x) => x.user_id));
   const nombreRol = new Map(roles.map((r) => [r.id, r.nombre]));
   const desc = new Map(permissions.map((p) => [p.id, p.descripcion]));
 
@@ -103,13 +109,17 @@ export default async function CasaDarf({ searchParams }: PageProps<"/panel/ajust
 
       <section className="flex flex-col gap-3">
         <h2 className="titular text-xl">2 · Personas · {miembros.length}</h2>
+        <p className="text-sm text-texto-2">
+          Quienes estén aquí salen en <Link href="/nosotros" className="font-bold text-violeta-claro">Conoce al equipo</Link> con su puesto, en el orden de los puestos (puedes ocultar a alguien).
+          Su foto y semblanza salen de su perfil profesional si es público. También entran al <Link href="/panel/personas/equipo/portal" className="font-bold text-violeta-claro">Portal del equipo</Link>.
+        </p>
         {roles.length > 0 ? (
           <Card className="flex flex-col gap-4">
             <h3 className="font-bold">Agregar a Casa DARF</h3>
             <form action={guardarMiembro} className="flex flex-col gap-4">
               <div className="grid gap-3 sm:grid-cols-[1fr_200px]">
-                <label className="flex flex-col gap-1.5 text-sm font-semibold">Correo de su cuenta
-                  <input className={input} name="email" type="email" required placeholder="persona@correo.com" />
+                <label className="flex flex-col gap-1.5 text-sm font-semibold">Nombre o correo de su cuenta
+                  <BuscarCuenta placeholder="Escribe su nombre" />
                 </label>
                 <label className="flex flex-col gap-1.5 text-sm font-semibold">En Casa DARF desde
                   <input className={input} name="desde" type="date" />
@@ -127,7 +137,13 @@ export default async function CasaDarf({ searchParams }: PageProps<"/panel/ajust
               <summary className="cursor-pointer">
                 <span className="font-bold">{m.nombre}</span>
                 <span className="ml-2 text-sm text-texto-3">{m.roles.map((r) => nombreRol.get(r) ?? r).join(", ")} · desde {m.desde.slice(0, 4)}</span>
+                <span className="ml-2 text-xs text-texto-3">{enNosotros.has(m.user_id) ? "· sale en Nosotros" : "· oculto en Nosotros"}</span>
               </summary>
+              <form action={nosotrosMiembro} className="mt-3">
+                <input type="hidden" name="uid" value={m.user_id} />
+                <input type="hidden" name="mostrar" value={enNosotros.has(m.user_id) ? "0" : "1"} />
+                <button className={buttonGhost}>{enNosotros.has(m.user_id) ? "Ocultar de Conoce al equipo" : "Mostrar en Conoce al equipo"}</button>
+              </form>
               <form action={guardarMiembro} className="mt-4 flex flex-col gap-3">
                 <input type="hidden" name="email" value={m.email} />
                 <p className="text-sm text-texto-3">{m.email}</p>

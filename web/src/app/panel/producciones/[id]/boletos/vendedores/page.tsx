@@ -9,6 +9,7 @@ import { estadoVendedor, sellerPath, TIPO_VENDEDOR, type SellerRow } from "@/lib
 import { createClient } from "@/lib/supabase/server";
 import { formatMoney } from "@/lib/tickets";
 import { addAccountSeller, addExternalSeller, setSellerActive } from "./actions";
+import { BuscarCuenta } from "@/components/panel/BuscarCuenta";
 
 export const metadata: Metadata = { title: "Vendedores" };
 
@@ -64,8 +65,8 @@ export default async function Vendedores({ params }: PageProps<"/panel/produccio
           <Card>
             <h2 className="titular mb-3 text-xl">Activar una cuenta</h2>
             <ActionForm action={addAccountSeller} hidden={{ pid: id }} submit="Activar">
-              <label className="flex flex-col gap-1.5 text-sm font-semibold">Correo de su cuenta
-                <input className={input} name="email" type="email" required />
+              <label className="flex flex-col gap-1.5 text-sm font-semibold">Nombre o correo de su cuenta
+                <BuscarCuenta />
               </label>
             </ActionForm>
           </Card>

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ActionForm } from "@/components/panel/ActionForm";
+import { BuscarCuenta } from "@/components/panel/BuscarCuenta";
 import { ConfirmSubmit } from "@/components/panel/ConfirmSubmit";
 import { Card, Notice, PanelTitle, button, input } from "@/components/panel/ui";
 import { FILTROS, filtroValido, unirDirectorio, type CuentaUsuario, type FichaPersona } from "@/lib/directory-rules";
@@ -39,7 +40,7 @@ export default async function Directorio({ searchParams }: PageProps<"/panel/per
   return (
     <>
       <PanelTitle eyebrow="Personas" title="Directorio">
-        Todas las personas de DARF: elenco, equipos y cuentas registradas. Abre la ficha para ver su historial. "Admin (dueño)" lo puede todo; las demás son "Cuenta". Para dar acceso a toda la empresa usa Ajustes, en Casa DARF; para una sola obra, la pestaña Permisos de esa obra.
+        Todas las personas de DARF: elenco, equipos y cuentas registradas. Abre la ficha para ver su historial. “Admin (dueño)” lo puede todo; las demás son “Cuenta”. Para dar acceso a toda la empresa usa Ajustes, en Casa DARF; para una sola obra, la pestaña Permisos de esa obra.
       </PanelTitle>
       {typeof sp.error === "string" && <Notice>{sp.error}</Notice>}
       {sp.ok === "1" && <Notice ok>Rol actualizado.</Notice>}
@@ -98,9 +99,21 @@ export default async function Directorio({ searchParams }: PageProps<"/panel/per
                   </form>
                 ) : !p.userId && p.personId ? (
                   <ActionForm inline action={linkAccount} hidden={{ id: p.personId }} submit="Ligar" submitClass="rounded-full border border-white/25 px-3 py-1 text-xs font-bold">
-                    <input className={`${input} w-52 max-w-full py-1 text-xs`} name="email" type="email" required placeholder="Correo de su cuenta" />
+                    <BuscarCuenta className="w-56 max-w-full" placeholder="Nombre o correo de su cuenta" />
                   </ActionForm>
                 ) : null}
+                {/* 0105: la ficha quedó en la cuenta equivocada (alguien se registró dos veces): pasarla a la buena. */}
+                {p.userId && p.personId && (
+                  <details className="relative">
+                    <summary className="cursor-pointer text-xs font-bold text-texto-3 hover:text-texto">Cambiar cuenta</summary>
+                    <div className="mt-2 flex flex-col gap-2 rounded-xl border border-white/15 bg-telon p-3 sm:absolute sm:right-0 sm:z-20 sm:w-80">
+                      <p className="text-xs text-texto-2">Pasa esta ficha y sus créditos a otra cuenta de la misma persona. La cuenta actual queda sin ficha.</p>
+                      <ActionForm action={linkAccount} hidden={{ id: p.personId }} confirm={`¿Pasar la ficha de ${p.nombre} y sus créditos a la cuenta elegida?`} submit="Cambiar" submitClass="rounded-full border border-white/25 px-3 py-1 text-xs font-bold self-start">
+                        <BuscarCuenta placeholder="Nombre o correo de la cuenta buena" />
+                      </ActionForm>
+                    </div>
+                  </details>
+                )}
                 <Link href={p.fichaHref} className="text-xs font-bold text-violeta-claro">Ficha <Icono nombre="flecha-der" /></Link>
               </span>
             </li>

@@ -255,7 +255,8 @@ export function panelMenu(a: PanelAccessData): NavSection[] {
   // Personas y Ajustes: cada subpestaña con su permiso de Casa DARF (0102).
   const personas: Section[] = [
     ...(casa(a, "casa.personas") ? [{ href: "/panel/personas", label: "Directorio" }, { href: "/panel/cumpleanos", label: "Cumpleaños" }] : []),
-    ...(casa(a, "casa.equipo") ? [{ href: "/panel/personas/equipo", label: "Equipo DARF" }] : []),
+    // 0105: el equipo de la empresa es Casa DARF (Ajustes); aquí queda su portal (avisos, material, juntas).
+    ...(casa(a, "casa.equipo") ? [{ href: "/panel/personas/equipo/portal", label: "Portal del equipo" }] : []),
     ...(casa(a, "casa.contacto") ? [{ href: "/panel/contacto", label: "Contacto" }] : []),
   ];
   if (personas.length) {

@@ -2,6 +2,7 @@ import { ActionForm } from "@/components/panel/ActionForm";
 import { input } from "@/components/panel/ui";
 import { TIPO_CREDITO } from "@/lib/casting";
 import { sendOffer } from "./offer-actions";
+import { BuscarCuenta } from "@/components/panel/BuscarCuenta";
 
 // Formulario de oferta: por correo (elenco) o para una solicitud de audición (resultados).
 export function OfferForm({ hidden, obras, papeles = [], porCorreo }: {
@@ -15,7 +16,7 @@ export function OfferForm({ hidden, obras, papeles = [], porCorreo }: {
   return (
     <ActionForm action={sendOffer} hidden={hidden} submit="Mandar oferta" submitClass="rounded-full bg-texto px-4 py-2 text-xs font-bold text-sala disabled:opacity-60">
       <div className="grid gap-2 sm:grid-cols-2">
-        {porCorreo && <input className={`${input} sm:col-span-2`} name="email" type="email" required placeholder="correo@ejemplo.com (debe tener cuenta DARF)" />}
+        {porCorreo && <BuscarCuenta className="sm:col-span-2" placeholder="Nombre o correo (debe tener cuenta DARF)" />}
         {obras && (
           <select className={`${input} sm:col-span-2`} name="production_id" required defaultValue="" aria-label="Obra">
             <option value="" disabled>¿Para qué obra?</option>
