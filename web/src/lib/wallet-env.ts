@@ -56,9 +56,9 @@ export function walletAppleConfig(): WalletAppleConfig | null {
 
 export const walletAppleActivo = (): boolean => walletAppleConfig() !== null;
 
-/** Google Wallet en modo demo solo acepta cuentas de prueba: mientras Google no apruebe la publicación,
- *  el botón de Google solo se le muestra al equipo (admin/staff). Cambiar a true al aprobarse. */
-export const GOOGLE_WALLET_PUBLICO = false;
+/** Google aprobó la publicación (2026-10-15): el botón de Google Wallet se muestra a todos. En false solo lo
+ *  vería el equipo (como en modo demo, que solo acepta cuentas de prueba). */
+export const GOOGLE_WALLET_PUBLICO = true;
 
 /** Dirección pública del sitio para las imágenes que descarga Google (las ligas de prueba de Vercel
  *  piden iniciar sesión y Google no puede leerlas). */
