@@ -200,7 +200,7 @@ describe("Casa DARF (0102)", () => {
   it("Comunicación ve sitio, DARFY, contacto y eventos DARF; no reportes ni Casa DARF", () => {
     const a = { ...base, casa: ["casa.sitio", "casa.eventos", "casa.club", "casa.contacto"] };
     expect(hasAnyAccess(a)).toBe(true);
-    expect(subs(a, "ajustes")).toEqual(["/panel/ajustes/sitio", "/panel/ajustes/darfy"]);
+    expect(subs(a, "ajustes")).toEqual(["/panel/ajustes/sitio", "/panel/ajustes/club", "/panel/ajustes/darfy"]);
     expect(subs(a, "personas")).toEqual(["/panel/contacto"]);
     expect(panelMenu(a).some((s) => s.id === "reportes")).toBe(false);
     expect(hasEventoAccess(a)).toBe(true);

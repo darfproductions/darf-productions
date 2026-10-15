@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { MEDIDAS_VESTUARIO } from "@/lib/medidas";
 import { mensajeError } from "@/lib/errores";
 import { createClient } from "@/lib/supabase/server";
 
@@ -12,7 +13,8 @@ export type FileState = { ok: boolean; message: string } | null;
 
 const TEXTOS = ["fecha_nacimiento", "telefono", "emergencia_nombre", "emergencia_telefono", "emergencia_parentesco", "tutor_nombre",
   "tutor_telefono", "tutor_email", "alergias", "condiciones", "medicamentos", "tipo_sangre", "talla_ropa", "talla_calzado"] as const;
-const MEDIDAS = ["altura_cm", "pecho_cm", "cintura_cm", "cadera_cm"] as const;
+// 0112: todas las medidas de la tabla de vestuario de DARF.
+const MEDIDAS = MEDIDAS_VESTUARIO.map((m) => m.k);
 
 const refresh = (pid: string) => {
   revalidatePath(`/cuenta/produccion/${pid}`);

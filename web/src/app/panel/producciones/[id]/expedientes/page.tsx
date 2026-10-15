@@ -5,18 +5,16 @@ import { ActionForm } from "@/components/panel/ActionForm";
 import { Card, input } from "@/components/panel/ui";
 import { TIPO_CREDITO } from "@/lib/casting-rules";
 import {
-  SEMAFORO, adeudo, docsPendientes, edad, estadoCuotas, estadoInscripcion, mesNombre, pesos, recaudacion, semaforo,
+  SEMAFORO, adeudo, docsPendientes, edad, estadoCuotas, estadoInscripcion, pesos, semaforo,
   type DocType, type Enrollment, type Fee, type FeeTerms, type MemberDoc, type MemberFile, type PersonFile,
 } from "@/lib/member-rules";
 import { can } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
 import { createClient } from "@/lib/supabase/server";
-import { addBasicDocs, addDocType, removeDocType, saveDiscipline, saveFee } from "./actions";
+import { addBasicDocs, addDocType, removeDocType, saveDiscipline } from "./actions";
 import { AjustesSeccion } from "@/components/panel/AjustesSeccion";
 import { ExpTabs } from "./ExpTabs";
-import { mayus } from "@/lib/dates";
 import { todasLasFilas } from "@/lib/supabase/paginar";
-import { getPagosFicha } from "@/lib/adeudos";
 import { Icono } from "@/components/Icono";
 
 export const metadata: Metadata = { title: "Expedientes" };
@@ -48,7 +46,7 @@ export default async function Expedientes({ params, searchParams }: PageProps<"/
   const { data: rosterData } = await supabase.rpc("cast_roster", { pid: id });
   const gente = (rosterData ?? []) as Roster[];
   const uids = gente.length ? gente.map((g) => g.user_id) : NONE;
-  const [persons, members, tipos, docs, fee, pagos, terms, disc, cfg, altas, ficha] = await Promise.all([
+  const [persons, members, tipos, docs, fee, pagos, terms, disc, cfg, altas] = await Promise.all([
     verExp ? supabase.from("person_files").select("*").in("user_id", uids) : Promise.resolve({ data: [] }),
     verExp ? supabase.from("member_files").select("user_id, revisado_at, confirmado_at").eq("production_id", id) : Promise.resolve({ data: [] }),
     supabase.from("member_doc_types").select("id, nombre, solo_menores, obligatorio, aplica, grupo, personas, descripcion").eq("production_id", id).order("orden"),
@@ -59,8 +57,6 @@ export default async function Expedientes({ params, searchParams }: PageProps<"/
     verDisc || verCuotas ? supabase.rpc("discipline_summary", { pid: id }) : Promise.resolve({ data: [] }),
     supabase.from("production_discipline").select("*").eq("production_id", id).maybeSingle(),
     supabase.from("member_enrollment").select("user_id, ingreso, baja_at, baja_motivo").eq("production_id", id),
-    // Pagos de quien aún no tiene cuenta (0111): cuentan en la recaudación.
-    verCuotas ? getPagosFicha(id) : Promise.resolve({ pagos: [], cuotas: [] }),
   ]);
   const altaDe = (u: string) => ((altas.data ?? []) as (Enrollment & { user_id: string })[]).find((a) => a.user_id === u) ?? null;
   const tiposDoc = (tipos.data ?? []) as DocType[];
@@ -72,7 +68,6 @@ export default async function Expedientes({ params, searchParams }: PageProps<"/
   type Pago = { user_id: string; periodo: string; monto: number; concepto: "mensualidad" | "inscripcion"; registrado_at: string; anulado_at: string | null };
   const pagosDe = (u: string) => ((pagos.data ?? []) as Pago[]).filter((p) => p.user_id === u);
   const cobra = !!cuota && cuota.cobrar !== false;
-  const rec = recaudacion([...((pagos.data ?? []) as Pago[]), ...ficha.pagos.map((p) => ({ ...p, registrado_at: p.pagado_at }))]);
   const discDe = (u: string) => ((disc.data ?? []) as Disc[]).find((d) => d.user_id === u);
   const reglas = cfg.data as { limite_advertencias: number; auto_mensualidad_meses: number | null; auto_retardos: number | null; auto_faltas: number | null; tolerancia_min?: number } | null;
   const porDecidir = gente.filter((g) => discDe(g.user_id)?.requiere_decision && !altaDe(g.user_id)?.baja_at);
@@ -84,8 +79,13 @@ export default async function Expedientes({ params, searchParams }: PageProps<"/
 
   return (
     <div className="flex flex-col gap-4">
-      <ExpTabs pid={id} actual="integrantes" pagos={verCuotas && cobra} />
-      {verExp && <a href={`/panel/producciones/${id}/expedientes/exportar/elenco`} className="self-end text-sm font-bold text-violeta-claro">Descargar elenco con tutores y emergencias (Excel) <Icono nombre="flecha-abajo" /></a>}
+      <ExpTabs pid={id} actual="integrantes" pagos={verCuotas} cobra={cobra} />
+      {verExp && (
+        <div className="flex flex-wrap justify-end gap-x-5 gap-y-1">
+          <a href={`/panel/producciones/${id}/expedientes/exportar/medidas`} className="text-sm font-bold text-violeta-claro">Descargar medidas de vestuario (Excel) <Icono nombre="flecha-abajo" /></a>
+          <a href={`/panel/producciones/${id}/expedientes/exportar/elenco`} className="text-sm font-bold text-violeta-claro">Descargar elenco con tutores y emergencias (Excel) <Icono nombre="flecha-abajo" /></a>
+        </div>
+      )}
       {verExp && subidos.length > 0 && (
         <Card id="subidos" className={`scroll-mt-24 ${sp.docs === "subidos" ? "border border-aviso/50" : ""}`}>
           <h2 className="font-bold text-aviso">Documentos subidos por revisar ({subidos.length})</h2>
@@ -153,8 +153,8 @@ export default async function Expedientes({ params, searchParams }: PageProps<"/
         {gente.length === 0 && <p className="px-5 py-4 text-texto-2">Aún no hay integrantes. Entran al aceptar una oferta (Elenco y equipos).</p>}
       </Card>
 
-      {(verExp || verDisc || verCuotas) && (
-        <AjustesSeccion resumen={[verExp && "Documentos que se piden", verDisc && "Advertencias", verCuotas && "Pagos del taller y recaudación"].filter(Boolean).join(" · ")}>
+      {(verExp || verDisc) && (
+        <AjustesSeccion resumen={[verExp && "Documentos que se piden", verDisc && "Advertencias"].filter(Boolean).join(" · ")}>
       {verExp && (
         <Card className="flex flex-col gap-3">
           <h2 className="titular text-xl">Documentos que se piden</h2>
@@ -233,48 +233,6 @@ export default async function Expedientes({ params, searchParams }: PageProps<"/
         </Card>
       )}
 
-      {verCuotas && (
-        <Card>
-          <h2 className="titular mb-1 text-xl">Pagos del taller</h2>
-          <p className="mb-3 text-sm text-texto-2">Inscripción (un solo pago, completo aunque entren tarde) y mensualidad (de qué mes a qué mes). Quien entra tarde paga desde su mes de ingreso. La beca, un monto especial o “sin inscripción” se ponen en el expediente de cada persona.</p>
-          <ActionForm action={saveFee} hidden={h} submit="Guardar pagos">
-            <label className="flex items-center gap-2 text-sm font-semibold"><input type="checkbox" name="cobrar" defaultChecked={cuota ? cuota.cobrar !== false : true} /> Este taller tiene pagos (si lo apagas, no se cobra nada a nadie)</label>
-            <div className="grid gap-2 sm:grid-cols-5">
-              <label className="flex flex-col gap-1 text-xs font-semibold">Inscripción (MXN)<input className={input} type="number" min={0} step="1" name="inscripcion" defaultValue={cuota?.inscripcion ?? 0} /></label>
-              <label className="flex flex-col gap-1 text-xs font-semibold">Mensualidad (MXN)<input className={input} type="number" min={0} step="1" name="monto" required defaultValue={cuota?.monto ?? ""} /></label>
-              <label className="flex flex-col gap-1 text-xs font-semibold">Primer mes<input className={input} type="month" name="desde" required defaultValue={cuota?.desde.slice(0, 7) ?? ""} /></label>
-              <label className="flex flex-col gap-1 text-xs font-semibold">Último mes<input className={input} type="month" name="hasta" required defaultValue={cuota?.hasta.slice(0, 7) ?? ""} /></label>
-              <label className="flex flex-col gap-1 text-xs font-semibold">Pagar antes del día<input className={input} type="number" min={1} max={28} name="dia_limite" defaultValue={cuota?.dia_limite ?? 10} /></label>
-            </div>
-            <label className="flex items-center gap-2 text-sm font-semibold"><input type="checkbox" name="vence_sabado" defaultChecked={!!cuota?.vence_sabado} /> Se paga el primer sábado del mes, con tolerancia hasta el segundo sábado (en lugar del día fijo)</label>
-          </ActionForm>
-        </Card>
-      )}
-
-      {verCuotas && rec.meses.length > 0 && (
-        <Card className="overflow-x-auto p-0 md:p-0">
-          <div className="flex flex-wrap items-baseline justify-between gap-2 px-5 pt-4">
-            <h2 className="titular text-xl">Recaudación</h2>
-            <a href={`/panel/producciones/${id}/expedientes/exportar/pagos`} className="text-sm font-bold text-violeta-claro">Exportar pagos (CSV) <Icono nombre="flecha-abajo" /></a>
-          </div>
-          <div className="grid grid-cols-3 gap-3 px-5 py-3 text-center">
-            <div><p className="text-xl font-black">{pesos(rec.inscripciones)}</p><p className="text-xs text-texto-3">Inscripciones</p></div>
-            <div><p className="text-xl font-black">{pesos(rec.mensualidades)}</p><p className="text-xs text-texto-3">Mensualidades</p></div>
-            <div><p className="text-xl font-black">{pesos(rec.total)}</p><p className="text-xs text-texto-3">Total cobrado</p></div>
-          </div>
-          <table className="w-full min-w-[480px] text-sm">
-            <thead className="text-left text-xs uppercase tracking-[0.12em] text-texto-3">
-              <tr>{["Mes en que se cobró", "Inscripciones", "Mensualidades", "Total"].map((t) => <th key={t} className="px-4 py-2">{t}</th>)}</tr>
-            </thead>
-            <tbody className="divide-y divide-white/10">
-              {rec.meses.map((m) => (
-                <tr key={m.mes}><td className="px-4 py-2">{mayus(mesNombre(m.mes))}</td><td className="px-4 py-2">{pesos(m.inscripciones)}</td>
-                  <td className="px-4 py-2">{pesos(m.mensualidades)}</td><td className="px-4 py-2 font-bold">{pesos(m.total)}</td></tr>
-              ))}
-            </tbody>
-          </table>
-        </Card>
-      )}
         </AjustesSeccion>
       )}
     </div>

@@ -10,11 +10,11 @@ import { assetUrl } from "@/lib/productions";
 import { createClient } from "@/lib/supabase/server";
 import { ActionForm } from "@/components/panel/ActionForm";
 import { ESTADO_OFERTA, listOffers, offerLabel } from "@/lib/casting";
-import { AddCreditForm } from "./AddCreditForm";
+import { AddCreditForm, ChecksPersonajes, type OpcionPersonaje } from "./AddCreditForm";
 import { Personajes } from "./Personajes";
 import { OfferForm } from "./OfferForm";
 import { withdrawOffer } from "./offer-actions";
-import { moveCredit, programarCredito, publishAllCast, removeCredit, setCreditPhoto, setCreditPublicado, setSoloCredito, updatePapel } from "./actions";
+import { moveCredit, programarCredito, publishAllCast, removeCredit, setCreditCharacters, setCreditPhoto, setCreditPublicado, setSoloCredito, updatePapel } from "./actions";
 import { isoToLocalMx } from "@/lib/dates";
 import { Icono } from "@/components/Icono";
 
@@ -36,7 +36,7 @@ const ELENCO = new Set(["reparto", "ensamble"]);
 const saleEl = (iso: string) =>
   new Intl.DateTimeFormat("es-MX", { weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit", timeZone: "America/Mexico_City" }).format(new Date(iso));
 
-type Row = { id: string; tipo: string; papel: string | null; foto_path: string | null; orden: number; activo: boolean; publicado: boolean; solo_credito: boolean; publicar_at: string | null; people: { id: string; nombre: string; profile_id: string | null } | null };
+type Row = { id: string; tipo: string; papel: string | null; foto_path: string | null; orden: number; activo: boolean; publicado: boolean; solo_credito: boolean; publicar_at: string | null; people: { id: string; nombre: string; profile_id: string | null } | null; credit_characters?: { character_id: string }[] };
 
 const mini = "grid h-8 w-8 place-items-center rounded-full border border-white/20 text-sm hover:border-white/50 disabled:opacity-40";
 
@@ -46,11 +46,16 @@ export default async function CastEditor({ params }: PageProps<"/panel/produccio
   const access = await requirePanel(`/panel/producciones/${id}/elenco`);
   if (!can(access, id, "elenco.gestionar") && !can(access, id, "obra.editar")) redirect(`/panel/producciones/${id}`);
   const supabase = await createClient();
-  const [{ data: credits }, { data: people }] = await Promise.all([
-    supabase.from("production_credits").select("id, tipo, papel, foto_path, orden, people(id, nombre, profile_id), activo, publicado, solo_credito, publicar_at").eq("production_id", id).order("orden").order("id"),
+  const [{ data: credits }, { data: people }, { data: chars }] = await Promise.all([
+    supabase.from("production_credits").select("id, tipo, papel, foto_path, orden, people(id, nombre, profile_id), activo, publicado, solo_credito, publicar_at, credit_characters(character_id)").eq("production_id", id).order("orden").order("id"),
     supabase.from("people").select("nombre").order("nombre").limit(2000),
+    supabase.from("production_characters").select("id, nombre").eq("production_id", id).order("orden").order("created_at"),
   ]);
   const rows = (credits ?? []) as unknown as Row[];
+  // 0112: personajes de la lista y quién ya tiene cada uno.
+  const ocupado = new Map<string, string>();
+  for (const r of rows) for (const c of r.credit_characters ?? []) if (r.activo) ocupado.set(c.character_id, [ocupado.get(c.character_id), r.people?.nombre].filter(Boolean).join(", "));
+  const personajes: OpcionPersonaje[] = ((chars ?? []) as { id: string; nombre: string }[]).map((c) => ({ ...c, ocupado: ocupado.get(c.id) ?? null }));
   const armaElenco = can(access, id, "elenco.gestionar");
   // La ficha de talento solo la abre quien arma el elenco o el Director (can_view_talent).
   const verFicha = armaElenco || access.isDirector;
@@ -120,7 +125,16 @@ export default async function CastEditor({ params }: PageProps<"/panel/produccio
                         {ELENCO.has(r.tipo) && !r.publicado && <span className="ml-2 rounded-full bg-[#4a3b10] px-2 py-0.5 text-[10px] font-bold text-[#fde68a]">{r.publicar_at ? `Sale el ${saleEl(r.publicar_at)}` : "No publicado"}</span>}
                         {!r.activo && <span className="ml-2 rounded-full bg-[#5a1a22] px-2 py-0.5 text-[10px] font-bold text-[#fecdd3]">Baja</span>}
                       </p>
-                      {g.papel && (
+                      {g.tipo === "reparto" && personajes.length > 0 ? (
+                        <details className="mt-1 max-w-xl">
+                          <summary className="cursor-pointer text-sm text-texto-2">{r.papel || "Sin personaje"} <span className="text-xs font-bold text-violeta-claro">· cambiar</span></summary>
+                          <div className="mt-2 rounded-lg bg-sala p-3">
+                            <ActionForm action={setCreditCharacters} hidden={{ pid: id, id: r.id }} submit="Guardar personajes" submitClass={`${buttonGhost} py-1 text-xs`}>
+                              <ChecksPersonajes personajes={personajes} marcados={(r.credit_characters ?? []).map((c) => c.character_id)} />
+                            </ActionForm>
+                          </div>
+                        </details>
+                      ) : g.papel && (
                         <div className="mt-1 max-w-sm">
                           <ActionForm inline action={updatePapel} hidden={{ pid: id, id: r.id }} submit="Guardar" submitClass={`${buttonGhost} py-1 text-xs`}>
                             <input className={`${input} min-w-0 flex-1 py-1.5 text-sm`} name="papel" defaultValue={r.papel ?? ""} aria-label={g.papel} />
@@ -171,7 +185,7 @@ export default async function CastEditor({ params }: PageProps<"/panel/produccio
                 ))}
                 {items.length === 0 && <li className="py-2 text-sm text-texto-3">Nadie todavía.</li>}
               </ul>
-              <AddCreditForm pid={id} tipo={g.tipo} papelLabel={g.papel} listId={listId} />
+              <AddCreditForm pid={id} tipo={g.tipo} papelLabel={g.papel} listId={listId} personajes={personajes} />
             </section>
           </Card>
         );

@@ -31,7 +31,9 @@ export async function addCredit(_p: CreditState, f: FormData): Promise<CreditSta
   const pid = String(f.get("pid"));
   const tipo = String(f.get("tipo"));
   const nombre = String(f.get("nombre") ?? "").trim().replace(/\s+/g, " ");
-  const papel = String(f.get("papel") ?? "").trim() || null;
+  // 0112: en Reparto se eligen uno o varios personajes de la lista de la obra.
+  const personajes = f.getAll("personaje").map(String).filter(Boolean);
+  const papel = String(f.get("papel") ?? "").trim() || (personajes.length ? "…" : null);
   if (!TIPOS.includes(tipo as (typeof TIPOS)[number])) return { ok: false, message: "Tipo no válido." };
   if (!nombre) return { ok: false, message: "Escribe el nombre de la persona." };
   // Ensamble y Staff (0106) son listas de nombres, sin personaje ni puesto.
@@ -40,8 +42,12 @@ export async function addCredit(_p: CreditState, f: FormData): Promise<CreditSta
   if (!person.id) return { ok: false, message: person.error ?? "No se pudo registrar a la persona." };
   const supabase = await createClient();
   const { data: last } = await supabase.from("production_credits").select("orden").eq("production_id", pid).eq("tipo", tipo).order("orden", { ascending: false }).limit(1);
-  const { error } = await supabase.from("production_credits").insert({ production_id: pid, person_id: person.id, tipo, papel, orden: ((last?.[0]?.orden as number) ?? 0) + 1 });
+  const { data: nuevo, error } = await supabase.from("production_credits").insert({ production_id: pid, person_id: person.id, tipo, papel, orden: ((last?.[0]?.orden as number) ?? 0) + 1 }).select("id").single();
   if (error) return { ok: false, message: mensajeError(error) };
+  if (personajes.length) {
+    const { error: e } = await supabase.rpc("credito_personajes", { p_credit: nuevo.id, p_chars: personajes });
+    if (e) return { ok: false, message: mensajeError(e) };
+  }
   refresh(pid);
   return { ok: true, message: `${nombre} agregado.` };
 }
@@ -58,6 +64,18 @@ export async function updatePapel(_p: CreditState, f: FormData): Promise<CreditS
   if (!count) return { ok: false, message: SIN_PERMISO };
   refresh(pid);
   return { ok: true, message: "Guardado." };
+}
+
+/** Personajes de un crédito de Reparto (0112): uno o varios de la lista de la obra. */
+export async function setCreditCharacters(_p: CreditState, f: FormData): Promise<CreditState> {
+  const pid = String(f.get("pid"));
+  const id = String(f.get("id"));
+  const personajes = f.getAll("personaje").map(String).filter(Boolean);
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("credito_personajes", { p_credit: id, p_chars: personajes });
+  if (error) return { ok: false, message: mensajeError(error) };
+  refresh(pid);
+  return { ok: true, message: "Personajes guardados." };
 }
 
 export async function removeCredit(_p: CreditState, f: FormData): Promise<CreditState> {

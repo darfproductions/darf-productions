@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element -- QR generado en el servidor */
 import type { Metadata } from "next";
 import Link from "next/link";
 import { AjustesSeccion } from "@/components/panel/AjustesSeccion";
@@ -12,7 +13,9 @@ import { requireAudition } from "@/lib/panel-auditions";
 import { casa } from "@/lib/panel-nav";
 import { createClient } from "@/lib/supabase/server";
 import { editarPersonaje, importarPersonajes, moverPersonaje } from "../votacion-actions";
-import { addAuditionMember, addField, addInvites, addRole, addSlot, removeAuditionMember, removeInvite, removeItem, saveAsTemplate, saveAudition, saveCriterios, saveOptions, setAuditionEstado, deleteAudition } from "../actions";
+import { origen } from "@/lib/gafete";
+import QRCode from "qrcode";
+import { addAuditionMember, addField, addInvites, addRole, addSlot, removeAuditionMember, removeInvite, removeItem, saveAsTemplate, saveAudition, saveCriterios, saveEntrevistaPreguntas, saveOptions, setAuditionEstado, deleteAudition } from "../actions";
 import { Icono } from "@/components/Icono";
 import { BuscarCuenta } from "@/components/panel/BuscarCuenta";
 
@@ -32,7 +35,7 @@ const check = "flex items-start gap-2 text-sm";
 export default async function AuditionConfig({ params }: PageProps<"/panel/audiciones/[aid]">) {
   const { aid } = await params;
   const { a, may, access, config } = await requireAudition(aid, []);
-  if (!may("audiciones.gestionar")) redirect(`/panel/audiciones/${aid}/${may("audiciones.evaluar") ? "evaluacion" : "registro"}`);
+  if (!may("audiciones.gestionar")) redirect(`/panel/audiciones/${aid}/${may("audiciones.evaluar") ? "evaluacion" : may("audiciones.registro") ? "registro" : "entrevista"}`);
   // Registro permanente: solo el Director lo configura; los demás van directo a las solicitudes.
   if (!config) redirect(`/panel/audiciones/${aid}/solicitudes`);
   // ¿Puede armar el equipo propio? Obra: quien da permisos en ella. General: el Director.
@@ -53,6 +56,9 @@ export default async function AuditionConfig({ params }: PageProps<"/panel/audic
     .map((r) => [r.role_id, { id: r.role_id, nombre: r.panel_roles?.nombre ?? r.role_id, orden: r.panel_roles?.orden ?? 99 }])).values()]
     .sort((x, y) => x.orden - y.orden);
   const miembros = (team.data ?? []) as { id: string; nombre: string | null; email: string; role_nombre: string }[];
+  // 0112: QR de la convocatoria para compartir (lleva a su página pública).
+  const ligaPublica = `${await origen()}/audiciones/${aid}`;
+  const qr = await QRCode.toDataURL(ligaPublica, { margin: 2, width: 720, errorCorrectionLevel: "M" });
   const h = { aid };
 
   return (
@@ -64,6 +70,18 @@ export default async function AuditionConfig({ params }: PageProps<"/panel/audic
         </div>
         {a.visibilidad === "enlace" && (
           <p className="flex flex-wrap items-center gap-2 text-sm text-texto-2">Solo con enlace: no aparece en la lista pública. Comparte el enlace con quienes deben inscribirse. <CopyLink path={`/audiciones/${aid}`} /></p>
+        )}
+        {a.estado !== "borrador" && (
+          <div className="flex flex-wrap items-center gap-4 rounded-xl bg-sala p-3">
+            <img src={qr} alt="Código QR de la convocatoria" width={120} height={120} className="h-[120px] w-[120px] rounded-lg bg-white" />
+            <div className="flex min-w-0 flex-1 basis-48 flex-col gap-2 text-sm">
+              <p className="text-texto-2">QR para compartir: lleva a la página de esta convocatoria. Ponlo en carteles, redes o en la escuela.</p>
+              <div className="flex flex-wrap items-center gap-2">
+                <a href={qr} download={`QR-${a.titulo.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Za-z0-9-]+/g, "-")}.png`} className="rounded-full bg-texto px-4 py-1.5 text-xs font-bold text-sala">Descargar QR</a>
+                <CopyLink path={`/audiciones/${aid}`} />
+              </div>
+            </div>
+          </div>
         )}
         <div className="flex flex-wrap gap-2">
           {ESTADOS.filter((e) => e.estado !== a.estado && !(a.estado === "cancelada" && e.estado === "finalizada")).map((e) => (
@@ -258,6 +276,13 @@ export default async function AuditionConfig({ params }: PageProps<"/panel/audic
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="obligatorio" /> Obligatoria</label>
         </ActionForm>
       </AjustesSeccion>
+      <AjustesSeccion id="entrevista" titulo="Entrevista del host">
+        <p className="mb-3 text-sm text-texto-2">El día de la audición, el host (rol “Host de audición” en el equipo de esta convocatoria) hace estas preguntas a cada aspirante al llegar y las anota; también tiene un espacio adicional para lo que surja. Queda en la solicitud y en su ficha de talento. Una pregunta por renglón.</p>
+        <ActionForm action={saveEntrevistaPreguntas} hidden={h} submit="Guardar preguntas">
+          <textarea className={`${input} min-h-28`} name="preguntas" defaultValue={(a.preguntas_entrevista ?? []).join("\n")} aria-label="Preguntas de la entrevista" />
+        </ActionForm>
+      </AjustesSeccion>
+
       <AjustesSeccion id="guardar-como-plantilla" titulo="Guardar como plantilla">
         <p className="mb-3 text-sm text-texto-2">Guarda las opciones, preguntas, criterios y requisitos de esta convocatoria para crear otras iguales después.</p>
         <ActionForm action={saveAsTemplate} hidden={h} submit="Guardar plantilla">

@@ -14,7 +14,7 @@ export const metadata: Metadata = { title: "Audiciones" };
 export default async function AuditionsPage({ params }: PageProps<"/panel/producciones/[id]/audiciones">) {
   const { id } = await params;
   const access = await requirePanel(`/panel/producciones/${id}/audiciones`);
-  if (!canAny(access, id, ["audiciones.gestionar", "audiciones.registro", "audiciones.evaluar"])) redirect(`/panel/producciones/${id}`);
+  if (!canAny(access, id, ["audiciones.gestionar", "audiciones.registro", "audiciones.evaluar", "audiciones.entrevista"])) redirect(`/panel/producciones/${id}`);
   const auditions = await listAuditions(id);
   return (
     <div className="flex flex-col gap-4">

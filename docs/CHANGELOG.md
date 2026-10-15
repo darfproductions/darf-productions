@@ -5,6 +5,19 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-10-15 — Host de audición, personajes por crédito, teatros guardados, Club Fan y medidas (migración 0112)
+
+- Rol **Host de audición** (`audiciones.entrevista`): pestaña "Entrevista" en la convocatoria con las preguntas de
+  `auditions.preguntas_entrevista` (3 de base, editables) y un espacio adicional; se guarda en
+  `audition_applications.entrevista`/`entrevista_extra` y sale en la ficha de talento (`talent_history`).
+- QR descargable de cada convocatoria (lleva a `/audiciones/[id]`).
+- `credit_characters`: un crédito de Reparto tiene uno o varios personajes de la lista; `papel` se arma solo
+  ("A / B"). Los personajes dobles de la lista y los créditos "A / B" se separaron al aplicar la migración.
+- `teatros`: guardar el mapa de asientos con el nombre del teatro y usarlo en otra obra (`teatro_guardar`, `teatro_usar`).
+- Expedientes → pestaña **Cuotas y recaudación** (antes escondido al final de la página).
+- `club_socios()` y página **Ajustes → Club Fan** (permiso de Casa DARF `casa.club`) con exportar a Excel.
+- Medidas de vestuario completas (tabla de DARF): 15 columnas nuevas en `person_files` y descarga en Excel para vestuario.
+
 ## 2026-10-15 — Dirección general, cuenta de la empresa, cuentas vacías, Difusión y pagos por ficha (migración 0111)
 
 - Rol `direccion_general_darf` ("Dirección general"): quien está en `direccion_general_darf` (Diego) entra solo a
