@@ -41,32 +41,32 @@ export async function tarjetaPng(d: DatosTarjeta): Promise<Buffer> {
   const { w, h } = TAMANO[d.formato];
   const historia = d.formato === "historia";
   const claro = isLight(d.colores.fondo);
-  const fotoAlto = historia ? 1080 : 820;
+  const fotoAlto = historia ? 1240 : 860;
   const [foto, logo, darf] = await Promise.all([
     comoPng(d.fotoUrl, w),
     comoPng(d.logoUrl, 760),
     comoPng(claro ? "/marca/darf-horizontal.svg" : "/marca/darf-horizontal-blanco.svg", 360),
   ]);
   const inicial = d.nombre.trim().slice(0, 1).toUpperCase();
-  const tamNombre = d.nombre.length > 22 ? 64 : d.nombre.length > 16 ? 76 : 88;
+  const tamNombre = d.nombre.length > 22 ? 68 : d.nombre.length > 16 ? 80 : 92;
 
+  // Foto de fondo arriba; el texto queda pegado abajo con DARF justo debajo (sin hueco).
   const res = new ImageResponse(
     (
-      <div style={{ width: w, height: h, display: "flex", flexDirection: "column", background: d.colores.fondo, color: d.colores.texto, fontFamily: "Montserrat" }}>
-        <div style={{ width: w, height: fotoAlto, display: "flex", position: "relative", overflow: "hidden", background: d.colores.superficie }}>
+      <div style={{ width: w, height: h, display: "flex", position: "relative", background: d.colores.fondo, color: d.colores.texto, fontFamily: "Montserrat" }}>
+        <div style={{ position: "absolute", left: 0, top: 0, width: w, height: fotoAlto, display: "flex", overflow: "hidden", background: d.colores.superficie }}>
           {foto
             ? <img src={foto} width={w} height={fotoAlto} style={{ objectFit: "cover", objectPosition: "top", width: w, height: fotoAlto }} alt="" />
             : <div style={{ width: w, height: fotoAlto, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 360, fontWeight: 900, color: d.colores.acento }}>{inicial}</div>}
-          <div style={{ position: "absolute", left: 0, bottom: 0, width: w, height: 260, display: "flex", backgroundImage: `linear-gradient(180deg, transparent, ${d.colores.fondo})` }} />
+          <div style={{ position: "absolute", left: 0, bottom: 0, width: w, height: 420, display: "flex", backgroundImage: `linear-gradient(180deg, transparent, ${d.colores.fondo})` }} />
         </div>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flex: 1, padding: "0 70px 60px", marginTop: -120, gap: historia ? 34 : 22 }}>
+        <div style={{ position: "absolute", left: 0, bottom: 0, width: w, display: "flex", flexDirection: "column", alignItems: "center", padding: `0 60px ${historia ? 110 : 64}px` }}>
           {logo
-            ? <img src={logo} style={{ maxWidth: 640, maxHeight: historia ? 230 : 170, objectFit: "contain" }} alt="" />
-            : <span style={{ fontSize: 64, fontWeight: 900, letterSpacing: 4 }}>{d.obra.toUpperCase()}</span>}
-          <span style={{ fontSize: 30, fontWeight: 800, letterSpacing: 8, color: d.colores.acento }}>{d.papel.toUpperCase()}</span>
-          <span style={{ fontSize: tamNombre, fontWeight: 900, textAlign: "center", lineHeight: 1.05 }}>{d.nombre}</span>
-          <div style={{ display: "flex", flex: 1 }} />
-          {darf ? <img src={darf} style={{ width: 300, objectFit: "contain" }} alt="" /> : <span style={{ fontSize: 34, fontWeight: 900 }}>DARF PRODUCTIONS</span>}
+            ? <img src={logo} style={{ maxWidth: 820, maxHeight: historia ? 320 : 240, objectFit: "contain" }} alt="" />
+            : <span style={{ fontSize: 72, fontWeight: 900, letterSpacing: 4 }}>{d.obra.toUpperCase()}</span>}
+          <span style={{ marginTop: historia ? 36 : 26, fontSize: historia ? 50 : 44, fontWeight: 800, letterSpacing: 8, color: d.colores.acento, textAlign: "center" }}>{d.papel.toUpperCase()}</span>
+          <span style={{ marginTop: 10, fontSize: tamNombre, fontWeight: 900, textAlign: "center", lineHeight: 1.05 }}>{d.nombre}</span>
+          {darf ? <img src={darf} style={{ marginTop: historia ? 110 : 70, width: 320, objectFit: "contain" }} alt="" /> : <span style={{ marginTop: 70, fontSize: 34, fontWeight: 900 }}>DARF PRODUCTIONS</span>}
         </div>
       </div>
     ),
