@@ -52,7 +52,7 @@ export default async function ProductionSummary({ params }: PageProps<"/panel/pr
   const vende = !p.concluded && !["archivada", "cancelada"].includes(p.estado);
   const [fs, zs, as] = vende ? await Promise.all([listPerformances(id), listZones(id), asientosDe(id)]) : [[], [], null];
   const lista = vende && as
-    ? listoParaVender({ pid: id, estado: p.estado, kitFaltan: faltan, funciones: fs, zonas: zs, asientos: as, whatsapp: !!env.whatsapp, posterDestacado: !!elegir(p, "destacada"), fecha: fechaCorta })
+    ? listoParaVender({ pid: id, estado: p.estado, kitFaltan: faltan, funciones: fs, zonas: zs, asientos: as, whatsapp: !!env.whatsapp, posterDestacado: !!elegir(p, "destacada"), elencoSinPublicar: porHacer.find((x) => x.tipo === "elenco_sin_publicar")?.n ?? 0, fecha: fechaCorta })
     : null;
   const mes = partesMx().m;
   const cumples = can(access, id, "obra.ver")

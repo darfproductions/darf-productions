@@ -35,4 +35,9 @@ describe("listo para vender", () => {
     expect(r.puntos.filter((p) => !p.ok).map((p) => p.clave)).toEqual(["publicada", "lugares", "precios", "whatsapp", "poster"]);
     expect(punto({ ...base, asientos: { total: 100, sinZona: 3, zonas: ["vip"] } }, "zonas").detalle).toBe("3 asientos sin zona.");
   });
+  it("0108: elenco sin publicar avisa pero no impide vender", () => {
+    const d = { ...base, posterDestacado: true, elencoSinPublicar: 2 };
+    expect(punto(d, "elenco")).toMatchObject({ ok: false, obligatorio: false, href: "/panel/producciones/obra/elenco", detalle: "2 personas sin publicar: no salen en la página." });
+    expect(punto(base, "elenco").ok).toBe(true);
+  });
 });

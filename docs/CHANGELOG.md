@@ -5,6 +5,15 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-10-15 — Avisos y bitácora del elenco sin publicar (migración 0108)
+
+- Bandeja "Por hacer" del panel: "N personas del elenco sin publicar" por obra viva (para quien arma el elenco),
+  con liga a Elenco. "Listo para vender" lo muestra como punto opcional (no impide vender).
+- Vista previa: los retratos del perfil profesional salen también para quien edita la obra aunque la persona
+  no esté publicada (`production_pro_info`). El público sigue viendo solo lo publicado.
+- Bitácora: "Publicó a Ana como Brady en Showman" / "Quitó de la página a…" (filtro "Elenco y expedientes").
+- Ideas para después (en `DARF-2.0-UI-PENDIENTES.md`): publicación programada, tarjeta para redes y aviso al Club Fan.
+
 ## 2026-10-15 — Elenco "No publicado" (migración 0107)
 
 - `production_credits.publicado`: lo que ya existía queda publicado; cada persona nueva de **Reparto o Ensamble**

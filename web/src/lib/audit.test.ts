@@ -26,6 +26,11 @@ describe("bitácora en lenguaje sencillo", () => {
     );
     expect(changedFields(antes, { ...antes, frase: "b", updated_at: "2" })).toEqual(["frase"]);
   });
+  it("0108: publicar y despublicar al elenco", () => {
+    const fila = (accion: string, d: Record<string, unknown>) => ({ ...base, tabla: "production_credits", accion, production_id: "mm", despues: d });
+    expect(describeAudit(fila("publicar", { persona: "Ana", papel: "Donna", tipo: "reparto" }), names)).toBe("Publicó a Ana como Donna en Mamma Mia");
+    expect(describeAudit(fila("despublicar", { persona: "Beto", papel: null, tipo: "ensamble" }), names)).toBe("Quitó de la página a Beto en el Ensamble en Mamma Mia");
+  });
 });
 
 describe("bitácora del mapa de asientos", () => {
