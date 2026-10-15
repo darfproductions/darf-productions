@@ -108,3 +108,27 @@ export async function setCreditPhoto(pid: string, creditId: string, path: string
   refresh(pid);
   return { ok: true, message: "Foto actualizada." };
 }
+
+/** 0107: publica o despublica a una persona del Reparto o Ensamble (solo cambia lo que ve el público). */
+export async function setCreditPublicado(_p: CreditState, f: FormData): Promise<CreditState> {
+  const pid = String(f.get("pid"));
+  const id = String(f.get("id"));
+  const publicado = f.get("publicado") === "1";
+  const supabase = await createClient();
+  const { error, count } = await supabase.from("production_credits").update({ publicado }, { count: "exact" }).eq("id", id).eq("production_id", pid);
+  if (error) return { ok: false, message: mensajeError(error) };
+  if (!count) return { ok: false, message: SIN_PERMISO };
+  refresh(pid);
+  return { ok: true, message: publicado ? "Publicado." : "Ya no se ve en la página." };
+}
+
+/** 0107: publica de una vez a todo el Reparto y Ensamble que falta. */
+export async function publishAllCast(_p: CreditState, f: FormData): Promise<CreditState> {
+  const pid = String(f.get("pid"));
+  const supabase = await createClient();
+  const { error, count } = await supabase.from("production_credits").update({ publicado: true }, { count: "exact" })
+    .eq("production_id", pid).in("tipo", ["reparto", "ensamble"]).eq("publicado", false);
+  if (error) return { ok: false, message: mensajeError(error) };
+  refresh(pid);
+  return { ok: true, message: count ? `Publicado: ${count === 1 ? "1 persona" : `${count} personas`}.` : "Todo el elenco ya estaba publicado." };
+}

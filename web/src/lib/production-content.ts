@@ -39,13 +39,17 @@ type FichaRow = {
 
 type CreditRow = { tipo: string; papel: string | null; foto_path: string | null; person_id: string; people: { nombre: string } | null };
 
-export async function getProductionContent(id: string): Promise<ProductionContent> {
+/** `conSinPublicar`: la vista previa del panel también muestra el elenco aún no publicado (0107). */
+export async function getProductionContent(id: string, conSinPublicar = false): Promise<ProductionContent> {
   const supabase = await createClient();
+  // 0107: la página pública solo muestra el Reparto y Ensamble publicados, aunque quien la vea sea del equipo.
+  let creditos = supabase.from("production_credits").select("tipo, papel, foto_path, person_id, people(nombre)").eq("production_id", id).eq("activo", true);
+  if (!conSinPublicar) creditos = creditos.eq("publicado", true);
   const [prod, acts, songs, credits, media, facts, thanks, pro] = await Promise.all([
     supabase.from("productions").select("venue, temporada, fecha, duracion, clasificacion, idioma, basada_en, sinopsis").eq("id", id).maybeSingle(),
     supabase.from("production_acts").select("id, nombre").eq("production_id", id).order("orden"),
     supabase.from("production_songs").select("act_id, titulo").eq("production_id", id).order("orden"),
-    supabase.from("production_credits").select("tipo, papel, foto_path, person_id, people(nombre)").eq("production_id", id).eq("activo", true).order("orden"),
+    creditos.order("orden"),
     supabase.from("production_media").select("titulo, youtube_id").eq("production_id", id).eq("tipo", "video").order("orden"),
     supabase.from("production_facts").select("etiqueta, valor").eq("production_id", id).order("orden"),
     supabase.from("production_thanks").select("texto").eq("production_id", id).order("orden"),
