@@ -66,12 +66,12 @@ export async function tarjetaPng(d: DatosTarjeta): Promise<Buffer> {
             : <span style={{ fontSize: 72, fontWeight: 900, letterSpacing: 4 }}>{d.obra.toUpperCase()}</span>}
           <span style={{ marginTop: historia ? 36 : 26, fontSize: historia ? 50 : 44, fontWeight: 800, letterSpacing: 8, color: d.colores.acento, textAlign: "center" }}>{d.papel.toUpperCase()}</span>
           <span style={{ marginTop: 10, fontSize: tamNombre, fontWeight: 900, textAlign: "center", lineHeight: 1.05 }}>{d.nombre}</span>
-          {darf ? <img src={darf} style={{ marginTop: historia ? 70 : 44, width: 380, objectFit: "contain" }} alt="" /> : <span style={{ marginTop: 44, fontSize: 38, fontWeight: 900 }}>DARF PRODUCTIONS</span>}
           {/* Leyenda con el estilo de la banda del gafete: negra, itálica y espaciada (satori no trae itálica: se inclina). */}
-          <div style={{ marginTop: historia ? 34 : 24, display: "flex", padding: "10px 34px", background: d.colores.acento, transform: "skewX(-10deg)" }}>
+          <div style={{ marginTop: historia ? 60 : 40, display: "flex", padding: "10px 34px", background: d.colores.acento, transform: "skewX(-10deg)" }}>
             <span style={{ fontSize: historia ? 34 : 30, fontWeight: 900, letterSpacing: 4, color: d.colores.fondo }}>ADQUIERE TUS BOLETOS</span>
           </div>
-          <span style={{ marginTop: 14, fontSize: historia ? 30 : 26, fontWeight: 800, letterSpacing: 2 }}>darfproductions.com</span>
+          {darf ? <img src={darf} style={{ marginTop: historia ? 34 : 26, width: 380, objectFit: "contain" }} alt="" /> : <span style={{ marginTop: 26, fontSize: 38, fontWeight: 900 }}>DARF PRODUCTIONS</span>}
+          <span style={{ marginTop: 10, fontSize: historia ? 30 : 26, fontWeight: 800, letterSpacing: 2 }}>darfproductions.com</span>
         </div>
       </div>
     ),
