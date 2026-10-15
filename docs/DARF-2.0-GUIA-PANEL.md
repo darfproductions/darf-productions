@@ -55,6 +55,12 @@ general: lo que hacía ahora lo cubren los puestos de Casa DARF y los roles de c
 - Si agregas a alguien en **Reparto o Ensamble** y su ficha ya tiene cuenta, queda solo como **integrante**
   (portal del elenco, ensayos, expediente). Si aún no tiene cuenta, entra en cuanto se ligue su cuenta.
   Staff, crew y los equipos solo quedan en créditos; sus permisos se dan en Permisos.
+- **Programar y avisar** (en cada persona sin publicar, botón **Publicar**):
+  - **Publicar ahora** o elegir fecha y hora para que **salga sola** (se revisa cada 5 minutos; hora de México).
+  - Casilla **"Avisar al Club Fan"**: al salir, los socios reciben una notificación ("Conoce a quien será Brady
+    en Showman"). Con **Publicar todo el elenco** llega un solo aviso para todos.
+- **Tarjeta para redes**: en cada persona de Reparto o Ensamble, **Tarjeta: Post · Historia** descarga la imagen
+  (1080×1350 y 1080×1920) con su foto, el logo y los colores de la obra.
 - **Solo crédito**: para gente de producción que sale de personaje. En su fila de Reparto o Ensamble toca
   **"Solo crédito"**: sale en la página con su personaje, pero no es integrante (no la citan a ensayos ni le
   cuentan faltas). "Hacer integrante" lo regresa.
@@ -83,6 +89,17 @@ general: lo que hacía ahora lo cubren los puestos de Casa DARF y los roles de c
   equipo de audiciones y de eventos, vendedores, ligar cuenta) puedes escribir el nombre en vez del correo.
   La lista muestra el correo a medias (por ejemplo "cam***er@gmail.com") para distinguir cuentas.
 - Filtros: Todos · Con obras en DARF · **Casa DARF y admin** · Sin cuenta.
+
+## Puerta (Panel → la obra → Boletos → Puerta)
+- El mismo escáner lee **boletos** y **pases del Club Fan** (Mi cuenta o Wallet). Pueden ponerse dos personas:
+  una revisa boletos y otra escanea pases.
+- El pase suma la **visita** de esa persona en esa función (también a quien compró). Cada quien cuenta una vez por
+  función y nunca hay más visitas que boletos que ya entraron ("Primero escanea su boleto").
+- Las visitas ganadas antes de este cambio con boletos escaneados se conservan.
+
+## Vendedores
+- **Ranking** por boletos vendidos: por obra (Reportes y Vendedores de la obra) y de todas las obras (Panel →
+  Reportes), con los 3 primeros destacados.
 
 ## Ensayos (Panel → la obra → Ensayos)
 - Se cita al elenco y también al equipo de producción. Los **encargados** abren el ensayo y pasan lista

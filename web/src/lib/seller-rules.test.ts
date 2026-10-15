@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cleanSellerCode, estadoVendedor, sellerPath, withSeller } from "./seller-rules";
+import { podio, rankingVendedores, cleanSellerCode, estadoVendedor, sellerPath, withSeller } from "./seller-rules";
 
 describe("códigos de vendedor", () => {
   it("limpia el código", () => {
@@ -19,5 +19,14 @@ describe("códigos de vendedor", () => {
     expect(estadoVendedor({ tipo: "elenco", activo: true, decidido: false })).toBe("Activo (elenco)");
     expect(estadoVendedor({ tipo: "elenco", activo: false, decidido: true })).toBe("Desactivado");
     expect(estadoVendedor({ tipo: "cuenta", activo: false, decidido: false })).toBe("No activo");
+  });
+});
+
+describe("ranking de vendedores (0110)", () => {
+  it("ordena por boletos, luego dinero", () => {
+    const r = rankingVendedores([{ nombre: "A", boletos: 3, monto: 900 }, { nombre: "B", boletos: 5, monto: 500 }, { nombre: "C", boletos: 3, monto: 1200 }]);
+    expect(r.map((x) => x.nombre)).toEqual(["B", "C", "A"]);
+    expect(podio(0)).toContain("e2b93b");
+    expect(podio(5)).toContain("white");
   });
 });

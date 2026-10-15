@@ -100,10 +100,7 @@ Diego eligió cuáles sí (ver plan del bloque). Hechas en `darf-2.0`, migracion
 - **Avisos por WhatsApp**: es un servicio de pago.
 - **Foto grupal en Nosotros**: cuando haya foto.
 - **Tema claro del panel "DARF Admin"**: sin decidir; el panel sigue oscuro.
-- **Anunciar el elenco poco a poco** (ideas de Diego, 2026-10-15, después del 0107):
-  1. *Publicación programada*: elegir fecha y hora por persona y que salga sola en la página.
-  2. *Tarjeta para redes al publicar*: imagen lista para Instagram con foto, nombre, personaje y colores de la obra.
-  3. *Avisar al Club Fan al publicar*: notificación opcional a los socios ("Conoce a quien será Brady en Showman").
+- ~~Anunciar el elenco poco a poco: publicación programada, tarjeta para redes y aviso al Club Fan.~~ Hecho en 0110.
 - No se harán: lista de espera, etiquetas de función (la franja ya cubre eso), transferir boleto, pago con tarjeta u OXXO.
 
 ## Para el lanzamiento (lista de revisión)

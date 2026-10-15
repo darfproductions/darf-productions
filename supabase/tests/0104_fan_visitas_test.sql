@@ -17,7 +17,7 @@ begin
 end $$;
 create temp table t104 (k text primary key, v uuid);
 
--- Funciones y compras de prueba.
+-- Funciones y compras de prueba (boletos escaneados antes del 16 oct 2026: desde 0110 la visita se cuenta con el pase).
 do $$ declare p1 uuid; p2 uuid; p3 uuid; o1 uuid; o2 uuid; o3 uuid; o4 uuid; begin
   insert into performances (production_id, starts_at, on_sale) values ('showman', now() - interval '3 days', false) returning id into p1;
   insert into performances (production_id, starts_at, on_sale) values ('showman', now() - interval '2 days', false) returning id into p2;
@@ -26,7 +26,7 @@ do $$ declare p1 uuid; p2 uuid; p3 uuid; o1 uuid; o2 uuid; o3 uuid; o4 uuid; beg
   -- Función 1: compra 3 boletos, entran todos (cuenta 1).
   insert into orders (order_code, performance_id, status, buyer_nombre, buyer_telefono, buyer_user_id, total)
     values ('T104A', p1, 'aprobado', 'Fan', '5512345678', '00000000-0000-0000-0000-000000000f41', 300) returning id into o1;
-  insert into tickets (order_id, performance_id, unit_price, checked_in_at) select o1, p1, 100, now() from generate_series(1, 3);
+  insert into tickets (order_id, performance_id, unit_price, checked_in_at) select o1, p1, 100, (now() - interval '30 days') from generate_series(1, 3);
   -- Función 2: compró pero no ha entrado (no cuenta todavía).
   insert into orders (order_code, performance_id, status, buyer_nombre, buyer_telefono, buyer_user_id, total)
     values ('T104B', p2, 'aprobado', 'Fan', '5512345678', '00000000-0000-0000-0000-000000000f41', 100) returning id into o2;
@@ -35,11 +35,11 @@ do $$ declare p1 uuid; p2 uuid; p3 uuid; o1 uuid; o2 uuid; o3 uuid; o4 uuid; beg
   -- Función 3: orden rechazada con boleto escaneado (no cuenta).
   insert into orders (order_code, performance_id, status, buyer_nombre, buyer_telefono, buyer_user_id, total)
     values ('T104C', p3, 'rechazado', 'Fan', '5512345678', '00000000-0000-0000-0000-000000000f41', 100) returning id into o3;
-  insert into tickets (order_id, performance_id, unit_price, checked_in_at) values (o3, p3, 100, now());
+  insert into tickets (order_id, performance_id, unit_price, checked_in_at) values (o3, p3, 100, (now() - interval '30 days'));
   -- Otra persona en la función 3 (no cuenta para la fan).
   insert into orders (order_code, performance_id, status, buyer_nombre, buyer_telefono, buyer_user_id, total)
     values ('T104D', p3, 'aprobado', 'Otro', '5512345679', '00000000-0000-0000-0000-000000000f42', 100) returning id into o4;
-  insert into tickets (order_id, performance_id, unit_price, checked_in_at) values (o4, p3, 100, now());
+  insert into tickets (order_id, performance_id, unit_price, checked_in_at) values (o4, p3, 100, (now() - interval '30 days'));
 end $$;
 
 -- T1: una función con varios boletos cuenta una vez; sin entrar o rechazada no cuenta.
@@ -51,7 +51,7 @@ end $$;
 
 -- T2: al entrar a la función 2 sube a 2.
 do $$ begin
-  update tickets set checked_in_at = now() where order_id = (select v from t104 where k = 'o2');
+  update tickets set checked_in_at = (now() - interval '30 days') where order_id = (select v from t104 where k = 'o2');
   if fan_visitas('00000000-0000-0000-0000-000000000f41') <> 2 then raise exception 'FALLO T2'; end if;
 end $$;
 

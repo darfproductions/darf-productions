@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { podio, rankingVendedores } from "@/lib/seller-rules";
 import Link from "next/link";
 import { PrintButton } from "@/components/PrintButton";
 import { Card, EstadoChip, PanelTitle } from "@/components/panel/ui";
@@ -30,7 +31,7 @@ export default async function ReporteGeneral({ searchParams }: PageProps<"/panel
   const todas = ((ov.data ?? []) as OverviewRow[]).map((r) => ({ ...r, capacidad: capacidad.get(r.production_id) }));
   const rows = filtro ? todas.filter((r) => r.estado === filtro) : todas;
   const t = totales(rows);
-  const vendedores = (sel.data ?? []) as { nombre: string; codigo: string; tipo: string; obras: number; ordenes: number; monto: number }[];
+  const vendedores = rankingVendedores((sel.data ?? []) as { nombre: string; codigo: string; tipo: string; obras: number; ordenes: number; boletos: number; monto: number }[]);
   const asist = pct(t.asistieron, t.boletos);
 
   return (
@@ -90,13 +91,13 @@ export default async function ReporteGeneral({ searchParams }: PageProps<"/panel
       </Card>
 
       <Card>
-        <h2 className="titular mb-3 text-xl">Vendedores (todas las obras)</h2>
+        <h2 className="titular mb-3 text-xl">Ranking de vendedores (todas las obras)</h2>
         {vendedores.length ? (
           <ol className="flex flex-col divide-y divide-white/10 text-sm">
             {vendedores.map((v, i) => (
               <li key={v.codigo} className="flex flex-wrap justify-between gap-2 py-2">
-                <span>{i + 1}. <b>{v.nombre}</b> <span className="text-texto-3">· {v.codigo} · {v.tipo === "externo" ? "externo" : "cuenta"} · {v.obras} {v.obras === 1 ? "obra" : "obras"}</span></span>
-                <span className="text-texto-2">{v.ordenes} órdenes · {formatMoney(Number(v.monto))}</span>
+                <span className="flex items-center gap-2"><span className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs font-black ${podio(i)}`}>{i + 1}</span><span><b>{v.nombre}</b> <span className="text-texto-3">· {v.codigo} · {v.tipo === "externo" ? "externo" : "cuenta"} · {v.obras} {v.obras === 1 ? "obra" : "obras"}</span></span></span>
+                <span className="text-texto-2"><b className="text-texto">{v.boletos} boletos</b> · {v.ordenes} órdenes · {formatMoney(Number(v.monto))}</span>
               </li>
             ))}
           </ol>

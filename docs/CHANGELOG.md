@@ -5,6 +5,16 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-10-15 — Elenco programado, tarjeta para redes, aviso al Club Fan, ranking y visitas en puerta (migración 0110)
+
+- `production_credits.publicar_at` (pg_cron `darf_elenco_programado` cada 5 min) y `avisar_club` (notificación
+  `fanzone` a `fan_members`; "Publicar todo" manda una sola con `elenco_avisar_club`).
+- Tarjeta para redes: `/panel/producciones/[id]/elenco/tarjeta/[credito]?f=post|historia` (next/og + sharp).
+- `director_sellers()` con boletos; ranking por boletos en reportes y vendedores.
+- `visitas_puerta` + `puerta_visita()`: el escáner de la puerta lee boletos y pases del Club Fan; la visita cuenta
+  con el pase (tope: boletos que ya entraron). `fan_visitas()` conserva lo ganado con boletos antes del cambio.
+- Página de la obra: "Ver video(s)"; perfil profesional por año y retrato sin hueco (#21, #22).
+
 ## 2026-10-15 — Asistencia histórica y "Solo crédito" (migración 0109)
 
 - `rehearsal_attendance_ficha`: asistencia guardada por ficha mientras no hay cuenta; al ligar la cuenta pasa sola

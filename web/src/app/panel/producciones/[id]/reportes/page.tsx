@@ -9,7 +9,7 @@ import { formatPerformanceDate } from "@/lib/productions";
 import { porcentaje } from "@/lib/rehearsal-rules";
 import { asistenciaTotal, conteo, descuentosUsados, ventasPorCanal, type Asistencia } from "@/lib/report-rules";
 import { capacidadFuncion, occupancy, summarizeSales } from "@/lib/sales";
-import { TIPO_VENDEDOR, type SellerRow } from "@/lib/seller-rules";
+import { TIPO_VENDEDOR, type SellerRow, podio, rankingVendedores } from "@/lib/seller-rules";
 import { createClient } from "@/lib/supabase/server";
 import { formatMoney } from "@/lib/tickets";
 import { mayus } from "@/lib/dates";
@@ -55,7 +55,7 @@ export default async function Reportes({ params }: PageProps<"/panel/produccione
     verVentas ? supabase.rpc("seller_list", { pid: id }) : none,
     verVentas ? listZones(id) : Promise.resolve([]),
   ]);
-  const vendedores = ((vend.data ?? []) as SellerRow[]).filter((v) => v.ordenes > 0 || v.pendientes > 0);
+  const vendedores = rankingVendedores(((vend.data ?? []) as SellerRow[]).filter((v) => v.ordenes > 0 || v.pendientes > 0));
 
   const s = resumen ?? summarizeSales([]);
   const canal = ventasPorCanal(orders);
@@ -119,12 +119,12 @@ export default async function Reportes({ params }: PageProps<"/panel/produccione
             ) : <p className="text-sm text-texto-3">Nadie ha usado códigos todavía.</p>}
           </div>
           <div>
-            <h3 className="mb-2 font-bold">Ventas por vendedor</h3>
+            <h3 className="mb-2 font-bold">Ranking de vendedores</h3>
             {vendedores.length ? (
               <ol className="flex flex-col divide-y divide-white/10 text-sm">
                 {vendedores.map((v, i) => (
                   <li key={v.seller_id} className="flex flex-wrap justify-between gap-2 py-2">
-                    <span>{i + 1}. <b>{v.nombre}</b> <span className="text-texto-3">· {TIPO_VENDEDOR[v.tipo]} · {v.codigo}</span></span>
+                    <span className="flex items-center gap-2"><span className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs font-black ${podio(i)}`}>{i + 1}</span><span><b>{v.nombre}</b> <span className="text-texto-3">· {TIPO_VENDEDOR[v.tipo]} · {v.codigo}</span></span></span>
                     <span className="text-texto-2">{v.boletos} boletos · {formatMoney(Number(v.monto))}{v.pendientes ? ` · ${v.pendientes} por aprobar` : ""}</span>
                   </li>
                 ))}
