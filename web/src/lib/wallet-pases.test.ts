@@ -76,6 +76,10 @@ describe("paseCredencialWallet", () => {
     expect(p.qr).toBe(liga);
     expect(p.qrTexto).toBe("FAN-AB12");
   });
+  it("Casa DARF: acento azul del holográfico", () => {
+    const pase = paseGafete({ nombre: "Diego", fotoUrl: null, franja: "casa", papel: "Dirección General", casaDesde: 2019 });
+    expect(paseCredencialWallet({ userId: "u1", liga, codigo: "DRF-AB12", pase }).colores.etiqueta).toBe("#9fe2ff");
+  });
   it("Gafete: papel, banda y sello del club", () => {
     const pase = { ...paseGafete({ nombre: "Luis", fotoUrl: null, franja: "produccion", papel: "Director" }), sello: "Socio #0002" };
     const p = paseCredencialWallet({ userId: "u2", liga, codigo: "DRF-XY34", pase });

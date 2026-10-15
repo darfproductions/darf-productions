@@ -24,6 +24,8 @@ const GRUPOS = [
   { tipo: "ensamble", titulo: "Ensamble", papel: null },
   { tipo: "creativo", titulo: "Equipo creativo", papel: "Puesto" },
   { tipo: "produccion", titulo: "Equipo de producción", papel: "Puesto" },
+  // 0106: Staff del equipo de producción, lista de nombres sin puesto (como Ensamble).
+  { tipo: "staff", titulo: "Equipo de producción · Staff", papel: null },
   { tipo: "crew", titulo: "Crew", papel: "Puesto" },
   { tipo: "tecnico", titulo: "Equipo técnico", papel: "Puesto" },
 ] as const;

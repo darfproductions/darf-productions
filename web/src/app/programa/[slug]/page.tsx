@@ -31,10 +31,11 @@ export default async function Programa({ params }: PageProps<"/programa/[slug]">
   const c = await getProductionContent(p.id);
   const equipos = [
     { titulo: "Equipo creativo", items: c.creativo },
-    { titulo: "Equipo de producción", items: c.produccion },
+    // 0106: el Staff va dentro del equipo de producción, como lista de nombres (igual que Ensamble).
+    { titulo: "Equipo de producción", items: c.produccion, staff: c.staff },
     { titulo: "Crew", items: c.crew },
     { titulo: "Equipo técnico", items: c.tecnico },
-  ].filter((g) => g.items.length);
+  ].filter((g) => g.items.length || g.staff?.length);
   let n = 0;
 
   return (

@@ -160,7 +160,8 @@ export function paseCredencialWallet(c: DatosCredencial, hoy: Date = new Date())
   const fan = c.pase.tema === "fan";
   // Medalla de fan (0104): solo socios.
   const medallaFan = fan || c.pase.sello ? nivelDe(c.pase.fanVisitas, "fan") : null;
-  const banda = fan ? "#d7bb5f" : colorBase(c.pase.banda.fondo) ?? "#a48bff"; // oro del club
+  // Oro del club; Casa DARF toma el azul de su holográfico (Diego 2026-10-15); las demás, el color de su franja.
+  const banda = fan ? "#d7bb5f" : c.pase.casa ? "#9fe2ff" : colorBase(c.pase.banda.fondo) ?? "#a48bff";
   const fondo = "#0b0910";
   const etiqueta = contraste(banda, fondo) >= 3 ? banda : "#a48bff";
   const tipoPase = fan ? "Credencial Club Fan" : c.pase.banda.label === "SPECTATOR" ? "Credencial DARF" : "Gafete DARF";
