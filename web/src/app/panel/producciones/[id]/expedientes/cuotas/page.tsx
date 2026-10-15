@@ -104,7 +104,7 @@ export default async function Cuotas({ params }: PageProps<"/panel/producciones/
                       </td>
                       {p.celdas.map((c, i) => (
                         <td key={cols[i].clave} className="px-2 py-2 text-center">
-                          {c.tipo === "pagado" ? <span title="Pagado" className="font-black text-[#86efac]">✓</span>
+                          {c.tipo === "pagado" ? <span title="Pagado" className="text-[#86efac]"><Icono nombre="check" etiqueta="Pagado" /></span>
                             : c.tipo === "pendiente" ? (
                               <label className="inline-flex flex-col items-center gap-0.5" title={`${pesos(c.monto)}${c.vencido ? " · vencido" : ""}`}>
                                 <input type="checkbox" name="pago" value={valorCasilla(p.quien, cols[i], c.monto)} aria-label={`${p.nombre}: ${cols[i].concepto === "inscripcion" ? "inscripción" : mesNombre(cols[i].periodo)}`} className="h-5 w-5" />
@@ -127,7 +127,7 @@ export default async function Cuotas({ params }: PageProps<"/panel/producciones/
               </select>
             </label>
           </ActionForm>
-          <p className="text-xs text-texto-3">✓ pagado · casilla = pendiente (“debe” si ya venció) · — no le toca (aún no entraba o ya era baja).</p>
+          <p className="text-xs text-texto-3"><Icono nombre="check" /> pagado · casilla = pendiente (“debe” si ya venció) · — no le toca (aún no entraba o ya era baja).</p>
         </Card>
       )}
 
