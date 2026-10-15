@@ -54,8 +54,8 @@ describe("secciones generales", () => {
     expect(t.find((s) => s.id === "proyectos")?.subs.map((x) => x.label)).toEqual(["Producciones", "Eventos"]) // 0084: taquilla aprueba pagos de eventos;
     expect(t.find((s) => s.id === "reportes")?.href).toBe("/panel/reportes/obras");
     expect(panelMenu(juezMM).find((s) => s.id === "proyectos")?.subs.map((x) => x.label)).toEqual(["Producciones", "Audiciones"]);
-    expect(panelMenu(director).find((s) => s.id === "personas")?.subs.map((x) => x.label)).toEqual(["Directorio", "Cumpleaños", "Equipo DARF", "Contacto"]);
-    expect(activeNav(panelMenu(director), "/panel/personas/equipo").sub?.label).toBe("Equipo DARF");
+    expect(panelMenu(director).find((s) => s.id === "personas")?.subs.map((x) => x.label)).toEqual(["Directorio", "Cumpleaños", "Portal del equipo", "Contacto"]);
+    expect(activeNav(panelMenu(director), "/panel/personas/equipo/portal").sub?.label).toBe("Portal del equipo");
   });
   it("sección activa: las direcciones viejas caen en su sección nueva", () => {
     const m = panelMenu(director);

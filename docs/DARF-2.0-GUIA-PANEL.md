@@ -29,13 +29,16 @@ general: lo que hacía ahora lo cubren los puestos de Casa DARF y los roles de c
    - **Administración y Finanzas**: reportes de todas las obras, estadísticas del Club Fan y bitácora.
    - **Comunicación y Marketing**: franja y anuncios del sitio, eventos, Club Fan, Contacto y DARFY.
    - **Talento y Comunidad**: audiciones generales, fichas de personas y el equipo de Nosotros.
-2. **Personas**: escribe el correo de su cuenta, marca su puesto (o varios) y la fecha desde la que está.
-   Varias personas pueden tener el mismo puesto.
+2. **Personas**: escribe su **nombre** (o correo), elígela de la lista, marca su puesto (o varios) y la fecha
+   desde la que está. Varias personas pueden tener el mismo puesto.
+   - Quienes estén aquí salen en **Conoce al equipo** (página Nosotros) con su puesto, en el orden de los
+     puestos. Puedes **ocultar** a alguien de Nosotros. Foto y semblanza salen de su perfil profesional público.
+   - También entran al **Portal del equipo** (Panel → Personas → Portal del equipo): avisos, material y juntas.
 3. Su gafete sale **holográfico** con el nombre del puesto y el sello de Casa DARF. Casa DARF manda sobre
    cualquier puesto de obra en el gafete.
 
 ### Equipo de una obra (Panel → la obra → Permisos)
-- **Agregar o invitar**: escribe un correo y marca sus roles. Si ya tiene cuenta, entra al momento; si no,
+- **Agregar o invitar**: escribe su nombre (o correo), elígela de la lista y marca sus roles. Si ya tiene cuenta, entra al momento; si no,
   le llega una invitación (y puedes mandarla por WhatsApp). Al registrarse con ese correo entra solo.
 - **Dirección general** de la obra: lo puede todo dentro de esa obra (gafete plateado). Revisa y publica
   las calificaciones de la escuela.
@@ -52,6 +55,12 @@ general: lo que hacía ahora lo cubren los puestos de Casa DARF y los roles de c
 ## Personas (Panel → Personas)
 - **Directorio**: todas las personas (fichas del elenco y cuentas). Ahí cambias "Cuenta / Admin (dueño)",
   ves el puesto de Casa DARF de cada quien, ligas fichas sin cuenta y unes duplicados.
+- **Alguien se registró dos veces** y sus créditos quedaron en la cuenta que no usa: en el Directorio, en su
+  fila, **"Cambiar cuenta"** → busca su nombre y elige la cuenta buena (la que dice "sin ficha"). La ficha y
+  sus créditos pasan a esa cuenta.
+- **Buscar por nombre**: en todos los lugares donde agregas a alguien (Casa DARF, Permisos, ofertas de papel,
+  equipo de audiciones y de eventos, vendedores, ligar cuenta) puedes escribir el nombre en vez del correo.
+  La lista muestra el correo a medias (por ejemplo "cam***er@gmail.com") para distinguir cuentas.
 - Filtros: Todos · Con obras en DARF · **Casa DARF y admin** · Sin cuenta.
 
 ## Ensayos (Panel → la obra → Ensayos)

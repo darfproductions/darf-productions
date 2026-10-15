@@ -5,6 +5,14 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-10-15 — Buscar por nombre, Nosotros desde Casa DARF y "Cambiar cuenta" (migración 0105)
+
+- **Buscar por nombre**: `buscar_cuentas(q)` (nombre o correo, correo enmascarado) y `cuenta_correo(id)` para quien
+  maneja algo en el panel. Los 8 formularios de agregar a alguien usan el buscador; el campo manda "cuenta:<id>".
+- **Nosotros** sale de Casa DARF (`casa_members.en_nosotros`, orden de los puestos); Equipo DARF (team_members) queda
+  sin uso y su pestaña se quitó. El portal del equipo general incluye a Casa DARF.
+- **Cambiar cuenta** de una ficha en el Directorio (duplicados al registrarse dos veces).
+
 ## 2026-10-15 — Directorio sin "Staff" y Google Wallet para todos (sin migraciones)
 
 - **Directorio**: el rol general queda en "Cuenta" o "Admin (dueño)". "Staff" ya no se asigna (nadie lo

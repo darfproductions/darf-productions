@@ -1,5 +1,6 @@
 "use server";
 
+import { correoDeCampo } from "@/lib/cuentas";
 import { revalidatePath } from "next/cache";
 import { roleDiff } from "@/lib/panel-nav";
 import { mensajeError } from "@/lib/errores";
@@ -13,11 +14,12 @@ const EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 // La base decide: panel_add_member y el borrado exigen permisos.gestionar en ESTA obra.
 export async function addMember(_prev: MemberState, form: FormData): Promise<MemberState> {
   const pid = String(form.get("pid") ?? "");
-  const email = String(form.get("email") ?? "").trim();
   const roles = form.getAll("role").map(String);
-  if (!EMAIL.test(email)) return { ok: false, message: "Escribe un correo válido." };
-  if (!roles.length) return { ok: false, message: "Marca al menos un rol." };
   const supabase = await createClient();
+  // 0105: viene del buscador ("cuenta:<id>") o es un correo escrito a mano.
+  const email = await correoDeCampo(supabase, String(form.get("email") ?? ""));
+  if (!EMAIL.test(email)) return { ok: false, message: "Elige a la persona de la lista o escribe un correo válido." };
+  if (!roles.length) return { ok: false, message: "Marca al menos un rol." };
   // 0094: con cuenta se agrega directo; sin cuenta queda una invitación con liga (y correo si está activado).
   const { data, error } = await supabase.rpc("panel_invite_member", { pid, p_email: email, p_roles: roles });
   revalidatePath(`/panel/producciones/${pid}`, "layout");

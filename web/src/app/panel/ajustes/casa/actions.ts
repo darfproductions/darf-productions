@@ -1,5 +1,6 @@
 "use server";
 
+import { correoDeCampo } from "@/lib/cuentas";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { roleIdFromName } from "@/lib/panel-nav";
@@ -14,10 +15,23 @@ const s = (f: FormData, k: string) => String(f.get(k) ?? "").trim();
 export async function guardarMiembro(f: FormData): Promise<void> {
   const roles = f.getAll("rol").map(String).filter(Boolean);
   const supabase = await createClient();
-  const { error } = await supabase.rpc("casa_agregar", { p_email: s(f, "email"), p_roles: roles, p_desde: s(f, "desde") || null });
+  const email = await correoDeCampo(supabase, s(f, "email"));
+  const { error } = await supabase.rpc("casa_agregar", { p_email: email, p_roles: roles, p_desde: s(f, "desde") || null });
   if (error) back(error.message);
   revalidatePath("/panel/ajustes/casa");
   back("Listo: Casa DARF actualizada. Su gafete se actualiza solo.", true);
+}
+
+/** "Conoce al equipo" (0105): mostrar u ocultar a la persona en Nosotros. */
+export async function nosotrosMiembro(f: FormData): Promise<void> {
+  const supabase = await createClient();
+  const mostrar = s(f, "mostrar") === "1";
+  const { error, count } = await supabase.from("casa_members").update({ en_nosotros: mostrar }, { count: "exact" }).eq("user_id", s(f, "uid"));
+  if (error) back(error.message);
+  if (!count) back("No se pudo cambiar.");
+  revalidatePath("/panel/ajustes/casa");
+  revalidatePath("/nosotros");
+  back(mostrar ? "Ahora sale en Conoce al equipo." : "Ya no sale en Conoce al equipo.", true);
 }
 
 export async function quitarMiembro(f: FormData): Promise<void> {

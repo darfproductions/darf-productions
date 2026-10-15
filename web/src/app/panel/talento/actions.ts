@@ -1,5 +1,6 @@
 "use server";
 
+import { correoDeCampo } from "@/lib/cuentas";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 
@@ -20,8 +21,9 @@ export async function mergePeople(_p: TalentState, f: FormData): Promise<TalentS
 
 export async function linkAccount(_p: TalentState, f: FormData): Promise<TalentState> {
   const supabase = await createClient();
-  const { error } = await supabase.rpc("people_link_account", { pid: String(f.get("id")), p_email: String(f.get("email") ?? "") });
+  const email = await correoDeCampo(supabase, String(f.get("email") ?? ""));
+  const { error } = await supabase.rpc("people_link_account", { pid: String(f.get("id")), p_email: email });
   if (error) return { ok: false, message: error.message };
   revalidatePath("/panel/personas");
-  return { ok: true, message: "Ficha ligada a la cuenta." };
+  return { ok: true, message: "Listo: la ficha y sus créditos quedaron en esa cuenta." };
 }

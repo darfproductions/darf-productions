@@ -1,5 +1,6 @@
 "use server";
 
+import { correoDeCampo } from "@/lib/cuentas";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { criteriosFromText } from "@/lib/audition-rules";
@@ -334,10 +335,10 @@ export async function removeItem(_p: AudState, f: FormData): Promise<AudState> {
 
 export async function addAuditionMember(_p: AudState, f: FormData): Promise<AudState> {
   const aid = str(f, "aid");
-  const email = str(f, "email");
   const roles = f.getAll("role").map(String).filter(Boolean);
-  if (!email || roles.length === 0) return { ok: false, message: "Escribe el correo y marca al menos un rol." };
   const supabase = await createClient();
+  const email = await correoDeCampo(supabase, str(f, "email"));
+  if (!email || roles.length === 0) return { ok: false, message: "Elige a la persona y marca al menos un rol." };
   for (const role of roles) {
     const { error } = await supabase.rpc("audition_add_member", { aid, p_email: email, p_role: role });
     if (error) return { ok: false, message: error.message };

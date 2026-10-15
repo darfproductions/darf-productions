@@ -2,13 +2,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ActionForm } from "@/components/panel/ActionForm";
-import { Card, PanelTitle, input } from "@/components/panel/ui";
+import { Card, PanelTitle } from "@/components/panel/ui";
 import { TIPO_CREDITO } from "@/lib/casting-rules";
 import { casa } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
 import { createClient } from "@/lib/supabase/server";
 import { linkAccount } from "../../actions";
 import { Icono } from "@/components/Icono";
+import { BuscarCuenta } from "@/components/panel/BuscarCuenta";
 
 export const metadata: Metadata = { title: "Ficha de persona" };
 
@@ -40,9 +41,9 @@ export default async function PersonPage({ params }: PageProps<"/panel/talento/p
       {casa(access, "casa.personas") && (
         <Card>
           <h2 className="titular mb-1 text-xl">Ligar a su cuenta</h2>
-          <p className="mb-3 text-sm text-texto-2">Si esta persona ya tiene cuenta en la página, escribe su correo: sus obras, audiciones y compras quedarán en una sola ficha.</p>
+          <p className="mb-3 text-sm text-texto-2">Si esta persona ya tiene cuenta en la página, búscala por nombre o correo: sus obras, audiciones y compras quedarán en una sola ficha.</p>
           <ActionForm action={linkAccount} hidden={{ id: h.id }} submit="Ligar">
-            <input className={`${input} max-w-md`} name="email" type="email" required placeholder="Correo de su cuenta" />
+            <BuscarCuenta className="max-w-md" placeholder="Nombre o correo de su cuenta" />
           </ActionForm>
           <p className="mt-2 text-xs text-texto-3">¿Aparece dos veces? Únelas en <Link href={`/panel/personas?q=${encodeURIComponent(h.nombre.split(" ")[0])}`} className="text-violeta-claro">Directorio</Link>.</p>
         </Card>

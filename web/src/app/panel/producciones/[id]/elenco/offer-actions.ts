@@ -1,5 +1,6 @@
 "use server";
 
+import { correoDeCampo } from "@/lib/cuentas";
 import { revalidatePath } from "next/cache";
 import { localMxToIso } from "@/lib/dates";
 import { createClient } from "@/lib/supabase/server";
@@ -14,11 +15,12 @@ export async function sendOffer(_p: OfferState, f: FormData): Promise<OfferState
   const pid = str(f, "production_id");
   const antes = str(f, "responder_antes");
   const supabase = await createClient();
+  const email = await correoDeCampo(supabase, str(f, "email"));
   const { error } = await supabase.rpc("casting_offer_send", {
     p: {
       production_id: pid,
       application_id: str(f, "application_id") || null,
-      email: str(f, "email") || null,
+      email: email || null,
       tipo: str(f, "tipo") || "reparto",
       papel: str(f, "papel"),
       mensaje: str(f, "mensaje"),

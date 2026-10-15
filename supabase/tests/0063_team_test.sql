@@ -47,15 +47,19 @@ do $$ declare ana uuid; beto uuid; caro uuid; n int; r record; begin
   update team_members set cargo = 'Directora general y fundadora' where person_id = ana;
   if (select count(*) from audit_log where tabla = 'team_members') < 4 then raise exception 'FALLO T2b: bitácora'; end if;
 
-  -- T3: el público ve nombre y cargo; foto y perfil solo si el perfil es público; no ve ocultos
+  -- T3: desde 0105 "Conoce al equipo" sale de Casa DARF (ver 0105_buscar_nosotros_casa_test.sql);
+  -- con 0105, team_members ya no se muestra. Antes de 0105 se comprueba lo de siempre.
+  if to_regprocedure('public.buscar_cuentas(text)') is null then
+    perform pg_temp.as_anon();
+    select count(*) into n from team_public();
+    if n <> 2 then raise exception 'FALLO T3a: % visibles', n; end if;
+    select * into r from team_public() where nombre = 'Ana Directora';
+    if r.slug <> 'ana-directora' or r.retrato_path is null or r.cargo <> 'Directora general y fundadora' then raise exception 'FALLO T3b'; end if;
+    select * into r from team_public() where nombre = 'Beto Productor';
+    if r.slug is not null or r.retrato_path is not null then raise exception 'FALLO T3c: mostró perfil privado'; end if;
+    if (select nombre from team_public() order by 1 limit 1) = 'Caro Oculta' then raise exception 'FALLO T3d'; end if;
+  end if;
   perform pg_temp.as_anon();
-  select count(*) into n from team_public();
-  if n <> 2 then raise exception 'FALLO T3a: % visibles', n; end if;
-  select * into r from team_public() where nombre = 'Ana Directora';
-  if r.slug <> 'ana-directora' or r.retrato_path is null or r.cargo <> 'Directora general y fundadora' then raise exception 'FALLO T3b'; end if;
-  select * into r from team_public() where nombre = 'Beto Productor';
-  if r.slug is not null or r.retrato_path is not null then raise exception 'FALLO T3c: mostró perfil privado'; end if;
-  if (select nombre from team_public() order by 1 limit 1) = 'Caro Oculta' then raise exception 'FALLO T3d'; end if;
   begin
     perform 1 from team_members;
     raise exception 'FALLO T3e: anónimo leyó la tabla';
@@ -65,8 +69,7 @@ do $$ declare ana uuid; beto uuid; caro uuid; n int; r record; begin
   -- T4: el Director quita
   perform pg_temp.as_user('00000000-0000-0000-0000-0000000000a1');
   delete from team_members where person_id = beto;
-  perform pg_temp.as_anon();
-  if (select count(*) from team_public()) <> 1 then raise exception 'FALLO T4'; end if;
+  if exists (select 1 from team_members where person_id = beto) then raise exception 'FALLO T4'; end if;
 
   raise exception 'OK: 0063 equipo DARF';
 end $$;

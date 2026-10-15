@@ -1,5 +1,6 @@
 "use server";
 
+import { correoDeCampo } from "@/lib/cuentas";
 import { revalidatePath } from "next/cache";
 import { localMxToIso } from "@/lib/dates";
 import { createClient } from "@/lib/supabase/server";
@@ -160,7 +161,8 @@ export async function marcarLlegada(_p: State, f: FormData): Promise<State> {
 /** Equipo propio del evento (0084): agregar o cambiar el papel de alguien por su correo. */
 export async function ponerEquipoEvento(_p: State, f: FormData): Promise<State> {
   const supabase = await createClient();
-  const { error } = await supabase.rpc("evento_equipo_poner", { eid: str(f, "id"), p_email: str(f, "email"), p_papel: str(f, "papel") });
+  const email = await correoDeCampo(supabase, str(f, "email"));
+  const { error } = await supabase.rpc("evento_equipo_poner", { eid: str(f, "id"), p_email: email, p_papel: str(f, "papel") });
   if (error) return { ok: false, message: error.message };
   refrescar(str(f, "pid") || null);
   return { ok: true, message: "Listo: se le avisó y ya lo ve en su panel." };

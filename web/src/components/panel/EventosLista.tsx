@@ -11,6 +11,7 @@ import { PAPELES_EVENTO, permisosEvento, type PanelAccessData, type PapelEvento 
 import { createClient } from "@/lib/supabase/server";
 import { input } from "@/components/panel/ui";
 import { Icono } from "@/components/Icono";
+import { BuscarCuenta } from "@/components/panel/BuscarCuenta";
 
 const small = "rounded-full border border-white/25 px-2.5 py-1 text-xs font-bold hover:border-white/50 disabled:opacity-60";
 const horaMx = (iso: string) => new Date(iso).toLocaleTimeString("es-MX", { timeZone: "America/Mexico_City", hour: "2-digit", minute: "2-digit" });
@@ -149,7 +150,7 @@ export async function EventosLista({ pid, access }: { pid?: string | null; acces
                 </ul>
               )}
               <ActionForm inline action={ponerEquipoEvento} hidden={{ pid: e.production_id ?? "", id: e.id }} submit="Agregar" submitClass={small}>
-                <input name="email" type="email" required placeholder="correo de su cuenta DARF" aria-label="Correo" className={`${input} max-w-[240px] py-1.5 text-xs`} />
+                <BuscarCuenta className="w-[240px] max-w-full" placeholder="Nombre o correo" />
                 <select name="papel" aria-label="Papel" defaultValue="puerta" className={`${input} w-auto py-1.5 text-xs`}>
                   {(Object.keys(PAPELES_EVENTO) as PapelEvento[]).map((k) => <option key={k} value={k}>{PAPELES_EVENTO[k].label}</option>)}
                 </select>
