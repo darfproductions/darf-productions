@@ -14,7 +14,8 @@ import { AddCreditForm } from "./AddCreditForm";
 import { Personajes } from "./Personajes";
 import { OfferForm } from "./OfferForm";
 import { withdrawOffer } from "./offer-actions";
-import { moveCredit, publishAllCast, removeCredit, setCreditPhoto, setCreditPublicado, setSoloCredito, updatePapel } from "./actions";
+import { moveCredit, programarCredito, publishAllCast, removeCredit, setCreditPhoto, setCreditPublicado, setSoloCredito, updatePapel } from "./actions";
+import { isoToLocalMx } from "@/lib/dates";
 import { Icono } from "@/components/Icono";
 
 export const metadata: Metadata = { title: "Elenco y equipos" };
@@ -32,7 +33,10 @@ const GRUPOS = [
 
 const ELENCO = new Set(["reparto", "ensamble"]);
 
-type Row = { id: string; tipo: string; papel: string | null; foto_path: string | null; orden: number; activo: boolean; publicado: boolean; solo_credito: boolean; people: { id: string; nombre: string; profile_id: string | null } | null };
+const saleEl = (iso: string) =>
+  new Intl.DateTimeFormat("es-MX", { weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit", timeZone: "America/Mexico_City" }).format(new Date(iso));
+
+type Row = { id: string; tipo: string; papel: string | null; foto_path: string | null; orden: number; activo: boolean; publicado: boolean; solo_credito: boolean; publicar_at: string | null; people: { id: string; nombre: string; profile_id: string | null } | null };
 
 const mini = "grid h-8 w-8 place-items-center rounded-full border border-white/20 text-sm hover:border-white/50 disabled:opacity-40";
 
@@ -43,7 +47,7 @@ export default async function CastEditor({ params }: PageProps<"/panel/produccio
   if (!can(access, id, "elenco.gestionar") && !can(access, id, "obra.editar")) redirect(`/panel/producciones/${id}`);
   const supabase = await createClient();
   const [{ data: credits }, { data: people }] = await Promise.all([
-    supabase.from("production_credits").select("id, tipo, papel, foto_path, orden, people(id, nombre, profile_id), activo, publicado, solo_credito").eq("production_id", id).order("orden").order("id"),
+    supabase.from("production_credits").select("id, tipo, papel, foto_path, orden, people(id, nombre, profile_id), activo, publicado, solo_credito, publicar_at").eq("production_id", id).order("orden").order("id"),
     supabase.from("people").select("nombre").order("nombre").limit(2000),
   ]);
   const rows = (credits ?? []) as unknown as Row[];
@@ -90,7 +94,9 @@ export default async function CastEditor({ params }: PageProps<"/panel/produccio
           <b className="text-texto">Reparto y Ensamble</b> entran como <b className="text-texto">No publicado</b>: quedan guardados y ya tienen acceso como integrantes (ensayos, expediente, gafete), pero no salen en la página ni en el programa hasta que los publiques. Los demás equipos salen en cuanto los agregas.
         </p>
         {porPublicar > 0
-          ? <ActionForm inline action={publishAllCast} hidden={{ pid: id }} confirm={`¿Publicar a ${porPublicar === 1 ? "1 persona" : `${porPublicar} personas`} del elenco? Saldrán en la página de la obra.`} submit={`Publicar todo el elenco (${porPublicar})`} submitClass="rounded-full bg-texto px-4 py-2 text-sm font-bold text-sala" />
+          ? <ActionForm inline action={publishAllCast} hidden={{ pid: id }} confirm={`¿Publicar a ${porPublicar === 1 ? "1 persona" : `${porPublicar} personas`} del elenco? Saldrán en la página de la obra.`} submit={`Publicar todo el elenco (${porPublicar})`} submitClass="rounded-full bg-texto px-4 py-2 text-sm font-bold text-sala">
+              <label className="flex items-center gap-2 text-xs font-semibold"><input type="checkbox" name="avisar" /> Avisar al Club Fan</label>
+            </ActionForm>
           : <span className="text-sm text-texto-3">Todo el elenco está publicado.</span>}
       </Card>
       <datalist id={listId}>{(people ?? []).map((p) => <option key={p.nombre as string} value={p.nombre as string} />)}</datalist>
@@ -111,7 +117,7 @@ export default async function CastEditor({ params }: PageProps<"/panel/produccio
                         {r.people ? (verFicha ? <Link href={r.people.profile_id ? `/panel/talento/${r.people.profile_id}` : `/panel/talento/p/${r.people.id}`} className="hover:underline">{r.people.nombre}</Link> : r.people.nombre) : "—"}
                         {r.people && !r.people.profile_id && <span className="ml-2 text-[10px] font-normal text-texto-3">sin cuenta</span>}
                         {r.solo_credito && <span className="ml-2 rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-bold text-texto-2">Solo crédito · no entra a ensayos</span>}
-                        {ELENCO.has(r.tipo) && !r.publicado && <span className="ml-2 rounded-full bg-[#4a3b10] px-2 py-0.5 text-[10px] font-bold text-[#fde68a]">No publicado</span>}
+                        {ELENCO.has(r.tipo) && !r.publicado && <span className="ml-2 rounded-full bg-[#4a3b10] px-2 py-0.5 text-[10px] font-bold text-[#fde68a]">{r.publicar_at ? `Sale el ${saleEl(r.publicar_at)}` : "No publicado"}</span>}
                         {!r.activo && <span className="ml-2 rounded-full bg-[#5a1a22] px-2 py-0.5 text-[10px] font-bold text-[#fecdd3]">Baja</span>}
                       </p>
                       {g.papel && (
@@ -129,11 +135,32 @@ export default async function CastEditor({ params }: PageProps<"/panel/produccio
                         submit={r.solo_credito ? "Hacer integrante" : "Solo crédito"}
                         submitClass="rounded-full border border-white/25 px-3 py-1 text-xs font-bold" />
                     )}
+                    {ELENCO.has(r.tipo) && (r.publicado ? (
+                      <ActionForm inline action={setCreditPublicado} hidden={{ pid: id, id: r.id, publicado: "0" }}
+                        confirm={`¿Quitar a ${r.people?.nombre} de la página? Sigue en el elenco y con su acceso.`}
+                        submit="Despublicar" submitClass="rounded-full border border-white/25 px-3 py-1 text-xs font-bold" />
+                    ) : (
+                      <details className="relative">
+                        <summary className="cursor-pointer rounded-full bg-texto px-3 py-1 text-xs font-bold text-sala">Publicar</summary>
+                        <div className="mt-2 flex flex-col gap-3 rounded-xl border border-white/15 bg-telon p-3 text-xs sm:absolute sm:right-0 sm:z-20 sm:w-80">
+                          <ActionForm action={setCreditPublicado} hidden={{ pid: id, id: r.id, publicado: "1" }} submit="Publicar ahora" submitClass="self-start rounded-full bg-texto px-3 py-1 text-xs font-bold text-sala">
+                            <label className="flex items-center gap-2 font-semibold"><input type="checkbox" name="avisar" /> Avisar al Club Fan</label>
+                          </ActionForm>
+                          <ActionForm action={programarCredito} hidden={{ pid: id, id: r.id }} submit={r.publicar_at ? "Cambiar hora" : "Programar"} submitClass="self-start rounded-full border border-white/25 px-3 py-1 text-xs font-bold">
+                            <label className="flex flex-col gap-1 font-semibold">O que salga solo (hora de México)
+                              <input type="datetime-local" name="fecha" required defaultValue={r.publicar_at ? isoToLocalMx(r.publicar_at) : ""} className={`${input} py-1.5 text-xs`} />
+                            </label>
+                            <label className="flex items-center gap-2 font-semibold"><input type="checkbox" name="avisar" /> Avisar al Club Fan al salir</label>
+                          </ActionForm>
+                          {r.publicar_at && <ActionForm inline action={programarCredito} hidden={{ pid: id, id: r.id, cancelar: "1" }} submit="Cancelar programación" submitClass="self-start text-xs font-bold text-texto-3 hover:text-texto" />}
+                        </div>
+                      </details>
+                    ))}
                     {ELENCO.has(r.tipo) && (
-                      <ActionForm inline action={setCreditPublicado} hidden={{ pid: id, id: r.id, publicado: r.publicado ? "0" : "1" }}
-                        confirm={r.publicado ? `¿Quitar a ${r.people?.nombre} de la página? Sigue en el elenco y con su acceso.` : undefined}
-                        submit={r.publicado ? "Despublicar" : "Publicar"}
-                        submitClass={r.publicado ? "rounded-full border border-white/25 px-3 py-1 text-xs font-bold" : "rounded-full bg-texto px-3 py-1 text-xs font-bold text-sala"} />
+                      <span className="flex items-center gap-1 text-xs text-texto-3">Tarjeta:
+                        <a href={`/panel/producciones/${id}/elenco/tarjeta/${r.id}?f=post`} download className="font-bold text-violeta-claro">Post</a>·
+                        <a href={`/panel/producciones/${id}/elenco/tarjeta/${r.id}?f=historia`} download className="font-bold text-violeta-claro">Historia</a>
+                      </span>
                     )}
                     <div className="flex items-center gap-1">
                       {i > 0 && <ActionForm inline action={moveCredit} hidden={{ pid: id, id: r.id, dir: "up" }} submit={<Icono nombre="flecha-arriba" etiqueta="Subir" />} submitClass={mini} />}

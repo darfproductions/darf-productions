@@ -55,7 +55,7 @@ export function reciboPdf(r: Recibo): Uint8Array {
 }
 
 export type EstadoCuenta = {
-  obra: string; nombre: string; mensualidad: number | null; beca: boolean; diaLimite: number;
+  obra: string; nombre: string; mensualidad: number | null; beca: boolean; vence: string;
   meses: Mes[]; inscripcion: Inscripcion; adeudo: number;
   pagos: { folio: string; concepto: string; periodo: string; monto: number; metodo: string; registrado_at: string; anulado_at: string | null }[];
 };
@@ -75,7 +75,7 @@ export function estadoCuentaPdf(e: EstadoCuenta): Uint8Array {
   y -= 34;
   const datos: [string, string][] = [
     ["Mensualidad", e.beca ? "Beca" : e.mensualidad != null ? pesos(e.mensualidad) : "-"],
-    ["Pagar antes del día", String(e.diaLimite)],
+    ["Vence", e.vence],
     ["Inscripción", INSCRIPCION_LABEL[e.inscripcion.estado].label],
     ["Adeudo a hoy", pesos(e.adeudo)],
   ];

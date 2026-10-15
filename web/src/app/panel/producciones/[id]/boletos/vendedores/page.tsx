@@ -5,7 +5,7 @@ import { CopyLink } from "@/components/panel/CopyLink";
 import { Card, input } from "@/components/panel/ui";
 import { can, salidaBoletos } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
-import { estadoVendedor, sellerPath, TIPO_VENDEDOR, type SellerRow } from "@/lib/seller-rules";
+import { estadoVendedor, sellerPath, TIPO_VENDEDOR, type SellerRow, rankingVendedores } from "@/lib/seller-rules";
 import { createClient } from "@/lib/supabase/server";
 import { formatMoney } from "@/lib/tickets";
 import { addAccountSeller, addExternalSeller, setSellerActive } from "./actions";
@@ -23,7 +23,8 @@ export default async function Vendedores({ params }: PageProps<"/panel/produccio
   if (!gestiona && !can(access, id, "ventas.ver")) redirect(salidaBoletos(access, id, "boletos/vendedores"));
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("seller_list", { pid: id });
-  const rows = (data ?? []) as SellerRow[];
+  // 0110: ordenados por boletos vendidos.
+  const rows = rankingVendedores((data ?? []) as SellerRow[]);
   const h = (sid: string, accion: string) => ({ pid: id, sid, accion });
 
   return (

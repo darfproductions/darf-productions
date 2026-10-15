@@ -27,6 +27,11 @@ describe("directorio de personas", () => {
     expect(conCasa.map((x) => x.key)).toEqual(["u:u2", "u:u3"]);
     expect(conCasa[0].casa).toEqual(["Comunicación y Marketing"]);
     expect(unirDirectorio(fichas, cuentas, "sin-cuenta").map((x) => x.key)).toEqual(["p:p2"]);
+    // 0111: cuentas vacías (solo cuentas sin ficha que la base marcó como vacías).
+    const vacias = unirDirectorio(fichas, cuentas, "vacias", {}, new Set(["u2", "u1"]));
+    expect(vacias.map((x) => x.key)).toEqual(["u:u2"]);
+    expect(vacias[0].vacia).toBe(true);
+    expect(filtroValido("vacias")).toBe("vacias");
     expect(filtroValido("x")).toBe("todos");
     expect(filtroValido("equipo")).toBe("equipo");
   });

@@ -5,6 +5,33 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-10-15 — Dirección general, cuenta de la empresa, cuentas vacías, Difusión y pagos por ficha (migración 0111)
+
+- Rol `direccion_general_darf` ("Dirección general"): quien está en `direccion_general_darf` (Diego) entra solo a
+  todas las obras (trigger en `productions`) y eventos (`evento_equipo` organiza), con acceso total
+  (`es_direccion_general`). Solo recibe avisos importantes (órdenes y pagos, audiciones, ofertas, solicitudes de pago);
+  no lo citan a ensayos ni sale en listas del equipo. No se da ni se quita desde Permisos. El rol de cada obra
+  `direccion_general` ahora se llama "Dirección de la obra".
+- `cuentas_empresa` (DARF Productions): sigue admin, sin Club Fan, credencial ni Wallet; fuera del Directorio y del equipo.
+- `cuentas_vacias()` / `admin_borrar_cuenta()`: el admin borra cuentas sin ficha, obras, compras ni registros
+  (Directorio → "Cuentas vacías"); en la Bitácora queda solo que se borró.
+- Wallet: el reverso ya no lleva el nivel de DARF Loyalty ni de Fan Zone.
+- Pestaña **Difusión** (grupo Público): 10 diseños para redes (post e historia) con el estilo de la tarjeta del elenco.
+- Pagos por ficha (`member_payments_ficha`, `ficha_cuotas`): pasan solos a la cuenta al ligarla, sin aviso;
+  salen en Adeudos como "Sin cuenta" y en la recaudación. `production_fees.vence_sabado`: vence el segundo sábado.
+- Script de datos `supabase/dev/carga_pagos_showman_2026-10-15.sql`: cuotas de Showman ($600 inscripción y mensualidad)
+  y la hoja de pagos de Diego.
+
+## 2026-10-15 — Elenco programado, tarjeta para redes, aviso al Club Fan, ranking y visitas en puerta (migración 0110)
+
+- `production_credits.publicar_at` (pg_cron `darf_elenco_programado` cada 5 min) y `avisar_club` (notificación
+  `fanzone` a `fan_members`; "Publicar todo" manda una sola con `elenco_avisar_club`).
+- Tarjeta para redes: `/panel/producciones/[id]/elenco/tarjeta/[credito]?f=post|historia` (next/og + sharp).
+- `director_sellers()` con boletos; ranking por boletos en reportes y vendedores.
+- `visitas_puerta` + `puerta_visita()`: el escáner de la puerta lee boletos y pases del Club Fan; la visita cuenta
+  con el pase (tope: boletos que ya entraron). `fan_visitas()` conserva lo ganado con boletos antes del cambio.
+- Página de la obra: "Ver video(s)"; perfil profesional por año y retrato sin hueco (#21, #22).
+
 ## 2026-10-15 — Asistencia histórica y "Solo crédito" (migración 0109)
 
 - `rehearsal_attendance_ficha`: asistencia guardada por ficha mientras no hay cuenta; al ligar la cuenta pasa sola

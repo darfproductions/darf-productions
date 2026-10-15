@@ -8,7 +8,7 @@ import { FILTROS, filtroValido, unirDirectorio, type CuentaUsuario, type FichaPe
 import { requireCasa } from "@/lib/permissions";
 import { createClient } from "@/lib/supabase/server";
 import { linkAccount, mergePeople } from "../talento/actions";
-import { changeGlobalRole } from "../usuarios/actions";
+import { borrarCuenta, changeGlobalRole } from "../usuarios/actions";
 import { Icono } from "@/components/Icono";
 
 export const metadata: Metadata = { title: "Directorio" };
@@ -21,18 +21,26 @@ export default async function Directorio({ searchParams }: PageProps<"/panel/per
   const q = typeof sp.q === "string" ? sp.q : "";
   const filtro = filtroValido(sp.filtro);
   const supabase = await createClient();
-  const [{ data: fichas }, { data: cuentas, error }, { data: sug }, casaRes, puestosRes] = await Promise.all([
+  const [{ data: fichas }, { data: cuentas, error }, { data: sug }, casaRes, puestosRes, vaciasRes] = await Promise.all([
     supabase.rpc("people_directory", { q: q || null }),
     supabase.rpc("admin_list_users", { q: q || null }),
     supabase.rpc("people_link_suggestions"),
     // Puestos de Casa DARF (0102): solo el admin los ve.
     access.isDirector ? supabase.rpc("casa_lista") : Promise.resolve({ data: null }),
     access.isDirector ? supabase.from("panel_roles").select("id, nombre").eq("alcance", "casa") : Promise.resolve({ data: null }),
+    // Cuentas vacías (0111): solo el admin las ve y las borra.
+    access.isDirector ? supabase.rpc("cuentas_vacias") : Promise.resolve({ data: null }),
   ]);
+  const vaciasLista = (vaciasRes.data ?? []) as { id: string; email: string; nombre: string | null }[];
+  const vacias = new Set(vaciasLista.map((v) => v.id));
+  const cuentasLista = (cuentas ?? []) as CuentaUsuario[];
+  // La lista de cuentas trae hasta 100; las vacías se agregan aunque no estén entre esas.
+  for (const v of vaciasLista) if (!cuentasLista.some((c) => c.id === v.id) && (!q || `${v.email} ${v.nombre ?? ""}`.toLowerCase().includes(q.toLowerCase()))) cuentasLista.push({ id: v.id, email: v.email, nombre: v.nombre, rol: "fan" });
   const nombrePuesto = new Map(((puestosRes.data ?? []) as { id: string; nombre: string }[]).map((r) => [r.id, r.nombre]));
   const casa = Object.fromEntries(((casaRes.data ?? []) as { user_id: string; roles: string[] }[])
     .map((m) => [m.user_id, m.roles.map((r) => nombrePuesto.get(r) ?? r)]));
-  const filas = unirDirectorio((fichas ?? []) as FichaPersona[], (cuentas ?? []) as CuentaUsuario[], filtro, casa);
+  const filas = unirDirectorio((fichas ?? []) as FichaPersona[], cuentasLista, filtro, casa, vacias);
+  const filtros = FILTROS.filter((f) => f.id !== "vacias" || access.isDirector);
   const fichasLista = (fichas ?? []) as FichaPersona[];
   const sugerencias = (sug ?? []) as { person_id: string; persona: string; user_id: string; email: string; cuenta: string; motivo: string }[];
   const qs = (f: string) => `/panel/personas?${new URLSearchParams({ ...(q ? { q } : {}), ...(f !== "todos" ? { filtro: f } : {}) })}`;
@@ -44,6 +52,7 @@ export default async function Directorio({ searchParams }: PageProps<"/panel/per
       </PanelTitle>
       {typeof sp.error === "string" && <Notice>{sp.error}</Notice>}
       {sp.ok === "1" && <Notice ok>Rol actualizado.</Notice>}
+      {sp.ok === "borrada" && <Notice ok>Cuenta borrada.</Notice>}
       {error && <Notice>{error.message}</Notice>}
 
       {sugerencias.length > 0 && (
@@ -67,7 +76,7 @@ export default async function Directorio({ searchParams }: PageProps<"/panel/per
         <button className={button}>Buscar</button>
       </form>
       <nav aria-label="Filtro" className="flex flex-wrap gap-2 text-sm">
-        {FILTROS.map((f) => (
+        {filtros.map((f) => (
           <Link key={f.id} href={qs(f.id)} className={`rounded-full border px-3 py-1.5 font-semibold ${filtro === f.id ? "border-texto" : "border-white/20"}`}>{f.label}</Link>
         ))}
       </nav>
@@ -113,6 +122,14 @@ export default async function Directorio({ searchParams }: PageProps<"/panel/per
                       </ActionForm>
                     </div>
                   </details>
+                )}
+                {p.vacia && p.userId && (
+                  <form action={borrarCuenta}>
+                    <input type="hidden" name="id" value={p.userId} />
+                    <input type="hidden" name="q" value={q} />
+                    <input type="hidden" name="filtro" value={filtro} />
+                    <ConfirmSubmit message={`¿Borrar la cuenta ${p.email ?? p.nombre}? Está vacía (sin ficha, obras ni compras). No se puede deshacer.`} className="rounded-full border border-[#ff8fa3]/50 px-3 py-1 text-xs font-bold text-[#ff8fa3]">Borrar</ConfirmSubmit>
+                  </form>
                 )}
                 <Link href={p.fichaHref} className="text-xs font-bold text-violeta-claro">Ficha <Icono nombre="flecha-der" /></Link>
               </span>

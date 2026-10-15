@@ -62,7 +62,8 @@ export async function setMemberRoles(_prev: MemberState, form: FormData): Promis
     .eq("production_id", pid)
     .eq("user_id", userId);
   if (error) return { ok: false, message: mensajeError(error) };
-  const { agregar, quitar } = roleDiff((rows ?? []).map((r) => r.role_id as string), deseados);
+  // Dirección general de DARF (0111) no se toca desde aquí.
+  const { agregar, quitar } = roleDiff((rows ?? []).map((r) => r.role_id as string).filter((r) => r !== "direccion_general_darf"), deseados);
   for (const role of agregar) {
     const { error: e } = await supabase.rpc("panel_add_member", { pid, p_email: email, p_role: role });
     if (e) return { ok: false, message: mensajeError(e) };

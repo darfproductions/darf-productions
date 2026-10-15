@@ -1,4 +1,4 @@
-import { adeudo, estadoCuotas, estadoInscripcion } from "@/lib/member-rules";
+import { adeudo, estadoCuotas, estadoInscripcion, venceCorto } from "@/lib/member-rules";
 import { getMemberData } from "@/lib/members";
 import type { Recibo } from "@/lib/pago-rules";
 import type { EstadoCuenta } from "@/lib/pdf-recibo";
@@ -23,7 +23,7 @@ export async function getEstadoCuenta(pid: string, uid: string, nombre: string):
   const inscripcion = estadoInscripcion(d.fee, d.terms, d.pagos);
   return {
     obra: (obra?.nombre as string) ?? pid, nombre,
-    mensualidad: Number(d.terms.cuota_especial ?? d.fee.monto), beca: d.terms.beca, diaLimite: d.fee.dia_limite,
+    mensualidad: Number(d.terms.cuota_especial ?? d.fee.monto), beca: d.terms.beca, vence: venceCorto(d.fee),
     meses, inscripcion, adeudo: adeudo(meses) + Math.max(0, inscripcion.debe - inscripcion.pagado),
     pagos: [...d.pagos].sort((a, b) => a.registrado_at.localeCompare(b.registrado_at)),
   };

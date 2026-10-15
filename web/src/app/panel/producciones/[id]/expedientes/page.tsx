@@ -16,6 +16,7 @@ import { AjustesSeccion } from "@/components/panel/AjustesSeccion";
 import { ExpTabs } from "./ExpTabs";
 import { mayus } from "@/lib/dates";
 import { todasLasFilas } from "@/lib/supabase/paginar";
+import { getPagosFicha } from "@/lib/adeudos";
 import { Icono } from "@/components/Icono";
 
 export const metadata: Metadata = { title: "Expedientes" };
@@ -47,17 +48,19 @@ export default async function Expedientes({ params, searchParams }: PageProps<"/
   const { data: rosterData } = await supabase.rpc("cast_roster", { pid: id });
   const gente = (rosterData ?? []) as Roster[];
   const uids = gente.length ? gente.map((g) => g.user_id) : NONE;
-  const [persons, members, tipos, docs, fee, pagos, terms, disc, cfg, altas] = await Promise.all([
+  const [persons, members, tipos, docs, fee, pagos, terms, disc, cfg, altas, ficha] = await Promise.all([
     verExp ? supabase.from("person_files").select("*").in("user_id", uids) : Promise.resolve({ data: [] }),
     verExp ? supabase.from("member_files").select("user_id, revisado_at, confirmado_at").eq("production_id", id) : Promise.resolve({ data: [] }),
     supabase.from("member_doc_types").select("id, nombre, solo_menores, obligatorio, aplica, grupo, personas, descripcion").eq("production_id", id).order("orden"),
     verExp ? supabase.from("member_docs").select("user_id, doc_type_id, archivo_path, subido_at, entregado_at").eq("production_id", id) : Promise.resolve({ data: [] }),
-    supabase.from("production_fees").select("monto, desde, hasta, dia_limite, cobrar, inscripcion").eq("production_id", id).maybeSingle(),
+    supabase.from("production_fees").select("monto, desde, hasta, dia_limite, cobrar, inscripcion, vence_sabado").eq("production_id", id).maybeSingle(),
     verCuotas ? todasLasFilas((a, b) => supabase.from("member_payments").select("user_id, periodo, monto, concepto, registrado_at, anulado_at").eq("production_id", id).order("id").range(a, b)) : Promise.resolve({ data: [] }),
     verCuotas ? supabase.from("member_fee_terms").select("user_id, beca, cuota_especial, sin_inscripcion").eq("production_id", id) : Promise.resolve({ data: [] }),
     verDisc || verCuotas ? supabase.rpc("discipline_summary", { pid: id }) : Promise.resolve({ data: [] }),
     supabase.from("production_discipline").select("*").eq("production_id", id).maybeSingle(),
     supabase.from("member_enrollment").select("user_id, ingreso, baja_at, baja_motivo").eq("production_id", id),
+    // Pagos de quien aún no tiene cuenta (0111): cuentan en la recaudación.
+    verCuotas ? getPagosFicha(id) : Promise.resolve({ pagos: [], cuotas: [] }),
   ]);
   const altaDe = (u: string) => ((altas.data ?? []) as (Enrollment & { user_id: string })[]).find((a) => a.user_id === u) ?? null;
   const tiposDoc = (tipos.data ?? []) as DocType[];
@@ -69,7 +72,7 @@ export default async function Expedientes({ params, searchParams }: PageProps<"/
   type Pago = { user_id: string; periodo: string; monto: number; concepto: "mensualidad" | "inscripcion"; registrado_at: string; anulado_at: string | null };
   const pagosDe = (u: string) => ((pagos.data ?? []) as Pago[]).filter((p) => p.user_id === u);
   const cobra = !!cuota && cuota.cobrar !== false;
-  const rec = recaudacion((pagos.data ?? []) as Pago[]);
+  const rec = recaudacion([...((pagos.data ?? []) as Pago[]), ...ficha.pagos.map((p) => ({ ...p, registrado_at: p.pagado_at }))]);
   const discDe = (u: string) => ((disc.data ?? []) as Disc[]).find((d) => d.user_id === u);
   const reglas = cfg.data as { limite_advertencias: number; auto_mensualidad_meses: number | null; auto_retardos: number | null; auto_faltas: number | null; tolerancia_min?: number } | null;
   const porDecidir = gente.filter((g) => discDe(g.user_id)?.requiere_decision && !altaDe(g.user_id)?.baja_at);
@@ -243,6 +246,7 @@ export default async function Expedientes({ params, searchParams }: PageProps<"/
               <label className="flex flex-col gap-1 text-xs font-semibold">Último mes<input className={input} type="month" name="hasta" required defaultValue={cuota?.hasta.slice(0, 7) ?? ""} /></label>
               <label className="flex flex-col gap-1 text-xs font-semibold">Pagar antes del día<input className={input} type="number" min={1} max={28} name="dia_limite" defaultValue={cuota?.dia_limite ?? 10} /></label>
             </div>
+            <label className="flex items-center gap-2 text-sm font-semibold"><input type="checkbox" name="vence_sabado" defaultChecked={!!cuota?.vence_sabado} /> Se paga el primer sábado del mes, con tolerancia hasta el segundo sábado (en lugar del día fijo)</label>
           </ActionForm>
         </Card>
       )}

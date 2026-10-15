@@ -14,6 +14,9 @@ describe("bitácora en lenguaje sencillo", () => {
     expect(describeAudit({ ...base, tabla: "production_members", despues: row }, names)).toBe("Dio a Ana el rol Taquilla en Mamma Mia");
     expect(describeAudit({ ...base, tabla: "production_members", accion: "delete", antes: row }, names)).toBe("Quitó a Ana como Taquilla en Mamma Mia");
   });
+  it("cuenta vacía borrada (0111): sin datos de la cuenta", () => {
+    expect(describeAudit({ ...base, tabla: "cuentas", accion: "delete", registro_id: "u9" }, names)).toBe("Borró una cuenta vacía");
+  });
   it("cambio de rol general", () => {
     expect(describeAudit({ ...base, tabla: "profiles", accion: "update", despues: { id: "u1", rol: "admin" } }, names)).toBe(
       "Cambió el rol general de Ana a Director",

@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { localMxToIso } from "@/lib/dates";
 import { mensajeError } from "@/lib/errores";
 import { createClient } from "@/lib/supabase/server";
 
@@ -114,12 +115,32 @@ export async function setCreditPublicado(_p: CreditState, f: FormData): Promise<
   const pid = String(f.get("pid"));
   const id = String(f.get("id"));
   const publicado = f.get("publicado") === "1";
+  // 0110: al publicar se puede avisar a los socios del Club Fan (lo manda la base, una vez).
+  const avisar = publicado && f.get("avisar") === "on";
   const supabase = await createClient();
-  const { error, count } = await supabase.from("production_credits").update({ publicado }, { count: "exact" }).eq("id", id).eq("production_id", pid);
+  const { error, count } = await supabase.from("production_credits").update({ publicado, avisar_club: avisar }, { count: "exact" }).eq("id", id).eq("production_id", pid);
   if (error) return { ok: false, message: mensajeError(error) };
   if (!count) return { ok: false, message: SIN_PERMISO };
   refresh(pid);
-  return { ok: true, message: publicado ? "Publicado." : "Ya no se ve en la página." };
+  return { ok: true, message: publicado ? (avisar ? "Publicado y avisado al Club Fan." : "Publicado.") : "Ya no se ve en la página." };
+}
+
+/** 0110: programa (o cancela) la publicación: sale sola a esa hora (hora de México). */
+export async function programarCredito(_p: CreditState, f: FormData): Promise<CreditState> {
+  const pid = String(f.get("pid"));
+  const id = String(f.get("id"));
+  const cancelar = f.get("cancelar") === "1";
+  const iso = cancelar ? null : localMxToIso(String(f.get("fecha") ?? ""));
+  if (!cancelar && !iso) return { ok: false, message: "Elige la fecha y la hora." };
+  if (iso && new Date(iso).getTime() <= Date.now()) return { ok: false, message: "Elige una hora que todavía no pase (o usa Publicar)." };
+  const supabase = await createClient();
+  const { error, count } = await supabase.from("production_credits")
+    .update({ publicar_at: iso, avisar_club: !cancelar && f.get("avisar") === "on" }, { count: "exact" })
+    .eq("id", id).eq("production_id", pid).eq("publicado", false);
+  if (error) return { ok: false, message: mensajeError(error) };
+  if (!count) return { ok: false, message: SIN_PERMISO };
+  refresh(pid);
+  return { ok: true, message: cancelar ? "Programación cancelada." : "Programado: saldrá solo a esa hora." };
 }
 
 /** 0107: publica de una vez a todo el Reparto y Ensamble que falta. */
@@ -129,6 +150,8 @@ export async function publishAllCast(_p: CreditState, f: FormData): Promise<Cred
   const { error, count } = await supabase.from("production_credits").update({ publicado: true }, { count: "exact" })
     .eq("production_id", pid).in("tipo", ["reparto", "ensamble"]).eq("publicado", false);
   if (error) return { ok: false, message: mensajeError(error) };
+  // 0110: un solo aviso al Club Fan por obra (no uno por persona).
+  if (count && f.get("avisar") === "on") await supabase.rpc("elenco_avisar_club", { pid });
   refresh(pid);
   return { ok: true, message: count ? `Publicado: ${count === 1 ? "1 persona" : `${count} personas`}.` : "Todo el elenco ya estaba publicado." };
 }

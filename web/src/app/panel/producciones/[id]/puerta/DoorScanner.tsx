@@ -1,11 +1,12 @@
 "use client";
 
+/* eslint-disable @next/next/no-img-element -- foto firmada de la persona */
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { QrScanner } from "@/components/panel/QrScanner";
 import { bip } from "@/lib/aviso-sonido";
 import { mayus } from "@/lib/dates";
-import { buscarPuerta, checkIn, conteoPuerta, deshacerEntrada, type BoletoPuerta, type CheckIn, type Conteo } from "./actions";
-import { etiquetaBoleto } from "./door-rules";
+import { buscarPuerta, checkIn, conteoPuerta, deshacerEntrada, visitaPuerta, type BoletoPuerta, type CheckIn, type Conteo, type Visita } from "./actions";
+import { esPaseClub, etiquetaBoleto } from "./door-rules";
 import { Icono, type IconoNombre } from "@/components/Icono";
 
 const VISTA: Record<string, { bg: string; title: string; icono: IconoNombre }> = {
@@ -16,6 +17,11 @@ const VISTA: Record<string, { bg: string; title: string; icono: IconoNombre }> =
   otra_funcion: { bg: "bg-[#5a1a22]", title: "Boleto de otra función", icono: "x" },
   no_encontrado: { bg: "bg-[#5a1a22]", title: "QR no válido", icono: "x" },
   error: { bg: "bg-[#5a1a22]", title: "No se pudo validar", icono: "alerta" },
+  // 0110: pases del Club Fan (suman la visita de esa cuenta en esta función).
+  visita_ok: { bg: "bg-[#14532d]", title: "Visita sumada", icono: "check" },
+  visita_ya: { bg: "bg-[#3f3a12]", title: "Su visita ya contaba", icono: "check" },
+  visita_sin_boleto: { bg: "bg-[#7c2d12]", title: "Primero escanea su boleto", icono: "alerta" },
+  visita_no_encontrado: { bg: "bg-[#5a1a22]", title: "Pase no válido", icono: "x" },
 };
 
 const fecha = (iso: string) =>
@@ -28,7 +34,7 @@ const chico = "rounded-full border border-white/25 px-3 py-1.5 text-xs font-bold
 // vivo, sonido y vibración, buscar por nombre/código si el QR no abre, deshacer y lista descargable.
 export function DoorScanner({ pid, funciones, inicial }: { pid: string; funciones: { id: string; starts_at: string }[]; inicial: string | null }) {
   const [funcion, setFuncion] = useState(inicial ?? funciones[0]?.id ?? "");
-  const [res, setRes] = useState<CheckIn | null>(null);
+  const [res, setRes] = useState<CheckIn | Visita | null>(null);
   const [conteo, setConteo] = useState<Conteo | null>(null);
   const [q, setQ] = useState("");
   const [hallados, setHallados] = useState<BoletoPuerta[] | null>(null);
@@ -49,10 +55,11 @@ export function DoorScanner({ pid, funciones, inicial }: { pid: string; funcione
     return () => { vivo = false; clearInterval(t); };
   }, [funcion]);
 
+  // El mismo escáner lee boletos y pases del Club Fan: una persona revisa boletos y otra, pases.
   const leer = (token: string) => start(async () => {
-    const r = await checkIn(token, funcion);
+    const r = esPaseClub(token) ? await visitaPuerta(token, funcion) : await checkIn(token, funcion);
     setRes(r);
-    bip(r.result === "ok");
+    bip(r.result === "ok" || r.result === "visita_ok");
     await actualizar();
   });
 
@@ -97,6 +104,18 @@ export function DoorScanner({ pid, funciones, inicial }: { pid: string; funcione
       {res && v && (
         <div role="status" className={`rounded-2xl p-6 text-white ${v.bg}`}>
           <p className="flex items-center gap-3 text-3xl font-black"><Icono nombre={v.icono} />{v.title}</p>
+          {res.result.startsWith("visita_") && "nombre" in res && res.nombre && (
+            <div className="mt-3 flex items-center gap-4">
+              {res.fotoUrl ? <img src={res.fotoUrl} alt="" className="h-20 w-20 rounded-full object-cover" /> : null}
+              <div>
+                <p className="text-2xl font-bold">{res.nombre}</p>
+                {res.result === "visita_ok" && <p className="text-lg">{res.visitas === 1 ? "1 visita" : `${res.visitas} visitas`}{res.socio ? " · Socio del Club Fan" : ""}</p>}
+                {res.result === "visita_ya" && res.hora && <p className="text-lg">Se registró a las {hora(res.hora)}</p>}
+              </div>
+            </div>
+          )}
+          {res.result === "visita_sin_boleto" && <p className="mt-1 text-lg">Todos los boletos que ya entraron tienen su visita. Escanea su boleto primero.</p>}
+          {res.result === "visita_no_encontrado" && <p className="mt-1 text-sm">Pide que abra su pase en Mi cuenta o en Wallet.</p>}
           {"seat_label" in res && res.seat_label && <p className="mt-1 text-xl font-bold">{etiquetaBoleto(res.seat_label, res.category)}</p>}
           {"buyer_nombre" in res && res.buyer_nombre && <p className="text-lg">{res.buyer_nombre}</p>}
           {"performance_starts_at" in res && res.performance_starts_at && (
@@ -109,7 +128,8 @@ export function DoorScanner({ pid, funciones, inicial }: { pid: string; funcione
           {res.result === "error" && <p>{res.message}</p>}
         </div>
       )}
-      <QrScanner busy={pending} placeholder="Código del boleto" onCode={leer} />
+      <QrScanner busy={pending} placeholder="Código del boleto o del pase (DRF-XXXX)" onCode={leer} />
+      <p className="text-xs text-texto-3">Lee boletos y pases del Club Fan. El pase (de Mi cuenta o Wallet) suma la visita de esa persona en esta función, también a quien compró: puede haber una persona revisando boletos y otra escaneando pases.</p>
       <section aria-label="Buscar en la lista" className="flex flex-col gap-2 rounded-2xl bg-telon p-4">
         <p className="text-sm font-semibold">¿No abre el QR? Búscalo por nombre, teléfono, código de orden o asiento.</p>
         <form onSubmit={(e) => { e.preventDefault(); buscar(); }} className="flex gap-2">

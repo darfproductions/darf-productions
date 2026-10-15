@@ -16,7 +16,7 @@ Hay tres niveles de acceso. Se suman: una persona puede tener varios.
 |---|---|---|
 | **Admin (dueño)** | Lo puede todo. Solo para el dueño de DARF. | Panel → Personas → Directorio → "Admin (dueño)" |
 | **Casa DARF** | Gente que trabaja para DARF como empresa (no para una sola obra). Cada puesto ve solo lo suyo. | Panel → Ajustes → **Casa DARF** |
-| **Equipo de una obra** | Gente de una producción (Dirección general, Producción, Dirección, Crew, Staff de la obra, maestros, integrantes del elenco). | Panel → la obra → **Permisos** |
+| **Equipo de una obra** | Gente de una producción (Dirección de la obra, Producción, Dirección, Crew, Staff de la obra, maestros, integrantes del elenco). | Panel → la obra → **Permisos** |
 
 Todas las demás cuentas son **"Cuenta"** (público, fans y socios del Club Fan). "Staff" ya no se usa como rol
 general: lo que hacía ahora lo cubren los puestos de Casa DARF y los roles de cada obra.
@@ -40,7 +40,8 @@ general: lo que hacía ahora lo cubren los puestos de Casa DARF y los roles de c
 ### Equipo de una obra (Panel → la obra → Permisos)
 - **Agregar o invitar**: escribe su nombre (o correo), elígela de la lista y marca sus roles. Si ya tiene cuenta, entra al momento; si no,
   le llega una invitación (y puedes mandarla por WhatsApp). Al registrarse con ese correo entra solo.
-- **Dirección general** de la obra: lo puede todo dentro de esa obra (gafete plateado). Revisa y publica
+- **Dirección general** (Diego, 0111): entra sola a todas las obras y eventos, lo puede todo y solo recibe avisos importantes. No se da ni se quita en Permisos.
+- **Dirección de la obra**: lo puede todo dentro de esa obra (gafete plateado). Revisa y publica
   las calificaciones de la escuela.
 
 ### Elenco (Panel → la obra → Elenco)
@@ -55,6 +56,12 @@ general: lo que hacía ahora lo cubren los puestos de Casa DARF y los roles de c
 - Si agregas a alguien en **Reparto o Ensamble** y su ficha ya tiene cuenta, queda solo como **integrante**
   (portal del elenco, ensayos, expediente). Si aún no tiene cuenta, entra en cuanto se ligue su cuenta.
   Staff, crew y los equipos solo quedan en créditos; sus permisos se dan en Permisos.
+- **Programar y avisar** (en cada persona sin publicar, botón **Publicar**):
+  - **Publicar ahora** o elegir fecha y hora para que **salga sola** (se revisa cada 5 minutos; hora de México).
+  - Casilla **"Avisar al Club Fan"**: al salir, los socios reciben una notificación ("Conoce a quien será Brady
+    en Showman"). Con **Publicar todo el elenco** llega un solo aviso para todos.
+- **Tarjeta para redes**: en cada persona de Reparto o Ensamble, **Tarjeta: Post · Historia** descarga la imagen
+  (1080×1350 y 1080×1920) con su foto, el logo y los colores de la obra.
 - **Solo crédito**: para gente de producción que sale de personaje. En su fila de Reparto o Ensamble toca
   **"Solo crédito"**: sale en la página con su personaje, pero no es integrante (no la citan a ensayos ni le
   cuentan faltas). "Hacer integrante" lo regresa.
@@ -83,6 +90,17 @@ general: lo que hacía ahora lo cubren los puestos de Casa DARF y los roles de c
   equipo de audiciones y de eventos, vendedores, ligar cuenta) puedes escribir el nombre en vez del correo.
   La lista muestra el correo a medias (por ejemplo "cam***er@gmail.com") para distinguir cuentas.
 - Filtros: Todos · Con obras en DARF · **Casa DARF y admin** · Sin cuenta.
+
+## Puerta (Panel → la obra → Boletos → Puerta)
+- El mismo escáner lee **boletos** y **pases del Club Fan** (Mi cuenta o Wallet). Pueden ponerse dos personas:
+  una revisa boletos y otra escanea pases.
+- El pase suma la **visita** de esa persona en esa función (también a quien compró). Cada quien cuenta una vez por
+  función y nunca hay más visitas que boletos que ya entraron ("Primero escanea su boleto").
+- Las visitas ganadas antes de este cambio con boletos escaneados se conservan.
+
+## Vendedores
+- **Ranking** por boletos vendidos: por obra (Reportes y Vendedores de la obra) y de todas las obras (Panel →
+  Reportes), con los 3 primeros destacados.
 
 ## Ensayos (Panel → la obra → Ensayos)
 - Se cita al elenco y también al equipo de producción. Los **encargados** abren el ensayo y pasan lista

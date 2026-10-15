@@ -16,6 +16,18 @@ export async function checkIn(token: string, funcion: string): Promise<CheckIn> 
   return data as CheckIn;
 }
 
+export type Visita = { result: "visita_ok" | "visita_ya" | "visita_sin_boleto" | "visita_no_encontrado"; nombre?: string; fotoUrl?: string | null; visitas?: number; socio?: boolean; hora?: string };
+
+/** 0110: pase del Club Fan en la puerta: suma la visita a esa cuenta en esta función. */
+export async function visitaPuerta(code: string, funcion: string): Promise<Visita | { result: "error"; message: string }> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("puerta_visita", { p_performance: funcion, p_code: code.trim() });
+  if (error) return { result: "error", message: error.message === "No autorizado" ? "No puedes validar en esta obra." : "No se pudo registrar la visita. Revisa la conexión e intenta de nuevo." };
+  const r = data as { resultado: "ok" | "ya" | "sin_boleto" | "no_encontrado"; nombre?: string; foto_path?: string | null; visitas?: number; socio?: boolean; hora?: string };
+  const fotoUrl = r.foto_path ? (await supabase.storage.from("avatares").createSignedUrl(r.foto_path, 600)).data?.signedUrl ?? null : null;
+  return { result: `visita_${r.resultado}` as Visita["result"], nombre: r.nombre, fotoUrl, visitas: r.visitas, socio: r.socio, hora: r.hora };
+}
+
 export type Conteo = { vendidos: number; entraron: number };
 export type BoletoPuerta = { ticket_id: string; qr_token: string; order_code: string; buyer_nombre: string; buyer_telefono: string; lugar: string; checked_in_at: string | null };
 

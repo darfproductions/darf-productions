@@ -10,7 +10,8 @@ import { nivelDe, PROGRAMA, type NivelLealtad, type Programa } from "@/lib/lealt
 // PNG porque el número cambia con cada obra; la misma imagen sirve para la web, el PDF y Wallet.
 
 let fuentes: Promise<{ name: string; data: Buffer; weight: 800 | 900 }[]> | null = null;
-function cargarFuentes() {
+/** Montserrat (Black y ExtraBold) para ImageResponse; también la usa la tarjeta del elenco (0110). */
+export function cargarFuentes() {
   fuentes ??= Promise.all([
     readFile(path.join(process.cwd(), "assets/fuentes/Montserrat-Black.ttf")).then((data) => ({ name: "Montserrat", data, weight: 900 as const })),
     readFile(path.join(process.cwd(), "assets/fuentes/Montserrat-ExtraBold.ttf")).then((data) => ({ name: "Montserrat", data, weight: 800 as const })),
