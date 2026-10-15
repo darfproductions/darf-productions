@@ -87,9 +87,10 @@ export function sellosApple(s: Sello[]): Sello[] {
   return [...s].sort((a, b) => orden[a.id] - orden[b.id]);
 }
 
-/** Franja de Google Wallet del gafete: el logo DARF primero y después sus sellos (Diego 2026-10-15). */
+/** Franja de Google Wallet del gafete (Diego 2026-10-15): con un sello, el logo DARF primero y el sello
+ *  después; con dos, el logo al centro y un sello a cada lado (Club · DARF · Casa). */
 export function filaGoogle<T extends string>(ids: T[]): (T | "darf")[] {
-  return ["darf", ...ids];
+  return ids.length === 2 ? [ids[0], "darf", ids[1]] : ["darf", ...ids];
 }
 
 /** Año en curso en CDMX (vigencia del gafete). */
