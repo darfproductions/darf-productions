@@ -28,7 +28,7 @@ export async function GET(_req: Request, ctx: RouteContext<"/panel/producciones/
       ["Integrante", "Correo", "Meses que debe", "Meses vencidos", "Mensualidades", "Inscripción", "Total", "Nota"],
       ...filas.filter((f) => f.adeudo.total > 0).sort((a, b) => b.adeudo.total - a.adeudo.total).map((f) => [
         f.nombre, f.email, f.adeudo.meses.map((m) => conceptoPago({ periodo: m.periodo }).replace("Mensualidad de ", "")).join("; "),
-        f.adeudo.meses.filter((m) => m.vencido).length, f.adeudo.total - f.adeudo.inscripcion, f.adeudo.inscripcion, f.adeudo.total, f.baja ? "Baja" : ""]),
+        f.adeudo.meses.filter((m) => m.vencido).length, f.adeudo.total - f.adeudo.inscripcion, f.adeudo.inscripcion, f.adeudo.total, [f.baja ? "Baja" : "", f.sinCuenta ? "Sin cuenta" : ""].filter(Boolean).join(" · ")]),
     ]);
   } else if (tipo === "elenco") {
     const [{ data: roster }, { data: fichas }] = await Promise.all([

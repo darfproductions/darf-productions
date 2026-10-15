@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { adeudo, cuentaAdvertencias, estadoInscripcion, mesesDePersona, recaudacion, docAplica, docsPendientes, estadoCuotas, faltantes, meses, semaforo } from "./member-rules";
+import { adeudo, cuentaAdvertencias, estadoInscripcion, mesesDePersona, recaudacion, docAplica, docsPendientes, estadoCuotas, faltantes, limiteDelMes, meses, semaforo, textoVencimiento, venceCorto } from "./member-rules";
 
 const hoy = new Date("2026-11-15T12:00:00Z");
 const completo = {
@@ -55,6 +55,18 @@ describe("mensualidades", () => {
     ], hoy);
     expect(ms.map((m) => m.estado)).toEqual(["pagado", "parcial", "vencido", "futuro", "futuro"]);
     expect(adeudo(ms, hoy)).toBe(800);
+  });
+  it("vence el segundo sábado (0111)", () => {
+    const sab = { ...fee, vence_sabado: true };
+    expect(limiteDelMes(sab, "2026-10-01")).toBe("2026-10-10");
+    expect(limiteDelMes(sab, "2026-11-01")).toBe("2026-11-14");
+    expect(limiteDelMes(sab, "2026-08-01")).toBe("2026-08-08");
+    expect(limiteDelMes(fee, "2026-10-01")).toBe("2026-10-10");
+    const t = { beca: false, cuota_especial: null };
+    expect(estadoCuotas(sab, t, [], new Date("2026-11-13T18:00:00Z")).find((m) => m.periodo === "2026-11-01")?.estado).toBe("pendiente");
+    expect(estadoCuotas(sab, t, [], new Date("2026-11-15T18:00:00Z")).find((m) => m.periodo === "2026-11-01")?.estado).toBe("vencido");
+    expect(textoVencimiento(sab)).toContain("primer sábado");
+    expect(venceCorto(fee)).toBe("Día 10");
   });
   it("antes del día límite está pendiente, no vencido", () => {
     const ms = estadoCuotas(fee, { beca: false, cuota_especial: null }, [], new Date("2026-11-05T12:00:00Z"));

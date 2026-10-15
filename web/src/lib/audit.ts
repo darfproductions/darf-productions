@@ -179,6 +179,9 @@ export function describeAudit(r: AuditRow, n: AuditNames): string {
       if (r.accion === "despublicar") return `Quitó de la página a ${quien}${como} en ${obra}`;
       return `Cambió el elenco de ${obra}`;
     }
+    case "cuentas":
+      // 0111: el admin borró una cuenta vacía (no se guardan sus datos).
+      return "Borró una cuenta vacía";
     case "discount_codes": {
       const cod = String(row.codigo ?? "");
       if (r.accion === "insert") return `Creó el código de descuento ${cod} (${String(row.percent)}%) en ${n.production(r.production_id)}`;
@@ -201,7 +204,7 @@ export function describeAudit(r: AuditRow, n: AuditNames): string {
 export type TipoBitacora = { id: string; label: string; tablas: string[]; accion?: string };
 
 export const TIPOS_BITACORA: TipoBitacora[] = [
-  { id: "permisos", label: "Permisos y roles", tablas: ["production_members", "panel_roles", "role_permissions", "profiles"] },
+  { id: "permisos", label: "Permisos y roles", tablas: ["production_members", "panel_roles", "role_permissions", "profiles", "cuentas"] },
   { id: "invitaciones", label: "Invitaciones al equipo", tablas: ["production_invites"] },
   { id: "obras", label: "Obras y página", tablas: ["productions", "anuncios", "program_pages", "season_closures", "production_characters"] },
   { id: "funciones", label: "Funciones, precios y mapa", tablas: ["performances", "precios", "seats"] },

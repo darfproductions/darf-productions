@@ -1,6 +1,5 @@
 import { createHash } from "node:crypto";
 import { anioMx, type PaseVista } from "@/lib/gafete-rules";
-import { nivelDe } from "@/lib/lealtad-rules";
 import { isLight } from "@/lib/themes";
 import type { EstiloBoleto } from "@/lib/ticket-design";
 
@@ -158,8 +157,6 @@ export function serialCredencial(userId: string): string {
 
 export function paseCredencialWallet(c: DatosCredencial, hoy: Date = new Date()): PaseWallet {
   const fan = c.pase.tema === "fan";
-  // Medalla de fan (0104): solo socios.
-  const medallaFan = fan || c.pase.sello ? nivelDe(c.pase.fanVisitas, "fan") : null;
   // Oro del club; Casa DARF toma el azul de su holográfico (Diego 2026-10-15); las demás, el color de su franja.
   const banda = fan ? "#d7bb5f" : c.pase.casa ? "#9fe2ff" : colorBase(c.pase.banda.fondo) ?? "#a48bff";
   const fondo = "#0b0910";
@@ -179,8 +176,6 @@ export function paseCredencialWallet(c: DatosCredencial, hoy: Date = new Date())
     auxiliares: [
       { key: "vigencia", label: "Vigencia", value: c.pase.pie.replace(/^DARF Productions · /, "") || anioMx(hoy) },
       ...(c.pase.casa ? [{ key: "casa", label: "Casa DARF", value: c.pase.casa.replace(/^Casa DARF · /, "") }] : []),
-      ...(nivelDe(c.pase.lealtad) ? [{ key: "lealtad", label: "DARF Loyalty", value: `${nivelDe(c.pase.lealtad)!.nombre} · ${c.pase.lealtad}` }] : []),
-      ...(medallaFan ? [{ key: "fanzone", label: "DARF Fan Zone", value: `${medallaFan.nombre} · ${c.pase.fanVisitas}` }] : []),
     ],
     reverso: [
       { key: "uso", label: "Cómo se usa", value: "Muéstrala en la entrada de ensayos y eventos. Si regeneras tu código en Mi cuenta, aquí se actualiza sola." },

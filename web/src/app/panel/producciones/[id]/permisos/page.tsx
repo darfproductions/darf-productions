@@ -35,7 +35,8 @@ export default async function ProductionPermissions({ params }: PageProps<"/pane
   const nombreRol = new Map(roles.map((r) => [r.id, r.nombre]));
   const desc = new Map(permissions.map((p) => [p.id, p.descripcion]));
   const personas = groupMembers(miembros);
-  const opciones = roles.filter((r) => r.id !== "integrante");
+  // Dirección general de DARF (0111) se asigna sola en todas las obras: se ve, pero no se da ni se quita aquí.
+  const opciones = roles.filter((r) => r.id !== "integrante" && r.id !== "direccion_general_darf");
 
   return (
     <div className="flex flex-col gap-4">
@@ -96,7 +97,9 @@ export default async function ProductionPermissions({ params }: PageProps<"/pane
                   <p className="truncate text-sm text-texto-3">{m.email}</p>
                 </div>
                 <ul className="flex flex-wrap gap-2">
-                  {m.roles.map((r) => (
+                  {m.roles.map((r) => r.role_id === "direccion_general_darf" ? (
+                    <li key={r.rowId} title="Se asigna sola en todas las obras" className="rounded-full bg-telon-2 px-3 py-1 text-sm font-semibold">{r.role_nombre}</li>
+                  ) : (
                     <li key={r.rowId}>
                       <MiniAction action={removeMember} hidden={{ pid: id, id: r.rowId }} confirm={`¿Quitar el rol ${r.role_nombre} a ${m.nombre || m.email}?`}
                         className="flex flex-wrap items-center gap-1 rounded-full bg-telon-2 py-1 pl-3 pr-1 text-sm font-semibold"

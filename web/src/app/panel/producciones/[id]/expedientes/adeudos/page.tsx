@@ -67,7 +67,8 @@ export default async function Adeudos({ params, searchParams }: PageProps<"/pane
                 {lista.map((f) => (
                   <tr key={f.user_id} className={f.baja ? "opacity-60" : ""}>
                     <td className="px-4 py-3">
-                      <Link href={`/panel/producciones/${id}/expedientes/${f.user_id}`} className="font-bold hover:underline">{f.nombre}</Link>
+                      <Link href={f.href} className="font-bold hover:underline">{f.nombre}</Link>
+                      {f.sinCuenta && <span className="ml-2 rounded-full bg-[#3a3346] px-2 py-0.5 text-[10px] font-bold text-texto-2">Sin cuenta</span>}
                       {f.baja && <span className="ml-2 rounded-full bg-[#5a1a22] px-2 py-0.5 text-[10px] font-bold text-[#fecdd3]">Baja</span>}
                       {f.beca && <span className="ml-2 rounded-full bg-[#1e3a8a] px-2 py-0.5 text-[10px] font-bold text-[#dbeafe]">Beca</span>}
                     </td>
@@ -90,7 +91,7 @@ export default async function Adeudos({ params, searchParams }: PageProps<"/pane
             </table>
             {lista.length === 0 && <p className="px-5 py-4 text-texto-2">{ver === "todos" ? "Aún no hay integrantes." : "Nadie debe. Todo al corriente."}</p>}
           </Card>
-          <p className="text-xs text-texto-3">Cuenta los meses ya iniciados y la inscripción. Los pagos anulados no cuentan. Rojo = pasó el día límite. Cada integrante recibe un recordatorio 3 días antes del día límite y otro al día siguiente si sigue debiendo.</p>
+          <p className="text-xs text-texto-3">Cuenta los meses ya iniciados y la inscripción. Los pagos anulados no cuentan. Rojo = pasó el día límite. Cada integrante recibe un recordatorio 3 días antes del día límite y otro al día siguiente si sigue debiendo. “Sin cuenta”: sus pagos están en su ficha y pasan solos a su cuenta cuando se registre.</p>
         </>
       )}
     </div>

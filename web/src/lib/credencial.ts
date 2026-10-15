@@ -28,3 +28,12 @@ export async function esSocio(): Promise<boolean> {
   const { data } = await supabase.rpc("is_fan_member");
   return data === true;
 }
+
+/** ¿Es la cuenta de la empresa (0111)? No tiene Club Fan, credencial ni Wallet. */
+export async function esCuentaEmpresa(): Promise<boolean> {
+  const supabase = await createClient();
+  const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) return false;
+  const { data } = await supabase.rpc("es_cuenta_empresa", { uid: auth.user.id });
+  return data === true;
+}

@@ -16,7 +16,7 @@ Hay tres niveles de acceso. Se suman: una persona puede tener varios.
 |---|---|---|
 | **Admin (dueño)** | Lo puede todo. Solo para el dueño de DARF. | Panel → Personas → Directorio → "Admin (dueño)" |
 | **Casa DARF** | Gente que trabaja para DARF como empresa (no para una sola obra). Cada puesto ve solo lo suyo. | Panel → Ajustes → **Casa DARF** |
-| **Equipo de una obra** | Gente de una producción (Dirección general, Producción, Dirección, Crew, Staff de la obra, maestros, integrantes del elenco). | Panel → la obra → **Permisos** |
+| **Equipo de una obra** | Gente de una producción (Dirección de la obra, Producción, Dirección, Crew, Staff de la obra, maestros, integrantes del elenco). | Panel → la obra → **Permisos** |
 
 Todas las demás cuentas son **"Cuenta"** (público, fans y socios del Club Fan). "Staff" ya no se usa como rol
 general: lo que hacía ahora lo cubren los puestos de Casa DARF y los roles de cada obra.
@@ -40,7 +40,8 @@ general: lo que hacía ahora lo cubren los puestos de Casa DARF y los roles de c
 ### Equipo de una obra (Panel → la obra → Permisos)
 - **Agregar o invitar**: escribe su nombre (o correo), elígela de la lista y marca sus roles. Si ya tiene cuenta, entra al momento; si no,
   le llega una invitación (y puedes mandarla por WhatsApp). Al registrarse con ese correo entra solo.
-- **Dirección general** de la obra: lo puede todo dentro de esa obra (gafete plateado). Revisa y publica
+- **Dirección general** (Diego, 0111): entra sola a todas las obras y eventos, lo puede todo y solo recibe avisos importantes. No se da ni se quita en Permisos.
+- **Dirección de la obra**: lo puede todo dentro de esa obra (gafete plateado). Revisa y publica
   las calificaciones de la escuela.
 
 ### Elenco (Panel → la obra → Elenco)

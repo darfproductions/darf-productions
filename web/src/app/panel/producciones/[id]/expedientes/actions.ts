@@ -64,7 +64,7 @@ export async function saveFee(_p: ExpState, f: FormData): Promise<ExpState> {
   const supabase = await createClient();
   const { error } = await supabase.from("production_fees").upsert({
     production_id: pid, monto: Number(str(f, "monto") || 0), desde: `${desde}-01`, hasta: `${hasta}-01`, dia_limite: Number(str(f, "dia_limite") || 10),
-    inscripcion: Number(str(f, "inscripcion") || 0), cobrar: f.get("cobrar") === "on",
+    inscripcion: Number(str(f, "inscripcion") || 0), cobrar: f.get("cobrar") === "on", vence_sabado: f.get("vence_sabado") === "on",
   });
   if (error) return { ok: false, message: /check/.test(error.message) ? "Revisa los meses: el último debe ser después del primero." : error.message };
   return ok(pid, null, f.get("cobrar") === "on" ? "Pagos guardados." : "Listo: este taller no cobra nada.");

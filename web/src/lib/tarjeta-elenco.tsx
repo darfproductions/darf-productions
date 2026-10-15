@@ -24,7 +24,7 @@ export type DatosTarjeta = {
 };
 
 /** Imagen como PNG en data URI (satori no lee WebP ni muchos formatos); null si no se puede. */
-async function comoPng(url: string | null, ancho: number): Promise<string | null> {
+export async function comoPng(url: string | null, ancho: number): Promise<string | null> {
   if (!url) return null;
   try {
     const buf = url.startsWith("/")

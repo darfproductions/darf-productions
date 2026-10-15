@@ -94,7 +94,7 @@ export default async function Evaluaciones({ params }: PageProps<"/panel/producc
         <h2 className="titular text-xl">Evaluaciones apagadas en esta obra</h2>
         <p className="text-sm text-texto-2">Enciéndelas si esta obra es un taller con calificaciones (rúbrica, maestros, periodos y boletas). Lo que ya se haya capturado se conserva.</p>
         {encender ? <ActionForm inline action={toggleRubric} hidden={{ pid: id, on: "si" }} submit="Encender evaluaciones" />
-          : <p className="text-sm text-texto-3">Pide a la Dirección general de la obra o al Director que las encienda.</p>}
+          : <p className="text-sm text-texto-3">Pide a la Dirección de la obra o al Director que las encienda.</p>}
       </Card>
     );
   }
@@ -146,8 +146,8 @@ export default async function Evaluaciones({ params }: PageProps<"/panel/producc
       <Card className="flex flex-col gap-3">
         <div>
           <h2 className="titular text-xl">Periodos</h2>
-          <p className="text-sm text-texto-2">Ej. Bimestre 1, Bimestre 2, Final. Cada maestro califica y <b>entrega</b> sus calificaciones; la coordinación y la Dirección general las revisan, y la Dirección general aprueba y publica: el alumno lo verá en su portal con su boleta en PDF.</p>
-          {!publica && <p className="text-xs text-texto-3">Las boletas las aprueba y publica la Dirección general de la obra.</p>}
+          <p className="text-sm text-texto-2">Ej. Bimestre 1, Bimestre 2, Final. Cada maestro califica y <b>entrega</b> sus calificaciones; la coordinación y la Dirección de la obra las revisan, y la Dirección de la obra aprueba y publica: el alumno lo verá en su portal con su boleta en PDF.</p>
+          {!publica && <p className="text-xs text-texto-3">Las boletas las aprueba y publica la Dirección de la obra.</p>}
         </div>
         <ul className="flex flex-col divide-y divide-white/10">
           {periodos.map((p) => (

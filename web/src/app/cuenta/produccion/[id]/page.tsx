@@ -12,7 +12,7 @@ import { requireSession } from "@/lib/auth";
 import { ConfirmVigente } from "@/components/ConfirmVigente";
 import {
   MES_LABEL, NIVEL_INCIDENCIA, SEMAFORO, TIPO_INCIDENCIA, adeudo, cuentaAdvertencias, docAplica, docsPendientes, edad, estadoCuotas,
-  INSCRIPCION_LABEL, estadoInscripcion, mesNombre, pendientesTexto, pesos, semaforo,
+  INSCRIPCION_LABEL, estadoInscripcion, mesNombre, pendientesTexto, pesos, semaforo, textoVencimiento,
 } from "@/lib/member-rules";
 import { getMemberData, signDocs } from "@/lib/members";
 import { METODOS, conceptoPago } from "@/lib/pago-rules";
@@ -365,7 +365,7 @@ export default async function MyProduction({ params, searchParams }: PageProps<"
                 <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${INSCRIPCION_LABEL[insc.estado].cls}`}>{INSCRIPCION_LABEL[insc.estado].label}</span></p>
             )}
             {d.terms.beca ? <p className="text-sm">Tienes beca: no pagas mensualidad.</p> : (
-              <p className="text-sm">Mensualidad: <b>{pesos(Number(d.terms.cuota_especial ?? d.fee.monto))}</b> · pagar antes del día {d.fee.dia_limite} de cada mes</p>
+              <p className="text-sm">Mensualidad: <b>{pesos(Number(d.terms.cuota_especial ?? d.fee.monto))}</b> · {textoVencimiento(d.fee)}</p>
             )}
             <p className="text-sm">Adeudo a hoy: <b>{pesos(adeudo(ms) + Math.max(0, (insc?.debe ?? 0) - (insc?.pagado ?? 0)))}</b></p>
             <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">

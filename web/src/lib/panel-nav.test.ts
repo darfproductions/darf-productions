@@ -39,7 +39,7 @@ describe("pestañas de la obra", () => {
     const tabs = ids(director, "hsm");
     expect(tabs[0]).toBe("resumen");
     expect(tabs.at(-1)).toBe("permisos");
-    expect(tabs).toHaveLength(18);
+    expect(tabs).toHaveLength(19);
   });
 });
 
@@ -142,7 +142,7 @@ describe("registro permanente (0064)", () => {
 
 describe("producción concluida (0066)", () => {
   it("solo quedan las pestañas de archivo", () => {
-    expect(productionTabs(director, "hsm", true).map((t) => t.id)).toEqual(["resumen", "pagina", "elenco", "expedientes", "solicitudes", "fanzone", "equipo", "reportes", "cierre", "permisos"].sort((x, y) => productionTabs(director, "hsm").findIndex((t) => t.id === x) - productionTabs(director, "hsm").findIndex((t) => t.id === y)));
+    expect(productionTabs(director, "hsm", true).map((t) => t.id)).toEqual(["resumen", "pagina", "elenco", "expedientes", "solicitudes", "fanzone", "difusion", "equipo", "reportes", "cierre", "permisos"].sort((x, y) => productionTabs(director, "hsm").findIndex((t) => t.id === x) - productionTabs(director, "hsm").findIndex((t) => t.id === y)));
     expect(productionTabs(taquillaMM, "mm", true).map((t) => t.id)).toEqual(["resumen", "reportes", "cierre"]);
   });
 });
@@ -177,7 +177,7 @@ describe("pestañas agrupadas de la obra (0085)", () => {
     const g = productionGroups(directorG, "showman");
     expect(g.map((x) => x.label)).toEqual(["Resumen", "Personas", "Ensayos y equipo", "Boletos", "Público", "Más"]);
     expect(g.find((x) => x.id === "boletos")?.tabs.map((t) => t.label)).toEqual(["Ventas y órdenes", "Taquilla", "Funciones y precios", "Mapa de asientos", "Descuentos", "Corte de caja", "Vendedores", "Puerta"]);
-    expect(g.find((x) => x.id === "publico")?.tabs.map((t) => t.label)).toEqual(["Página pública", "Programa digital", "Fan Zone y eventos"]);
+    expect(g.find((x) => x.id === "publico")?.tabs.map((t) => t.label)).toEqual(["Página pública", "Programa digital", "Fan Zone y eventos", "Difusión"]);
   });
   it("con pocos permisos, pocos grupos; la liga del grupo es su primera pestaña", () => {
     expect(productionGroups(puertaG, "showman").map((x) => [x.id, x.path])).toEqual([["resumen", ""], ["boletos", "puerta"]]);

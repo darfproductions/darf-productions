@@ -139,12 +139,13 @@ export const PRODUCTION_TABS: Tab[] = [
   { id: "programa", label: "Programa digital", path: "programa", perms: ["programa.editar"], etapa: null },
   { id: "reportes", label: "Reportes", path: "reportes", perms: ["reportes.ver"], etapa: null },
   { id: "fanzone", label: "Fan Zone", path: "fanzone", perms: ["fanzone.editar"], etapa: null },
+  { id: "difusion", label: "Difusión", path: "difusion", perms: ["obra.editar", "obra.publicar"], etapa: null },
   { id: "cierre", label: "Cierre de temporada", path: "cierre", perms: ["obra.publicar", "reportes.ver"], etapa: null },
   { id: "permisos", label: "Permisos", path: "permisos", perms: ["permisos.gestionar"], etapa: null },
 ];
 
 /** Pestañas que siguen visibles cuando la producción está concluida (decisión de Diego). */
-export const CONCLUIDA_TABS = ["resumen", "pagina", "elenco", "expedientes", "solicitudes", "fanzone", "cierre", "permisos", "reportes", "equipo"];
+export const CONCLUIDA_TABS = ["resumen", "pagina", "elenco", "expedientes", "solicitudes", "fanzone", "difusion", "cierre", "permisos", "reportes", "equipo"];
 
 /** Pestañas que veo en una obra: Resumen si tengo cualquier permiso ahí; el resto según su permiso.
  *  Si la obra está concluida, solo las de CONCLUIDA_TABS. */
@@ -166,7 +167,7 @@ const GRUPOS: { id: GrupoObra; label: string; tabs: string[] }[] = [
   { id: "personas", label: "Personas", tabs: ["elenco", "audiciones", "expedientes", "solicitudes", "evaluaciones"] },
   { id: "ensayos", label: "Ensayos y equipo", tabs: ["ensayos", "equipo", "materiales", "comunicados"] },
   { id: "boletos", label: "Boletos", tabs: ["boletos", "puerta"] },
-  { id: "publico", label: "Público", tabs: ["pagina", "programa", "fanzone"] },
+  { id: "publico", label: "Público", tabs: ["pagina", "programa", "fanzone", "difusion"] },
   { id: "mas", label: "Más", tabs: ["reportes", "cierre", "permisos"] },
 ];
 const ETIQUETA: Record<string, string> = { fanzone: "Fan Zone y eventos", elenco: "Elenco y equipos" };

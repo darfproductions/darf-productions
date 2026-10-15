@@ -4,12 +4,14 @@
 export type FichaPersona = { id: string; profile_id: string | null; nombre: string; email: string | null; obras: string[]; creditos: number };
 export type CuentaUsuario = { id: string; email: string; nombre: string | null; rol: "fan" | "staff" | "admin" };
 
-export type FiltroDirectorio = "todos" | "elenco" | "equipo" | "sin-cuenta";
+export type FiltroDirectorio = "todos" | "elenco" | "equipo" | "sin-cuenta" | "vacias";
 export const FILTROS: { id: FiltroDirectorio; label: string }[] = [
   { id: "todos", label: "Todos" },
   { id: "elenco", label: "Con obras en DARF" },
   { id: "equipo", label: "Casa DARF y admin" },
   { id: "sin-cuenta", label: "Sin cuenta" },
+  // 0111: cuentas sin ficha, obras, compras ni registros (solo el admin las ve y las puede borrar).
+  { id: "vacias", label: "Cuentas vacías" },
 ];
 
 export type FilaDirectorio = {
@@ -24,6 +26,8 @@ export type FilaDirectorio = {
   obras: string[];
   creditos: number;
   fichaHref: string;
+  /** Cuenta vacía que se puede borrar (0111). */
+  vacia: boolean;
 };
 
 const norm = (t: string) => t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
@@ -33,8 +37,8 @@ export function filtroValido(v: unknown): FiltroDirectorio {
 }
 
 /** Una fila por persona: la ficha y su cuenta juntas; las cuentas sin ficha también aparecen.
- *  `casa`: puestos de Casa DARF por cuenta (solo los ve el admin). */
-export function unirDirectorio(fichas: FichaPersona[], cuentas: CuentaUsuario[], filtro: FiltroDirectorio = "todos", casa: Record<string, string[]> = {}): FilaDirectorio[] {
+ *  `casa`: puestos de Casa DARF por cuenta (solo los ve el admin). `vacias`: cuentas que se pueden borrar. */
+export function unirDirectorio(fichas: FichaPersona[], cuentas: CuentaUsuario[], filtro: FiltroDirectorio = "todos", casa: Record<string, string[]> = {}, vacias: Set<string> = new Set()): FilaDirectorio[] {
   const porCuenta = new Map(cuentas.map((c) => [c.id, c]));
   const usadas = new Set<string>();
   const filas: FilaDirectorio[] = fichas.map((f) => {
@@ -51,6 +55,7 @@ export function unirDirectorio(fichas: FichaPersona[], cuentas: CuentaUsuario[],
       obras: f.obras,
       creditos: f.creditos,
       fichaHref: f.profile_id ? `/panel/talento/${f.profile_id}` : `/panel/talento/p/${f.id}`,
+      vacia: false,
     };
   });
   for (const c of cuentas) {
@@ -66,6 +71,7 @@ export function unirDirectorio(fichas: FichaPersona[], cuentas: CuentaUsuario[],
       obras: [],
       creditos: 0,
       fichaHref: `/panel/talento/${c.id}`,
+      vacia: vacias.has(c.id),
     });
   }
   return filas
@@ -73,6 +79,7 @@ export function unirDirectorio(fichas: FichaPersona[], cuentas: CuentaUsuario[],
       if (filtro === "elenco") return f.creditos > 0 || f.obras.length > 0;
       if (filtro === "equipo") return f.rol === "admin" || f.casa.length > 0;
       if (filtro === "sin-cuenta") return !f.userId;
+      if (filtro === "vacias") return f.vacia;
       return true;
     })
     .sort((a, b) => norm(a.nombre).localeCompare(norm(b.nombre)));

@@ -108,7 +108,26 @@ export const SEMAFORO: Record<Semaforo, { label: string; cls: string }> = {
 
 // ──────── Mensualidades ────────
 
-export type Fee = { monto: number; desde: string; hasta: string; dia_limite: number; cobrar?: boolean; inscripcion?: number };
+export type Fee = { monto: number; desde: string; hasta: string; dia_limite: number; cobrar?: boolean; inscripcion?: number; vence_sabado?: boolean };
+
+/** Día límite de un mes ("2026-10-01" → "2026-10-10"): un día fijo o, con vence_sabado (0111), el segundo
+ *  sábado (se paga el primer sábado y hay una semana de tolerancia). */
+export function limiteDelMes(fee: Pick<Fee, "dia_limite" | "vence_sabado">, periodo: string): string {
+  const mes = periodo.slice(0, 8);
+  if (!fee.vence_sabado) return `${mes}${String(fee.dia_limite).padStart(2, "0")}`;
+  const dow = new Date(`${mes}01T12:00:00Z`).getUTCDay();
+  return `${mes}${String(1 + ((6 - dow + 7) % 7) + 7).padStart(2, "0")}`;
+}
+
+/** Cuándo se paga, en palabras (portal del integrante). */
+export function textoVencimiento(fee: Pick<Fee, "dia_limite" | "vence_sabado">): string {
+  return fee.vence_sabado ? "se paga el primer sábado de cada mes (tolerancia hasta el segundo sábado)" : `pagar antes del día ${fee.dia_limite} de cada mes`;
+}
+
+/** Vencimiento corto (estado de cuenta en PDF). */
+export function venceCorto(fee: Pick<Fee, "dia_limite" | "vence_sabado">): string {
+  return fee.vence_sabado ? "Segundo sábado" : `Día ${fee.dia_limite}`;
+}
 export type Payment = { periodo: string; monto: number; concepto?: "mensualidad" | "inscripcion"; anulado_at?: string | null };
 
 /** Un pago anulado (0079) queda en el historial pero ya no cuenta. */
@@ -155,7 +174,7 @@ export function estadoCuotas(fee: Fee, persona: FeeTerms, pagos: Payment[], hoy:
   if (fee.cobrar === false) return [];
   return mesesDePersona(fee.desde, fee.hasta, e).map((periodo) => {
     const pagado = soloMensualidad(pagos).filter((p) => p.periodo === periodo).reduce((s, p) => s + Number(p.monto), 0);
-    const limite = `${periodo.slice(0, 8)}${String(fee.dia_limite).padStart(2, "0")}`;
+    const limite = limiteDelMes(fee, periodo);
     let estado: MesEstado;
     if (persona.beca || debe === 0) estado = "beca";
     else if (pagado >= debe) estado = "pagado";

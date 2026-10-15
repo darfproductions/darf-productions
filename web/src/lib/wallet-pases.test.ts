@@ -75,6 +75,9 @@ describe("paseCredencialWallet", () => {
     expect(p.colores.etiqueta).toBe("#d7bb5f");
     expect(p.qr).toBe(liga);
     expect(p.qrTexto).toBe("FAN-AB12");
+    // 0111: el reverso ya no lleva el nivel de DARF Loyalty ni de Fan Zone.
+    expect(p.auxiliares.map((x) => x.key)).not.toContain("lealtad");
+    expect(p.auxiliares.map((x) => x.key)).not.toContain("fanzone");
   });
   it("Casa DARF: acento azul del holográfico", () => {
     const pase = paseGafete({ nombre: "Diego", fotoUrl: null, franja: "casa", papel: "Dirección General", casaDesde: 2019 });
