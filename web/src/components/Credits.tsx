@@ -90,14 +90,14 @@ export function Ensemble({ items }: { items: { persona: string; foto?: string; p
   );
 }
 
-export function TeamGroups({ groups }: { groups: { titulo: string; items: Credit[] }[] }) {
-  const visible = groups.filter((g) => g.items.length > 0);
+export function TeamGroups({ groups }: { groups: { titulo: string; items: Credit[]; /** Staff (0106): solo nombres. */ staff?: Credit[] }[] }) {
+  const visible = groups.filter((g) => g.items.length > 0 || (g.staff?.length ?? 0) > 0);
   return (
     <div className="flex flex-col divide-y divide-current/12 border-y border-current/12">
       {visible.map((g, gi) => (
         <details key={g.titulo} open={gi === 0} className="group py-3">
           <summary className="flex min-h-[44px] cursor-pointer list-none items-center justify-between py-3">
-            <span className="text-lg font-bold md:text-xl">{g.titulo} <span className="text-[15px] font-normal opacity-60">· {g.items.length}</span></span>
+            <span className="text-lg font-bold md:text-xl">{g.titulo} <span className="text-[15px] font-normal opacity-60">· {g.items.length + (g.staff?.length ?? 0)}</span></span>
             <span aria-hidden="true" className="text-2xl text-obra-acento transition-transform group-open:rotate-45">+</span>
           </summary>
           <ul className="grid gap-x-10 pb-4 sm:grid-cols-2">
@@ -111,6 +111,16 @@ export function TeamGroups({ groups }: { groups: { titulo: string; items: Credit
               </li>
             ))}
           </ul>
+          {(g.staff?.length ?? 0) > 0 && (
+            <div className="flex flex-col gap-3 pb-4">
+              <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-obra-acento">Staff</p>
+              <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
+                {g.staff!.map((n, i) => (
+                  <li key={i} className="flex items-center gap-3"><Avatar name={n.persona} foto={n.foto} size="sm" /><Nombre persona={n.persona} perfil={n.perfil} className="text-sm font-semibold" /></li>
+                ))}
+              </ul>
+            </div>
+          )}
         </details>
       ))}
     </div>

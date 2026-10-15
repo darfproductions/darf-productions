@@ -26,7 +26,7 @@ export function OfferForm({ hidden, obras, papeles = [], porCorreo }: {
         <select className={input} name="tipo" defaultValue="reparto" aria-label="Tipo">
           {Object.entries(TIPO_CREDITO).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
         </select>
-        <input className={input} name="papel" list={listId} placeholder="Personaje o puesto (vacío si es ensamble)" />
+        <input className={input} name="papel" list={listId} placeholder="Personaje o puesto (vacío si es ensamble o staff)" />
         <datalist id={listId}>{papeles.map((p) => <option key={p} value={p} />)}</datalist>
         <textarea className={`${input} min-h-16 sm:col-span-2`} name="mensaje" placeholder="Mensaje (opcional): ¡Felicidades! Primer ensayo el…" />
         <label className="flex flex-col gap-1 text-xs font-semibold">Responder antes de (opcional)<input className={input} type="date" name="responder_antes" /></label>

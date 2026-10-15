@@ -103,11 +103,12 @@ export async function ProductionView({
   const videos = c.videos;
   const equipos = [
     { titulo: "Equipo creativo", items: c.creativo },
-    { titulo: "Equipo de producción", items: c.produccion },
+    // 0106: el Staff va dentro del equipo de producción, como lista de nombres (igual que Ensamble).
+    { titulo: "Equipo de producción", items: c.produccion, staff: c.staff },
     { titulo: "Crew", items: c.crew },
     { titulo: "Equipo técnico", items: c.tecnico },
   ];
-  const hayEquipo = equipos.some((g) => g.items.length > 0);
+  const hayEquipo = equipos.some((g) => g.items.length > 0 || (g.staff?.length ?? 0) > 0);
   const ficha = c.ficha;
   const dato = (etiqueta: string) => ficha.find((x) => x.etiqueta === etiqueta)?.valor;
   const duracion = dato("Duración");

@@ -5,6 +5,14 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-10-15 — Staff de producción y acceso automático del elenco (migración 0106)
+
+- Crédito tipo **staff**: lista de nombres sin puesto dentro del Equipo de producción (página de la obra y programa).
+  En el gafete cuenta como Staff. Vale en ofertas, documentos y ensayos por grupo.
+- Agregar a alguien con cuenta en **Reparto o Ensamble** (o ligar su ficha) le da el rol integrante de esa obra si
+  está viva (borrador o publicada, no concluida). Se aplicó una vez a lo que ya existía.
+- Apple Wallet: Casa DARF usa el azul del holográfico (#9fe2ff) como color de acento.
+
 ## 2026-10-15 — Buscar por nombre, Nosotros desde Casa DARF y "Cambiar cuenta" (migración 0105)
 
 - **Buscar por nombre**: `buscar_cuentas(q)` (nombre o correo, correo enmascarado) y `cuenta_correo(id)` para quien

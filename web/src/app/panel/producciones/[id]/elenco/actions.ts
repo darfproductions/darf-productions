@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/server";
 // en ESTA obra (0032). La foto es de la obra (sesión de esa obra), no de la persona.
 
 export type CreditState = { ok: boolean; message: string } | null;
-const TIPOS = ["reparto", "ensamble", "creativo", "produccion", "crew", "tecnico"] as const;
+const TIPOS = ["reparto", "ensamble", "creativo", "produccion", "crew", "tecnico", "staff"] as const;
 
 const refresh = (pid: string) => {
   revalidatePath(`/panel/producciones/${pid}`, "layout");
@@ -33,7 +33,8 @@ export async function addCredit(_p: CreditState, f: FormData): Promise<CreditSta
   const papel = String(f.get("papel") ?? "").trim() || null;
   if (!TIPOS.includes(tipo as (typeof TIPOS)[number])) return { ok: false, message: "Tipo no válido." };
   if (!nombre) return { ok: false, message: "Escribe el nombre de la persona." };
-  if (tipo !== "ensamble" && !papel) return { ok: false, message: tipo === "reparto" ? "Escribe el personaje." : "Escribe el puesto." };
+  // Ensamble y Staff (0106) son listas de nombres, sin personaje ni puesto.
+  if (tipo !== "ensamble" && tipo !== "staff" && !papel) return { ok: false, message: tipo === "reparto" ? "Escribe el personaje." : "Escribe el puesto." };
   const person = await personId(nombre);
   if (!person.id) return { ok: false, message: person.error ?? "No se pudo registrar a la persona." };
   const supabase = await createClient();

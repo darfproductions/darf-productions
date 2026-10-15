@@ -44,7 +44,11 @@ general: lo que hacía ahora lo cubren los puestos de Casa DARF y los roles de c
   las calificaciones de la escuela.
 
 ### Elenco (Panel → la obra → Elenco)
-- **Créditos**: los nombres que salen en la página de la obra.
+- **Créditos**: los nombres que salen en la página de la obra **en cuanto la obra está publicada** (en borrador
+  no se ven). **Staff** va dentro del Equipo de producción: solo nombres, sin puesto (como Ensamble).
+- Si agregas a alguien en **Reparto o Ensamble** y su ficha ya tiene cuenta, queda solo como **integrante**
+  (portal del elenco, ensayos, expediente). Si aún no tiene cuenta, entra en cuanto se ligue su cuenta.
+  Staff, crew y los equipos solo quedan en créditos; sus permisos se dan en Permisos.
 - **Ofertas de papel**: a quien hizo audición y tiene cuenta. Al aceptarla en Mi cuenta queda solo como
   integrante (con su crédito y su ficha). Así es como entra el elenco en las siguientes producciones.
 - **Elenco que ya estaba antes de tener cuenta**: que se registren y luego, en Panel → Personas →

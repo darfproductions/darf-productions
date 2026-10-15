@@ -7,6 +7,7 @@ export const TIPO_CREDITO: Record<string, string> = {
   produccion: "Equipo de producción",
   crew: "Crew",
   tecnico: "Equipo técnico",
+  staff: "Staff de producción",
 };
 
 export const ESTADO_OFERTA: Record<string, { label: string; cls: string }> = {

@@ -19,6 +19,8 @@ export type ProductionContent = {
   produccion: Credit[];
   crew: Credit[];
   tecnico: Credit[];
+  /** Staff (0106): solo nombres, sin puesto. */
+  staff: Credit[];
   agradecimientos: string[];
   /** Ficha técnica en el orden fijo de la plantilla, solo campos con valor. */
   ficha: Ficha;
@@ -94,6 +96,7 @@ export async function getProductionContent(id: string): Promise<ProductionConten
     produccion: team("produccion"),
     crew: team("crew"),
     tecnico: team("tecnico"),
+    staff: team("staff"),
     agradecimientos: (thanks.data ?? []).map((t) => t.texto as string),
     ficha,
   };
