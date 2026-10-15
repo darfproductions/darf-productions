@@ -21,6 +21,8 @@ type H = {
     id: string; audition_id: string; titulo: string; obra: string | null; fecha: string; estado: string; ronda: number; numero: number | null;
     llego: string | null; entro: string | null; salio: string | null; personajes: string[] | null; promedio: number | null;
     respuestas: { pregunta: string; respuesta: string }[]; videos: { titulo: string; url: string }[];
+    /** 0112: entrevista del host. */
+    entrevista?: { pregunta: string; respuesta: string }[]; entrevista_extra?: string | null;
   }[];
 };
 
@@ -79,6 +81,13 @@ export default async function TalentPage({ params }: PageProps<"/panel/talento/[
                 <p key={i} className="break-words"><span className="text-texto-3">{r.pregunta}:</span>{" "}
                   {/^https:\/\//.test(r.respuesta) ? <a href={r.respuesta} target="_blank" rel="noreferrer" className="text-violeta-claro underline">abrir enlace</a> : r.respuesta}</p>
               ))}
+              {((a.entrevista ?? []).length > 0 || a.entrevista_extra) && (
+                <div className="rounded-lg bg-sala px-3 py-2">
+                  <p className="text-xs font-bold uppercase tracking-[0.12em] text-texto-3">Entrevista</p>
+                  {(a.entrevista ?? []).map((r, i) => <p key={i} className="break-words"><span className="text-texto-3">{r.pregunta}:</span> {r.respuesta}</p>)}
+                  {a.entrevista_extra && <p className="break-words"><span className="text-texto-3">Adicional:</span> {a.entrevista_extra}</p>}
+                </div>
+              )}
               {a.videos.map((v, i) => <a key={i} href={v.url} target="_blank" rel="noreferrer" className="text-violeta-claro underline">{v.titulo} <Icono nombre="externo" /></a>)}
               <Link href={`/panel/audiciones/${a.audition_id}/aspirante/${a.id}`} className="text-xs font-bold text-violeta-claro">Abrir en la audición <Icono nombre="flecha-der" /></Link>
             </div>

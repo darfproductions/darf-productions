@@ -10,7 +10,7 @@ export type PersonFile = {
   alergias: string | null; condiciones: string | null; medicamentos: string | null; tipo_sangre: string | null;
   altura_cm: number | null; pecho_cm: number | null; cintura_cm: number | null; cadera_cm: number | null;
   talla_ropa: string | null; talla_calzado: string | null;
-};
+} & Partial<Record<import("@/lib/medidas").MedidaKey, number | null>>;
 
 /** Estado del expediente en una obra: el integrante confirma vigencia; la producción revisa. */
 export type MemberFile = { revisado_at: string | null; confirmado_at: string | null };

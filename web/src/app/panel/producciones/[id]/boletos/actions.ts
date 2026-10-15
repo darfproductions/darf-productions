@@ -374,3 +374,38 @@ export async function copySeatMap(_p: TicketState, f: FormData): Promise<TicketS
   refresh(destino);
   return { ok: true, message: `Mapa copiado: ${asientos((data as { asientos: number }).asientos)}. Revisa las zonas y sus precios.` };
 }
+
+// ──────── Teatros guardados (0112) ────────
+
+/** Guarda el mapa de esta obra como teatro (con nombre) para usarlo en otras obras. */
+export async function saveTeatro(_p: TicketState, f: FormData): Promise<TicketState> {
+  const pid = String(f.get("pid"));
+  const nombre = String(f.get("nombre") ?? "").trim();
+  if (nombre.length < 2) return { ok: false, message: "Escribe el nombre del teatro." };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("teatro_guardar", { pid, p_nombre: nombre });
+  if (error) return { ok: false, message: mensajeError(error) };
+  refresh(pid);
+  return { ok: true, message: `Guardado como “${nombre}”. Ya lo puedes usar en otras obras.` };
+}
+
+/** Usa un teatro guardado como mapa de esta obra. */
+export async function usarTeatro(_p: TicketState, f: FormData): Promise<TicketState> {
+  const destino = String(f.get("pid"));
+  const tid = String(f.get("teatro") ?? "");
+  if (!tid) return { ok: false, message: "Elige un teatro." };
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("teatro_usar", { tid, destino });
+  if (error) return { ok: false, message: mensajeError(error) };
+  refresh(destino);
+  return { ok: true, message: `Mapa listo: ${asientos((data as { asientos: number }).asientos)}. Revisa las zonas y sus precios.` };
+}
+
+export async function deleteTeatro(_p: TicketState, f: FormData): Promise<TicketState> {
+  const pid = String(f.get("pid"));
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("teatro_borrar", { tid: String(f.get("teatro") ?? "") });
+  if (error) return { ok: false, message: mensajeError(error) };
+  refresh(pid);
+  return { ok: true, message: "Teatro borrado." };
+}

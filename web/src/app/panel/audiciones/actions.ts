@@ -166,6 +166,33 @@ export async function saveCriterios(_p: AudState, f: FormData): Promise<AudState
   return done(aid, `Criterios guardados: ${criterios.map((c) => c.l).join(", ")}.`);
 }
 
+/** Preguntas de la entrevista del host (0112): una por renglón. */
+export async function saveEntrevistaPreguntas(_p: AudState, f: FormData): Promise<AudState> {
+  const aid = str(f, "aid");
+  const preguntas = [...new Set(str(f, "preguntas").split("\n").map((x) => x.trim().replace(/\s+/g, " ")).filter(Boolean))].slice(0, 20);
+  if (preguntas.some((x) => x.length > 200)) return { ok: false, message: "Cada pregunta puede tener hasta 200 letras." };
+  const supabase = await createClient();
+  const { error, count } = await supabase.from("auditions").update({ preguntas_entrevista: preguntas }, { count: "exact" }).eq("id", aid);
+  if (error) return { ok: false, message: error.message };
+  if (!count) return { ok: false, message: "No tienes permiso para editar esta convocatoria." };
+  return done(aid, preguntas.length ? `Preguntas guardadas (${preguntas.length}).` : "Sin preguntas: el host solo tendrá el espacio adicional.");
+}
+
+/** El host guarda la entrevista de un aspirante (0112). */
+export async function saveEntrevista(_p: AudState, f: FormData): Promise<AudState> {
+  const aid = str(f, "aid");
+  const app = str(f, "app");
+  const preguntas = f.getAll("pregunta").map(String);
+  const respuestas = f.getAll("respuesta").map(String);
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("audition_entrevista_guardar", {
+    app, p_respuestas: preguntas.map((pregunta, i) => ({ pregunta, respuesta: respuestas[i] ?? "" })), p_extra: str(f, "extra"),
+  });
+  if (error) return { ok: false, message: mensajeError(error) };
+  revalidatePath(`/panel/audiciones/${aid}/entrevista`);
+  return { ok: true, message: "Entrevista guardada en su expediente." };
+}
+
 // ──────── Invitaciones (convocatoria particular) ────────
 
 export async function addInvites(_p: AudState, f: FormData): Promise<AudState> {

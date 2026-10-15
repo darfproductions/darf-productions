@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { saveMemberFile, type FileState } from "@/app/expediente/actions";
 import type { PersonFile } from "@/lib/member-rules";
+import { MEDIDAS_VESTUARIO } from "@/lib/medidas";
 
 const field = "rounded-lg border border-white/10 bg-sala px-3 py-2.5 font-normal text-texto";
 const lbl = "flex flex-col gap-1.5 text-sm font-semibold";
@@ -43,10 +44,9 @@ export function ExpedienteForm({ pid, uid, f, esMenor, propio }: { pid: string; 
       </fieldset>
       <fieldset className="grid gap-3 sm:grid-cols-3">
         <legend className="mb-2 font-bold">Medidas para vestuario</legend>
-        <label className={lbl}>Altura (cm)<input className={field} type="number" step="0.5" name="altura_cm" defaultValue={v("altura_cm")} /></label>
-        <label className={lbl}>Pecho (cm)<input className={field} type="number" step="0.5" name="pecho_cm" defaultValue={v("pecho_cm")} /></label>
-        <label className={lbl}>Cintura (cm)<input className={field} type="number" step="0.5" name="cintura_cm" defaultValue={v("cintura_cm")} /></label>
-        <label className={lbl}>Cadera (cm)<input className={field} type="number" step="0.5" name="cadera_cm" defaultValue={v("cadera_cm")} /></label>
+        {MEDIDAS_VESTUARIO.map((m) => (
+          <label key={m.k} className={lbl}>{m.l} (cm)<input className={field} type="number" step="0.1" min={1} max={250} name={m.k} defaultValue={v(m.k)} /></label>
+        ))}
         <label className={lbl}>Talla de ropa<input className={field} name="talla_ropa" defaultValue={v("talla_ropa")} placeholder="CH, M, G…" /></label>
         <label className={lbl}>Calzado (MX)<input className={field} name="talla_calzado" defaultValue={v("talla_calzado")} /></label>
       </fieldset>

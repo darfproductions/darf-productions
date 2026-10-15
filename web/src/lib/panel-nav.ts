@@ -58,7 +58,7 @@ export function permisosEvento(a: PanelAccessData, e: { id: string; production_i
   };
 }
 
-const AUD_PERMS = ["audiciones.gestionar", "audiciones.registro", "audiciones.evaluar"];
+const AUD_PERMS = ["audiciones.gestionar", "audiciones.registro", "audiciones.evaluar", "audiciones.entrevista"];
 
 type AudRef = { id: string; production_id: string | null; permanente?: boolean };
 
@@ -125,7 +125,7 @@ export type Tab = {
 export const PRODUCTION_TABS: Tab[] = [
   { id: "resumen", label: "Resumen", path: "", perms: [], etapa: null },
   { id: "pagina", label: "Página pública", path: "pagina", perms: ["obra.editar", "obra.publicar"], etapa: null },
-  { id: "audiciones", label: "Audiciones", path: "audiciones", perms: ["audiciones.gestionar", "audiciones.registro", "audiciones.evaluar"], etapa: null },
+  { id: "audiciones", label: "Audiciones", path: "audiciones", perms: ["audiciones.gestionar", "audiciones.registro", "audiciones.evaluar", "audiciones.entrevista"], etapa: null },
   { id: "elenco", label: "Elenco y equipos", path: "elenco", perms: ["elenco.gestionar", "obra.editar"], etapa: null },
   { id: "expedientes", label: "Expedientes", path: "expedientes", perms: ["expedientes.ver", "mensualidades.gestionar"], etapa: null },
   { id: "ensayos", label: "Ensayos", path: "ensayos", perms: ["ensayos.gestionar"], etapa: null },
@@ -275,6 +275,8 @@ export function panelMenu(a: PanelAccessData): NavSection[] {
     ...(a.isDirector ? [{ href: "/panel/ajustes/casa", label: "Casa DARF" }] : []),
     ...(casa(a, "casa.roles") ? [{ href: "/panel/roles", label: "Roles y permisos" }] : []),
     ...(casa(a, "casa.sitio") ? [{ href: "/panel/ajustes/sitio", label: "Sitio" }] : []),
+    // 0112: base de socios del Club Fan.
+    ...(casa(a, "casa.club") ? [{ href: "/panel/ajustes/club", label: "Club Fan" }] : []),
     ...(casa(a, "casa.contacto") ? [{ href: "/panel/ajustes/darfy", label: "DARFY" }] : []),
     ...(casa(a, "casa.bitacora") ? [{ href: "/panel/bitacora", label: "Bitácora" }] : []),
   ];

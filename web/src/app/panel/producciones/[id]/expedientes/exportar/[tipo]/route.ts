@@ -3,10 +3,11 @@ import { getAdeudos, getPagosObra } from "@/lib/adeudos";
 import { mesNombre } from "@/lib/member-rules";
 import { METODOS, conceptoPago, csv } from "@/lib/pago-rules";
 import { createClient } from "@/lib/supabase/server";
+import { MEDIDAS_VESTUARIO } from "@/lib/medidas";
 
 // Exportar en CSV para Excel: pagos y adeudos (mensualidades.gestionar), elenco con tutores y
 // contactos de emergencia (expedientes.ver) y asistencia a ensayos (ensayos.gestionar).
-const PERMISO: Record<string, string> = { pagos: "mensualidades.gestionar", adeudos: "mensualidades.gestionar", elenco: "expedientes.ver", asistencia: "ensayos.gestionar" };
+const PERMISO: Record<string, string> = { pagos: "mensualidades.gestionar", adeudos: "mensualidades.gestionar", elenco: "expedientes.ver", medidas: "expedientes.ver", asistencia: "ensayos.gestionar" };
 export async function GET(_req: Request, ctx: RouteContext<"/panel/producciones/[id]/expedientes/exportar/[tipo]">) {
   const { id, tipo } = await ctx.params;
   const supabase = await createClient();
@@ -42,6 +43,20 @@ export async function GET(_req: Request, ctx: RouteContext<"/panel/producciones/
         const f = ficha.get(r.user_id) ?? {};
         return [r.nombre, r.email, (r.papeles ?? []).join(", "), f.telefono, f.fecha_nacimiento, f.tutor_nombre, f.tutor_telefono, f.tutor_email,
           f.emergencia_nombre, f.emergencia_telefono, f.emergencia_parentesco, f.alergias, f.tipo_sangre];
+      }),
+    ]);
+  } else if (tipo === "medidas") {
+    // 0112: medidas de vestuario de todo el elenco (tabla de DARF).
+    const [{ data: roster }, { data: fichas }] = await Promise.all([
+      supabase.rpc("cast_roster", { pid: id }),
+      supabase.from("person_files").select(`user_id, talla_ropa, talla_calzado, ${MEDIDAS_VESTUARIO.map((m) => m.k).join(", ")}`),
+    ]);
+    const ficha = new Map(((fichas ?? []) as unknown as Record<string, string | number | null>[]).map((f) => [f.user_id, f]));
+    cuerpo = csv([
+      ["Integrante", "Papel", ...MEDIDAS_VESTUARIO.map((m) => `${m.l} (cm)`), "Talla de ropa", "Calzado"],
+      ...((roster ?? []) as { user_id: string; nombre: string; papeles: string[] | null }[]).map((r) => {
+        const f = ficha.get(r.user_id) ?? {};
+        return [r.nombre, (r.papeles ?? []).join(", "), ...MEDIDAS_VESTUARIO.map((m) => f[m.k] as number | null), f.talla_ropa as string | null, f.talla_calzado as string | null];
       }),
     ]);
   } else {

@@ -96,6 +96,19 @@ export default async function ApplicantPage({ params }: PageProps<"/panel/audici
       </Card>
 
       <Card className="lg:col-span-5">
+        <h2 className="mb-2 font-bold">Entrevista</h2>
+        {((x.entrevista ?? []) as { pregunta: string; respuesta: string }[]).length === 0 && !x.entrevista_extra
+          ? <p className="text-sm text-texto-3">Aún sin entrevista. <Link href={`/panel/audiciones/${aid}/entrevista/${app}`} className="font-bold text-violeta-claro">Hacerla</Link></p>
+          : (
+            <div className="flex flex-col gap-1.5 text-sm">
+              {((x.entrevista ?? []) as { pregunta: string; respuesta: string }[]).map((r, i) => <p key={i} className="break-words"><span className="text-texto-3">{r.pregunta}:</span> {r.respuesta}</p>)}
+              {x.entrevista_extra && <p className="break-words"><span className="text-texto-3">Adicional:</span> {x.entrevista_extra}</p>}
+              <Link href={`/panel/audiciones/${aid}/entrevista/${app}`} className="text-xs font-bold text-violeta-claro">Editar entrevista <Icono nombre="flecha-der" /></Link>
+            </div>
+          )}
+      </Card>
+
+      <Card className="lg:col-span-5">
         <h2 className="mb-2 font-bold">Calificaciones</h2>
         {(scores.data ?? []).length === 0 && <p className="text-sm text-texto-3">Aún sin calificar.</p>}
         <ul className="flex flex-col gap-2 text-sm">

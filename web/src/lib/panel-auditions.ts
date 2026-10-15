@@ -13,6 +13,8 @@ export type PanelAudition = AuditionOptions & {
   criterios: Criterio[]; plantilla: string | null; permanente: boolean;
   /** 0089: audiciones con votación. */
   con_callback: boolean; fase: import("@/lib/votacion-rules").Fase;
+  /** 0112: preguntas del host el día de la audición. */
+  preguntas_entrevista?: string[];
   productions?: { nombre: string } | null;
 };
 

@@ -17,6 +17,8 @@ export default async function AuditionLayout({ children, params }: LayoutProps<"
     { href: "", label: "Configuración", show: g && config },
     { href: "/solicitudes", label: "Solicitudes", show: g },
     { href: "/registro", label: "Día de la audición", show: a.modalidad !== "en_linea" && (g || may("audiciones.registro")) },
+    // 0112: el host entrevista a cada aspirante el día de la audición.
+    { href: "/entrevista", label: "Entrevista", show: a.modalidad !== "en_linea" && (g || may("audiciones.entrevista")) },
     { href: "/evaluacion", label: "Evaluación", show: may("audiciones.evaluar") },
     { href: "/votacion", label: "Votación", show: votacion && (g || may("audiciones.evaluar")) },
     { href: "/cast", label: "Cast", show: votacion && g },
