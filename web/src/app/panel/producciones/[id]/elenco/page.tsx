@@ -14,7 +14,7 @@ import { AddCreditForm } from "./AddCreditForm";
 import { Personajes } from "./Personajes";
 import { OfferForm } from "./OfferForm";
 import { withdrawOffer } from "./offer-actions";
-import { moveCredit, removeCredit, setCreditPhoto, updatePapel } from "./actions";
+import { moveCredit, publishAllCast, removeCredit, setCreditPhoto, setCreditPublicado, updatePapel } from "./actions";
 import { Icono } from "@/components/Icono";
 
 export const metadata: Metadata = { title: "Elenco y equipos" };
@@ -30,7 +30,9 @@ const GRUPOS = [
   { tipo: "tecnico", titulo: "Equipo técnico", papel: "Puesto" },
 ] as const;
 
-type Row = { id: string; tipo: string; papel: string | null; foto_path: string | null; orden: number; activo: boolean; people: { id: string; nombre: string; profile_id: string | null } | null };
+const ELENCO = new Set(["reparto", "ensamble"]);
+
+type Row = { id: string; tipo: string; papel: string | null; foto_path: string | null; orden: number; activo: boolean; publicado: boolean; people: { id: string; nombre: string; profile_id: string | null } | null };
 
 const mini = "grid h-8 w-8 place-items-center rounded-full border border-white/20 text-sm hover:border-white/50 disabled:opacity-40";
 
@@ -41,7 +43,7 @@ export default async function CastEditor({ params }: PageProps<"/panel/produccio
   if (!can(access, id, "elenco.gestionar") && !can(access, id, "obra.editar")) redirect(`/panel/producciones/${id}`);
   const supabase = await createClient();
   const [{ data: credits }, { data: people }] = await Promise.all([
-    supabase.from("production_credits").select("id, tipo, papel, foto_path, orden, people(id, nombre, profile_id), activo").eq("production_id", id).order("orden").order("id"),
+    supabase.from("production_credits").select("id, tipo, papel, foto_path, orden, people(id, nombre, profile_id), activo, publicado").eq("production_id", id).order("orden").order("id"),
     supabase.from("people").select("nombre").order("nombre").limit(2000),
   ]);
   const rows = (credits ?? []) as unknown as Row[];
@@ -50,6 +52,8 @@ export default async function CastEditor({ params }: PageProps<"/panel/produccio
   const verFicha = armaElenco || access.isDirector;
   const ofertas = armaElenco ? await listOffers(id) : [];
   const listId = "personas-darf";
+  // 0107: Reparto y Ensamble entran sin publicar; se publican uno por uno o todos juntos.
+  const porPublicar = rows.filter((r) => ELENCO.has(r.tipo) && !r.publicado).length;
 
   return (
     <div className="flex flex-col gap-4">
@@ -81,6 +85,14 @@ export default async function CastEditor({ params }: PageProps<"/panel/produccio
           </details>
         </Card>
       )}
+      <Card className="flex flex-wrap items-center justify-between gap-3">
+        <p className="min-w-0 flex-1 basis-64 text-sm text-texto-2">
+          <b className="text-texto">Reparto y Ensamble</b> entran como <b className="text-texto">No publicado</b>: quedan guardados y ya tienen acceso como integrantes (ensayos, expediente, gafete), pero no salen en la página ni en el programa hasta que los publiques. Los demás equipos salen en cuanto los agregas.
+        </p>
+        {porPublicar > 0
+          ? <ActionForm inline action={publishAllCast} hidden={{ pid: id }} confirm={`¿Publicar a ${porPublicar === 1 ? "1 persona" : `${porPublicar} personas`} del elenco? Saldrán en la página de la obra.`} submit={`Publicar todo el elenco (${porPublicar})`} submitClass="rounded-full bg-texto px-4 py-2 text-sm font-bold text-sala" />
+          : <span className="text-sm text-texto-3">Todo el elenco está publicado.</span>}
+      </Card>
       <datalist id={listId}>{(people ?? []).map((p) => <option key={p.nombre as string} value={p.nombre as string} />)}</datalist>
       {GRUPOS.map((g) => {
         const items = rows.filter((r) => r.tipo === g.tipo);
@@ -98,6 +110,7 @@ export default async function CastEditor({ params }: PageProps<"/panel/produccio
                       <p className="font-semibold">
                         {r.people ? (verFicha ? <Link href={r.people.profile_id ? `/panel/talento/${r.people.profile_id}` : `/panel/talento/p/${r.people.id}`} className="hover:underline">{r.people.nombre}</Link> : r.people.nombre) : "—"}
                         {r.people && !r.people.profile_id && <span className="ml-2 text-[10px] font-normal text-texto-3">sin cuenta</span>}
+                        {ELENCO.has(r.tipo) && !r.publicado && <span className="ml-2 rounded-full bg-[#4a3b10] px-2 py-0.5 text-[10px] font-bold text-[#fde68a]">No publicado</span>}
                         {!r.activo && <span className="ml-2 rounded-full bg-[#5a1a22] px-2 py-0.5 text-[10px] font-bold text-[#fecdd3]">Baja</span>}
                       </p>
                       {g.papel && (
@@ -109,6 +122,12 @@ export default async function CastEditor({ params }: PageProps<"/panel/produccio
                       )}
                     </div>
                     <ImageUpload compact productionId={id} kind="retrato" carpeta="creditos" base={r.people?.nombre ?? "retrato"} save={setCreditPhoto.bind(null, id, r.id)} label={r.foto_path ? "Cambiar foto" : "Subir foto"} />
+                    {ELENCO.has(r.tipo) && (
+                      <ActionForm inline action={setCreditPublicado} hidden={{ pid: id, id: r.id, publicado: r.publicado ? "0" : "1" }}
+                        confirm={r.publicado ? `¿Quitar a ${r.people?.nombre} de la página? Sigue en el elenco y con su acceso.` : undefined}
+                        submit={r.publicado ? "Despublicar" : "Publicar"}
+                        submitClass={r.publicado ? "rounded-full border border-white/25 px-3 py-1 text-xs font-bold" : "rounded-full bg-texto px-3 py-1 text-xs font-bold text-sala"} />
+                    )}
                     <div className="flex items-center gap-1">
                       {i > 0 && <ActionForm inline action={moveCredit} hidden={{ pid: id, id: r.id, dir: "up" }} submit={<Icono nombre="flecha-arriba" etiqueta="Subir" />} submitClass={mini} />}
                       {i < items.length - 1 && <ActionForm inline action={moveCredit} hidden={{ pid: id, id: r.id, dir: "down" }} submit={<Icono nombre="flecha-abajo" etiqueta="Bajar" />} submitClass={mini} />}

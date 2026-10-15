@@ -72,7 +72,7 @@ export async function ProductionView({
   // 0088: una función que ya empezó deja de venderse aunque siga "en venta".
   const vendibles = performances.filter((fn) => funcionVendible(fn, p.concluded));
   const [c, gallery, ensayos, audiciones, programa, franja, ocupacion, socio, eventos, cartelera, sesion] = await Promise.all([
-    getProductionContent(p.id),
+    getProductionContent(p.id, vistaPrevia),
     getGallery(p.id),
     fanzoneCount(p.id),
     listOpenAuditionsFor(p.id),

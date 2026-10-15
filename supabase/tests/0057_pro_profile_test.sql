@@ -51,6 +51,10 @@ do $$ declare pid uuid; n int; r record; begin
   update profiles set fecha_nacimiento = (hoy_mx() - interval '12 years')::date where id = '00000000-0000-0000-0000-0000000000e1';
   if pro_is_public(pid) then raise exception 'FALLO T3a: menor público sin permiso'; end if;
   insert into production_credits (production_id, person_id, tipo, papel, activo) values ('showman', pid, 'reparto', 'Jenny', true);
+  -- 0107: el reparto nuevo entra sin publicar; aquí se publica para probar la página pública.
+  if exists (select 1 from information_schema.columns where table_name = 'production_credits' and column_name = 'publicado') then
+    execute format('update production_credits set publicado = true where production_id = %L and person_id = %L', 'showman', pid);
+  end if;
   perform pg_temp.as_user('00000000-0000-0000-0000-0000000000a1');
   perform panel_add_member('showman', 't_cont@test.local', (select coalesce(max(id), 'productor') from panel_roles where id = 'direccion_general'));
   perform pg_temp.as_user('00000000-0000-0000-0000-0000000000d1');

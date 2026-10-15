@@ -5,6 +5,15 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-10-15 — Elenco "No publicado" (migración 0107)
+
+- `production_credits.publicado`: lo que ya existía queda publicado; cada persona nueva de **Reparto o Ensamble**
+  (panel, oferta aceptada u obra duplicada) entra sin publicar. Los demás equipos salen como antes.
+- El público (página de la obra, programa, perfil profesional, nombres de personas, cifras del inicio) solo ve
+  lo publicado. El equipo de la obra y la vista previa del panel ven todo.
+- Panel → Elenco: etiqueta "No publicado", botones Publicar/Despublicar por persona y "Publicar todo el elenco".
+  Publicar no cambia el acceso de integrante (0106).
+
 ## 2026-10-15 — Staff de producción y acceso automático del elenco (migración 0106)
 
 - Crédito tipo **staff**: lista de nombres sin puesto dentro del Equipo de producción (página de la obra y programa).

@@ -46,6 +46,10 @@ general: lo que hacía ahora lo cubren los puestos de Casa DARF y los roles de c
 ### Elenco (Panel → la obra → Elenco)
 - **Créditos**: los nombres que salen en la página de la obra **en cuanto la obra está publicada** (en borrador
   no se ven). **Staff** va dentro del Equipo de producción: solo nombres, sin puesto (como Ensamble).
+- **Reparto y Ensamble entran como "No publicado"**: puedes cargar personajes y actores sin que salgan en la página.
+  Cuando quieras anunciarlos, toca **Publicar** en cada persona (para soltarlos poco a poco) o **Publicar todo el
+  elenco**. **Despublicar** la vuelve a ocultar. La **vista previa** de la obra sí los muestra. Los demás equipos
+  (creativo, producción, staff, crew, técnico) salen en cuanto los agregas.
 - Si agregas a alguien en **Reparto o Ensamble** y su ficha ya tiene cuenta, queda solo como **integrante**
   (portal del elenco, ensayos, expediente). Si aún no tiene cuenta, entra en cuanto se ligue su cuenta.
   Staff, crew y los equipos solo quedan en créditos; sus permisos se dan en Permisos.
