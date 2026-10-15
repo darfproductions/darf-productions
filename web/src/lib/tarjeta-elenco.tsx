@@ -58,7 +58,7 @@ export async function tarjetaPng(d: DatosTarjeta): Promise<Buffer> {
           {foto
             ? <img src={foto} width={w} height={fotoAlto} style={{ objectFit: "cover", objectPosition: "top", width: w, height: fotoAlto }} alt="" />
             : <div style={{ width: w, height: fotoAlto, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 360, fontWeight: 900, color: d.colores.acento }}>{inicial}</div>}
-          <div style={{ position: "absolute", left: 0, bottom: 0, width: w, height: 420, display: "flex", backgroundImage: `linear-gradient(180deg, transparent, ${d.colores.fondo})` }} />
+          <div style={{ position: "absolute", left: 0, bottom: 0, width: w, height: historia ? 340 : 300, display: "flex", backgroundImage: `linear-gradient(180deg, transparent 0%, transparent 25%, ${d.colores.fondo} 100%)` }} />
         </div>
         <div style={{ position: "absolute", left: 0, bottom: 0, width: w, display: "flex", flexDirection: "column", alignItems: "center", padding: `0 60px ${historia ? 100 : 52}px` }}>
           {logo
