@@ -42,6 +42,8 @@ export async function tarjetaPng(d: DatosTarjeta): Promise<Buffer> {
   const historia = d.formato === "historia";
   const claro = isLight(d.colores.fondo);
   const fotoAlto = historia ? 1240 : 860;
+  // En el post (más bajito) la foto sube un poco para que la cara no quede detrás del logo de la obra.
+  const subir = historia ? 0 : 150;
   const [foto, logo, darf] = await Promise.all([
     comoPng(d.fotoUrl, w),
     comoPng(d.logoUrl, 760),
@@ -56,7 +58,7 @@ export async function tarjetaPng(d: DatosTarjeta): Promise<Buffer> {
       <div style={{ width: w, height: h, display: "flex", position: "relative", background: d.colores.fondo, color: d.colores.texto, fontFamily: "Montserrat" }}>
         <div style={{ position: "absolute", left: 0, top: 0, width: w, height: fotoAlto, display: "flex", overflow: "hidden", background: d.colores.superficie }}>
           {foto
-            ? <img src={foto} width={w} height={fotoAlto} style={{ objectFit: "cover", objectPosition: "top", width: w, height: fotoAlto }} alt="" />
+            ? <img src={foto} width={w} height={fotoAlto + subir} style={{ objectFit: "cover", objectPosition: "top", width: w, height: fotoAlto + subir, marginTop: -subir }} alt="" />
             : <div style={{ width: w, height: fotoAlto, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 360, fontWeight: 900, color: d.colores.acento }}>{inicial}</div>}
           <div style={{ position: "absolute", left: 0, bottom: 0, width: w, height: historia ? 340 : 300, display: "flex", backgroundImage: `linear-gradient(180deg, transparent 0%, transparent 25%, ${d.colores.fondo} 100%)` }} />
         </div>
