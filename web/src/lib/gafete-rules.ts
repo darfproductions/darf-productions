@@ -87,14 +87,9 @@ export function sellosApple(s: Sello[]): Sello[] {
   return [...s].sort((a, b) => orden[a.id] - orden[b.id]);
 }
 
-/** Franja de Google Wallet: DARF al centro y los sellos a los lados, las medallas lo más al centro posible.
- *  Con tres o más sellos ya no va el logo: Club · Fan · Lealtad · Casa (Diego 2026-10-14). */
+/** Franja de Google Wallet del gafete: el logo DARF primero y después sus sellos (Diego 2026-10-15). */
 export function filaGoogle<T extends string>(ids: T[]): (T | "darf")[] {
-  if (ids.length >= 3) return ids;
-  const izq: T[] = ids.filter((i) => i === "club");
-  const der: T[] = ids.filter((i) => i !== "club");
-  if (!izq.length && der.length > 1) izq.push(der.shift()!);
-  return [...izq, "darf", ...der];
+  return ["darf", ...ids];
 }
 
 /** Año en curso en CDMX (vigencia del gafete). */

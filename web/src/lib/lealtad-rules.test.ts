@@ -43,12 +43,9 @@ describe("DARF Loyalty (0103)", () => {
     expect(sellosDe({ ...p, lealtad: 2 }).map((s) => s.src)).not.toContain("/medalla/2");
   });
 
-  it("Google: DARF al centro y la medalla lo más al centro posible; con tres sellos, sin logo", () => {
-    expect(filaGoogle(["club", "lealtad", "casa"])).toEqual(["club", "lealtad", "casa"]);
-    expect(filaGoogle(["club", "lealtad"])).toEqual(["club", "darf", "lealtad"]);
-    expect(filaGoogle(["lealtad", "casa"])).toEqual(["lealtad", "darf", "casa"]);
-    expect(filaGoogle(["club", "casa"])).toEqual(["club", "darf", "casa"]);
-    expect(filaGoogle(["lealtad"])).toEqual(["darf", "lealtad"]);
+  it("Google: el logo DARF primero y después los sellos", () => {
+    expect(filaGoogle(["club", "casa"])).toEqual(["darf", "club", "casa"]);
+    expect(filaGoogle(["club"])).toEqual(["darf", "club"]);
     expect(filaGoogle([])).toEqual(["darf"]);
   });
 
@@ -80,8 +77,6 @@ describe("DARF Loyalty (0103)", () => {
     const socio = { ...g, sello: "Socio #0001" };
     expect(sellosDe(socio).map((s) => s.id)).toEqual(["club", "fan", "lealtad", "casa"]);
     expect(sellosApple(sellosDe(socio)).map((s) => s.id)).toEqual(["lealtad", "fan", "casa", "club"]);
-    expect(filaGoogle(["club", "fan", "lealtad", "casa"])).toEqual(["club", "fan", "lealtad", "casa"]);
-    expect(filaGoogle(["club", "fan"])).toEqual(["club", "darf", "fan"]);
   });
 
   it("Wallet y PDF: sin medallas, solo Club Fan y Casa DARF", () => {

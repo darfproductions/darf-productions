@@ -113,7 +113,7 @@ export async function bandaCredencial(clave: string, w: number, h: number): Prom
       pieza("/marca/fan-zone-oro.svg", w * 0.5, h * 0.26),
     ]);
   } else {
-    // DARF al centro y sus sellos a los lados (Club · DARF · Casa). Las medallas solo van en la página.
+    // El logo DARF primero y después sus sellos (DARF · Club · Casa). Las medallas solo van en la página.
     const ids = [
       ...(socio && id !== "cuenta" ? ["club" as const] : []),
       ...(id === "casa" ? ["casa" as const] : []),
