@@ -1,6 +1,6 @@
 -- DARF 2.0 — SOLO PARA EL PROYECTO SUPABASE "DARF 2.0 DEV" (la base de darfproductions.com).
 -- Pagos del taller de Showman (hoja de Diego, 2026-10-15). Requiere apply_0111_dev.sql.
---   * Cuotas: inscripción $600 (se pagó el 22 de agosto) y mensualidad $600 de septiembre a diciembre.
+--   * Cuotas: inscripción $600 (se pagó el 22 de agosto) y mensualidad $600 de septiembre a enero.
 --     Se paga el primer sábado del mes con una semana de tolerancia: vence el segundo sábado.
 --   * Cobro activo: recordatorios y adeudos en la página.
 --   * Quien ya tiene cuenta recibe sus pagos enseguida (sin aviso); quien no, los recibe al ligar su cuenta.
@@ -18,7 +18,7 @@ end $$;
 begin;
 
 insert into production_fees (production_id, monto, desde, hasta, dia_limite, cobrar, inscripcion, vence_sabado)
-values ('showman', 600, '2026-09-01', '2026-12-01', 10, true, 600, true)
+values ('showman', 600, '2026-09-01', '2027-01-01', 10, true, 600, true)
 on conflict (production_id) do update set monto = excluded.monto, desde = excluded.desde, hasta = excluded.hasta,
   cobrar = true, inscripcion = excluded.inscripcion, vence_sabado = true;
 
