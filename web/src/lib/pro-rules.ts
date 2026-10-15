@@ -49,6 +49,14 @@ export function trayectoriaDe(rows: Trayecto[], hoy: Date = new Date()): { ok: t
 }
 
 /** Enlace https (reel o canal); null si está vacío. */
+/** Trayectoria de la más reciente a la más antigua; sin año, al final en el orden capturado. */
+export function ordenarTrayectoria(items: Trayecto[]): Trayecto[] {
+  const anio = (t: Trayecto) => Number(/\d{4}/.exec(t.anio ?? "")?.[0] ?? NaN);
+  return items.map((t, i) => ({ t, i, y: anio(t) }))
+    .sort((a, b) => (Number.isNaN(a.y) ? 1 : 0) - (Number.isNaN(b.y) ? 1 : 0) || (b.y - a.y || 0) || a.i - b.i)
+    .map((x) => x.t);
+}
+
 export function httpsOrNull(v: string): string | null | false {
   const s = v.trim();
   if (!s) return null;

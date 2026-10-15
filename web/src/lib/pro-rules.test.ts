@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { httpsOrNull, parseList, reelYoutube, trayectoriaDe, usuarioRed } from "./pro-rules";
+import { httpsOrNull, ordenarTrayectoria, parseList, reelYoutube, trayectoriaDe, usuarioRed } from "./pro-rules";
 
 describe("perfil profesional", () => {
+  it("trayectoria por año, la más reciente primero; sin año al final", () => {
+    const t = (obra: string, anio: string) => ({ obra, papel: "", compania: "", anio });
+    const r = ordenarTrayectoria([t("A", "2018"), t("B", ""), t("C", "2023"), t("D", "2018"), t("E", "2025")]);
+    expect(r.map((x) => x.obra)).toEqual(["E", "C", "A", "D", "B"]);
+  });
   it("listas sin repetidos", () => {
     expect(parseList("Jazz, ballet,  jazz,\nTap")).toEqual(["Jazz", "ballet", "Tap"]);
     expect(parseList("")).toEqual([]);
