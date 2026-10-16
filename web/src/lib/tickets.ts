@@ -76,6 +76,9 @@ export type MapSeat = {
   seat_number: number | null;
   lado: string | null;
   price_category_id: string | null;
+  /** 0113: posición en un mapa libre. */
+  pos_x?: number | null;
+  pos_y?: number | null;
 };
 
 /** Agrupa asientos por fila (A cerca del escenario) y por bloque izquierda/central/derecha. */

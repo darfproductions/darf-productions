@@ -7,6 +7,7 @@ import { requirePanel } from "@/lib/permissions";
 import { createClient } from "@/lib/supabase/server";
 import { SeatMapBuilder, type BuilderSeat } from "./SeatMapBuilder";
 import { Teatros, type Teatro } from "./Teatros";
+import { leerDiseno } from "@/lib/mapa-libre";
 import { todasLasFilas } from "@/lib/supabase/paginar";
 
 export const metadata: Metadata = { title: "Mapa de asientos" };
@@ -17,12 +18,13 @@ export default async function SeatMapPage({ params }: PageProps<"/panel/producci
   const access = await requirePanel(`/panel/producciones/${id}/boletos/mapa`);
   if (!can(access, id, "funciones.gestionar")) redirect(salidaBoletos(access, id, "boletos/mapa"));
   const supabase = await createClient();
-  const [{ data: seats }, zonas, { data: vendidos }, obras, { data: teatros }] = await Promise.all([
-    todasLasFilas((a, b) => supabase.from("seats").select("id, seat_label, seat_row, seat_number, lado, price_category_id, is_active").eq("production_id", id).order("id").range(a, b)),
+  const [{ data: seats }, zonas, { data: vendidos }, obras, { data: teatros }, { data: prod }] = await Promise.all([
+    todasLasFilas((a, b) => supabase.from("seats").select("id, seat_label, seat_row, seat_number, lado, price_category_id, is_active, pos_x, pos_y, section").eq("production_id", id).order("id").range(a, b)),
     listZones(id),
     supabase.rpc("seat_map_has_tickets", { pid: id }),
     listPanelProductions(),
     supabase.rpc("teatros_lista"),
+    supabase.from("mapas_diseno").select("diseno").eq("production_id", id).maybeSingle(),
   ]);
   // Obras que ya tienen mapa (para "Copiar mapa de otra obra"): se cuenta en cada una, sin bajar sus asientos.
   const conMapa = await Promise.all(obras.filter((o) => o.id !== id).map(async (o) =>
@@ -32,6 +34,7 @@ export default async function SeatMapPage({ params }: PageProps<"/panel/producci
     <div className="flex flex-col gap-4">
     <SeatMapBuilder
       pid={id}
+      diseno={leerDiseno(prod?.diseno)}
       seats={(seats ?? []) as BuilderSeat[]}
       zonas={zonas.filter((z) => z.cupo == null).map((z) => ({ id: z.id, nombre: z.nombre, color: z.color ?? null, descripcion: z.descripcion }))}
       conBoletos={!!vendidos}

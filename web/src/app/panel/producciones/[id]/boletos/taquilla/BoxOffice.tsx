@@ -2,6 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element -- QR generados como imagen en el servidor */
 import { useRouter } from "next/navigation";
+import type { Forma } from "@/lib/mapa-libre";
 import { useMemo, useState, useTransition } from "react";
 import { SeatMap, type ZonePrice } from "@/components/SeatMap";
 import { input } from "@/components/panel/ui";
@@ -12,7 +13,7 @@ import { boxOfficeSale, type SaleResult } from "../actions";
 const MAX_SEATS = 20;
 
 // Venta en taquilla: elegir asientos, datos del comprador y listo (queda aprobada).
-export function BoxOffice({ pid, performanceId, seats, taken, prices }: { pid: string; performanceId: string; seats: MapSeat[]; taken: string[]; prices: ZonePrice[] }) {
+export function BoxOffice({ pid, performanceId, seats, taken, prices, formas = [] }: { pid: string; performanceId: string; seats: MapSeat[]; taken: string[]; prices: ZonePrice[]; formas?: Forma[] }) {
   const router = useRouter();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [nombre, setNombre] = useState("");
@@ -59,7 +60,7 @@ export function BoxOffice({ pid, performanceId, seats, taken, prices }: { pid: s
   return (
     <div className="grid gap-6 lg:grid-cols-12">
       <section aria-label="Mapa de asientos" className="flex flex-col gap-3 lg:col-span-8">
-        <SeatMap seats={seats} prices={prices} taken={takenSet} selected={selected} onToggle={toggle} />
+        <SeatMap formas={formas} seats={seats} prices={prices} taken={takenSet} selected={selected} onToggle={toggle} />
         <button type="button" onClick={() => router.refresh()} className="self-start text-sm font-bold text-violeta-claro">Actualizar disponibilidad</button>
       </section>
       <aside className="flex flex-col gap-3 rounded-2xl bg-telon p-5 lg:col-span-4 lg:self-start">

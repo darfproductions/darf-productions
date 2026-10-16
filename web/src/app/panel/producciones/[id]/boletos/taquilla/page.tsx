@@ -45,7 +45,7 @@ export default async function BoxOfficePage({ params, searchParams }: PageProps<
       {data && !data.error && data.prices.length === 0 && <Card>Esta función no tiene precios. Agrégalos en Funciones y precios.</Card>}
       {funcion && general.length > 0 && <GeneralBoxOffice key={`g-${funcion}`} pid={id} performanceId={funcion} zones={general} />}
       {data && !data.error && numerados.length > 0 && funcion && (
-        <BoxOffice key={funcion} pid={id} performanceId={funcion} seats={data.seats} taken={data.taken} prices={numerados} />
+        <BoxOffice key={funcion} pid={id} performanceId={funcion} formas={data.formas} seats={data.seats} taken={data.taken} prices={numerados} />
       )}
     </>
   );

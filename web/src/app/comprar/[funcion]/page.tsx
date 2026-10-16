@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { leerDiseno } from "@/lib/mapa-libre";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PageHeading } from "@/components/PageHeading";
@@ -42,13 +43,16 @@ export default async function ComprarPage({ params, searchParams }: PageProps<"/
   const supabase = await createClient();
   // Antes de mostrar el mapa se liberan los asientos de órdenes vencidas (0054).
   if (vendible && session) await supabase.rpc("expire_due_orders", { pid: p.id });
-  const [seatsRes, takenRes, pricesRes] = vendible
+  const [seatsRes, takenRes, pricesRes, disenoRes] = vendible
     ? await Promise.all([
-        todasLasFilas((a, b) => supabase.from("seats").select("id, seat_label, seat_row, seat_number, lado, price_category_id, is_active").eq("production_id", p.id).order("id").range(a, b)),
+        todasLasFilas((a, b) => supabase.from("seats").select("id, seat_label, seat_row, seat_number, lado, price_category_id, is_active, pos_x, pos_y").eq("production_id", p.id).order("id").range(a, b)),
         asientosOcupados(supabase, f.id),
         supabase.from("performance_price_categories").select("price_category_id, price, price_categories(nombre, cupo, color)").eq("performance_id", f.id),
+        // 0113: escenario del mapa libre.
+        supabase.from("mapas_diseno").select("diseno").eq("production_id", p.id).maybeSingle(),
       ])
-    : [null, null, null];
+    : [null, null, null, null];
+  const formas = leerDiseno(disenoRes?.data?.diseno)?.formas ?? [];
 
   const seats = ((seatsRes?.data ?? []) as (MapSeat & { is_active: boolean })[]).filter((s) => s.is_active);
   const taken = (takenRes?.data ?? []) as string[];
@@ -103,6 +107,7 @@ export default async function ComprarPage({ params, searchParams }: PageProps<"/
           )}
           {prices.length > 0 && general.length > 0 && <h2 className="titular text-2xl">O elige asientos numerados</h2>}
           {prices.length > 0 && <SeatPicker
+            formas={formas}
             performanceId={f.id}
             productionId={p.id}
             productionName={p.nombre}
