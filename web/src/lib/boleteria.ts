@@ -1,4 +1,5 @@
 import type { MapSeat } from "@/lib/tickets";
+import { leerDiseno } from "@/lib/mapa-libre";
 import type { SaleOrder, summarizeSales } from "@/lib/sales";
 import { todasLasFilas } from "@/lib/supabase/paginar";
 import { createClient } from "@/lib/supabase/server";
@@ -105,12 +106,14 @@ export async function listOrders(pid: string, opts: { funcion?: string; estado?:
 export async function boxOfficeData(pid: string, performanceId: string) {
   const supabase = await createClient();
   await supabase.rpc("expire_due_orders", { pid });
-  const [seats, taken, prices] = await Promise.all([
-    todasLasFilas((a, b) => supabase.from("seats").select("id, seat_label, seat_row, seat_number, lado, price_category_id, is_active").eq("production_id", pid).order("id").range(a, b)),
+  const [seats, taken, prices, diseno] = await Promise.all([
+    todasLasFilas((a, b) => supabase.from("seats").select("id, seat_label, seat_row, seat_number, lado, price_category_id, is_active, pos_x, pos_y").eq("production_id", pid).order("id").range(a, b)),
     asientosOcupados(supabase, performanceId),
     supabase.from("performance_price_categories").select("price_category_id, price, price_categories(nombre, color)").eq("performance_id", performanceId),
+    supabase.from("mapas_diseno").select("diseno").eq("production_id", pid).maybeSingle(),
   ]);
   return {
+    formas: leerDiseno(diseno.data?.diseno)?.formas ?? [],
     seats: ((seats.data ?? []) as (MapSeat & { is_active: boolean })[]).filter((s) => s.is_active),
     taken: (taken.data ?? []) as string[],
     prices: (prices.data ?? []).map((r) => ({

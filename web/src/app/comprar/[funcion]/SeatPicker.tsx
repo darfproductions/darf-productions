@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import type { Forma } from "@/lib/mapa-libre";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { createClient } from "@/lib/supabase/client";
@@ -30,6 +31,8 @@ export function SeatPicker(props: {
   sinSesion?: boolean;
   /** Asientos elegidos antes de entrar (?asientos=…). */
   inicial?: string[];
+  /** 0113: escenario del mapa libre. */
+  formas?: Forma[];
 }) {
   const router = useRouter();
   const [selected, setSelected] = useState<Set<string>>(() => new Set((props.inicial ?? []).filter((id) => !props.taken.includes(id) && props.seats.some((s) => s.id === id))));
@@ -140,7 +143,7 @@ export function SeatPicker(props: {
     <div className="grid gap-8 lg:grid-cols-12">
       <section aria-label="Mapa de asientos" className="flex flex-col gap-4 lg:col-span-8">
         {aviso && <p role="alert" className="rounded-xl border border-[#ff8fa3]/40 bg-[#ff8fa3]/10 px-4 py-3 text-sm">{aviso}</p>}
-        <SeatMap seats={props.seats} prices={props.prices} taken={taken} selected={selected} onToggle={toggle} />
+        <SeatMap formas={props.formas} seats={props.seats} prices={props.prices} taken={taken} selected={selected} onToggle={toggle} />
         <button type="button" onClick={() => { setPolled(null); setAviso(""); router.refresh(); }} className="self-start text-sm font-bold text-violeta-claro">Actualizar disponibilidad</button>
       </section>
 

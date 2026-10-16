@@ -9,6 +9,9 @@ import {
 } from "@/lib/seatmap-rules";
 import { groupSeatsByRow, ZONE_COLORS } from "@/lib/tickets";
 import { copySeatMap, generateSeatMap, saveSeatZone, updateSeats, type SeatMapResult } from "../actions";
+import { MapaPlano } from "@/components/MapaPlano";
+import type { Diseno } from "@/lib/mapa-libre";
+import { MapaEditor } from "./MapaEditor";
 
 export type BuilderSeat = {
   id: string;
@@ -18,6 +21,10 @@ export type BuilderSeat = {
   lado: string | null;
   price_category_id: string | null;
   is_active: boolean;
+  /** 0113: mapa libre. */
+  pos_x?: number | null;
+  pos_y?: number | null;
+  section?: string | null;
 };
 type Zona = { id: string; nombre: string; color: string | null; descripcion: string | null };
 
@@ -73,8 +80,9 @@ function num(v: string, min = 0) {
   return Number.isFinite(n) ? Math.max(min, Math.floor(n)) : min;
 }
 
-export function SeatMapBuilder({ pid, seats, zonas, conBoletos, obras }: {
+export function SeatMapBuilder({ pid, seats, zonas, conBoletos, obras, diseno }: {
   pid: string;
+  diseno: Diseno | null;
   seats: BuilderSeat[];
   zonas: Zona[];
   conBoletos: boolean;
@@ -107,6 +115,16 @@ export function SeatMapBuilder({ pid, seats, zonas, conBoletos, obras }: {
     });
   };
   const activos = seats.filter((s) => s.is_active).length;
+  // 0113: mapa libre (con posición) y sus bloques para seleccionar completos.
+  const libre = seats.some((s) => s.pos_x != null);
+  const secciones = [...new Set(seats.map((s) => s.section).filter((x): x is string => !!x))];
+  const toggleSeccion = (sec: string) => setSel((prev) => {
+    const ids = seats.filter((s) => s.section === sec).map((s) => s.id);
+    const all = ids.every((id) => prev.has(id));
+    const n = new Set(prev);
+    for (const id of ids) if (all) n.delete(id); else n.add(id);
+    return n;
+  });
 
   // ──── Generar ────
   const [spec, setSpec] = useState<MapSpec>(() => ({ ...SPEC_INICIAL, zonas: zonas[0] ? [{ zona: zonas[0].id, desde: 1, hasta: SPEC_INICIAL.cuantas }] : [] }));
@@ -162,7 +180,25 @@ export function SeatMapBuilder({ pid, seats, zonas, conBoletos, obras }: {
             <h2 className="titular text-xl">Ajustar asiento por asiento</h2>
             <p className="text-sm text-texto-2">Toca asientos para seleccionarlos (toca la letra de la fila para seleccionarla completa). Los quitados se ven punteados y no se venden; puedes volver a ponerlos.</p>
           </div>
-          <SeatGrid seats={seats} colorOf={colorOf} selected={sel} onToggle={toggle} onRow={toggleRow} />
+          {libre ? (
+            <>
+              {secciones.length > 1 && (
+                <div className="flex flex-wrap items-center gap-2 text-xs">
+                  <span className="text-texto-3">Seleccionar bloque completo:</span>
+                  {secciones.map((s) => <button key={s} type="button" onClick={() => toggleSeccion(s)} className="rounded-full border border-white/25 px-3 py-1 font-bold">{s}</button>)}
+                </div>
+              )}
+              <MapaPlano formas={diseno?.formas ?? []} alto="60vh" onToggle={(id) => { const s = seats.find((x) => x.id === id); if (s) toggle(s); }}
+                asientos={seats.filter((s) => s.pos_x != null).map((s) => {
+                  const marcado = sel.has(s.id), color = colorOf(s.price_category_id);
+                  return {
+                    id: s.id, x: s.pos_x!, y: s.pos_y ?? 0, numero: s.seat_number, etiqueta: s.seat_label, marcado,
+                    fondo: marcado ? "#ffffff" : s.is_active ? color : "transparent", texto: marcado ? "#0b0910" : s.is_active ? "#ffffff" : "#6e6878",
+                    borde: !s.is_active && !marcado ? color : undefined, titulo: `${s.seat_label}${s.section ? ` · ${s.section}` : ""}${s.is_active ? "" : " (quitado)"}`,
+                  };
+                })} />
+            </>
+          ) : <SeatGrid seats={seats} colorOf={colorOf} selected={sel} onToggle={toggle} onRow={toggleRow} />}
           <ul className="flex flex-wrap gap-2 text-xs">
             {zonas.map((z) => (
               <li key={z.id} className="flex items-center gap-1.5 rounded-full bg-sala px-2.5 py-1"><span className="h-2.5 w-2.5 rounded-full" style={{ background: colorOf(z.id) }} />{z.nombre}</li>
@@ -183,9 +219,14 @@ export function SeatMapBuilder({ pid, seats, zonas, conBoletos, obras }: {
         </Card>
       )}
 
+      {/* 0113: diseñar el mapa libre */}
+      <MapaEditor pid={pid} inicial={diseno} zonas={zonas} colorOf={colorOf} asientosActuales={seats.length} conBoletos={conBoletos} />
+
       {/* Generar */}
       {!conBoletos && (
         <Card className="flex flex-col gap-4">
+          <details open={!libre && seats.length > 0 && !diseno} className="flex flex-col gap-4">
+          <summary className="cursor-pointer font-bold">Otra forma: crear por filas (teatro clásico, sin dibujo)</summary>
           <div>
             <h2 className="titular text-xl">{seats.length ? "Generar un mapa nuevo" : "Crear el mapa"}</h2>
             <p className="text-sm text-texto-2">Describe el teatro por filas: cuántas filas, cuántos asientos tiene cada bloque (izquierda, centro, derecha) y qué zona va en cada rango de filas. La fila A es la más cercana al escenario. Ves el resultado abajo antes de guardar.</p>
@@ -256,6 +297,7 @@ export function SeatMapBuilder({ pid, seats, zonas, conBoletos, obras }: {
               </div>
             </>
           )}
+          </details>
         </Card>
       )}
 

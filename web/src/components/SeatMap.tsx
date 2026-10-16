@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { colorZona, textoSobre } from "@/lib/seatmap-rules";
 import { clampSeat, formatMoney, groupSeatsByRow, seatSize, ZONE_COLORS, type MapSeat } from "@/lib/tickets";
+import type { Forma } from "@/lib/mapa-libre";
+import { MapaPlano } from "@/components/MapaPlano";
 
 export type ZonePrice = { categoryId: string; price: number; nombre: string; color?: string | null };
 
@@ -14,7 +16,10 @@ export function SeatMap({
   taken,
   selected,
   onToggle,
+  formas = [],
 }: {
+  /** 0113: escenario del mapa libre (si los asientos tienen posición). */
+  formas?: Forma[];
   seats: MapSeat[];
   prices: ZonePrice[];
   taken: Set<string>;
@@ -39,6 +44,40 @@ export function SeatMap({
   }, [cols]);
   const size = zoom ?? fit;
   const dist = (t: React.TouchList) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+  const libre = seats.some((s) => s.pos_x != null);
+  const leyenda = (
+    <ul className="flex flex-wrap gap-2 text-sm">
+      {prices.slice().sort((a, b) => b.price - a.price).map((z) => (
+        <li key={z.categoryId} className="flex items-center gap-2 rounded-full bg-telon px-3 py-1.5">
+          <span aria-hidden="true" className="h-3 w-3 rounded-full" style={{ background: colorByCat.get(z.categoryId) }} />
+          {z.nombre} · {formatMoney(z.price).replace(" MXN", "")}
+        </li>
+      ))}
+      <li className="flex items-center gap-2 rounded-full bg-telon px-3 py-1.5"><span aria-hidden="true" className="h-3 w-3 rounded-full bg-[#3a3446]" /> Ocupado</li>
+      <li className="flex items-center gap-2 rounded-full bg-telon px-3 py-1.5"><span aria-hidden="true" className="h-3 w-3 rounded-full bg-white" /> Selección</li>
+    </ul>
+  );
+  // 0113: mapa libre (escenario redondo, pasarela, 360°…): cada asiento en su lugar.
+  if (libre) {
+    const porId = new Map(seats.map((s) => [s.id, s]));
+    return (
+      <>
+        {leyenda}
+        <MapaPlano formas={formas} onToggle={(id) => { const s = porId.get(id); if (s) onToggle(s); }}
+          asientos={seats.filter((s) => s.pos_x != null).map((s) => {
+            const zone = priceByCat.get(s.price_category_id ?? "");
+            const isTaken = taken.has(s.id) || !zone;
+            const isSel = selected.has(s.id);
+            const color = zone ? colorByCat.get(zone.categoryId) ?? "#888" : "#888";
+            return {
+              id: s.id, x: s.pos_x!, y: s.pos_y ?? 0, numero: s.seat_number, etiqueta: s.seat_label, deshabilitado: isTaken, marcado: isSel,
+              fondo: isSel ? "#ffffff" : isTaken ? "#3a3446" : color, texto: isSel ? "#0b0910" : isTaken ? "#6e6878" : textoSobre(color),
+              titulo: `Asiento ${s.seat_label}${zone ? `, ${zone.nombre}, ${formatMoney(zone.price)}` : ""}${isTaken ? ", ocupado" : ""}`,
+            };
+          })} />
+      </>
+    );
+  }
   return (
     <>
       <ul className="flex flex-wrap gap-2 text-sm">

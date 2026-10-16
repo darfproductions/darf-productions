@@ -409,3 +409,29 @@ export async function deleteTeatro(_p: TicketState, f: FormData): Promise<Ticket
   refresh(pid);
   return { ok: true, message: "Teatro borrado." };
 }
+
+// ──────── Mapa libre (0113) ────────
+
+type AsientoDiseno = { fila: string; numero: number; etiqueta: string; x: number; y: number; zona: string | null; seccion: string };
+
+/** Guarda el mapa diseñado en la página: el diseño y sus asientos. Sin zona elegida, van a la zona "General". */
+export async function disenarMapa(pid: string, diseno: unknown, lista: AsientoDiseno[]): Promise<SeatMapResult> {
+  const supabase = await createClient();
+  let general: string | null = null;
+  if (lista.some((a) => !a.zona)) {
+    const { data: z } = await supabase.from("price_categories").select("id").eq("production_id", pid).eq("nombre", "General").is("cupo", null).maybeSingle();
+    general = (z?.id as string | undefined) ?? null;
+    if (!general) {
+      const { data: nueva, error } = await supabase.from("price_categories").insert({ production_id: pid, nombre: "General", color: "#a48bff" }).select("id").single();
+      if (error) return { ok: false, message: mensajeError(error) };
+      general = nueva.id as string;
+    }
+  }
+  const { data, error } = await supabase.rpc("seat_map_disenar", {
+    pid, p_diseno: diseno,
+    lista: lista.map((a) => ({ fila: a.fila, numero: a.numero, etiqueta: a.etiqueta, x: a.x, y: a.y, seccion: a.seccion, lado: "central", zona: a.zona ?? general })),
+  });
+  if (error) return { ok: false, message: mensajeError(error) };
+  refresh(pid);
+  return { ok: true, message: `Mapa guardado: ${asientos((data as { asientos: number }).asientos)}. Ahora acomoda las zonas y ponles precio en cada función.` };
+}

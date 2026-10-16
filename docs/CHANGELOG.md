@@ -5,6 +5,18 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-10-16 — Mapa de asientos libre (migración 0113)
+
+- Cada asiento puede tener posición (`seats.pos_x`/`pos_y`). La compra, la taquilla y el panel lo dibujan tal cual
+  (escenario redondo, pasarela, 360°, pasillos donde sea). El mapa por filas de siempre sigue igual (sin posición).
+- Editor en Boletos → Mapa de asientos: plantillas (frontal, con pasarela, 360°, arena), bloques rectos o en arco,
+  figuras (escenario, pasarela) que se arrastran con el mouse o el dedo. La numeración (fila + número) sigue de un
+  bloque a otro y **nunca se repite** en toda la obra (Diego: "nunca debe haber dos A1, aunque sean diferentes zonas").
+  Los asientos sin zona van a "General"; las zonas y precios se acomodan después.
+- `seat_map_disenar` guarda asientos + diseño. El diseño vive en `mapas_diseno` (no en `productions`) para no
+  disparar la revisión del kit de publicar, los avisos de Wallet ni la bitácora de la obra al guardar el mapa.
+- Copiar el mapa de otra obra y los teatros guardados llevan las posiciones y el diseño.
+
 ## 2026-10-15 — Host de audición, personajes por crédito, teatros guardados, Club Fan y medidas (migración 0112)
 
 - Rol **Host de audición** (`audiciones.entrevista`): pestaña "Entrevista" en la convocatoria con las preguntas de
