@@ -45,6 +45,7 @@ export function ImageUpload({
   label,
   compact,
   revisar,
+  multiple,
 }: {
   productionId: string;
   kind: ImageKind;
@@ -56,12 +57,54 @@ export function ImageUpload({
   compact?: boolean;
   /** Revisión extra de medidas (por ejemplo, la proporción de un póster). */
   revisar?: (ancho: number, alto: number) => { errores: string[]; avisos: string[] };
+  /** Varias fotos a la vez (se suben una tras otra). */
+  multiple?: boolean;
 }) {
   const router = useRouter();
   const input = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; lines: string[] } | null>(null);
+  const [progreso, setProgreso] = useState<string | null>(null);
   const rule = IMAGE_RULES[kind];
+
+  async function onFiles(files: File[]) {
+    if (files.length === 1) return onFile(files[0]);
+    setMsg(null);
+    setBusy(true);
+    let bien = 0;
+    const errores: string[] = [];
+    try {
+      for (const [i, f] of files.entries()) {
+        setProgreso(`${i + 1} de ${files.length}`);
+        const r = await subir(f);
+        if (r.ok) bien++;
+        else errores.push(`${f.name}: ${r.lines[0]}`);
+      }
+    } finally {
+      setProgreso(null);
+      setBusy(false);
+      if (input.current) input.current.value = "";
+    }
+    setMsg({ ok: errores.length === 0, lines: [`${bien} de ${files.length} fotos subidas.`, ...errores.slice(0, 5)] });
+    if (bien) router.refresh();
+  }
+
+  async function subir(file: File): Promise<{ ok: boolean; lines: string[] }> {
+    try {
+      const dims = await measure(file, kind === "logo");
+      const c = await compressImage(file, kind);
+      const check = checkImage(kind, { type: file.type, size: c.file.size, ...dims });
+      const extra = revisar?.(dims.width, dims.height) ?? { errores: [], avisos: [] };
+      if (!check.ok || extra.errores.length) return { ok: false, lines: [...check.errors, ...extra.errores] };
+      const path = storagePath(productionId, carpeta, base, c.file.type);
+      const { error } = await createClient().storage.from(bucket).upload(path, c.file, { contentType: c.file.type, upsert: false });
+      if (error) return { ok: false, lines: [`No se pudo subir: ${error.message}`] };
+      const res = await save(path);
+      return { ok: res.ok, lines: [res.message] };
+    } catch {
+      return { ok: false, lines: ["No se pudo leer la imagen."] };
+    }
+  }
 
   async function onFile(file: File) {
     setMsg(null);
@@ -97,16 +140,17 @@ export function ImageUpload({
   return (
     <div className={compact ? "flex flex-col gap-1" : "flex flex-col gap-2"}>
       <label className={`inline-flex cursor-pointer items-center justify-center rounded-full border border-white/25 font-bold hover:border-white/50 ${compact ? "px-3 py-1 text-xs" : "self-start px-4 py-2 text-sm"} ${busy ? "opacity-60" : ""}`}>
-        {busy ? "Subiendo…" : (label ?? `Subir ${rule.label.toLowerCase()}`)}
+        {busy ? `Subiendo${progreso ? ` ${progreso}` : ""}…` : (label ?? `Subir ${rule.label.toLowerCase()}`)}
         <input
           ref={input}
           type="file"
           accept={rule.types.join(",")}
           className="sr-only"
           disabled={busy}
+          multiple={multiple}
           onChange={(e) => {
-            const f = e.target.files?.[0];
-            if (f) void onFile(f);
+            const fs = Array.from(e.target.files ?? []);
+            if (fs.length) void onFiles(multiple ? fs : fs.slice(0, 1));
           }}
         />
       </label>

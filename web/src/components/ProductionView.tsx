@@ -431,7 +431,10 @@ export async function ProductionView({
                 </li>
               ))}
             </ul>
-            {ensayos > 0 && <Link href={`/fan-zone/${p.id}`} className="fb fb-fz fb-sm self-start">Más en la Fan Zone</Link>}
+            <div className="flex flex-wrap gap-3">
+              {gallery.some((g) => g.funcion) && <Link href={`/producciones/${p.id}/fotos`} className="fb fb-o fb-sm self-start"><Icono nombre="camara" /> Fotos de cada función</Link>}
+              {ensayos > 0 && <Link href={`/fan-zone/${p.id}`} className="fb fb-fz fb-sm self-start">Más en la Fan Zone</Link>}
+            </div>
           </Bloque>
         )}
 
@@ -447,6 +450,12 @@ export async function ProductionView({
           <Bloque id="agradecimientos" eyebrow="Gracias" titulo="Agradecimientos">
             <ul className="grid gap-x-10 gap-y-2 opacity-90 sm:grid-cols-2">{c.agradecimientos.map((a, i) => <li key={i}>{a}</li>)}</ul>
           </Bloque>
+        )}
+
+        {!vistaPrevia && (
+          <p className="text-sm text-texto-3">
+            ¿Eres de un medio? <Link href={`/producciones/${p.id}/prensa`} className="font-bold text-lila underline-offset-4 hover:underline">Kit de prensa <Icono nombre="flecha-der" /></Link>
+          </p>
         )}
       </div>
 

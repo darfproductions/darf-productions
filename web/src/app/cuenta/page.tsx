@@ -107,6 +107,15 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
     listNotifications({ limit: 3 }), unreadCount(), getMiCredencial(),
   ]);
   const misEnsayosEquipo = ((await supabase.rpc("mis_ensayos_equipo")).data ?? []) as MiEnsayoEquipo[];
+  // 0114: regalo de cumpleaños del Club Fan (solo el del mes en curso y si aún no se usó).
+  const mesMx = new Intl.DateTimeFormat("es-MX", { timeZone: "America/Mexico_City", year: "numeric", month: "numeric" }).formatToParts(new Date());
+  const anioMx = Number(mesMx.find((x) => x.type === "year")?.value);
+  const numMesMx = Number(mesMx.find((x) => x.type === "month")?.value);
+  const regaloRow = credencial?.socio
+    ? (await supabase.from("regalos_cumple").select("codigo").eq("user_id", session.userId).eq("anio", anioMx).eq("mes", numMesMx).maybeSingle()).data
+    : null;
+  const regalo = regaloRow && !orders.some((o) => o.discount_codigo === regaloRow.codigo && o.status !== "rechazado") ? (regaloRow.codigo as string) : null;
+  const nombreMes = new Intl.DateTimeFormat("es-MX", { timeZone: "America/Mexico_City", month: "long" }).format(new Date());
   const equipos = (miEquipo.data ?? []) as { production_id: string | null; nombre: string; roles: string[] }[];
   const pendEquipo = new Map(((equipoPend.data ?? []) as { production_id: string | null; avisos: number; notas: number }[]).map((x) => [x.production_id ?? "general", x]));
   const ventas = (misVentas.data ?? []) as MySale[];
@@ -442,6 +451,13 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
             <section aria-labelledby="club" className="flex flex-col gap-2 rounded-2xl bg-telon p-6">
               <h2 id="club" className="text-lg font-bold">Club Fan</h2>
               <p className="text-sm text-texto-2">Eres socio {numeroSocio(credencial.socio.numero)}{credencial.socio.fundador ? " · Fan fundador" : ""}. <Link href="/club-fan" className="font-bold text-lila">Tus beneficios</Link></p>
+              {regalo && (
+                <div className="rounded-xl border border-oro/40 bg-oro/10 p-3 text-sm">
+                  <p className="font-bold text-oro-claro">¡Feliz cumpleaños! Tu regalo</p>
+                  <p className="mt-1 text-texto-2">10 % en hasta 2 boletos de cualquier obra, en una compra, hasta el fin de {nombreMes}. Escribe este código en &ldquo;Código de descuento&rdquo; al comprar:</p>
+                  <p className="num mt-2 select-all text-lg font-black tracking-widest">{regalo}</p>
+                </div>
+              )}
               <SalirClub numero={numeroSocio(credencial.socio.numero)} />
             </section>
           )}

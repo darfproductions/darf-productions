@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState, useTransition } from "react";
 import { Card, Notice, input } from "@/components/panel/ui";
-import { FormaSvg } from "@/components/MapaPlano";
+import { FormaSvg, etiquetasFila } from "@/components/MapaPlano";
 import {
   bloqueBase, encimados, encuadre, erroresDiseno, forma, generarLibre, PLANTILLAS, plantilla,
   type Bloque, type Diseno, type Forma, type Plantilla,
@@ -145,6 +145,9 @@ export function MapaEditor({ pid, inicial, zonas, colorOf, asientosActuales, con
             <svg ref={svg} viewBox={`${vista.x} ${vista.y} ${vista.w} ${vista.h}`} className="block h-[60vh] w-full touch-none select-none"
               onPointerMove={mover} onPointerUp={soltar} onPointerCancel={soltar} onPointerDown={() => setSel(null)} role="application" aria-label="Lienzo del mapa">
               {d.formas.map((f) => <FormaSvg key={f.id} f={f} activa={fig?.id === f.id} onPointerDown={empezar("forma", f.id)} />)}
+              {etiquetasFila(asientos).map((e, i) => (
+                <text key={`${e.fila}-${i}`} x={e.x} y={e.y} textAnchor="middle" dominantBaseline="central" fontSize={9} fontWeight={800} fill="#a39cb3" style={{ pointerEvents: "none" }}>{e.fila}</text>
+              ))}
               {d.bloques.map((b) => {
                 const activo = bloque?.id === b.id;
                 const suyos = asientos.filter((a) => a.bloque === b.id);

@@ -5,6 +5,19 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-10-16 — Fotos de tu función, regalo de cumpleaños, kit de prensa y filas en el mapa (migración 0114)
+
+- **Fotos de cada función:** `gallery_photos.performance_id`. En Fan Zone del panel se elige la función y se suben
+  varias fotos a la vez; "Avisar a quienes fueron" (`fotos_funcion_avisar`) manda un solo aviso a quien tuvo boleto
+  aprobado y queda registrado en `fotos_funcion_avisos` (no se repite). Página pública `/producciones/<obra>/fotos`.
+- **Regalo de cumpleaños del Club Fan:** cada mañana (`darf_cumple`) los socios que cumplen ese mes reciben un código
+  personal `CUMPLE-XXXXXX` (`regalos_cumple`): 10 % en hasta 2 boletos, una compra, cualquier obra, todo el mes.
+  `_resolve_discount_code` lo convierte al usarlo en un código normal de esa obra (`discount_codes.regalo_id`) y
+  revisa que lo use su dueño y una sola vez; no aparece en la lista de Descuentos de la obra. Se ve en Mi cuenta.
+- **Kit de prensa:** `/producciones/<obra>/prensa` (pública, sin menú): logo, pósters, imagen de ambiente, fotos en
+  tamaño original, sinopsis, ficha, funciones, créditos y contacto para medios. Liga al final de la página de la obra.
+- **Mapa libre:** la letra de la fila sale en las puntas de cada fila (compra, taquilla, panel y editor).
+
 ## 2026-10-16 — Mapa de asientos libre (migración 0113)
 
 - Cada asiento puede tener posición (`seats.pos_x`/`pos_y`). La compra, la taquilla y el panel lo dibujan tal cual
