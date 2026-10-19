@@ -10,8 +10,10 @@ import { listFanzone } from "@/lib/fanzone";
 import { can } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
 import { formatPerformanceDate, getGallery } from "@/lib/productions";
-import { addGalleryPhoto, moveFanzoneItem, removeFanzoneItem, removeGalleryPhoto, setFanzoneDetalle, setFanzoneFlag } from "./actions";
+import { addGalleryPhoto, avisarFotosFuncion, moveFanzoneItem, removeFanzoneItem, removeGalleryPhoto, setFanzoneDetalle, setFanzoneFlag } from "./actions";
 import { FanzoneForm } from "./FanzoneForm";
+import { FotosFuncionSubir } from "./FotosFuncionSubir";
+import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { EventosLista } from "@/components/panel/EventosLista";
 import { MiniAction } from "@/components/panel/MiniAction";
@@ -27,10 +29,16 @@ export default async function FanZoneEditor({ params }: PageProps<"/panel/produc
   const { id } = await params;
   const access = await requirePanel(`/panel/producciones/${id}/fanzone`);
   if (!can(access, id, "fanzone.editar")) redirect(`/panel/producciones/${id}`);
-  const [items, gallery] = await Promise.all([
+  const supabase = await createClient();
+  const [items, gallery, estado] = await Promise.all([
     listFanzone(id),
     getGallery(id),
+    supabase.rpc("fotos_funcion_estado", { pid: id }),
   ]);
+  type Funcion = { performance_id: string; starts_at: string; fotos: number; con_boleto: number; avisados: number | null; avisado_at: string | null };
+  // Funciones que ya empezaron (la base da también las de hoy).
+  const ahora = new Date().toISOString();
+  const funciones = ((estado.data ?? []) as Funcion[]).filter((f) => f.starts_at <= ahora);
   const h = (iid: string, extra: Record<string, string>) => ({ pid: id, id: iid, ...extra });
 
   return (
@@ -97,6 +105,35 @@ export default async function FanZoneEditor({ params }: PageProps<"/panel/produc
             <Link href={`/panel/eventos?obra=${id}`} className="fb fb-fz fb-sm">+ Crear evento</Link>
           </div>
           <EventosLista access={access} pid={id} />
+        </section>
+      </Card>
+      <Card>
+        <section className="flex flex-col gap-4">
+          <div>
+            <h2 className="titular text-xl">Fotos de cada función</h2>
+            <p className="mt-1 text-sm text-texto-2">Elige la función y sube sus fotos (puedes elegir varias a la vez). Salen en la galería y en la página de fotos de esa función. Cuando el álbum esté completo, avisa a quienes fueron: les llega un solo aviso en su cuenta y su teléfono.</p>
+          </div>
+          <FotosFuncionSubir pid={id} funciones={funciones.map((f) => ({ id: f.performance_id, label: formatPerformanceDate(f.starts_at) }))} />
+          {funciones.some((f) => f.fotos > 0) && (
+            <ul className="flex flex-col divide-y divide-white/10 text-sm">
+              {funciones.filter((f) => f.fotos > 0).map((f) => (
+                <li key={f.performance_id} className="flex flex-wrap items-center justify-between gap-2 py-2.5">
+                  <span>
+                    <b>{formatPerformanceDate(f.starts_at)}</b>
+                    <span className="block text-xs text-texto-3">
+                      {f.fotos} {f.fotos === 1 ? "foto" : "fotos"} · {f.con_boleto} {f.con_boleto === 1 ? "persona" : "personas"} con boleto y cuenta ·{" "}
+                      <Link href={`/producciones/${id}/fotos?funcion=${f.performance_id}`} className="underline" target="_blank">ver página</Link>
+                    </span>
+                  </span>
+                  {f.avisado_at
+                    ? <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-bold">Avisado a {f.avisados} · {formatPerformanceDate(f.avisado_at)}</span>
+                    : <ActionForm inline action={avisarFotosFuncion} hidden={{ pid: id, funcion: f.performance_id }}
+                        confirm={`¿Avisar a ${f.con_boleto} ${f.con_boleto === 1 ? "persona" : "personas"} que ya están las fotos? Solo se puede una vez.`}
+                        submit="Avisar a quienes fueron" submitClass={small} />}
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
       </Card>
       <Card>

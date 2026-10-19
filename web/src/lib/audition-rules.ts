@@ -51,7 +51,7 @@ export type AuditionOptions = {
   pedir_foto: boolean;
   elegir_horario: boolean;
   visibilidad: "publica" | "enlace";
-  numeracion: "llegada" | "previa";
+  numeracion: "llegada" | "previa" | "personaje";
   modalidad: "presencial" | "en_linea" | "mixta";
   solo_invitados: boolean;
 };

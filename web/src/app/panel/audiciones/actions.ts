@@ -140,7 +140,7 @@ export async function saveOptions(_p: AudState, f: FormData): Promise<AudState> 
         elegir_horario: on("elegir_horario"),
         // Por invitación siempre es "solo con enlace".
         visibilidad: solo_invitados || str(f, "visibilidad") === "enlace" ? "enlace" : "publica",
-        numeracion: str(f, "numeracion") === "previa" ? "previa" : "llegada",
+        numeracion: (["previa", "personaje"] as const).find((x) => x === str(f, "numeracion")) ?? "llegada",
         modalidad,
         solo_invitados,
         // 0089: con callback, el "Siguiente" pasa por "Elegir callback" y "Callback" antes de votar.
@@ -413,6 +413,15 @@ export async function autoOrder(_p: AudState, f: FormData): Promise<AudState> {
   return done(aid, `Listo: ${data} personas ordenadas por horario.`);
 }
 
+/** 0116: repartir ya los números por personaje (si no, se reparten solos al cerrar inscripciones). */
+export async function numerarAhora(_p: AudState, f: FormData): Promise<AudState> {
+  const aid = str(f, "aid");
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("audition_numerar_ahora", { aid });
+  if (error) return { ok: false, message: mensajeError(error) };
+  return done(aid, `Listo: ${data} personas con su lugar. Ya les llegó el aviso a su cuenta.`);
+}
+
 /** Subir o bajar a alguien en la lista (intercambia su número con el de al lado). */
 export async function swapOrder(aid: string, a1: string, a2: string): Promise<{ ok: boolean; message?: string }> {
   const supabase = await createClient();
@@ -503,4 +512,47 @@ export async function saveScore(_p: AudState, f: FormData): Promise<AudState> {
   if (error) return { ok: false, message: error.message };
   revalidatePath(`${base(aid)}/evaluacion`);
   return { ok: true, message: "Guardado." };
+}
+
+// ════════ 0115: en escena (el host pasa al siguiente; los jueces lo ven) ════════
+
+export type EnEscenaRes = { ok: boolean; message?: string; app?: string | null; nombre?: string | null; numero?: number | null };
+
+export async function ponerEnEscena(aid: string, app: string | null): Promise<EnEscenaRes> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("audition_en_escena", { aid, app });
+  if (error) return { ok: false, message: mensajeError(error) };
+  revalidatePath(`${base(aid)}/entrevista`);
+  const d = data as { app: string | null; nombre: string | null; numero: number | null };
+  return { ok: true, ...d };
+}
+
+export async function pasarSiguiente(aid: string): Promise<EnEscenaRes> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("audition_siguiente", { aid });
+  if (error) return { ok: false, message: mensajeError(error) };
+  revalidatePath(`${base(aid)}/entrevista`);
+  const d = data as { app: string | null; nombre?: string | null; numero?: number | null };
+  return { ok: true, ...d, message: d.app ? undefined : "Ya no hay nadie más esperando." };
+}
+
+export type JuezActual = {
+  app: string | null; numero: number | null; nombre: string; edad: number | null; foto: string | null; desde: string | null;
+  personajes: string[] | null; respuestas: { pregunta: string; respuesta: string }[]; enlaces: { titulo: string; url: string }[];
+  entrevista: { pregunta: string; respuesta: string }[]; extra: string | null; entrevista_at: string | null;
+  historial: { obra: string; temporada: string | null; tipo: string; papel: string | null }[];
+  puntos: Record<string, number>; notas: string | null; picks: { opcion: number; role_id: string | null; ensamble: boolean }[];
+};
+
+/** Quien está en escena ahora, para la pantalla de los jueces (se vuelve a pedir cada pocos segundos). */
+export async function juezActual(aid: string, ronda: number): Promise<JuezActual | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("audition_juez_actual", { aid, p_ronda: ronda });
+  if (error || !data || !(data as { app: string | null }).app) return null;
+  const d = data as Omit<JuezActual, "foto"> & { foto_path: string | null };
+  let foto: string | null = null;
+  if (d.foto_path) foto = (await supabase.storage.from("audiciones").createSignedUrl(d.foto_path, 3600)).data?.signedUrl ?? null;
+  const { foto_path: _f, ...resto } = d;
+  void _f;
+  return { ...resto, foto };
 }

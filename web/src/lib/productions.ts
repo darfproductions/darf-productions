@@ -166,15 +166,15 @@ export async function getPerformanceForSale(performanceId: string) {
 }
 
 /** Fotos de la galería pública de una obra (tabla gallery_photos + Storage `gallery`). */
-export async function getGallery(productionId: string): Promise<{ id: string; url: string }[]> {
+export async function getGallery(productionId: string): Promise<{ id: string; url: string; funcion: boolean }[]> {
   const supabase = await createClient();
   const { data } = await supabase
     .from("gallery_photos")
-    .select("id, path")
+    .select("id, path, performance_id")
     .eq("production_id", productionId)
     .eq("kind", "galeria")
     .order("sort_order");
-  return (data ?? []).map((r) => ({ id: r.id, url: supabase.storage.from("gallery").getPublicUrl(r.path).data.publicUrl }));
+  return (data ?? []).map((r) => ({ id: r.id, url: supabase.storage.from("gallery").getPublicUrl(r.path).data.publicUrl, funcion: !!r.performance_id }));
 }
 
 /** Capacidad y lugares ocupados de cada función (mapa + entrada general). Solo lectura. */

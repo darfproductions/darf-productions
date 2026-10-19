@@ -70,7 +70,7 @@ export function SeatMap({
             const isSel = selected.has(s.id);
             const color = zone ? colorByCat.get(zone.categoryId) ?? "#888" : "#888";
             return {
-              id: s.id, x: s.pos_x!, y: s.pos_y ?? 0, numero: s.seat_number, etiqueta: s.seat_label, deshabilitado: isTaken, marcado: isSel,
+              id: s.id, x: s.pos_x!, y: s.pos_y ?? 0, numero: s.seat_number, etiqueta: s.seat_label, fila: s.seat_row, deshabilitado: isTaken, marcado: isSel,
               fondo: isSel ? "#ffffff" : isTaken ? "#3a3446" : color, texto: isSel ? "#0b0910" : isTaken ? "#6e6878" : textoSobre(color),
               titulo: `Asiento ${s.seat_label}${zone ? `, ${zone.nombre}, ${formatMoney(zone.price)}` : ""}${isTaken ? ", ocupado" : ""}`,
             };

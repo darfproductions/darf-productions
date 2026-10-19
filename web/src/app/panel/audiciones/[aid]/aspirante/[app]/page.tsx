@@ -24,11 +24,12 @@ export default async function ApplicantPage({ params }: PageProps<"/panel/audici
   const etiqueta = new Map(((a.criterios ?? []) as Criterio[]).map((c) => [c.k, c.l]));
   if (!/^[0-9a-f-]{36}$/.test(app)) notFound();
   const supabase = await createClient();
-  const [{ data: x }, scores, videos, roles] = await Promise.all([
+  const [{ data: x }, scores, videos, roles, campos] = await Promise.all([
     supabase.from("audition_applications").select("*, audition_slots(inicia, sala)").eq("id", app).eq("audition_id", aid).maybeSingle(),
     supabase.from("audition_scores").select("ronda, puntos, notas, judge_id").eq("application_id", app).order("ronda"),
     supabase.from("audition_videos").select("id, titulo, url, application_id, created_at").eq("audition_id", aid).order("created_at"),
     supabase.from("audition_roles").select("id, nombre").eq("audition_id", aid),
+    supabase.from("audition_fields").select("id, etiqueta, tipo").eq("audition_id", aid).order("orden"),
   ]);
   if (!x) notFound();
   const fotos = await signPhotos([x.foto_path]);
@@ -93,6 +94,21 @@ export default async function ApplicantPage({ params }: PageProps<"/panel/audici
             <ul className="flex flex-col gap-1">{delDia.map((v) => <li key={v.id}><a href={v.url} target="_blank" rel="noreferrer" className="text-violeta-claro underline">{v.titulo} <Icono nombre="externo" /></a></li>)}</ul>
           </div>
         )}
+      </Card>
+
+      <Card className="lg:col-span-5">
+        <h2 className="mb-2 font-bold">Su formulario</h2>
+        {(() => {
+          // 0115: las respuestas de su inscripción (las ligas salen con los videos).
+          const resp = (x.respuestas ?? {}) as Record<string, unknown>;
+          const filas = ((campos.data ?? []) as { id: string; etiqueta: string; tipo: string }[])
+            .filter((c) => c.tipo !== "enlace" && String(resp[c.id] ?? "").trim());
+          return filas.length === 0 ? <p className="text-sm text-texto-3">No contestó preguntas extra.</p> : (
+            <div className="flex flex-col gap-1.5 text-sm">
+              {filas.map((c) => <p key={c.id} className="whitespace-pre-line break-words"><span className="text-texto-3">{c.etiqueta}:</span> {String(resp[c.id])}</p>)}
+            </div>
+          );
+        })()}
       </Card>
 
       <Card className="lg:col-span-5">

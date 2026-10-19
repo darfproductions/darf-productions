@@ -5,6 +5,7 @@ import { Card } from "@/components/panel/ui";
 import { Icono } from "@/components/Icono";
 import { requireAudition } from "@/lib/panel-auditions";
 import { createClient } from "@/lib/supabase/server";
+import { EnEscenaHost, PonerEnEscena } from "./EnEscenaHost";
 
 export const metadata: Metadata = { title: "Entrevista" };
 
@@ -15,7 +16,12 @@ export default async function Entrevistas({ params, searchParams }: PageProps<"/
   const { aid } = await params;
   const sp = await searchParams;
   await requireAudition(aid, ["audiciones.entrevista", "audiciones.gestionar"], "/entrevista");
-  const { data, error } = await (await createClient()).rpc("audition_entrevistas_lista", { aid });
+  const supabase = await createClient();
+  const [{ data, error }, { data: escena }] = await Promise.all([
+    supabase.rpc("audition_entrevistas_lista", { aid }),
+    supabase.rpc("audition_juez_actual", { aid }),
+  ]);
+  const actual = (escena as { app: string | null; numero: number | null; nombre: string } | null)?.app ? (escena as { app: string; numero: number | null; nombre: string }) : null;
   const todos = (data ?? []) as Fila[];
   const ver = sp.ver === "todos" ? "todos" : "pendientes";
   const pendientes = todos.filter((f) => !f.hecha);
@@ -24,12 +30,13 @@ export default async function Entrevistas({ params, searchParams }: PageProps<"/
 
   return (
     <div className="flex flex-col gap-4">
-      <AutoRefresh seconds={30} />
+      <AutoRefresh seconds={15} />
       <Card className="flex flex-col gap-2">
         <h2 className="titular text-xl">Entrevista</h2>
         <p className="text-sm text-texto-2">Recibe a cada aspirante, hazle las preguntas y anótalas. Queda en su solicitud y en su ficha de talento. Quien ya llegó y aún no tiene entrevista sale primero.</p>
         <p className="text-sm"><b>{todos.length - pendientes.length}</b> de <b>{todos.length}</b> entrevistados.</p>
       </Card>
+      <EnEscenaHost aid={aid} actual={actual} />
       <nav aria-label="Filtro" className="flex gap-2">
         <Link href="?" className={pill(ver === "pendientes")}>Pendientes ({pendientes.length})</Link>
         <Link href="?ver=todos" className={pill(ver === "todos")}>Todos ({todos.length})</Link>
@@ -38,8 +45,8 @@ export default async function Entrevistas({ params, searchParams }: PageProps<"/
       <Card className="p-0 md:p-0">
         <ul className="divide-y divide-white/10">
           {lista.map((f) => (
-            <li key={f.id}>
-              <Link href={`/panel/audiciones/${aid}/entrevista/${f.id}`} className="flex flex-wrap items-center gap-3 px-4 py-3 text-sm hover:bg-white/5">
+            <li key={f.id} className={`flex items-center gap-2 pr-3 ${actual?.app === f.id ? "bg-lila/10" : ""}`}>
+              <Link href={`/panel/audiciones/${aid}/entrevista/${f.id}`} className="flex min-w-0 flex-1 flex-wrap items-center gap-3 px-4 py-3 text-sm hover:bg-white/5">
                 <b className="w-12 shrink-0 text-lg">{f.numero ?? "—"}</b>
                 <span className="min-w-0 flex-1">
                   <b>{f.nombre}</b>
@@ -49,6 +56,9 @@ export default async function Entrevistas({ params, searchParams }: PageProps<"/
                 <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${f.hecha ? "bg-[#14532d] text-[#bbf7d0]" : "bg-[#3a3346] text-texto-2"}`}>{f.hecha ? "Entrevistado" : "Pendiente"}</span>
                 <Icono nombre="flecha-der" />
               </Link>
+              {actual?.app === f.id
+                ? <span className="rounded-full bg-lila px-3 py-1 text-xs font-bold text-sala">En escena</span>
+                : f.llego && !f.termino && <PonerEnEscena aid={aid} app={f.id} />}
             </li>
           ))}
         </ul>

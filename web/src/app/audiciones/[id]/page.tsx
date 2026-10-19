@@ -58,7 +58,8 @@ export default async function AuditionPage({ params }: PageProps<"/audiciones/[i
               <div className="flex flex-col gap-1">
                 <p className="text-lg font-bold">Ya estás inscrito</p>
                 <p className="text-sm">Estado: <b>{ESTADO_SOLICITUD[mine.estado]?.label ?? mine.estado}</b>{mine.audition_slots ? ` · ${formatSlot(mine.audition_slots.inicia)}` : ""}</p>
-                {mine.numero && <p className="text-sm">Tu número: <b>{mine.numero}</b>{!mine.checked_in_at && a.numeracion === "previa" ? " (puede ajustarse antes del día)" : ""}</p>}
+                {mine.numero && <p className="text-sm">Tu {a.numeracion === "personaje" ? "lugar" : "número"}: <b>{mine.numero}</b>{!mine.checked_in_at && a.numeracion !== "llegada" ? " (puede ajustarse antes del día)" : ""}</p>}
+                {!mine.numero && a.numeracion === "personaje" && !mine.checked_in_at && <p className="text-sm">Tu lugar para audicionar te llega a tu cuenta cuando cierren las inscripciones (se ordena por personaje).</p>}
                 {!mine.audition_slots && !a.elegir_horario && <p className="text-sm text-texto-2">Te avisaremos tu horario.</p>}
                 {qr && !enLinea && <p className="text-sm text-texto-2">Muestra este QR en la mesa de registro el día de la audición.</p>}
                 {enLinea && <p className="text-sm text-texto-2">Audición en línea: el equipo revisará tus videos y te avisará el resultado aquí y en Mi cuenta.</p>}

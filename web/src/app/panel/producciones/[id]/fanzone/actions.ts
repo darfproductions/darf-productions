@@ -22,6 +22,29 @@ export async function addGalleryPhoto(pid: string, path: string): Promise<{ ok: 
   return { ok: true, message: "Foto agregada a la galería." };
 }
 
+// 0114: fotos de una función (también salen en la galería) y el aviso a quienes fueron.
+export async function addFotoFuncion(pid: string, perf: string, path: string): Promise<{ ok: boolean; message: string }> {
+  if (!path.startsWith(`${pid}/galeria/`)) return { ok: false, message: "Ruta de archivo no válida." };
+  const supabase = await createClient();
+  const { data: last } = await supabase.from("gallery_photos").select("sort_order").eq("production_id", pid).eq("kind", "galeria").order("sort_order", { ascending: false }).limit(1);
+  const { error } = await supabase.from("gallery_photos").insert({ production_id: pid, kind: "galeria", path, performance_id: perf, sort_order: ((last?.[0]?.sort_order as number) ?? 0) + 1 });
+  if (error) return { ok: false, message: mensajeError(error) };
+  revalidatePath(`/panel/producciones/${pid}/fanzone`);
+  revalidatePath(`/producciones/${pid}`);
+  return { ok: true, message: "Foto agregada." };
+}
+
+export async function avisarFotosFuncion(_p: { ok: boolean; message: string } | null, f: FormData): Promise<{ ok: boolean; message: string }> {
+  const pid = String(f.get("pid"));
+  const perf = String(f.get("funcion"));
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("fotos_funcion_avisar", { pid, perf });
+  if (error) return { ok: false, message: mensajeError(error) };
+  revalidatePath(`/panel/producciones/${pid}/fanzone`);
+  const n = Number(data ?? 0);
+  return { ok: true, message: n === 0 ? "Listo. Nadie de esa función tiene cuenta, así que no hubo a quién avisar." : `Listo: se avisó a ${n} ${n === 1 ? "persona" : "personas"}.` };
+}
+
 export async function removeGalleryPhoto(_p: { ok: boolean; message: string } | null, f: FormData): Promise<{ ok: boolean; message: string } | null> {
   const pid = String(f.get("pid"));
   const id = String(f.get("id"));

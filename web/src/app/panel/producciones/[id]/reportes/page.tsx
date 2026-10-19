@@ -51,7 +51,7 @@ export default async function Reportes({ params }: PageProps<"/panel/produccione
     verTaller ? todasLasFilas((a, b) => supabase.from("member_payments").select("monto, concepto, registrado_at").eq("production_id", id).is("anulado_at", null).order("id").range(a, b)) : none,
     verAsist ? supabase.rpc("attendance_summary", { pid: id }) : none,
     verAsist ? supabase.rpc("cast_roster", { pid: id }) : none,
-    verAud ? supabase.from("auditions").select("id, titulo, estado, audition_applications(estado)").eq("production_id", id).order("created_at", { ascending: false }) : none,
+    verAud ? supabase.from("auditions").select("id, titulo, estado, audition_applications!audition_applications_audition_id_fkey(estado)").eq("production_id", id).order("created_at", { ascending: false }) : none,
     verVentas ? supabase.rpc("seller_list", { pid: id }) : none,
     verVentas ? listZones(id) : Promise.resolve([]),
   ]);

@@ -5,6 +5,41 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-10-19 — Números de audición por personaje (migración 0116)
+
+- Nueva opción en "Números del día": **por personaje**. Al inscribirse nadie tiene número; al cerrar inscripciones
+  (estado "cerrada" o fecha de cierre, revisada cada 15 min con `darf_numeros_audicion`) se reparten con
+  `audition_numerar_personaje`: primero el personaje más importante (orden de la convocatoria); quien elige varios va
+  con el más importante; sin personaje al final; dentro de cada grupo, por orden de inscripción. Aviso a cada cuenta.
+- Quien se registra en la entrada el día de la audición pasa al último. En Registro: "Asignar lugares ahora" y flechas
+  para mover a alguien después.
+- Arreglo: la consulta de "mi solicitud" (`auditions(...)` desde `audition_applications`) era ambigua desde 0089 por
+  `audition_cast`; ahora nombra la relación. Sin esto el aspirante no veía "Ya estás inscrito" ni su número.
+  0115 ya no pone llave foránea en `auditions.en_escena` por la misma razón.
+
+## 2026-10-19 — "En escena" en audiciones (migración 0115)
+
+- `auditions.en_escena`: el host (o quien gestiona) pone a alguien en escena o usa "Pasar al siguiente"
+  (`audition_en_escena`, `audition_siguiente`); se marca solo que entró y que el anterior terminó.
+- Pantalla del juez (Evaluación): arriba sale quien está en escena y cambia sola cada 4 s
+  (`audition_juez_actual`): foto, edad, papeles que quiere, **respuestas del formulario de inscripción**, entrevista
+  que guarda el host, historial en DARF y su rúbrica. Sin datos de contacto. Lo que el juez escribe no se pierde.
+- Antes los jueces solo veían las ligas del formulario, no las respuestas de texto. Ahora también salen en la
+  ficha del aspirante.
+
+## 2026-10-16 — Fotos de tu función, regalo de cumpleaños, kit de prensa y filas en el mapa (migración 0114)
+
+- **Fotos de cada función:** `gallery_photos.performance_id`. En Fan Zone del panel se elige la función y se suben
+  varias fotos a la vez; "Avisar a quienes fueron" (`fotos_funcion_avisar`) manda un solo aviso a quien tuvo boleto
+  aprobado y queda registrado en `fotos_funcion_avisos` (no se repite). Página pública `/producciones/<obra>/fotos`.
+- **Regalo de cumpleaños del Club Fan:** cada mañana (`darf_cumple`) los socios que cumplen ese mes reciben un código
+  personal `CUMPLE-XXXXXX` (`regalos_cumple`): 10 % en hasta 2 boletos, una compra, cualquier obra, todo el mes.
+  `_resolve_discount_code` lo convierte al usarlo en un código normal de esa obra (`discount_codes.regalo_id`) y
+  revisa que lo use su dueño y una sola vez; no aparece en la lista de Descuentos de la obra. Se ve en Mi cuenta.
+- **Kit de prensa:** `/producciones/<obra>/prensa` (pública, sin menú): logo, pósters, imagen de ambiente, fotos en
+  tamaño original, sinopsis, ficha, funciones, créditos y contacto para medios. Liga al final de la página de la obra.
+- **Mapa libre:** la letra de la fila sale en las puntas de cada fila (compra, taquilla, panel y editor).
+
 ## 2026-10-16 — Mapa de asientos libre (migración 0113)
 
 - Cada asiento puede tener posición (`seats.pos_x`/`pos_y`). La compra, la taquilla y el panel lo dibujan tal cual

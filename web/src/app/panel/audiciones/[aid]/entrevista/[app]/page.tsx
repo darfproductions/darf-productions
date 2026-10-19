@@ -7,6 +7,7 @@ import { Icono } from "@/components/Icono";
 import { requireAudition } from "@/lib/panel-auditions";
 import { createClient } from "@/lib/supabase/server";
 import { saveEntrevista } from "../../../actions";
+import { EnEscenaHost } from "../EnEscenaHost";
 
 export const metadata: Metadata = { title: "Entrevista" };
 
@@ -20,7 +21,12 @@ export default async function EntrevistaAspirante({ params }: PageProps<"/panel/
   const { aid, app } = await params;
   await requireAudition(aid, ["audiciones.entrevista", "audiciones.gestionar"], `/entrevista/${app}`);
   if (!/^[0-9a-f-]{36}$/.test(app)) notFound();
-  const { data } = await (await createClient()).rpc("audition_entrevista", { app });
+  const supabase = await createClient();
+  const [{ data }, { data: escena }] = await Promise.all([
+    supabase.rpc("audition_entrevista", { app }),
+    supabase.rpc("audition_juez_actual", { aid }),
+  ]);
+  const actual = (escena as { app: string | null } | null)?.app ? (escena as { app: string; numero: number | null; nombre: string }) : null;
   const e = data as Entrevista | null;
   if (!e || e.id !== app) notFound();
   const respuesta = (p: string) => e.entrevista.find((x) => x.pregunta === p)?.respuesta ?? "";
@@ -30,6 +36,7 @@ export default async function EntrevistaAspirante({ params }: PageProps<"/panel/
   return (
     <div className="flex flex-col gap-4">
       <Link href={`/panel/audiciones/${aid}/entrevista`} className="text-sm font-bold text-violeta-claro"><Icono nombre="flecha-izq" /> Lista de entrevistas</Link>
+      <EnEscenaHost aid={aid} actual={actual} esta={{ app, nombre: e.nombre }} />
       <Card className="flex flex-col gap-1">
         <p className="text-xl font-bold">{e.numero ? `Nº ${e.numero} · ` : ""}{e.nombre}{e.es_menor && <span className="ml-2 text-sm text-aviso">menor de edad</span>}</p>
         {e.personajes?.length ? <p className="text-sm text-texto-2">Se inscribió para: {e.personajes.join(", ")}</p> : null}
