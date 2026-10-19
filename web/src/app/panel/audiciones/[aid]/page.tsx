@@ -137,6 +137,7 @@ export default async function AuditionConfig({ params }: PageProps<"/panel/audic
                 <select className={input} name="numeracion" defaultValue={a.numeracion}>
                   <option value="llegada">Al llegar (orden de llegada)</option>
                   <option value="previa">Asignación previa (lista en orden desde antes)</option>
+                  <option value="personaje">Por personaje (se asignan al cerrar inscripciones)</option>
                 </select>
               </label>
             </div>

@@ -11,6 +11,8 @@ export type PanelAudition = AuditionOptions & {
   id: string; production_id: string | null; titulo: string; descripcion: string | null; requisitos: string | null; sede: string | null;
   estado: string; inscripcion_cierra: string | null; edad_min: number | null; edad_max: number | null; created_at: string;
   criterios: Criterio[]; plantilla: string | null; permanente: boolean;
+  /** 0116: números por personaje ya repartidos. */
+  numeros_asignados_at: string | null;
   /** 0089: audiciones con votación. */
   con_callback: boolean; fase: import("@/lib/votacion-rules").Fase;
   /** 0112: preguntas del host el día de la audición. */

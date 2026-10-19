@@ -12,7 +12,10 @@ do $$ begin
 end $$;
 begin;
 
-alter table auditions add column if not exists en_escena uuid references audition_applications(id) on delete set null;
+-- Sin llave foránea a propósito: una segunda relación auditions↔audition_applications confunde a la API
+-- (las consultas con auditions(...) dejarían de funcionar). Si se borra la solicitud, el puntero se ignora.
+alter table auditions add column if not exists en_escena uuid;
+alter table auditions drop constraint if exists auditions_en_escena_fkey;
 alter table auditions add column if not exists en_escena_at timestamptz;
 
 -- Poner en escena (app = null: nadie en escena).
@@ -83,6 +86,7 @@ begin
   select * into au from auditions where id = aid;
   if au.en_escena is null then return json_build_object('app', null); end if;
   select * into a from audition_applications where id = au.en_escena;
+  if not found then return json_build_object('app', null); end if;
   if a.user_id is not null then select id into v_person from people where profile_id = a.user_id; end if;
   return json_build_object(
     'app', a.id, 'numero', a.numero, 'nombre', a.nombre, 'edad', audition_age(aid, a.fecha_nacimiento),

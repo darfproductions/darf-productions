@@ -7,7 +7,7 @@ import { DAY_LABEL, dayStatus, daySummary, hora, minutos } from "@/lib/audition-
 import { formatSlot } from "@/lib/auditions";
 import { requireAudition } from "@/lib/panel-auditions";
 import { createClient } from "@/lib/supabase/server";
-import { autoOrder, walkIn } from "../../actions";
+import { autoOrder, numerarAhora, walkIn } from "../../actions";
 import { Desk } from "./Desk";
 import { OrderButtons, StepButtons } from "./StepButtons";
 import { Icono } from "@/components/Icono";
@@ -45,6 +45,19 @@ export default async function DayPage({ params, searchParams }: PageProps<"/pane
       <AutoRefresh seconds={20} />
       <div className="flex flex-col gap-4 lg:col-span-5">
         <Card><Desk aid={aid} /></Card>
+        {gestiona && a.numeracion === "personaje" && (
+          <Card className="flex flex-col gap-2">
+            <h2 className="font-bold">Lugares por personaje</h2>
+            {a.numeros_asignados_at ? (
+              <p className="text-sm text-texto-2">Los lugares ya se repartieron: primero el personaje más importante, al final quien no eligió personaje; dentro de cada personaje, por orden de inscripción. A cada quien le llegó su lugar a su cuenta. Quien se registre aquí el día de la audición pasa al último. Puedes mover a alguien con <Icono nombre="flecha-arriba" /> <Icono nombre="flecha-abajo" />.</p>
+            ) : (
+              <>
+                <p className="text-sm text-texto-2">Los lugares se reparten solos cuando cierren las inscripciones (al poner la convocatoria en &ldquo;Cerrada&rdquo; o al llegar la fecha de cierre), y a cada quien le llega su lugar a su cuenta. Si quieres, puedes repartirlos ya.</p>
+                <ActionForm inline action={numerarAhora} hidden={{ aid }} confirm="¿Repartir los lugares ya? A cada aspirante le llega su número y ya no se vuelven a repartir solos." submit="Asignar lugares ahora" submitClass="rounded-full border border-white/25 px-4 py-2 text-sm font-bold" />
+              </>
+            )}
+          </Card>
+        )}
         {gestiona && a.numeracion === "previa" && (
           <Card className="flex flex-col gap-2">
             <h2 className="font-bold">Orden de la lista</h2>
@@ -119,7 +132,7 @@ export default async function DayPage({ params, searchParams }: PageProps<"/pane
                       {r.finished_at && ` · salió ${hora(r.finished_at)}${dur !== null ? ` (${dur} min)` : ""}`}
                     </span>
                   </span>
-                  {gestiona && a.numeracion === "previa" && !r.checked_in_at && r.numero !== null && (
+                  {gestiona && (a.numeracion === "previa" || (a.numeracion === "personaje" && a.numeros_asignados_at)) && !r.checked_in_at && r.numero !== null && (
                     <OrderButtons aid={aid} app={r.id} prev={vecino(r.id, -1)} next={vecino(r.id, 1)} />
                   )}
                   {st !== "no_cumple" && <StepButtons aid={aid} app={r.id} nombre={r.nombre} status={st} />}

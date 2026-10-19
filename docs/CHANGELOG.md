@@ -5,6 +5,18 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-10-19 — Números de audición por personaje (migración 0116)
+
+- Nueva opción en "Números del día": **por personaje**. Al inscribirse nadie tiene número; al cerrar inscripciones
+  (estado "cerrada" o fecha de cierre, revisada cada 15 min con `darf_numeros_audicion`) se reparten con
+  `audition_numerar_personaje`: primero el personaje más importante (orden de la convocatoria); quien elige varios va
+  con el más importante; sin personaje al final; dentro de cada grupo, por orden de inscripción. Aviso a cada cuenta.
+- Quien se registra en la entrada el día de la audición pasa al último. En Registro: "Asignar lugares ahora" y flechas
+  para mover a alguien después.
+- Arreglo: la consulta de "mi solicitud" (`auditions(...)` desde `audition_applications`) era ambigua desde 0089 por
+  `audition_cast`; ahora nombra la relación. Sin esto el aspirante no veía "Ya estás inscrito" ni su número.
+  0115 ya no pone llave foránea en `auditions.en_escena` por la misma razón.
+
 ## 2026-10-19 — "En escena" en audiciones (migración 0115)
 
 - `auditions.en_escena`: el host (o quien gestiona) pone a alguien en escena o usa "Pasar al siguiente"

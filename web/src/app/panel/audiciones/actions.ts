@@ -140,7 +140,7 @@ export async function saveOptions(_p: AudState, f: FormData): Promise<AudState> 
         elegir_horario: on("elegir_horario"),
         // Por invitación siempre es "solo con enlace".
         visibilidad: solo_invitados || str(f, "visibilidad") === "enlace" ? "enlace" : "publica",
-        numeracion: str(f, "numeracion") === "previa" ? "previa" : "llegada",
+        numeracion: (["previa", "personaje"] as const).find((x) => x === str(f, "numeracion")) ?? "llegada",
         modalidad,
         solo_invitados,
         // 0089: con callback, el "Siguiente" pasa por "Elegir callback" y "Callback" antes de votar.
@@ -411,6 +411,15 @@ export async function autoOrder(_p: AudState, f: FormData): Promise<AudState> {
   const { data, error } = await supabase.rpc("audition_auto_order", { aid });
   if (error) return { ok: false, message: error.message };
   return done(aid, `Listo: ${data} personas ordenadas por horario.`);
+}
+
+/** 0116: repartir ya los números por personaje (si no, se reparten solos al cerrar inscripciones). */
+export async function numerarAhora(_p: AudState, f: FormData): Promise<AudState> {
+  const aid = str(f, "aid");
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("audition_numerar_ahora", { aid });
+  if (error) return { ok: false, message: mensajeError(error) };
+  return done(aid, `Listo: ${data} personas con su lugar. Ya les llegó el aviso a su cuenta.`);
 }
 
 /** Subir o bajar a alguien en la lista (intercambia su número con el de al lado). */

@@ -15,7 +15,9 @@ export type Audition = {
   pedir_foto: boolean;
   elegir_horario: boolean;
   visibilidad: "publica" | "enlace";
-  numeracion: "llegada" | "previa";
+  numeracion: "llegada" | "previa" | "personaje";
+  /** 0116: cuándo se repartieron los números por personaje. */
+  numeros_asignados_at?: string | null;
   modalidad: "presencial" | "en_linea" | "mixta";
   solo_invitados: boolean;
   titulo: string;
@@ -32,7 +34,7 @@ export type AuditionField = { id: string; etiqueta: string; tipo: "texto" | "par
 export type AuditionSlot = { id: string; inicia: string; sala: string | null; cupo: number; ocupados: number };
 
 const COLS =
-  "id, production_id, titulo, descripcion, requisitos, sede, estado, inscripcion_cierra, edad_min, edad_max, pedir_tutor, pedir_foto, elegir_horario, visibilidad, numeracion, modalidad, solo_invitados, permanente, productions(nombre)";
+  "id, production_id, titulo, descripcion, requisitos, sede, estado, inscripcion_cierra, edad_min, edad_max, pedir_tutor, pedir_foto, elegir_horario, visibilidad, numeracion, numeros_asignados_at, modalidad, solo_invitados, permanente, productions(nombre)";
 
 export async function listPublicAuditions(): Promise<Audition[]> {
   const supabase = await createClient();
@@ -112,7 +114,7 @@ export type MyApplication = {
 };
 
 const MY_COLS =
-  "id, audition_id, estado, nombre, telefono, fecha_nacimiento, slot_id, roles, respuestas, tutor_nombre, tutor_telefono, tutor_email, consentimiento_imagen, foto_path, qr_token, numero, checked_in_at, auditions(titulo, estado), audition_slots(inicia, sala)";
+  "id, audition_id, estado, nombre, telefono, fecha_nacimiento, slot_id, roles, respuestas, tutor_nombre, tutor_telefono, tutor_email, consentimiento_imagen, foto_path, qr_token, numero, checked_in_at, auditions!audition_applications_audition_id_fkey(titulo, estado), audition_slots(inicia, sala)";
 
 export async function getMyApplication(auditionId: string, userId: string): Promise<MyApplication | null> {
   const supabase = await createClient();
