@@ -5,6 +5,16 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-10-19 — "En escena" en audiciones (migración 0115)
+
+- `auditions.en_escena`: el host (o quien gestiona) pone a alguien en escena o usa "Pasar al siguiente"
+  (`audition_en_escena`, `audition_siguiente`); se marca solo que entró y que el anterior terminó.
+- Pantalla del juez (Evaluación): arriba sale quien está en escena y cambia sola cada 4 s
+  (`audition_juez_actual`): foto, edad, papeles que quiere, **respuestas del formulario de inscripción**, entrevista
+  que guarda el host, historial en DARF y su rúbrica. Sin datos de contacto. Lo que el juez escribe no se pierde.
+- Antes los jueces solo veían las ligas del formulario, no las respuestas de texto. Ahora también salen en la
+  ficha del aspirante.
+
 ## 2026-10-16 — Fotos de tu función, regalo de cumpleaños, kit de prensa y filas en el mapa (migración 0114)
 
 - **Fotos de cada función:** `gallery_photos.performance_id`. En Fan Zone del panel se elige la función y se suben

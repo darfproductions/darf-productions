@@ -7,6 +7,8 @@ import { requireAudition, signPhotos } from "@/lib/panel-auditions";
 import { createClient } from "@/lib/supabase/server";
 import { ScoreForm } from "./ScoreForm";
 import { PickForm } from "./PickForm";
+import { EnEscenaJuez } from "./EnEscenaJuez";
+import { juezActual } from "../../actions";
 import { getSession } from "@/lib/auth";
 import { rondaDeFase } from "@/lib/votacion-rules";
 import { Icono } from "@/components/Icono";
@@ -44,6 +46,9 @@ export default async function Judging({ params, searchParams }: PageProps<"/pane
       misPicks.set(k.application_id, arr);
     }
   }
+  // 0115: en el día presencial, arriba sale quien está en escena (lo pasa el host).
+  const enVivo = a.modalidad !== "en_linea";
+  const enEscena = enVivo ? await juezActual(aid, ronda) : null;
   const hechas = conVotacion ? rows.filter((r) => (misPicks.get(r.id) ?? []).some(Boolean)).length : rows.filter((r) => Object.keys(r.puntos ?? {}).length > 0).length;
 
   return (
@@ -56,8 +61,11 @@ export default async function Judging({ params, searchParams }: PageProps<"/pane
         <span className="text-texto-3">· {conVotacion ? "marcaste opciones de" : "calificaste"} {hechas} de {rows.length}</span>
       </div>
       {error && <Card>{error.message}</Card>}
+      {enVivo && <EnEscenaJuez aid={aid} ronda={ronda} criterios={criterios} roles={roles} conVotacion={conVotacion} abiertas={abiertas} inicial={enEscena} />}
       {rows.length === 0 && <Card>{a.modalidad === "presencial" ? "Todavía no hay personas registradas en esta ronda." : "Todavía no hay inscritos en esta ronda."}</Card>}
-      <ul className="grid gap-4 xl:grid-cols-2">
+      <details open={!enVivo} className="group">
+      {enVivo && rows.length > 0 && <summary className="mt-2 cursor-pointer text-sm font-bold uppercase tracking-widest text-texto-3">Todos los audicionantes ({rows.length}) · para calificar fuera de orden</summary>}
+      <ul className="mt-3 grid gap-4 xl:grid-cols-2">
         {rows.map((r) => (
           <li key={r.id}>
             <Card className="flex flex-col gap-4 sm:flex-row">
@@ -86,6 +94,7 @@ export default async function Judging({ params, searchParams }: PageProps<"/pane
           </li>
         ))}
       </ul>
+      </details>
     </>
   );
 }
