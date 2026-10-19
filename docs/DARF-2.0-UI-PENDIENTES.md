@@ -95,6 +95,11 @@ Diego eligió cuáles sí (ver plan del bloque). Hechas en `darf-2.0`, migracion
 ## Lo que queda pendiente
 
 - **Velocidad de páginas públicas (caché):** se dejó para después de la mudanza de datos (Bloque 5), cuando se mida con datos reales; ya se quitaron consultas repetidas de sesión y permisos.
+- **Mapa de asientos con varios pisos** (Diego, 2026-10-19; aún no se usa, pero se va a necesitar): en el editor, "Piso 1" y
+  "+ Agregar piso" (2.º, 3.º…), cada piso con su propio dibujo de bloques y escenario de referencia; en la compra, pestañas
+  por piso; la numeración no se repite entre pisos (por ejemplo, prefijo de piso o letras distintas). Idea técnica:
+  `Diseno.pisos[]` con sus `formas` y `bloques`, y `seats.piso` (o usar `section`) para que taquilla, puerta y reportes
+  lo muestren.
 - **Boletín por correo** (después; necesita suscripción, confirmación y baja).
 - **Wallet** (Apple/Google): programado (ver `docs/DARF-2.0-WALLET.md`); falta que Diego ponga las llaves en Vercel y los botones oficiales.
 - **Avisos por WhatsApp**: es un servicio de pago.

@@ -192,7 +192,7 @@ export function SeatMapBuilder({ pid, seats, zonas, conBoletos, obras, diseno }:
                 asientos={seats.filter((s) => s.pos_x != null).map((s) => {
                   const marcado = sel.has(s.id), color = colorOf(s.price_category_id);
                   return {
-                    id: s.id, x: s.pos_x!, y: s.pos_y ?? 0, numero: s.seat_number, etiqueta: s.seat_label, fila: s.seat_row, marcado,
+                    id: s.id, x: s.pos_x!, y: s.pos_y ?? 0, numero: s.seat_number, etiqueta: s.seat_label, fila: s.seat_row, grupo: s.section ?? undefined, marcado,
                     fondo: marcado ? "#ffffff" : s.is_active ? color : "transparent", texto: marcado ? "#0b0910" : s.is_active ? "#ffffff" : "#6e6878",
                     borde: !s.is_active && !marcado ? color : undefined, titulo: `${s.seat_label}${s.section ? ` · ${s.section}` : ""}${s.is_active ? "" : " (quitado)"}`,
                   };

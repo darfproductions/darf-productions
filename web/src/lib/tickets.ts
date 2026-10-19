@@ -79,6 +79,8 @@ export type MapSeat = {
   /** 0113: posición en un mapa libre. */
   pos_x?: number | null;
   pos_y?: number | null;
+  /** Bloque del mapa libre (para las letras de fila). */
+  section?: string | null;
 };
 
 /** Agrupa asientos por fila (A cerca del escenario) y por bloque izquierda/central/derecha. */
