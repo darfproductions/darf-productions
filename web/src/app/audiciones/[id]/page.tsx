@@ -4,7 +4,8 @@ import { notFound } from "next/navigation";
 import QRCode from "qrcode";
 import { PageHeading } from "@/components/PageHeading";
 import { getSession } from "@/lib/auth";
-import { ESTADO_CONVOCATORIA, ESTADO_SOLICITUD } from "@/lib/audition-rules";
+import { ESTADO_CONVOCATORIA, ESTADO_SOLICITUD, whatsappAudicionUrl } from "@/lib/audition-rules";
+import { env } from "@/lib/env";
 import { amInvited, formatSlot, getAudition, getAuditionObra, getMyApplication } from "@/lib/auditions";
 import { MODALIDAD } from "@/lib/audition-rules";
 import { getTheme, themeStyle } from "@/lib/productions";
@@ -63,6 +64,11 @@ export default async function AuditionPage({ params }: PageProps<"/audiciones/[i
                 {!mine.audition_slots && !a.elegir_horario && <p className="text-sm text-texto-2">Te avisaremos tu horario.</p>}
                 {qr && !enLinea && <p className="text-sm text-texto-2">Muestra este QR en la mesa de registro el día de la audición.</p>}
                 {enLinea && <p className="text-sm text-texto-2">Audición en línea: el equipo revisará tus videos y te avisará el resultado aquí y en Mi cuenta.</p>}
+                {whatsappAudicionUrl(env.whatsapp, a.productions?.nombre || a.titulo) && (
+                  <p className="mt-2 text-sm">¿Dudas o necesitas ayuda con tu audición?{" "}
+                    <a href={whatsappAudicionUrl(env.whatsapp, a.productions?.nombre || a.titulo, mine.nombre)} target="_blank" rel="noreferrer" className="font-bold text-exito underline">Escríbenos por WhatsApp <Icono nombre="externo" /></a>
+                  </p>
+                )}
                 {!mine.checked_in_at && ["inscrito", "convocado", "en_espera"].includes(mine.estado) && (
                   <MiniAction action={cancelMyApplication} hidden={{ app: mine.id, aid: a.id }} confirm="¿Cancelar tu inscripción?" className="mt-2 flex flex-wrap items-center gap-2"
                     buttonClass="text-sm font-bold text-[#ff8fa3] underline" label="Cancelar mi inscripción" />
@@ -88,6 +94,11 @@ export default async function AuditionPage({ params }: PageProps<"/audiciones/[i
               <h2 className="titular text-2xl">{mine && mine.estado !== "cancelado" ? "Editar mi inscripción" : "Inscripción"}</h2>
               <ApplyForm aid={a.id} userId={session.userId} roles={roles} fields={fields} slots={a.elegir_horario && !enLinea ? slots : []} fechaAudicion={slots[0]?.inicia ?? null}
                 opciones={{ pedirFoto: a.pedir_foto, pedirTutor: a.pedir_tutor }} defaults={{ nombre: session.profile?.nombre ?? "", telefono: session.profile?.telefono ?? "" }} previa={mine} />
+              {!mine && whatsappAudicionUrl(env.whatsapp, a.productions?.nombre || a.titulo) && (
+                <p className="text-sm text-texto-2">¿Dudas antes de inscribirte?{" "}
+                  <a href={whatsappAudicionUrl(env.whatsapp, a.productions?.nombre || a.titulo, session.profile?.nombre)} target="_blank" rel="noreferrer" className="font-bold text-lila underline">Escríbenos por WhatsApp <Icono nombre="externo" /></a>
+                </p>
+              )}
             </>
           )}
           {a.estado === "cancelada" && (

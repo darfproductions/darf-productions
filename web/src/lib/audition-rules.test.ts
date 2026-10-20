@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ageAt, criteriosFromText, dayStatus, daySummary, lugares, minutos, score, videoSource } from "./audition-rules";
+import { ageAt, criteriosFromText, dayStatus, daySummary, lugares, minutos, score, videoSource, whatsappAudicionUrl } from "./audition-rules";
 import { EN_BLANCO, PLANTILLAS, REGISTRO_PERMANENTE } from "./audition-templates";
 
 describe("audiciones", () => {
@@ -75,5 +75,15 @@ describe("audiciones 2.0", () => {
     ]);
     expect(criteriosFromText("a,b,c,d,e,f,g,h,i,j")).toHaveLength(8);
     expect(criteriosFromText(" , ")).toEqual([]);
+  });
+});
+
+describe("WhatsApp de dudas de audición", () => {
+  it("arma el mensaje con la obra y el nombre", () => {
+    const u = whatsappAudicionUrl("524421234567", "Teen Beach Movie", "Ana López");
+    expect(u.startsWith("https://wa.me/524421234567?text=")).toBe(true);
+    expect(decodeURIComponent(u.split("text=")[1])).toBe("Hola DARF, tengo dudas sobre las audiciones de Teen Beach Movie. Soy Ana López.");
+    expect(decodeURIComponent(whatsappAudicionUrl("52", "Showman").split("text=")[1])).toBe("Hola DARF, tengo dudas sobre las audiciones de Showman.");
+    expect(whatsappAudicionUrl("", "Showman")).toBe("");
   });
 });

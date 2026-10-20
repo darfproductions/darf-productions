@@ -138,3 +138,10 @@ export function videoSource(url: string): "youtube" | "drive" | "otro" | null {
   if (h === "drive.google.com") return "drive";
   return "otro";
 }
+
+/** WhatsApp de DARF con el mensaje ya escrito para dudas de una audición. Vacío si no hay número. */
+export function whatsappAudicionUrl(numero: string, obra: string, nombre?: string | null): string {
+  if (!numero) return "";
+  const quien = nombre?.trim() ? ` Soy ${nombre.trim().slice(0, 80)}.` : "";
+  return `https://wa.me/${numero}?text=${encodeURIComponent(`Hola DARF, tengo dudas sobre las audiciones de ${obra.trim().slice(0, 120)}.${quien}`)}`;
+}
