@@ -189,6 +189,23 @@ export function encuadre(d: Diseno, asientos: { x: number; y: number }[], margen
   return { x: x0, y: y0, w: Math.max(...xs) + margen - x0, h: Math.max(...ys) + margen - y0 };
 }
 
+/**
+ * La base guarda posiciones entre 0 y 10000. Si el dibujo se salió hacia la izquierda o hacia arriba (o es enorme),
+ * se recorre todo junto (bloques, figuras y asientos) para que quepa; el dibujo se ve igual.
+ */
+export function normalizarOrigen(d: Diseno): { d: Diseno; dx: number; dy: number; cabe: boolean } {
+  // Solo los asientos tienen que caber (las figuras se guardan en el diseño, no en la tabla de asientos).
+  const caja = encuadre({ ...d, formas: [] }, generarLibre(d), 0);
+  const dx = caja.x < 20 ? Math.ceil(20 - caja.x) : 0;
+  const dy = caja.y < 20 ? Math.ceil(20 - caja.y) : 0;
+  const cabe = caja.w + 40 <= 9900 && caja.h + 40 <= 9900;
+  if (!dx && !dy) return { d, dx, dy, cabe };
+  return {
+    d: { ...d, bloques: d.bloques.map((b) => ({ ...b, x: b.x + dx, y: b.y + dy })), formas: d.formas.map((f) => ({ ...f, x: f.x + dx, y: f.y + dy })) },
+    dx, dy, cabe,
+  };
+}
+
 // ──────── Plantillas para empezar ────────
 
 let siguiente = 0;

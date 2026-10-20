@@ -1,10 +1,10 @@
 "use client";
 
-import { useMemo, useRef, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { Card, Notice, input } from "@/components/panel/ui";
 import { FormaSvg, etiquetasFila } from "@/components/MapaPlano";
 import {
-  asientosFila, bloqueBase, encimados, encuadre, erroresDiseno, forma, generarLibre, lugaresQuitados, nombreFila, partirClave, PLANTILLAS, plantilla,
+  asientosFila, bloqueBase, encimados, leerDiseno, normalizarOrigen, encuadre, erroresDiseno, forma, generarLibre, lugaresQuitados, nombreFila, partirClave, PLANTILLAS, plantilla,
   type Bloque, type Diseno, type Forma, type Plantilla,
 } from "@/lib/mapa-libre";
 import { disenarMapa, type SeatMapResult } from "../actions";
@@ -46,6 +46,24 @@ export function MapaEditor({ pid, inicial, zonas, colorOf, asientosActuales, con
   const [caja, setCaja] = useState<{ x0: number; y0: number; x1: number; y1: number } | null>(null);
   const [zonaPinta, setZonaPinta] = useState<string>(zonas[0]?.id ?? "");
   const quitadosVista = useMemo(() => lugaresQuitados(d), [d]);
+  // Borrador automático en este navegador: si se recarga la página, se puede recuperar lo no guardado.
+  const llave = `darf-mapa-borrador-${pid}`;
+  const [borrador, setBorrador] = useState<Diseno | null>(null);
+  const primero = useRef(d); // el diseño con que abrió la página: ese no se guarda como borrador
+  useEffect(() => {
+    // Se lee al abrir (después de pintar): el servidor no tiene el almacenamiento del navegador.
+    const t = setTimeout(() => {
+      try {
+        const b = leerDiseno(JSON.parse(localStorage.getItem(llave) ?? "null"));
+        if (b && JSON.stringify(b) !== JSON.stringify(inicial)) setBorrador(b);
+      } catch { /* sin almacenamiento: no pasa nada */ }
+    }, 0);
+    return () => clearTimeout(t);
+  }, [llave, inicial]);
+  useEffect(() => {
+    if (d === primero.current) return;
+    try { localStorage.setItem(llave, JSON.stringify(d)); } catch { /* sin almacenamiento */ }
+  }, [d, llave]);
 
   const bloque = sel?.tipo === "bloque" ? d.bloques.find((b) => b.id === sel.id) ?? null : null;
   const fig = sel?.tipo === "forma" ? d.formas.find((f) => f.id === sel.id) ?? null : null;
@@ -184,8 +202,15 @@ export function MapaEditor({ pid, inicial, zonas, colorOf, asientosActuales, con
   const guardar = () => {
     if (errores.length) return;
     if (asientosActuales && !window.confirm(`Esto reemplaza el mapa actual (${asientosActuales} asientos) por uno nuevo de ${asientos.length}. ¿Seguir?`)) return;
+    // Si el dibujo se salió del área (posiciones negativas), se recorre completo antes de guardar.
+    const { d: listo, dx, dy, cabe } = normalizarOrigen(d);
+    if (!cabe) { setMsg({ ok: false, message: "El dibujo es demasiado grande: acerca los bloques y el escenario." }); return; }
+    if (dx || dy) { setD(listo); setVista((v) => ({ ...v, x: v.x + dx, y: v.y + dy })); }
+    const lista = generarLibre(listo);
     start(async () => {
-      setMsg(await disenarMapa(pid, d, asientos.map((a) => ({ fila: a.fila, numero: a.numero, etiqueta: a.etiqueta, x: a.x, y: a.y, zona: a.zona, seccion: a.seccion }))));
+      const r = await disenarMapa(pid, listo, lista.map((a) => ({ fila: a.fila, numero: a.numero, etiqueta: a.etiqueta, x: a.x, y: a.y, zona: a.zona, seccion: a.seccion })));
+      setMsg(r);
+      if (r.ok) { try { localStorage.removeItem(llave); } catch { /* sin almacenamiento */ } }
     });
   };
   const porBloque = new Map<string, number>();
@@ -199,6 +224,14 @@ export function MapaEditor({ pid, inicial, zonas, colorOf, asientosActuales, con
         <h2 className="titular text-xl">Diseñar el mapa</h2>
         <p className="text-sm text-texto-2">Arma el teatro como es: empieza con una plantilla y mueve los bloques y el escenario con el mouse o el dedo. Gira, curvea y cambia filas y asientos en el panel. Los pasillos son el espacio entre bloques. En &ldquo;Zonas y asientos&rdquo; seleccionas asientos para darles zona (Preferente, Discapacitados…) o quitarlos. La numeración (fila + número) sigue de un bloque a otro y nunca se repite.</p>
       </div>
+      {borrador && (
+        <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-aviso/40 bg-aviso/10 p-3 text-sm">
+          <span className="flex-1">Tienes un diseño sin guardar de la última vez en este navegador.</span>
+          <button type="button" className="rounded-full bg-texto px-4 py-1.5 text-xs font-bold text-sala"
+            onClick={() => { setD(borrador); setVista(encuadre(borrador, generarLibre(borrador), 60)); setSel(null); setBorrador(null); }}>Recuperarlo</button>
+          <button type="button" className={ghost} onClick={() => { try { localStorage.removeItem(llave); } catch { /* sin almacenamiento */ } setBorrador(null); }}>Descartar</button>
+        </div>
+      )}
       {conBoletos && <Notice>Ya hay boletos vendidos con asiento: el mapa ya no se puede reemplazar, solo ajustar asiento por asiento (abajo).</Notice>}
       <div className="flex flex-wrap items-center gap-2 text-sm">
         <span className="text-texto-3">Empezar con:</span>
