@@ -34,11 +34,26 @@ export type Bloque = {
   /** Numerar de izquierda a derecha o al revés (viendo desde el escenario hacia el público: izq = izquierda del dibujo). */
   sentido: "izq" | "der";
   zona: string | null;
+  /** Asientos de cada fila (si una fila no tiene dato, se usa asientos + crece). */
+  porFila?: number[] | null;
+  /** Zona propia de un asiento: clave "fila:lugar" (fila del bloque desde 0, lugar en el orden en que se numera). */
+  zonasAsiento?: Record<string, string>;
+  /** Lugares quitados ("fila:lugar"): no se crean y la numeración se recorre. */
+  quitados?: string[];
 };
 
 export type Diseno = { version: 1; formas: Forma[]; bloques: Bloque[] };
 
-export type AsientoLibre = { fila: string; numero: number; etiqueta: string; x: number; y: number; zona: string | null; seccion: string; bloque: string };
+export type AsientoLibre = { fila: string; numero: number; etiqueta: string; x: number; y: number; zona: string | null; seccion: string; bloque: string; clave: string };
+
+/** Un lugar quitado (solo para dibujarlo punteado en el editor). */
+export type LugarQuitado = { x: number; y: number; bloque: string; clave: string };
+
+/** Asientos de la fila f de un bloque. */
+export function asientosFila(b: Bloque, f: number): number {
+  const v = b.porFila?.[f];
+  return Math.max(0, Math.floor(typeof v === "number" && Number.isFinite(v) ? v : b.asientos + f * b.crece));
+}
 
 export const MAX_ASIENTOS_LIBRE = 2000;
 const rad = (g: number) => (g * Math.PI) / 180;
@@ -59,7 +74,7 @@ export function nombreFila(inicial: string, i: number): string {
 export function posicionesBloque(b: Bloque): { fila: number; puntos: { x: number; y: number }[] }[] {
   const out: { fila: number; puntos: { x: number; y: number }[] }[] = [];
   for (let f = 0; f < Math.max(0, Math.floor(b.filas)); f++) {
-    const n = Math.max(0, Math.floor(b.asientos + f * b.crece));
+    const n = asientosFila(b, f);
     const puntos: { x: number; y: number }[] = [];
     if (b.forma === "arco") {
       const r = b.radio + f * b.sepFila;
@@ -89,17 +104,40 @@ export function generarLibre(d: Diseno): AsientoLibre[] {
   const ultimo = new Map<string, number>();
   const out: AsientoLibre[] = [];
   for (const b of d.bloques) {
+    const fuera = new Set(b.quitados ?? []);
     for (const { fila, puntos } of posicionesBloque(b)) {
       const nombre = nombreFila(b.filaInicial || "A", fila);
       let num = b.numInicial && b.numInicial > 0 ? Math.floor(b.numInicial) : (ultimo.get(nombre) ?? 0) + 1;
-      for (const p of puntos) {
-        out.push({ fila: nombre, numero: num, etiqueta: `${nombre}${num}`, x: p.x, y: p.y, zona: b.zona, seccion: b.nombre.trim() || "Bloque", bloque: b.id });
+      for (const [i, p] of puntos.entries()) {
+        const k = `${fila}:${i}`;
+        if (fuera.has(k)) continue; // quitado: no gasta número (la numeración se recorre)
+        out.push({ fila: nombre, numero: num, etiqueta: `${nombre}${num}`, x: p.x, y: p.y, zona: b.zonasAsiento?.[k] ?? b.zona,
+          seccion: b.nombre.trim() || "Bloque", bloque: b.id, clave: `${b.id}|${k}` });
         ultimo.set(nombre, Math.max(ultimo.get(nombre) ?? 0, num));
         num++;
       }
     }
   }
   return out;
+}
+
+/** Lugares quitados del diseño, con su posición (para dibujarlos punteados y poder volver a ponerlos). */
+export function lugaresQuitados(d: Diseno): LugarQuitado[] {
+  const out: LugarQuitado[] = [];
+  for (const b of d.bloques) {
+    const fuera = new Set(b.quitados ?? []);
+    if (!fuera.size) continue;
+    for (const { fila, puntos } of posicionesBloque(b)) {
+      puntos.forEach((p, i) => { const k = `${fila}:${i}`; if (fuera.has(k)) out.push({ x: p.x, y: p.y, bloque: b.id, clave: `${b.id}|${k}` }); });
+    }
+  }
+  return out;
+}
+
+/** Separa "bloque|fila:lugar" en el bloque y la clave dentro del bloque. */
+export function partirClave(clave: string): { bloque: string; k: string } {
+  const i = clave.lastIndexOf("|");
+  return { bloque: clave.slice(0, i), k: clave.slice(i + 1) };
 }
 
 /** Etiquetas repetidas (nunca debe haber dos "A1"). */
@@ -210,5 +248,14 @@ export function leerDiseno(v: unknown): Diseno | null {
   if (!v || typeof v !== "object") return null;
   const d = v as Partial<Diseno>;
   if (d.version !== 1 || !Array.isArray(d.bloques) || !Array.isArray(d.formas)) return null;
-  return { version: 1, formas: d.formas.map((f) => forma(f)), bloques: d.bloques.map((b) => bloqueBase(b)) };
+  const clave = /^\d{1,3}:\d{1,3}$/;
+  const limpio = (b: Partial<Bloque>): Bloque => {
+    const x = bloqueBase(b);
+    x.porFila = Array.isArray(b.porFila) ? b.porFila.slice(0, 60).map((n) => Math.min(120, Math.max(0, Math.floor(Number(n) || 0)))) : null;
+    x.zonasAsiento = Object.fromEntries(Object.entries(b.zonasAsiento && typeof b.zonasAsiento === "object" ? b.zonasAsiento : {})
+      .filter(([k, v]) => clave.test(k) && typeof v === "string" && v.length <= 40));
+    x.quitados = Array.isArray(b.quitados) ? b.quitados.filter((k) => typeof k === "string" && clave.test(k)) : [];
+    return x;
+  };
+  return { version: 1, formas: d.formas.map((f) => forma(f)), bloques: d.bloques.map((b) => limpio(b)) };
 }

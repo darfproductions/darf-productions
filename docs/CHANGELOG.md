@@ -5,6 +5,16 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-10-19 — Editor de mapas: zonas por asiento, quitar asientos y filas distintas
+
+- Modo "Zonas y asientos" en el editor: seleccionar asientos (tocar, rectángulo, letra de fila, fila o bloque completo),
+  darles zona (Preferente, Discapacitados…), regresarlos a la zona del bloque, quitarlos o volver a ponerlos.
+  Los quitados no gastan número: la numeración de la fila se recorre.
+- "Cada fila con distinto número de asientos" (ej. 15, 16, 17, 19) además de "primera fila + crece".
+- Todo vive en el diseño (`Bloque.porFila`, `zonasAsiento`, `quitados`); sin cambios en la base.
+- Las letras de fila van en las puntas de cada bloque (un hueco no parte la fila).
+- Pendiente anotado: mapas con varios pisos.
+
 ## 2026-10-19 — Números de audición por personaje (migración 0116)
 
 - Nueva opción en "Números del día": **por personaje**. Al inscribirse nadie tiene número; al cerrar inscripciones

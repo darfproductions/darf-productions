@@ -11,6 +11,8 @@ export type AsientoPlano = {
   fondo: string; texto: string; borde?: string; deshabilitado?: boolean; marcado?: boolean; titulo?: string;
   /** Letra de la fila: se escribe en las puntas de cada fila. */
   fila?: string | null;
+  /** Bloque al que pertenece (las letras van en las puntas de cada bloque). */
+  grupo?: string;
 };
 
 const R = 9;
@@ -25,13 +27,16 @@ export function encuadrePlano(formas: Forma[], asientos: { x: number; y: number 
 }
 
 /** Letras de fila en las dos puntas de cada tramo (una fila partida en bloques da un tramo por bloque). */
-export function etiquetasFila(asientos: { x: number; y: number; numero: number | null; fila?: string | null }[]) {
+export function etiquetasFila(asientos: { x: number; y: number; numero: number | null; fila?: string | null; grupo?: string }[]) {
+  // Con grupo (el bloque), cada fila de cada bloque es un solo tramo aunque tenga huecos.
   const porFila = new Map<string, { x: number; y: number; n: number }[]>();
+  const conGrupo = asientos.some((a) => a.grupo);
   for (const a of asientos) {
     if (!a.fila) continue;
-    const l = porFila.get(a.fila) ?? [];
+    const k = conGrupo ? `${a.fila}\u0000${a.grupo ?? ""}` : a.fila;
+    const l = porFila.get(k) ?? [];
     l.push({ x: a.x, y: a.y, n: a.numero ?? 0 });
-    porFila.set(a.fila, l);
+    porFila.set(k, l);
   }
   const out: { fila: string; x: number; y: number }[] = [];
   const punta = (fila: string, a: { x: number; y: number }, b: { x: number; y: number } | undefined, lado: -1 | 1) => {
@@ -39,7 +44,8 @@ export function etiquetasFila(asientos: { x: number; y: number; numero: number |
     const d = Math.hypot(a.x - b.x, a.y - b.y) || 1;
     out.push({ fila, x: a.x + ((a.x - b.x) / d) * 17, y: a.y + ((a.y - b.y) / d) * 17 });
   };
-  for (const [fila, l] of porFila) {
+  for (const [clave, l] of porFila) {
+    const fila = clave.split("\u0000")[0];
     l.sort((a, b) => a.n - b.n);
     // Un salto grande entre asientos seguidos es un pasillo: ahí empieza otro tramo.
     let tramo: typeof l = [];
@@ -51,7 +57,7 @@ export function etiquetasFila(asientos: { x: number; y: number; numero: number |
     };
     for (const a of l) {
       const prev = tramo[tramo.length - 1];
-      if (prev && Math.hypot(a.x - prev.x, a.y - prev.y) > 45) cerrar();
+      if (prev && !conGrupo && Math.hypot(a.x - prev.x, a.y - prev.y) > 45) cerrar();
       tramo.push(a);
     }
     cerrar();

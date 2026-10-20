@@ -34,7 +34,7 @@ export async function applyToAudition(_p: ApplyState, f: FormData): Promise<Appl
   if (error) return { ok: false, message: mensajeError(error) };
   revalidatePath(`/audiciones/${aid}`);
   revalidatePath("/cuenta");
-  return { ok: true, message: "¡Listo! Tu inscripción quedó guardada. Tu QR para el día de la audición está abajo y en Mi cuenta." };
+  return { ok: true, message: "¡Listo! Tu inscripción quedó guardada. Tu QR para el día de la audición está arriba y en Mi cuenta. Si tienes dudas, ahí mismo está nuestro WhatsApp." };
 }
 
 export async function cancelMyApplication(_p: { ok: boolean; message: string } | null, f: FormData): Promise<{ ok: boolean; message: string } | null> {

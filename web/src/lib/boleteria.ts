@@ -107,7 +107,7 @@ export async function boxOfficeData(pid: string, performanceId: string) {
   const supabase = await createClient();
   await supabase.rpc("expire_due_orders", { pid });
   const [seats, taken, prices, diseno] = await Promise.all([
-    todasLasFilas((a, b) => supabase.from("seats").select("id, seat_label, seat_row, seat_number, lado, price_category_id, is_active, pos_x, pos_y").eq("production_id", pid).order("id").range(a, b)),
+    todasLasFilas((a, b) => supabase.from("seats").select("id, seat_label, seat_row, seat_number, lado, price_category_id, is_active, pos_x, pos_y, section").eq("production_id", pid).order("id").range(a, b)),
     asientosOcupados(supabase, performanceId),
     supabase.from("performance_price_categories").select("price_category_id, price, price_categories(nombre, color)").eq("performance_id", performanceId),
     supabase.from("mapas_diseno").select("diseno").eq("production_id", pid).maybeSingle(),

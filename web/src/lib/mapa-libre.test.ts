@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bloqueBase, encimados, erroresDiseno, generarLibre, leerDiseno, nombreFila, plantilla, PLANTILLAS, posicionesBloque, repetidos } from "./mapa-libre";
+import { bloqueBase, encimados, erroresDiseno, generarLibre, leerDiseno, lugaresQuitados, nombreFila, partirClave, plantilla, PLANTILLAS, posicionesBloque, repetidos } from "./mapa-libre";
 
 describe("mapa libre (0113)", () => {
   it("nombres de fila con letras y números", () => {
@@ -55,5 +55,38 @@ describe("mapa libre (0113)", () => {
     const d = plantilla("redondo");
     expect(leerDiseno(JSON.parse(JSON.stringify(d)))?.bloques).toHaveLength(4);
     expect(leerDiseno({ version: 2 })).toBeNull();
+  });
+});
+
+describe("mapa libre: filas distintas, zonas por asiento y huecos", () => {
+  it("cada fila con su número de asientos", () => {
+    const b = bloqueBase({ filas: 4, asientos: 15, porFila: [15, 16, 17, 19] });
+    expect(posicionesBloque(b).map((f) => f.puntos.length)).toEqual([15, 16, 17, 19]);
+    // Sin dato para una fila, usa la fórmula.
+    expect(posicionesBloque({ ...b, porFila: [15] }).map((f) => f.puntos.length)).toEqual([15, 15, 15, 15]);
+  });
+  it("quitar asientos a mitad de fila: la numeración se recorre", () => {
+    const d = { version: 1 as const, formas: [], bloques: [bloqueBase({ filas: 1, asientos: 8, quitados: ["0:3", "0:4"] })] };
+    const a = generarLibre(d);
+    expect(a.map((x) => x.etiqueta)).toEqual(["A1", "A2", "A3", "A4", "A5", "A6"]);
+    expect(a[3].x).toBeGreaterThan(a[2].x + 40); // el hueco se nota
+    expect(repetidos(a)).toEqual([]);
+    expect(lugaresQuitados(d)).toHaveLength(2);
+  });
+  it("zona propia de algunos asientos", () => {
+    const b = bloqueBase({ filas: 2, asientos: 5, zona: "pref", zonasAsiento: { "1:0": "disc", "1:1": "disc", "1:2": "disc" } });
+    const a = generarLibre({ version: 1, formas: [], bloques: [b] });
+    expect(a.filter((x) => x.zona === "disc").map((x) => x.etiqueta)).toEqual(["B1", "B2", "B3"]);
+    expect(a.filter((x) => x.zona === "pref")).toHaveLength(7);
+    expect(partirClave(a[0].clave)).toEqual({ bloque: b.id, k: "0:0" });
+  });
+  it("lee diseños viejos y limpia datos raros", () => {
+    const viejo = leerDiseno({ version: 1, formas: [], bloques: [{ id: "b1", asientos: 4, filas: 1 }] });
+    expect(viejo?.bloques[0].quitados).toEqual([]);
+    expect(viejo?.bloques[0].porFila).toBeNull();
+    const raro = leerDiseno({ version: 1, formas: [], bloques: [{ id: "b1", porFila: [999, -3], quitados: ["x", "0:1"], zonasAsiento: { "0:0": "z", malo: "z" } }] });
+    expect(raro?.bloques[0].porFila).toEqual([120, 0]);
+    expect(raro?.bloques[0].quitados).toEqual(["0:1"]);
+    expect(Object.keys(raro?.bloques[0].zonasAsiento ?? {})).toEqual(["0:0"]);
   });
 });

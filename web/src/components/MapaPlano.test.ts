@@ -14,3 +14,10 @@ describe("letras de fila del mapa libre (0114)", () => {
     expect(etiquetasFila([{ x: 0, y: 0, numero: 1 }])).toEqual([]);
   });
 });
+
+describe("letras de fila por bloque", () => {
+  it("con grupo, un hueco no parte la fila", () => {
+    const a = [0, 20, 40, 120, 140].map((x, i) => ({ x, y: 0, numero: i + 1, fila: "C", grupo: "centro" }));
+    expect(etiquetasFila(a)).toHaveLength(2);
+  });
+});

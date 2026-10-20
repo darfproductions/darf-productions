@@ -45,7 +45,7 @@ export default async function ComprarPage({ params, searchParams }: PageProps<"/
   if (vendible && session) await supabase.rpc("expire_due_orders", { pid: p.id });
   const [seatsRes, takenRes, pricesRes, disenoRes] = vendible
     ? await Promise.all([
-        todasLasFilas((a, b) => supabase.from("seats").select("id, seat_label, seat_row, seat_number, lado, price_category_id, is_active, pos_x, pos_y").eq("production_id", p.id).order("id").range(a, b)),
+        todasLasFilas((a, b) => supabase.from("seats").select("id, seat_label, seat_row, seat_number, lado, price_category_id, is_active, pos_x, pos_y, section").eq("production_id", p.id).order("id").range(a, b)),
         asientosOcupados(supabase, f.id),
         supabase.from("performance_price_categories").select("price_category_id, price, price_categories(nombre, cupo, color)").eq("performance_id", f.id),
         // 0113: escenario del mapa libre.
