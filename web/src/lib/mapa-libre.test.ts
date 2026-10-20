@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bloqueBase, encimados, erroresDiseno, generarLibre, leerDiseno, lugaresQuitados, nombreFila, partirClave, plantilla, PLANTILLAS, posicionesBloque, repetidos } from "./mapa-libre";
+import { bloqueBase, forma, encimados, erroresDiseno, generarLibre, leerDiseno, lugaresQuitados, nombreFila, normalizarOrigen, partirClave, plantilla, PLANTILLAS, posicionesBloque, repetidos } from "./mapa-libre";
 
 describe("mapa libre (0113)", () => {
   it("nombres de fila con letras y números", () => {
@@ -88,5 +88,25 @@ describe("mapa libre: filas distintas, zonas por asiento y huecos", () => {
     expect(raro?.bloques[0].porFila).toEqual([120, 0]);
     expect(raro?.bloques[0].quitados).toEqual(["0:1"]);
     expect(Object.keys(raro?.bloques[0].zonasAsiento ?? {})).toEqual(["0:0"]);
+  });
+});
+
+describe("origen del dibujo (la base guarda de 0 a 10000)", () => {
+  it("un dibujo salido a la izquierda y arriba se recorre completo", () => {
+    const d = { version: 1 as const, formas: [forma({ x: -80, y: -40, ancho: 100, alto: 40 })], bloques: [bloqueBase({ x: -150, y: -30, filas: 2, asientos: 3 })] };
+    const antes = generarLibre(d);
+    const { d: n, dx, dy, cabe } = normalizarOrigen(d);
+    const despues = generarLibre(n);
+    expect(cabe).toBe(true);
+    expect(dx).toBeGreaterThan(0);
+    expect(dy).toBeGreaterThan(0);
+    expect(Math.min(...despues.map((a) => a.x), ...despues.map((a) => a.y))).toBeGreaterThanOrEqual(20);
+    // Mismas distancias: todo se movió junto.
+    expect(despues.map((a) => [a.x - antes[0].x - dx, a.y - antes[0].y - dy])).toEqual(antes.map((a) => [a.x - antes[0].x, a.y - antes[0].y]));
+    expect(n.formas[0].x).toBe(-80 + dx);
+  });
+  it("si ya cabe, no cambia nada", () => {
+    const d = plantilla("frontal");
+    expect(normalizarOrigen(d).d).toBe(d);
   });
 });
