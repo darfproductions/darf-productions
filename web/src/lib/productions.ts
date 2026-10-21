@@ -59,7 +59,7 @@ export type Performance = {
   preventa_hasta?: string | null;
 };
 
-export type ZonePrice = { nombre: string; price: number; /** Color de la zona en el mapa (0062). */ color?: string | null };
+export type ZonePrice = { nombre: string; price: number; /** Color de la zona en el mapa (0062). */ color?: string | null; /** Orden de la zona (0117). */ orden?: number };
 
 const PRODUCTION_COLUMNS =
   `id, nombre, venue, temporada, price, on_sale, concluded, destacada, created_at, estado, frase, color_fondo, color_superficie, color_texto, color_acento, logo_path, ambiente_path, ${POSTER_COLUMNS}` as const;
@@ -112,17 +112,17 @@ export async function getProduction(id: string, opts: { includeDrafts?: boolean 
   if (onSaleIds.length) {
     const { data } = await supabase
       .from("performance_price_categories")
-      .select("price, price_categories(nombre, color)")
+      .select("price, price_categories(nombre, color, orden)")
       .in("performance_id", onSaleIds);
     const byZone = new Map<string, ZonePrice>();
     for (const row of data ?? []) {
-      const cat = row.price_categories as unknown as { nombre: string; color: string | null } | null;
+      const cat = row.price_categories as unknown as { nombre: string; color: string | null; orden: number | null } | null;
       if (!cat) continue;
       const price = Number(row.price);
       const prev = byZone.get(cat.nombre);
-      if (prev === undefined || price < prev.price) byZone.set(cat.nombre, { nombre: cat.nombre, price, color: cat.color });
+      if (prev === undefined || price < prev.price) byZone.set(cat.nombre, { nombre: cat.nombre, price, color: cat.color, orden: cat.orden ?? 0 });
     }
-    prices = [...byZone.values()].sort((a, b) => b.price - a.price);
+    prices = [...byZone.values()].sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0) || b.price - a.price);
   }
 
   return {

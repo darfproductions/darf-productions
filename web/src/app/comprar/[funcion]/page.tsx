@@ -47,7 +47,7 @@ export default async function ComprarPage({ params, searchParams }: PageProps<"/
     ? await Promise.all([
         todasLasFilas((a, b) => supabase.from("seats").select("id, seat_label, seat_row, seat_number, lado, price_category_id, is_active, pos_x, pos_y, section").eq("production_id", p.id).order("id").range(a, b)),
         asientosOcupados(supabase, f.id),
-        supabase.from("performance_price_categories").select("price_category_id, price, price_categories(nombre, cupo, color)").eq("performance_id", f.id),
+        supabase.from("performance_price_categories").select("price_category_id, price, price_categories(nombre, cupo, color, orden)").eq("performance_id", f.id),
         // 0113: escenario del mapa libre.
         supabase.from("mapas_diseno").select("diseno").eq("production_id", p.id).maybeSingle(),
       ])
@@ -63,6 +63,7 @@ export default async function ComprarPage({ params, searchParams }: PageProps<"/
     price: Number(r.price),
     nombre: (r.price_categories as unknown as { nombre: string } | null)?.nombre ?? "",
     color: (r.price_categories as unknown as { color: string | null } | null)?.color ?? null,
+    orden: (r.price_categories as unknown as { orden: number | null } | null)?.orden ?? 0,
   }));
   // Link de vendedor: el código se revisa aquí para mostrar su nombre desde el inicio.
   const sellerRes = vendible && vendedor && session ? await supabase.rpc("preview_seller_code", { target_performance_id: f.id, target_code: vendedor }) : null;

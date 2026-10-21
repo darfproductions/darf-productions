@@ -11,6 +11,7 @@ import { groupSeatsByRow, ZONE_COLORS } from "@/lib/tickets";
 import { copySeatMap, generateSeatMap, saveSeatZone, updateSeats, type SeatMapResult } from "../actions";
 import { MapaPlano } from "@/components/MapaPlano";
 import type { Diseno } from "@/lib/mapa-libre";
+import { ZonaAcciones } from "../ZonaAcciones";
 import { MapaEditor } from "./MapaEditor";
 
 export type BuilderSeat = {
@@ -26,7 +27,7 @@ export type BuilderSeat = {
   pos_y?: number | null;
   section?: string | null;
 };
-type Zona = { id: string; nombre: string; color: string | null; descripcion: string | null };
+type Zona = { id: string; nombre: string; color: string | null; descripcion: string | null; precio_base?: number | null };
 
 const ghost = "rounded-full border border-white/25 px-4 py-2 text-sm font-bold hover:border-white/50 disabled:opacity-50";
 const solid = "rounded-full bg-texto px-5 py-2.5 text-sm font-bold text-sala disabled:opacity-50";
@@ -158,14 +159,18 @@ export function SeatMapBuilder({ pid, seats, zonas, conBoletos, obras, diseno }:
       <Card className="flex flex-col gap-4">
         <div>
           <h2 className="titular text-xl">Zonas</h2>
-          <p className="text-sm text-texto-2">Cada asiento pertenece a una zona de precio (ej. VIP, Preferente). El precio se pone en cada función, en Funciones y precios.</p>
+          <p className="text-sm text-texto-2">Cada asiento pertenece a una zona (ej. VIP, Preferente). Ordénalas de la más a la menos importante con las flechas: así salen en la compra. El precio que pongas aquí se aplica a todas las funciones que aún no pasan (y a las nuevas); si una función lleva un precio distinto, ajústalo en Funciones y precios.</p>
         </div>
-        {zonas.map((z) => (
-          <ActionForm key={z.id} inline action={saveSeatZone} hidden={{ pid, zid: z.id }} submit="Guardar" submitClass={ghost}>
-            <input type="color" name="color" defaultValue={colorOf(z.id)} aria-label={`Color de ${z.nombre}`} className="h-10 w-12 rounded bg-transparent" />
-            <input className={`${input} w-48`} name="nombre" defaultValue={z.nombre} aria-label="Nombre de la zona" required />
-            <span className="text-xs text-texto-3">{seats.filter((s) => s.price_category_id === z.id).length} asientos</span>
-          </ActionForm>
+        {zonas.map((z, i) => (
+          <div key={z.id} className="flex flex-col gap-2 border-b border-white/10 pb-3 last:border-0">
+            <ActionForm inline action={saveSeatZone} hidden={{ pid, zid: z.id }} submit="Guardar" submitClass={ghost}>
+              <input type="color" name="color" defaultValue={colorOf(z.id)} aria-label={`Color de ${z.nombre}`} className="h-10 w-12 rounded bg-transparent" />
+              <input className={`${input} w-48`} name="nombre" defaultValue={z.nombre} aria-label="Nombre de la zona" required />
+              <span className="text-xs text-texto-3">{seats.filter((s) => s.price_category_id === z.id).length} asientos</span>
+            </ActionForm>
+            <ZonaAcciones pid={pid} zona={z} primera={i === 0} ultima={i === zonas.length - 1}
+              asientos={seats.filter((s) => s.price_category_id === z.id).length} otras={zonas.filter((o) => o.id !== z.id)} />
+          </div>
         ))}
         <ActionForm inline action={saveSeatZone} hidden={{ pid }} submit="Crear zona" submitClass={solid}>
           <input type="color" name="color" defaultValue={colorZona({ nombre: "" }, zonas.length)} aria-label="Color de la zona nueva" className="h-10 w-12 rounded bg-transparent" />

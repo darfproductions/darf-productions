@@ -6,7 +6,7 @@ import { clampSeat, formatMoney, groupSeatsByRow, seatSize, ZONE_COLORS, type Ma
 import type { Forma } from "@/lib/mapa-libre";
 import { MapaPlano } from "@/components/MapaPlano";
 
-export type ZonePrice = { categoryId: string; price: number; nombre: string; color?: string | null };
+export type ZonePrice = { categoryId: string; price: number; nombre: string; color?: string | null; orden?: number };
 
 // Mapa de asientos (mismo dibujo para la compra en línea y la taquilla del panel).
 // Solo pinta; quién puede comprar y qué está ocupado lo decide la base.
@@ -47,7 +47,7 @@ export function SeatMap({
   const libre = seats.some((s) => s.pos_x != null);
   const leyenda = (
     <ul className="flex flex-wrap gap-2 text-sm">
-      {prices.slice().sort((a, b) => b.price - a.price).map((z) => (
+      {prices.slice().sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0) || b.price - a.price).map((z) => (
         <li key={z.categoryId} className="flex items-center gap-2 rounded-full bg-telon px-3 py-1.5">
           <span aria-hidden="true" className="h-3 w-3 rounded-full" style={{ background: colorByCat.get(z.categoryId) }} />
           {z.nombre} · {formatMoney(z.price).replace(" MXN", "")}
@@ -81,7 +81,7 @@ export function SeatMap({
   return (
     <>
       <ul className="flex flex-wrap gap-2 text-sm">
-        {prices.slice().sort((a, b) => b.price - a.price).map((z) => (
+        {prices.slice().sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0) || b.price - a.price).map((z) => (
           <li key={z.categoryId} className="flex items-center gap-2 rounded-full bg-telon px-3 py-1.5">
             <span aria-hidden="true" className="h-3 w-3 rounded-full" style={{ background: colorByCat.get(z.categoryId) }} />
             {z.nombre} · {formatMoney(z.price).replace(" MXN", "")}

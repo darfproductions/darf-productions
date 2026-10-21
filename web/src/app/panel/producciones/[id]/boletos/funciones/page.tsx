@@ -12,6 +12,10 @@ import { ligaWhatsApp } from "@/lib/pago-rules";
 import { formatPerformanceDate } from "@/lib/productions";
 import { formatMoney } from "@/lib/tickets";
 import { cancelPerformance, createPerformance, deletePerformance, saveGeneralZone, setProductionOnSale, updatePerformance } from "../actions";
+import { ZonaAcciones } from "../ZonaAcciones";
+import { ingresoPotencial } from "@/lib/sales";
+import { createClient } from "@/lib/supabase/server";
+import { todasLasFilas } from "@/lib/supabase/paginar";
 import { Icono } from "@/components/Icono";
 
 export const metadata: Metadata = { title: "Funciones y precios" };
@@ -28,6 +32,20 @@ export default async function PerformancesPage({ params }: PageProps<"/panel/pro
   const [p, funciones, zonas] = await Promise.all([getPanelProduction(id), listPerformances(id), listZones(id)]);
   if (!p) redirect("/panel/producciones");
   // Funciones canceladas (0091): quién pagó y hay que reembolsar, con WhatsApp para avisarle.
+  // 0117: cuánto deja cada función si se vende todo, y lo vendido (aprobado) hasta hoy.
+  const supabase = await createClient();
+  const [asientosRes, vendidoRes] = gestionar ? await Promise.all([
+    todasLasFilas((a, b) => supabase.from("seats").select("price_category_id").eq("production_id", id).eq("is_active", true).order("id").range(a, b)),
+    funciones.length ? supabase.from("orders").select("performance_id, total").eq("status", "aprobado").in("performance_id", funciones.map((f) => f.id)) : Promise.resolve({ data: [] }),
+  ]) : [{ data: [] }, { data: [] }];
+  const asientosPorZona = new Map<string, number>();
+  for (const r of (asientosRes.data ?? []) as { price_category_id: string | null }[]) if (r.price_category_id) asientosPorZona.set(r.price_category_id, (asientosPorZona.get(r.price_category_id) ?? 0) + 1);
+  const vendido = new Map<string, number>();
+  for (const o of (vendidoRes.data ?? []) as { performance_id: string; total: number }[]) vendido.set(o.performance_id, (vendido.get(o.performance_id) ?? 0) + Number(o.total));
+  const activas = funciones.filter((f) => !f.cancelada_at);
+  const potencial = new Map(activas.map((f) => [f.id, ingresoPotencial(asientosPorZona, f.prices, zonas)]));
+  const totalPotencial = [...potencial.values()].reduce((n, x) => n + x.total, 0);
+  const totalVendido = activas.reduce((n, f) => n + (vendido.get(f.id) ?? 0), 0);
   const porReembolsar = new Map(await Promise.all(funciones.filter((f) => f.cancelada_at).map(async (f) => [f.id, await listOrders(id, { funcion: f.id, estado: "aprobado" })] as const)));
 
   return (
@@ -45,6 +63,43 @@ export default async function PerformancesPage({ params }: PageProps<"/panel/pro
             confirm={p.on_sale ? "¿Cerrar la venta de toda la obra?" : "¿Abrir la venta de la obra?"}
             submit={p.on_sale ? "Cerrar venta" : "Abrir venta"}
           />
+        </Card>
+      )}
+
+      {gestionar && activas.length > 0 && (
+        <Card className="flex flex-col gap-3">
+          <div>
+            <h2 className="titular text-xl">Si se vende todo</h2>
+            <p className="text-sm text-texto-2">Cuánto deja cada función llena con los precios que tiene hoy (sin descuentos ni cortesías) y cuánto llevas vendido.</p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[520px] text-sm">
+              <thead className="text-left text-xs uppercase tracking-widest text-texto-3">
+                <tr><th className="py-2 pr-3 font-semibold">Función</th><th className="py-2 pr-3 text-right font-semibold">Lugares</th><th className="py-2 pr-3 text-right font-semibold">Llena</th><th className="py-2 text-right font-semibold">Vendido</th></tr>
+              </thead>
+              <tbody className="divide-y divide-white/10">
+                {activas.map((f) => {
+                  const x = potencial.get(f.id)!;
+                  return (
+                    <tr key={f.id}>
+                      <td className="py-2 pr-3">{formatPerformanceDate(f.starts_at)}{x.sinPrecio > 0 && <span className="block text-xs text-aviso">{x.sinPrecio} asientos sin precio en esta función</span>}</td>
+                      <td className="num py-2 pr-3 text-right">{x.lugares}</td>
+                      <td className="num py-2 pr-3 text-right font-bold">{formatMoney(x.total)}</td>
+                      <td className="num py-2 text-right text-texto-2">{formatMoney(vendido.get(f.id) ?? 0)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+              <tfoot>
+                <tr className="border-t-2 border-white/20 font-black">
+                  <td className="py-2 pr-3">Todas las funciones ({activas.length})</td>
+                  <td className="num py-2 pr-3 text-right">{activas.reduce((n, f) => n + potencial.get(f.id)!.lugares, 0)}</td>
+                  <td className="num py-2 pr-3 text-right text-exito">{formatMoney(totalPotencial)}</td>
+                  <td className="num py-2 text-right">{formatMoney(totalVendido)}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
         </Card>
       )}
 
@@ -88,7 +143,7 @@ export default async function PerformancesPage({ params }: PageProps<"/panel/pro
                   <b>{formatPerformanceDate(f.starts_at)}</b>
                   {f.on_sale ? <span className="rounded-full bg-[#14532d] px-2 py-0.5 text-[11px] uppercase text-[#bbf7d0]">en venta</span> : <span className="rounded-full bg-white/10 px-2 py-0.5 text-[11px] uppercase text-texto-3">sin venta</span>}
                   {f.preventa_hasta && <span className="rounded-full border border-oro/40 px-2 py-0.5 text-[11px] uppercase text-oro-claro">preventa</span>}
-                  <span className="text-sm text-texto-3">{f.venue ? `${f.venue} · ` : ""}{precios.length ? `$${Math.min(...precios)}–$${Math.max(...precios)}` : "sin precios"}</span>
+                  <span className="text-sm text-texto-3">{f.venue ? `${f.venue} · ` : ""}{precios.length ? `$${Math.min(...precios)}–$${Math.max(...precios)} · llena ${formatMoney(potencial.get(f.id)?.total ?? 0)}` : "sin precios"}</span>
                 </span>
                 <span className="text-sm font-bold text-violeta-claro">Editar <span className="inline-block transition-transform group-open:rotate-180"><Icono nombre="chevron-abajo" /></span></span>
               </summary>
@@ -157,10 +212,11 @@ export default async function PerformancesPage({ params }: PageProps<"/panel/pro
           </details>
           <AjustesSeccion id="zonas" titulo="Zonas de entrada general" resumen={`${zonas.filter((z) => z.cupo != null).length} zonas`}>
             <div>
-              <p className="text-sm text-texto-2">Zonas sin asiento numerado (ej. Pista: 80 lugares). El cupo vale para todas las funciones; en cada función puedes poner otro. Luego ponle precio en cada función.</p>
+              <p className="text-sm text-texto-2">Zonas sin asiento numerado (ej. Pista: 80 lugares). El cupo vale para todas las funciones; en cada función puedes poner otro. El precio que pongas aquí va a todas las funciones que aún no pasan.</p>
             </div>
-            {zonas.filter((z) => z.cupo != null).map((z) => (
-              <ActionForm key={z.id} action={saveGeneralZone} hidden={{ pid: id, zid: z.id }} submit="Guardar zona" submitClass={ghost}>
+            {zonas.filter((z) => z.cupo != null).map((z, i, gz) => (
+              <div key={z.id} className="flex flex-col gap-2 border-b border-white/10 pb-3 last:border-0">
+              <ActionForm action={saveGeneralZone} hidden={{ pid: id, zid: z.id }} submit="Guardar zona" submitClass={ghost}>
                 <div className="grid gap-3 sm:grid-cols-4">
                   <label className="flex flex-col gap-1.5 text-sm font-semibold">Nombre<input className={input} name="nombre" defaultValue={z.nombre} required maxLength={60} /></label>
                   <label className="flex flex-col gap-1.5 text-sm font-semibold">Cupo<input className={input} name="cupo" type="number" min={1} step="1" defaultValue={z.cupo ?? ""} required /></label>
@@ -168,6 +224,8 @@ export default async function PerformancesPage({ params }: PageProps<"/panel/pro
                 </div>
                 <label className="flex items-center gap-2 text-sm"><input type="hidden" name="activa" value="off" /><input type="checkbox" name="activa" value="on" defaultChecked={z.is_active} /> Activa (se vende)</label>
               </ActionForm>
+              <ZonaAcciones pid={id} zona={{ ...z, precio_base: z.precio_base ?? activas.find((f) => f.starts_at && f.starts_at > new Date().toISOString())?.prices.find((x) => x.categoryId === z.id)?.price ?? null }} primera={i === 0} ultima={i === gz.length - 1} asientos={0} otras={[]} />
+              </div>
             ))}
             <ActionForm action={saveGeneralZone} hidden={{ pid: id }} submit="Crear zona">
               <div className="grid gap-3 sm:grid-cols-4">
