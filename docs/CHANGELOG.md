@@ -18,6 +18,9 @@ solo *qué*.
 - `mostrar_total`: apagado, el mapa y la pantalla de apartar no muestran precios, subtotal ni total (el mensaje de WhatsApp sí).
 - Tarjeta "Venta y precios" también en Página pública; sin precios, las zonas de la obra salen solo con su nombre.
 - Showman: híbrido, sin precios ni total y funciones ocultas (script DEV).
+- Taquilla: campo "Correo de su cuenta DARF". Con cuenta, la orden pasa a esa cuenta al momento (`order_asignar_correo`,
+  con aviso); sin cuenta, queda en `orders.correo_pendiente` y el trigger `vincular_ordenes_correo` (auth.users) se la
+  pasa cuando crea su cuenta y confirma ese correo. El PDF de la taquilla sigue igual.
 - Panel → Funciones y precios: tarjeta "Cómo se vende esta obra"; "Listo para vender" avisa si están ocultas.
 - Showman queda con funciones ocultas (script DEV).
 

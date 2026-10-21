@@ -2,6 +2,7 @@
 -- 0120: cómo se vende cada obra (funciones publicadas; venta solo por la página, híbrida o por WhatsApp; precios y total visibles).
 -- Además deja Showman como pidió Diego: funciones OCULTAS (se publican desde el panel), venta híbrida
 -- ("Aparta tu lugar" → WhatsApp) y sin precios ni total en la página ni al elegir lugares.
+-- Taquilla: correo del comprador para que sus boletos aparezcan en su cuenta (o al crearla).
 -- Se puede correr más de una vez. Si la base no es DEV, aborta.
 do $$ begin
   if to_regclass('darf_env.marker') is null
@@ -90,6 +91,64 @@ language sql stable security definer set search_path = public as $$
    where pf.starts_at > now() and ppc.price > 0 and production_is_visible(pf.production_id)
    group by pf.production_id
 $$;
+
+-- ──────── Taquilla: boletos a la cuenta del comprador por su correo ────────
+-- Al vender en taquilla se puede poner el correo de la cuenta del comprador: sus boletos aparecen en su Mi cuenta.
+-- Si ese correo aún no tiene cuenta, la orden queda guardada con el correo y se le pasa sola cuando cree su
+-- cuenta y confirme el correo (mismo momento en que se reclaman las invitaciones del equipo, 0094).
+alter table orders add column if not exists correo_pendiente text;
+create index if not exists orders_correo_pendiente_idx on orders (lower(correo_pendiente)) where correo_pendiente is not null;
+
+create or replace function order_asignar_correo(target_order_id uuid, p_correo text) returns text
+language plpgsql security definer set search_path = public as $$
+declare o orders; v_pid text; v_correo text := lower(btrim(coalesce(p_correo, ''))); v_uid uuid;
+begin
+  select * into o from orders where id = target_order_id for update;
+  if not found then raise exception 'No se encontró la orden.'; end if;
+  select production_id into v_pid from performances where id = o.performance_id;
+  if not has_perm(v_pid, 'ventas.operar') then raise exception 'No autorizado'; end if;
+  if v_correo !~ '^[^@\s]+@[^@\s]+\.[^@\s]+$' then raise exception 'Revisa el correo.'; end if;
+  if o.buyer_user_id is not null then raise exception 'Esta orden ya está en una cuenta.'; end if;
+  select id into v_uid from auth.users where lower(email) = v_correo and email_confirmed_at is not null limit 1;
+  if v_uid is not null then
+    update orders set buyer_user_id = v_uid, correo_pendiente = null where id = o.id;
+    begin
+      perform notify(array[v_uid], 'boletos', left('Tienes boletos de ' || production_name(v_pid), 200),
+                     'Ya están en tu cuenta, con su QR para entrar.', '/cuenta', v_pid);
+    exception when others then null;
+    end;
+  else
+    update orders set correo_pendiente = v_correo where id = o.id;
+  end if;
+  insert into audit_log (tabla, accion, production_id, despues)
+    values ('orders', 'taquilla_correo', v_pid, jsonb_build_object('orden', o.order_code, 'cuenta', v_uid is not null));
+  return case when v_uid is not null then 'cuenta' else 'pendiente' end;
+end $$;
+revoke all on function order_asignar_correo(uuid, text) from public, anon;
+grant execute on function order_asignar_correo(uuid, text) to authenticated;
+
+create or replace function vincular_ordenes_correo() returns trigger
+language plpgsql security definer set search_path = public as $$
+declare uids uuid[]; n int;
+begin
+  if new.email_confirmed_at is null then return new; end if;
+  if tg_op = 'UPDATE' and old.email_confirmed_at is not null and old.email is not distinct from new.email then return new; end if;
+  begin
+    update orders set buyer_user_id = new.id, correo_pendiente = null
+     where buyer_user_id is null and correo_pendiente = lower(new.email);
+    get diagnostics n = row_count;
+    if n > 0 then
+      perform notify(array[new.id], 'boletos', 'Tienes boletos en tu cuenta', 'Los boletos que compraste en taquilla ya están aquí, con su QR para entrar.', '/cuenta', null);
+    end if;
+  exception when others then null; -- nunca impide crear o confirmar la cuenta
+  end;
+  return new;
+end $$;
+revoke all on function vincular_ordenes_correo() from public, anon, authenticated;
+drop trigger if exists vincular_ordenes_correo on auth.users;
+create trigger vincular_ordenes_correo after insert or update of email_confirmed_at, email on auth.users
+  for each row execute function vincular_ordenes_correo();
+
 -- Showman: funciones ocultas hasta que se publiquen; híbrido y sin precios ni total.
 update productions set funciones_publicadas = false, modo_venta = 'hibrido', mostrar_precios = false, mostrar_total = false where id = 'showman';
 

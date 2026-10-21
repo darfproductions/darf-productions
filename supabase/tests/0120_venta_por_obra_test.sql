@@ -81,3 +81,35 @@ do $$ declare z uuid; pf uuid; ok boolean; n int; o json; begin
 end $$;
 
 select 'TODO OK';
+
+-- T5: taquilla con correo: con cuenta va directo; sin cuenta queda pendiente y se pasa al crear y confirmar la cuenta.
+do $$ declare z uuid; pf uuid; o json; oid1 uuid; oid2 uuid; r text; ok boolean; begin
+  select id into z from price_categories where production_id = 't120_obra' limit 1;
+  select id into pf from performances where production_id = 't120_obra' limit 1;
+  update auth.users set email_confirmed_at = now() where id = '00000000-0000-0000-0000-000000000c02';
+  perform pg_temp.as_user('00000000-0000-0000-0000-000000000c01');
+  perform obra_venta_ajustes('t120_obra', true, 'whatsapp', true, true);
+  o := admin_create_general_order(pf, 'Con cuenta', '5512345678', z, 1);
+  select id into oid1 from orders where order_code = o->>'order_code';
+  r := order_asignar_correo(oid1, '  T120_PUBLICO@test.local ');
+  if r <> 'cuenta' then raise exception 'FALLO T5: con cuenta %', r; end if;
+  o := admin_create_general_order(pf, 'Sin cuenta', '5512345678', z, 1);
+  select id into oid2 from orders where order_code = o->>'order_code';
+  r := order_asignar_correo(oid2, 'nuevo120@test.local');
+  if r <> 'pendiente' then raise exception 'FALLO T5: sin cuenta %', r; end if;
+  begin perform order_asignar_correo(oid2, 'no-es-correo'); ok := false; exception when others then ok := true; end;
+  if not ok then raise exception 'FALLO T5: correo inválido'; end if;
+  perform pg_temp.as_user('00000000-0000-0000-0000-000000000c02');
+  begin perform order_asignar_correo(oid2, 'otro@test.local'); ok := false; exception when others then ok := true; end;
+  perform pg_temp.as_root();
+  if not ok then raise exception 'FALLO T5: sin permiso'; end if;
+  if (select buyer_user_id from orders where id = oid1) <> '00000000-0000-0000-0000-000000000c02' then raise exception 'FALLO T5: no quedó en la cuenta'; end if;
+  -- Crea la cuenta (sin confirmar: aún no); al confirmar el correo se le pasa.
+  insert into auth.users (id, instance_id, aud, role, email) values
+    ('00000000-0000-0000-0000-000000000c09', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'Nuevo120@test.local');
+  if (select buyer_user_id from orders where id = oid2) is not null then raise exception 'FALLO T5: se pasó sin confirmar'; end if;
+  update auth.users set email_confirmed_at = now() where id = '00000000-0000-0000-0000-000000000c09';
+  if (select buyer_user_id from orders where id = oid2) is distinct from '00000000-0000-0000-0000-000000000c09' then raise exception 'FALLO T5: no se pasó al confirmar'; end if;
+end $$;
+
+select 'TODO OK T5';
