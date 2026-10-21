@@ -11,8 +11,9 @@ import { requirePanel } from "@/lib/permissions";
 import { ligaWhatsApp } from "@/lib/pago-rules";
 import { formatPerformanceDate } from "@/lib/productions";
 import { formatMoney } from "@/lib/tickets";
-import { cancelPerformance, createPerformance, deletePerformance, saveGeneralZone, savePreventaObra, saveVentaAjustes, setProductionOnSale, updatePerformance } from "../actions";
+import { cancelPerformance, createPerformance, deletePerformance, saveGeneralZone, savePreventaObra, setProductionOnSale, updatePerformance } from "../actions";
 import { ZonaAcciones } from "../ZonaAcciones";
+import { VentaAjustes } from "../VentaAjustes";
 import { ingresoPotencial } from "@/lib/sales";
 import { createClient } from "@/lib/supabase/server";
 import { todasLasFilas } from "@/lib/supabase/paginar";
@@ -36,7 +37,6 @@ export default async function PerformancesPage({ params }: PageProps<"/panel/pro
   const supabase = await createClient();
   // 0118: fechas de preventa de la obra (las funciones que no tienen fechas propias las siguen).
   const { data: obraPre } = await supabase.from("productions").select("preventa_desde, preventa_hasta, funciones_publicadas, modo_venta, mostrar_precios, mostrar_total").eq("id", id).maybeSingle();
-  const publicadas = obraPre?.funciones_publicadas !== false;
   const [asientosRes, vendidoRes] = gestionar ? await Promise.all([
     todasLasFilas((a, b) => supabase.from("seats").select("price_category_id").eq("production_id", id).eq("is_active", true).order("id").range(a, b)),
     funciones.length ? supabase.from("orders").select("performance_id, total").eq("status", "aprobado").in("performance_id", funciones.map((f) => f.id)) : Promise.resolve({ data: [] }),
@@ -69,34 +69,7 @@ export default async function PerformancesPage({ params }: PageProps<"/panel/pro
         </Card>
       )}
 
-      {gestionar && (
-        <Card className={`flex flex-col gap-3 ${publicadas ? "" : "border border-aviso/50"}`}>
-          <div>
-            <h2 className="titular text-xl">Cómo se vende esta obra</h2>
-            <p className="text-sm text-texto-2">
-              {publicadas ? "Las funciones se ven en la página de la obra." : <b className="text-aviso">Las funciones están ocultas: el público no ve fechas, cuenta regresiva ni compra. Tú y el equipo sí las ven aquí.</b>}
-            </p>
-          </div>
-          <ActionForm action={saveVentaAjustes} hidden={{ pid: id }} submit="Guardar" submitClass={ghost}>
-            <label className="flex items-start gap-2 text-sm"><input type="checkbox" name="funciones_publicadas" defaultChecked={publicadas} className="mt-1" />
-              <span><b>Funciones publicadas</b> — sin la palomita, las funciones, fechas y la cuenta regresiva no salen en ningún lado de la página.</span></label>
-            <label className="flex items-start gap-2 text-sm"><input type="checkbox" name="mostrar_precios" defaultChecked={obraPre?.mostrar_precios !== false} className="mt-1" />
-              <span><b>Mostrar precios en la página de la obra</b> — sin la palomita no sale &quot;Desde $…&quot; ni la lista de zonas con precio.</span></label>
-            <label className="flex items-start gap-2 text-sm"><input type="checkbox" name="mostrar_total" defaultChecked={obraPre?.mostrar_total !== false} className="mt-1" />
-              <span><b>Mostrar precios y total al apartar</b> — sin la palomita, en el mapa y al apartar no se ven precios ni total (el mensaje de WhatsApp sí lleva el total).</span></label>
-            <fieldset className="flex flex-col gap-2 text-sm">
-              <legend className="mb-1 font-semibold">Venta</legend>
-              <label className="flex items-start gap-2"><input type="radio" name="modo_venta" value="web" defaultChecked={!obraPre?.modo_venta || obraPre.modo_venta === "web"} className="mt-1" />
-                <span><b>Solo por la página</b> — con su cuenta eligen lugares, se crea su orden con su total y en el pago eligen el método (hoy: WhatsApp). Al aprobar el pago les sale su boleto con QR.</span></label>
-              <label className="flex items-start gap-2"><input type="radio" name="modo_venta" value="hibrido" defaultChecked={obraPre?.modo_venta === "hibrido"} className="mt-1" />
-                <span><b>Híbrido</b> — eligen asientos en el mapa (con su cuenta), se apartan y los manda directo a WhatsApp con su código para seguir ahí.</span></label>
-              <label className="flex items-start gap-2"><input type="radio" name="modo_venta" value="whatsapp" defaultChecked={obraPre?.modo_venta === "whatsapp"} className="mt-1" />
-                <span><b>Todo por WhatsApp</b> — la página no aparta: cada función tiene un botón para pedir boletos por WhatsApp y el equipo vende desde Taquilla.</span></label>
-              <span className="text-xs text-texto-3">La Taquilla funciona igual en los tres.</span>
-            </fieldset>
-          </ActionForm>
-        </Card>
-      )}
+      {gestionar && <VentaAjustes pid={id} v={obraPre} />}
 
       {gestionar && (
         <Card className="flex flex-col gap-3">

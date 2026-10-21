@@ -1,6 +1,7 @@
 -- DARF 2.0 — SOLO PARA EL PROYECTO SUPABASE "DARF 2.0 DEV" (la base de darfproductions.com).
 -- 0120: cómo se vende cada obra (funciones publicadas; venta solo por la página, híbrida o por WhatsApp; precios y total visibles).
--- Además deja las funciones de Showman OCULTAS (pedido de Diego): se publican desde el panel cuando se decida.
+-- Además deja Showman como pidió Diego: funciones OCULTAS (se publican desde el panel), venta híbrida
+-- ("Aparta tu lugar" → WhatsApp) y sin precios ni total en la página ni al elegir lugares.
 -- Se puede correr más de una vez. Si la base no es DEV, aborta.
 do $$ begin
   if to_regclass('darf_env.marker') is null
@@ -89,9 +90,10 @@ language sql stable security definer set search_path = public as $$
    where pf.starts_at > now() and ppc.price > 0 and production_is_visible(pf.production_id)
    group by pf.production_id
 $$;
--- Showman: funciones ocultas hasta que se publiquen desde Funciones y precios.
-update productions set funciones_publicadas = false where id = 'showman';
+-- Showman: funciones ocultas hasta que se publiquen; híbrido y sin precios ni total.
+update productions set funciones_publicadas = false, modo_venta = 'hibrido', mostrar_precios = false, mostrar_total = false where id = 'showman';
 
 commit;
 
-select 'Listo 0120. Showman con funciones ocultas: ' || (select case when funciones_publicadas then 'NO (revisar)' else 'sí' end from productions where id = 'showman') as resultado;
+select 'Listo 0120. Showman: ' || (select case when not funciones_publicadas and modo_venta = 'hibrido' and not mostrar_precios and not mostrar_total
+  then 'funciones ocultas, híbrido y sin precios.' else 'REVISAR' end from productions where id = 'showman') as resultado;

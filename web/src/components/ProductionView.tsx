@@ -223,7 +223,8 @@ export async function ProductionView({
           })}
         </ul>
       )}
-      {conPrecios && prices.length > 0 && (
+      {/* 0120: sin precios, las zonas salen solo con su nombre. */}
+      {prices.length > 0 && (
         <div className="rounded-[22px] border border-current/12 bg-obra-superficie px-6 py-6 md:px-9 md:py-8">
           <div className="mb-2 flex flex-wrap items-baseline justify-between gap-3">
             <h3 className="text-[22px] font-extrabold tracking-[-0.02em]">Zonas</h3>
@@ -238,11 +239,11 @@ export async function ProductionView({
               <li key={z.nombre} className="grid grid-cols-[14px_minmax(0,1fr)_auto] items-center gap-4 border-b border-current/12 px-1 py-4 last:border-0">
                 <i aria-hidden="true" className="h-3.5 w-3.5 rounded-[4px] border border-current/20" style={{ background: z.color ?? "currentColor" }} />
                 <span className="text-[15px] font-semibold">{z.nombre}</span>
-                <strong className="num text-[17px]">{formatPrice(z.price)}</strong>
+                {conPrecios && <strong className="num text-[17px]">{formatPrice(z.price)}</strong>}
               </li>
             ))}
           </ul>
-          <p className="pt-4 text-[12.5px] opacity-70">Precios en pesos mexicanos.</p>
+          {conPrecios && <p className="pt-4 text-[12.5px] opacity-70">Precios en pesos mexicanos.</p>}
         </div>
       )}
     </Bloque>

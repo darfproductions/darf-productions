@@ -15,7 +15,9 @@ solo *qué*.
   o 'whatsapp' (botón "Pedir por WhatsApp" por función; el equipo vende desde Taquilla). La compra en línea lo
   revisa en `preventa_revisar`. Taquilla igual en los tres.
 - `mostrar_precios`: apagado, la página de la obra no muestra "Desde $" ni zonas con precio (el inicio tampoco).
-- `mostrar_total`: apagado, el mapa y la pantalla de apartar no muestran precios ni total (el mensaje de WhatsApp sí).
+- `mostrar_total`: apagado, el mapa y la pantalla de apartar no muestran precios, subtotal ni total (el mensaje de WhatsApp sí).
+- Tarjeta "Venta y precios" también en Página pública; sin precios, las zonas de la obra salen solo con su nombre.
+- Showman: híbrido, sin precios ni total y funciones ocultas (script DEV).
 - Panel → Funciones y precios: tarjeta "Cómo se vende esta obra"; "Listo para vender" avisa si están ocultas.
 - Showman queda con funciones ocultas (script DEV).
 
