@@ -5,7 +5,9 @@ import { notFound } from "next/navigation";
 import { PageHeading } from "@/components/PageHeading";
 import { PasosBarra, PasosProvider } from "@/components/PasosCompra";
 import { UnirseClub } from "@/components/fanzone/UnirseClub";
-import { enPreventa, partesFuncion } from "@/lib/disponibilidad";
+import { enPreventa, partesFuncion, ventaPorAbrir } from "@/lib/disponibilidad";
+import { getPromos } from "@/lib/promos";
+import { conPromo, mejorPromo, pctZona } from "@/lib/promo-rules";
 import { getCredencial } from "@/lib/fanzone";
 import { getSession } from "@/lib/auth";
 import { formatPerformanceDate, getPerformanceForSale, getTheme, themeStyle } from "@/lib/productions";
@@ -39,11 +41,15 @@ export default async function ComprarPage({ params, searchParams }: PageProps<"/
   const preventa = vendible && enPreventa(f);
   const bloqueada = preventa && !(await getCredencial());
   const hasta = preventa && f.preventa_hasta ? partesFuncion(f.preventa_hasta) : null;
+  // 0118: antes del inicio nadie compra en línea (la base lo exige igual).
+  const abre = vendible && ventaPorAbrir(f) && f.preventa_desde ? partesFuncion(f.preventa_desde) : null;
 
   const supabase = await createClient();
   // Antes de mostrar el mapa se liberan los asientos de órdenes vencidas (0054).
   if (vendible && session) await supabase.rpc("expire_due_orders", { pid: p.id });
-  const [seatsRes, takenRes, pricesRes, disenoRes] = vendible
+  const promos = vendible ? (await getPromos(p.id)).get(f.id) : undefined;
+  const promo = mejorPromo(promos);
+  const [seatsRes, takenRes, pricesRes, disenoRes] = vendible && !abre
     ? await Promise.all([
         todasLasFilas((a, b) => supabase.from("seats").select("id, seat_label, seat_row, seat_number, lado, price_category_id, is_active, pos_x, pos_y, section").eq("production_id", p.id).order("id").range(a, b)),
         asientosOcupados(supabase, f.id),
@@ -57,10 +63,14 @@ export default async function ComprarPage({ params, searchParams }: PageProps<"/
   const seats = ((seatsRes?.data ?? []) as (MapSeat & { is_active: boolean })[]).filter((s) => s.is_active);
   const taken = (takenRes?.data ?? []) as string[];
   // Zonas con asiento para el mapa; las de entrada general van aparte (0055).
-  const general = vendible ? await generalAvailability(f.id) : [];
+  const general = (vendible && !abre ? await generalAvailability(f.id) : []).map((z) => {
+    const pct = pctZona(promos, z.price_category_id);
+    return pct ? { ...z, precio: conPromo(z.precio, pct), antes: z.precio } : z;
+  });
   const prices: ZonePrice[] = (pricesRes?.data ?? []).filter((r) => (r.price_categories as unknown as { cupo: number | null } | null)?.cupo == null).map((r) => ({
     categoryId: r.price_category_id as string,
-    price: Number(r.price),
+    price: conPromo(Number(r.price), pctZona(promos, r.price_category_id as string)),
+    ...(pctZona(promos, r.price_category_id as string) > 0 && { antes: Number(r.price) }),
     nombre: (r.price_categories as unknown as { nombre: string } | null)?.nombre ?? "",
     color: (r.price_categories as unknown as { color: string | null } | null)?.color ?? null,
     orden: (r.price_categories as unknown as { orden: number | null } | null)?.orden ?? 0,
@@ -83,6 +93,18 @@ export default async function ComprarPage({ params, searchParams }: PageProps<"/
             <p className="text-lg">{yaPaso ? "Esta función ya pasó." : "Esta función no está a la venta en este momento."}</p>
             <Link href={`/producciones/${p.id}`} className="mt-4 inline-block font-bold text-violeta-claro"><Icono nombre="flecha-izq" /> Volver a la obra</Link>
           </div>
+        ) : abre ? (
+          <div className="flex max-w-2xl flex-col items-start gap-4 rounded-2xl bg-telon p-8">
+            <p className="text-2xl font-black uppercase tracking-[-0.02em]">{f.preventa_hasta ? <>La preventa del <span className="txt-oro">Club Fan</span> abre pronto</> : "La venta abre pronto"}</p>
+            <p className="text-texto-2">
+              {f.preventa_hasta ? "Los socios del Club Fan pueden comprar" : "Puedes comprar"} desde el {abre.dia} {abre.numero} {abre.mes}, {abre.hora}.
+              {f.preventa_hasta && " Únete gratis al Club Fan para comprar antes que nadie."}
+            </p>
+            {f.preventa_hasta && !(await getCredencial()) && (session ? <UnirseClub /> : (
+              <Link href={`/entrar?next=${encodeURIComponent(`/comprar/${f.id}`)}`} className="fb fb-fz">Entra o crea tu cuenta para unirte</Link>
+            ))}
+            <Link href={`/producciones/${p.id}`} className="text-sm font-bold text-texto-3 hover:text-texto"><Icono nombre="flecha-izq" /> Volver a la obra</Link>
+          </div>
         ) : bloqueada ? (
           <div className="flex max-w-2xl flex-col items-start gap-4 rounded-[22px] border border-oro/40 bg-[#120f17] p-8">
             {/* eslint-disable-next-line @next/next/no-img-element -- logo SVG del kit */}
@@ -102,6 +124,7 @@ export default async function ComprarPage({ params, searchParams }: PageProps<"/
           <PasosProvider>
           <div className="flex flex-col gap-10">
           <PasosBarra />
+          {promo && <p className="rounded-2xl border border-obra-acento/40 bg-telon p-4 font-semibold">Promo {promo.nombre}: {promo.percent}% de descuento ya aplicado{[...prices, ...general].some((z) => !("antes" in z) || z.antes == null) ? " en algunas zonas" : ""}.</p>}
           {general.length > 0 && (
             <GeneralPicker performanceId={f.id} productionName={p.nombre} zones={general}
               defaultPhone={session?.profile?.telefono ?? ""} defaultSeller={vendedor ?? ""} sinSesion={!session} />

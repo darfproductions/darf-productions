@@ -5,6 +5,34 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-10-21 — Borradores de la página de la obra (migración 0119)
+
+- Con la obra publicada, lo que se edita en Página pública queda en **borrador** (`obra_borradores`, una fila por
+  sección: datos, colores, kit, póster, franja, canciones, ficha extra, videos, agradecimientos). Si la obra aún no es
+  pública, se guarda directo como antes.
+- "Cambios sin publicar" en el editor: publicar cada sección (o todo) **a fans** y después **a todos**, o directo a
+  todos; descartar el borrador o quitarlo a los fans. `obra_publicar` / `obra_descartar` piden `obra.publicar`.
+- Los socios del Club Fan ven la capa de fans en la misma página de la obra (`obra_capa('fans')`), con un aviso de
+  "novedades exclusivas". La vista previa deja elegir: con el borrador, lo que ven los fans o lo que ve el público.
+- Al cambiar, publicar o descartar imágenes del kit/póster, las que ya no usa nadie se borran del Storage
+  (`kit_en_uso` cuida las obras duplicadas que comparten imagen).
+- Fuera de las capas (siguen como estaban): elenco y créditos, anuncios, galería y videos de ensayo (Fan Zone).
+
+## 2026-10-21 — Preventa con inicio, precio propio por función y promos automáticas (migración 0118)
+
+- Preventa del Club Fan con **inicio y fin**, definida una vez para la obra (`obra_preventa`) y aplicada a las
+  funciones que la siguen; cada función puede tener fechas propias (`preventa_propia`). Antes del inicio nadie compra
+  en línea; el aviso "abrió la preventa" sale al llegar el inicio (tarea `darf_preventa` cada 10 minutos).
+- **Precio propio**: un precio distinto al de la zona en una función queda marcado (`performance_price_categories.propio`)
+  y "Poner en todas las funciones" ya no lo pisa.
+- **Promos automáticas** (`promos`, por funciones y zonas, con fechas): el % se aplica solo en la compra y en taquilla
+  (`promo_precio` dentro de las funciones de compra). Si hay varias gana la mayor; un código se aplica encima.
+  El público ve el precio tachado y el nombre de la promo.
+
+## 2026-10-21 — Difusión de DARF: guías para redes
+
+- Ajustes → Difusión: "Cómo unirte al Club Fan" y "Cómo crear tu cuenta", en post e historia, con pasos y QR.
+
 ## 2026-10-21 — Zonas: borrar, precio de la zona, orden y "si se vende todo" (migración 0117)
 
 - `price_categories.orden` y `precio_base`. Flechas para ordenar las zonas (se respeta en el panel, la compra, la

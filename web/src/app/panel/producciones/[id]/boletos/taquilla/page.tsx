@@ -9,6 +9,8 @@ import { formatPerformanceDate } from "@/lib/productions";
 import { BoxOffice } from "./BoxOffice";
 import { GeneralBoxOffice } from "./GeneralBoxOffice";
 import { funcionDePuerta } from "../../puerta/door-rules";
+import { getPromos } from "@/lib/promos";
+import { conPromo, pctZona } from "@/lib/promo-rules";
 
 export const metadata: Metadata = { title: "Taquilla" };
 
@@ -26,9 +28,17 @@ export default async function BoxOfficePage({ params, searchParams }: PageProps<
   const pedida = typeof sp.funcion === "string" && funciones.some((f) => f.id === sp.funcion) ? sp.funcion : null;
   const funcion = pedida ?? funcionDePuerta(funciones, ahora) ?? undefined;
   const data = funcion ? await boxOfficeData(id, funcion) : null;
-  const general = funcion ? await generalAvailability(funcion) : [];
+  // 0118: la taquilla también cobra con la promo de la función.
+  const promos = funcion ? (await getPromos(id)).get(funcion) : undefined;
+  const general = (funcion ? await generalAvailability(funcion) : []).map((z) => {
+    const pct = pctZona(promos, z.price_category_id);
+    return pct ? { ...z, precio: conPromo(z.precio, pct), antes: z.precio } : z;
+  });
   const gen = new Set(general.map((z) => z.price_category_id));
-  const numerados = (data?.prices ?? []).filter((p) => !gen.has(p.categoryId));
+  const numerados = (data?.prices ?? []).filter((p) => !gen.has(p.categoryId)).map((p) => {
+    const pct = pctZona(promos, p.categoryId);
+    return pct ? { ...p, price: conPromo(p.price, pct), antes: p.price } : p;
+  });
 
   return (
     <>

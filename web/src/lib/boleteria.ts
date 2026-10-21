@@ -14,16 +14,20 @@ export type PanelPerformance = {
   on_sale: boolean;
   /** 0076: hasta cuándo solo el Club Fan puede comprar. */
   preventa_hasta: string | null;
+  /** 0118: antes de esta fecha nadie compra en línea; `preventa_propia` = no sigue las fechas de la obra. */
+  preventa_desde: string | null;
+  preventa_propia: boolean;
   cancelada_at: string | null;
   cancelada_motivo: string | null;
-  prices: { categoryId: string; nombre: string; price: number; cupo: number | null }[];
+  /** `propio` (0118): precio puesto en esta función; "Poner en todas las funciones" no lo cambia. */
+  prices: { categoryId: string; nombre: string; price: number; cupo: number | null; propio?: boolean }[];
 };
 
 export async function listPerformances(pid: string): Promise<PanelPerformance[]> {
   const supabase = await createClient();
   const { data } = await supabase
     .from("performances")
-    .select("id, starts_at, venue, on_sale, preventa_hasta, cancelada_at, cancelada_motivo, performance_price_categories(price, cupo, price_category_id, price_categories(nombre))")
+    .select("id, starts_at, venue, on_sale, preventa_hasta, preventa_desde, preventa_propia, cancelada_at, cancelada_motivo, performance_price_categories(price, cupo, propio, price_category_id, price_categories(nombre))")
     .eq("production_id", pid)
     .order("starts_at", { nullsFirst: false });
   return (data ?? []).map((p) => ({
@@ -32,10 +36,12 @@ export async function listPerformances(pid: string): Promise<PanelPerformance[]>
     venue: p.venue as string | null,
     on_sale: p.on_sale as boolean,
     preventa_hasta: (p.preventa_hasta as string | null) ?? null,
+    preventa_desde: (p.preventa_desde as string | null) ?? null,
+    preventa_propia: !!p.preventa_propia,
     cancelada_at: (p.cancelada_at as string | null) ?? null,
     cancelada_motivo: (p.cancelada_motivo as string | null) ?? null,
-    prices: ((p.performance_price_categories ?? []) as unknown as { price: number; cupo: number | null; price_category_id: string; price_categories: { nombre: string } | null }[])
-      .map((r) => ({ categoryId: r.price_category_id, nombre: r.price_categories?.nombre ?? "", price: Number(r.price), cupo: r.cupo }))
+    prices: ((p.performance_price_categories ?? []) as unknown as { price: number; cupo: number | null; propio: boolean; price_category_id: string; price_categories: { nombre: string } | null }[])
+      .map((r) => ({ categoryId: r.price_category_id, nombre: r.price_categories?.nombre ?? "", price: Number(r.price), cupo: r.cupo, propio: !!r.propio }))
       .sort((a, b) => b.price - a.price),
   }));
 }
@@ -49,7 +55,7 @@ export async function listZones(pid: string): Promise<Zone[]> {
 }
 
 /** Zonas de entrada general de una función con sus lugares libres (0055). */
-export type GeneralZone = { price_category_id: string; nombre: string; descripcion: string | null; precio: number; cupo: number; ocupados: number; libres: number };
+export type GeneralZone = { price_category_id: string; nombre: string; descripcion: string | null; precio: number; cupo: number; ocupados: number; libres: number; /** 0118: precio sin la promo. */ antes?: number };
 
 export async function generalAvailability(performanceId: string): Promise<GeneralZone[]> {
   const supabase = await createClient();

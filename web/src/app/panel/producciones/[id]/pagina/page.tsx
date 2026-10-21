@@ -22,6 +22,9 @@ import { SongsEditor } from "./SongsEditor";
 import { FORMATOS, FORMATO_INFO, poster } from "@/lib/poster";
 import { PosterSlot } from "./PosterSlot";
 import { Icono } from "@/components/Icono";
+import { CambiosPanel } from "./CambiosPanel";
+import { getCambios, getCapa } from "@/lib/obra-capa";
+import { obraConCapa, ordenarCambios, type Seccion } from "@/lib/obra-capa-rules";
 
 export const metadata: Metadata = { title: "Página pública" };
 
@@ -33,10 +36,10 @@ const field = (label: string, name: string, value: string | null, extra?: { plac
 );
 
 // 0085: Estado queda abierto arriba; las demás secciones se pliegan (se abren con su pastilla o #ancla).
-function Block({ id, title, children, note }: { id: string; title: string; children: React.ReactNode; note?: string }) {
+function Block({ id, title, children, note, cambio }: { id: string; title: string; children: React.ReactNode; note?: string; cambio?: "borrador" | "fans" }) {
   if (id !== "estado") {
     return (
-      <AjustesSeccion id={id} titulo={title}>
+      <AjustesSeccion id={id} titulo={title} resumen={cambio === "borrador" ? "Borrador sin publicar" : cambio === "fans" ? "Solo lo ven los fans" : undefined}>
         {note && <p className="text-sm text-texto-2">{note}</p>}
         {children}
       </AjustesSeccion>
@@ -62,16 +65,28 @@ export default async function PageEditor({ params }: PageProps<"/panel/produccio
   const editar = can(access, id, "obra.editar");
   const publicar = can(access, id, "obra.publicar");
   if (!editar && !publicar) redirect(`/panel/producciones/${id}`);
-  const data = await getEditorData(id);
+  const [data, capa, cambiosRaw] = await Promise.all([getEditorData(id), getCapa(id, "borrador"), getCambios(id)]);
   if (!data) redirect("/panel/producciones");
-  const p = data.production;
+  // 0119: el editor muestra lo más nuevo de cada sección (borrador o lo de fans) sobre lo publicado.
+  const p = obraConCapa(data.production, capa);
   const faltan = kitMissing(p);
+  const cambios = ordenarCambios(cambiosRaw);
+  const cambio = (...ss: Seccion[]) => {
+    const cs = cambios.filter((c) => ss.includes(c.seccion));
+    return cs.some((c) => c.borrador) ? "borrador" as const : cs.some((c) => c.fans) ? "fans" as const : undefined;
+  };
+  const publica = ["publicada", "archivada"].includes(data.production.estado);
+  const actos = capa.canciones?.actos ?? data.actos;
+  const facts = capa.ficha?.items ?? data.facts;
+  const videos = capa.videos?.items ?? data.videos;
+  const thanks = capa.gracias?.items ?? data.thanks;
+  const banner = capa.franja ?? data.banner;
 
   return (
     <div className="flex flex-col gap-4">
       <nav aria-label="Secciones del editor" className="flex flex-wrap gap-2 text-sm">
-        {[["estado", "Estado"], ["datos", "Datos y ficha"], ["kit", "Kit visual"], ["franja", "Franja de avisos"], ["anuncios", "Anuncios"], ["canciones", "Canciones"], ["extra", "Ficha extra"], ["videos", "Videos"], ["gracias", "Agradecimientos"]]
-          .filter(([k]) => editar || k === "estado")
+        {[["estado", "Estado"], ...(publica || cambios.length ? [["cambios", `Cambios sin publicar${cambios.length ? ` (${cambios.length})` : ""}`]] : []), ["datos", "Datos y ficha"], ["kit", "Kit visual"], ["franja", "Franja de avisos"], ["anuncios", "Anuncios"], ["canciones", "Canciones"], ["extra", "Ficha extra"], ["videos", "Videos"], ["gracias", "Agradecimientos"]]
+          .filter(([k]) => editar || k === "estado" || k === "cambios")
           .map(([k, l]) => <a key={k} href={`#${k}`} className="rounded-full border border-white/20 px-3 py-1.5 font-semibold hover:border-white/50">{l}</a>)}
         <Link href={`/vista-previa/${id}`} target="_blank" className="rounded-full bg-texto px-3 py-1.5 font-bold text-sala">Vista previa <Icono nombre="externo" /></Link>
       </nav>
@@ -89,9 +104,11 @@ export default async function PageEditor({ params }: PageProps<"/panel/produccio
         {publicar ? <EstadoPanel pid={id} estado={p.estado} onSale={p.on_sale} /> : <p className="text-sm text-texto-3">Publicar o archivar lo hace la Dirección de la obra o el Director.</p>}
       </Block>
 
+      {(publica || cambios.length > 0) && <CambiosPanel pid={id} cambios={cambios} publicar={publicar} />}
+
       {editar && (
         <>
-          <Block id="datos" title="Datos y ficha técnica" note="La ficha se muestra en este orden en todas las obras. Deja vacío lo que no aplique.">
+          <Block id="datos" cambio={cambio("datos")} title="Datos y ficha técnica" note="La ficha se muestra en este orden en todas las obras. Deja vacío lo que no aplique.">
             <EditForm action={saveGeneral} pid={id} submit="Guardar datos">
               <div className="grid gap-3 sm:grid-cols-2">
                 {field("Nombre de la obra", "nombre", p.nombre, { wide: true })}
@@ -110,7 +127,7 @@ export default async function PageEditor({ params }: PageProps<"/panel/produccio
             </EditForm>
           </Block>
 
-          <Block id="kit" title="Kit visual" note="Las mismas piezas en todas las obras. El logo va en una caja fija y la imagen de ambiente al fondo del encabezado.">
+          <Block id="kit" cambio={cambio("kit", "colores", "poster")} title="Kit visual" note="Las mismas piezas en todas las obras. El logo va en una caja fija y la imagen de ambiente al fondo del encabezado.">
             <div className="grid gap-4 md:grid-cols-2">
               <div className="flex flex-col gap-3 rounded-lg bg-sala p-4">
                 <p className="font-bold">Logo</p>
@@ -165,29 +182,29 @@ export default async function PageEditor({ params }: PageProps<"/panel/produccio
             />
           </Block>
 
-          <Block id="franja" title="Franja de avisos" note="Una barra abajo del encabezado de la obra para anunciar cosas: últimas funciones, promociones, audiciones… Puede correr como marquesina o quedarse fija, con varios avisos que se turnan.">
-            <BannerEditor pid={id} banner={data.banner} acento={p.color_acento ?? "#a48bff"} />
+          <Block id="franja" cambio={cambio("franja")} title="Franja de avisos" note="Una barra abajo del encabezado de la obra para anunciar cosas: últimas funciones, promociones, audiciones… Puede correr como marquesina o quedarse fija, con varios avisos que se turnan.">
+            <BannerEditor pid={id} banner={banner} acento={p.color_acento ?? "#a48bff"} />
           </Block>
 
           <Block id="anuncios" title="Anuncios" note="Tarjetas en la página de la obra o en la Fan Zone: revelación del elenco, nuevas fechas, convocatorias… Con fecha de revelación se ve una cuenta regresiva y el botón Avísame.">
             <AnunciosEditor scope={id} />
           </Block>
 
-          <Block id="canciones" title="Canciones">
-            <SongsEditor pid={id} initial={data.actos} />
+          <Block id="canciones" cambio={cambio("canciones")} title="Canciones">
+            <SongsEditor pid={id} initial={actos.length ? actos : [{ nombre: "", canciones: [] }]} />
           </Block>
 
-          <Block id="extra" title="Ficha extra" note="Datos que no están en la ficha fija (por ejemplo: Colectivo, Producción asociada).">
-            <RowsEditor pid={id} action={saveFacts} initial={data.facts.map((f) => [f.etiqueta, f.valor])} fields={[{ name: "etiqueta", placeholder: "Etiqueta" }, { name: "valor", placeholder: "Valor" }]} submit="Guardar ficha extra" addLabel="+ Agregar dato" />
+          <Block id="extra" cambio={cambio("ficha")} title="Ficha extra" note="Datos que no están en la ficha fija (por ejemplo: Colectivo, Producción asociada).">
+            <RowsEditor pid={id} action={saveFacts} initial={facts.map((f) => [f.etiqueta, f.valor])} fields={[{ name: "etiqueta", placeholder: "Etiqueta" }, { name: "valor", placeholder: "Valor" }]} submit="Guardar ficha extra" addLabel="+ Agregar dato" />
           </Block>
 
-          <Block id="videos" title="Videos públicos" note="Enlaces de YouTube (pro-shot, tráiler…). Los ensayos van en la pestaña Fan Zone.">
-            <RowsEditor pid={id} action={saveVideos} hidden={{ tipo: "video" }} initial={data.videos.map((v) => [v.titulo, `https://youtu.be/${v.youtube_id}`])} fields={[{ name: "titulo", placeholder: "Título" }, { name: "enlace", placeholder: "https://youtu.be/…" }]} submit="Guardar videos" addLabel="+ Agregar video" />
+          <Block id="videos" cambio={cambio("videos")} title="Videos públicos" note="Enlaces de YouTube (pro-shot, tráiler…). Los ensayos van en la pestaña Fan Zone.">
+            <RowsEditor pid={id} action={saveVideos} hidden={{ tipo: "video" }} initial={videos.map((v) => [v.titulo, `https://youtu.be/${v.youtube_id}`])} fields={[{ name: "titulo", placeholder: "Título" }, { name: "enlace", placeholder: "https://youtu.be/…" }]} submit="Guardar videos" addLabel="+ Agregar video" />
           </Block>
 
-          <Block id="gracias" title="Agradecimientos" note="Uno por renglón.">
+          <Block id="gracias" cambio={cambio("gracias")} title="Agradecimientos" note="Uno por renglón.">
             <EditForm action={saveThanks} pid={id} submit="Guardar agradecimientos">
-              <textarea className={`${input} min-h-36 leading-7`} name="thanks" defaultValue={data.thanks.join("\n")} />
+              <textarea className={`${input} min-h-36 leading-7`} name="thanks" defaultValue={thanks.join("\n")} />
             </EditForm>
           </Block>
         </>

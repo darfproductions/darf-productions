@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { themeProblems } from "@/lib/themes";
 import { parseYoutube } from "@/lib/youtube";
 import { FORMATOS, columna, type Formato } from "@/lib/poster";
+import { SECCIONES, type Seccion } from "@/lib/obra-capa-rules";
 
 // Editor de la página de la obra. La base decide qué puede cada quien
 // (0032: obra.editar para contenido, obra.publicar para el estado).
@@ -31,13 +32,53 @@ async function update(pid: string, values: Record<string, unknown>) {
   return null;
 }
 
+/** Rutas del kit que la obra usa hoy: publicadas y en cambios sin publicar (0119). */
+async function rutasKit(pid: string): Promise<Set<string>> {
+  const supabase = await createClient();
+  const [{ data: p }, { data: rows }] = await Promise.all([
+    supabase.from("productions").select(`logo_path, ambiente_path, ${FORMATOS.flatMap((f) => [columna(f, false), columna(f, true)]).join(", ")}`).eq("id", pid).maybeSingle(),
+    supabase.from("obra_borradores").select("borrador, fans").eq("production_id", pid).in("seccion", ["kit", "poster"]),
+  ]);
+  const out = new Set<string>();
+  const add = (o: unknown) => { if (o && typeof o === "object") for (const v of Object.values(o)) if (typeof v === "string" && v) out.add(v); };
+  add(p);
+  for (const r of (rows ?? []) as { borrador: unknown; fans: unknown }[]) { add(r.borrador); add(r.fans); }
+  return out;
+}
+
+/** Hace el cambio y borra del Storage las imágenes del kit que dejaron de usarse (pósters viejos, logos reemplazados…). */
+async function conLimpieza<T>(pid: string, cambio: () => Promise<T>): Promise<T> {
+  const antes = await rutasKit(pid).catch(() => new Set<string>());
+  const r = await cambio();
+  const despues = await rutasKit(pid).catch(() => null);
+  if (despues) {
+    const sobran = [...antes].filter((x) => !despues.has(x) && x.startsWith(`${pid}/kit/`));
+    if (sobran.length) {
+      // Una obra duplicada puede seguir usando la misma imagen: esas no se borran.
+      const supabase = await createClient();
+      const { data: enUso, error } = await supabase.rpc("kit_en_uso", { paths: sobran });
+      const libres = error ? [] : sobran.filter((x) => !((enUso ?? []) as string[]).includes(x));
+      if (libres.length) await supabase.storage.from("producciones").remove(libres).catch(() => null);
+    }
+  }
+  return r;
+}
+
+/** 0119: con la obra pública el cambio queda en borrador; si no, se guarda directo. */
+async function guardar(pid: string, seccion: Seccion, datos: Record<string, unknown>, listo: string, parche = false): Promise<EditState> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("obra_borrador_guardar", { pid, p_seccion: seccion, datos, p_parche: parche });
+  if (error) return fail(error);
+  return done(pid, data === "borrador" ? "Guardado en borrador: el público aún no lo ve. Publícalo en «Cambios sin publicar», arriba." : listo);
+}
+
 export async function saveGeneral(_p: EditState, f: FormData): Promise<EditState> {
   const pid = String(f.get("pid"));
   const nombre = txt(f, "nombre");
   const frase = txt(f, "frase");
   if (!nombre) return { ok: false, message: "La obra necesita un nombre." };
   if (frase && frase.length > 120) return { ok: false, message: "La frase corta debe tener máximo 120 caracteres." };
-  const err = await update(pid, {
+  return guardar(pid, "datos", {
     nombre,
     frase,
     sinopsis: txt(f, "sinopsis"),
@@ -48,8 +89,7 @@ export async function saveGeneral(_p: EditState, f: FormData): Promise<EditState
     clasificacion: txt(f, "clasificacion"),
     idioma: txt(f, "idioma"),
     basada_en: txt(f, "basada_en"),
-  });
-  return err ? fail(err) : done(pid, "Datos guardados.");
+  }, "Datos guardados.");
 }
 
 export async function saveColors(_p: EditState, f: FormData): Promise<EditState> {
@@ -58,29 +98,23 @@ export async function saveColors(_p: EditState, f: FormData): Promise<EditState>
   if (!Object.values(c).every((v) => /^#[0-9a-fA-F]{6}$/.test(v))) return { ok: false, message: "Revisa los colores." };
   const problems = themeProblems(c);
   // Se guarda aunque no se lea bien (para ir probando), pero no se podrá publicar.
-  const err = await update(pid, { color_fondo: c.fondo, color_superficie: c.superficie, color_texto: c.texto, color_acento: c.acento });
-  if (err) return fail(err);
-  return problems.length
-    ? { ok: false, message: `Guardado, pero así no se puede publicar: ${problems.join(" ")}` }
-    : done(pid, "Colores guardados.");
+  const r = await guardar(pid, "colores", { color_fondo: c.fondo, color_superficie: c.superficie, color_texto: c.texto, color_acento: c.acento }, "Colores guardados.");
+  if (!r?.ok) return r;
+  return problems.length ? { ok: false, message: `Guardado, pero así no se puede publicar: ${problems.join(" ")}` } : r;
 }
 
 export async function saveKitImage(pid: string, kind: "logo" | "ambiente", path: string): Promise<{ ok: boolean; message: string }> {
   if (!path.startsWith(`${pid}/kit/`)) return { ok: false, message: "Ruta de archivo no válida." };
-  const err = await update(pid, kind === "logo" ? { logo_path: path } : { ambiente_path: path });
-  if (err) return { ok: false, message: err.message };
-  done(pid, "");
-  return { ok: true, message: kind === "logo" ? "Logo actualizado." : "Imagen de ambiente actualizada." };
+  const r = await conLimpieza(pid, () => guardar(pid, "kit", kind === "logo" ? { logo_path: path } : { ambiente_path: path }, kind === "logo" ? "Logo actualizado." : "Imagen de ambiente actualizada.", true));
+  return { ok: !!r?.ok, message: r?.message ?? "No se pudo guardar." };
 }
 
 /** Póster oficial (0093): un formato y versión; path vacío lo quita. */
 export async function savePoster(pid: string, formato: string, info: boolean, path: string): Promise<{ ok: boolean; message: string }> {
   if (!(FORMATOS as readonly string[]).includes(formato)) return { ok: false, message: "Formato no válido." };
   if (path && !path.startsWith(`${pid}/kit/`)) return { ok: false, message: "Ruta de archivo no válida." };
-  const err = await update(pid, { [columna(formato as Formato, info)]: path || null });
-  if (err) return { ok: false, message: err.message };
-  done(pid, "");
-  return { ok: true, message: path ? "Póster guardado." : "Póster quitado." };
+  const r = await conLimpieza(pid, () => guardar(pid, "poster", { [columna(formato as Formato, info)]: path || null }, path ? "Póster guardado." : "Póster quitado.", true));
+  return { ok: !!r?.ok, message: r?.message ?? "No se pudo guardar." };
 }
 
 export async function quitarPoster(_p: EditState, f: FormData): Promise<EditState> {
@@ -110,17 +144,13 @@ export async function saveSongs(_p: EditState, f: FormData): Promise<EditState> 
   if (actos.length > 1 && actos.some((a) => !a.nombre && a.canciones.length)) {
     return { ok: false, message: "Cuando hay varios actos, cada uno necesita nombre (ej. Acto I)." };
   }
-  const supabase = await createClient();
-  const { error } = await supabase.rpc("panel_set_songs", { pid, actos });
-  return error ? fail(error) : done(pid, "Canciones guardadas.");
+  return guardar(pid, "canciones", { actos }, "Canciones guardadas.");
 }
 
 export async function saveThanks(_p: EditState, f: FormData): Promise<EditState> {
   const pid = String(f.get("pid"));
   const items = String(f.get("thanks") ?? "").split("\n").map((s) => s.trim()).filter(Boolean);
-  const supabase = await createClient();
-  const { error } = await supabase.rpc("panel_set_thanks", { pid, items });
-  return error ? fail(error) : done(pid, "Agradecimientos guardados.");
+  return guardar(pid, "gracias", { items }, "Agradecimientos guardados.");
 }
 
 export async function saveFacts(_p: EditState, f: FormData): Promise<EditState> {
@@ -128,9 +158,7 @@ export async function saveFacts(_p: EditState, f: FormData): Promise<EditState> 
   const etiquetas = f.getAll("etiqueta").map(String);
   const valores = f.getAll("valor").map(String);
   const items = etiquetas.map((etiqueta, i) => ({ etiqueta: etiqueta.trim(), valor: (valores[i] ?? "").trim() })).filter((x) => x.etiqueta && x.valor);
-  const supabase = await createClient();
-  const { error } = await supabase.rpc("panel_set_facts", { pid, items });
-  return error ? fail(error) : done(pid, "Ficha guardada.");
+  return guardar(pid, "ficha", { items }, "Ficha guardada.");
 }
 
 /** Videos públicos ("video") o ensayos de la Fan Zone ("ensayo"). */
@@ -148,9 +176,11 @@ export async function saveVideos(_p: EditState, f: FormData): Promise<EditState>
     if (!id) return { ok: false, message: `El enlace del video ${i + 1} no es de YouTube.` };
     items.push({ titulo: titulo || "Video", youtube_id: id });
   }
+  // Los ensayos son de la Fan Zone (ya son solo para fans): se guardan directo.
+  if (tipo === "video") return guardar(pid, "videos", { items }, "Videos guardados.");
   const supabase = await createClient();
   const { error } = await supabase.rpc("panel_set_media", { pid, p_tipo: tipo, items });
-  return error ? fail(error) : done(pid, tipo === "ensayo" ? "Ensayos guardados." : "Videos guardados.");
+  return error ? fail(error) : done(pid, "Ensayos guardados.");
 }
 
 /** Franja de avisos abajo del Hero (0069): estilo, color, encendida y la lista de avisos. */
@@ -159,7 +189,32 @@ export async function saveBanner(_p: EditState, f: FormData): Promise<EditState>
   const r = leerFranja(f);
   if (!r.ok) return r;
   const { estilo, color, items } = r;
+  return guardar(pid, "franja", { estilo, color: color || null, activa: f.get("activa") === "1", items }, "Franja guardada.");
+}
+
+const secciones = (f: FormData): Seccion[] | null => {
+  const xs = f.getAll("seccion").map(String).filter((x): x is Seccion => (SECCIONES as readonly string[]).includes(x));
+  return xs.length ? xs : null;
+};
+
+/** 0119: publicar cambios a fans o a todos (una sección o todas). */
+export async function publicarCambios(_p: EditState, f: FormData): Promise<EditState> {
+  const pid = String(f.get("pid"));
+  const destino = String(f.get("destino")) === "fans" ? "fans" : "publico";
   const supabase = await createClient();
-  const { error } = await supabase.rpc("panel_set_banner", { pid, p_estilo: estilo, p_color: color || null, p_activa: f.get("activa") === "1", items });
-  return error ? fail(error) : done(pid, "Franja guardada.");
+  const r = await conLimpieza(pid, async () => supabase.rpc("obra_publicar", { pid, p_secciones: secciones(f), p_destino: destino }));
+  if (r.error) return fail(r.error);
+  const n = Number(r.data ?? 0);
+  if (!n) return { ok: false, message: destino === "fans" ? "No hay borradores para publicar a fans." : "No hay cambios para publicar." };
+  return done(pid, destino === "fans" ? `Publicado para el Club Fan (${n === 1 ? "1 sección" : `${n} secciones`}). El público aún no lo ve.` : `Publicado para todos (${n === 1 ? "1 sección" : `${n} secciones`}).`);
+}
+
+/** 0119: tirar el borrador, o quitar lo de fans (vuelven a ver lo público). */
+export async function descartarCambios(_p: EditState, f: FormData): Promise<EditState> {
+  const pid = String(f.get("pid"));
+  const capa = String(f.get("capa")) === "fans" ? "fans" : "borrador";
+  const supabase = await createClient();
+  const r = await conLimpieza(pid, async () => supabase.rpc("obra_descartar", { pid, p_secciones: secciones(f), p_capa: capa }));
+  if (r.error) return fail(r.error);
+  return done(pid, capa === "fans" ? "Los fans vuelven a ver lo publicado." : "Borrador descartado.");
 }

@@ -58,7 +58,7 @@ export function GeneralPicker(props: { performanceId: string; productionName: st
             <label className={`flex cursor-pointer flex-col gap-0.5 rounded-xl border p-4 ${zone === x.price_category_id ? "border-texto bg-white/5" : "border-white/15"} ${x.libres === 0 ? "cursor-not-allowed opacity-50" : ""}`}>
               <input type="radio" name="zona" className="sr-only" disabled={x.libres === 0} checked={zone === x.price_category_id}
                 onChange={() => { setZone(x.price_category_id); setCantidad(1); }} />
-              <span className="font-bold">{x.nombre} · {formatMoney(x.precio)}</span>
+              <span className="font-bold">{x.nombre} · {x.antes != null && <s className="font-normal opacity-60">{formatMoney(x.antes)}</s>} {formatMoney(x.precio)}</span>
               {x.descripcion && <span className="text-xs text-texto-3">{x.descripcion}</span>}
               <span className={`text-sm ${x.libres === 0 ? "text-[#ff8fa3]" : x.libres <= 10 ? "text-aviso" : "text-texto-2"}`}>
                 {x.libres === 0 ? "Agotado" : x.libres <= 10 ? `¡Quedan ${x.libres}!` : `${x.libres} lugares disponibles`}
