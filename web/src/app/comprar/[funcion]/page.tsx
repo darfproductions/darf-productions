@@ -22,6 +22,8 @@ import { mensajeError } from "@/lib/errores";
 import { todasLasFilas } from "@/lib/supabase/paginar";
 import { asientosOcupados } from "@/lib/ocupados";
 import { Icono } from "@/components/Icono";
+import { env } from "@/lib/env";
+import { whatsappPedirUrl } from "@/lib/tickets";
 
 export const metadata: Metadata = { title: "Comprar boletos" };
 
@@ -35,6 +37,9 @@ export default async function ComprarPage({ params, searchParams }: PageProps<"/
   const data = await getPerformanceForSale(funcion);
   if (!data) notFound();
   const { performance: f, production: p } = data;
+  // 0120: funciones sin publicar no se venden en línea (ni se ven).
+  if (p.funciones_publicadas === false) notFound();
+  const porWhatsApp = p.modo_venta === "whatsapp";
   const vendible = funcionVendible(f, p.concluded);
   const yaPaso = !!f.starts_at && !funcionVendible({ on_sale: true, starts_at: f.starts_at }, false);
   // Preventa del Club Fan (0076): quien no es socio puede unirse aquí mismo (la base lo exige igual).
@@ -49,7 +54,7 @@ export default async function ComprarPage({ params, searchParams }: PageProps<"/
   if (vendible && session) await supabase.rpc("expire_due_orders", { pid: p.id });
   const promos = vendible ? (await getPromos(p.id)).get(f.id) : undefined;
   const promo = mejorPromo(promos);
-  const [seatsRes, takenRes, pricesRes, disenoRes] = vendible && !abre
+  const [seatsRes, takenRes, pricesRes, disenoRes] = vendible && !abre && !porWhatsApp
     ? await Promise.all([
         todasLasFilas((a, b) => supabase.from("seats").select("id, seat_label, seat_row, seat_number, lado, price_category_id, is_active, pos_x, pos_y, section").eq("production_id", p.id).order("id").range(a, b)),
         asientosOcupados(supabase, f.id),
@@ -63,7 +68,7 @@ export default async function ComprarPage({ params, searchParams }: PageProps<"/
   const seats = ((seatsRes?.data ?? []) as (MapSeat & { is_active: boolean })[]).filter((s) => s.is_active);
   const taken = (takenRes?.data ?? []) as string[];
   // Zonas con asiento para el mapa; las de entrada general van aparte (0055).
-  const general = (vendible && !abre ? await generalAvailability(f.id) : []).map((z) => {
+  const general = (vendible && !abre && !porWhatsApp ? await generalAvailability(f.id) : []).map((z) => {
     const pct = pctZona(promos, z.price_category_id);
     return pct ? { ...z, precio: conPromo(z.precio, pct), antes: z.precio } : z;
   });
@@ -92,6 +97,13 @@ export default async function ComprarPage({ params, searchParams }: PageProps<"/
           <div className="rounded-2xl bg-telon p-8">
             <p className="text-lg">{yaPaso ? "Esta función ya pasó." : "Esta función no está a la venta en este momento."}</p>
             <Link href={`/producciones/${p.id}`} className="mt-4 inline-block font-bold text-violeta-claro"><Icono nombre="flecha-izq" /> Volver a la obra</Link>
+          </div>
+        ) : porWhatsApp ? (
+          <div className="flex max-w-2xl flex-col items-start gap-4 rounded-2xl bg-telon p-8">
+            <p className="text-2xl font-black uppercase tracking-[-0.02em]">Boletos por WhatsApp</p>
+            <p className="text-texto-2">Los lugares de esta función se apartan por WhatsApp. Escríbenos y te ayudamos a elegirlos; al confirmar tu pago te llega tu boleto con QR.</p>
+            <a href={whatsappPedirUrl(env.whatsapp, p.nombre, formatPerformanceDate(f.starts_at)) || "/contacto"} target="_blank" rel="noopener" className="fb fb-luz">Pedir boletos por WhatsApp</a>
+            <Link href={`/producciones/${p.id}`} className="text-sm font-bold text-texto-3 hover:text-texto"><Icono nombre="flecha-izq" /> Volver a la obra</Link>
           </div>
         ) : abre ? (
           <div className="flex max-w-2xl flex-col items-start gap-4 rounded-2xl bg-telon p-8">

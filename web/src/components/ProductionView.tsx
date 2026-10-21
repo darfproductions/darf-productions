@@ -14,7 +14,8 @@ import { fechaEstreno } from "@/lib/cuenta-regresiva";
 import { enPreventa, ETIQUETA_FUNCION, estadoFuncion, partesFuncion, ventaPorAbrir } from "@/lib/disponibilidad";
 import { getPromos } from "@/lib/promos";
 import { mejorPromo } from "@/lib/promo-rules";
-import { isDev } from "@/lib/env";
+import { env, isDev } from "@/lib/env";
+import { whatsappPedirUrl } from "@/lib/tickets";
 import { EncuentroCard } from "@/components/fanzone/EncuentroCard";
 import { EventoBloqueado } from "@/components/eventos/EventoBloqueado";
 import { getSession } from "@/lib/auth";
@@ -102,7 +103,10 @@ export async function ProductionView({
   // Próxima función que todavía se puede comprar (las funciones vienen en orden de fecha).
   const comprables = vendibles.filter((fn) => estadoDe(fn.id) !== "agotado");
   const proxima = comprables[0] ?? null;
-  const desde = prices.length ? Math.min(...prices.map((z) => z.price)) : null;
+  // 0120: cada obra decide si muestra precios y si se vende en la página o todo por WhatsApp.
+  const conPrecios = p.mostrar_precios !== false;
+  const porWhatsApp = p.modo_venta === "whatsapp";
+  const desde = conPrecios && prices.length ? Math.min(...prices.map((z) => z.price)) : null;
   const enVenta = vendibles.length > 0;
   // Antes del estreno, la tarjeta del hero cuenta los días que faltan.
   const estreno = p.concluded ? null : fechaEstreno(performances);
@@ -139,7 +143,7 @@ export async function ProductionView({
   const show = (id: string) => sections.some((s) => s.id === id);
 
   const funciones = show("funciones") && (
-    <Bloque id="funciones" eyebrow={p.concluded ? "Así se presentó" : "Elige tu función"} titulo="Funciones y precios">
+    <Bloque id="funciones" eyebrow={p.concluded ? "Así se presentó" : "Elige tu función"} titulo={conPrecios ? "Funciones y precios" : "Funciones"}>
       {performances.length === 0 && <p className="opacity-75">Aún no hay funciones registradas.</p>}
       {performances.length > 0 && (
         <ul className="flex flex-col gap-3.5">
@@ -176,7 +180,7 @@ export async function ProductionView({
                   </span>
                   {pre && fn.preventa_hasta && (() => { const h = partesFuncion(fn.preventa_hasta); return <span className="text-[12.5px] font-semibold text-obra-acento">Preventa Club Fan hasta el {h.dia} {h.numero} {h.mes}, {h.hora}</span>; })()}
                   {porAbrir && fn.preventa_desde && (() => { const d = partesFuncion(fn.preventa_desde); return <span className="text-[12.5px] font-semibold text-obra-acento">{fn.preventa_hasta ? "Preventa Club Fan" : "Venta"} desde el {d.dia} {d.numero} {d.mes}, {d.hora}</span>; })()}
-                  {promo && !agotado && <span className="text-[12.5px] font-semibold text-obra-acento">Promo {promo.nombre}: {promo.percent}% de descuento{promo.hasta ? ` hasta el ${(() => { const h = partesFuncion(promo.hasta); return `${h.dia} ${h.numero} ${h.mes}`; })()}` : ""}</span>}
+                  {promo && conPrecios && !agotado && <span className="text-[12.5px] font-semibold text-obra-acento">Promo {promo.nombre}: {promo.percent}% de descuento{promo.hasta ? ` hasta el ${(() => { const h = partesFuncion(promo.hasta); return `${h.dia} ${h.numero} ${h.mes}`; })()}` : ""}</span>}
                 </div>
                 <div className="col-span-2 flex flex-wrap items-center justify-between gap-3 md:contents">
                   {porAbrir ? (
@@ -196,7 +200,9 @@ export async function ProductionView({
                     <span className="chip chip-obra">{p.concluded ? "Concluida" : "Próximamente"}</span>
                   )}
                   {vendible && !agotado && !porAbrir && (
-                    pre ? (
+                    porWhatsApp ? (
+                      <a href={whatsappPedirUrl(env.whatsapp, p.nombre, f ? `${f.dia} ${f.numero} ${f.mes}, ${f.hora}` : null) || "/contacto"} target="_blank" rel="noopener" className="fb fb-luz fb-sm ml-auto md:ml-0">Pedir por WhatsApp</a>
+                    ) : pre ? (
                       socio ? (
                         <Link href={withSeller(`/comprar/${fn.id}`, vendedor)} className="fb fb-fz fb-sm ml-auto md:ml-0">Entrar a preventa</Link>
                       ) : (
@@ -213,7 +219,7 @@ export async function ProductionView({
           })}
         </ul>
       )}
-      {prices.length > 0 && (
+      {conPrecios && prices.length > 0 && (
         <div className="rounded-[22px] border border-current/12 bg-obra-superficie px-6 py-6 md:px-9 md:py-8">
           <div className="mb-2 flex flex-wrap items-baseline justify-between gap-3">
             <h3 className="text-[22px] font-extrabold tracking-[-0.02em]">Zonas</h3>

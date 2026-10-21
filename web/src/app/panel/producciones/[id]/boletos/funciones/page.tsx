@@ -11,7 +11,7 @@ import { requirePanel } from "@/lib/permissions";
 import { ligaWhatsApp } from "@/lib/pago-rules";
 import { formatPerformanceDate } from "@/lib/productions";
 import { formatMoney } from "@/lib/tickets";
-import { cancelPerformance, createPerformance, deletePerformance, saveGeneralZone, savePreventaObra, setProductionOnSale, updatePerformance } from "../actions";
+import { cancelPerformance, createPerformance, deletePerformance, saveGeneralZone, savePreventaObra, saveVentaAjustes, setProductionOnSale, updatePerformance } from "../actions";
 import { ZonaAcciones } from "../ZonaAcciones";
 import { ingresoPotencial } from "@/lib/sales";
 import { createClient } from "@/lib/supabase/server";
@@ -35,7 +35,8 @@ export default async function PerformancesPage({ params }: PageProps<"/panel/pro
   // 0117: cuánto deja cada función si se vende todo, y lo vendido (aprobado) hasta hoy.
   const supabase = await createClient();
   // 0118: fechas de preventa de la obra (las funciones que no tienen fechas propias las siguen).
-  const { data: obraPre } = await supabase.from("productions").select("preventa_desde, preventa_hasta").eq("id", id).maybeSingle();
+  const { data: obraPre } = await supabase.from("productions").select("preventa_desde, preventa_hasta, funciones_publicadas, modo_venta, mostrar_precios").eq("id", id).maybeSingle();
+  const publicadas = obraPre?.funciones_publicadas !== false;
   const [asientosRes, vendidoRes] = gestionar ? await Promise.all([
     todasLasFilas((a, b) => supabase.from("seats").select("price_category_id").eq("production_id", id).eq("is_active", true).order("id").range(a, b)),
     funciones.length ? supabase.from("orders").select("performance_id, total").eq("status", "aprobado").in("performance_id", funciones.map((f) => f.id)) : Promise.resolve({ data: [] }),
@@ -65,6 +66,30 @@ export default async function PerformancesPage({ params }: PageProps<"/panel/pro
             confirm={p.on_sale ? "¿Cerrar la venta de toda la obra?" : "¿Abrir la venta de la obra?"}
             submit={p.on_sale ? "Cerrar venta" : "Abrir venta"}
           />
+        </Card>
+      )}
+
+      {gestionar && (
+        <Card className={`flex flex-col gap-3 ${publicadas ? "" : "border border-aviso/50"}`}>
+          <div>
+            <h2 className="titular text-xl">Cómo se vende esta obra</h2>
+            <p className="text-sm text-texto-2">
+              {publicadas ? "Las funciones se ven en la página de la obra." : <b className="text-aviso">Las funciones están ocultas: el público no ve fechas, cuenta regresiva ni compra. Tú y el equipo sí las ven aquí.</b>}
+            </p>
+          </div>
+          <ActionForm action={saveVentaAjustes} hidden={{ pid: id }} submit="Guardar" submitClass={ghost}>
+            <label className="flex items-start gap-2 text-sm"><input type="checkbox" name="funciones_publicadas" defaultChecked={publicadas} className="mt-1" />
+              <span><b>Funciones publicadas</b> — sin la palomita, las funciones, fechas y la cuenta regresiva no salen en ningún lado de la página.</span></label>
+            <label className="flex items-start gap-2 text-sm"><input type="checkbox" name="mostrar_precios" defaultChecked={obraPre?.mostrar_precios !== false} className="mt-1" />
+              <span><b>Mostrar precios en la página de la obra</b> — sin la palomita no sale &quot;Desde $…&quot; ni la lista de zonas con precio (al apartar sí se ve el total).</span></label>
+            <fieldset className="flex flex-col gap-2 text-sm">
+              <legend className="mb-1 font-semibold">Venta</legend>
+              <label className="flex items-start gap-2"><input type="radio" name="modo_venta" value="web" defaultChecked={obraPre?.modo_venta !== "whatsapp"} className="mt-1" />
+                <span><b>En la página</b> — eligen asientos, los apartan y pagan por WhatsApp; al aprobar el pago les sale su boleto con QR.</span></label>
+              <label className="flex items-start gap-2"><input type="radio" name="modo_venta" value="whatsapp" defaultChecked={obraPre?.modo_venta === "whatsapp"} className="mt-1" />
+                <span><b>Todo por WhatsApp</b> — la página no aparta: cada función tiene un botón para pedir boletos por WhatsApp y el equipo vende desde Taquilla.</span></label>
+            </fieldset>
+          </ActionForm>
         </Card>
       )}
 

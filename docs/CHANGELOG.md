@@ -5,6 +5,17 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-10-22 — Cómo se vende cada obra (migración 0120)
+
+- `productions.funciones_publicadas`: con la casilla apagada el público no ve funciones, fechas, cuenta regresiva ni
+  puede comprar en línea (RLS de `performances` con `funcion_legible`: el equipo, el elenco y quien ya tiene una orden
+  sí las ven). La página pública las oculta también para el equipo con sesión; la vista previa las muestra.
+- `modo_venta`: 'web' (apartas en la página y pagas por WhatsApp) o 'whatsapp' (botón "Pedir por WhatsApp" por
+  función; el equipo vende desde Taquilla). La compra en línea lo revisa en `preventa_revisar`.
+- `mostrar_precios`: apagado, la página de la obra no muestra "Desde $" ni zonas con precio (el inicio tampoco).
+- Panel → Funciones y precios: tarjeta "Cómo se vende esta obra"; "Listo para vender" avisa si están ocultas.
+- Showman queda con funciones ocultas (script DEV).
+
 ## 2026-10-21 — Borradores de la página de la obra (migración 0119)
 
 - Con la obra publicada, lo que se edita en Página pública queda en **borrador** (`obra_borradores`, una fila por

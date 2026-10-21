@@ -21,6 +21,8 @@ export type DatosVenta = {
   asientos: { total: number; sinZona: number; zonas: string[] };
   whatsapp: boolean;
   posterDestacado: boolean;
+  /** 0120: funciones publicadas (sin publicar el público no las ve). Sin dato = publicadas. */
+  funcionesPublicadas?: boolean;
   /** 0108: Reparto y Ensamble aún sin publicar (no impide vender). */
   elencoSinPublicar?: number;
   /** Fecha corta para los mensajes ("sáb 18 oct, 7:00 p.m."). */
@@ -49,6 +51,8 @@ export function listoParaVender(d: DatosVenta): { puntos: Punto[]; listo: boolea
     { clave: "kit", texto: "Kit visual completo (logo, imagen y colores)", ok: d.kitFaltan.length === 0, obligatorio: true,
       detalle: d.kitFaltan.join(" ") || undefined, href: `${base}/pagina#kit` },
     { clave: "funciones", texto: "Hay funciones con fecha próxima", ok: futuras.length > 0, obligatorio: true, href: `${base}/boletos/funciones` },
+    { clave: "funciones_publicadas", texto: "Las funciones están publicadas en la página", ok: d.funcionesPublicadas !== false, obligatorio: true,
+      detalle: d.funcionesPublicadas === false ? "Están ocultas: el público no ve fechas ni puede comprar. Publícalas en Funciones y precios." : undefined, href: `${base}/boletos/funciones` },
     { clave: "lugares", texto: "Hay lugares para vender (mapa de asientos o zonas con cupo)", ok: hayLugares, obligatorio: true, href: `${base}/boletos/funciones#zonas` },
     { clave: "zonas", texto: "Todos los asientos tienen zona de precio", ok: d.asientos.sinZona === 0, obligatorio: true,
       detalle: d.asientos.sinZona ? `${d.asientos.sinZona} ${d.asientos.sinZona === 1 ? "asiento sin zona" : "asientos sin zona"}.` : undefined, href: `${base}/boletos/mapa` },

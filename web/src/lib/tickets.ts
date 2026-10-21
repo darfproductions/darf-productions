@@ -32,6 +32,13 @@ export function whatsappPayUrl(
   return `https://wa.me/${phoneNumber}?text=${encodeURIComponent(msg)}`;
 }
 
+/** 0120: obras que se venden todo por WhatsApp: mensaje para pedir boletos de una función. Vacío si no hay número. */
+export function whatsappPedirUrl(phoneNumber: string, prodName: string, funcion: string | null): string {
+  if (!phoneNumber) return "";
+  const msg = `Hola, quiero boletos para ${prodName}${funcion ? ` — Función: ${funcion}` : ""}. ¿Me ayudan a apartar mis lugares?`;
+  return `https://wa.me/${phoneNumber}?text=${encodeURIComponent(msg)}`;
+}
+
 export type DiscountPreview = {
   codigo: string;
   percent: number;

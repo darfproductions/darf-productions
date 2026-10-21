@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clampSeat, formatMoney, groupSeatsByRow, previewDiscount, seatSize, whatsappPayUrl } from "./tickets";
+import { clampSeat, formatMoney, groupSeatsByRow, previewDiscount, seatSize, whatsappPayUrl, whatsappPedirUrl } from "./tickets";
 
 describe("pago por WhatsApp", () => {
   it("sin número configurado no genera enlace (DEV)", () => {
@@ -67,5 +67,16 @@ describe("tamaño de asiento (zoom del mapa)", () => {
     expect(seatSize(3000, 10)).toBe(28);
     expect(clampSeat(60)).toBe(48);
     expect(clampSeat(5)).toBe(12);
+  });
+});
+
+describe("pedir boletos por WhatsApp (0120)", () => {
+  it("arma el mensaje con la obra y la función", () => {
+    const u = whatsappPedirUrl("525512345678", "Showman", "Sáb 24 oct, 7:00 p.m.");
+    expect(u.startsWith("https://wa.me/525512345678?text=")).toBe(true);
+    expect(decodeURIComponent(u.split("text=")[1])).toContain("boletos para Showman — Función: Sáb 24 oct");
+  });
+  it("sin número no hay liga", () => {
+    expect(whatsappPedirUrl("", "Showman", null)).toBe("");
   });
 });
