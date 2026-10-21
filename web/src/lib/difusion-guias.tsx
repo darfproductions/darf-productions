@@ -34,7 +34,7 @@ export async function guiaPng(g: Guia, formato: FormatoTarjeta, sitio: string): 
       <div style={{ width: w, height: h, display: "flex", flexDirection: "column", alignItems: "center", position: "relative", background: FONDO, color: TEXTO, fontFamily: "Montserrat", padding: `${historia ? 120 : 64}px 72px ${historia ? 110 : 56}px` }}>
         <div style={{ position: "absolute", left: 0, top: 0, width: w, height: h, display: "flex", backgroundImage: `radial-gradient(circle at 50% 8%, ${acento}44 0%, ${FONDO} 58%)` }} />
         {arribaLogo && <img src={arribaLogo} style={{ width: g.oro ? (historia ? 520 : 420) : (historia ? 420 : 340), objectFit: "contain" }} alt="" />}
-        <span style={{ marginTop: historia ? 56 : 36, fontSize: historia ? 40 : 34, fontWeight: 800, letterSpacing: 8, color: acento }}>{g.arriba.toUpperCase()}</span>
+        <span style={{ marginTop: historia ? 56 : 36, fontSize: historia ? 38 : 34, fontWeight: 800, letterSpacing: historia ? 5 : 8, color: acento, textAlign: "center" }}>{g.arriba.toUpperCase()}</span>
         <div style={{ marginTop: 10, display: "flex", flexDirection: "column", alignItems: "center" }}>
           {partesTitulo(g.titulo).map((renglon, i) => (
             <div key={i} style={{ display: "flex", lineHeight: 1 }}>

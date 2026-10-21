@@ -113,14 +113,13 @@ export default async function DiscountsPage({ params }: PageProps<"/panel/produc
             </details>
           );
         })}
-        <details className="rounded-lg border border-white/15 p-3" open={promos.length === 0}>
-          <summary className="cursor-pointer font-bold text-violeta-claro">+ Nueva promo</summary>
-          <div className="mt-3">
-            <ActionForm action={savePromo} hidden={{ pid: id }} submit="Crear promo">
-              <PromoFields zonas={zonas} funciones={funciones} />
-            </ActionForm>
-          </div>
-        </details>
+        {/* Fuera de un <details>: al guardar, el aviso "Promo guardada" no se esconde. */}
+        <div className="rounded-lg border border-white/15 p-3">
+          <h3 className="mb-3 font-bold text-violeta-claro">Nueva promo</h3>
+          <ActionForm action={savePromo} hidden={{ pid: id }} submit="Crear promo">
+            <PromoFields zonas={zonas} funciones={funciones} />
+          </ActionForm>
+        </div>
       </Card>
 
       <h2 className="titular mt-2 text-xl">Códigos de descuento</h2>
