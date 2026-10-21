@@ -12,6 +12,15 @@ export const METODOS_PAGO = [
 
 export type MetodoPago = (typeof METODOS_PAGO)[number][0];
 
+/** 0120: cómo se vende cada obra. 'web': cuenta, orden y checkout; 'hibrido': eliges asientos y vas directo a
+ *  WhatsApp; 'whatsapp': todo por WhatsApp (el equipo vende en Taquilla). */
+export type ModoVenta = "web" | "hibrido" | "whatsapp";
+
+/** Métodos de pago del checkout en línea. Hoy solo WhatsApp; los demás se agregan aquí cuando existan. */
+export const PAGO_EN_LINEA: { id: string; label: string; ayuda: string; activo: boolean }[] = [
+  { id: "whatsapp", label: "WhatsApp", ayuda: "Te pasamos los datos para pagar y confirmamos tu pago por WhatsApp.", activo: true },
+];
+
 const ETIQUETA_METODO: Record<string, string> = Object.fromEntries(METODOS_PAGO);
 
 export function metodoLabel(m: string | null | undefined): string | null {

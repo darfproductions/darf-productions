@@ -40,6 +40,8 @@ export default async function ComprarPage({ params, searchParams }: PageProps<"/
   // 0120: funciones sin publicar no se venden en línea (ni se ven).
   if (p.funciones_publicadas === false) notFound();
   const porWhatsApp = p.modo_venta === "whatsapp";
+  const modo = p.modo_venta === "hibrido" ? "hibrido" as const : "web" as const;
+  const mostrarTotal = p.mostrar_total !== false;
   const vendible = funcionVendible(f, p.concluded);
   const yaPaso = !!f.starts_at && !funcionVendible({ on_sale: true, starts_at: f.starts_at }, false);
   // Preventa del Club Fan (0076): quien no es socio puede unirse aquí mismo (la base lo exige igual).
@@ -136,13 +138,15 @@ export default async function ComprarPage({ params, searchParams }: PageProps<"/
           <PasosProvider>
           <div className="flex flex-col gap-10">
           <PasosBarra />
-          {promo && <p className="rounded-2xl border border-obra-acento/40 bg-telon p-4 font-semibold">Promo {promo.nombre}: {promo.percent}% de descuento ya aplicado{[...prices, ...general].some((z) => !("antes" in z) || z.antes == null) ? " en algunas zonas" : ""}.</p>}
+          {promo && mostrarTotal && <p className="rounded-2xl border border-obra-acento/40 bg-telon p-4 font-semibold">Promo {promo.nombre}: {promo.percent}% de descuento ya aplicado{[...prices, ...general].some((z) => !("antes" in z) || z.antes == null) ? " en algunas zonas" : ""}.</p>}
           {general.length > 0 && (
-            <GeneralPicker performanceId={f.id} productionName={p.nombre} zones={general}
+            <GeneralPicker performanceId={f.id} productionName={p.nombre} zones={general} modo={modo} mostrarTotal={mostrarTotal}
               defaultPhone={session?.profile?.telefono ?? ""} defaultSeller={vendedor ?? ""} sinSesion={!session} />
           )}
           {prices.length > 0 && general.length > 0 && <h2 className="titular text-2xl">O elige asientos numerados</h2>}
           {prices.length > 0 && <SeatPicker
+            modo={modo}
+            mostrarTotal={mostrarTotal}
             formas={formas}
             performanceId={f.id}
             productionId={p.id}

@@ -10,9 +10,12 @@ solo *qué*.
 - `productions.funciones_publicadas`: con la casilla apagada el público no ve funciones, fechas, cuenta regresiva ni
   puede comprar en línea (RLS de `performances` con `funcion_legible`: el equipo, el elenco y quien ya tiene una orden
   sí las ven). La página pública las oculta también para el equipo con sesión; la vista previa las muestra.
-- `modo_venta`: 'web' (apartas en la página y pagas por WhatsApp) o 'whatsapp' (botón "Pedir por WhatsApp" por
-  función; el equipo vende desde Taquilla). La compra en línea lo revisa en `preventa_revisar`.
+- `modo_venta`: 'web' (solo por la página: cuenta, orden, total y checkout con método de pago —hoy solo WhatsApp,
+  lista `PAGO_EN_LINEA` para agregar otros—), 'hibrido' (eliges asientos, se apartan y te manda directo a WhatsApp)
+  o 'whatsapp' (botón "Pedir por WhatsApp" por función; el equipo vende desde Taquilla). La compra en línea lo
+  revisa en `preventa_revisar`. Taquilla igual en los tres.
 - `mostrar_precios`: apagado, la página de la obra no muestra "Desde $" ni zonas con precio (el inicio tampoco).
+- `mostrar_total`: apagado, el mapa y la pantalla de apartar no muestran precios ni total (el mensaje de WhatsApp sí).
 - Panel → Funciones y precios: tarjeta "Cómo se vende esta obra"; "Listo para vender" avisa si están ocultas.
 - Showman queda con funciones ocultas (script DEV).
 

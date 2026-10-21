@@ -16,10 +16,12 @@ export type Production = KitColumns & PosterColumns & {
   id: string;
   /** 0120: sin publicar, el público no ve funciones, fechas ni cuenta regresiva. */
   funciones_publicadas?: boolean;
-  /** 0120: 'web' (apartas en la página y pagas por WhatsApp) o 'whatsapp' (todo por WhatsApp). */
-  modo_venta?: "web" | "whatsapp";
+  /** 0120: 'web' (cuenta, orden y checkout), 'hibrido' (eliges asientos → WhatsApp) o 'whatsapp' (todo por WhatsApp). */
+  modo_venta?: "web" | "hibrido" | "whatsapp";
   /** 0120: precios visibles en la página de la obra. */
   mostrar_precios?: boolean;
+  /** 0120: precios y total visibles al apartar. */
+  mostrar_total?: boolean;
   nombre: string;
   venue: string | null;
   /** Temporada (texto libre, "2027"). */
@@ -70,7 +72,7 @@ export type Performance = {
 export type ZonePrice = { nombre: string; price: number; /** Color de la zona en el mapa (0062). */ color?: string | null; /** Orden de la zona (0117). */ orden?: number };
 
 const PRODUCTION_COLUMNS =
-  `id, nombre, venue, temporada, price, on_sale, concluded, destacada, created_at, estado, frase, color_fondo, color_superficie, color_texto, color_acento, logo_path, ambiente_path, funciones_publicadas, modo_venta, mostrar_precios, ${POSTER_COLUMNS}` as const;
+  `id, nombre, venue, temporada, price, on_sale, concluded, destacada, created_at, estado, frase, color_fondo, color_superficie, color_texto, color_acento, logo_path, ambiente_path, funciones_publicadas, modo_venta, mostrar_precios, mostrar_total, ${POSTER_COLUMNS}` as const;
 
 export type PublicProduction = ConEstado<Production>;
 

@@ -234,10 +234,11 @@ export async function updatePerformance(_p: TicketState, f: FormData): Promise<T
 /** 0120: cómo se vende la obra: funciones publicadas, modo de venta y precios visibles. */
 export async function saveVentaAjustes(_p: TicketState, f: FormData): Promise<TicketState> {
   const pid = String(f.get("pid"));
-  const modo = String(f.get("modo_venta")) === "whatsapp" ? "whatsapp" : "web";
+  const m = String(f.get("modo_venta"));
+  const modo = m === "whatsapp" || m === "hibrido" ? m : "web";
   const publicadas = f.get("funciones_publicadas") === "on";
   const supabase = await createClient();
-  const { error } = await supabase.rpc("obra_venta_ajustes", { pid, p_funciones_publicadas: publicadas, p_modo_venta: modo, p_mostrar_precios: f.get("mostrar_precios") === "on" });
+  const { error } = await supabase.rpc("obra_venta_ajustes", { pid, p_funciones_publicadas: publicadas, p_modo_venta: modo, p_mostrar_precios: f.get("mostrar_precios") === "on", p_mostrar_total: f.get("mostrar_total") === "on" });
   if (error) return { ok: false, message: mensajeError(error) };
   refresh(pid);
   return { ok: true, message: publicadas ? "Guardado. Las funciones se ven en la página." : "Guardado. Las funciones están ocultas: el público no ve fechas ni cuenta regresiva." };

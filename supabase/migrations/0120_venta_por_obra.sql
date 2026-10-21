@@ -1,18 +1,18 @@
 -- 0120 (Diego 2026-10-22): cómo se vende cada obra.
 --   * funciones_publicadas: mientras esté apagado, las funciones (fechas, cuenta regresiva, compra) no salen en
 --     ningún lado para el público; solo el equipo las ve. Botón "Publicar funciones" en el panel.
---   * modo_venta: 'web' (eliges asientos, apartas y pagas por WhatsApp, como hasta hoy) o 'whatsapp' (la página no
---     aparta: se piden por WhatsApp y el equipo vende desde Taquilla).
+--   * modo_venta: 'web' (solo por la página: cuenta, orden, total y checkout con método de pago —hoy WhatsApp—),
+--     'hibrido' (eliges asientos, se apartan y te manda directo a WhatsApp) o 'whatsapp' (la página no aparta:
+--     se piden por WhatsApp y el equipo vende desde Taquilla).
 --   * mostrar_precios: si se apaga, la página de la obra no muestra precios.
+--   * mostrar_total: si se apaga, al apartar no se ven precios ni total en pantalla (el mensaje de WhatsApp sí lo lleva).
 
 alter table productions add column if not exists funciones_publicadas boolean not null default true;
 alter table productions add column if not exists modo_venta text not null default 'web';
 alter table productions add column if not exists mostrar_precios boolean not null default true;
-do $$ begin
-  if not exists (select 1 from pg_constraint where conname = 'productions_modo_venta_check') then
-    alter table productions add constraint productions_modo_venta_check check (modo_venta in ('web', 'whatsapp'));
-  end if;
-end $$;
+alter table productions add column if not exists mostrar_total boolean not null default true;
+alter table productions drop constraint if exists productions_modo_venta_check;
+alter table productions add constraint productions_modo_venta_check check (modo_venta in ('web', 'hibrido', 'whatsapp'));
 
 -- ¿El público puede ver las funciones de esta obra? (obra visible y funciones publicadas)
 create or replace function funciones_visibles(pid text) returns boolean
@@ -50,24 +50,26 @@ begin
   end if;
 end $$;
 
-create or replace function obra_venta_ajustes(pid text, p_funciones_publicadas boolean, p_modo_venta text, p_mostrar_precios boolean) returns void
+drop function if exists obra_venta_ajustes(text, boolean, text, boolean);
+create or replace function obra_venta_ajustes(pid text, p_funciones_publicadas boolean, p_modo_venta text, p_mostrar_precios boolean, p_mostrar_total boolean) returns void
 language plpgsql security definer set search_path = public as $$
 declare antes productions;
 begin
   if not (has_perm(pid, 'funciones.gestionar') or has_perm(pid, 'obra.publicar')) then raise exception 'No autorizado'; end if;
-  if p_modo_venta not in ('web', 'whatsapp') then raise exception 'Modo de venta no válido.'; end if;
+  if p_modo_venta not in ('web', 'hibrido', 'whatsapp') then raise exception 'Modo de venta no válido.'; end if;
   select * into antes from productions where id = pid for update;
   if not found then raise exception 'No se encontró la obra.'; end if;
   update productions set funciones_publicadas = coalesce(p_funciones_publicadas, funciones_publicadas),
-         modo_venta = p_modo_venta, mostrar_precios = coalesce(p_mostrar_precios, mostrar_precios), updated_at = now()
+         modo_venta = p_modo_venta, mostrar_precios = coalesce(p_mostrar_precios, mostrar_precios),
+         mostrar_total = coalesce(p_mostrar_total, mostrar_total), updated_at = now()
    where id = pid;
   insert into audit_log (tabla, accion, production_id, antes, despues)
     values ('productions', 'venta_ajustes', pid,
-            jsonb_build_object('funciones_publicadas', antes.funciones_publicadas, 'modo_venta', antes.modo_venta, 'mostrar_precios', antes.mostrar_precios),
-            jsonb_build_object('funciones_publicadas', p_funciones_publicadas, 'modo_venta', p_modo_venta, 'mostrar_precios', p_mostrar_precios));
+            jsonb_build_object('funciones_publicadas', antes.funciones_publicadas, 'modo_venta', antes.modo_venta, 'mostrar_precios', antes.mostrar_precios, 'mostrar_total', antes.mostrar_total),
+            jsonb_build_object('funciones_publicadas', p_funciones_publicadas, 'modo_venta', p_modo_venta, 'mostrar_precios', p_mostrar_precios, 'mostrar_total', p_mostrar_total));
 end $$;
-revoke all on function obra_venta_ajustes(text, boolean, text, boolean) from public, anon;
-grant execute on function obra_venta_ajustes(text, boolean, text, boolean) to authenticated;
+revoke all on function obra_venta_ajustes(text, boolean, text, boolean, boolean) from public, anon;
+grant execute on function obra_venta_ajustes(text, boolean, text, boolean, boolean) to authenticated;
 
 -- "Desde $…" del inicio y la cartelera: sin obras con funciones ocultas ni con precios apagados.
 create or replace function productions_desde()

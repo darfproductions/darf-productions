@@ -33,7 +33,12 @@ export function SeatPicker(props: {
   inicial?: string[];
   /** 0113: escenario del mapa libre. */
   formas?: Forma[];
+  /** 0120: 'web' (checkout) o 'hibrido' (al apartar, directo a WhatsApp). */
+  modo?: "web" | "hibrido";
+  /** 0120: precios y total visibles al apartar. */
+  mostrarTotal?: boolean;
 }) {
+  const conTotal = props.mostrarTotal !== false;
   const router = useRouter();
   const [selected, setSelected] = useState<Set<string>>(() => new Set((props.inicial ?? []).filter((id) => !props.taken.includes(id) && props.seats.some((s) => s.id === id))));
   const [phone, setPhone] = useState(props.defaultPhone);
@@ -137,13 +142,13 @@ export function SeatPicker(props: {
   }
 
   usePaso(result ? 4 : chosen.length ? 3 : 2);
-  if (result) return <OrderDone result={result} />;
+  if (result) return <OrderDone result={result} modo={props.modo} mostrarTotal={conTotal} />;
 
   return (
     <div className="grid gap-8 lg:grid-cols-12">
       <section aria-label="Mapa de asientos" className="flex flex-col gap-4 lg:col-span-8">
         {aviso && <p role="alert" className="rounded-xl border border-[#ff8fa3]/40 bg-[#ff8fa3]/10 px-4 py-3 text-sm">{aviso}</p>}
-        <SeatMap formas={props.formas} seats={props.seats} prices={props.prices} taken={taken} selected={selected} onToggle={toggle} />
+        <SeatMap formas={props.formas} seats={props.seats} prices={props.prices} taken={taken} selected={selected} onToggle={toggle} sinPrecios={!conTotal} />
         <button type="button" onClick={() => { setPolled(null); setAviso(""); router.refresh(); }} className="self-start text-sm font-bold text-violeta-claro">Actualizar disponibilidad</button>
       </section>
 
@@ -155,7 +160,7 @@ export function SeatPicker(props: {
           ) : (
             <ul className="flex flex-col gap-1 text-sm">
               {chosen.map((s) => (
-                <li key={s.id} className="flex justify-between"><span>{s.seat_label}</span><span>{formatMoney(priceByCat.get(s.price_category_id ?? "")?.price ?? 0)}</span></li>
+                <li key={s.id} className="flex justify-between"><span>{s.seat_label}</span>{conTotal ? <span>{formatMoney(priceByCat.get(s.price_category_id ?? "")?.price ?? 0)}</span> : <span className="text-texto-3">{priceByCat.get(s.price_category_id ?? "")?.nombre}</span>}</li>
               ))}
             </ul>
           )}
@@ -169,12 +174,12 @@ export function SeatPicker(props: {
             {(disc.note || discountMsg) && <p className={`text-sm ${disc.note || !discount ? "text-[#ff8fa3]" : "text-exito"}`}>{disc.note || discountMsg}</p>}
           </div>
 
-          <dl className="flex flex-col gap-1 border-t border-white/10 pt-4 text-sm">
+          {conTotal && <dl className="flex flex-col gap-1 border-t border-white/10 pt-4 text-sm">
             <div className="flex justify-between"><dt>Subtotal</dt><dd>{formatMoney(subtotal)}</dd></div>
             {disc.amount > 0 && <div className="flex justify-between text-exito"><dt>Descuento {discount?.codigo}</dt><dd>−{formatMoney(disc.amount)}</dd></div>}
             <div className="flex justify-between text-lg font-bold"><dt>Total</dt><dd>{formatMoney(subtotal - disc.amount)}</dd></div>
             <p className="text-xs text-texto-3">El total final lo confirma el sistema al apartar tus asientos.</p>
-          </dl>
+          </dl>}
 
           <label className="flex flex-col gap-1.5 text-sm font-semibold">Teléfono *
             <input value={phone} onChange={(e) => setPhone(e.target.value)} type="tel" autoComplete="tel" className="rounded-lg bg-sala px-3 py-3 font-normal" />
@@ -205,7 +210,7 @@ export function SeatPicker(props: {
             disabled={pending || chosen.length === 0}
             className="boton-compra rounded-full py-4 text-sm font-bold uppercase tracking-[0.1em] disabled:opacity-50"
           >
-            {pending ? "Apartando…" : `Apartar ${chosen.length || ""} ${chosen.length === 1 ? "asiento" : "asientos"}`}
+            {pending ? "Apartando…" : props.modo === "hibrido" ? `Apartar y seguir en WhatsApp` : `Apartar ${chosen.length || ""} ${chosen.length === 1 ? "asiento" : "asientos"}`}
           </button>
           )}
         </div>
@@ -213,7 +218,7 @@ export function SeatPicker(props: {
       {chosen.length > 0 && (
         <div className="fixed inset-x-0 bottom-0 z-30 flex items-center justify-between gap-3 border-t border-white/10 bg-sala/95 px-4 py-3 backdrop-blur lg:hidden">
           <span className="text-sm">
-            <b>{chosen.length} {chosen.length === 1 ? "asiento" : "asientos"}</b> · {formatMoney(subtotal - disc.amount)}
+            <b>{chosen.length} {chosen.length === 1 ? "asiento" : "asientos"}</b>{conTotal && <> · {formatMoney(subtotal - disc.amount)}</>}
           </span>
           <button type="button" onClick={() => document.getElementById("tu-compra")?.scrollIntoView({ behavior: "smooth" })}
             className="boton-compra rounded-full px-5 py-3 text-xs font-bold uppercase tracking-[0.08em]">Continuar</button>

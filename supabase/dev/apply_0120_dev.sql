@@ -1,5 +1,5 @@
 -- DARF 2.0 — SOLO PARA EL PROYECTO SUPABASE "DARF 2.0 DEV" (la base de darfproductions.com).
--- 0120: cómo se vende cada obra (funciones publicadas, venta en la página o por WhatsApp, precios visibles).
+-- 0120: cómo se vende cada obra (funciones publicadas; venta solo por la página, híbrida o por WhatsApp; precios y total visibles).
 -- Además deja las funciones de Showman OCULTAS (pedido de Diego): se publican desde el panel cuando se decida.
 -- Se puede correr más de una vez. Si la base no es DEV, aborta.
 do $$ begin
@@ -16,11 +16,9 @@ begin;
 alter table productions add column if not exists funciones_publicadas boolean not null default true;
 alter table productions add column if not exists modo_venta text not null default 'web';
 alter table productions add column if not exists mostrar_precios boolean not null default true;
-do $$ begin
-  if not exists (select 1 from pg_constraint where conname = 'productions_modo_venta_check') then
-    alter table productions add constraint productions_modo_venta_check check (modo_venta in ('web', 'whatsapp'));
-  end if;
-end $$;
+alter table productions add column if not exists mostrar_total boolean not null default true;
+alter table productions drop constraint if exists productions_modo_venta_check;
+alter table productions add constraint productions_modo_venta_check check (modo_venta in ('web', 'hibrido', 'whatsapp'));
 
 -- ¿El público puede ver las funciones de esta obra? (obra visible y funciones publicadas)
 create or replace function funciones_visibles(pid text) returns boolean
@@ -58,24 +56,26 @@ begin
   end if;
 end $$;
 
-create or replace function obra_venta_ajustes(pid text, p_funciones_publicadas boolean, p_modo_venta text, p_mostrar_precios boolean) returns void
+drop function if exists obra_venta_ajustes(text, boolean, text, boolean);
+create or replace function obra_venta_ajustes(pid text, p_funciones_publicadas boolean, p_modo_venta text, p_mostrar_precios boolean, p_mostrar_total boolean) returns void
 language plpgsql security definer set search_path = public as $$
 declare antes productions;
 begin
   if not (has_perm(pid, 'funciones.gestionar') or has_perm(pid, 'obra.publicar')) then raise exception 'No autorizado'; end if;
-  if p_modo_venta not in ('web', 'whatsapp') then raise exception 'Modo de venta no válido.'; end if;
+  if p_modo_venta not in ('web', 'hibrido', 'whatsapp') then raise exception 'Modo de venta no válido.'; end if;
   select * into antes from productions where id = pid for update;
   if not found then raise exception 'No se encontró la obra.'; end if;
   update productions set funciones_publicadas = coalesce(p_funciones_publicadas, funciones_publicadas),
-         modo_venta = p_modo_venta, mostrar_precios = coalesce(p_mostrar_precios, mostrar_precios), updated_at = now()
+         modo_venta = p_modo_venta, mostrar_precios = coalesce(p_mostrar_precios, mostrar_precios),
+         mostrar_total = coalesce(p_mostrar_total, mostrar_total), updated_at = now()
    where id = pid;
   insert into audit_log (tabla, accion, production_id, antes, despues)
     values ('productions', 'venta_ajustes', pid,
-            jsonb_build_object('funciones_publicadas', antes.funciones_publicadas, 'modo_venta', antes.modo_venta, 'mostrar_precios', antes.mostrar_precios),
-            jsonb_build_object('funciones_publicadas', p_funciones_publicadas, 'modo_venta', p_modo_venta, 'mostrar_precios', p_mostrar_precios));
+            jsonb_build_object('funciones_publicadas', antes.funciones_publicadas, 'modo_venta', antes.modo_venta, 'mostrar_precios', antes.mostrar_precios, 'mostrar_total', antes.mostrar_total),
+            jsonb_build_object('funciones_publicadas', p_funciones_publicadas, 'modo_venta', p_modo_venta, 'mostrar_precios', p_mostrar_precios, 'mostrar_total', p_mostrar_total));
 end $$;
-revoke all on function obra_venta_ajustes(text, boolean, text, boolean) from public, anon;
-grant execute on function obra_venta_ajustes(text, boolean, text, boolean) to authenticated;
+revoke all on function obra_venta_ajustes(text, boolean, text, boolean, boolean) from public, anon;
+grant execute on function obra_venta_ajustes(text, boolean, text, boolean, boolean) to authenticated;
 
 -- "Desde $…" del inicio y la cartelera: sin obras con funciones ocultas ni con precios apagados.
 create or replace function productions_desde()
@@ -89,7 +89,6 @@ language sql stable security definer set search_path = public as $$
    where pf.starts_at > now() and ppc.price > 0 and production_is_visible(pf.production_id)
    group by pf.production_id
 $$;
-
 -- Showman: funciones ocultas hasta que se publiquen desde Funciones y precios.
 update productions set funciones_publicadas = false where id = 'showman';
 

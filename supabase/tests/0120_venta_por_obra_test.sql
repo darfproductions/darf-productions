@@ -40,7 +40,7 @@ do $$ declare z uuid; pf uuid; ok boolean; n int; o json; begin
 
   -- T2: el equipo oculta las funciones: el público ya no las ve ni compra; quien ya compró sí ve la suya.
   perform pg_temp.as_user('00000000-0000-0000-0000-000000000c01');
-  perform obra_venta_ajustes('t120_obra', false, 'web', true);
+  perform obra_venta_ajustes('t120_obra', false, 'web', true, true);
   if (select count(*) from performances where production_id = 't120_obra') <> 1 then raise exception 'FALLO T2: equipo no ve'; end if;
   perform pg_temp.as_anon();
   if (select count(*) from performances where production_id = 't120_obra') <> 0 then raise exception 'FALLO T2: anon ve'; end if;
@@ -55,7 +55,7 @@ do $$ declare z uuid; pf uuid; ok boolean; n int; o json; begin
 
   -- T3: publicadas, modo WhatsApp: en línea no; taquilla sí.
   perform pg_temp.as_user('00000000-0000-0000-0000-000000000c01');
-  perform obra_venta_ajustes('t120_obra', true, 'whatsapp', false);
+  perform obra_venta_ajustes('t120_obra', true, 'whatsapp', false, false);
   perform pg_temp.as_user('00000000-0000-0000-0000-000000000c02');
   begin perform create_general_ticket_order(pf, 'X', '5512345678', z, 1); ok := false; exception when others then ok := sqlerrm like '%por WhatsApp%'; end;
   if not ok then raise exception 'FALLO T3: compró en línea'; end if;
@@ -65,9 +65,17 @@ do $$ declare z uuid; pf uuid; ok boolean; n int; o json; begin
   if (select mostrar_precios from productions where id = 't120_obra') then raise exception 'FALLO T3: precios'; end if;
   if exists (select 1 from productions_desde() where production_id = 't120_obra') then raise exception 'FALLO T3: desde sin precios'; end if;
 
+  -- T3b: híbrido: se aparta en línea.
+  perform pg_temp.as_user('00000000-0000-0000-0000-000000000c01');
+  perform obra_venta_ajustes('t120_obra', true, 'hibrido', true, false);
+  perform pg_temp.as_user('00000000-0000-0000-0000-000000000c02');
+  o := create_general_ticket_order(pf, 'Hibrido', '5512345678', z, 1);
+  perform pg_temp.as_root();
+  if (select mostrar_total from productions where id = 't120_obra') then raise exception 'FALLO T3b: total'; end if;
+
   -- T4: sin permiso no se cambia.
   perform pg_temp.as_user('00000000-0000-0000-0000-000000000c02');
-  begin perform obra_venta_ajustes('t120_obra', true, 'web', true); ok := false; exception when others then ok := true; end;
+  begin perform obra_venta_ajustes('t120_obra', true, 'web', true, true); ok := false; exception when others then ok := true; end;
   perform pg_temp.as_root();
   if not ok then raise exception 'FALLO T4'; end if;
 end $$;
