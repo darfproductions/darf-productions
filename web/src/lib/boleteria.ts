@@ -40,11 +40,11 @@ export async function listPerformances(pid: string): Promise<PanelPerformance[]>
   }));
 }
 
-export type Zone = { id: string; nombre: string; is_active: boolean; cupo: number | null; descripcion: string | null; color?: string | null };
+export type Zone = { id: string; nombre: string; is_active: boolean; cupo: number | null; descripcion: string | null; color?: string | null; orden?: number; precio_base?: number | null };
 
 export async function listZones(pid: string): Promise<Zone[]> {
   const supabase = await createClient();
-  const { data } = await supabase.from("price_categories").select("id, nombre, is_active, cupo, descripcion, color").eq("production_id", pid).order("nombre");
+  const { data } = await supabase.from("price_categories").select("id, nombre, is_active, cupo, descripcion, color, orden, precio_base").eq("production_id", pid).order("orden").order("nombre");
   return (data ?? []) as Zone[];
 }
 
@@ -109,7 +109,7 @@ export async function boxOfficeData(pid: string, performanceId: string) {
   const [seats, taken, prices, diseno] = await Promise.all([
     todasLasFilas((a, b) => supabase.from("seats").select("id, seat_label, seat_row, seat_number, lado, price_category_id, is_active, pos_x, pos_y, section").eq("production_id", pid).order("id").range(a, b)),
     asientosOcupados(supabase, performanceId),
-    supabase.from("performance_price_categories").select("price_category_id, price, price_categories(nombre, color)").eq("performance_id", performanceId),
+    supabase.from("performance_price_categories").select("price_category_id, price, price_categories(nombre, color, orden)").eq("performance_id", performanceId),
     supabase.from("mapas_diseno").select("diseno").eq("production_id", pid).maybeSingle(),
   ]);
   return {
@@ -121,6 +121,7 @@ export async function boxOfficeData(pid: string, performanceId: string) {
       price: Number(r.price),
       nombre: (r.price_categories as unknown as { nombre: string } | null)?.nombre ?? "",
       color: (r.price_categories as unknown as { color: string | null } | null)?.color ?? null,
+      orden: (r.price_categories as unknown as { orden: number | null } | null)?.orden ?? 0,
     })),
     error: seats.error ?? taken.error ?? prices.error,
   };

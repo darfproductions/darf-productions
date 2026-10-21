@@ -435,3 +435,31 @@ export async function disenarMapa(pid: string, diseno: unknown, lista: AsientoDi
   refresh(pid);
   return { ok: true, message: `Mapa guardado: ${asientos((data as { asientos: number }).asientos)}. Ahora acomoda las zonas y ponles precio en cada función.` };
 }
+
+// ════════ 0117: zonas — orden, precio para todas las funciones y borrar ════════
+
+export async function moverZona(pid: string, zid: string, arriba: boolean): Promise<{ ok: boolean; message: string }> {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("zona_mover", { zid, arriba });
+  if (error) return { ok: false, message: mensajeError(error) };
+  refresh(pid);
+  return { ok: true, message: "" };
+}
+
+export async function precioZona(pid: string, zid: string, precio: number): Promise<{ ok: boolean; message: string }> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("zona_precio", { zid, p_precio: precio });
+  if (error) return { ok: false, message: mensajeError(error) };
+  refresh(pid);
+  const n = Number(data ?? 0);
+  return { ok: true, message: n ? `Precio ${formatMoney(precio)} puesto en ${n} ${n === 1 ? "función" : "funciones"}. Las funciones nuevas también lo toman.` : `Precio ${formatMoney(precio)} guardado. Aún no hay funciones próximas; las nuevas lo toman.` };
+}
+
+export async function borrarZona(pid: string, zid: string, destino: string | null): Promise<{ ok: boolean; message: string }> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("zona_borrar", { zid, destino });
+  if (error) return { ok: false, message: mensajeError(error) };
+  refresh(pid);
+  const n = Number(data ?? 0);
+  return { ok: true, message: n ? `Zona borrada; sus ${n} asientos pasaron a la otra zona.` : "Zona borrada." };
+}

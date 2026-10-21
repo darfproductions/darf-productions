@@ -72,3 +72,29 @@ export function capacidadFuncion(
   const general = new Map(zonas.filter((z) => z.cupo != null && z.is_active).map((z) => [z.id, z.cupo as number]));
   return asientos + precios.reduce((n, p) => (general.has(p.categoryId) ? n + (p.cupo ?? general.get(p.categoryId)!) : n), 0);
 }
+
+/**
+ * 0117: cuánto deja una función si se vende todo (sin descuentos ni cortesías).
+ * Zonas con asiento: asientos activos de la zona × su precio en la función. Entrada general: cupo × precio.
+ * `sinPrecio`: asientos que no se pueden vender porque su zona no tiene precio en esa función.
+ */
+export function ingresoPotencial(
+  asientosPorZona: Map<string, number>,
+  precios: { categoryId: string; price: number; cupo: number | null }[],
+  zonas: { id: string; cupo: number | null; is_active: boolean }[],
+): { lugares: number; total: number; sinPrecio: number } {
+  const precio = new Map(precios.map((p) => [p.categoryId, p]));
+  let lugares = 0, total = 0, sinPrecio = 0;
+  for (const z of zonas) {
+    const p = precio.get(z.id);
+    if (z.cupo == null) {
+      const n = asientosPorZona.get(z.id) ?? 0;
+      if (!p) { sinPrecio += n; continue; }
+      lugares += n; total += n * p.price;
+    } else if (z.is_active && p) {
+      const n = p.cupo ?? z.cupo;
+      lugares += n; total += n * p.price;
+    }
+  }
+  return { lugares, total, sinPrecio };
+}

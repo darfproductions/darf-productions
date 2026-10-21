@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { capacidadFuncion, occupancy, summarizeSales, type SaleOrder } from "./sales";
+import { capacidadFuncion, ingresoPotencial, occupancy, summarizeSales, type SaleOrder } from "./sales";
 
 const t = (id: string, active = true, checked: string | null = null) => ({ id, is_active: active, checked_in_at: checked, seat_label: id });
 const base: Omit<SaleOrder, "id" | "status" | "total" | "tickets" | "performance_id"> = {
@@ -35,5 +35,20 @@ describe("capacidad con entrada general", () => {
     expect(capacidadFuncion(200, [{ categoryId: "pref", cupo: null }, { categoryId: "pista", cupo: null }], zonas)).toBe(280);
     expect(capacidadFuncion(200, [{ categoryId: "pista", cupo: 30 }], zonas)).toBe(230);
     expect(capacidadFuncion(200, [{ categoryId: "gradas", cupo: null }], zonas)).toBe(200);
+  });
+});
+
+describe("ingreso si se vende todo (0117)", () => {
+  it("asientos × precio y entrada general con su cupo", () => {
+    const asientos = new Map([["vip", 10], ["gen", 40], ["sin", 5]]);
+    const zonas = [
+      { id: "vip", cupo: null, is_active: true }, { id: "gen", cupo: null, is_active: true }, { id: "sin", cupo: null, is_active: true },
+      { id: "pista", cupo: 80, is_active: true }, { id: "off", cupo: 20, is_active: false },
+    ];
+    const precios = [
+      { categoryId: "vip", price: 500, cupo: null }, { categoryId: "gen", price: 250, cupo: null },
+      { categoryId: "pista", price: 100, cupo: 60 }, { categoryId: "off", price: 50, cupo: null },
+    ];
+    expect(ingresoPotencial(asientos, precios, zonas)).toEqual({ lugares: 110, total: 10 * 500 + 40 * 250 + 60 * 100, sinPrecio: 5 });
   });
 });

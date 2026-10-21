@@ -5,6 +5,16 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-10-21 — Zonas: borrar, precio de la zona, orden y "si se vende todo" (migración 0117)
+
+- `price_categories.orden` y `precio_base`. Flechas para ordenar las zonas (se respeta en el panel, la compra, la
+  taquilla y la página de la obra); las nuevas van al final.
+- Precio de la zona: `zona_precio` lo pone en todas las funciones que aún no pasan y las funciones nuevas lo toman
+  (`copy_prices_to_new_performance` usa `precio_base`). Cada función puede seguir con su precio propio.
+- `zona_borrar`: si tiene asientos pasan a otra zona; con boletos vendidos no se borra.
+- Funciones y precios: tarjeta "Si se vende todo" (`ingresoPotencial`): lugares, cuánto deja cada función llena, lo
+  vendido y el total de todas las funciones.
+
 ## 2026-10-19 — Editor de mapas: zonas por asiento, quitar asientos y filas distintas
 
 - Modo "Zonas y asientos" en el editor: seleccionar asientos (tocar, rectángulo, letra de fila, fila o bloque completo),
