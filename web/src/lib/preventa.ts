@@ -10,7 +10,8 @@ export async function getPreventas(pid: string | null): Promise<PreventaObra[]> 
   const supabase = await createClient();
   const ahora = new Date().toISOString();
   const [perfs, mios, { productions }] = await Promise.all([
-    supabase.from("performances").select("production_id, preventa_hasta").eq("on_sale", true).gt("preventa_hasta", ahora),
+    // 0118: solo las que ya empezaron (antes del inicio, nadie compra).
+    supabase.from("performances").select("production_id, preventa_hasta").eq("on_sale", true).gt("preventa_hasta", ahora).or(`preventa_desde.is.null,preventa_desde.lte.${ahora}`),
     supabase.from("preventa_recordatorios").select("production_id"),
     getHomeData(),
   ]);

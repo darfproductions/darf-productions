@@ -11,7 +11,9 @@ import { YouTube } from "@/components/YouTube";
 import { listOpenAuditionsFor } from "@/lib/auditions";
 import { getPublicBanner } from "@/lib/banner";
 import { fechaEstreno } from "@/lib/cuenta-regresiva";
-import { enPreventa, ETIQUETA_FUNCION, estadoFuncion, partesFuncion } from "@/lib/disponibilidad";
+import { enPreventa, ETIQUETA_FUNCION, estadoFuncion, partesFuncion, ventaPorAbrir } from "@/lib/disponibilidad";
+import { getPromos } from "@/lib/promos";
+import { mejorPromo } from "@/lib/promo-rules";
 import { isDev } from "@/lib/env";
 import { EncuentroCard } from "@/components/fanzone/EncuentroCard";
 import { EventoBloqueado } from "@/components/eventos/EventoBloqueado";
@@ -20,6 +22,7 @@ import { esSocio } from "@/lib/credencial";
 import { fanzoneCount, getEncuentros, getEventosCartelera } from "@/lib/fanzone";
 import { estadoPublico } from "@/lib/home-rules";
 import { getProductionContent } from "@/lib/production-content";
+import { capaVacia, obraConCapa, type Capa } from "@/lib/obra-capa-rules";
 import { getProgram } from "@/lib/program";
 import { withSeller } from "@/lib/seller-rules";
 import { funcionVendible } from "@/lib/ventas-rules";
@@ -60,29 +63,34 @@ export async function ProductionView({
   data,
   vendedor = null,
   vistaPrevia = false,
+  capa = {},
 }: {
   data: NonNullable<Awaited<ReturnType<typeof getProduction>>>;
   vendedor?: string | null;
   /** En la vista previa del panel hay una barra amarilla fija arriba. */
   vistaPrevia?: boolean;
+  /** 0119: cambios aún no públicos encima (los de fans para socios; el borrador en la vista previa). */
+  capa?: Capa;
 }) {
-  const { production: p, performances, prices } = data;
+  const { performances, prices } = data;
+  const p = obraConCapa(data.production, capa);
   const theme = getTheme(p);
   const posterPagina = posterUrl(p, "pagina");
   // 0088: una función que ya empezó deja de venderse aunque siga "en venta".
   const vendibles = performances.filter((fn) => funcionVendible(fn, p.concluded));
-  const [c, gallery, ensayos, audiciones, programa, franja, ocupacion, socio, eventos, cartelera, sesion] = await Promise.all([
-    getProductionContent(p.id, vistaPrevia),
+  const [c, gallery, ensayos, audiciones, programa, franja, ocupacion, socio, eventos, cartelera, sesion, promos] = await Promise.all([
+    getProductionContent(p.id, vistaPrevia, capa),
     getGallery(p.id),
     fanzoneCount(p.id),
     listOpenAuditionsFor(p.id),
     getProgram(p.id),
-    getPublicBanner(p.id),
+    getPublicBanner(p.id, capa.franja),
     performanceOccupancy(vendibles.map((fn) => fn.id)),
     esSocio(),
     getEncuentros(p.id),
     getEventosCartelera(30),
     getSession(),
+    getPromos(p.id),
   ]);
   // Eventos de esta obra (0081/0082): los que puede abrir y, con candado, los del club o con cuenta.
   const abiertos = new Set(eventos.map((e) => e.id));
@@ -139,6 +147,9 @@ export async function ProductionView({
             const vendible = funcionVendible(fn, p.concluded);
             const est = vendible ? estadoDe(fn.id) : null;
             const pre = vendible && enPreventa(fn);
+            // 0118: la venta (o la preventa) aún no abre; y la promo automática de la función.
+            const porAbrir = vendible && ventaPorAbrir(fn);
+            const promo = vendible ? mejorPromo(promos.get(fn.id)) : null;
             const agotado = est === "agotado";
             const f = fn.starts_at ? partesFuncion(fn.starts_at) : null;
             return (
@@ -164,9 +175,13 @@ export async function ProductionView({
                     {duracion && <> · Duración aprox. {duracion}</>}
                   </span>
                   {pre && fn.preventa_hasta && (() => { const h = partesFuncion(fn.preventa_hasta); return <span className="text-[12.5px] font-semibold text-obra-acento">Preventa Club Fan hasta el {h.dia} {h.numero} {h.mes}, {h.hora}</span>; })()}
+                  {porAbrir && fn.preventa_desde && (() => { const d = partesFuncion(fn.preventa_desde); return <span className="text-[12.5px] font-semibold text-obra-acento">{fn.preventa_hasta ? "Preventa Club Fan" : "Venta"} desde el {d.dia} {d.numero} {d.mes}, {d.hora}</span>; })()}
+                  {promo && !agotado && <span className="text-[12.5px] font-semibold text-obra-acento">Promo {promo.nombre}: {promo.percent}% de descuento{promo.hasta ? ` hasta el ${(() => { const h = partesFuncion(promo.hasta); return `${h.dia} ${h.numero} ${h.mes}`; })()}` : ""}</span>}
                 </div>
                 <div className="col-span-2 flex flex-wrap items-center justify-between gap-3 md:contents">
-                  {pre ? (
+                  {porAbrir ? (
+                    <span className={`chip ${fn.preventa_hasta ? "chip-fz" : "chip-obra"}`}>Muy pronto</span>
+                  ) : pre ? (
                     <span className="chip chip-fz">Preventa Fan Zone</span>
                   ) : vendible ? (
                     est ? (
@@ -180,7 +195,7 @@ export async function ProductionView({
                   ) : (
                     <span className="chip chip-obra">{p.concluded ? "Concluida" : "Próximamente"}</span>
                   )}
-                  {vendible && !agotado && (
+                  {vendible && !agotado && !porAbrir && (
                     pre ? (
                       socio ? (
                         <Link href={withSeller(`/comprar/${fn.id}`, vendedor)} className="fb fb-fz fb-sm ml-auto md:ml-0">Entrar a preventa</Link>
@@ -191,7 +206,7 @@ export async function ProductionView({
                       <Link href={withSeller(`/comprar/${fn.id}`, vendedor)} className="fb fb-luz fb-sm ml-auto md:ml-0">Elegir asientos</Link>
                     )
                   )}
-                  {(!vendible || agotado) && <span aria-hidden="true" className="hidden md:block" />}
+                  {(!vendible || agotado || porAbrir) && <span aria-hidden="true" className="hidden md:block" />}
                 </div>
               </li>
             );
@@ -262,6 +277,12 @@ export async function ProductionView({
 
   return (
     <main style={themeStyle(theme)} className={`min-h-dvh bg-obra-fondo text-obra-texto ${enVenta ? "pb-32 md:pb-16" : "pb-16"}`}>
+      {!vistaPrevia && !capaVacia(capa) && (
+        <p className="flex items-center justify-center gap-2 bg-[#120f17] px-4 py-2 text-center text-sm font-semibold">
+          <img src="/marca/fan-zone-oro.svg" alt="" className="h-4 w-auto" />
+          <span>Estás viendo <span className="txt-oro">novedades exclusivas del Club Fan</span> antes que nadie.</span>
+        </p>
+      )}
       {/* Hero: ambiente a sangre, degradado desde la izquierda, cono de luz y grano. */}
       <section className="relative flex min-h-[560px] overflow-hidden md:min-h-[780px]">
         {theme && <HeroBackdrop theme={theme} />}

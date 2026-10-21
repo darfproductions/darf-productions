@@ -11,7 +11,7 @@ import { requirePanel } from "@/lib/permissions";
 import { ligaWhatsApp } from "@/lib/pago-rules";
 import { formatPerformanceDate } from "@/lib/productions";
 import { formatMoney } from "@/lib/tickets";
-import { cancelPerformance, createPerformance, deletePerformance, saveGeneralZone, setProductionOnSale, updatePerformance } from "../actions";
+import { cancelPerformance, createPerformance, deletePerformance, saveGeneralZone, savePreventaObra, setProductionOnSale, updatePerformance } from "../actions";
 import { ZonaAcciones } from "../ZonaAcciones";
 import { ingresoPotencial } from "@/lib/sales";
 import { createClient } from "@/lib/supabase/server";
@@ -34,6 +34,8 @@ export default async function PerformancesPage({ params }: PageProps<"/panel/pro
   // Funciones canceladas (0091): quién pagó y hay que reembolsar, con WhatsApp para avisarle.
   // 0117: cuánto deja cada función si se vende todo, y lo vendido (aprobado) hasta hoy.
   const supabase = await createClient();
+  // 0118: fechas de preventa de la obra (las funciones que no tienen fechas propias las siguen).
+  const { data: obraPre } = await supabase.from("productions").select("preventa_desde, preventa_hasta").eq("id", id).maybeSingle();
   const [asientosRes, vendidoRes] = gestionar ? await Promise.all([
     todasLasFilas((a, b) => supabase.from("seats").select("price_category_id").eq("production_id", id).eq("is_active", true).order("id").range(a, b)),
     funciones.length ? supabase.from("orders").select("performance_id, total").eq("status", "aprobado").in("performance_id", funciones.map((f) => f.id)) : Promise.resolve({ data: [] }),
@@ -63,6 +65,24 @@ export default async function PerformancesPage({ params }: PageProps<"/panel/pro
             confirm={p.on_sale ? "¿Cerrar la venta de toda la obra?" : "¿Abrir la venta de la obra?"}
             submit={p.on_sale ? "Cerrar venta" : "Abrir venta"}
           />
+        </Card>
+      )}
+
+      {gestionar && (
+        <Card className="flex flex-col gap-3">
+          <div>
+            <h2 className="titular text-xl">Preventa del Club Fan</h2>
+            <p className="text-sm text-texto-2">
+              Antes del <b>inicio</b> nadie puede comprar en línea; entre el inicio y el <b>fin</b> solo compran los socios del Club Fan; después, todos.
+              Se pone en todas las funciones que no tengan fechas propias (en cada función puedes cambiarlas). Deja el fin vacío si no hay preventa: el inicio queda como apertura de la venta.
+            </p>
+          </div>
+          <ActionForm action={savePreventaObra} hidden={{ pid: id }} submit="Guardar preventa" submitClass={ghost}>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="flex flex-col gap-1.5 text-sm font-semibold">Inicio (CDMX)<input className={input} type="datetime-local" name="desde" defaultValue={isoToLocalMx((obraPre?.preventa_desde as string | null) ?? null)} /></label>
+              <label className="flex flex-col gap-1.5 text-sm font-semibold">Fin: abre para todos (CDMX)<input className={input} type="datetime-local" name="hasta" defaultValue={isoToLocalMx((obraPre?.preventa_hasta as string | null) ?? null)} /></label>
+            </div>
+          </ActionForm>
         </Card>
       )}
 
@@ -143,6 +163,8 @@ export default async function PerformancesPage({ params }: PageProps<"/panel/pro
                   <b>{formatPerformanceDate(f.starts_at)}</b>
                   {f.on_sale ? <span className="rounded-full bg-[#14532d] px-2 py-0.5 text-[11px] uppercase text-[#bbf7d0]">en venta</span> : <span className="rounded-full bg-white/10 px-2 py-0.5 text-[11px] uppercase text-texto-3">sin venta</span>}
                   {f.preventa_hasta && <span className="rounded-full border border-oro/40 px-2 py-0.5 text-[11px] uppercase text-oro-claro">preventa</span>}
+                  {f.preventa_desde && f.preventa_desde > new Date().toISOString() && <span className="rounded-full border border-white/25 px-2 py-0.5 text-[11px] uppercase text-texto-2">abre {formatPerformanceDate(f.preventa_desde).replace(/^\S+ /, "")}</span>}
+                  {f.prices.some((x) => x.propio) && <span className="rounded-full border border-violeta-claro/50 px-2 py-0.5 text-[11px] uppercase text-violeta-claro">precio propio</span>}
                   <span className="text-sm text-texto-3">{f.venue ? `${f.venue} · ` : ""}{precios.length ? `$${Math.min(...precios)}–$${Math.max(...precios)} · llena ${formatMoney(potencial.get(f.id)?.total ?? 0)}` : "sin precios"}</span>
                 </span>
                 <span className="text-sm font-bold text-violeta-claro">Editar <span className="inline-block transition-transform group-open:rotate-180"><Icono nombre="chevron-abajo" /></span></span>
@@ -163,6 +185,7 @@ export default async function PerformancesPage({ params }: PageProps<"/panel/pro
                   {zonas.map((z) => (
                     <label key={z.id} className="flex flex-col gap-1 text-xs font-semibold">{z.nombre}{z.cupo != null && <span className="font-normal text-texto-3">Entrada general</span>}
                       <input className={input} type="number" min={0} step="1" name={`precio_${z.id}`} defaultValue={f.prices.find((x) => x.categoryId === z.id)?.price ?? ""} />
+                      {f.prices.find((x) => x.categoryId === z.id)?.propio && <span className="font-normal text-violeta-claro" title="Poner el precio en todas las funciones no lo cambia. Escribe el precio de la zona para que vuelva a seguirla.">Precio propio{z.precio_base != null ? ` (zona: $${z.precio_base})` : ""}</span>}
                       {z.cupo != null && (
                         <input className={input} type="number" min={0} step="1" name={`cupo_${z.id}`} placeholder={`Cupo: ${z.cupo}`} title="Cupo en esta función (vacío = el de la zona)"
                           defaultValue={f.prices.find((x) => x.categoryId === z.id)?.cupo ?? ""} />
@@ -171,10 +194,19 @@ export default async function PerformancesPage({ params }: PageProps<"/panel/pro
                   ))}
                 </fieldset>
                 <label className="flex items-center gap-2 text-sm font-semibold"><input type="checkbox" name="on_sale" defaultChecked={f.on_sale} /> Esta función está en venta en línea</label>
-                <label className="flex flex-col gap-1.5 text-sm font-semibold">Preventa Fan Zone hasta
-                  <input className={input} type="datetime-local" name="preventa_hasta" defaultValue={isoToLocalMx(f.preventa_hasta)} />
-                  <span className="text-xs font-normal text-texto-3">Opcional. Con la función en venta, hasta esta fecha solo compran los socios del Club Fan (a quienes activaron el recordatorio les avisamos). Después, venta para todos.</span>
-                </label>
+                <fieldset className="flex flex-col gap-2 rounded-lg bg-sala p-3">
+                  <legend className="px-1 text-sm font-semibold">Preventa del Club Fan</legend>
+                  <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="preventa_obra" defaultChecked={!f.preventa_propia} /> Usar las fechas de la obra (las de arriba)</label>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <label className="flex flex-col gap-1.5 text-sm font-semibold">Inicio (nadie compra antes)
+                      <input className={input} type="datetime-local" name="preventa_desde" defaultValue={isoToLocalMx(f.preventa_desde)} />
+                    </label>
+                    <label className="flex flex-col gap-1.5 text-sm font-semibold">Fin (después compran todos)
+                      <input className={input} type="datetime-local" name="preventa_hasta" defaultValue={isoToLocalMx(f.preventa_hasta)} />
+                    </label>
+                  </div>
+                  <span className="text-xs text-texto-3">Para fechas solo de esta función, quita la palomita. Entre inicio y fin solo compran los socios (a quienes activaron el recordatorio les avisamos al abrir).</span>
+                </fieldset>
               </ActionForm>
               <div className="mt-3 border-t border-white/10 pt-3">
                 <ActionForm inline action={deletePerformance} hidden={{ pid: id, perf: f.id }} confirm="¿Eliminar esta función? Solo se puede si no tiene boletos activos." submit="Eliminar función" submitClass={ghost} />

@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { ProductionView } from "@/components/ProductionView";
 import { getProduction } from "@/lib/productions";
 import { cleanSellerCode } from "@/lib/seller-rules";
+import { getSession } from "@/lib/auth";
+import { getCapa } from "@/lib/obra-capa";
 
 // Página de obra: una sola plantilla para todas las producciones (ver ProductionView).
 
@@ -26,5 +28,7 @@ export default async function ProductionPage({ params, searchParams }: PageProps
   const vendedor = cleanSellerCode((await searchParams).v);
   const data = await getProduction(slug);
   if (!data) notFound();
-  return <ProductionView data={data} vendedor={vendedor} />;
+  // 0119: los socios del Club Fan ven los cambios publicados solo para fans.
+  const capa = (await getSession()) ? await getCapa(data.production.id, "fans") : {};
+  return <ProductionView data={data} vendedor={vendedor} capa={capa} />;
 }

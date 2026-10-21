@@ -36,7 +36,12 @@ export function partesFuncion(iso: string): { dia: string; numero: string; mes: 
   return { dia: v("weekday"), numero: v("day"), mes: v("month"), hora: `${v("hour")}:${v("minute")} h` };
 }
 
-/** ¿La función está en preventa del Club Fan ahora? (0076) */
-export function enPreventa(f: { on_sale: boolean; preventa_hasta?: string | null }, ahora: number = Date.now()): boolean {
-  return f.on_sale && !!f.preventa_hasta && new Date(f.preventa_hasta).getTime() > ahora;
+/** ¿La función está en preventa del Club Fan ahora? (0076; 0118: ya empezó). */
+export function enPreventa(f: { on_sale: boolean; preventa_hasta?: string | null; preventa_desde?: string | null }, ahora: number = Date.now()): boolean {
+  return f.on_sale && !!f.preventa_hasta && new Date(f.preventa_hasta).getTime() > ahora && !ventaPorAbrir(f, ahora);
+}
+
+/** 0118: la venta (o la preventa) aún no abre: nadie compra en línea hasta esa fecha. */
+export function ventaPorAbrir(f: { on_sale: boolean; preventa_desde?: string | null }, ahora: number = Date.now()): boolean {
+  return f.on_sale && !!f.preventa_desde && new Date(f.preventa_desde).getTime() > ahora;
 }

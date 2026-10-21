@@ -277,6 +277,8 @@ export function panelMenu(a: PanelAccessData): NavSection[] {
     ...(casa(a, "casa.sitio") ? [{ href: "/panel/ajustes/sitio", label: "Sitio" }] : []),
     // 0112: base de socios del Club Fan.
     ...(casa(a, "casa.club") ? [{ href: "/panel/ajustes/club", label: "Club Fan" }] : []),
+    // Guías para redes de DARF (cómo unirte al Club Fan, cómo crear tu cuenta).
+    ...(casa(a, "casa.sitio") || casa(a, "casa.club") ? [{ href: "/panel/ajustes/difusion", label: "Difusión" }] : []),
     ...(casa(a, "casa.contacto") ? [{ href: "/panel/ajustes/darfy", label: "DARFY" }] : []),
     ...(casa(a, "casa.bitacora") ? [{ href: "/panel/bitacora", label: "Bitácora" }] : []),
   ];

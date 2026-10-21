@@ -13,8 +13,9 @@ export async function getBanner(pid: string): Promise<Banner | null> {
 }
 
 /** Lo que el público ve ahora: encendida y con al menos un aviso vigente. */
-export async function getPublicBanner(pid: string): Promise<Banner | null> {
-  const b = await getBanner(pid);
+export async function getPublicBanner(pid: string, capa?: Banner): Promise<Banner | null> {
+  // 0119: con capa (fans o borrador), esa franja en lugar de la publicada.
+  const b = capa ?? await getBanner(pid);
   if (!b?.activa) return null;
   const items = avisosVigentes(b.items);
   return items.length ? { ...b, items } : null;

@@ -173,11 +173,24 @@ export async function updatePerformance(_p: TicketState, f: FormData): Promise<T
   if (fecha && !starts_at) return { ok: false, message: "Revisa la fecha y hora." };
   const on_sale = f.get("on_sale") === "on";
   if (on_sale && !starts_at) return { ok: false, message: "Una función sin fecha no puede estar en venta." };
-  // Preventa del Club Fan (0076): hasta esa fecha solo los socios pueden comprar.
-  const preventaTxt = String(f.get("preventa_hasta") ?? "");
-  const preventa_hasta = preventaTxt ? localMxToIso(preventaTxt) : null;
-  if (preventaTxt && !preventa_hasta) return { ok: false, message: "Revisa la fecha de la preventa." };
+  // Preventa del Club Fan (0076; 0118 con inicio): entre inicio y fin solo los socios; antes del inicio nadie.
+  // "Usar las fechas de la obra" la deja siguiendo a la obra (y la obra se las pone).
+  const deObra = f.get("preventa_obra") === "on";
+  const fecha2 = (k: string) => { const t = String(f.get(k) ?? ""); return { t, iso: t ? localMxToIso(t) : null }; };
+  const h = fecha2("preventa_hasta");
+  const d = fecha2("preventa_desde");
+  if ((h.t && !h.iso) || (d.t && !d.iso)) return { ok: false, message: "Revisa las fechas de la preventa." };
+  let preventa_hasta = h.iso;
+  let preventa_desde = d.iso;
+  const supabase = await createClient();
+  if (deObra) {
+    const { data: o } = await supabase.from("productions").select("preventa_desde, preventa_hasta").eq("id", pid).maybeSingle();
+    preventa_desde = (o?.preventa_desde as string | null) ?? null;
+    preventa_hasta = (o?.preventa_hasta as string | null) ?? null;
+    if (preventa_hasta && starts_at && preventa_hasta >= starts_at) { preventa_desde = null; preventa_hasta = null; }
+  }
   if (preventa_hasta && starts_at && preventa_hasta >= starts_at) return { ok: false, message: "La preventa debe terminar antes de la función." };
+  if (preventa_desde && preventa_hasta && preventa_desde >= preventa_hasta) return { ok: false, message: "El inicio de la preventa debe ser antes del fin." };
   const prices = [...f.entries()]
     .filter(([k, v]) => k.startsWith("precio_") && String(v).trim() !== "")
     .map(([k, v]) => {
@@ -185,23 +198,53 @@ export async function updatePerformance(_p: TicketState, f: FormData): Promise<T
       const cupo = String(f.get(`cupo_${cat}`) ?? "").trim();
       return { performance_id: id, price_category_id: cat, price: Number(v), ...(f.has(`cupo_${cat}`) && { cupo: cupo === "" ? null : Number(cupo) }) };
     });
+  // 0118: un precio distinto al de la zona queda como "propio" (Poner en todas las funciones no lo cambia).
+  const [{ data: antes }, { data: base }] = await Promise.all([
+    supabase.from("performance_price_categories").select("price_category_id, price, propio").eq("performance_id", id),
+    supabase.from("price_categories").select("id, precio_base").eq("production_id", pid),
+  ]);
+  const previo = new Map(((antes ?? []) as { price_category_id: string; price: number; propio: boolean }[]).map((r) => [r.price_category_id, r]));
+  const bases = new Map(((base ?? []) as { id: string; precio_base: number | null }[]).map((r) => [r.id, r.precio_base == null ? null : Number(r.precio_base)]));
   if (prices.some((p) => Number.isNaN(p.price))) return { ok: false, message: "Revisa los precios." };
   if (prices.some((p) => p.price < 0)) return { ok: false, message: "Los precios no pueden ser negativos." };
   if (prices.some((p) => "cupo" in p && p.cupo != null && (!Number.isInteger(p.cupo) || p.cupo < 0))) return { ok: false, message: "El cupo debe ser un número entero." };
-  const supabase = await createClient();
   if (prices.length) {
-    const { error } = await supabase.from("performance_price_categories").upsert(prices, { onConflict: "performance_id,price_category_id" });
+    const conPropio = prices.map((x) => {
+      const b = bases.get(x.price_category_id);
+      const ant = previo.get(x.price_category_id);
+      const propio = b != null ? x.price !== b : !!ant && (ant.propio || Number(ant.price) !== x.price);
+      return { ...x, propio };
+    });
+    const { error } = await supabase.from("performance_price_categories").upsert(conPropio, { onConflict: "performance_id,price_category_id" });
     if (error) return { ok: false, message: error.message };
   }
   const { error, count } = await supabase
     .from("performances")
-    .update({ starts_at, venue: String(f.get("venue") ?? "").trim() || null, on_sale, preventa_hasta }, { count: "exact" })
+    .update({ starts_at, venue: String(f.get("venue") ?? "").trim() || null, on_sale, preventa_hasta, preventa_desde, preventa_propia: !deObra }, { count: "exact" })
     .eq("id", id)
     .eq("production_id", pid);
   if (error) return { ok: false, message: error.message };
   if (!count) return { ok: false, message: "No tienes permiso para editar esta función." };
   refresh(pid);
-  return { ok: true, message: on_sale ? (preventa_hasta && new Date(preventa_hasta).getTime() > Date.now() ? "Guardado: la función está en preventa para el Club Fan." : "Guardado: la función está en venta.") : "Guardado." };
+  const ahora = Date.now();
+  return { ok: true, message: !on_sale ? "Guardado." : preventa_desde && new Date(preventa_desde).getTime() > ahora ? "Guardado: la venta abre en la fecha de inicio."
+    : preventa_hasta && new Date(preventa_hasta).getTime() > ahora ? "Guardado: la función está en preventa para el Club Fan." : "Guardado: la función está en venta." };
+}
+
+/** 0118: fechas de preventa de la obra; se ponen a las funciones que siguen a la obra. */
+export async function savePreventaObra(_p: TicketState, f: FormData): Promise<TicketState> {
+  const pid = String(f.get("pid"));
+  const leer = (k: string) => { const t = String(f.get(k) ?? ""); return { t, iso: t ? localMxToIso(t) : null }; };
+  const d = leer("desde");
+  const h = leer("hasta");
+  if ((d.t && !d.iso) || (h.t && !h.iso)) return { ok: false, message: "Revisa las fechas." };
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("obra_preventa", { pid, p_desde: d.iso, p_hasta: h.iso });
+  if (error) return { ok: false, message: mensajeError(error) };
+  refresh(pid);
+  const r = data as { funciones: number; antes_del_fin: number };
+  const extra = r.antes_del_fin ? ` ${r.antes_del_fin === 1 ? "1 función empieza" : `${r.antes_del_fin} funciones empiezan`} antes del fin de la preventa y no cambió.` : "";
+  return { ok: true, message: `Guardado en ${r.funciones === 1 ? "1 función" : `${r.funciones} funciones`}.${extra}` };
 }
 
 export async function deletePerformance(_p: TicketState, f: FormData): Promise<TicketState> {
@@ -264,6 +307,39 @@ export async function saveDiscount(_p: TicketState, f: FormData): Promise<Ticket
   if (error) return { ok: false, message: error.message };
   refresh(pid);
   return { ok: true, message: "Código guardado." };
+}
+
+/** 0118: promo automática (sin código) para funciones y zonas elegidas. */
+export async function savePromo(_p: TicketState, f: FormData): Promise<TicketState> {
+  const pid = String(f.get("pid"));
+  const desde = String(f.get("desde") ?? "");
+  const hasta = String(f.get("hasta") ?? "");
+  const percent = Number(String(f.get("percent") ?? "").trim());
+  if (!Number.isFinite(percent)) return { ok: false, message: "Revisa el porcentaje." };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("admin_save_promo", {
+    target_id: String(f.get("id") ?? "") || null,
+    pid,
+    p_nombre: String(f.get("nombre") ?? ""),
+    p_percent: percent,
+    p_desde: desde ? localMxToIso(desde) : null,
+    p_hasta: hasta ? localMxToIso(hasta) : null,
+    p_activa: f.get("activo") === "on",
+    p_funciones: f.getAll("funcion").map(String),
+    p_zonas: f.getAll("zona").map(String),
+  });
+  if (error) return { ok: false, message: mensajeError(error) };
+  refresh(pid);
+  return { ok: true, message: "Promo guardada. Ya se aplica sola en la compra y en taquilla." };
+}
+
+export async function deletePromo(_p: TicketState, f: FormData): Promise<TicketState> {
+  const pid = String(f.get("pid"));
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("admin_delete_promo", { target_id: String(f.get("id")) });
+  if (error) return { ok: false, message: mensajeError(error) };
+  refresh(pid);
+  return { ok: true, message: "Promo borrada. Los boletos ya vendidos conservan su precio." };
 }
 
 export async function deleteDiscount(_p: TicketState, f: FormData): Promise<TicketState> {
@@ -452,7 +528,11 @@ export async function precioZona(pid: string, zid: string, precio: number): Prom
   if (error) return { ok: false, message: mensajeError(error) };
   refresh(pid);
   const n = Number(data ?? 0);
-  return { ok: true, message: n ? `Precio ${formatMoney(precio)} puesto en ${n} ${n === 1 ? "función" : "funciones"}. Las funciones nuevas también lo toman.` : `Precio ${formatMoney(precio)} guardado. Aún no hay funciones próximas; las nuevas lo toman.` };
+  // 0118: las funciones con precio propio no cambian; se dice cuántas.
+  const { count: propias } = await supabase.from("performance_price_categories").select("performance_id, performances!inner(starts_at)", { count: "exact", head: true })
+    .eq("price_category_id", zid).eq("propio", true).gt("performances.starts_at", new Date().toISOString());
+  const nota = propias ? ` ${propias === 1 ? "1 función tiene" : `${propias} funciones tienen`} precio propio y no cambió.` : "";
+  return { ok: true, message: (n ? `Precio ${formatMoney(precio)} puesto en ${n} ${n === 1 ? "función" : "funciones"}. Las funciones nuevas también lo toman.` : `Precio ${formatMoney(precio)} guardado. Las funciones nuevas lo toman.`) + nota };
 }
 
 export async function borrarZona(pid: string, zid: string, destino: string | null): Promise<{ ok: boolean; message: string }> {

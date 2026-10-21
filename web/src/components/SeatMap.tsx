@@ -6,7 +6,7 @@ import { clampSeat, formatMoney, groupSeatsByRow, seatSize, ZONE_COLORS, type Ma
 import type { Forma } from "@/lib/mapa-libre";
 import { MapaPlano } from "@/components/MapaPlano";
 
-export type ZonePrice = { categoryId: string; price: number; nombre: string; color?: string | null; orden?: number };
+export type ZonePrice = { categoryId: string; price: number; nombre: string; color?: string | null; orden?: number; /** 0118: precio sin la promo (se muestra tachado). */ antes?: number };
 
 // Mapa de asientos (mismo dibujo para la compra en línea y la taquilla del panel).
 // Solo pinta; quién puede comprar y qué está ocupado lo decide la base.
@@ -50,7 +50,7 @@ export function SeatMap({
       {prices.slice().sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0) || b.price - a.price).map((z) => (
         <li key={z.categoryId} className="flex items-center gap-2 rounded-full bg-telon px-3 py-1.5">
           <span aria-hidden="true" className="h-3 w-3 rounded-full" style={{ background: colorByCat.get(z.categoryId) }} />
-          {z.nombre} · {formatMoney(z.price).replace(" MXN", "")}
+          {z.nombre} · {z.antes != null && <s className="opacity-60">{formatMoney(z.antes).replace(" MXN", "")}</s>} {formatMoney(z.price).replace(" MXN", "")}
         </li>
       ))}
       <li className="flex items-center gap-2 rounded-full bg-telon px-3 py-1.5"><span aria-hidden="true" className="h-3 w-3 rounded-full bg-[#3a3446]" /> Ocupado</li>
@@ -84,7 +84,7 @@ export function SeatMap({
         {prices.slice().sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0) || b.price - a.price).map((z) => (
           <li key={z.categoryId} className="flex items-center gap-2 rounded-full bg-telon px-3 py-1.5">
             <span aria-hidden="true" className="h-3 w-3 rounded-full" style={{ background: colorByCat.get(z.categoryId) }} />
-            {z.nombre} · {formatMoney(z.price).replace(" MXN", "")}
+            {z.nombre} · {z.antes != null && <s className="opacity-60">{formatMoney(z.antes).replace(" MXN", "")}</s>} {formatMoney(z.price).replace(" MXN", "")}
           </li>
         ))}
         <li className="flex items-center gap-2 rounded-full bg-telon px-3 py-1.5"><span aria-hidden="true" className="h-3 w-3 rounded-full bg-[#3a3446]" /> Ocupado</li>

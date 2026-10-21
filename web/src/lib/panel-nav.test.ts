@@ -197,10 +197,10 @@ describe("pestañas agrupadas de la obra (0085)", () => {
 describe("Casa DARF (0102)", () => {
   const base = { isDirector: false, byProduction: {} as Record<string, string[]> };
   const subs = (a: Parameters<typeof panelMenu>[0], id: string) => panelMenu(a).find((s) => s.id === id)?.subs.map((x) => x.href) ?? [];
-  it("Comunicación ve sitio, DARFY, contacto y eventos DARF; no reportes ni Casa DARF", () => {
+  it("Comunicación ve sitio, Difusión, DARFY, contacto y eventos DARF; no reportes ni Casa DARF", () => {
     const a = { ...base, casa: ["casa.sitio", "casa.eventos", "casa.club", "casa.contacto"] };
     expect(hasAnyAccess(a)).toBe(true);
-    expect(subs(a, "ajustes")).toEqual(["/panel/ajustes/sitio", "/panel/ajustes/club", "/panel/ajustes/darfy"]);
+    expect(subs(a, "ajustes")).toEqual(["/panel/ajustes/sitio", "/panel/ajustes/club", "/panel/ajustes/difusion", "/panel/ajustes/darfy"]);
     expect(subs(a, "personas")).toEqual(["/panel/contacto"]);
     expect(panelMenu(a).some((s) => s.id === "reportes")).toBe(false);
     expect(hasEventoAccess(a)).toBe(true);

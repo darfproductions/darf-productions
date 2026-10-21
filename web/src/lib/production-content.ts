@@ -1,5 +1,6 @@
 import { perfilUrl, assetUrl } from "@/lib/productions";
 import { createClient } from "@/lib/supabase/server";
+import type { Capa } from "@/lib/obra-capa-rules";
 
 // Contenido artístico de una obra (tablas de la migración 0029): sinopsis,
 // ficha, canciones, créditos con foto POR OBRA, videos y agradecimientos.
@@ -39,8 +40,9 @@ type FichaRow = {
 
 type CreditRow = { tipo: string; papel: string | null; foto_path: string | null; person_id: string; people: { nombre: string } | null };
 
-/** `conSinPublicar`: la vista previa del panel también muestra el elenco aún no publicado (0107). */
-export async function getProductionContent(id: string, conSinPublicar = false): Promise<ProductionContent> {
+/** `conSinPublicar`: la vista previa del panel también muestra el elenco aún no publicado (0107).
+ *  `capa` (0119): cambios de fans o del borrador encima de lo publicado. */
+export async function getProductionContent(id: string, conSinPublicar = false, capa: Capa = {}): Promise<ProductionContent> {
   const supabase = await createClient();
   // 0107: la página pública solo muestra el Reparto y Ensamble publicados, aunque quien la vea sea del equipo.
   let creditos = supabase.from("production_credits").select("tipo, papel, foto_path, person_id, people(nombre)").eq("production_id", id).eq("activo", true);
@@ -58,14 +60,15 @@ export async function getProductionContent(id: string, conSinPublicar = false): 
   const failed = [prod, acts, songs, credits, media, facts, thanks].find((r) => r.error);
   if (failed?.error) throw new Error(`No se pudo cargar el contenido de la obra: ${failed.error.message}`);
 
-  const p = prod.data as FichaRow | null;
+  const p = (prod.data && capa.datos ? { ...prod.data, ...capa.datos } : prod.data) as FichaRow | null;
   const songRows = songs.data ?? [];
-  const actos = (acts.data ?? []).map((a) => ({
+  let actos = (acts.data ?? []).map((a) => ({
     nombre: a.nombre as string,
     canciones: songRows.filter((s) => s.act_id === a.id).map((s) => s.titulo as string),
   }));
   const sueltas = songRows.filter((s) => !s.act_id).map((s) => s.titulo as string);
   if (sueltas.length) actos.unshift({ nombre: "", canciones: sueltas });
+  if (capa.canciones) actos = capa.canciones.actos.map((a) => ({ nombre: a.nombre ?? "", canciones: (a.canciones ?? []).filter(Boolean) }));
 
   const rows = (credits.data ?? []) as unknown as CreditRow[];
   const of = (tipo: string) => rows.filter((r) => r.tipo === tipo && r.people);
@@ -87,13 +90,13 @@ export async function getProductionContent(id: string, conSinPublicar = false): 
     { etiqueta: "Clasificación", valor: p?.clasificacion },
     { etiqueta: "Idioma", valor: p?.idioma },
     { etiqueta: "Basada en", valor: p?.basada_en },
-    ...(facts.data ?? []),
+    ...(capa.ficha ? capa.ficha.items : (facts.data ?? [])),
   ].filter((x): x is { etiqueta: string; valor: string } => !!x.valor);
 
   return {
     sinopsis: (p?.sinopsis ?? "").split(/\n\s*\n/).map((t) => t.trim()).filter(Boolean),
     actos: actos.filter((a) => a.canciones.length > 0),
-    videos: (media.data ?? []).map((m) => ({ titulo: m.titulo as string, youtube: m.youtube_id as string })),
+    videos: capa.videos ? capa.videos.items.map((m) => ({ titulo: m.titulo, youtube: m.youtube_id })) : (media.data ?? []).map((m) => ({ titulo: m.titulo as string, youtube: m.youtube_id as string })),
     reparto: of("reparto").map((r) => ({ personaje: r.papel ?? "", persona: r.people!.nombre, foto: foto(r), perfil: perfil(r) })),
     ensamble: of("ensamble").map((r) => ({ persona: r.people!.nombre, foto: foto(r), perfil: perfil(r) })),
     creativo: team("creativo"),
@@ -101,7 +104,7 @@ export async function getProductionContent(id: string, conSinPublicar = false): 
     crew: team("crew"),
     tecnico: team("tecnico"),
     staff: team("staff"),
-    agradecimientos: (thanks.data ?? []).map((t) => t.texto as string),
+    agradecimientos: capa.gracias ? capa.gracias.items : (thanks.data ?? []).map((t) => t.texto as string),
     ficha,
   };
 }
