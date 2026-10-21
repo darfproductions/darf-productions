@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clampSeat, formatMoney, groupSeatsByRow, previewDiscount, seatSize, whatsappPayUrl, whatsappPedirUrl } from "./tickets";
+import { clampSeat, formatMoney, groupSeatsByRow, previewDiscount, seatSize, whatsappApartadoUrl, whatsappPayUrl, whatsappPedirUrl } from "./tickets";
 
 describe("pago por WhatsApp", () => {
   it("sin número configurado no genera enlace (DEV)", () => {
@@ -74,9 +74,17 @@ describe("pedir boletos por WhatsApp (0120)", () => {
   it("arma el mensaje con la obra y la función", () => {
     const u = whatsappPedirUrl("525512345678", "Showman", "Sáb 24 oct, 7:00 p.m.");
     expect(u.startsWith("https://wa.me/525512345678?text=")).toBe(true);
-    expect(decodeURIComponent(u.split("text=")[1])).toContain("boletos para Showman — Función: Sáb 24 oct");
+    expect(decodeURIComponent(u.split("text=")[1])).toContain("información de Showman — Función: Sáb 24 oct");
   });
   it("sin número no hay liga", () => {
     expect(whatsappPedirUrl("", "Showman", null)).toBe("");
+  });
+});
+
+describe("apartado híbrido por WhatsApp (0120)", () => {
+  it("lleva código, lugares y total, sin pago ni boletos", () => {
+    const t = decodeURIComponent(whatsappApartadoUrl("525512345678", { prodName: "Showman", orderCode: "DARF-1", seats: ["A1", "A2"], total: 400 }).split("text=")[1]);
+    expect(t).toContain("aparté mis lugares para Showman — Código: DARF-1 — Lugares: A1, A2 — Total: $400.00 MXN");
+    expect(t).not.toMatch(/pag|boleto/i);
   });
 });

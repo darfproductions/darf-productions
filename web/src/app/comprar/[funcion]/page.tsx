@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { leerDiseno } from "@/lib/mapa-libre";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { PageHeading } from "@/components/PageHeading";
 import { PasosBarra, PasosProvider } from "@/components/PasosCompra";
 import { UnirseClub } from "@/components/fanzone/UnirseClub";
@@ -15,7 +15,7 @@ import { cleanSellerCode } from "@/lib/seller-rules";
 import { createClient } from "@/lib/supabase/server";
 import type { MapSeat } from "@/lib/tickets";
 import { generalAvailability } from "@/lib/boleteria";
-import { funcionVendible } from "@/lib/ventas-rules";
+import { funcionVendible, textosVenta } from "@/lib/ventas-rules";
 import { GeneralPicker } from "./GeneralPicker";
 import { SeatPicker, type ZonePrice } from "./SeatPicker";
 import { mensajeError } from "@/lib/errores";
@@ -25,7 +25,10 @@ import { Icono } from "@/components/Icono";
 import { env } from "@/lib/env";
 import { whatsappPedirUrl } from "@/lib/tickets";
 
-export const metadata: Metadata = { title: "Comprar boletos" };
+export async function generateMetadata({ params }: PageProps<"/comprar/[funcion]">): Promise<Metadata> {
+  const data = await getPerformanceForSale((await params).funcion);
+  return { title: textosVenta(data?.production.modo_venta).eyebrow };
+}
 
 export default async function ComprarPage({ params, searchParams }: PageProps<"/comprar/[funcion]">) {
   const { funcion } = await params;
@@ -40,6 +43,11 @@ export default async function ComprarPage({ params, searchParams }: PageProps<"/
   // 0120: funciones sin publicar no se venden en línea (ni se ven).
   if (p.funciones_publicadas === false) notFound();
   const porWhatsApp = p.modo_venta === "whatsapp";
+  // 0120: "todo por WhatsApp" no tiene pantalla de compra: directo a WhatsApp.
+  if (porWhatsApp && env.whatsapp) redirect(whatsappPedirUrl(env.whatsapp, p.nombre, formatPerformanceDate(f.starts_at)));
+  const tv = textosVenta(p.modo_venta);
+  // En híbrido no se habla de comprar: se aparta.
+  const verbo = p.modo_venta === "hibrido" ? "apartar" : "comprar";
   const modo = p.modo_venta === "hibrido" ? "hibrido" as const : "web" as const;
   const mostrarTotal = p.mostrar_total !== false;
   const vendible = funcionVendible(f, p.concluded);
@@ -91,7 +99,7 @@ export default async function ComprarPage({ params, searchParams }: PageProps<"/
 
   return (
     <main style={themeStyle(getTheme(p))} className="pb-10">
-      <PageHeading eyebrow={`Comprar boletos · ${p.nombre}`} title={prices.length === 0 && general.length > 0 ? "Elige tus boletos" : "Elige tus asientos"}>
+      <PageHeading eyebrow={`${tv.eyebrow} · ${p.nombre}`} title={modo === "hibrido" ? tv.titulo : prices.length === 0 && general.length > 0 ? "Elige tus boletos" : "Elige tus asientos"}>
         <span>{formatPerformanceDate(f.starts_at)}</span> · {f.venue ?? p.venue}
       </PageHeading>
       <div className="mx-auto max-w-[1440px] px-5 md:px-16">
@@ -111,8 +119,8 @@ export default async function ComprarPage({ params, searchParams }: PageProps<"/
           <div className="flex max-w-2xl flex-col items-start gap-4 rounded-2xl bg-telon p-8">
             <p className="text-2xl font-black uppercase tracking-[-0.02em]">{f.preventa_hasta ? <>La preventa del <span className="txt-oro">Club Fan</span> abre pronto</> : "La venta abre pronto"}</p>
             <p className="text-texto-2">
-              {f.preventa_hasta ? "Los socios del Club Fan pueden comprar" : "Puedes comprar"} desde el {abre.dia} {abre.numero} {abre.mes}, {abre.hora}.
-              {f.preventa_hasta && " Únete gratis al Club Fan para comprar antes que nadie."}
+              {f.preventa_hasta ? `Los socios del Club Fan pueden ${verbo}` : `Puedes ${verbo}`} desde el {abre.dia} {abre.numero} {abre.mes}, {abre.hora}.
+              {f.preventa_hasta && ` Únete gratis al Club Fan para ${verbo} antes que nadie.`}
             </p>
             {f.preventa_hasta && !(await getCredencial()) && (session ? <UnirseClub /> : (
               <Link href={`/entrar?next=${encodeURIComponent(`/comprar/${f.id}`)}`} className="fb fb-fz">Entra o crea tu cuenta para unirte</Link>
@@ -124,7 +132,7 @@ export default async function ComprarPage({ params, searchParams }: PageProps<"/
             {/* eslint-disable-next-line @next/next/no-img-element -- logo SVG del kit */}
             <img src="/marca/fan-zone-oro.svg" alt="DARF Fan Zone" className="h-8 w-auto" />
             <p className="text-2xl font-black uppercase tracking-[-0.02em]">Preventa para el <span className="txt-oro">Club Fan</span></p>
-            <p className="text-texto-2">Esta función está en preventa{hasta ? ` hasta el ${hasta.dia} ${hasta.numero} ${hasta.mes}, ${hasta.hora}` : ""}. Únete gratis al Club Fan y compra antes que nadie; después se abre para todos.</p>
+            <p className="text-texto-2">Esta función está en preventa{hasta ? ` hasta el ${hasta.dia} ${hasta.numero} ${hasta.mes}, ${hasta.hora}` : ""}. Únete gratis al Club Fan y {verbo === "apartar" ? "aparta" : "compra"} antes que nadie; después se abre para todos.</p>
             {session ? <UnirseClub /> : (
               <Link href={`/entrar?next=${encodeURIComponent(`/comprar/${f.id}`)}`} className="fb fb-fz">Entra o crea tu cuenta para unirte</Link>
             )}
@@ -137,7 +145,7 @@ export default async function ComprarPage({ params, searchParams }: PageProps<"/
         ) : (
           <PasosProvider>
           <div className="flex flex-col gap-10">
-          <PasosBarra />
+          <PasosBarra pasos={tv.pasos} />
           {promo && mostrarTotal && <p className="rounded-2xl border border-obra-acento/40 bg-telon p-4 font-semibold">Promo {promo.nombre}: {promo.percent}% de descuento ya aplicado{[...prices, ...general].some((z) => !("antes" in z) || z.antes == null) ? " en algunas zonas" : ""}.</p>}
           {general.length > 0 && (
             <GeneralPicker performanceId={f.id} productionName={p.nombre} zones={general} modo={modo} mostrarTotal={mostrarTotal}

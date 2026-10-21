@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { esMetodo, estadoOrden, funcionVendible, mensajeOrden, metodoLabel, puedeExtender, textoBusqueda } from "./ventas-rules";
+import { esMetodo, estadoOrden, funcionVendible, mensajeOrden, metodoLabel, puedeExtender, textoBusqueda, textosVenta } from "./ventas-rules";
 
 describe("estadoOrden", () => {
   it("nombra cada caso", () => {
@@ -54,5 +54,22 @@ describe("mensajes de WhatsApp de una orden", () => {
   });
   it("búsqueda limpia", () => {
     expect(textoBusqueda(" Ana,(López)* ")).toBe("Ana López");
+  });
+});
+
+describe("textos según el esquema de venta (0120)", () => {
+  it("solo por la página: comprar y 4 pasos", () => {
+    const t = textosVenta("web");
+    expect(t.cta).toBe("Comprar boletos");
+    expect(t.pasos).toHaveLength(4);
+  });
+  it("híbrido: aparta tu lugar, 2 pasos y nada de pago, boletos ni compra", () => {
+    const t = textosVenta("hibrido");
+    expect(t.cta).toBe("Aparta tu lugar");
+    expect(t.pasos).toEqual(["Elige tu lugar", "Sigue en WhatsApp"]);
+    expect(JSON.stringify(t)).not.toMatch(/pag|boleto|compra/i);
+  });
+  it("todo por WhatsApp: más información", () => {
+    expect(textosVenta("whatsapp").cta).toBe("Más información por WhatsApp");
   });
 });

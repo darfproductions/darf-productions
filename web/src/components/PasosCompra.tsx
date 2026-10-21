@@ -46,11 +46,14 @@ export function usePaso(paso: number) {
   useEffect(() => () => ctx?.quitar(id), [ctx, id]);
 }
 
-export function PasosBarra() {
-  const actual = useContext(ActualCtx);
+/** `pasos` (0120): en híbrido solo dos ("Elige tu lugar", "Sigue en WhatsApp"); los selectores siguen avisando
+ *  2–4 y aquí se recorren para que el primero sea "elegir". */
+export function PasosBarra({ pasos = PASOS }: { pasos?: string[] }) {
+  const actualCompra = useContext(ActualCtx);
+  const actual = pasos.length === PASOS.length ? actualCompra : actualCompra >= 4 ? 2 : 1;
   return (
-    <ol aria-label="Pasos de la compra" className="grid grid-cols-4 gap-2">
-      {PASOS.map((nombre, i) => {
+    <ol aria-label="Pasos" className={`grid gap-2 ${pasos.length === 2 ? "grid-cols-2" : "grid-cols-4"}`}>
+      {pasos.map((nombre, i) => {
         const n = i + 1;
         const hecho = n < actual;
         const aqui = n === actual;

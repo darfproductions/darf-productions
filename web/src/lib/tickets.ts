@@ -32,10 +32,18 @@ export function whatsappPayUrl(
   return `https://wa.me/${phoneNumber}?text=${encodeURIComponent(msg)}`;
 }
 
+/** 0120: híbrido: ya apartó y sigue en WhatsApp (sin hablar de pago ni boletos; el total sí va). */
+export function whatsappApartadoUrl(phoneNumber: string, o: { prodName: string; orderCode: string; seats: string[]; total: number; buyerPhone?: string | null }): string {
+  if (!phoneNumber) return "";
+  const msg = `Hola, aparté mis lugares para ${o.prodName} — Código: ${o.orderCode} — Lugares: ${o.seats.join(", ")} — Total: ${formatMoney(o.total)}` +
+    (o.buyerPhone ? ` — Teléfono: ${o.buyerPhone}` : "") + ".";
+  return `https://wa.me/${phoneNumber}?text=${encodeURIComponent(msg)}`;
+}
+
 /** 0120: obras que se venden todo por WhatsApp: mensaje para pedir boletos de una función. Vacío si no hay número. */
 export function whatsappPedirUrl(phoneNumber: string, prodName: string, funcion: string | null): string {
   if (!phoneNumber) return "";
-  const msg = `Hola, quiero boletos para ${prodName}${funcion ? ` — Función: ${funcion}` : ""}. ¿Me ayudan a apartar mis lugares?`;
+  const msg = `Hola, me gustaría más información de ${prodName}${funcion ? ` — Función: ${funcion}` : ""}.`;
   return `https://wa.me/${phoneNumber}?text=${encodeURIComponent(msg)}`;
 }
 

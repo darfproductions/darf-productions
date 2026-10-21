@@ -17,6 +17,7 @@ const field = "rounded-lg bg-sala px-3 py-3 font-normal";
 export function GeneralPicker(props: { performanceId: string; productionName: string; zones: GeneralZone[]; defaultPhone: string; defaultSeller?: string; sinSesion?: boolean;
   /** 0120: 'web' (checkout) o 'hibrido' (directo a WhatsApp); y si se ven precios y total. */ modo?: "web" | "hibrido"; mostrarTotal?: boolean }) {
   const conTotal = props.mostrarTotal !== false;
+  const hibrido = props.modo === "hibrido";
   const [zone, setZone] = useState(props.zones.find((z) => z.libres > 0)?.price_category_id ?? "");
   const [cantidad, setCantidad] = useState(1);
   const [phone, setPhone] = useState(props.defaultPhone);
@@ -39,7 +40,7 @@ export function GeneralPicker(props: { performanceId: string; productionName: st
   function apartar() {
     setError("");
     start(async () => {
-      const r = await placeGeneralOrder({ performanceId: props.performanceId, productionName: props.productionName, zoneId: zone, cantidad, phone, sellerCode: seller, discountCode: codigo });
+      const r = await placeGeneralOrder({ performanceId: props.performanceId, productionName: props.productionName, zoneId: zone, cantidad, phone, sellerCode: seller, discountCode: codigo, hibrido });
       if (r.ok) setResult(r);
       else setError(r.message);
     });
@@ -52,7 +53,7 @@ export function GeneralPicker(props: { performanceId: string; productionName: st
     <div className="flex flex-col gap-4 rounded-2xl bg-telon p-6">
       <div>
         <h2 className="text-lg font-bold">Entrada general</h2>
-        <p className="text-sm text-texto-2">Sin asiento numerado: entras a la zona y te acomodas al llegar. Máximo {MAX} por compra.</p>
+        <p className="text-sm text-texto-2">Sin asiento numerado: entras a la zona y te acomodas al llegar. Máximo {MAX} {hibrido ? "por persona" : "por compra"}.</p>
       </div>
       <ul className="grid gap-2 sm:grid-cols-2">
         {props.zones.map((x) => (
@@ -100,7 +101,7 @@ export function GeneralPicker(props: { performanceId: string; productionName: st
           ) : (
           <button type="button" onClick={apartar} disabled={pending || !phone.trim()}
             className="boton-compra self-start rounded-full px-8 py-4 text-sm font-bold uppercase tracking-[0.1em] disabled:opacity-50">
-            {pending ? "Apartando…" : props.modo === "hibrido" ? "Apartar y seguir en WhatsApp" : `Apartar ${cantidad} ${cantidad === 1 ? "lugar" : "lugares"}`}
+            {pending ? "Apartando…" : hibrido ? "Siguiente" : `Apartar ${cantidad} ${cantidad === 1 ? "lugar" : "lugares"}`}
           </button>
           )}
         </>
