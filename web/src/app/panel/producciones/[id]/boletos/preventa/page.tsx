@@ -13,6 +13,8 @@ import { createClient } from "@/lib/supabase/server";
 import { formatMoney } from "@/lib/tickets";
 import { crearCodigoPreventa, estadoCodigoPreventa } from "../actions";
 import { CompartirWhatsApp } from "./CompartirWhatsApp";
+import { Icono } from "@/components/Icono";
+import { TAMANO_PREVENTA, type FormatoPreventa } from "@/lib/difusion-preventa-rules";
 
 export const metadata: Metadata = { title: "Preventa privada" };
 
@@ -65,6 +67,16 @@ export default async function PreventaPrivadaPage({ params }: PageProps<"/panel/
               </dl>
             </div>
             <p className="break-all text-xs text-texto-3">Liga: {path}</p>
+            {/* Diseño para redes con el póster, el código, la liga y su QR. */}
+            {c.activo && (
+              <div className="flex flex-wrap items-center gap-2 text-xs">
+                <span className="font-semibold text-texto-2">Diseño para redes:</span>
+                {(Object.entries(TAMANO_PREVENTA) as [FormatoPreventa, { label: string }][]).map(([f, t]) => (
+                  <a key={f} href={`/panel/producciones/${id}/boletos/preventa/${c.codigo}/diseno?f=${f}&descargar=1`} className={ghost}>{t.label} <Icono nombre="flecha-abajo" /></a>
+                ))}
+                <a href={`/panel/producciones/${id}/boletos/preventa/${c.codigo}/diseno?f=historia`} target="_blank" rel="noopener" className="font-bold text-violeta-claro">Ver</a>
+              </div>
+            )}
             <div className="flex flex-wrap gap-2">
               <CopyLink path={path} />
               {c.activo && <CompartirWhatsApp path={path} texto={texto} />}

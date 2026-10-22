@@ -5,6 +5,17 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-10-22 — Diseños de preventa para redes (Club Fan y códigos)
+
+- Panel → Público → Difusión: sección "Preventa Club Fan" con tres diseños ("¡Ya empezó!" hasta tal fecha,
+  "¡Es mañana!" con la hora en que abre y "Del … al …"), el sugerido marcado como "Hoy toca". Usan las fechas de la
+  obra o de la función elegida. El diseño anterior "Preventa Club Fan" sale de la lista general.
+- Diseño por código de preventa privada (0123): "Preventa privada para {nombre}", fechas, el código, la liga y un
+  QR que lleva a /preventa/CODIGO. En Difusión y en Boletos → Preventa privada.
+- Tres tamaños: cuadrado 1080×1080, post 3:4 (1080×1440) e historia 9:16 (1080×1920). Fondo: el póster limpio
+  de la obra (3:4 o 9:16; si falta, la imagen de ambiente) con degradado; arriba el logo de DARF o el de la Fan Zone
+  y el de la obra. `lib/difusion-preventa-rules.ts` (textos, con pruebas) y `lib/difusion-preventa.tsx` (dibujo).
+
 ## 2026-10-22 — Preventa privada con código (migración 0123)
 
 - Tercera etapa de venta, antes de las otras: privada (solo con código) → Club Fan (socios y quien tiene código) →
