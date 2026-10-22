@@ -8,8 +8,9 @@ import type { DatosExtra } from "@/lib/difusion-extra-datos";
 import { cargarFuentes } from "@/lib/medalla";
 import { comoPng } from "@/lib/tarjeta-elenco";
 
-// Más diseños de Difusión, con el mismo marco que los de preventa: póster de fondo oscurecido, logo de DARF y de la
-// obra arriba. Cada diseño pone su contenido en el cuerpo.
+// Más diseños de Difusión, con el mismo marco que los de preventa: póster de fondo oscurecido y tres franjas que
+// ocupan todo el alto: logos arriba, título + contenido al centro (toma el espacio que sobra y se centra) y el pie
+// abajo con margen fijo. Así hay aire entre las partes sin huecos grandes.
 
 export type DatosImagenExtra = {
   diseno: DisenoExtra;
@@ -34,47 +35,64 @@ export type DatosImagenExtra = {
 export async function extraPng(d: DatosImagenExtra): Promise<Buffer> {
   const { w, h } = TAMANO_PREVENTA[d.formato];
   const cuadrado = d.formato === "cuadrado", historia = d.formato === "historia";
+  /** Valor según el formato: cuadrado, post 3:4, historia 9:16. */
   const s = (c: number, p: number, hi: number) => (cuadrado ? c : historia ? hi : p);
   const acento = d.colores.acento;
   const invitacion = d.diseno === "invitacion";
+  const conQr = d.diseno === "invitacion" || d.diseno === "comprar" || d.diseno === "calendario";
   const [fondo, logoObra, marca, qr] = await Promise.all([
     comoPng(d.fondoUrl, w),
-    comoPng(d.logoUrl, invitacion ? 900 : 520),
+    comoPng(d.logoUrl, invitacion ? 960 : 520),
     comoPng("/marca/darf-horizontal-blanco.svg", 520),
-    d.diseno === "mapa" || d.diseno === "incluye" ? Promise.resolve(null) : QRCode.toDataURL(d.url, { margin: 1, width: 360, color: { dark: "#0b0910", light: "#ffffff" } }),
+    conQr ? QRCode.toDataURL(d.url, { margin: 1, width: 360, color: { dark: "#0b0910", light: "#ffffff" } }) : Promise.resolve(null),
   ]);
-  const arriba = s(40, 50, 80);
-  const cuerpoTop = invitacion ? 0 : s(190, 220, 300);
-  const titulo = (t: string, tam = s(70, 84, 96)) => (
+
+  // Medidas comunes.
+  const lado = 60;
+  const margenArriba = s(40, 52, 84);
+  const margenAbajo = s(44, 60, 96);
+  const separacion = s(26, 36, 50);
+  const altoLogos = s(130, 150, 190);
+
+  const titulo = (t: string, tam: number) => (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-      {t.split("\n").map((r) => <span key={r} style={{ fontSize: tam, fontWeight: 900, lineHeight: 1, textAlign: "center" }}>{r.toUpperCase()}</span>)}
+      {t.split("\n").map((r) => <span key={r} style={{ fontSize: tam, fontWeight: 900, lineHeight: 1.02, textAlign: "center" }}>{r.toUpperCase()}</span>)}
     </div>
   );
-  const pie = (
-    <div style={{ display: "flex", alignItems: "center", gap: 24, marginTop: s(18, 26, 40) }}>
-      {qr && <img src={qr} width={s(150, 180, 220)} height={s(150, 180, 220)} style={{ borderRadius: 14 }} alt="" />}
+  const subtitulo = (t: string) => <span style={{ marginTop: s(8, 12, 16), fontSize: s(26, 31, 38), fontWeight: 800, opacity: 0.88, textAlign: "center" }}>{t}</span>;
+  const qrLado = s(150, 184, 230);
+  const pieInfo = (
+    <div style={{ display: "flex", alignItems: "center", gap: s(22, 28, 34) }}>
+      {qr && <img src={qr} width={qrLado} height={qrLado} style={{ width: qrLado, height: qrLado, borderRadius: 14 }} alt="" />}
       <div style={{ display: "flex", flexDirection: "column" }}>
-        <span style={{ fontSize: s(22, 25, 30), fontWeight: 800, letterSpacing: 4, color: acento }}>MÁS INFORMACIÓN</span>
-        {d.whatsapp && <span style={{ marginTop: 6, fontSize: s(30, 34, 40), fontWeight: 900 }}>WhatsApp {d.whatsapp}</span>}
-        <span style={{ marginTop: 2, fontSize: s(24, 27, 32), fontWeight: 800 }}>{d.liga}</span>
+        <span style={{ fontSize: s(21, 24, 29), fontWeight: 800, letterSpacing: 4, color: acento }}>MÁS INFORMACIÓN</span>
+        {d.whatsapp && <span style={{ marginTop: s(6, 8, 10), fontSize: s(30, 34, 42), fontWeight: 900 }}>WhatsApp {d.whatsapp}</span>}
+        <span style={{ marginTop: 2, fontSize: s(23, 26, 31), fontWeight: 800 }}>{d.liga}</span>
       </div>
     </div>
   );
+  const pieLiga = <span style={{ fontSize: s(25, 29, 34), fontWeight: 800, textAlign: "center" }}>Elige tu lugar en {d.liga}</span>;
 
-  let cuerpo: React.ReactNode = null;
+  let centro: React.ReactNode = null;
+  let pie: React.ReactNode = null;
+
   if (d.diseno === "mapa" && d.extra) {
-    const mw = w - 120, mh = s(520, 760, 1060);
-    const m0 = puntosMapa(d.extra.asientos, d.extra.formas, mw, mh);
-    // La caja mide lo que mide el mapa (sin espacio vacío abajo).
-    const alto = m0.puntos.length ? Math.min(mh, Math.max(...m0.puntos.map((p) => p.y)) + m0.radio + 24) : Math.round(mh * 0.4);
-    const m = m0;
-    const color = new Map(d.extra.zonas.map((z) => [z.id, z.color]));
+    // El mapa crece para llenar el centro: alto disponible menos título, subtítulo y píldoras.
     const zonas = d.extra.zonas.filter((z) => z.general || d.extra!.asientos.some((a) => a.zona === z.id));
-    cuerpo = (
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: w }}>
-        {titulo("Zonas y precios", s(56, 70, 84))}
-        <span style={{ marginTop: 6, fontSize: s(26, 30, 36), fontWeight: 800, opacity: 0.85 }}>{d.fecha}{d.hora ? ` · ${d.hora}` : ""}</span>
-        <div style={{ position: "relative", marginTop: s(14, 24, 36), width: mw, height: alto, display: "flex", borderRadius: 24, background: "rgba(11,9,16,0.55)" }}>
+    const filasPildoras = Math.ceil(zonas.length / (cuadrado ? 3 : 2));
+    const disponible = h - margenArriba - altoLogos - margenAbajo - s(40, 46, 52) - separacion * 3 - s(70, 84, 100) - s(40, 46, 56) - filasPildoras * s(62, 70, 80);
+    const mw = w - lado * 2, mh = Math.max(260, disponible);
+    const m = puntosMapa(d.extra.asientos, d.extra.formas, mw, mh);
+    // La caja mide lo que mide el mapa (sin espacio vacío abajo).
+    const alto = m.puntos.length ? Math.min(mh, Math.max(...m.puntos.map((p) => p.y)) + m.radio + 28) : Math.round(mh * 0.4);
+    const color = new Map(d.extra.zonas.map((z) => [z.id, z.color]));
+    centro = (
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: separacion, width: w }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+          {titulo("Zonas y precios", s(60, 72, 88))}
+          {subtitulo(`${d.fecha}${d.hora ? ` · ${d.hora}` : ""}`)}
+        </div>
+        <div style={{ position: "relative", width: mw, height: alto, display: "flex", borderRadius: 26, background: "rgba(11,9,16,0.55)" }}>
           {m.escenarioArriba && m.puntos.length > 0 && (
             <div style={{ position: "absolute", left: mw * 0.2, top: 14, width: mw * 0.6, height: s(44, 52, 64), display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 10, background: "rgba(255,255,255,0.14)" }}>
               <span style={{ fontSize: s(20, 22, 26), fontWeight: 900, letterSpacing: 8 }}>ESCENARIO</span>
@@ -90,99 +108,107 @@ export async function extraPng(d: DatosImagenExtra): Promise<Buffer> {
           ))}
           {m.puntos.length === 0 && <span style={{ margin: "auto", fontSize: 30, fontWeight: 800, opacity: 0.7 }}>Entrada general</span>}
         </div>
-        <div style={{ marginTop: s(16, 22, 34), display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 14, width: w - 100 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: s(12, 14, 18), width: w - lado * 2 }}>
           {zonas.map((z) => (
-            <div key={z.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 20px", borderRadius: 999, background: "rgba(11,9,16,0.7)", border: `3px solid ${z.color}` }}>
-              <div style={{ width: 24, height: 24, borderRadius: 12, background: z.color }} />
-              <span style={{ fontSize: s(26, 30, 34), fontWeight: 900 }}>{z.nombre}{z.general ? " (general)" : ""}</span>
-              {d.extra!.mostrarPrecios && z.precio != null && <span style={{ fontSize: s(26, 30, 34), fontWeight: 900, color: acento }}>{precioCorto(z.precio)}</span>}
+            <div key={z.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: `${s(9, 11, 14)}px ${s(18, 22, 26)}px`, borderRadius: 999, background: "rgba(11,9,16,0.75)", border: `3px solid ${z.color}` }}>
+              <div style={{ width: s(22, 24, 28), height: s(22, 24, 28), borderRadius: 999, background: z.color }} />
+              <span style={{ fontSize: s(25, 29, 35), fontWeight: 900 }}>{z.nombre}{z.general ? " (general)" : ""}</span>
+              {d.extra!.mostrarPrecios && z.precio != null && <span style={{ fontSize: s(25, 29, 35), fontWeight: 900, color: acento }}>{precioCorto(z.precio)}</span>}
             </div>
           ))}
         </div>
-        <span style={{ marginTop: s(14, 20, 30), fontSize: s(24, 27, 32), fontWeight: 800 }}>Elige tu lugar en {d.liga}</span>
       </div>
     );
+    pie = pieLiga;
   } else if (d.diseno === "comprar" && d.pasos) {
     const dos = d.pasos.length > 1;
-    cuerpo = (
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: w }}>
-        {titulo("¿Cómo compro\nmis boletos?", s(58, 72, 86))}
-        <div style={{ marginTop: s(18, 30, 44), display: "flex", flexDirection: "column", gap: s(14, 22, 32), width: w - 120 }}>
+    centro = (
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: separacion, width: w }}>
+        {titulo("¿Cómo aseguro\nmi lugar?", s(62, 76, 92))}
+        <div style={{ display: "flex", flexDirection: "column", gap: s(16, 24, 34), width: w - lado * 2 }}>
           {d.pasos.map((o, i) => (
-            <div key={o.titulo} style={{ display: "flex", flexDirection: "column", padding: s(18, 26, 34), borderRadius: 26, background: "rgba(11,9,16,0.72)", border: `3px solid ${acento}` }}>
-              <span style={{ fontSize: s(22, 26, 30), fontWeight: 900, letterSpacing: 5, color: acento }}>{dos ? `OPCIÓN ${i + 1} · ` : ""}{o.titulo.toUpperCase()}</span>
+            <div key={o.titulo} style={{ display: "flex", flexDirection: "column", padding: `${s(20, 28, 38)}px ${s(24, 30, 36)}px`, borderRadius: 28, background: "rgba(11,9,16,0.75)", border: `3px solid ${acento}` }}>
+              <span style={{ fontSize: s(22, 26, 31), fontWeight: 900, letterSpacing: 5, color: acento }}>{dos ? `OPCIÓN ${i + 1} · ` : ""}{o.titulo.toUpperCase()}</span>
               {o.pasos.map((p, k) => (
-                <div key={k} style={{ display: "flex", alignItems: "center", gap: 16, marginTop: s(8, 12, 16) }}>
-                  <div style={{ width: s(40, 46, 54), height: s(40, 46, 54), borderRadius: 999, background: acento, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    <span style={{ fontSize: s(22, 26, 30), fontWeight: 900, color: "#0b0910" }}>{k + 1}</span>
+                <div key={k} style={{ display: "flex", alignItems: "center", gap: s(14, 18, 22), marginTop: s(10, 16, 22) }}>
+                  <div style={{ width: s(40, 48, 58), height: s(40, 48, 58), borderRadius: 999, background: acento, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <span style={{ fontSize: s(22, 27, 32), fontWeight: 900, color: "#0b0910" }}>{k + 1}</span>
                   </div>
-                  <span style={{ fontSize: s(26, 31, 36), fontWeight: 800 }}>{p}</span>
+                  <span style={{ fontSize: s(26, 31, 38), fontWeight: 800 }}>{p}</span>
                 </div>
               ))}
             </div>
           ))}
         </div>
-        {pie}
       </div>
     );
+    pie = pieInfo;
   } else if (d.diseno === "calendario" && d.calendario) {
-    cuerpo = (
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: w }}>
-        {titulo("Funciones", s(70, 86, 100))}
-        {d.lugar && <span style={{ marginTop: 6, fontSize: s(26, 30, 36), fontWeight: 800, opacity: 0.85 }}>{d.lugar}</span>}
-        <div style={{ marginTop: s(16, 26, 40), display: "flex", flexDirection: "column", width: w - 140, borderRadius: 26, background: "rgba(11,9,16,0.72)", padding: `${s(6, 10, 16)}px ${s(24, 30, 36)}px` }}>
+    centro = (
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: separacion, width: w }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+          {titulo("Funciones", s(76, 92, 110))}
+          {d.lugar && subtitulo(d.lugar)}
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", width: w - lado * 2 - 20, borderRadius: 28, background: "rgba(11,9,16,0.75)", padding: `${s(8, 14, 20)}px ${s(28, 34, 40)}px` }}>
           {d.calendario.renglones.map((r, i) => (
-            <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: `${s(10, 14, 20)}px 0`, borderBottom: i < d.calendario!.renglones.length - 1 ? "2px solid rgba(255,255,255,0.15)" : "none" }}>
-              <span style={{ fontSize: s(30, 34, 40), fontWeight: 900 }}>{r.fecha}</span>
-              <span style={{ fontSize: s(30, 34, 40), fontWeight: 900, color: acento }}>{r.hora}</span>
+            <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: `${s(12, 20, 28)}px 0`, borderBottom: i < d.calendario!.renglones.length - 1 ? "2px solid rgba(255,255,255,0.15)" : "none" }}>
+              <span style={{ fontSize: s(31, 37, 44), fontWeight: 900 }}>{r.fecha}</span>
+              <span style={{ fontSize: s(31, 37, 44), fontWeight: 900, color: acento }}>{r.hora}</span>
             </div>
           ))}
-          {d.calendario.renglones.length === 0 && <span style={{ padding: 20, fontSize: 34, fontWeight: 800 }}>Fechas por anunciar</span>}
+          {d.calendario.renglones.length === 0 && <span style={{ padding: 24, fontSize: 36, fontWeight: 800 }}>Fechas por anunciar</span>}
         </div>
-        {d.calendario.mas > 0 && <span style={{ marginTop: 12, fontSize: s(24, 28, 32), fontWeight: 800 }}>y {d.calendario.mas} {d.calendario.mas === 1 ? "fecha más" : "fechas más"}</span>}
-        {pie}
+        {d.calendario.mas > 0 && <span style={{ fontSize: s(24, 28, 34), fontWeight: 800 }}>y {d.calendario.mas} {d.calendario.mas === 1 ? "fecha más" : "fechas más"}</span>}
       </div>
     );
+    pie = pieInfo;
   } else if (d.diseno === "incluye" && d.extra) {
     const zonas = d.extra.zonas.slice(0, s(3, 4, 6));
-    cuerpo = (
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: w }}>
-        {titulo("¿Qué incluye\ntu lugar?", s(56, 72, 86))}
-        <div style={{ marginTop: s(16, 26, 40), display: "flex", flexDirection: "column", gap: s(12, 18, 24), width: w - 120 }}>
+    centro = (
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: separacion, width: w }}>
+        {titulo("¿Qué incluye\ntu lugar?", s(62, 76, 92))}
+        <div style={{ display: "flex", flexDirection: "column", gap: s(14, 20, 28), width: w - lado * 2 }}>
           {zonas.map((z) => (
-            <div key={z.id} style={{ display: "flex", flexDirection: "column", padding: s(16, 22, 28), borderRadius: 24, background: "rgba(11,9,16,0.72)", borderLeft: `14px solid ${z.color}` }}>
+            <div key={z.id} style={{ display: "flex", flexDirection: "column", padding: `${s(18, 24, 32)}px ${s(24, 30, 36)}px`, borderRadius: 26, background: "rgba(11,9,16,0.75)", borderLeft: `14px solid ${z.color}` }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span style={{ fontSize: s(34, 40, 46), fontWeight: 900 }}>{z.nombre.toUpperCase()}</span>
-                {d.extra!.mostrarPrecios && z.precio != null && <span style={{ fontSize: s(32, 38, 44), fontWeight: 900, color: acento }}>{precioCorto(z.precio)}</span>}
+                <span style={{ fontSize: s(36, 42, 50), fontWeight: 900 }}>{z.nombre.toUpperCase()}</span>
+                {d.extra!.mostrarPrecios && z.precio != null && <span style={{ fontSize: s(34, 40, 48), fontWeight: 900, color: acento }}>{precioCorto(z.precio)}</span>}
               </div>
               {z.beneficios.length
                 ? z.beneficios.slice(0, 4).map((b) => (
-                  <div key={b.id} style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 6 }}>
+                  <div key={b.id} style={{ display: "flex", alignItems: "center", gap: 14, marginTop: s(8, 10, 14) }}>
                     <div style={{ width: 12, height: 12, borderRadius: 6, background: acento }} />
-                    <span style={{ fontSize: s(24, 28, 32), fontWeight: 700 }}>{textoBeneficio(b)}</span>
+                    <span style={{ fontSize: s(25, 29, 35), fontWeight: 700 }}>{textoBeneficio(b)}</span>
                   </div>
                 ))
-                : <span style={{ marginTop: 6, fontSize: s(24, 28, 32), fontWeight: 700, opacity: 0.75 }}>Tu lugar en {z.nombre}</span>}
+                : <span style={{ marginTop: s(8, 10, 14), fontSize: s(25, 29, 35), fontWeight: 700, opacity: 0.75 }}>Tu lugar en {z.nombre}</span>}
             </div>
           ))}
         </div>
-        <span style={{ marginTop: s(14, 22, 34), fontSize: s(24, 27, 32), fontWeight: 800 }}>Elige tu lugar en {d.liga}</span>
       </div>
     );
-  } else if (invitacion) {
-    cuerpo = (
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", width: w, height: h, padding: `${s(150, 190, 260)}px 60px ${s(40, 60, 110)}px` }}>
-        <span style={{ fontSize: s(30, 36, 44), fontWeight: 800, letterSpacing: 8, color: acento }}>DARF PRODUCTIONS</span>
-        <span style={{ marginTop: 4, fontSize: s(44, 54, 64), fontWeight: 900 }}>TE INVITA A</span>
-        {logoObra ? <img src={logoObra} style={{ marginTop: s(14, 24, 40), maxWidth: s(780, 860, 900), maxHeight: s(250, 340, 440), objectFit: "contain" }} alt="" />
-          : <span style={{ marginTop: 24, fontSize: 110, fontWeight: 900 }}>{d.obra.toUpperCase()}</span>}
-        <span style={{ marginTop: s(18, 28, 44), fontSize: s(40, 48, 56), fontWeight: 900, textAlign: "center" }}>{d.fecha}</span>
-        {d.hora && <span style={{ fontSize: s(36, 42, 50), fontWeight: 900, color: acento }}>{d.hora}</span>}
-        {d.lugar && <span style={{ marginTop: 6, fontSize: s(28, 32, 38), fontWeight: 800, opacity: 0.9, textAlign: "center" }}>{d.lugar}</span>}
-        {pie}
-      </div>
-    );
+    pie = pieLiga;
   }
+
+  // Invitación: tres bloques repartidos en todo el alto (invita / logo / fecha), el pie con QR hasta abajo.
+  const invitacionCuerpo = invitacion && (
+    <div style={{ position: "absolute", left: 0, top: 0, width: w, height: h, display: "flex", flexDirection: "column", alignItems: "center",
+      justifyContent: "space-between", padding: `${margenArriba + s(110, 140, 190)}px ${lado}px ${margenAbajo}px` }}>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+        <span style={{ fontSize: s(30, 36, 44), fontWeight: 800, letterSpacing: 10, color: acento }}>DARF PRODUCTIONS</span>
+        <span style={{ marginTop: s(6, 10, 14), fontSize: s(48, 58, 70), fontWeight: 900 }}>TE INVITA A</span>
+      </div>
+      {logoObra ? <img src={logoObra} style={{ maxWidth: s(760, 880, 940), maxHeight: s(230, 330, 460), objectFit: "contain" }} alt="" />
+        : <span style={{ fontSize: 110, fontWeight: 900 }}>{d.obra.toUpperCase()}</span>}
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+        <span style={{ fontSize: s(42, 52, 62), fontWeight: 900, textAlign: "center" }}>{d.fecha}</span>
+        {d.hora && <span style={{ marginTop: s(4, 8, 12), fontSize: s(38, 46, 56), fontWeight: 900, color: acento }}>{d.hora}</span>}
+        {d.lugar && <span style={{ marginTop: s(8, 12, 18), fontSize: s(28, 34, 40), fontWeight: 800, opacity: 0.9, textAlign: "center" }}>{d.lugar}</span>}
+      </div>
+      {pieInfo}
+    </div>
+  );
 
   const res = new ImageResponse(
     (
@@ -194,13 +220,19 @@ export async function extraPng(d: DatosImagenExtra): Promise<Buffer> {
           backgroundImage: invitacion
             ? "linear-gradient(180deg, rgba(11,9,16,0.7) 0%, rgba(11,9,16,0.45) 30%, rgba(11,9,16,0.8) 70%, rgba(11,9,16,0.95) 100%)"
             : "linear-gradient(180deg, rgba(11,9,16,0.8) 0%, rgba(11,9,16,0.72) 30%, rgba(11,9,16,0.88) 100%)" }} />
-        <div style={{ position: "absolute", left: 0, top: 0, width: w, display: "flex", alignItems: "center", justifyContent: invitacion ? "center" : "space-between", padding: `${arriba}px 60px 0` }}>
-          {marca ? <img src={marca} style={{ width: s(260, 300, 330), objectFit: "contain" }} alt="" /> : <span style={{ fontSize: 40, fontWeight: 900 }}>DARF</span>}
-          {!invitacion && (logoObra ? <img src={logoObra} style={{ maxWidth: s(320, 360, 400), maxHeight: s(130, 150, 190), objectFit: "contain" }} alt="" />
+        {/* Franja de arriba: logos. */}
+        <div style={{ position: "absolute", left: 0, top: margenArriba, width: w, height: altoLogos, display: "flex", alignItems: "center", justifyContent: invitacion ? "center" : "space-between", padding: `0 ${lado}px` }}>
+          {marca ? <img src={marca} style={{ width: s(260, 300, 340), objectFit: "contain" }} alt="" /> : <span style={{ fontSize: 40, fontWeight: 900 }}>DARF</span>}
+          {!invitacion && (logoObra ? <img src={logoObra} style={{ maxWidth: s(320, 360, 400), maxHeight: altoLogos, objectFit: "contain" }} alt="" />
             : <span style={{ fontSize: 40, fontWeight: 900 }}>{d.obra.toUpperCase()}</span>)}
         </div>
-        {/* El contenido se centra en el espacio bajo los logos (los diseños cortos no quedan pegados arriba). */}
-        <div style={{ position: "absolute", left: 0, top: cuerpoTop, width: w, height: h - cuerpoTop - (invitacion ? 0 : s(30, 40, 70)), display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>{cuerpo}</div>
+        {invitacion ? invitacionCuerpo : (
+          // Franjas del centro (toma el espacio que sobra y se centra) y de abajo (pie con margen fijo).
+          <div style={{ position: "absolute", left: 0, top: margenArriba + altoLogos, width: w, height: h - margenArriba - altoLogos, display: "flex", flexDirection: "column", alignItems: "center", padding: `${separacion}px 0 ${margenAbajo}px` }}>
+            <div style={{ flexGrow: 1, width: w, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>{centro}</div>
+            {pie && <div style={{ marginTop: separacion, display: "flex", justifyContent: "center" }}>{pie}</div>}
+          </div>
+        )}
       </div>
     ),
     { width: w, height: h, fonts: await cargarFuentes() },
