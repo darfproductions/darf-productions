@@ -5,6 +5,19 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-10-22 — Más diseños de Difusión: invitación, mapa, cómo comprar, calendario, qué incluye
+
+- Panel → Público → Difusión, sección "Para invitar y vender", en cuadrado, 3:4 y 9:16, con el póster de fondo:
+  - Invitación: "DARF Productions te invita a" + logo grande de la obra, fecha y hora de la función elegida (o las
+    fechas de la temporada), lugar, WhatsApp, página y QR a la obra.
+  - Mapa de zonas: el mapa real (filas o mapa libre con su escenario), colores de zona y precios (si la obra los
+    muestra; de la función elegida o el más bajo en venta).
+  - Cómo comprar: opción 1 por WhatsApp y opción 2 en la página (aparta y cierra por WhatsApp); en obras "todo por
+    WhatsApp" solo la primera.
+  - Calendario de funciones y "¿Qué incluye tu lugar?" (zonas con sus beneficios de 0122).
+- `lib/difusion-extra-rules.ts` (con pruebas), `lib/difusion-extra-datos.ts`, `lib/difusion-extra.tsx` y la ruta
+  `/panel/producciones/[id]/difusion/mas/[diseno]`.
+
 ## 2026-10-22 — Diseños de preventa para redes (Club Fan y códigos)
 
 - Panel → Público → Difusión: sección "Preventa Club Fan" con tres diseños ("¡Ya empezó!" hasta tal fecha,

@@ -5,6 +5,7 @@ import { Card, button, input } from "@/components/panel/ui";
 import { Icono } from "@/components/Icono";
 import { funcionPorOmision, getObraDifusion } from "@/lib/difusion-datos";
 import { DISENOS, fechaLarga, hora } from "@/lib/difusion-rules";
+import { DISENOS_EXTRA } from "@/lib/difusion-extra-rules";
 import { MODOS_FAN, TAMANO_PREVENTA, modoSugerido, rangoCorto, type FormatoPreventa } from "@/lib/difusion-preventa-rules";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
@@ -60,6 +61,31 @@ export default async function Difusion({ params, searchParams }: PageProps<"/pan
         ) : (
           <p className="mt-3 text-sm text-aviso">Esta obra aún no tiene funciones: los diseños con fecha dirán “Próximamente”.</p>
         )}
+      </Card>
+
+      <Card className="flex flex-col gap-3">
+        <div>
+          <h2 className="titular text-xl">Para invitar y vender</h2>
+          <p className="text-sm text-texto-2">Con el póster de la obra de fondo. La invitación y el mapa usan la función elegida arriba. Se descargan en cuadrado (1:1), post (3:4) o historia (9:16).</p>
+        </div>
+        <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {DISENOS_EXTRA.map((x) => {
+            const ligaX = (f: FormatoPreventa, descargar = false) =>
+              `/panel/producciones/${id}/difusion/mas/${x.id}?${new URLSearchParams({ f, ...(x.funcion && funcion ? { funcion: funcion.id } : {}), ...(descargar ? { descargar: "1" } : {}) })}`;
+            return (
+              <li key={x.id} className="flex flex-col gap-2 rounded-xl bg-telon-2 p-3">
+                <div>
+                  <h3 className="font-bold">{x.label}</h3>
+                  <p className="text-xs text-texto-3">{x.ayuda}</p>
+                </div>
+                <img src={ligaX("post")} alt={`Vista previa: ${x.label}`} loading="lazy" width={1080} height={1440} className="aspect-[3/4] w-full rounded-lg bg-sala object-cover" />
+                <div className="mt-auto flex flex-wrap gap-2">
+                  {formatos.map(([f, t]) => <a key={f} href={ligaX(f, true)} className={pill}>{t.label} <Icono nombre="flecha-abajo" /></a>)}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
       </Card>
 
       <Card className="flex flex-col gap-3">

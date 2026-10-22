@@ -1,0 +1,43 @@
+import { NextResponse } from "next/server";
+import { funcionPorOmision, getObraDifusion } from "@/lib/difusion-datos";
+import { extraPng } from "@/lib/difusion-extra";
+import { getDatosExtra } from "@/lib/difusion-extra-datos";
+import { DISENOS_EXTRA, esDisenoExtra, pasosComprar, renglonesCalendario, telefonoLegible, textoInvitacion } from "@/lib/difusion-extra-rules";
+import { esFormatoPreventa, sitioCorto, type FormatoPreventa } from "@/lib/difusion-preventa-rules";
+import { rangoFechas } from "@/lib/difusion-rules";
+import { env } from "@/lib/env";
+import { can } from "@/lib/panel-nav";
+import { requirePanel } from "@/lib/permissions";
+
+// Más diseños: invitación, mapa de zonas, cómo comprar, calendario y lo que incluye cada zona.
+// ?f=cuadrado|post|historia, &funcion=<id> (invitación y mapa) y &descargar=1. Mismo permiso que Difusión.
+export async function GET(req: Request, ctx: RouteContext<"/panel/producciones/[id]/difusion/mas/[diseno]">) {
+  const { id, diseno } = await ctx.params;
+  const access = await requirePanel(`/panel/producciones/${id}/difusion`);
+  if (!can(access, id, "obra.editar") && !can(access, id, "obra.publicar")) return NextResponse.json({ error: "No autorizado." }, { status: 403 });
+  if (!esDisenoExtra(diseno)) return NextResponse.json({ error: "Ese diseño no existe." }, { status: 404 });
+  const sp = new URL(req.url).searchParams;
+  const f = sp.get("f");
+  const formato: FormatoPreventa = esFormatoPreventa(f) ? f : "post";
+  const obra = await getObraDifusion(id);
+  if (!obra) return NextResponse.json({ error: "No se encontró." }, { status: 404 });
+  const usaFuncion = DISENOS_EXTRA.find((x) => x.id === diseno)!.funcion;
+  const pedida = sp.get("funcion");
+  const funcion = !usaFuncion ? null : pedida === "todas" ? null : pedida ? obra.funciones.find((x) => x.id === pedida) ?? null : funcionPorOmision(obra.funciones);
+  const base = (env.siteUrl || "https://darfproductions.com").replace(/\/$/, "");
+  const extra = diseno === "mapa" || diseno === "incluye" || diseno === "comprar" ? await getDatosExtra(id, funcion?.id ?? null) : undefined;
+  const fecha = textoInvitacion({ funcion, rango: rangoFechas(obra.funciones) });
+  const png = await extraPng({
+    diseno, formato, obra: obra.nombre, logoUrl: obra.logoUrl, colores: obra.colores,
+    fondoUrl: formato === "historia" ? obra.poster.p9x16 : obra.poster.p3x4,
+    liga: `${sitioCorto(base)}/producciones/${id}`, url: `${base}/producciones/${id}`,
+    whatsapp: telefonoLegible(env.whatsapp), lugar: (funcion?.venue ?? obra.venue) || null,
+    fecha: fecha.fecha, hora: fecha.hora, extra,
+    pasos: diseno === "comprar" ? pasosComprar({ whatsapp: env.whatsapp, liga: `${sitioCorto(base)}/producciones/${id}`, modo: extra?.modoVenta }) : undefined,
+    calendario: diseno === "calendario" ? renglonesCalendario(obra.funciones, formato === "historia" ? 9 : formato === "post" ? 6 : 4) : undefined,
+  });
+  const archivo = `${obra.nombre}-${diseno}-${formato}`.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^A-Za-z0-9-]+/g, "-");
+  return new NextResponse(new Uint8Array(png), {
+    headers: { "Content-Type": "image/png", "Cache-Control": "private, no-store", ...(sp.get("descargar") ? { "Content-Disposition": `attachment; filename="${archivo}.png"` } : {}) },
+  });
+}
