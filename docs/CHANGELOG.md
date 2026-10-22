@@ -5,6 +5,21 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-10-22 — Preventa privada con código (migración 0123)
+
+- Tercera etapa de venta, antes de las otras: privada (solo con código) → Club Fan (socios y quien tiene código) →
+  general. Si no se pone fecha privada, todo sigue igual. Taquilla vende siempre.
+- Las fechas privadas viven en `preventa_privada_obras` (con `max_por_persona`) y `preventa_privada_funciones`, que
+  el público no puede leer: quien no tiene código solo ve "La venta abre el…". Se ponen en la tarjeta "Preventas"
+  de Funciones y precios (obra) o en cada función con fechas propias; la base las copia como las de 0118.
+- Códigos por obra (`preventa_codigos`: nombre, máximo de personas, activo) con liga `/preventa/CODIGO`; al abrirla
+  con sesión se canjea a la cuenta (`preventa_accesos`, `preventa_canjear`, tope de 10 intentos fallidos por hora).
+  También hay campo "¿Tienes un código de preventa?" en la obra. Desactivar un código quita el acceso.
+- `preventa_revisar` (reemplaza la de 0120) deja comprar en la etapa privada solo con acceso; el límite por persona
+  lo revisa un trigger diferido sobre `tickets` (`preventa_privada_tope`), sin cambiar las funciones de compra.
+- Panel → Boletos → Preventa privada: crear códigos, copiar liga, compartir por WhatsApp, activar/desactivar y, por
+  código, personas, boletos pagados y lo vendido (`preventa_codigos_resumen`).
+
 ## 2026-10-22 — Beneficios por zona (migración 0122)
 
 - Una zona puede incluir beneficios además del lugar (VIP: acceso anticipado, póster firmado, foto con el elenco,

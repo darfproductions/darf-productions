@@ -180,6 +180,8 @@ export function boletosSubtabs(a: PanelAccessData, pid: string): SubTab[] {
     { id: "funciones", label: "Funciones y precios", path: "boletos/funciones", show: can(a, pid, "funciones.gestionar") || can(a, pid, "ventas.operar") },
     { id: "mapa", label: "Mapa de asientos", path: "boletos/mapa", show: can(a, pid, "funciones.gestionar") },
     // 0122: beneficios por zona (VIP: acceso anticipado, póster…) y su reporte de entregas.
+    // 0123: códigos de preventa privada (antes de la del Club Fan).
+    { id: "preventa", label: "Preventa privada", path: "boletos/preventa", show: can(a, pid, "funciones.gestionar") || can(a, pid, "ventas.ver") },
     { id: "beneficios", label: "Beneficios", path: "boletos/beneficios", show: can(a, pid, "funciones.gestionar") || can(a, pid, "ventas.ver") },
     { id: "descuentos", label: "Descuentos", path: "boletos/descuentos", show: can(a, pid, "descuentos.gestionar") },
     { id: "corte", label: "Corte de caja", path: "boletos/corte", show: can(a, pid, "ventas.ver") || can(a, pid, "reportes.ver") },

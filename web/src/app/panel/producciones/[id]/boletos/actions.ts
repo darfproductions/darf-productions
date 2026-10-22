@@ -238,6 +238,13 @@ export async function updatePerformance(_p: TicketState, f: FormData): Promise<T
     .eq("production_id", pid);
   if (error) return { ok: false, message: error.message };
   if (!count) return { ok: false, message: "No tienes permiso para editar esta función." };
+  // 0123: con fechas propias, su preventa privada propia (con las de la obra la pone la base).
+  if (!deObra) {
+    const pv = fecha2("preventa_privada");
+    if (pv.t && !pv.iso) return { ok: false, message: "Revisa la fecha de la preventa privada." };
+    const { error: ePriv } = await supabase.rpc("funcion_preventa_privada", { pfid: id, p_desde: pv.iso });
+    if (ePriv) { refresh(pid); return { ok: false, message: `Se guardó la función, pero no la preventa privada: ${mensajeError(ePriv)}` }; }
+  }
   refresh(pid);
   const ahora = Date.now();
   return { ok: true, message: !on_sale ? "Guardado." : preventa_desde && new Date(preventa_desde).getTime() > ahora ? "Guardado: la venta abre en la fecha de inicio."
@@ -267,6 +274,14 @@ export async function savePreventaObra(_p: TicketState, f: FormData): Promise<Ti
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("obra_preventa", { pid, p_desde: d.iso, p_hasta: h.iso });
   if (error) return { ok: false, message: mensajeError(error) };
+  // 0123: preventa privada (con código) antes del inicio; máximo de boletos por persona.
+  const pv = leer("privada");
+  if (pv.t && !pv.iso) return { ok: false, message: "Revisa la fecha de la preventa privada." };
+  const maxTxt = String(f.get("privada_max") ?? "").trim();
+  const max = maxTxt ? Number(maxTxt) : null;
+  if (max != null && (!Number.isInteger(max) || max < 1 || max > 50)) return { ok: false, message: "El máximo por persona va de 1 a 50 (o vacío)." };
+  const { error: ePriv } = await supabase.rpc("obra_preventa_privada", { pid, p_desde: pv.iso, p_max: max });
+  if (ePriv) { refresh(pid); return { ok: false, message: `Se guardó la del Club Fan, pero no la privada: ${mensajeError(ePriv)}` }; }
   refresh(pid);
   const r = data as { funciones: number; antes_del_fin: number };
   const extra = r.antes_del_fin ? ` ${r.antes_del_fin === 1 ? "1 función empieza" : `${r.antes_del_fin} funciones empiezan`} antes del fin de la preventa y no cambió.` : "";
@@ -641,4 +656,29 @@ export async function moverBeneficio(_p: TicketState, f: FormData): Promise<Tick
   }
   refresh(pid);
   return { ok: true, message: "Orden guardado." };
+}
+
+// ──────── Preventa privada (0123) ────────
+
+export async function crearCodigoPreventa(_p: TicketState, f: FormData): Promise<TicketState> {
+  const pid = String(f.get("pid"));
+  const nombre = String(f.get("nombre") ?? "").trim();
+  const maxTxt = String(f.get("max_personas") ?? "").trim();
+  const max = maxTxt ? Number(maxTxt) : null;
+  if (max != null && (!Number.isInteger(max) || max < 1)) return { ok: false, message: "El máximo de personas debe ser un número entero (o vacío)." };
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("preventa_codigo_crear", { pid, p_nombre: nombre, p_max: max });
+  if (error) return { ok: false, message: mensajeError(error) };
+  refresh(pid);
+  return { ok: true, message: `Código ${(data as { codigo: string }).codigo} creado. Copia la liga y compártela.` };
+}
+
+export async function estadoCodigoPreventa(_p: TicketState, f: FormData): Promise<TicketState> {
+  const pid = String(f.get("pid"));
+  const activo = f.get("activo") === "1";
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("preventa_codigo_estado", { p_id: String(f.get("id")), p_activo: activo });
+  if (error) return { ok: false, message: mensajeError(error) };
+  refresh(pid);
+  return { ok: true, message: activo ? "Código activado." : "Código desactivado: ya no da acceso (tampoco a quien ya lo usó)." };
 }

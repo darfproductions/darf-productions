@@ -12,7 +12,9 @@ import { YouTube } from "@/components/YouTube";
 import { listOpenAuditionsFor } from "@/lib/auditions";
 import { getPublicBanner } from "@/lib/banner";
 import { fechaEstreno } from "@/lib/cuenta-regresiva";
-import { enPreventa, ETIQUETA_FUNCION, estadoFuncion, partesFuncion, ventaPorAbrir } from "@/lib/disponibilidad";
+import { enPreventa, enPrivada, ETIQUETA_FUNCION, estadoFuncion, partesFuncion, privadaPorAbrir, ventaPorAbrir } from "@/lib/disponibilidad";
+import { miPreventaPrivada } from "@/lib/preventa-privada";
+import { CodigoPreventa } from "@/components/CodigoPreventa";
 import { getPromos } from "@/lib/promos";
 import { mejorPromo } from "@/lib/promo-rules";
 import { env, isDev } from "@/lib/env";
@@ -95,6 +97,8 @@ export async function ProductionView({
     getSession(),
     getPromos(p.id),
   ]);
+  // 0123: si canjeó un código, sus fechas de preventa privada (el público no las ve).
+  const mia = await miPreventaPrivada(p.id, !!sesion);
   // Eventos de esta obra (0081/0082): los que puede abrir y, con candado, los del club o con cuenta.
   const abiertos = new Set(eventos.map((e) => e.id));
   const bloqueados = cartelera.filter((e) => e.production_id === p.id && !abiertos.has(e.id));
@@ -153,14 +157,21 @@ export async function ProductionView({
   const funciones = show("funciones") && (
     <Bloque id="funciones" eyebrow={p.concluded ? "Así se presentó" : "Elige tu función"} titulo={conPrecios ? "Funciones y precios" : "Funciones"}>
       {performances.length === 0 && <p className="opacity-75">Aún no hay funciones registradas.</p>}
+      {/* 0123: con preventa (o venta por abrir) se puede usar un código de preventa privada. */}
+      {!mia?.acceso && !porWhatsApp && performances.some((fn) => funcionVendible(fn, p.concluded) && (ventaPorAbrir(fn) || enPreventa(fn))) && (
+        <div className="mb-4"><CodigoPreventa conSesion={!!sesion} aqui={`/producciones/${p.id}#funciones`} /></div>
+      )}
       {performances.length > 0 && (
         <ul className="flex flex-col gap-3.5">
           {performances.map((fn) => {
             const vendible = funcionVendible(fn, p.concluded);
             const est = vendible ? estadoDe(fn.id) : null;
+            // 0123: con código, en su preventa privada ya puede elegir (antes que el Club Fan).
+            const privada = vendible && enPrivada(fn, mia);
+            const privadaAbre = vendible ? privadaPorAbrir(fn, mia) : null;
             const pre = vendible && enPreventa(fn);
             // 0118: la venta (o la preventa) aún no abre; y la promo automática de la función.
-            const porAbrir = vendible && ventaPorAbrir(fn);
+            const porAbrir = vendible && ventaPorAbrir(fn) && !privada;
             const promo = vendible ? mejorPromo(promos.get(fn.id)) : null;
             const agotado = est === "agotado";
             const f = fn.starts_at ? partesFuncion(fn.starts_at) : null;
@@ -187,12 +198,16 @@ export async function ProductionView({
                     {duracion && <> · Duración aprox. {duracion}</>}
                   </span>
                   {pre && fn.preventa_hasta && (() => { const h = partesFuncion(fn.preventa_hasta); return <span className="text-[12.5px] font-semibold text-obra-acento">Preventa Club Fan hasta el {h.dia} {h.numero} {h.mes}, {h.hora}</span>; })()}
+                  {privada && fn.preventa_desde && (() => { const d = partesFuncion(fn.preventa_desde); return <span className="text-[12.5px] font-semibold text-obra-acento">Preventa privada · tienes acceso hasta el {d.dia} {d.numero} {d.mes}, {d.hora}</span>; })()}
+                  {privadaAbre && (() => { const d = partesFuncion(privadaAbre); return <span className="text-[12.5px] font-semibold text-obra-acento">Tu preventa privada abre el {d.dia} {d.numero} {d.mes}, {d.hora}</span>; })()}
                   {porAbrir && fn.preventa_desde && (() => { const d = partesFuncion(fn.preventa_desde); return <span className="text-[12.5px] font-semibold text-obra-acento">{fn.preventa_hasta ? "Preventa Club Fan" : "Venta"} desde el {d.dia} {d.numero} {d.mes}, {d.hora}</span>; })()}
                   {promo && conPrecios && !agotado && <span className="text-[12.5px] font-semibold text-obra-acento">Promo {promo.nombre}: {promo.percent}% de descuento{promo.hasta ? ` hasta el ${(() => { const h = partesFuncion(promo.hasta); return `${h.dia} ${h.numero} ${h.mes}`; })()}` : ""}</span>}
                 </div>
                 <div className="col-span-2 flex flex-wrap items-center justify-between gap-3 md:contents">
                   {porAbrir ? (
                     <span className={`chip ${fn.preventa_hasta ? "chip-fz" : "chip-obra"}`}>Muy pronto</span>
+                  ) : privada ? (
+                    <span className="chip chip-obra">Preventa privada</span>
                   ) : pre ? (
                     <span className="chip chip-fz">Preventa Fan Zone</span>
                   ) : vendible ? (
@@ -211,7 +226,7 @@ export async function ProductionView({
                     porWhatsApp ? (
                       <a href={whatsappPedirUrl(env.whatsapp, p.nombre, f ? `${f.dia} ${f.numero} ${f.mes}, ${f.hora}` : null) || "/contacto"} target="_blank" rel="noopener" className="fb fb-luz fb-sm ml-auto md:ml-0">{tv.funcion}</a>
                     ) : pre ? (
-                      socio ? (
+                      socio || mia?.acceso ? (
                         <Link href={withSeller(`/comprar/${fn.id}`, vendedor)} className="fb fb-fz fb-sm ml-auto md:ml-0">Entrar a preventa</Link>
                       ) : (
                         <Link href="/fan-zone" className="fb fb-fz fb-sm ml-auto md:ml-0">Únete al Club Fan</Link>

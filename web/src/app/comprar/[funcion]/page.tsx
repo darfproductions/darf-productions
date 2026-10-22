@@ -7,7 +7,8 @@ import { notFound, redirect } from "next/navigation";
 import { PageHeading } from "@/components/PageHeading";
 import { PasosBarra, PasosProvider } from "@/components/PasosCompra";
 import { UnirseClub } from "@/components/fanzone/UnirseClub";
-import { enPreventa, partesFuncion, ventaPorAbrir } from "@/lib/disponibilidad";
+import { enPreventa, enPrivada, partesFuncion, privadaPorAbrir, ventaPorAbrir } from "@/lib/disponibilidad";
+import { miPreventaPrivada } from "@/lib/preventa-privada";
 import { getPromos } from "@/lib/promos";
 import { conPromo, mejorPromo, pctZona } from "@/lib/promo-rules";
 import { getCredencial } from "@/lib/fanzone";
@@ -55,11 +56,15 @@ export default async function ComprarPage({ params, searchParams }: PageProps<"/
   const vendible = funcionVendible(f, p.concluded);
   const yaPaso = !!f.starts_at && !funcionVendible({ on_sale: true, starts_at: f.starts_at }, false);
   // Preventa del Club Fan (0076): quien no es socio puede unirse aquí mismo (la base lo exige igual).
+  // 0123: con código, su preventa privada (antes que la del Club Fan) y el máximo por persona.
+  const mia = await miPreventaPrivada(p.id, !!session);
+  const privada = vendible && enPrivada(f, mia);
   const preventa = vendible && enPreventa(f);
-  const bloqueada = preventa && !(await getCredencial());
+  const bloqueada = preventa && !mia?.acceso && !(await getCredencial());
   const hasta = preventa && f.preventa_hasta ? partesFuncion(f.preventa_hasta) : null;
   // 0118: antes del inicio nadie compra en línea (la base lo exige igual).
-  const abre = vendible && ventaPorAbrir(f) && f.preventa_desde ? partesFuncion(f.preventa_desde) : null;
+  const privadaAbre = vendible ? privadaPorAbrir(f, mia) : null;
+  const abre = vendible && !privada && ventaPorAbrir(f) && f.preventa_desde ? partesFuncion(privadaAbre ?? f.preventa_desde) : null;
 
   const supabase = await createClient();
   // Antes de mostrar el mapa se liberan los asientos de órdenes vencidas (0054).
@@ -123,12 +128,12 @@ export default async function ComprarPage({ params, searchParams }: PageProps<"/
           </div>
         ) : abre ? (
           <div className="flex max-w-2xl flex-col items-start gap-4 rounded-2xl bg-telon p-8">
-            <p className="text-2xl font-black uppercase tracking-[-0.02em]">{f.preventa_hasta ? <>La preventa del <span className="txt-oro">Club Fan</span> abre pronto</> : "La venta abre pronto"}</p>
+            <p className="text-2xl font-black uppercase tracking-[-0.02em]">{privadaAbre ? "Tu preventa privada abre pronto" : f.preventa_hasta ? <>La preventa del <span className="txt-oro">Club Fan</span> abre pronto</> : "La venta abre pronto"}</p>
             <p className="text-texto-2">
-              {f.preventa_hasta ? `Los socios del Club Fan pueden ${verbo}` : `Puedes ${verbo}`} desde el {abre.dia} {abre.numero} {abre.mes}, {abre.hora}.
-              {f.preventa_hasta && ` Únete gratis al Club Fan para ${verbo} antes que nadie.`}
+              {privadaAbre ? `Con tu código puedes ${verbo}` : f.preventa_hasta ? `Los socios del Club Fan pueden ${verbo}` : `Puedes ${verbo}`} desde el {abre.dia} {abre.numero} {abre.mes}, {abre.hora}.
+              {!privadaAbre && f.preventa_hasta && ` Únete gratis al Club Fan para ${verbo} antes que nadie.`}
             </p>
-            {f.preventa_hasta && !(await getCredencial()) && (session ? <UnirseClub /> : (
+            {!privadaAbre && f.preventa_hasta && !(await getCredencial()) && (session ? <UnirseClub /> : (
               <Link href={`/entrar?next=${encodeURIComponent(`/comprar/${f.id}`)}`} className="fb fb-fz">Entra o crea tu cuenta para unirte</Link>
             ))}
             <Link href={`/producciones/${p.id}`} className="text-sm font-bold text-texto-3 hover:text-texto"><Icono nombre="flecha-izq" /> Volver a la obra</Link>
@@ -152,6 +157,11 @@ export default async function ComprarPage({ params, searchParams }: PageProps<"/
           <PasosProvider>
           <div className="flex flex-col gap-10">
           <PasosBarra pasos={tv.pasos} />
+          {privada && (
+            <p className="rounded-2xl border border-obra-acento/40 bg-telon p-4 font-semibold">
+              Preventa privada: tienes acceso con tu código antes que nadie.{mia?.max ? ` Máximo ${mia.max} ${mia.max === 1 ? "lugar" : "lugares"} por persona en esta función.` : ""}
+            </p>
+          )}
           {promo && mostrarTotal && <p className="rounded-2xl border border-obra-acento/40 bg-telon p-4 font-semibold">Promo {promo.nombre}: {promo.percent}% de descuento ya aplicado{[...prices, ...general].some((z) => !("antes" in z) || z.antes == null) ? " en algunas zonas" : ""}.</p>}
           {general.length > 0 && (
             <GeneralPicker performanceId={f.id} productionName={p.nombre} zones={general} modo={modo} mostrarTotal={mostrarTotal}
