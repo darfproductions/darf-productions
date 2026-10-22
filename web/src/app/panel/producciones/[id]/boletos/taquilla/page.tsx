@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Card } from "@/components/panel/ui";
+import { BeneficiosZona } from "@/components/BeneficiosZona";
+import { listarBeneficios } from "@/lib/beneficios";
+import { porZona, type Beneficio } from "@/lib/beneficios-rules";
 import { boxOfficeData, generalAvailability, listPerformances } from "@/lib/boleteria";
 import { can, salidaBoletos } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
@@ -35,6 +38,10 @@ export default async function BoxOfficePage({ params, searchParams }: PageProps<
     return pct ? { ...z, precio: conPromo(z.precio, pct), antes: z.precio } : z;
   });
   const gen = new Set(general.map((z) => z.price_category_id));
+  // 0122: qué incluye cada zona en esta función (para decirlo al vender).
+  const benef = funcion ? porZona(await listarBeneficios(id), funcion) : new Map<string, Beneficio[]>();
+  const zonasConBenef = [...general.map((z) => ({ id: z.price_category_id, nombre: z.nombre })), ...(data?.prices ?? []).filter((p) => !gen.has(p.categoryId)).map((p) => ({ id: p.categoryId, nombre: p.nombre }))]
+    .filter((z) => benef.get(z.id)?.length);
   const numerados = (data?.prices ?? []).filter((p) => !gen.has(p.categoryId)).map((p) => {
     const pct = pctZona(promos, p.categoryId);
     return pct ? { ...p, price: conPromo(p.price, pct), antes: p.price } : p;
@@ -53,6 +60,16 @@ export default async function BoxOfficePage({ params, searchParams }: PageProps<
       {!funcion && <Card>{todas.length ? "No hay funciones próximas para vender." : "Esta obra no tiene funciones con fecha. Créalas en Funciones y precios."}</Card>}
       {data?.error && <Card>No se pudo cargar el mapa: {data.error.message}</Card>}
       {data && !data.error && data.prices.length === 0 && <Card>Esta función no tiene precios. Agrégalos en Funciones y precios.</Card>}
+      {zonasConBenef.length > 0 && (
+        <Card className="grid gap-3 sm:grid-cols-2">
+          {zonasConBenef.map((z) => (
+            <div key={z.id}>
+              <p className="mb-1 text-sm font-bold">{z.nombre} incluye</p>
+              <BeneficiosZona beneficios={benef.get(z.id)} className="text-texto-2" />
+            </div>
+          ))}
+        </Card>
+      )}
       {funcion && general.length > 0 && <GeneralBoxOffice key={`g-${funcion}`} pid={id} performanceId={funcion} zones={general} />}
       {data && !data.error && numerados.length > 0 && funcion && (
         <BoxOffice key={funcion} pid={id} performanceId={funcion} formas={data.formas} seats={data.seats} taken={data.taken} prices={numerados} />

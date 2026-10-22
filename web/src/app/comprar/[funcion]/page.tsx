@@ -1,3 +1,5 @@
+import { listarBeneficios } from "@/lib/beneficios";
+import { porZona, type Beneficio } from "@/lib/beneficios-rules";
 import type { Metadata } from "next";
 import { leerDiseno } from "@/lib/mapa-libre";
 import Link from "next/link";
@@ -78,9 +80,12 @@ export default async function ComprarPage({ params, searchParams }: PageProps<"/
   const seats = ((seatsRes?.data ?? []) as (MapSeat & { is_active: boolean })[]).filter((s) => s.is_active);
   const taken = (takenRes?.data ?? []) as string[];
   // Zonas con asiento para el mapa; las de entrada general van aparte (0055).
+  // 0122: lo que incluye cada zona en ESTA función.
+  const benef = vendible && !abre && !porWhatsApp ? porZona(await listarBeneficios(p.id), f.id) : new Map<string, Beneficio[]>();
   const general = (vendible && !abre && !porWhatsApp ? await generalAvailability(f.id) : []).map((z) => {
     const pct = pctZona(promos, z.price_category_id);
-    return pct ? { ...z, precio: conPromo(z.precio, pct), antes: z.precio } : z;
+    const conB = { ...z, beneficios: benef.get(z.price_category_id) ?? [] };
+    return pct ? { ...conB, precio: conPromo(z.precio, pct), antes: z.precio } : conB;
   });
   const prices: ZonePrice[] = (pricesRes?.data ?? []).filter((r) => (r.price_categories as unknown as { cupo: number | null } | null)?.cupo == null).map((r) => ({
     categoryId: r.price_category_id as string,
@@ -89,6 +94,7 @@ export default async function ComprarPage({ params, searchParams }: PageProps<"/
     nombre: (r.price_categories as unknown as { nombre: string } | null)?.nombre ?? "",
     color: (r.price_categories as unknown as { color: string | null } | null)?.color ?? null,
     orden: (r.price_categories as unknown as { orden: number | null } | null)?.orden ?? 0,
+    beneficios: benef.get(r.price_category_id as string) ?? [],
   }));
   // Link de vendedor: el código se revisa aquí para mostrar su nombre desde el inicio.
   const sellerRes = vendible && vendedor && session ? await supabase.rpc("preview_seller_code", { target_performance_id: f.id, target_code: vendedor }) : null;

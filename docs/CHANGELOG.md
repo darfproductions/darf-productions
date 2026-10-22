@@ -5,6 +5,22 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-10-22 — Beneficios por zona (migración 0122)
+
+- Una zona puede incluir beneficios además del lugar (VIP: acceso anticipado, póster firmado, foto con el elenco,
+  bartender…). Tabla `zona_beneficios` por obra (tipo experiencia/acceso/souvenir/atención/otro, nombre, detalle,
+  minutos antes para acceso, cupo opcional "primeros N" por función, `funciones` para valer solo en algunas) y
+  `zona_beneficio_zonas` (un beneficio en varias zonas; trigger: misma obra).
+- La zona de un boleto con asiento es la del asiento (`coalesce(t.price_category_id, s.price_category_id)`).
+  `beneficios_de_ticket` resuelve el cupo por orden de aprobación (null mientras la orden está pendiente).
+- Se ven en: página de la obra (Zonas), compra ("VIP incluye", "Tu lugar en VIP incluye"), pantalla final,
+  WhatsApp ("Incluye (VIP): …", con `orden_beneficios`), boleto en Mi cuenta, imagen y PDF del boleto, Apple y
+  Google Wallet (`wallet_beneficios` para la actualización sin sesión) y Taquilla.
+- Puerta: al escanear salen los beneficios con "Marcar entregado" (`beneficio_entregar`, en `beneficio_entregas` y
+  bitácora) y la hora de acceso anticipado. Panel → Boletos → Beneficios: alta (con botones rápidos), zonas,
+  funciones, cupo, orden y reporte de entregas por función (`beneficios_reporte`).
+- Fuera de alcance por ahora: copiar beneficios al duplicar obra o usar un teatro guardado; extras con precio.
+
 ## 2026-10-22 — DARF Showcase Shows (migración 0121)
 
 - Página pública `/showcases` con el contenido del dossier: públicos, qué hace especial a DARF, galería "Así se vive",

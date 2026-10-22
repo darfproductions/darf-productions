@@ -1,3 +1,4 @@
+import { lineasDesdeBoletos, textosBoleto, type BeneficioBoleto } from "@/lib/beneficios-rules";
 import type { Metadata } from "next";
 import QRCode from "qrcode";
 import { CopyLink } from "@/components/panel/CopyLink";
@@ -100,6 +101,11 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
     for (const t of o.tickets) if (t.is_active) qrs.set(t.id, await QRCode.toDataURL(t.qr_token, { margin: 1, width: 240 }));
   }
 
+  // 0122: lo que incluye la zona de cada boleto (órdenes que siguen vigentes).
+  const vigentes = orders.filter((o) => o.status !== "rechazado" && !funcionPasada(o.performances?.starts_at ?? null)).flatMap((o) => o.tickets.filter((t) => t.is_active).map((t) => t.id));
+  const { data: benefRows } = vigentes.length ? await supabase.rpc("beneficios_boletos", { p_tickets: vigentes }) : { data: [] };
+  const benef = new Map(((benefRows ?? []) as { ticket_id: string; beneficios: BeneficioBoleto[] }[]).map((r) => [r.ticket_id, r.beneficios]));
+
   // Mis audiciones (0036): solo las propias; QR mientras no haya llegado.
   const [audiciones, invitaciones, ofertas, misObras, sinLeer, misVentas, miEquipo, equipoPend, notis, notisNuevas, credencial] = await Promise.all([
     listMyApplications(session.userId), listMyInvites(), listMyOffers(), supabase.rpc("my_productions"), supabase.rpc("my_unread_announcements"),
@@ -158,11 +164,13 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
                 comprador: o.buyer_nombre,
                 qr: qrs.get(t.id) ?? null,
                 usado: !!t.checked_in_at,
+                ...textosBoleto(benef.get(t.id) ?? [], o.performances?.starts_at),
               }));
               const wa = o.status === "pendiente"
                 ? whatsappPayUrl(env.whatsapp, {
                     prodName: nombre, orderCode: o.order_code, seats, total: Number(o.total),
                     buyerPhone: o.buyer_telefono, discountCode: o.discount_codigo, discountAmount: Number(o.discount_amount ?? 0),
+                    incluye: lineasDesdeBoletos(activos.flatMap((t) => benef.get(t.id) ?? [])),
                   })
                 : "";
               return (

@@ -4,11 +4,12 @@ import { getSession } from "@/lib/auth";
 import { env } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
 import { whatsappApartadoUrl, whatsappPayUrl } from "@/lib/tickets";
+import { incluyeDeOrden } from "@/lib/beneficios";
 import { mensajeError } from "@/lib/errores";
 import { telefonoOk } from "@/lib/account-rules";
 
 export type OrderResult =
-  | { ok: true; orderCode: string; total: number; seats: string[]; whatsappUrl: string; expiresAt: string | null }
+  | { ok: true; orderCode: string; total: number; seats: string[]; whatsappUrl: string; expiresAt: string | null; /** 0122 */ incluye?: string[] }
   | { ok: false; message: string };
 
 // Crea la orden llamando a la MISMA función de la base que usa la 1.0
@@ -48,14 +49,16 @@ export async function placeOrder(input: {
   const d = data as { order_code: string; total: number; seats?: string[]; discount_codigo?: string | null; discount_amount?: number | null };
   const seats = d.seats ?? [];
   const { data: ord } = await supabase.from("orders").select("expires_at").eq("order_code", d.order_code).maybeSingle();
+  const incluye = await incluyeDeOrden({ orderCode: d.order_code });
   return {
     expiresAt: (ord?.expires_at as string | null) ?? null,
     ok: true,
+    incluye,
     orderCode: d.order_code,
     total: Number(d.total),
     seats,
     whatsappUrl: input.hibrido
-      ? whatsappApartadoUrl(env.whatsapp, { prodName: input.productionName, orderCode: d.order_code, seats, total: Number(d.total), buyerPhone: phone })
+      ? whatsappApartadoUrl(env.whatsapp, { prodName: input.productionName, orderCode: d.order_code, seats, total: Number(d.total), buyerPhone: phone, incluye })
       : whatsappPayUrl(env.whatsapp, {
         prodName: input.productionName,
         orderCode: d.order_code,
@@ -64,6 +67,7 @@ export async function placeOrder(input: {
         buyerPhone: phone,
         discountCode: d.discount_codigo,
         discountAmount: d.discount_amount,
+        incluye,
       }),
   };
 }
@@ -98,17 +102,19 @@ export async function placeGeneralOrder(input: {
   const d = data as { order_code: string; total: number; seats?: string[]; discount_codigo?: string | null; discount_amount?: number | null };
   const seats = d.seats ?? [];
   const { data: ord } = await supabase.from("orders").select("expires_at").eq("order_code", d.order_code).maybeSingle();
+  const incluye = await incluyeDeOrden({ orderCode: d.order_code });
   return {
     ok: true,
+    incluye,
     orderCode: d.order_code,
     total: Number(d.total),
     seats,
     expiresAt: (ord?.expires_at as string | null) ?? null,
     whatsappUrl: input.hibrido
-      ? whatsappApartadoUrl(env.whatsapp, { prodName: input.productionName, orderCode: d.order_code, seats, total: Number(d.total), buyerPhone: phone })
+      ? whatsappApartadoUrl(env.whatsapp, { prodName: input.productionName, orderCode: d.order_code, seats, total: Number(d.total), buyerPhone: phone, incluye })
       : whatsappPayUrl(env.whatsapp, {
         prodName: input.productionName, orderCode: d.order_code, seats, total: Number(d.total), buyerPhone: phone,
-        discountCode: d.discount_codigo, discountAmount: d.discount_amount,
+        discountCode: d.discount_codigo, discountAmount: d.discount_amount, incluye,
       }),
   };
 }

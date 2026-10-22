@@ -1,3 +1,4 @@
+import { textosBoleto, type BeneficioBoleto } from "@/lib/beneficios-rules";
 import { funcionPasada } from "@/lib/account-rules";
 import type { ImagenesApple, ServicioApple } from "@/lib/apple-wallet";
 import { getSession } from "@/lib/auth";
@@ -40,7 +41,7 @@ const asientoDe = (t: Pick<FilaBoleto, "seats" | "price_categories">) =>
   t.seats?.seat_label ?? (t.price_categories ? `General · ${t.price_categories.nombre}` : "Admisión general");
 
 /** Arma el boleto (con su estado: cancelado, función cancelada o ya ingresó). */
-function armarBoleto(t: FilaBoleto): BoletoWallet | null {
+function armarBoleto(t: FilaBoleto, beneficios: BeneficioBoleto[] = []): BoletoWallet | null {
   const o = t.orders;
   const f = o?.performances;
   if (!o || !f) return null;
@@ -56,6 +57,7 @@ function armarBoleto(t: FilaBoleto): BoletoWallet | null {
   const pase = conEstado(paseBoleto({
     ticketId: t.id, qrToken: t.qr_token, obra, startsAt: f.starts_at, lugar, asiento,
     orden: o.order_code, comprador: o.buyer_nombre, estilo: estiloDe(tema, poster),
+    ...textosBoleto(beneficios, f.starts_at),
   }), estado);
   const logo = isLight(pase.colores.fondo) ? "/marca/darf-horizontal.svg" : "/marca/darf-horizontal-blanco.svg";
   const imagenObra = { ambiente: prod?.ambiente_path ? assetUrl(prod.ambiente_path) : poster, logo: tema?.logo ?? null };
@@ -85,7 +87,9 @@ export async function boletoWallet(ticketId: string): Promise<BoletoWallet | Fal
   if (o.status !== "aprobado" || !t.is_active) return { error: "Este boleto no está activo.", status: 409 };
   if (f.cancelada_at) return { error: "Esta función se canceló.", status: 409 };
   if (funcionPasada(f.starts_at)) return { error: "Esta función ya pasó.", status: 410 };
-  return armarBoleto(t) ?? { error: "Boleto no encontrado.", status: 404 };
+  // 0122: lo que incluye su zona.
+  const { data: bs } = await supabase.rpc("beneficios_boleto", { p_ticket: t.id });
+  return armarBoleto(t, (bs ?? []) as BeneficioBoleto[]) ?? { error: "Boleto no encontrado.", status: 404 };
 }
 
 export type CredencialWallet = { pase: PaseWallet; fan: boolean; logo: string; logoTexto?: string; foto: string | null; banda: string; apple: ImagenesApple };
@@ -142,7 +146,8 @@ export async function paseActualizado(serial: string, token: string): Promise<Pa
   };
   const cambiado = new Date(d.cambiado_at);
   if (d.tipo === "boleto") {
-    const b = d.boleto ? armarBoleto(d.boleto) : null;
+    const { data: bs } = d.boleto ? await supabase.rpc("wallet_beneficios", { p_serial: serial, p_token: token }) : { data: [] };
+    const b = d.boleto ? armarBoleto(d.boleto, (bs ?? []) as BeneficioBoleto[]) : null;
     return b && b.pase.serial === serial ? { pase: b.pase, apple: b.apple, cambiado } : null;
   }
   if (!d.credencial) return null;

@@ -1,4 +1,5 @@
 /* eslint-disable @next/next/no-img-element -- logos del kit y fotos desde Storage */
+import { BeneficiosZona } from "@/components/BeneficiosZona";
 import Image from "next/image";
 import Link from "next/link";
 import { Anuncios } from "@/components/anuncios/Anuncios";
@@ -28,6 +29,7 @@ import { getProgram } from "@/lib/program";
 import { withSeller } from "@/lib/seller-rules";
 import { funcionVendible, textosVenta } from "@/lib/ventas-rules";
 import {
+  formatPerformanceDate,
   formatPrice,
   getGallery,
   getProduction,
@@ -105,6 +107,8 @@ export async function ProductionView({
   const proxima = comprables[0] ?? null;
   // 0120: cada obra decide si muestra precios y si se vende en la página o todo por WhatsApp.
   const conPrecios = p.mostrar_precios !== false;
+  // 0122: "Solo el sábado 5 de diciembre" en beneficios de algunas funciones.
+  const fechasFn = new Map(performances.map((fn) => [fn.id, formatPerformanceDate(fn.starts_at)]));
   const porWhatsApp = p.modo_venta === "whatsapp";
   const tv = textosVenta(p.modo_venta);
   // Botones de compra: en "todo por WhatsApp" van directo a WhatsApp; si no, a las funciones.
@@ -236,10 +240,12 @@ export async function ProductionView({
           </div>
           <ul>
             {prices.map((z) => (
-              <li key={z.nombre} className="grid grid-cols-[14px_minmax(0,1fr)_auto] items-center gap-4 border-b border-current/12 px-1 py-4 last:border-0">
+              <li key={z.nombre} className="grid grid-cols-[14px_minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2 border-b border-current/12 px-1 py-4 last:border-0">
                 <i aria-hidden="true" className="h-3.5 w-3.5 rounded-[4px] border border-current/20" style={{ background: z.color ?? "currentColor" }} />
                 <span className="text-[15px] font-semibold">{z.nombre}</span>
-                {conPrecios && <strong className="num text-[17px]">{formatPrice(z.price)}</strong>}
+                {conPrecios ? <strong className="num text-[17px]">{formatPrice(z.price)}</strong> : <span />}
+                {/* 0122: lo que incluye la zona además del lugar. */}
+                {!!z.beneficios?.length && <BeneficiosZona beneficios={z.beneficios} fechas={fechasFn} className="col-start-2 col-end-4" />}
               </li>
             ))}
           </ul>

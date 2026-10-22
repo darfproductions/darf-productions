@@ -5,7 +5,8 @@ import { useCallback, useEffect, useState, useTransition } from "react";
 import { QrScanner } from "@/components/panel/QrScanner";
 import { bip } from "@/lib/aviso-sonido";
 import { mayus } from "@/lib/dates";
-import { buscarPuerta, checkIn, conteoPuerta, deshacerEntrada, visitaPuerta, type BoletoPuerta, type CheckIn, type Conteo, type Visita } from "./actions";
+import { beneficiosPuerta, buscarPuerta, checkIn, conteoPuerta, deshacerEntrada, entregarBeneficio, visitaPuerta, type BoletoPuerta, type CheckIn, type Conteo, type Visita } from "./actions";
+import { TIPOS_BENEFICIO, horaAcceso, minutosAcceso, textoBeneficio, type BeneficioBoleto } from "@/lib/beneficios-rules";
 import { esPaseClub, etiquetaBoleto } from "./door-rules";
 import { Icono, type IconoNombre } from "@/components/Icono";
 
@@ -40,6 +41,20 @@ export function DoorScanner({ pid, funciones, inicial }: { pid: string; funcione
   const [hallados, setHallados] = useState<BoletoPuerta[] | null>(null);
   const [aviso, setAviso] = useState("");
   const [pending, start] = useTransition();
+  // 0122: beneficios del último boleto leído (token para marcar entregas).
+  const [benef, setBenef] = useState<{ token: string; lista: BeneficioBoleto[] } | null>(null);
+  const cargarBenef = async (token: string, r: CheckIn | Visita) => {
+    if (r.result === "ok" || r.result === "ya_usado") {
+      const lista = await beneficiosPuerta(token);
+      setBenef(lista.length ? { token, lista } : null);
+    } else setBenef(null);
+  };
+  const entregar = (b: BeneficioBoleto, si: boolean) => start(async () => {
+    if (!benef) return;
+    const r = await entregarBeneficio(benef.token, b.beneficio_id, si);
+    if (r.ok) setBenef({ token: benef.token, lista: r.beneficios }); else setAviso(r.message);
+  });
+  const inicio = funciones.find((f) => f.id === funcion)?.starts_at ?? null;
   const v = res ? VISTA[res.result] : null;
 
   const actualizar = useCallback(async () => {
@@ -59,6 +74,7 @@ export function DoorScanner({ pid, funciones, inicial }: { pid: string; funcione
   const leer = (token: string) => start(async () => {
     const r = esPaseClub(token) ? await visitaPuerta(token, funcion) : await checkIn(token, funcion);
     setRes(r);
+    if (esPaseClub(token)) setBenef(null); else await cargarBenef(token, r);
     bip(r.result === "ok" || r.result === "visita_ok");
     await actualizar();
   });
@@ -72,6 +88,7 @@ export function DoorScanner({ pid, funciones, inicial }: { pid: string; funcione
   const marcar = (b: BoletoPuerta) => start(async () => {
     const r = await checkIn(b.qr_token, funcion);
     setRes(r);
+    await cargarBenef(b.qr_token, r);
     bip(r.result === "ok");
     await actualizar();
     const n = await buscarPuerta(funcion, q);
@@ -127,6 +144,30 @@ export function DoorScanner({ pid, funciones, inicial }: { pid: string; funcione
           {res.result === "otra_funcion" && <p className="mt-1 text-sm">No se marcó como usado. Mándalo a taquilla.</p>}
           {res.result === "error" && <p>{res.message}</p>}
         </div>
+      )}
+      {/* 0122: beneficios de su zona; se marca lo que ya se entregó. */}
+      {benef && res && (res.result === "ok" || res.result === "ya_usado") && (
+        <section aria-label="Beneficios del boleto" className="flex flex-col gap-2 rounded-2xl border border-[#d7bb5f]/50 bg-telon p-4">
+          <p className="text-sm font-black uppercase tracking-[0.14em] text-[#d7bb5f]">Incluye · {benef.lista[0]?.zona}</p>
+          {minutosAcceso(benef.lista) && <p className="text-sm font-bold">Acceso anticipado: puede entrar desde las {horaAcceso(inicio, minutosAcceso(benef.lista))}</p>}
+          <ul className="flex flex-col divide-y divide-white/10">
+            {benef.lista.map((b) => (
+              <li key={b.beneficio_id} className="flex flex-wrap items-center justify-between gap-2 py-2">
+                <span className="flex min-w-0 items-center gap-2">
+                  <Icono nombre={TIPOS_BENEFICIO[b.tipo]?.icono ?? "destello"} />
+                  <span>
+                    <b>{textoBeneficio(b)}</b>
+                    {b.alcanza === false && <span className="block text-xs font-bold text-[#ff8fa3]">No alcanzó: el cupo es de {b.cupo}</span>}
+                    {b.entregado_at && <span className="block text-xs text-exito">Entregado a las {hora(b.entregado_at)}</span>}
+                  </span>
+                </span>
+                {b.tipo !== "acceso" && b.alcanza !== false && (b.entregado_at
+                  ? <button type="button" disabled={pending} onClick={() => entregar(b, false)} className={chico}>Deshacer</button>
+                  : <button type="button" disabled={pending} onClick={() => entregar(b, true)} className="rounded-full bg-[#d7bb5f] px-3 py-1.5 text-xs font-bold text-[#0b0910] disabled:opacity-60">Marcar entregado</button>)}
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
       <QrScanner busy={pending} placeholder="Código del boleto o del pase (DRF-XXXX)" onCode={leer} />
       <p className="text-xs text-texto-3">Lee boletos y pases del Club Fan. El pase (de Mi cuenta o Wallet) suma la visita de esa persona en esta función, también a quien compró: puede haber una persona revisando boletos y otra escaneando pases.</p>

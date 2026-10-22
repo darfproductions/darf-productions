@@ -1,5 +1,7 @@
 "use client";
 
+import { BeneficiosZona } from "@/components/BeneficiosZona";
+
 import Link from "next/link";
 import type { Forma } from "@/lib/mapa-libre";
 import { useRouter } from "next/navigation";
@@ -79,6 +81,8 @@ export function SeatPicker(props: {
   }, [props.performanceId, props.productionId, props.seats]);
   const priceByCat = useMemo(() => new Map(props.prices.map((p) => [p.categoryId, p])), [props.prices]);
   const chosen = props.seats.filter((s) => selected.has(s.id));
+  // 0122: zonas elegidas que incluyen algo.
+  const zonasElegidas = [...new Set(chosen.map((s) => s.price_category_id ?? ""))].map((c) => priceByCat.get(c)).filter((z): z is ZonePrice => !!z?.beneficios?.length);
   const subtotal = chosen.reduce((n, s) => n + (priceByCat.get(s.price_category_id ?? "")?.price ?? 0), 0);
   const disc = previewDiscount(discount, chosen, (id) => priceByCat.get(id)?.price);
 
@@ -151,6 +155,17 @@ export function SeatPicker(props: {
     <div className="grid gap-8 lg:grid-cols-12">
       <section aria-label="Mapa de asientos" className="flex flex-col gap-4 lg:col-span-8">
         {aviso && <p role="alert" className="rounded-xl border border-[#ff8fa3]/40 bg-[#ff8fa3]/10 px-4 py-3 text-sm">{aviso}</p>}
+        {/* 0122: qué incluye cada zona (además del lugar). */}
+        {props.prices.some((z) => z.beneficios?.length) && (
+          <div className="grid gap-3 rounded-2xl bg-telon p-4 sm:grid-cols-2">
+            {props.prices.filter((z) => z.beneficios?.length).map((z) => (
+              <div key={z.categoryId}>
+                <p className="mb-1 flex items-center gap-2 text-sm font-bold"><i aria-hidden="true" className="h-3 w-3 rounded-[3px]" style={{ background: z.color ?? "currentColor" }} />{z.nombre} incluye</p>
+                <BeneficiosZona beneficios={z.beneficios} className="text-texto-2" />
+              </div>
+            ))}
+          </div>
+        )}
         <SeatMap formas={props.formas} seats={props.seats} prices={props.prices} taken={taken} selected={selected} onToggle={toggle} sinPrecios={!conTotal} />
         <button type="button" onClick={() => { setPolled(null); setAviso(""); router.refresh(); }} className="self-start text-sm font-bold text-violeta-claro">Actualizar disponibilidad</button>
       </section>
@@ -167,6 +182,13 @@ export function SeatPicker(props: {
               ))}
             </ul>
           )}
+
+          {zonasElegidas.map((z) => (
+            <div key={z.categoryId} className="rounded-xl bg-sala p-3">
+              <p className="mb-1 text-xs font-black uppercase tracking-[0.12em] text-violeta-claro">Tu lugar en {z.nombre} incluye</p>
+              <BeneficiosZona beneficios={z.beneficios} />
+            </div>
+          ))}
 
           <div className="flex flex-col gap-2 border-t border-white/10 pt-4">
             <label htmlFor="codigo" className="text-sm font-semibold">Código de descuento</label>

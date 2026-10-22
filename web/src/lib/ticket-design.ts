@@ -15,6 +15,10 @@ export type BoletoVista = {
   /** QR como imagen (data URL); null si la función ya pasó. */
   qr: string | null;
   usado: boolean;
+  /** 0122: lo que incluye su zona ("Acceso anticipado (15 min antes)", "Póster firmado"). */
+  incluye?: string[];
+  /** 0122: "Puertas para ti: 7:45 p.m.". */
+  acceso?: string | null;
 };
 
 export type EstiloBoleto = { fondo: string; superficie: string; texto: string; acento: string; logo: string | null; /** Póster oficial limpio 3:4 (0093), de fondo arriba. */ poster?: string | null };

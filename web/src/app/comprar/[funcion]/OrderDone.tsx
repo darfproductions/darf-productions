@@ -27,6 +27,12 @@ export function OrderDone({ result, modo = "web", mostrarTotal = true }: { resul
         <p className="titular text-3xl">{modo === "hibrido" ? "¡Listo! Sigue en WhatsApp" : "¡Lugares apartados!"}</p>
         {/* Híbrido: sin hablar de pago ni boletos (pedido de Diego). */}
         <p className="text-lg">{modo === "hibrido" ? "Código" : "Orden"} <b>{result.orderCode}</b> · {result.seats.join(", ")}{mostrarTotal && <> · Total {formatMoney(result.total)}</>}</p>
+        {/* 0122: lo que incluye su zona. */}
+        {!!result.incluye?.length && (
+          <ul className="flex flex-col gap-1 rounded-xl bg-white/5 px-4 py-3 text-sm">
+            {result.incluye.map((x) => <li key={x}>{x}</li>)}
+          </ul>
+        )}
         {result.expiresAt && (
           <p className="rounded-xl border border-aviso/40 bg-aviso/10 px-4 py-3 text-sm">
             Tus lugares quedan apartados hasta <b>{limiteTexto(result.expiresAt)}</b>; {modo === "hibrido" ? "si no se confirman para entonces" : "si no se confirma tu pago para entonces"}, se liberan solos.

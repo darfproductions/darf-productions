@@ -1,12 +1,14 @@
 "use client";
 
+import type { BeneficioCorto } from "@/lib/beneficios-rules";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { colorZona, textoSobre } from "@/lib/seatmap-rules";
 import { clampSeat, formatMoney, groupSeatsByRow, seatSize, ZONE_COLORS, type MapSeat } from "@/lib/tickets";
 import type { Forma } from "@/lib/mapa-libre";
 import { MapaPlano } from "@/components/MapaPlano";
 
-export type ZonePrice = { categoryId: string; price: number; nombre: string; color?: string | null; orden?: number; /** 0118: precio sin la promo (se muestra tachado). */ antes?: number };
+export type ZonePrice = { categoryId: string; price: number; nombre: string; color?: string | null; orden?: number; /** 0118: precio sin la promo (se muestra tachado). */ antes?: number;
+  /** 0122: lo que incluye la zona. */ beneficios?: BeneficioCorto[] };
 
 // Mapa de asientos (mismo dibujo para la compra en línea y la taquilla del panel).
 // Solo pinta; quién puede comprar y qué está ocupado lo decide la base.

@@ -179,6 +179,8 @@ export function boletosSubtabs(a: PanelAccessData, pid: string): SubTab[] {
     { id: "taquilla", label: "Taquilla", path: "boletos/taquilla", show: can(a, pid, "ventas.operar") },
     { id: "funciones", label: "Funciones y precios", path: "boletos/funciones", show: can(a, pid, "funciones.gestionar") || can(a, pid, "ventas.operar") },
     { id: "mapa", label: "Mapa de asientos", path: "boletos/mapa", show: can(a, pid, "funciones.gestionar") },
+    // 0122: beneficios por zona (VIP: acceso anticipado, póster…) y su reporte de entregas.
+    { id: "beneficios", label: "Beneficios", path: "boletos/beneficios", show: can(a, pid, "funciones.gestionar") || can(a, pid, "ventas.ver") },
     { id: "descuentos", label: "Descuentos", path: "boletos/descuentos", show: can(a, pid, "descuentos.gestionar") },
     { id: "corte", label: "Corte de caja", path: "boletos/corte", show: can(a, pid, "ventas.ver") || can(a, pid, "reportes.ver") },
     { id: "vendedores", label: "Vendedores", path: "boletos/vendedores", show: can(a, pid, "ventas.ver") || can(a, pid, "vendedores.gestionar") },

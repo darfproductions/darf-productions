@@ -1,5 +1,7 @@
 "use client";
 
+import { BeneficiosZona } from "@/components/BeneficiosZona";
+
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { createClient } from "@/lib/supabase/client";
@@ -63,6 +65,7 @@ export function GeneralPicker(props: { performanceId: string; productionName: st
                 onChange={() => { setZone(x.price_category_id); setCantidad(1); }} />
               <span className="font-bold">{x.nombre}{conTotal && <> · {x.antes != null && <s className="font-normal opacity-60">{formatMoney(x.antes)}</s>} {formatMoney(x.precio)}</>}</span>
               {x.descripcion && <span className="text-xs text-texto-3">{x.descripcion}</span>}
+              <BeneficiosZona beneficios={x.beneficios} className="my-1 text-texto-2" />
               <span className={`text-sm ${x.libres === 0 ? "text-[#ff8fa3]" : x.libres <= 10 ? "text-aviso" : "text-texto-2"}`}>
                 {x.libres === 0 ? "Agotado" : x.libres <= 10 ? `¡Quedan ${x.libres}!` : `${x.libres} lugares disponibles`}
               </span>

@@ -18,6 +18,8 @@ export function whatsappPayUrl(
     buyerPhone?: string | null;
     discountCode?: string | null;
     discountAmount?: number | null;
+    /** 0122: "Incluye (VIP): …" por zona. */
+    incluye?: string[];
   },
 ): string {
   if (!phoneNumber) return "";
@@ -28,15 +30,16 @@ export function whatsappPayUrl(
     (o.discountCode ? ` — Código de descuento: ${o.discountCode} (−${formatMoney(o.discountAmount ?? 0)})` : "") +
     ` — Total: ${formatMoney(o.total)}` +
     (o.buyerPhone ? ` — Teléfono: ${o.buyerPhone}` : "") +
+    (o.incluye?.length ? ` — ${o.incluye.join(" — ")}` : "") +
     ". Mi solicitud ya quedó guardada en mi cuenta DARF, en espera de aprobación.";
   return `https://wa.me/${phoneNumber}?text=${encodeURIComponent(msg)}`;
 }
 
 /** 0120: híbrido: ya apartó y sigue en WhatsApp (sin hablar de pago ni boletos; el total sí va). */
-export function whatsappApartadoUrl(phoneNumber: string, o: { prodName: string; orderCode: string; seats: string[]; total: number; buyerPhone?: string | null }): string {
+export function whatsappApartadoUrl(phoneNumber: string, o: { prodName: string; orderCode: string; seats: string[]; total: number; buyerPhone?: string | null; incluye?: string[] }): string {
   if (!phoneNumber) return "";
   const msg = `Hola, aparté mis lugares para ${o.prodName} — Código: ${o.orderCode} — Lugares: ${o.seats.join(", ")} — Total: ${formatMoney(o.total)}` +
-    (o.buyerPhone ? ` — Teléfono: ${o.buyerPhone}` : "") + ".";
+    (o.buyerPhone ? ` — Teléfono: ${o.buyerPhone}` : "") + (o.incluye?.length ? ` — ${o.incluye.join(" — ")}` : "") + ".";
   return `https://wa.me/${phoneNumber}?text=${encodeURIComponent(msg)}`;
 }
 

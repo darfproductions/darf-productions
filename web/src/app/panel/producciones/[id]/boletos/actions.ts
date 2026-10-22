@@ -569,3 +569,76 @@ export async function borrarZona(pid: string, zid: string, destino: string | nul
   const n = Number(data ?? 0);
   return { ok: true, message: n ? `Zona borrada; sus ${n} asientos pasaron a la otra zona.` : "Zona borrada." };
 }
+
+// ──────── Beneficios por zona (0122) ────────
+// La base revisa funciones.gestionar en esta obra y que las zonas sean de la obra.
+
+export async function guardarBeneficio(_p: TicketState, f: FormData): Promise<TicketState> {
+  const pid = String(f.get("pid"));
+  const id = String(f.get("id") ?? "");
+  const tipo = String(f.get("tipo") ?? "otro");
+  const nombre = String(f.get("nombre") ?? "").trim();
+  if (nombre.length < 2) return { ok: false, message: "Escribe el nombre del beneficio." };
+  if (!["experiencia", "acceso", "souvenir", "atencion", "otro"].includes(tipo)) return { ok: false, message: "Tipo no válido." };
+  const num = (k: string) => { const v = String(f.get(k) ?? "").trim(); return v ? Number(v) : null; };
+  const minutos = tipo === "acceso" ? num("minutos_antes") : null;
+  const cupo = num("cupo");
+  if (minutos != null && (!Number.isInteger(minutos) || minutos < 1 || minutos > 240)) return { ok: false, message: "Los minutos deben ser de 1 a 240." };
+  if (cupo != null && (!Number.isInteger(cupo) || cupo < 1)) return { ok: false, message: "El cupo debe ser un número entero mayor a 0 (o vacío)." };
+  const funciones = f.get("cuando") === "algunas" ? f.getAll("funciones").map(String) : [];
+  if (f.get("cuando") === "algunas" && !funciones.length) return { ok: false, message: "Marca al menos una función (o elige \"Todas\")." };
+  const row = {
+    tipo, nombre, detalle: String(f.get("detalle") ?? "").trim() || null, minutos_antes: minutos, cupo,
+    funciones: funciones.length ? funciones : null, activo: f.has("activo") ? f.get("activo") === "on" : true, updated_at: new Date().toISOString(),
+  };
+  const supabase = await createClient();
+  let bid = id;
+  if (id) {
+    const { error, count } = await supabase.from("zona_beneficios").update(row, { count: "exact" }).eq("id", id).eq("production_id", pid);
+    if (error) return { ok: false, message: mensajeError(error) };
+    if (!count) return { ok: false, message: "No se guardó: revisa tus permisos." };
+  } else {
+    const { data: ult } = await supabase.from("zona_beneficios").select("orden").eq("production_id", pid).order("orden", { ascending: false }).limit(1).maybeSingle();
+    const { data, error } = await supabase.from("zona_beneficios").insert({ ...row, production_id: pid, orden: (ult?.orden ?? 0) + 1 }).select("id").single();
+    if (error) return { ok: false, message: mensajeError(error) };
+    bid = data.id as string;
+  }
+  if (f.get("con_zonas") === "1") {
+    const zonas = f.getAll("zonas").map(String);
+    const { error: e1 } = await supabase.from("zona_beneficio_zonas").delete().eq("beneficio_id", bid);
+    if (e1) return { ok: false, message: mensajeError(e1) };
+    if (zonas.length) {
+      const { error: e2 } = await supabase.from("zona_beneficio_zonas").insert(zonas.map((z) => ({ beneficio_id: bid, price_category_id: z })));
+      if (e2) return { ok: false, message: mensajeError(e2) };
+    }
+  }
+  refresh(pid);
+  return { ok: true, message: id ? "Beneficio guardado." : "Beneficio creado. Revisa en qué zonas aplica." };
+}
+
+export async function borrarBeneficio(_p: TicketState, f: FormData): Promise<TicketState> {
+  const pid = String(f.get("pid"));
+  const supabase = await createClient();
+  const { error, count } = await supabase.from("zona_beneficios").delete({ count: "exact" }).eq("id", String(f.get("id"))).eq("production_id", pid);
+  if (error) return { ok: false, message: mensajeError(error) };
+  if (!count) return { ok: false, message: "No se borró: revisa tus permisos." };
+  refresh(pid);
+  return { ok: true, message: "Beneficio borrado." };
+}
+
+export async function moverBeneficio(_p: TicketState, f: FormData): Promise<TicketState> {
+  const pid = String(f.get("pid"));
+  const supabase = await createClient();
+  const { data } = await supabase.from("zona_beneficios").select("id, orden").eq("production_id", pid).order("orden").order("created_at");
+  const xs = (data ?? []) as { id: string; orden: number }[];
+  const i = xs.findIndex((x) => x.id === String(f.get("id")));
+  const j = f.get("dir") === "arriba" ? i - 1 : i + 1;
+  if (i < 0 || j < 0 || j >= xs.length) return null;
+  [xs[i], xs[j]] = [xs[j], xs[i]];
+  for (const [k, x] of xs.entries()) {
+    const { error } = await supabase.from("zona_beneficios").update({ orden: k + 1 }).eq("id", x.id);
+    if (error) return { ok: false, message: mensajeError(error) };
+  }
+  refresh(pid);
+  return { ok: true, message: "Orden guardado." };
+}

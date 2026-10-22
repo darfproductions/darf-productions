@@ -45,6 +45,9 @@ export type DatosBoleto = {
   orden: string;
   comprador: string;
   estilo: EstiloBoleto;
+  /** 0122: lo que incluye la zona y la hora de acceso anticipado. */
+  incluye?: string[];
+  acceso?: string | null;
 };
 
 export type DatosCredencial = {
@@ -142,6 +145,8 @@ export function paseBoleto(b: DatosBoleto): PaseWallet {
     auxiliares: [{ key: "nombre", label: "A nombre de", value: b.comprador }, { key: "orden", label: "Orden", value: b.orden }],
     reverso: [
       { key: "funcion", label: "Función", value: conFecha ? fechaLarga(b.startsAt!) : "Fecha por anunciar" },
+      ...(b.incluye?.length ? [{ key: "incluye", label: "Incluye", value: b.incluye.join(" · ") }] : []),
+      ...(b.acceso ? [{ key: "acceso", label: "Acceso anticipado", value: b.acceso }] : []),
       { key: "ayuda", label: "Cómo entrar", value: AVISO_BOLETO },
       { key: "web", label: "Mis boletos", value: "darfproductions.com/cuenta" },
     ],

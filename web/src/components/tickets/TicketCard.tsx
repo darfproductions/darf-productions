@@ -53,6 +53,14 @@ export function TicketCard({ b, estilo, i, total }: { b: BoletoVista; estilo: Es
           <dd className="truncate font-bold">{b.comprador}</dd>
         </div>
       </dl>
+      {/* 0122: beneficios de su zona. */}
+      {!!b.incluye?.length && (
+        <div className="mx-6 mb-4 rounded-xl px-4 py-3 text-sm" style={{ background: estilo.superficie }}>
+          <p className="text-[11px] font-bold uppercase tracking-[0.2em]" style={{ color: estilo.acento }}>Incluye</p>
+          <ul className="mt-1 flex flex-col gap-0.5">{b.incluye.map((x) => <li key={x}>{x}</li>)}</ul>
+          {b.acceso && <p className="mt-1.5 font-bold">{b.acceso}</p>}
+        </div>
+      )}
       <div className="px-6 pb-4">
         <div className="relative mx-auto aspect-square w-full max-w-[280px] rounded-2xl bg-white p-3">
           {b.qr ? (
