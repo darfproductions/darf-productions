@@ -5,6 +5,21 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-10-22 — DARF Showcase Shows (migración 0121)
+
+- Página pública `/showcases` con el contenido del dossier: públicos, qué hace especial a DARF, galería "Así se vive",
+  planes (precio, duración y elenco, qué incluye, ideal para, nota técnica, fotos y videos del plan), condiciones.
+  Se llega con un botón en Eventos. Sin publicar, solo la ve quien la edita.
+- "Contratar {plan}" → formulario (nombre, teléfono, correo, fecha, horario, lugar, tipo de evento, personas, notas).
+  `showcase_solicitar` (anon y con cuenta) valida, guarda en `showcase_solicitudes` (tope 5 por teléfono al día),
+  avisa al equipo con permiso y regresa el WhatsApp; la web abre wa.me con todo el mensaje. Avisa si la fecha está a
+  menos de 2 semanas (o de 1 mes, para shows personalizados).
+- Panel → Proyectos → Showcases (permiso de Casa DARF `casa.showcases`): Planes (crear, editar, ordenar, ocultar,
+  borrar), Página (textos, listas, WhatsApp editable, publicar), Fotos y videos (generales por categoría —En escena,
+  Equipo, Ensayos— y por plan; fotos al bucket `showcases`, videos como ligas de YouTube/Instagram/TikTok) y
+  Solicitudes (bandeja por estado: nueva, cotizada, confirmada, descartada, con notas del equipo).
+- Datos iniciales: los 3 planes y textos del dossier, WhatsApp 524465220560 (solo si las tablas están vacías).
+
 ## 2026-10-22 — Cómo se vende cada obra (migración 0120)
 
 - `productions.funciones_publicadas`: con la casilla apagada el público no ve funciones, fechas, cuenta regresiva ni

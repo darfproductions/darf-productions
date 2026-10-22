@@ -213,6 +213,11 @@ describe("Casa DARF (0102)", () => {
     expect(canConfigAudition(a, { id: "o", production_id: "hsm" })).toBe(false);
     expect(subs(a, "personas")).toEqual(["/panel/personas", "/panel/cumpleanos"]);
   });
+  it("Showcases (0121) sale en Proyectos solo con su permiso", () => {
+    expect(subs({ ...base, casa: ["casa.showcases"] }, "proyectos")).toEqual(["/panel/showcases"]);
+    expect(subs({ ...base, casa: ["casa.sitio"] }, "proyectos")).not.toContain("/panel/showcases");
+    expect(subs({ isDirector: true, byProduction: {} }, "proyectos")).toContain("/panel/showcases");
+  });
   it("solo el Director ve Ajustes → Casa DARF", () => {
     expect(subs({ isDirector: true, byProduction: {} }, "ajustes")[0]).toBe("/panel/ajustes/casa");
     expect(subs({ ...base, casa: ["casa.roles"] }, "ajustes")).toEqual(["/panel/roles"]);

@@ -251,8 +251,10 @@ export function panelMenu(a: PanelAccessData): NavSection[] {
   if (hasAuditionAccess(a)) proyectos.push({ href: "/panel/audiciones", label: "Audiciones" });
   // Eventos (0081/0084): Director, Fan Zone, puerta o taquilla de una obra, o equipo de un evento.
   if (hasEventoAccess(a)) proyectos.push({ href: "/panel/eventos", label: "Eventos" });
+  // Showcases (0121): planes, página y solicitudes de DARF Showcase Shows.
+  if (casa(a, "casa.showcases")) proyectos.push({ href: "/panel/showcases", label: "Showcases" });
   // Casa DARF sin obras ni audiciones (p. ej. solo Roles o Bitácora) no ve Proyectos.
-  if (proyectos.length) out.push({ id: "proyectos", label: "Proyectos", href: proyectos[0].href, subs: proyectos, match: ["/panel/producciones", "/panel/audiciones", "/panel/eventos"] });
+  if (proyectos.length) out.push({ id: "proyectos", label: "Proyectos", href: proyectos[0].href, subs: proyectos, match: ["/panel/producciones", "/panel/audiciones", "/panel/eventos", "/panel/showcases"] });
   // Personas y Ajustes: cada subpestaña con su permiso de Casa DARF (0102).
   const personas: Section[] = [
     ...(casa(a, "casa.personas") ? [{ href: "/panel/personas", label: "Directorio" }, { href: "/panel/cumpleanos", label: "Cumpleaños" }] : []),
