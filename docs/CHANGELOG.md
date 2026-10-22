@@ -5,9 +5,19 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-10-22 — 0124 Póster alterno y fondos de "Para invitar y vender"
+
+- Kit de la obra: "Póster alterno" opcional en 3:4 y 9:16, cada uno con información y sin textos ni logo (columnas
+  `poster_alt_*`). Pasa por borradores igual que el póster oficial (sección "poster"); la limpieza del Storage lo
+  respeta (`kit_en_uso`). Sale en el kit de prensa. No reemplaza al póster oficial en la página.
+- Fondos: la invitación usa el póster alterno sin textos (si falta: ambiente → póster solo imagen). Mapa, ¿Cómo
+  aseguro mi lugar?, Funciones y ¿Qué incluye? usan la imagen de ambiente (si falta: póster solo imagen), porque el
+  póster tiene personajes y textos que compiten con lo de encima. Los diseños de preventa siguen con el póster.
+- Título "¿Cómo aseguro mi lugar?" y espaciado en tres franjas (logos, contenido, pie) en los cinco diseños.
+
 ## 2026-10-22 — Más diseños de Difusión: invitación, mapa, cómo comprar, calendario, qué incluye
 
-- Panel → Público → Difusión, sección "Para invitar y vender", en cuadrado, 3:4 y 9:16, con el póster de fondo:
+- Panel → Público → Difusión, sección "Para invitar y vender", en cuadrado, 3:4 y 9:16 (fondos: ver 0124):
   - Invitación: "DARF Productions te invita a" + logo grande de la obra, fecha y hora de la función elegida (o las
     fechas de la temporada), lugar, WhatsApp, página y QR a la obra.
   - Mapa de zonas: el mapa real (filas o mapa libre con su escenario), colores de zona y precios (si la obra los

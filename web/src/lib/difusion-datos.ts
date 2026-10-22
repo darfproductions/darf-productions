@@ -13,6 +13,10 @@ export type ObraDifusion = {
   fondo: { post: string | null; historia: string | null };
   /** Póster limpio 3:4 y 9:16 (diseños de preventa: el póster de fondo); si falta, el ambiente. */
   poster: { p3x4: string | null; p9x16: string | null };
+  /** Imagen de ambiente tal cual (o null). */
+  ambiente: string | null;
+  /** Póster alterno sin textos ni logo (0124): fondo de la invitación. */
+  alterno: { p3x4: string | null; p9x16: string | null };
   /** Fechas de la preventa del Club Fan de la obra (0118). */
   preventa: { desde: string | null; hasta: string | null };
   colores: { fondo: string; superficie: string; texto: string; acento: string };
@@ -22,7 +26,7 @@ export type ObraDifusion = {
 export async function getObraDifusion(pid: string): Promise<ObraDifusion | null> {
   const supabase = await createClient();
   const [{ data: p }, { data: fs }] = await Promise.all([
-    supabase.from("productions").select("nombre, venue, color_fondo, color_superficie, color_texto, color_acento, logo_path, ambiente_path, poster_3x4_path, poster_9x16_path, preventa_desde, preventa_hasta").eq("id", pid).maybeSingle(),
+    supabase.from("productions").select("nombre, venue, color_fondo, color_superficie, color_texto, color_acento, logo_path, ambiente_path, poster_3x4_path, poster_9x16_path, poster_alt_3x4_path, poster_alt_9x16_path, preventa_desde, preventa_hasta").eq("id", pid).maybeSingle(),
     supabase.from("performances").select("id, starts_at, venue, preventa_hasta, preventa_desde").eq("production_id", pid).is("cancelada_at", null).order("starts_at"),
   ]);
   if (!p) return null;
@@ -34,6 +38,8 @@ export async function getObraDifusion(pid: string): Promise<ObraDifusion | null>
     logoUrl: url(p.logo_path),
     fondo: { post: ambiente ?? url(p.poster_3x4_path), historia: ambiente ?? url(p.poster_9x16_path) },
     poster: { p3x4: url(p.poster_3x4_path) ?? ambiente, p9x16: url(p.poster_9x16_path) ?? url(p.poster_3x4_path) ?? ambiente },
+    ambiente,
+    alterno: { p3x4: url(p.poster_alt_3x4_path), p9x16: url(p.poster_alt_9x16_path) },
     preventa: { desde: (p.preventa_desde as string | null) ?? null, hasta: (p.preventa_hasta as string | null) ?? null },
     colores: {
       fondo: (p.color_fondo as string) ?? "#0b0a12", superficie: (p.color_superficie as string) ?? "#16141f",

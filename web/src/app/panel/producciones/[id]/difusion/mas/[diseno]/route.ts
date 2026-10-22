@@ -27,9 +27,16 @@ export async function GET(req: Request, ctx: RouteContext<"/panel/producciones/[
   const base = (env.siteUrl || "https://darfproductions.com").replace(/\/$/, "");
   const extra = diseno === "mapa" || diseno === "incluye" || diseno === "comprar" ? await getDatosExtra(id, funcion?.id ?? null) : undefined;
   const fecha = textoInvitacion({ funcion, rango: rangoFechas(obra.funciones) });
+  // La invitación va sobre el póster alterno sin textos; los diseños con mucha información, sobre el ambiente
+  // (el póster tiene personajes y textos que compiten con lo de encima). Si faltan, el póster solo imagen.
+  const historia = formato === "historia";
+  const poster = historia ? obra.poster.p9x16 : obra.poster.p3x4;
+  const fondoUrl = diseno === "invitacion"
+    ? (historia ? obra.alterno.p9x16 ?? obra.alterno.p3x4 : obra.alterno.p3x4 ?? obra.alterno.p9x16) ?? obra.ambiente ?? poster
+    : obra.ambiente ?? poster;
   const png = await extraPng({
     diseno, formato, obra: obra.nombre, logoUrl: obra.logoUrl, colores: obra.colores,
-    fondoUrl: formato === "historia" ? obra.poster.p9x16 : obra.poster.p3x4,
+    fondoUrl,
     liga: `${sitioCorto(base)}/producciones/${id}`, url: `${base}/producciones/${id}`,
     whatsapp: telefonoLegible(env.whatsapp), lugar: (funcion?.venue ?? obra.venue) || null,
     fecha: fecha.fecha, hora: fecha.hora, extra,

@@ -10,7 +10,7 @@ export const NOMBRE_SECCION: Record<Seccion, string> = {
   datos: "Datos y sinopsis",
   colores: "Colores",
   kit: "Logo e imagen de ambiente",
-  poster: "Póster oficial",
+  poster: "Pósters (oficial y alterno)",
   franja: "Franja de avisos",
   canciones: "Canciones",
   ficha: "Ficha extra",
@@ -49,7 +49,7 @@ export const capaVacia = (c: Capa) => Object.keys(c).length === 0;
 
 /** Columnas de la obra con la capa encima (datos, colores, kit y póster). */
 export function obraConCapa<T extends object>(p: T, c: Capa): T {
-  const poster = c.poster ? Object.fromEntries(Object.entries(c.poster).filter(([k]) => /^poster_(3x4|9x16|4x3|16x9)(_info)?_path$/.test(k))) : {};
+  const poster = c.poster ? Object.fromEntries(Object.entries(c.poster).filter(([k]) => /^poster_(alt_)?(3x4|9x16|4x3|16x9)(_info)?_path$/.test(k))) : {};
   return { ...p, ...(c.datos ?? {}), ...(c.colores ?? {}), ...(c.kit ?? {}), ...poster };
 }
 

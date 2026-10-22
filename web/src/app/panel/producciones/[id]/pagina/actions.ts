@@ -5,7 +5,7 @@ import { leerFranja } from "@/lib/banner-form";
 import { createClient } from "@/lib/supabase/server";
 import { themeProblems } from "@/lib/themes";
 import { parseYoutube } from "@/lib/youtube";
-import { FORMATOS, columna, type Formato } from "@/lib/poster";
+import { FORMATOS, FORMATOS_ALT, POSTER_ALT_COLUMNS, columna, columnaAlt, type Formato, type FormatoAlt } from "@/lib/poster";
 import { SECCIONES, type Seccion } from "@/lib/obra-capa-rules";
 
 // Editor de la página de la obra. La base decide qué puede cada quien
@@ -36,7 +36,7 @@ async function update(pid: string, values: Record<string, unknown>) {
 async function rutasKit(pid: string): Promise<Set<string>> {
   const supabase = await createClient();
   const [{ data: p }, { data: rows }] = await Promise.all([
-    supabase.from("productions").select(`logo_path, ambiente_path, ${FORMATOS.flatMap((f) => [columna(f, false), columna(f, true)]).join(", ")}`).eq("id", pid).maybeSingle(),
+    supabase.from("productions").select(`logo_path, ambiente_path, ${FORMATOS.flatMap((f) => [columna(f, false), columna(f, true)]).join(", ")}, ${POSTER_ALT_COLUMNS}`).eq("id", pid).maybeSingle(),
     supabase.from("obra_borradores").select("borrador, fans").eq("production_id", pid).in("seccion", ["kit", "poster"]),
   ]);
   const out = new Set<string>();
@@ -109,17 +109,23 @@ export async function saveKitImage(pid: string, kind: "logo" | "ambiente", path:
   return { ok: !!r?.ok, message: r?.message ?? "No se pudo guardar." };
 }
 
-/** Póster oficial (0093): un formato y versión; path vacío lo quita. */
-export async function savePoster(pid: string, formato: string, info: boolean, path: string): Promise<{ ok: boolean; message: string }> {
-  if (!(FORMATOS as readonly string[]).includes(formato)) return { ok: false, message: "Formato no válido." };
+/** Póster oficial (0093) o alterno (0124): un formato y versión; path vacío lo quita. */
+export async function savePoster(pid: string, formato: string, info: boolean, path: string, alt = false): Promise<{ ok: boolean; message: string }> {
+  if (!((alt ? FORMATOS_ALT : FORMATOS) as readonly string[]).includes(formato)) return { ok: false, message: "Formato no válido." };
   if (path && !path.startsWith(`${pid}/kit/`)) return { ok: false, message: "Ruta de archivo no válida." };
-  const r = await conLimpieza(pid, () => guardar(pid, "poster", { [columna(formato as Formato, info)]: path || null }, path ? "Póster guardado." : "Póster quitado.", true));
+  const col = alt ? columnaAlt(formato as FormatoAlt, info) : columna(formato as Formato, info);
+  const r = await conLimpieza(pid, () => guardar(pid, "poster", { [col]: path || null }, path ? "Póster guardado." : "Póster quitado.", true));
   return { ok: !!r?.ok, message: r?.message ?? "No se pudo guardar." };
+}
+
+/** Póster alterno (0124): igual que el oficial, en 3:4 y 9:16. */
+export async function savePosterAlt(pid: string, formato: string, info: boolean, path: string): Promise<{ ok: boolean; message: string }> {
+  return savePoster(pid, formato, info, path, true);
 }
 
 export async function quitarPoster(_p: EditState, f: FormData): Promise<EditState> {
   const pid = String(f.get("pid"));
-  const r = await savePoster(pid, String(f.get("formato")), f.get("info") === "1", "");
+  const r = await savePoster(pid, String(f.get("formato")), f.get("info") === "1", "", f.get("alt") === "1");
   return r.ok ? done(pid, r.message) : { ok: false, message: r.message };
 }
 

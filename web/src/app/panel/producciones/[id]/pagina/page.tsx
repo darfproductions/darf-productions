@@ -10,7 +10,7 @@ import { can } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
 import { assetUrl } from "@/lib/productions";
 import { kitMissing } from "@/lib/themes";
-import { quitarPoster, saveFacts, saveGeneral, saveKitImage, savePoster, saveThanks, saveVideos } from "./actions";
+import { quitarPoster, saveFacts, saveGeneral, saveKitImage, savePoster, savePosterAlt, saveThanks, saveVideos } from "./actions";
 import { ActionForm } from "@/components/panel/ActionForm";
 import { AnunciosEditor } from "@/components/anuncios/AnunciosEditor";
 import { BannerEditor } from "./BannerEditor";
@@ -19,7 +19,7 @@ import { EditForm } from "./EditForm";
 import { EstadoPanel } from "./EstadoPanel";
 import { RowsEditor } from "./RowsEditor";
 import { SongsEditor } from "./SongsEditor";
-import { FORMATOS, FORMATO_INFO, poster } from "@/lib/poster";
+import { FORMATOS, FORMATOS_ALT, FORMATO_INFO, poster, posterAlt } from "@/lib/poster";
 import { PosterSlot } from "./PosterSlot";
 import { Icono } from "@/components/Icono";
 import { CambiosPanel } from "./CambiosPanel";
@@ -181,6 +181,39 @@ export default async function PageEditor({ params }: PageProps<"/panel/produccio
                         </div>
                       );
                     })}
+                  </div>
+                ))}
+              </div>
+            </section>
+            <section id="poster-alterno" aria-label="Póster alterno" className="flex scroll-mt-24 flex-col gap-3 rounded-lg bg-sala p-4">
+              <div>
+                <p className="font-bold">Póster alterno <span className="font-normal text-texto-3">(opcional)</span></p>
+                <p className="text-sm text-texto-3">
+                  Otro arte de la obra, en dos versiones: <b>con la información</b> (sale en el kit de prensa) y <b>sin textos ni logo</b>,
+                  que se usa de fondo en la invitación de Difusión. Si falta, la invitación usa la imagen de ambiente.
+                </p>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                {FORMATOS_ALT.map((f) => (
+                  <div key={f} className="flex flex-col gap-2">
+                    <p className="text-sm font-bold">{FORMATO_INFO[f].titulo} <span className="font-normal text-texto-3">· ideal {FORMATO_INFO[f].ideal}</span></p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {[true, false].map((info) => {
+                        const ruta = posterAlt(p, f, info);
+                        return (
+                          <div key={String(info)} className="flex flex-col gap-1.5 rounded-lg bg-telon-2 p-2">
+                            <span className="text-xs font-semibold">{info ? "Con la información" : "Sin textos ni logo"}</span>
+                            <div className="mx-auto w-28 overflow-hidden rounded bg-sala" style={{ aspectRatio: FORMATO_INFO[f].ratio }}>
+                              {ruta ? <img src={assetUrl(ruta)} alt={`Póster alterno ${FORMATO_INFO[f].titulo} ${info ? "con información" : "sin textos"}`} className="h-full w-full object-cover" /> : <span className="grid h-full place-items-center text-[11px] text-texto-3">Falta</span>}
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <PosterSlot pid={id} formato={f} info={info} alt tiene={!!ruta} save={savePosterAlt.bind(null, id, f, info)} />
+                              {ruta && <ActionForm inline action={quitarPoster} hidden={{ pid: id, formato: f, info: info ? "1" : "0", alt: "1" }} confirm="¿Quitar esta imagen del póster alterno?" submit="Quitar" submitClass="text-xs font-bold text-texto-3 underline" />}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 ))}
               </div>
