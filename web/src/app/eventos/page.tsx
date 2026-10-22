@@ -6,6 +6,7 @@ import { getSession } from "@/lib/auth";
 import { esSocio } from "@/lib/credencial";
 import { getEncuentros, getEventosCartelera } from "@/lib/fanzone";
 import { EventoBloqueado } from "@/components/eventos/EventoBloqueado";
+import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Eventos" };
 
@@ -14,6 +15,8 @@ export const metadata: Metadata = { title: "Eventos" };
 export default async function EventosPage() {
   const [session, eventos, cartelera] = await Promise.all([getSession(), getEncuentros(null), getEventosCartelera(30)]);
   const socio = session ? await esSocio() : false;
+  // 0121: botón a Showcases (si la página está publicada).
+  const { data: sc } = await (await createClient()).from("showcase_ajustes").select("publicado, titulo").eq("id", 1).maybeSingle();
   // Los que aún no puede abrir (del club o con cuenta): se muestran con candado para invitar.
   const visibles = new Set(eventos.map((e) => e.id));
   const bloqueados = cartelera.filter((e) => !visibles.has(e.id));
@@ -26,6 +29,16 @@ export default async function EventosPage() {
         {!socio && <> Muchos son del <Link href="/fan-zone" className="font-bold text-oro-claro underline">Club Fan</Link> (es gratis).</>}
       </PageHeading>
       <div className="mx-auto flex max-w-[1100px] flex-col gap-10 px-5 md:px-16">
+        {sc?.publicado && (
+          <Link href="/showcases" className="flex flex-col gap-3 rounded-[22px] bg-[linear-gradient(120deg,#3b1ce8,#ff2f8c)] p-6 transition hover:brightness-110 md:flex-row md:items-center md:justify-between md:p-8">
+            <span className="flex flex-col gap-1">
+              <span className="text-[11px] font-black uppercase tracking-[0.2em] opacity-85">Lleva el espectáculo a tu evento</span>
+              <span className="display text-[clamp(1.6rem,3.5vw,2.4rem)]">{sc.titulo}</span>
+              <span className="text-sm opacity-90">Música, danza y teatro musical en vivo para escuelas, empresas y celebraciones.</span>
+            </span>
+            <span className="fb self-start bg-white text-[#0b0910] md:self-auto">Ver showcases</span>
+          </Link>
+        )}
         {enVivo.length > 0 && (
           <section aria-labelledby="vivo-t" className="flex flex-col gap-4">
             <h2 id="vivo-t" className="h2-seccion">Ahora</h2>

@@ -50,7 +50,7 @@ export function ImageUpload({
   productionId: string;
   kind: ImageKind;
   carpeta: "kit" | "creditos" | "galeria" | "programa";
-  bucket?: "producciones" | "gallery";
+  bucket?: "producciones" | "gallery" | "showcases";
   base: string;
   save: (path: string) => Promise<Result>;
   label?: string;
