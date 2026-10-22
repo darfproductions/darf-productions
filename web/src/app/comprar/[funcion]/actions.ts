@@ -3,7 +3,7 @@
 import { getSession } from "@/lib/auth";
 import { env } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
-import { whatsappPayUrl } from "@/lib/tickets";
+import { whatsappApartadoUrl, whatsappPayUrl } from "@/lib/tickets";
 import { mensajeError } from "@/lib/errores";
 import { telefonoOk } from "@/lib/account-rules";
 
@@ -22,6 +22,8 @@ export async function placeOrder(input: {
   phone: string;
   sellerCode: string;
   discountCode: string | null;
+  /** 0120: obra híbrida: el mensaje de WhatsApp habla de lugares apartados, no de pago. */
+  hibrido?: boolean;
 }): Promise<OrderResult> {
   const session = await getSession();
   if (!session) return { ok: false, message: "Tu sesión expiró. Vuelve a entrar para comprar." };
@@ -52,15 +54,17 @@ export async function placeOrder(input: {
     orderCode: d.order_code,
     total: Number(d.total),
     seats,
-    whatsappUrl: whatsappPayUrl(env.whatsapp, {
-      prodName: input.productionName,
-      orderCode: d.order_code,
-      seats,
-      total: Number(d.total),
-      buyerPhone: phone,
-      discountCode: d.discount_codigo,
-      discountAmount: d.discount_amount,
-    }),
+    whatsappUrl: input.hibrido
+      ? whatsappApartadoUrl(env.whatsapp, { prodName: input.productionName, orderCode: d.order_code, seats, total: Number(d.total), buyerPhone: phone })
+      : whatsappPayUrl(env.whatsapp, {
+        prodName: input.productionName,
+        orderCode: d.order_code,
+        seats,
+        total: Number(d.total),
+        buyerPhone: phone,
+        discountCode: d.discount_codigo,
+        discountAmount: d.discount_amount,
+      }),
   };
 }
 
@@ -73,6 +77,7 @@ export async function placeGeneralOrder(input: {
   phone: string;
   sellerCode: string;
   discountCode: string;
+  hibrido?: boolean;
 }): Promise<OrderResult> {
   const session = await getSession();
   if (!session) return { ok: false, message: "Tu sesión expiró. Vuelve a entrar para comprar." };
@@ -99,9 +104,11 @@ export async function placeGeneralOrder(input: {
     total: Number(d.total),
     seats,
     expiresAt: (ord?.expires_at as string | null) ?? null,
-    whatsappUrl: whatsappPayUrl(env.whatsapp, {
-      prodName: input.productionName, orderCode: d.order_code, seats, total: Number(d.total), buyerPhone: phone,
-      discountCode: d.discount_codigo, discountAmount: d.discount_amount,
-    }),
+    whatsappUrl: input.hibrido
+      ? whatsappApartadoUrl(env.whatsapp, { prodName: input.productionName, orderCode: d.order_code, seats, total: Number(d.total), buyerPhone: phone })
+      : whatsappPayUrl(env.whatsapp, {
+        prodName: input.productionName, orderCode: d.order_code, seats, total: Number(d.total), buyerPhone: phone,
+        discountCode: d.discount_codigo, discountAmount: d.discount_amount,
+      }),
   };
 }

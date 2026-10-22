@@ -94,26 +94,39 @@ async function guardarPago(orderId: string | undefined, metodo: string | undefin
 }
 
 export type SaleResult =
-  | { ok: true; orderCode: string; total: number; tickets: { seat: string; qr: string }[]; aviso?: string }
+  | { ok: true; orderCode: string; total: number; tickets: { seat: string; qr: string }[]; aviso?: string; /** 0120: a qué cuenta se fueron los boletos. */ cuenta?: string }
   | { ok: false; message: string };
 
-type Extras = { metodo?: string; codigo?: string; motivo?: string };
+type Extras = { metodo?: string; codigo?: string; motivo?: string; /** 0120: correo de la cuenta DARF del comprador. */ correo?: string };
 
 /** Antes de vender: una cortesía necesita motivo (0091). */
 function revisaExtras(x: Extras): string | null {
   if (x.metodo === "cortesia" && !x.motivo?.trim()) return "Escribe el motivo de la cortesía (a quién y por qué).";
+  if (x.correo?.trim() && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(x.correo.trim())) return "Revisa el correo de la cuenta del comprador.";
   return null;
 }
 
 /** Después de vender (0091): cortesía en $0 con motivo, o código de descuento, y el método de pago.
  *  La venta ya quedó hecha: si algo de esto falla se avisa, sin deshacerla. */
-async function aplicaExtras(orderId: string | undefined, x: Extras): Promise<{ total?: number; aviso?: string }> {
+async function aplicaExtras(orderId: string | undefined, x: Extras): Promise<{ total?: number; aviso?: string; cuenta?: string }> {
   if (!orderId) return {};
   const supabase = await createClient();
+  // 0120: los boletos a la cuenta del comprador (o guardados para cuando la cree con ese correo).
+  let cuenta: string | undefined;
+  let avisoCorreo: string | undefined;
+  const correo = x.correo?.trim();
+  if (correo) {
+    const { data, error } = await supabase.rpc("order_asignar_correo", { target_order_id: orderId, p_correo: correo });
+    if (error) avisoCorreo = `Se vendió, pero los boletos no quedaron en su cuenta: ${mensajeError(error)}.`;
+    else cuenta = data === "cuenta"
+      ? `Listo: los boletos ya están en la cuenta de ${correo.toLowerCase()}.`
+      : `${correo.toLowerCase()} aún no tiene cuenta: los boletos se le pasan solos cuando la cree con ese correo y lo confirme.`;
+  }
+  const junta = (a?: string) => [a, avisoCorreo].filter(Boolean).join(" ") || undefined;
   if (x.metodo === "cortesia") {
     const { error } = await supabase.rpc("order_cortesia", { target_order_id: orderId, p_motivo: x.motivo ?? "" });
-    if (error) return { aviso: `Se vendió, pero no quedó como cortesía: ${mensajeError(error)}. Hazlo desde Ventas y órdenes.` };
-    return { total: 0 };
+    if (error) return { aviso: junta(`Se vendió, pero no quedó como cortesía: ${mensajeError(error)}. Hazlo desde Ventas y órdenes.`), cuenta };
+    return { total: 0, aviso: junta(), cuenta };
   }
   let total: number | undefined;
   let aviso: string | undefined;
@@ -123,7 +136,7 @@ async function aplicaExtras(orderId: string | undefined, x: Extras): Promise<{ t
     else total = Number((data as { total: number }).total);
   }
   await guardarPago(orderId, x.metodo);
-  return { total, aviso };
+  return { total, aviso: junta(aviso), cuenta };
 }
 
 /** Venta en taquilla (queda aprobada al momento; mismo RPC que la 1.0). */
@@ -148,7 +161,7 @@ export async function boxOfficeSale(input: { pid: string; performanceId: string;
     (r.tickets ?? []).map(async (t) => ({ seat: t.seat_label, qr: await QRCode.toDataURL(t.qr_token, { margin: 1, width: 240 }) })),
   );
   refresh(input.pid);
-  return { ok: true, orderCode: r.order_code, total: ex.total ?? Number(r.total), tickets, aviso: ex.aviso };
+  return { ok: true, orderCode: r.order_code, total: ex.total ?? Number(r.total), tickets, aviso: ex.aviso, cuenta: ex.cuenta };
 }
 
 // ──────── Funciones y precios (funciones.gestionar) ────────
@@ -229,6 +242,19 @@ export async function updatePerformance(_p: TicketState, f: FormData): Promise<T
   const ahora = Date.now();
   return { ok: true, message: !on_sale ? "Guardado." : preventa_desde && new Date(preventa_desde).getTime() > ahora ? "Guardado: la venta abre en la fecha de inicio."
     : preventa_hasta && new Date(preventa_hasta).getTime() > ahora ? "Guardado: la función está en preventa para el Club Fan." : "Guardado: la función está en venta." };
+}
+
+/** 0120: cómo se vende la obra: funciones publicadas, modo de venta y precios visibles. */
+export async function saveVentaAjustes(_p: TicketState, f: FormData): Promise<TicketState> {
+  const pid = String(f.get("pid"));
+  const m = String(f.get("modo_venta"));
+  const modo = m === "whatsapp" || m === "hibrido" ? m : "web";
+  const publicadas = f.get("funciones_publicadas") === "on";
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("obra_venta_ajustes", { pid, p_funciones_publicadas: publicadas, p_modo_venta: modo, p_mostrar_precios: f.get("mostrar_precios") === "on", p_mostrar_total: f.get("mostrar_total") === "on" });
+  if (error) return { ok: false, message: mensajeError(error) };
+  refresh(pid);
+  return { ok: true, message: publicadas ? "Guardado. Las funciones se ven en la página." : "Guardado. Las funciones están ocultas: el público no ve fechas ni cuenta regresiva." };
 }
 
 /** 0118: fechas de preventa de la obra; se ponen a las funciones que siguen a la obra. */
@@ -394,7 +420,7 @@ export async function boxOfficeGeneralSale(input: { pid: string; performanceId: 
     (r.tickets ?? []).map(async (t) => ({ seat: t.seat_label, qr: await QRCode.toDataURL(t.qr_token, { margin: 1, width: 240 }) })),
   );
   refresh(input.pid);
-  return { ok: true, orderCode: r.order_code, total: ex.total ?? Number(r.total), tickets, aviso: ex.aviso };
+  return { ok: true, orderCode: r.order_code, total: ex.total ?? Number(r.total), tickets, aviso: ex.aviso, cuenta: ex.cuenta };
 }
 
 // ──────── Mapa de asientos (0062) ────────

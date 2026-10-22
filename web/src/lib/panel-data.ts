@@ -16,10 +16,12 @@ export type PanelProduction = KitColumns & PosterColumns & {
   on_sale: boolean;
   concluded: boolean;
   created_at: string;
+  /** 0120: funciones visibles para el público. */
+  funciones_publicadas?: boolean;
 };
 
 const COLUMNS =
-  `id, nombre, estado, venue, temporada, on_sale, concluded, destacada, created_at, frase, color_fondo, color_superficie, color_texto, color_acento, logo_path, ambiente_path, ${POSTER_COLUMNS}` as const;
+  `id, nombre, estado, venue, temporada, on_sale, concluded, destacada, created_at, frase, color_fondo, color_superficie, color_texto, color_acento, logo_path, ambiente_path, funciones_publicadas, ${POSTER_COLUMNS}` as const;
 
 export async function listPanelProductions(ids?: string[]): Promise<PanelProduction[]> {
   const supabase = await createClient();

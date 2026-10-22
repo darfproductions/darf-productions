@@ -12,6 +12,30 @@ export const METODOS_PAGO = [
 
 export type MetodoPago = (typeof METODOS_PAGO)[number][0];
 
+/** 0120: cómo se vende cada obra. 'web': cuenta, orden y checkout; 'hibrido': eliges asientos y vas directo a
+ *  WhatsApp; 'whatsapp': todo por WhatsApp (el equipo vende en Taquilla). */
+export type ModoVenta = "web" | "hibrido" | "whatsapp";
+
+/** 0120: lo que dicen los botones y la pantalla de apartar según cómo se vende la obra.
+ *  En híbrido no se habla de pago, boletos ni compra: solo de apartar tu lugar y seguir en WhatsApp. */
+export function textosVenta(modo: ModoVenta | null | undefined) {
+  if (modo === "hibrido") {
+    return { cta: "Aparta tu lugar", funcion: "Aparta tu lugar", eyebrow: "Aparta tu lugar", titulo: "Aparta tu lugar", carrito: "Tu lugar",
+      siguiente: "Siguiente", pasos: ["Elige tu lugar", "Sigue en WhatsApp"], porPersona: "por persona" };
+  }
+  if (modo === "whatsapp") {
+    return { cta: "Más información por WhatsApp", funcion: "Más información por WhatsApp", eyebrow: "Más información", titulo: "Más información",
+      carrito: "", siguiente: "", pasos: [] as string[], porPersona: "por persona" };
+  }
+  return { cta: "Comprar boletos", funcion: "Elegir asientos", eyebrow: "Comprar boletos", titulo: "Elige tus asientos", carrito: "Tu compra",
+    siguiente: "", pasos: ["Función", "Lugares", "Tus datos", "Pago y boletos"], porPersona: "por compra" };
+}
+
+/** Métodos de pago del checkout en línea. Hoy solo WhatsApp; los demás se agregan aquí cuando existan. */
+export const PAGO_EN_LINEA: { id: string; label: string; ayuda: string; activo: boolean }[] = [
+  { id: "whatsapp", label: "WhatsApp", ayuda: "Te pasamos los datos para pagar y confirmamos tu pago por WhatsApp.", activo: true },
+];
+
 const ETIQUETA_METODO: Record<string, string> = Object.fromEntries(METODOS_PAGO);
 
 export function metodoLabel(m: string | null | undefined): string | null {

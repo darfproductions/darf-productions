@@ -14,7 +14,8 @@ import { fechaEstreno } from "@/lib/cuenta-regresiva";
 import { enPreventa, ETIQUETA_FUNCION, estadoFuncion, partesFuncion, ventaPorAbrir } from "@/lib/disponibilidad";
 import { getPromos } from "@/lib/promos";
 import { mejorPromo } from "@/lib/promo-rules";
-import { isDev } from "@/lib/env";
+import { env, isDev } from "@/lib/env";
+import { whatsappPedirUrl } from "@/lib/tickets";
 import { EncuentroCard } from "@/components/fanzone/EncuentroCard";
 import { EventoBloqueado } from "@/components/eventos/EventoBloqueado";
 import { getSession } from "@/lib/auth";
@@ -25,7 +26,7 @@ import { getProductionContent } from "@/lib/production-content";
 import { capaVacia, obraConCapa, type Capa } from "@/lib/obra-capa-rules";
 import { getProgram } from "@/lib/program";
 import { withSeller } from "@/lib/seller-rules";
-import { funcionVendible } from "@/lib/ventas-rules";
+import { funcionVendible, textosVenta } from "@/lib/ventas-rules";
 import {
   formatPrice,
   getGallery,
@@ -102,7 +103,14 @@ export async function ProductionView({
   // Próxima función que todavía se puede comprar (las funciones vienen en orden de fecha).
   const comprables = vendibles.filter((fn) => estadoDe(fn.id) !== "agotado");
   const proxima = comprables[0] ?? null;
-  const desde = prices.length ? Math.min(...prices.map((z) => z.price)) : null;
+  // 0120: cada obra decide si muestra precios y si se vende en la página o todo por WhatsApp.
+  const conPrecios = p.mostrar_precios !== false;
+  const porWhatsApp = p.modo_venta === "whatsapp";
+  const tv = textosVenta(p.modo_venta);
+  // Botones de compra: en "todo por WhatsApp" van directo a WhatsApp; si no, a las funciones.
+  const ligaCompra = porWhatsApp ? whatsappPedirUrl(env.whatsapp, p.nombre, null) || "/contacto" : "#funciones";
+  const externa = porWhatsApp ? { target: "_blank", rel: "noopener" } : {};
+  const desde = conPrecios && prices.length ? Math.min(...prices.map((z) => z.price)) : null;
   const enVenta = vendibles.length > 0;
   // Antes del estreno, la tarjeta del hero cuenta los días que faltan.
   const estreno = p.concluded ? null : fechaEstreno(performances);
@@ -139,7 +147,7 @@ export async function ProductionView({
   const show = (id: string) => sections.some((s) => s.id === id);
 
   const funciones = show("funciones") && (
-    <Bloque id="funciones" eyebrow={p.concluded ? "Así se presentó" : "Elige tu función"} titulo="Funciones y precios">
+    <Bloque id="funciones" eyebrow={p.concluded ? "Así se presentó" : "Elige tu función"} titulo={conPrecios ? "Funciones y precios" : "Funciones"}>
       {performances.length === 0 && <p className="opacity-75">Aún no hay funciones registradas.</p>}
       {performances.length > 0 && (
         <ul className="flex flex-col gap-3.5">
@@ -176,7 +184,7 @@ export async function ProductionView({
                   </span>
                   {pre && fn.preventa_hasta && (() => { const h = partesFuncion(fn.preventa_hasta); return <span className="text-[12.5px] font-semibold text-obra-acento">Preventa Club Fan hasta el {h.dia} {h.numero} {h.mes}, {h.hora}</span>; })()}
                   {porAbrir && fn.preventa_desde && (() => { const d = partesFuncion(fn.preventa_desde); return <span className="text-[12.5px] font-semibold text-obra-acento">{fn.preventa_hasta ? "Preventa Club Fan" : "Venta"} desde el {d.dia} {d.numero} {d.mes}, {d.hora}</span>; })()}
-                  {promo && !agotado && <span className="text-[12.5px] font-semibold text-obra-acento">Promo {promo.nombre}: {promo.percent}% de descuento{promo.hasta ? ` hasta el ${(() => { const h = partesFuncion(promo.hasta); return `${h.dia} ${h.numero} ${h.mes}`; })()}` : ""}</span>}
+                  {promo && conPrecios && !agotado && <span className="text-[12.5px] font-semibold text-obra-acento">Promo {promo.nombre}: {promo.percent}% de descuento{promo.hasta ? ` hasta el ${(() => { const h = partesFuncion(promo.hasta); return `${h.dia} ${h.numero} ${h.mes}`; })()}` : ""}</span>}
                 </div>
                 <div className="col-span-2 flex flex-wrap items-center justify-between gap-3 md:contents">
                   {porAbrir ? (
@@ -196,14 +204,16 @@ export async function ProductionView({
                     <span className="chip chip-obra">{p.concluded ? "Concluida" : "Próximamente"}</span>
                   )}
                   {vendible && !agotado && !porAbrir && (
-                    pre ? (
+                    porWhatsApp ? (
+                      <a href={whatsappPedirUrl(env.whatsapp, p.nombre, f ? `${f.dia} ${f.numero} ${f.mes}, ${f.hora}` : null) || "/contacto"} target="_blank" rel="noopener" className="fb fb-luz fb-sm ml-auto md:ml-0">{tv.funcion}</a>
+                    ) : pre ? (
                       socio ? (
                         <Link href={withSeller(`/comprar/${fn.id}`, vendedor)} className="fb fb-fz fb-sm ml-auto md:ml-0">Entrar a preventa</Link>
                       ) : (
                         <Link href="/fan-zone" className="fb fb-fz fb-sm ml-auto md:ml-0">Únete al Club Fan</Link>
                       )
                     ) : (
-                      <Link href={withSeller(`/comprar/${fn.id}`, vendedor)} className="fb fb-luz fb-sm ml-auto md:ml-0">Elegir asientos</Link>
+                      <Link href={withSeller(`/comprar/${fn.id}`, vendedor)} className="fb fb-luz fb-sm ml-auto md:ml-0">{tv.funcion}</Link>
                     )
                   )}
                   {(!vendible || agotado || porAbrir) && <span aria-hidden="true" className="hidden md:block" />}
@@ -213,6 +223,7 @@ export async function ProductionView({
           })}
         </ul>
       )}
+      {/* 0120: sin precios, las zonas salen solo con su nombre. */}
       {prices.length > 0 && (
         <div className="rounded-[22px] border border-current/12 bg-obra-superficie px-6 py-6 md:px-9 md:py-8">
           <div className="mb-2 flex flex-wrap items-baseline justify-between gap-3">
@@ -228,11 +239,11 @@ export async function ProductionView({
               <li key={z.nombre} className="grid grid-cols-[14px_minmax(0,1fr)_auto] items-center gap-4 border-b border-current/12 px-1 py-4 last:border-0">
                 <i aria-hidden="true" className="h-3.5 w-3.5 rounded-[4px] border border-current/20" style={{ background: z.color ?? "currentColor" }} />
                 <span className="text-[15px] font-semibold">{z.nombre}</span>
-                <strong className="num text-[17px]">{formatPrice(z.price)}</strong>
+                {conPrecios && <strong className="num text-[17px]">{formatPrice(z.price)}</strong>}
               </li>
             ))}
           </ul>
-          <p className="pt-4 text-[12.5px] opacity-70">Precios en pesos mexicanos.</p>
+          {conPrecios && <p className="pt-4 text-[12.5px] opacity-70">Precios en pesos mexicanos.</p>}
         </div>
       )}
     </Bloque>
@@ -302,7 +313,7 @@ export async function ProductionView({
               {duracion && <li className="chip chip-obra">{duracion}</li>}
             </ul>
             <div className="flex flex-wrap gap-3 pt-1">
-              {enVenta && <a href="#funciones" className="fb fb-luz">Comprar boletos</a>}
+              {enVenta && <a href={ligaCompra} {...externa} className="fb fb-luz">{tv.cta}</a>}
               {videos.length > 0 && (
                 <a href="#videos" className="fb fb-obra">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4v16l13-8z" /></svg>
@@ -327,7 +338,7 @@ export async function ProductionView({
                 <>
                   <hr className="border-linea-2" />
                   <span className="flex items-center justify-between">
-                    <span className="text-[12.5px] text-texto-3">Boletos desde</span>
+                    <span className="text-[12.5px] text-texto-3">{p.modo_venta === "web" || !p.modo_venta ? "Boletos desde" : "Desde"}</span>
                     <strong className="num txt-oro text-[26px] font-black">{formatPrice(desde)}</strong>
                   </span>
                 </>
@@ -354,7 +365,7 @@ export async function ProductionView({
               <div className="hidden shrink-0 items-center gap-4 md:flex">
                 {theme && <Image src={theme.logo} alt="" width={120} height={30} style={{ height: 30, width: "auto" }} className="max-w-[140px] object-contain" />}
                 {desde !== null && <span className="text-[12.5px] opacity-75">Desde <strong className="num opacity-100">{formatPrice(desde)}</strong></span>}
-                <a href="#funciones" className="fb fb-luz fb-sm">Boletos</a>
+                <a href={ligaCompra} {...externa} className="fb fb-luz fb-sm">{porWhatsApp ? "WhatsApp" : p.modo_venta === "hibrido" ? "Aparta tu lugar" : "Boletos"}</a>
               </div>
             )}
           </div>
@@ -484,9 +495,9 @@ export async function ProductionView({
       {enVenta && (
         <div className={`glass fixed inset-x-2 z-30 flex items-center justify-between gap-3 rounded-[20px] py-2.5 pl-5 pr-2.5 text-texto md:hidden ${isDev ? "bottom-9" : "bottom-2"}`}>
           <span className="text-[12.5px] text-texto-3">
-            {desde !== null ? <>Desde <strong className="num block text-lg font-black text-texto">{formatPrice(desde)}</strong></> : "Boletos a la venta"}
+            {desde !== null ? <>Desde <strong className="num block text-lg font-black text-texto">{formatPrice(desde)}</strong></> : porWhatsApp ? "Escríbenos" : p.modo_venta === "hibrido" ? "Lugares disponibles" : "Boletos a la venta"}
           </span>
-          <a href="#funciones" className="fb fb-luz fb-sm">Comprar boletos</a>
+          <a href={ligaCompra} {...externa} className="fb fb-luz fb-sm">{tv.cta}</a>
         </div>
       )}
     </main>

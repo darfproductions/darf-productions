@@ -13,6 +13,7 @@ import { formatPerformanceDate } from "@/lib/productions";
 import { formatMoney } from "@/lib/tickets";
 import { cancelPerformance, createPerformance, deletePerformance, saveGeneralZone, savePreventaObra, setProductionOnSale, updatePerformance } from "../actions";
 import { ZonaAcciones } from "../ZonaAcciones";
+import { VentaAjustes } from "../VentaAjustes";
 import { ingresoPotencial } from "@/lib/sales";
 import { createClient } from "@/lib/supabase/server";
 import { todasLasFilas } from "@/lib/supabase/paginar";
@@ -35,7 +36,7 @@ export default async function PerformancesPage({ params }: PageProps<"/panel/pro
   // 0117: cuánto deja cada función si se vende todo, y lo vendido (aprobado) hasta hoy.
   const supabase = await createClient();
   // 0118: fechas de preventa de la obra (las funciones que no tienen fechas propias las siguen).
-  const { data: obraPre } = await supabase.from("productions").select("preventa_desde, preventa_hasta").eq("id", id).maybeSingle();
+  const { data: obraPre } = await supabase.from("productions").select("preventa_desde, preventa_hasta, funciones_publicadas, modo_venta, mostrar_precios, mostrar_total").eq("id", id).maybeSingle();
   const [asientosRes, vendidoRes] = gestionar ? await Promise.all([
     todasLasFilas((a, b) => supabase.from("seats").select("price_category_id").eq("production_id", id).eq("is_active", true).order("id").range(a, b)),
     funciones.length ? supabase.from("orders").select("performance_id, total").eq("status", "aprobado").in("performance_id", funciones.map((f) => f.id)) : Promise.resolve({ data: [] }),
@@ -67,6 +68,8 @@ export default async function PerformancesPage({ params }: PageProps<"/panel/pro
           />
         </Card>
       )}
+
+      {gestionar && <VentaAjustes pid={id} v={obraPre} />}
 
       {gestionar && (
         <Card className="flex flex-col gap-3">

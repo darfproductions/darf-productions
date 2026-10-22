@@ -17,7 +17,10 @@ export function SeatMap({
   selected,
   onToggle,
   formas = [],
+  sinPrecios = false,
 }: {
+  /** 0120: la obra no muestra precios al apartar (solo el nombre de la zona). */
+  sinPrecios?: boolean;
   /** 0113: escenario del mapa libre (si los asientos tienen posición). */
   formas?: Forma[];
   seats: MapSeat[];
@@ -27,6 +30,7 @@ export function SeatMap({
   onToggle: (s: MapSeat) => void;
 }) {
   const priceByCat = useMemo(() => new Map(prices.map((p) => [p.categoryId, p])), [prices]);
+  const precioDe = (z: ZonePrice) => (sinPrecios ? "" : `, ${formatMoney(z.price)}`);
   const colorByCat = useMemo(() => new Map([...prices].sort((a, b) => a.nombre.localeCompare(b.nombre)).map((p, i) => [p.categoryId, colorZona(p, i, ZONE_COLORS)])), [prices]);
   const rows = useMemo(() => groupSeatsByRow(seats), [seats]);
   // Zoom (Fase 4B): "Ajustar" calcula el tamaño para que quepa a lo ancho; + y − o dos dedos lo cambian.
@@ -50,7 +54,7 @@ export function SeatMap({
       {prices.slice().sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0) || b.price - a.price).map((z) => (
         <li key={z.categoryId} className="flex items-center gap-2 rounded-full bg-telon px-3 py-1.5">
           <span aria-hidden="true" className="h-3 w-3 rounded-full" style={{ background: colorByCat.get(z.categoryId) }} />
-          {z.nombre} · {z.antes != null && <s className="opacity-60">{formatMoney(z.antes).replace(" MXN", "")}</s>} {formatMoney(z.price).replace(" MXN", "")}
+          {z.nombre}{!sinPrecios && <> · {z.antes != null && <s className="opacity-60">{formatMoney(z.antes).replace(" MXN", "")}</s>} {formatMoney(z.price).replace(" MXN", "")}</>}
         </li>
       ))}
       <li className="flex items-center gap-2 rounded-full bg-telon px-3 py-1.5"><span aria-hidden="true" className="h-3 w-3 rounded-full bg-[#3a3446]" /> Ocupado</li>
@@ -72,7 +76,7 @@ export function SeatMap({
             return {
               id: s.id, x: s.pos_x!, y: s.pos_y ?? 0, numero: s.seat_number, etiqueta: s.seat_label, fila: s.seat_row, grupo: s.section ?? undefined, deshabilitado: isTaken, marcado: isSel,
               fondo: isSel ? "#ffffff" : isTaken ? "#3a3446" : color, texto: isSel ? "#0b0910" : isTaken ? "#6e6878" : textoSobre(color),
-              titulo: `Asiento ${s.seat_label}${zone ? `, ${zone.nombre}, ${formatMoney(zone.price)}` : ""}${isTaken ? ", ocupado" : ""}`,
+              titulo: `Asiento ${s.seat_label}${zone ? `, ${zone.nombre}${precioDe(zone)}` : ""}${isTaken ? ", ocupado" : ""}`,
             };
           })} />
       </>
@@ -84,7 +88,7 @@ export function SeatMap({
         {prices.slice().sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0) || b.price - a.price).map((z) => (
           <li key={z.categoryId} className="flex items-center gap-2 rounded-full bg-telon px-3 py-1.5">
             <span aria-hidden="true" className="h-3 w-3 rounded-full" style={{ background: colorByCat.get(z.categoryId) }} />
-            {z.nombre} · {z.antes != null && <s className="opacity-60">{formatMoney(z.antes).replace(" MXN", "")}</s>} {formatMoney(z.price).replace(" MXN", "")}
+            {z.nombre}{!sinPrecios && <> · {z.antes != null && <s className="opacity-60">{formatMoney(z.antes).replace(" MXN", "")}</s>} {formatMoney(z.price).replace(" MXN", "")}</>}
           </li>
         ))}
         <li className="flex items-center gap-2 rounded-full bg-telon px-3 py-1.5"><span aria-hidden="true" className="h-3 w-3 rounded-full bg-[#3a3446]" /> Ocupado</li>
@@ -125,7 +129,7 @@ export function SeatMap({
                         onClick={() => onToggle(s)}
                         disabled={isTaken}
                         aria-pressed={isSel}
-                        aria-label={`Asiento ${s.seat_label}${zone ? `, ${zone.nombre}, ${formatMoney(zone.price)}` : ""}${isTaken ? ", ocupado" : ""}`}
+                        aria-label={`Asiento ${s.seat_label}${zone ? `, ${zone.nombre}${precioDe(zone)}` : ""}${isTaken ? ", ocupado" : ""}`}
                         title={s.seat_label}
                         className="flex items-center justify-center rounded font-bold disabled:cursor-not-allowed"
                         style={{

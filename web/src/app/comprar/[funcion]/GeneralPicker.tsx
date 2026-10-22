@@ -14,7 +14,10 @@ const MAX = 10; // mismo tope que valida la base (0055)
 const field = "rounded-lg bg-sala px-3 py-3 font-normal";
 
 // Entrada general (Fase 4C): eliges zona y cuántos boletos; sin asiento. La base cuenta el cupo.
-export function GeneralPicker(props: { performanceId: string; productionName: string; zones: GeneralZone[]; defaultPhone: string; defaultSeller?: string; sinSesion?: boolean }) {
+export function GeneralPicker(props: { performanceId: string; productionName: string; zones: GeneralZone[]; defaultPhone: string; defaultSeller?: string; sinSesion?: boolean;
+  /** 0120: 'web' (checkout) o 'hibrido' (directo a WhatsApp); y si se ven precios y total. */ modo?: "web" | "hibrido"; mostrarTotal?: boolean }) {
+  const conTotal = props.mostrarTotal !== false;
+  const hibrido = props.modo === "hibrido";
   const [zone, setZone] = useState(props.zones.find((z) => z.libres > 0)?.price_category_id ?? "");
   const [cantidad, setCantidad] = useState(1);
   const [phone, setPhone] = useState(props.defaultPhone);
@@ -37,20 +40,20 @@ export function GeneralPicker(props: { performanceId: string; productionName: st
   function apartar() {
     setError("");
     start(async () => {
-      const r = await placeGeneralOrder({ performanceId: props.performanceId, productionName: props.productionName, zoneId: zone, cantidad, phone, sellerCode: seller, discountCode: codigo });
+      const r = await placeGeneralOrder({ performanceId: props.performanceId, productionName: props.productionName, zoneId: zone, cantidad, phone, sellerCode: seller, discountCode: codigo, hibrido });
       if (r.ok) setResult(r);
       else setError(r.message);
     });
   }
 
   usePaso(result ? 4 : zone ? 3 : 2);
-  if (result) return <OrderDone result={result} />;
+  if (result) return <OrderDone result={result} modo={props.modo} mostrarTotal={conTotal} />;
 
   return (
     <div className="flex flex-col gap-4 rounded-2xl bg-telon p-6">
       <div>
         <h2 className="text-lg font-bold">Entrada general</h2>
-        <p className="text-sm text-texto-2">Sin asiento numerado: entras a la zona y te acomodas al llegar. Máximo {MAX} por compra.</p>
+        <p className="text-sm text-texto-2">Sin asiento numerado: entras a la zona y te acomodas al llegar. Máximo {MAX} {hibrido ? "por persona" : "por compra"}.</p>
       </div>
       <ul className="grid gap-2 sm:grid-cols-2">
         {props.zones.map((x) => (
@@ -58,7 +61,7 @@ export function GeneralPicker(props: { performanceId: string; productionName: st
             <label className={`flex cursor-pointer flex-col gap-0.5 rounded-xl border p-4 ${zone === x.price_category_id ? "border-texto bg-white/5" : "border-white/15"} ${x.libres === 0 ? "cursor-not-allowed opacity-50" : ""}`}>
               <input type="radio" name="zona" className="sr-only" disabled={x.libres === 0} checked={zone === x.price_category_id}
                 onChange={() => { setZone(x.price_category_id); setCantidad(1); }} />
-              <span className="font-bold">{x.nombre} · {x.antes != null && <s className="font-normal opacity-60">{formatMoney(x.antes)}</s>} {formatMoney(x.precio)}</span>
+              <span className="font-bold">{x.nombre}{conTotal && <> · {x.antes != null && <s className="font-normal opacity-60">{formatMoney(x.antes)}</s>} {formatMoney(x.precio)}</>}</span>
               {x.descripcion && <span className="text-xs text-texto-3">{x.descripcion}</span>}
               <span className={`text-sm ${x.libres === 0 ? "text-[#ff8fa3]" : x.libres <= 10 ? "text-aviso" : "text-texto-2"}`}>
                 {x.libres === 0 ? "Agotado" : x.libres <= 10 ? `¡Quedan ${x.libres}!` : `${x.libres} lugares disponibles`}
@@ -74,7 +77,7 @@ export function GeneralPicker(props: { performanceId: string; productionName: st
             <button type="button" aria-label="Uno menos" onClick={() => setCantidad((n) => Math.max(1, n - 1))} className="h-10 w-10 rounded-full border border-white/25 text-lg font-bold">−</button>
             <span className="w-8 text-center text-xl font-black">{cantidad}</span>
             <button type="button" aria-label="Uno más" onClick={() => setCantidad((n) => Math.min(tope, n + 1))} className="h-10 w-10 rounded-full border border-white/25 text-lg font-bold">+</button>
-            <span className="ml-auto text-lg font-bold">{formatMoney(z.precio * cantidad)}</span>
+            {conTotal && <span className="ml-auto text-lg font-bold">{formatMoney(z.precio * cantidad)}</span>}
           </div>
           <div className="grid gap-3 sm:grid-cols-3">
             <label className="flex flex-col gap-1.5 text-sm font-semibold">Teléfono *
@@ -98,7 +101,7 @@ export function GeneralPicker(props: { performanceId: string; productionName: st
           ) : (
           <button type="button" onClick={apartar} disabled={pending || !phone.trim()}
             className="boton-compra self-start rounded-full px-8 py-4 text-sm font-bold uppercase tracking-[0.1em] disabled:opacity-50">
-            {pending ? "Apartando…" : `Apartar ${cantidad} ${cantidad === 1 ? "lugar" : "lugares"}`}
+            {pending ? "Apartando…" : hibrido ? "Siguiente" : `Apartar ${cantidad} ${cantidad === 1 ? "lugar" : "lugares"}`}
           </button>
           )}
         </>

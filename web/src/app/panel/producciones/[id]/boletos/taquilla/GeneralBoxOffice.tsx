@@ -27,7 +27,7 @@ export function GeneralBoxOffice({ pid, performanceId, zones }: { pid: string; p
       <div className="flex flex-col gap-4 rounded-2xl bg-telon p-6">
         <p className="titular text-2xl">Venta registrada · {result.orderCode}</p>
         <p className="text-texto-2">Total {formatMoney(result.total)}. Muestra o envía estos QR al comprador.</p>
-        <DespuesDeVenta pid={pid} orderCode={result.orderCode} aviso={result.aviso} />
+        <DespuesDeVenta pid={pid} orderCode={result.orderCode} aviso={result.aviso} cuenta={result.cuenta} />
         <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
           {result.tickets.map((t, i) => (
             <li key={i} className="flex flex-col items-center gap-2 rounded-xl bg-white p-3 text-black">

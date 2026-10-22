@@ -40,4 +40,11 @@ describe("listo para vender", () => {
     expect(punto(d, "elenco")).toMatchObject({ ok: false, obligatorio: false, href: "/panel/producciones/obra/elenco", detalle: "2 personas sin publicar: no salen en la página." });
     expect(punto(base, "elenco").ok).toBe(true);
   });
+  it("0120: funciones ocultas impiden vender", () => {
+    const r = listoParaVender({ ...base, funcionesPublicadas: false });
+    const x = r.puntos.find((p) => p.clave === "funciones_publicadas")!;
+    expect(x.ok).toBe(false);
+    expect(r.listo).toBe(false);
+    expect(listoParaVender(base).puntos.find((p) => p.clave === "funciones_publicadas")!.ok).toBe(true);
+  });
 });

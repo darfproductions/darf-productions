@@ -23,6 +23,8 @@ import { FORMATOS, FORMATO_INFO, poster } from "@/lib/poster";
 import { PosterSlot } from "./PosterSlot";
 import { Icono } from "@/components/Icono";
 import { CambiosPanel } from "./CambiosPanel";
+import { VentaAjustes } from "../boletos/VentaAjustes";
+import { createClient } from "@/lib/supabase/server";
 import { getCambios, getCapa } from "@/lib/obra-capa";
 import { obraConCapa, ordenarCambios, type Seccion } from "@/lib/obra-capa-rules";
 
@@ -76,6 +78,11 @@ export default async function PageEditor({ params }: PageProps<"/panel/produccio
     return cs.some((c) => c.borrador) ? "borrador" as const : cs.some((c) => c.fans) ? "fans" as const : undefined;
   };
   const publica = ["publicada", "archivada"].includes(data.production.estado);
+  // 0120: venta y precios también desde aquí (misma tarjeta que en Funciones y precios).
+  const venta = can(access, id, "funciones.gestionar") || publicar;
+  const { data: valoresVenta } = venta
+    ? await (await createClient()).from("productions").select("funciones_publicadas, modo_venta, mostrar_precios, mostrar_total").eq("id", id).maybeSingle()
+    : { data: null };
   const actos = capa.canciones?.actos ?? data.actos;
   const facts = capa.ficha?.items ?? data.facts;
   const videos = capa.videos?.items ?? data.videos;
@@ -85,8 +92,8 @@ export default async function PageEditor({ params }: PageProps<"/panel/produccio
   return (
     <div className="flex flex-col gap-4">
       <nav aria-label="Secciones del editor" className="flex flex-wrap gap-2 text-sm">
-        {[["estado", "Estado"], ...(publica || cambios.length ? [["cambios", `Cambios sin publicar${cambios.length ? ` (${cambios.length})` : ""}`]] : []), ["datos", "Datos y ficha"], ["kit", "Kit visual"], ["franja", "Franja de avisos"], ["anuncios", "Anuncios"], ["canciones", "Canciones"], ["extra", "Ficha extra"], ["videos", "Videos"], ["gracias", "Agradecimientos"]]
-          .filter(([k]) => editar || k === "estado" || k === "cambios")
+        {[["estado", "Estado"], ...(publica || cambios.length ? [["cambios", `Cambios sin publicar${cambios.length ? ` (${cambios.length})` : ""}`]] : []), ...(venta ? [["venta", "Venta y precios"]] : []), ["datos", "Datos y ficha"], ["kit", "Kit visual"], ["franja", "Franja de avisos"], ["anuncios", "Anuncios"], ["canciones", "Canciones"], ["extra", "Ficha extra"], ["videos", "Videos"], ["gracias", "Agradecimientos"]]
+          .filter(([k]) => editar || k === "estado" || k === "cambios" || k === "venta")
           .map(([k, l]) => <a key={k} href={`#${k}`} className="rounded-full border border-white/20 px-3 py-1.5 font-semibold hover:border-white/50">{l}</a>)}
         <Link href={`/vista-previa/${id}`} target="_blank" className="rounded-full bg-texto px-3 py-1.5 font-bold text-sala">Vista previa <Icono nombre="externo" /></Link>
       </nav>
@@ -105,6 +112,8 @@ export default async function PageEditor({ params }: PageProps<"/panel/produccio
       </Block>
 
       {(publica || cambios.length > 0) && <CambiosPanel pid={id} cambios={cambios} publicar={publicar} />}
+
+      {venta && <section id="venta" className="scroll-mt-24"><VentaAjustes pid={id} v={valoresVenta} /></section>}
 
       {editar && (
         <>

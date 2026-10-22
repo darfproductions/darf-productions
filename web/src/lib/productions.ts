@@ -14,6 +14,14 @@ import { elegir, POSTER_COLUMNS, type PosterColumns, type Uso } from "@/lib/post
 
 export type Production = KitColumns & PosterColumns & {
   id: string;
+  /** 0120: sin publicar, el público no ve funciones, fechas ni cuenta regresiva. */
+  funciones_publicadas?: boolean;
+  /** 0120: 'web' (cuenta, orden y checkout), 'hibrido' (eliges asientos → WhatsApp) o 'whatsapp' (todo por WhatsApp). */
+  modo_venta?: "web" | "hibrido" | "whatsapp";
+  /** 0120: precios visibles en la página de la obra. */
+  mostrar_precios?: boolean;
+  /** 0120: precios y total visibles al apartar. */
+  mostrar_total?: boolean;
   nombre: string;
   venue: string | null;
   /** Temporada (texto libre, "2027"). */
@@ -64,7 +72,7 @@ export type Performance = {
 export type ZonePrice = { nombre: string; price: number; /** Color de la zona en el mapa (0062). */ color?: string | null; /** Orden de la zona (0117). */ orden?: number };
 
 const PRODUCTION_COLUMNS =
-  `id, nombre, venue, temporada, price, on_sale, concluded, destacada, created_at, estado, frase, color_fondo, color_superficie, color_texto, color_acento, logo_path, ambiente_path, ${POSTER_COLUMNS}` as const;
+  `id, nombre, venue, temporada, price, on_sale, concluded, destacada, created_at, estado, frase, color_fondo, color_superficie, color_texto, color_acento, logo_path, ambiente_path, funciones_publicadas, modo_venta, mostrar_precios, mostrar_total, ${POSTER_COLUMNS}` as const;
 
 export type PublicProduction = ConEstado<Production>;
 
@@ -85,7 +93,9 @@ export async function getHomeData(): Promise<HomeData> {
   // "Desde $" con el precio real de las funciones que vienen (0088), no la columna vieja de la 1.0.
   const minimo = new Map(((desde.data ?? []) as { production_id: string; desde: number }[]).map((r) => [r.production_id, Number(r.desde)]));
   const conPrecio = ((prods.data ?? []) as Production[]).map((p) => ({ ...p, price: minimo.get(p.id) ?? 0 }));
-  const productions = ordenarObras(clasificar(conPrecio, perfs.data ?? []));
+  // 0120: funciones sin publicar no cuentan (ni para el equipo con sesión): sin fechas ni cuenta regresiva.
+  const publicadas = new Set(conPrecio.filter((p) => p.funciones_publicadas !== false).map((p) => p.id));
+  const productions = ordenarObras(clasificar(conPrecio, (perfs.data ?? []).filter((f) => publicadas.has(f.production_id as string))));
   return { productions, featured: elegirPortada(productions) };
 }
 
@@ -107,9 +117,11 @@ export async function getProduction(id: string, opts: { includeDrafts?: boolean 
   ]);
   if (prod.error) throw new Error(prod.error.message);
   if (!prod.data) return null;
+  // 0120: con las funciones sin publicar la página pública no muestra ninguna (la vista previa del equipo sí).
+  const funciones = opts.includeDrafts || (prod.data as Production).funciones_publicadas !== false ? (perfs.data ?? []) : [];
 
   // Precios por zona: la base solo los muestra para funciones en venta.
-  const onSaleIds = (perfs.data ?? []).filter((p) => p.on_sale).map((p) => p.id);
+  const onSaleIds = funciones.filter((p) => p.on_sale).map((p) => p.id);
   let prices: ZonePrice[] = [];
   if (onSaleIds.length) {
     const { data } = await supabase
@@ -129,7 +141,7 @@ export async function getProduction(id: string, opts: { includeDrafts?: boolean 
 
   return {
     production: prod.data as Production,
-    performances: (perfs.data ?? []) as Performance[],
+    performances: funciones as Performance[],
     prices,
   };
 }
