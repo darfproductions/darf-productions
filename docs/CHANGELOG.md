@@ -19,6 +19,8 @@ solo *qué*.
   Equipo, Ensayos— y por plan; fotos al bucket `showcases`, videos como ligas de YouTube/Instagram/TikTok) y
   Solicitudes (bandeja por estado: nueva, cotizada, confirmada, descartada, con notas del equipo).
 - Datos iniciales: los 3 planes y textos del dossier, WhatsApp 524465220560 (solo si las tablas están vacías).
+- 0121b: el permiso se agrega a los roles de Casa DARF Dirección General y Producción Ejecutiva (los roles ya
+  existentes no lo recibían solos; solo la cuenta admin lo veía). Script `apply_0121b_dev.sql`, sin despliegue.
 
 ## 2026-10-22 — Cómo se vende cada obra (migración 0120)
 
