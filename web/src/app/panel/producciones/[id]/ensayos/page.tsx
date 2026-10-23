@@ -32,7 +32,7 @@ export default async function Ensayos({ params }: PageProps<"/panel/producciones
     supabase.rpc("cast_roster", { pid: id }),
     supabase.rpc("attendance_summary", { pid: id }),
     avisoFaltaHoras(id),
-    supabase.from("member_requests").select("id", { count: "exact", head: true }).eq("production_id", id).eq("tipo", "falta").eq("estado", "pendiente"),
+    supabase.from("member_requests").select("id", { count: "exact", head: true }).eq("production_id", id).in("tipo", ["falta", "llegada"]).eq("estado", "pendiente"),
     supabase.rpc("equipo_ensayos", { pid: id }),
   ]);
   const equipo = ((team ?? []) as { user_id: string; nombre: string; roles: string[] }[]).map((x) => ({ user_id: x.user_id, nombre: x.nombre, papeles: x.roles, detalle: x.roles.join(", ") }));
@@ -120,7 +120,7 @@ export default async function Ensayos({ params }: PageProps<"/panel/producciones
 
       {!!porRevisar && (
         <Link href={`/panel/producciones/${id}/solicitudes`} className="flex items-center justify-between gap-3 rounded-[18px] border border-aviso/40 bg-telon px-5 py-3 text-sm hover:bg-telon-2">
-          <b className="text-aviso">{porRevisar} {porRevisar === 1 ? "solicitud" : "solicitudes"} de falta por revisar</b>
+          <b className="text-aviso">{porRevisar} {porRevisar === 1 ? "solicitud" : "solicitudes"} de falta o llegada tarde por revisar</b>
           <span className="text-violeta-claro"><Icono nombre="flecha-der" /></span>
         </Link>
       )}

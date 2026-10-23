@@ -95,6 +95,12 @@ function dibujar(ctx: CanvasRenderingContext2D, b: BoletoVista, e: EstiloBoleto,
   etiqueta("Asiento", 48, 524);
   ctx.fillStyle = e.texto; ctx.font = `900 60px ${fuente}`;
   ctx.fillText(b.asiento.slice(0, 22), 48, 590);
+  // 0122: lo que incluye la zona, en una línea.
+  if (b.incluye?.length) {
+    ctx.fillStyle = e.acento; ctx.font = `700 21px ${fuente}`;
+    const linea = `Incluye: ${b.incluye.join(" · ")}${b.acceso ? ` · ${b.acceso}` : ""}`;
+    ctx.fillText(linea.length > 64 ? `${linea.slice(0, 63)}…` : linea, 48, 624);
+  }
   etiqueta("Orden", 48, 650);
   etiqueta("Nombre", 380, 650);
   ctx.fillStyle = e.texto; ctx.font = `700 30px ${fuente}`;

@@ -4,9 +4,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PageHeading } from "@/components/PageHeading";
 import { Icono } from "@/components/Icono";
-import { FORMATO_INFO, FORMATOS, poster } from "@/lib/poster";
+import { FORMATO_INFO, FORMATOS, FORMATOS_ALT, POSTER_ALT_COLUMNS, poster, posterAlt, type PosterColumns } from "@/lib/poster";
 import { getProductionContent } from "@/lib/production-content";
 import { assetUrl, formatPerformanceDate, getGallery, getProduction } from "@/lib/productions";
+import { createClient } from "@/lib/supabase/server";
 
 // 0114: kit de prensa de cada obra. Liga pública que no está en el menú; se comparte con medios.
 // Solo usa lo que ya es público en la página de la obra, con las imágenes en su tamaño original.
@@ -29,7 +30,11 @@ export default async function KitPrensa({ params }: PageProps<"/producciones/[sl
   const data = await getProduction(slug);
   if (!data) notFound();
   const p = data.production;
-  const [c, galeria] = await Promise.all([getProductionContent(p.id), getGallery(p.id)]);
+  const supabase = await createClient();
+  const [c, galeria, { data: alt }] = await Promise.all([
+    getProductionContent(p.id), getGallery(p.id),
+    supabase.from("productions").select(POSTER_ALT_COLUMNS).eq("id", p.id).maybeSingle(),
+  ]);
 
   const descargas: Descarga[] = [];
   if (p.logo_path) descargas.push({ titulo: "Logo de la obra", detalle: "PNG con fondo transparente", url: assetUrl(p.logo_path), fondo: true });
@@ -38,6 +43,12 @@ export default async function KitPrensa({ params }: PageProps<"/producciones/[sl
     const limpio = poster(p, f, false);
     if (info) descargas.push({ titulo: `Póster ${FORMATO_INFO[f].titulo}`, detalle: "Con la información", url: assetUrl(info) });
     if (limpio) descargas.push({ titulo: `Póster ${FORMATO_INFO[f].titulo}`, detalle: "Solo imagen", url: assetUrl(limpio) });
+  }
+  for (const f of FORMATOS_ALT) {
+    const info = posterAlt(alt as PosterColumns | null, f, true);
+    const limpio = posterAlt(alt as PosterColumns | null, f, false);
+    if (info) descargas.push({ titulo: `Póster alterno ${FORMATO_INFO[f].titulo}`, detalle: "Con la información", url: assetUrl(info) });
+    if (limpio) descargas.push({ titulo: `Póster alterno ${FORMATO_INFO[f].titulo}`, detalle: "Sin textos ni logo", url: assetUrl(limpio) });
   }
   if (p.ambiente_path) descargas.push({ titulo: "Imagen de ambiente", detalle: "Fondo de la obra", url: assetUrl(p.ambiente_path) });
 

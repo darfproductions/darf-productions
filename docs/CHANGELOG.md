@@ -5,6 +5,103 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-10-23 — 0126 Solicitud de llegada tarde
+
+- En Solicitudes del portal del elenco, además de avisar una falta: "Avisar que llegaré tarde". Se elige el ensayo (solo
+  los que no han empezado), la hora a la que llegará y la razón; se manda hasta que empieza el ensayo. El aviso dice la
+  regla: "Tu hora de entrada será las 7:30 p.m.; tienes 10 minutos de tolerancia. Si llegas después de las 7:40 p.m.,
+  cuenta como retardo y los minutos se cuentan desde las 7:30 p.m.".
+- La aprueba quien lleva los ensayos (Panel → Solicitudes). Aprobada, esa hora es su hora de entrada para el gafete y al
+  abrir el ensayo (`hora_entrada`); si la aprueban cuando ya llegó, se recalcula su registro y se anulan las
+  advertencias automáticas de retardo que sobren. Rechazada, cuenta la hora normal. La lista del ensayo muestra
+  "Llega a las 7:30 p.m. (aprobada)". No se puede pedir falta y llegada tarde para el mismo ensayo.
+- Base: `member_requests.llegada_hora`, tipo `llegada`, `request_late`, `hora_entrada`, `hora_mx`; reemplazadas
+  `request_absence`, `request_review`, `can_review_request`, `request_label`, `notify_request`, `_llegada` y
+  `rehearsal_roster`.
+
+## 2026-10-22 — 0125 Entregas de beneficios: cuándo, lista por persona y avisos
+
+- Lo pagado se tiene que entregar. Cada beneficio dice cuándo se entrega: antes del día de la función (desde N días
+  antes), el día antes de empezar, el día al terminar, o después del día (plazo de N días). Con eso cada boleto
+  tiene fecha límite (hora de México) y estado: pendiente, ya se puede entregar, vencido, entregado (o sin cupo / falta
+  el pago, que no cuentan). Los beneficios existentes quedan: acceso = antes de empezar; lo demás = al terminar.
+- Panel → Boletos → Beneficios → "Ver lista de entregas": por función, persona por persona, con filtros (por entregar,
+  vencidos, ya se pueden, entregados), buscador, WhatsApp con mensaje listo para coordinar, "Entregado" con nota
+  opcional (o "Deshacer") y Excel. En la puerta se sigue marcando al escanear, ahora con nota y el momento visible.
+  Quién y cuándo entregó queda guardado y en la bitácora.
+- Avisos: la bandeja "Por hacer" muestra beneficios vencidos y los que ya se pueden entregar (liga directa a la
+  función); la lista antes del cierre no deja cerrar la temporada con beneficios pagados sin entregar.
+- El comprador ve en su boleto, PDF, Wallet y Mi cuenta cuándo se entrega cada beneficio y, ya entregado, la fecha;
+  la página de la obra, la compra y el WhatsApp dicen cuándo se entrega.
+- Base: `zona_beneficios.entrega/entrega_dias`, `beneficio_entregas.nota`, `beneficio_limite`,
+  `beneficio_entregar_boleto`, `beneficios_entregas`, `beneficios_pendientes`; `beneficios_de_ticket`,
+  `beneficio_entregar`, `beneficios_reporte` y `orden_beneficios` reemplazadas.
+
+## 2026-10-22 — 0124 Póster alterno y fondos de "Para invitar y vender"
+
+- Kit de la obra: "Póster alterno" opcional en 3:4 y 9:16, cada uno con información y sin textos ni logo (columnas
+  `poster_alt_*`). Pasa por borradores igual que el póster oficial (sección "poster"); la limpieza del Storage lo
+  respeta (`kit_en_uso`). Sale en el kit de prensa. No reemplaza al póster oficial en la página.
+- Fondos: la invitación usa el póster alterno sin textos (si falta: ambiente → póster solo imagen). Mapa, ¿Cómo
+  aseguro mi lugar?, Funciones y ¿Qué incluye? usan la imagen de ambiente (si falta: póster solo imagen), porque el
+  póster tiene personajes y textos que compiten con lo de encima. Los diseños de preventa siguen con el póster.
+- Título "¿Cómo aseguro mi lugar?" y espaciado en tres franjas (logos, contenido, pie) en los cinco diseños.
+
+## 2026-10-22 — Más diseños de Difusión: invitación, mapa, cómo comprar, calendario, qué incluye
+
+- Panel → Público → Difusión, sección "Para invitar y vender", en cuadrado, 3:4 y 9:16 (fondos: ver 0124):
+  - Invitación: "DARF Productions te invita a" + logo grande de la obra, fecha y hora de la función elegida (o las
+    fechas de la temporada), lugar, WhatsApp, página y QR a la obra.
+  - Mapa de zonas: el mapa real (filas o mapa libre con su escenario), colores de zona y precios (si la obra los
+    muestra; de la función elegida o el más bajo en venta).
+  - Cómo comprar: opción 1 por WhatsApp y opción 2 en la página (aparta y cierra por WhatsApp); en obras "todo por
+    WhatsApp" solo la primera.
+  - Calendario de funciones y "¿Qué incluye tu lugar?" (zonas con sus beneficios de 0122).
+- `lib/difusion-extra-rules.ts` (con pruebas), `lib/difusion-extra-datos.ts`, `lib/difusion-extra.tsx` y la ruta
+  `/panel/producciones/[id]/difusion/mas/[diseno]`.
+
+## 2026-10-22 — Diseños de preventa para redes (Club Fan y códigos)
+
+- Panel → Público → Difusión: sección "Preventa Club Fan" con tres diseños ("¡Ya empezó!" hasta tal fecha,
+  "¡Es mañana!" con la hora en que abre y "Del … al …"), el sugerido marcado como "Hoy toca". Usan las fechas de la
+  obra o de la función elegida. El diseño anterior "Preventa Club Fan" sale de la lista general.
+- Diseño por código de preventa privada (0123): "Preventa privada para {nombre}", fechas, el código, la liga y un
+  QR que lleva a /preventa/CODIGO. En Difusión y en Boletos → Preventa privada.
+- Tres tamaños: cuadrado 1080×1080, post 3:4 (1080×1440) e historia 9:16 (1080×1920). Fondo: el póster limpio
+  de la obra (3:4 o 9:16; si falta, la imagen de ambiente) con degradado; arriba el logo de DARF o el de la Fan Zone
+  y el de la obra. `lib/difusion-preventa-rules.ts` (textos, con pruebas) y `lib/difusion-preventa.tsx` (dibujo).
+
+## 2026-10-22 — Preventa privada con código (migración 0123)
+
+- Tercera etapa de venta, antes de las otras: privada (solo con código) → Club Fan (socios y quien tiene código) →
+  general. Si no se pone fecha privada, todo sigue igual. Taquilla vende siempre.
+- Las fechas privadas viven en `preventa_privada_obras` (con `max_por_persona`) y `preventa_privada_funciones`, que
+  el público no puede leer: quien no tiene código solo ve "La venta abre el…". Se ponen en la tarjeta "Preventas"
+  de Funciones y precios (obra) o en cada función con fechas propias; la base las copia como las de 0118.
+- Códigos por obra (`preventa_codigos`: nombre, máximo de personas, activo) con liga `/preventa/CODIGO`; al abrirla
+  con sesión se canjea a la cuenta (`preventa_accesos`, `preventa_canjear`, tope de 10 intentos fallidos por hora).
+  También hay campo "¿Tienes un código de preventa?" en la obra. Desactivar un código quita el acceso.
+- `preventa_revisar` (reemplaza la de 0120) deja comprar en la etapa privada solo con acceso; el límite por persona
+  lo revisa un trigger diferido sobre `tickets` (`preventa_privada_tope`), sin cambiar las funciones de compra.
+- Panel → Boletos → Preventa privada: crear códigos, copiar liga, compartir por WhatsApp, activar/desactivar y, por
+  código, personas, boletos pagados y lo vendido (`preventa_codigos_resumen`).
+
+## 2026-10-22 — Beneficios por zona (migración 0122)
+
+- Una zona puede incluir beneficios además del lugar (VIP: acceso anticipado, póster firmado, foto con el elenco,
+  bartender…). Tabla `zona_beneficios` por obra (tipo experiencia/acceso/souvenir/atención/otro, nombre, detalle,
+  minutos antes para acceso, cupo opcional "primeros N" por función, `funciones` para valer solo en algunas) y
+  `zona_beneficio_zonas` (un beneficio en varias zonas; trigger: misma obra).
+- La zona de un boleto con asiento es la del asiento (`coalesce(t.price_category_id, s.price_category_id)`).
+  `beneficios_de_ticket` resuelve el cupo por orden de aprobación (null mientras la orden está pendiente).
+- Se ven en: página de la obra (Zonas), compra ("VIP incluye", "Tu lugar en VIP incluye"), pantalla final,
+  WhatsApp ("Incluye (VIP): …", con `orden_beneficios`), boleto en Mi cuenta, imagen y PDF del boleto, Apple y
+  Google Wallet (`wallet_beneficios` para la actualización sin sesión) y Taquilla.
+- Puerta: al escanear salen los beneficios con "Marcar entregado" (`beneficio_entregar`, en `beneficio_entregas` y
+  bitácora) y la hora de acceso anticipado. Panel → Boletos → Beneficios: alta (con botones rápidos), zonas,
+  funciones, cupo, orden y reporte de entregas por función (`beneficios_reporte`).
+- Fuera de alcance por ahora: copiar beneficios al duplicar obra o usar un teatro guardado; extras con precio.
+
 ## 2026-10-22 — DARF Showcase Shows (migración 0121)
 
 - Página pública `/showcases` con el contenido del dossier: públicos, qué hace especial a DARF, galería "Así se vive",
@@ -19,6 +116,8 @@ solo *qué*.
   Equipo, Ensayos— y por plan; fotos al bucket `showcases`, videos como ligas de YouTube/Instagram/TikTok) y
   Solicitudes (bandeja por estado: nueva, cotizada, confirmada, descartada, con notas del equipo).
 - Datos iniciales: los 3 planes y textos del dossier, WhatsApp 524465220560 (solo si las tablas están vacías).
+- 0121b: el permiso se agrega a los roles de Casa DARF Dirección General y Producción Ejecutiva (los roles ya
+  existentes no lo recibían solos; solo la cuenta admin lo veía). Script `apply_0121b_dev.sql`, sin despliegue.
 
 ## 2026-10-22 — Cómo se vende cada obra (migración 0120)
 

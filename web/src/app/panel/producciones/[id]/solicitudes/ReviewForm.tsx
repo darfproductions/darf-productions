@@ -7,6 +7,7 @@ import { Icono } from "@/components/Icono";
 
 const QUE_PASA: Record<string, string> = {
   falta: "Al aprobar, los ensayos quedan como falta justificada.",
+  llegada: "Al aprobar, la hora que pidió es su hora de entrada (con la tolerancia de la obra): si llega después, el retardo se cuenta desde esa hora. Si ya llegó, su registro se recalcula.",
   pago: "Al aprobar, el pago se registra en sus mensualidades con este monto.",
   documento: "Al aprobar, el documento queda como recibido en su expediente.",
   otro: "",

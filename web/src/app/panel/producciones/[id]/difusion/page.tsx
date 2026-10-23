@@ -5,6 +5,10 @@ import { Card, button, input } from "@/components/panel/ui";
 import { Icono } from "@/components/Icono";
 import { funcionPorOmision, getObraDifusion } from "@/lib/difusion-datos";
 import { DISENOS, fechaLarga, hora } from "@/lib/difusion-rules";
+import { DISENOS_EXTRA } from "@/lib/difusion-extra-rules";
+import { MODOS_FAN, TAMANO_PREVENTA, modoSugerido, rangoCorto, type FormatoPreventa } from "@/lib/difusion-preventa-rules";
+import { createClient } from "@/lib/supabase/server";
+import Link from "next/link";
 import { can } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
 
@@ -25,6 +29,17 @@ export default async function Difusion({ params, searchParams }: PageProps<"/pan
   const funcion = pedida ?? funcionPorOmision(obra.funciones);
   const liga = (tipo: string, f: "post" | "historia", extra: Record<string, string> = {}) =>
     `/panel/producciones/${id}/difusion/${tipo}?${new URLSearchParams({ f, ...(funcion ? { funcion: funcion.id } : {}), ...extra })}`;
+
+  // Preventa (Club Fan en 3 momentos y códigos de preventa privada): cuadrado, post 3:4 e historia 9:16.
+  const prevDesde = pedida ? pedida.preventa_desde ?? null : obra.preventa.desde;
+  const prevHasta = pedida ? pedida.preventa_hasta ?? null : obra.preventa.hasta;
+  const sugerido = modoSugerido(prevDesde, prevHasta);
+  const ligaFan = (modo: string, f: FormatoPreventa, descargar = false) =>
+    `/panel/producciones/${id}/difusion/preventa/${modo}?${new URLSearchParams({ f, ...(pedida ? { funcion: pedida.id } : {}), ...(descargar ? { descargar: "1" } : {}) })}`;
+  const verCodigos = can(access, id, "funciones.gestionar") || can(access, id, "ventas.ver");
+  const { data: codigosRes } = verCodigos ? await (await createClient()).from("preventa_codigos").select("codigo, nombre").eq("production_id", id).eq("activo", true).order("created_at") : { data: [] };
+  const codigos = (codigosRes ?? []) as { codigo: string; nombre: string }[];
+  const formatos = Object.entries(TAMANO_PREVENTA) as [FormatoPreventa, { label: string }][];
 
   return (
     <div className="flex flex-col gap-4">
@@ -48,8 +63,78 @@ export default async function Difusion({ params, searchParams }: PageProps<"/pan
         )}
       </Card>
 
+      <Card className="flex flex-col gap-3">
+        <div>
+          <h2 className="titular text-xl">Para invitar y vender</h2>
+          <p className="text-sm text-texto-2">Con el póster de la obra de fondo. La invitación y el mapa usan la función elegida arriba. Se descargan en cuadrado (1:1), post (3:4) o historia (9:16).</p>
+        </div>
+        <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {DISENOS_EXTRA.map((x) => {
+            const ligaX = (f: FormatoPreventa, descargar = false) =>
+              `/panel/producciones/${id}/difusion/mas/${x.id}?${new URLSearchParams({ f, ...(x.funcion && funcion ? { funcion: funcion.id } : {}), ...(descargar ? { descargar: "1" } : {}) })}`;
+            return (
+              <li key={x.id} className="flex flex-col gap-2 rounded-xl bg-telon-2 p-3">
+                <div>
+                  <h3 className="font-bold">{x.label}</h3>
+                  <p className="text-xs text-texto-3">{x.ayuda}</p>
+                </div>
+                <img src={ligaX("post")} alt={`Vista previa: ${x.label}`} loading="lazy" width={1080} height={1440} className="aspect-[3/4] w-full rounded-lg bg-sala object-cover" />
+                <div className="mt-auto flex flex-wrap gap-2">
+                  {formatos.map(([f, t]) => <a key={f} href={ligaX(f, true)} className={pill}>{t.label} <Icono nombre="flecha-abajo" /></a>)}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      </Card>
+
+      <Card className="flex flex-col gap-3">
+        <div>
+          <h2 className="titular text-xl">Preventa Club Fan</h2>
+          <p className="text-sm text-texto-2">Con el póster de la obra de fondo y el logo de la Fan Zone. Se descargan en cuadrado (1:1), post (3:4) o historia (9:16).
+            {prevDesde || prevHasta ? ` Fechas: ${rangoCorto(prevDesde, prevHasta)}${pedida ? " (de la función elegida)" : " (de la obra)"}.` : ""}</p>
+          {!prevDesde && !prevHasta && <p className="mt-1 text-sm font-semibold text-aviso">Esta obra aún no tiene fechas de preventa: ponlas en <Link href={`/panel/producciones/${id}/boletos/funciones`} className="underline">Funciones y precios, en Preventas</Link>.</p>}
+        </div>
+        <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {MODOS_FAN.map((m) => (
+            <li key={m.id} className={`flex flex-col gap-2 rounded-xl p-3 ${m.id === sugerido ? "bg-oro/10 ring-1 ring-oro/50" : "bg-telon-2"}`}>
+              <div>
+                <h3 className="font-bold">{m.label}{m.id === sugerido && <span className="ml-2 rounded-full bg-oro/20 px-2 py-0.5 text-[10px] font-black uppercase text-oro-claro">Hoy toca</span>}</h3>
+                <p className="text-xs text-texto-3">{m.ayuda}</p>
+              </div>
+              <img src={ligaFan(m.id, "post")} alt={`Vista previa: ${m.label}`} loading="lazy" width={1080} height={1440} className="aspect-[3/4] w-full rounded-lg bg-sala object-cover" />
+              <div className="mt-auto flex flex-wrap gap-2">
+                {formatos.map(([f, t]) => <a key={f} href={ligaFan(m.id, f, true)} className={pill}>{t.label} <Icono nombre="flecha-abajo" /></a>)}
+              </div>
+            </li>
+          ))}
+        </ul>
+      </Card>
+
+      {verCodigos && (
+        <Card className="flex flex-col gap-3">
+          <div>
+            <h2 className="titular text-xl">Preventa privada (con código)</h2>
+            <p className="text-sm text-texto-2">Un diseño por código, con el código, la liga y su QR. Los códigos se crean en <Link href={`/panel/producciones/${id}/boletos/preventa`} className="underline">Boletos, en Preventa privada</Link>.</p>
+          </div>
+          {codigos.length === 0 ? <p className="text-sm text-texto-3">No hay códigos activos.</p> : (
+            <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {codigos.map((c) => (
+                <li key={c.codigo} className="flex flex-col gap-2 rounded-xl bg-telon-2 p-3">
+                  <h3 className="font-bold">{c.nombre} <span className="text-xs text-texto-3">{c.codigo}</span></h3>
+                  <img src={`/panel/producciones/${id}/boletos/preventa/${c.codigo}/diseno?f=post`} alt={`Vista previa: ${c.nombre}`} loading="lazy" width={1080} height={1440} className="aspect-[3/4] w-full rounded-lg bg-sala object-cover" />
+                  <div className="mt-auto flex flex-wrap gap-2">
+                    {formatos.map(([f, t]) => <a key={f} href={`/panel/producciones/${id}/boletos/preventa/${c.codigo}/diseno?f=${f}&descargar=1`} className={pill}>{t.label} <Icono nombre="flecha-abajo" /></a>)}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+      )}
+
       <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        {DISENOS.map((d) => {
+        {DISENOS.filter((d) => d.id !== "preventa").map((d) => {
           const temporada: Record<string, string> = d.id === "agotadas" ? { funcion: "todas" } : {};
           return (
             <li key={d.id}>

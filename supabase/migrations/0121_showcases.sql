@@ -7,6 +7,11 @@
 insert into permissions (id, grupo, descripcion, orden) values
   ('casa.showcases', 'Casa DARF', 'Showcases: planes, página, fotos y videos y solicitudes', 111)
 on conflict (id) do nothing;
+-- 0121b: los roles de Casa DARF que ya existían no lo tenían (Diego: Dirección General y Producción Ejecutiva).
+insert into role_permissions (role_id, permission_id)
+select r.id, 'casa.showcases' from panel_roles r
+where r.id in ('casa_direccion_general', 'casa_produccion_ejecutiva') and r.alcance = 'casa' and not r.es_sistema
+on conflict do nothing;
 
 -- ──────── Página (una sola fila) ────────
 create table if not exists showcase_ajustes (

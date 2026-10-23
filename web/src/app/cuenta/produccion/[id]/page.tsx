@@ -19,8 +19,8 @@ import { METODOS, conceptoPago } from "@/lib/pago-rules";
 import { ASISTENCIA, fechaEnsayo, type Rehearsal } from "@/lib/rehearsal-rules";
 import { TIPO_MATERIAL, porCarpeta, signMaterials, type Material } from "@/lib/materials";
 import { RequestCard } from "@/components/requests/RequestCard";
-import { avisoFaltaHoras, listRequests } from "@/lib/requests";
-import { puedeAvisarFalta, textoLimite, type RequestTipo } from "@/lib/request-rules";
+import { avisoFaltaHoras, listRequests, toleranciaMin } from "@/lib/requests";
+import { horaMx, puedeAvisarFalta, puedeAvisarLlegada, textoLimite, type RequestTipo } from "@/lib/request-rules";
 import { cancelRequest, markRead } from "./actions";
 import { RequestForm, type EnsayoOpcion } from "./RequestForm";
 import { createClient } from "@/lib/supabase/server";
@@ -51,6 +51,7 @@ export default async function MyProduction({ params, searchParams }: PageProps<"
     listRequests(id, { uid: session.userId, limit: 100 }),
     avisoFaltaHoras(id),
   ]);
+  const tolerancia = await toleranciaMin(id);
   const [rub, misEvals] = await Promise.all([getRubric(id), getEvaluations(id, { uid: session.userId })]);
   const evaluaciones = await Promise.all(
     rub.periodos.filter((p) => p.publicado_at && misEvals.some((e) => e.period_id === p.id)).map(async (p) => {
@@ -77,9 +78,9 @@ export default async function MyProduction({ params, searchParams }: PageProps<"
   const proximos = ensayos.filter((r) => isoMx(new Date(r.inicia)) >= hoy);
   const pasados = ensayos.filter((r) => isoMx(new Date(r.inicia)) < hoy).reverse();
   const asisDe = (rid: string) => ((asis.data ?? []) as { rehearsal_id: string; estado: string; minutos_tarde: number | null }[]).find((a) => a.rehearsal_id === rid);
-  // Solicitud de falta vigente (pendiente o aprobada; si no, la última rechazada) de cada ensayo.
+  // Solicitud de falta o de llegada tarde vigente (pendiente o aprobada; si no, la última rechazada) de cada ensayo.
   const faltaDe = (rid: string) => {
-    const de = solicitudes.filter((q) => q.tipo === "falta" && q.ensayos.some((x) => x.id === rid));
+    const de = solicitudes.filter((q) => (q.tipo === "falta" || q.tipo === "llegada") && q.ensayos.some((x) => x.id === rid));
     return de.find((q) => q.estado === "pendiente" || q.estado === "aprobada") ?? de.find((q) => q.estado === "rechazada") ?? null;
   };
   const ahora = new Date();
@@ -101,7 +102,7 @@ export default async function MyProduction({ params, searchParams }: PageProps<"
   const siguiente = proximos.find((r) => r.estado !== "cancelado") ?? null;
   const sinLeer = comunicados.filter((a) => !leidos.has(a.id)).length;
   const solUrls = await signDocs(solicitudes.map((q) => q.archivo_path));
-  const tipoInicial = (["falta", "documento", "pago", "otro"] as const).find((t) => t === sp.nueva) ?? (typeof sp.falta === "string" ? "falta" : null);
+  const tipoInicial = (["falta", "llegada", "documento", "pago", "otro"] as const).find((t) => t === sp.nueva) ?? (typeof sp.falta === "string" ? "falta" : typeof sp.llegada === "string" ? "llegada" : null);
   const cuota = d.fee && d.fee.cobrar !== false && !d.terms.beca ? Number(d.terms.cuota_especial ?? d.fee.monto) : null;
   const activa = !d.alta?.baja_at;
   const debeHoy = adeudo(ms) + Math.max(0, (insc?.debe ?? 0) - (insc?.pagado ?? 0));
@@ -206,12 +207,18 @@ export default async function MyProduction({ params, searchParams }: PageProps<"
                 {r.estado !== "cancelado" && activa && (() => {
                   const q = faltaDe(r.id);
                   if (q && q.estado !== "rechazada") {
+                    if (q.tipo === "llegada") {
+                      const h = q.llegada_hora ? horaMx(q.llegada_hora) : "";
+                      return <p className="text-xs font-bold text-aviso">{q.estado === "aprobada" ? <><Icono nombre="check" /> Llegada tarde aprobada: tu hora de entrada es las {h}</> : `Llegada tarde a las ${h} · esperando respuesta`}</p>;
+                    }
                     return <p className="text-xs font-bold text-aviso">{q.estado === "aprobada" ? <><Icono nombre="check" /> Falta justificada</> : "Falta solicitada · esperando respuesta"}</p>;
                   }
                   const op = opcionesFalta.find((o) => o.id === r.id);
+                  const tarde = op && puedeAvisarLlegada(r.inicia, ahora)
+                    ? <Link href={`?llegada=${r.id}#solicitudes`} scroll={false} className="self-start text-sm font-bold text-violeta-claro">Llegaré tarde · avisar <Icono nombre="flecha-der" /></Link> : null;
                   return op?.permitido
-                    ? <Link href={`?falta=${r.id}#solicitudes`} scroll={false} className="self-start text-sm font-bold text-violeta-claro">{q ? "Tu solicitud fue rechazada · volver a pedir" : "No podré ir · solicitar falta"} <Icono nombre="flecha-der" /></Link>
-                    : <p className="text-xs text-texto-3">{q ? "Tu solicitud fue rechazada." : `Las faltas se avisan ${textoLimite(horasAviso)}; para este ensayo ya pasó el límite.`}</p>;
+                    ? <div className="flex flex-wrap gap-x-5 gap-y-1"><Link href={`?falta=${r.id}#solicitudes`} scroll={false} className="self-start text-sm font-bold text-violeta-claro">{q ? "Tu solicitud fue rechazada · volver a pedir" : "No podré ir · solicitar falta"} <Icono nombre="flecha-der" /></Link>{tarde}</div>
+                    : <>{<p className="text-xs text-texto-3">{q ? "Tu solicitud fue rechazada." : `Las faltas se avisan ${textoLimite(horasAviso)}; para este ensayo ya pasó el límite.`}</p>}{tarde}</>;
                 })()}
               </li>
             ))}
@@ -239,12 +246,12 @@ export default async function MyProduction({ params, searchParams }: PageProps<"
           <section aria-labelledby="solicitudes" className="flex flex-col gap-4 rounded-2xl bg-telon p-6">
             <div>
               <h2 id="solicitudes" className="titular text-2xl">Solicitudes</h2>
-              <p className="mt-1 text-sm text-texto-2">Avisa una falta, manda documentos o comprobantes de pago, o cualquier otra solicitud. La producción la aprueba o la rechaza y aquí queda el registro.</p>
+              <p className="mt-1 text-sm text-texto-2">Avisa una falta o que llegarás tarde, manda documentos o comprobantes de pago, o cualquier otra solicitud. La producción la aprueba o la rechaza y aquí queda el registro.</p>
             </div>
             {activa && (
-              <RequestForm key={String(sp.falta ?? sp.nueva ?? "")} pid={id} uid={session.userId} ensayos={opcionesFalta} horas={horasAviso}
+              <RequestForm key={String(sp.falta ?? sp.llegada ?? sp.nueva ?? "")} pid={id} uid={session.userId} ensayos={opcionesFalta} horas={horasAviso} tolerancia={tolerancia}
                 docTipos={misDocs.map((t) => ({ id: t.id, nombre: t.nombre }))} cuota={cuota}
-                inicial={{ tipo: tipoInicial as RequestTipo | null, falta: typeof sp.falta === "string" ? sp.falta : null }} />
+                inicial={{ tipo: tipoInicial as RequestTipo | null, falta: typeof sp.falta === "string" ? sp.falta : typeof sp.llegada === "string" ? sp.llegada : null }} />
             )}
             <h3 className="mt-2 text-lg font-bold">Mis solicitudes</h3>
             {solicitudes.length === 0 ? <p className="text-sm text-texto-2">Aún no has mandado solicitudes.</p> : (

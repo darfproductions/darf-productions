@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { enPreventa, estadoFuncion, partesFuncion } from "./disponibilidad";
+import { enPreventa, enPrivada, estadoFuncion, partesFuncion, privadaPorAbrir } from "./disponibilidad";
 
 describe("estadoFuncion", () => {
   it("sin capacidad no se sabe", () => {
@@ -31,5 +31,24 @@ describe("enPreventa", () => {
     expect(enPreventa({ on_sale: true, preventa_hasta: "2027-01-09T00:00:00Z" }, ahora)).toBe(false);
     expect(enPreventa({ on_sale: false, preventa_hasta: "2027-01-11T00:00:00Z" }, ahora)).toBe(false);
     expect(enPreventa({ on_sale: true, preventa_hasta: null }, ahora)).toBe(false);
+  });
+});
+
+describe("preventa privada (0123)", () => {
+  const ahora = Date.parse("2026-11-01T12:00:00Z");
+  const f = { id: "f1", on_sale: true, preventa_desde: "2026-11-05T12:00:00Z" };
+  const mia = { acceso: true, funciones: { f1: "2026-10-30T12:00:00Z" } };
+  it("con código y dentro de la ventana: en privada", () => {
+    expect(enPrivada(f, mia, ahora)).toBe(true);
+    expect(privadaPorAbrir(f, mia, ahora)).toBeNull();
+  });
+  it("sin código, sin fecha privada o ya en la del Club Fan: no", () => {
+    expect(enPrivada(f, { acceso: false }, ahora)).toBe(false);
+    expect(enPrivada(f, null, ahora)).toBe(false);
+    expect(enPrivada({ ...f, id: "otra" }, mia, ahora)).toBe(false);
+    expect(enPrivada(f, mia, Date.parse("2026-11-06T00:00:00Z"))).toBe(false);
+  });
+  it("con código pero aún no abre", () => {
+    expect(privadaPorAbrir(f, mia, Date.parse("2026-10-29T00:00:00Z"))).toBe("2026-10-30T12:00:00Z");
   });
 });

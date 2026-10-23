@@ -55,7 +55,8 @@ export async function listZones(pid: string): Promise<Zone[]> {
 }
 
 /** Zonas de entrada general de una función con sus lugares libres (0055). */
-export type GeneralZone = { price_category_id: string; nombre: string; descripcion: string | null; precio: number; cupo: number; ocupados: number; libres: number; /** 0118: precio sin la promo. */ antes?: number };
+export type GeneralZone = { price_category_id: string; nombre: string; descripcion: string | null; precio: number; cupo: number; ocupados: number; libres: number; /** 0118: precio sin la promo. */ antes?: number;
+  /** 0122: lo que incluye la zona. */ beneficios?: import("@/lib/beneficios-rules").BeneficioCorto[] };
 
 export async function generalAvailability(performanceId: string): Promise<GeneralZone[]> {
   const supabase = await createClient();

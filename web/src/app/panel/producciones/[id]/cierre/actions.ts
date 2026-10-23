@@ -15,6 +15,10 @@ export async function closeSeason(_p: State, f: FormData): Promise<State> {
   const pid = String(f.get("pid") ?? "");
   if (String(f.get("confirmo") ?? "") !== "on") return { ok: false, message: "Marca la casilla de confirmación." };
   const supabase = await createClient();
+  // 0125: lo pagado se tiene que entregar. La base no lo revisa al cerrar; aquí sí.
+  const { data: b } = await supabase.rpc("beneficios_pendientes", { pid }).maybeSingle();
+  const faltan = (b as { pendientes: number } | null)?.pendientes ?? 0;
+  if (faltan) return { ok: false, message: `Faltan ${faltan} ${faltan === 1 ? "beneficio pagado" : "beneficios pagados"} por entregar. Revísalos en Boletos, Beneficios, Entregas.` };
   const { error } = await supabase.rpc("season_close", { pid, notas_: String(f.get("notas") ?? ""), dar_baja: f.get("dar_baja") === "on" });
   if (error) return { ok: false, message: error.message };
   refresh(pid);

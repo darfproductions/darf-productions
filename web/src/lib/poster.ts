@@ -18,12 +18,30 @@ export type PosterColumns = {
   poster_9x16_path?: string | null; poster_9x16_info_path?: string | null;
   poster_4x3_path?: string | null; poster_4x3_info_path?: string | null;
   poster_16x9_path?: string | null; poster_16x9_info_path?: string | null;
+  poster_alt_3x4_path?: string | null; poster_alt_3x4_info_path?: string | null;
+  poster_alt_9x16_path?: string | null; poster_alt_9x16_info_path?: string | null;
 };
 
 export const POSTER_COLUMNS = "poster_3x4_path, poster_3x4_info_path, poster_9x16_path, poster_9x16_info_path, poster_4x3_path, poster_4x3_info_path, poster_16x9_path, poster_16x9_info_path";
 
 export function columna(f: Formato, info: boolean): keyof PosterColumns {
   return `poster_${f}${info ? "_info" : ""}_path` as keyof PosterColumns;
+}
+
+// Póster alterno (0124): opcional, 3:4 y 9:16, con y sin información. La versión sin textos ni logo es el
+// fondo de la invitación de Difusión; no reemplaza al póster oficial en la página.
+export const FORMATOS_ALT = ["3x4", "9x16"] as const;
+/** Solo el panel, el kit de prensa y Difusión las leen; la página pública no. */
+export const POSTER_ALT_COLUMNS = "poster_alt_3x4_path, poster_alt_3x4_info_path, poster_alt_9x16_path, poster_alt_9x16_info_path";
+export type FormatoAlt = (typeof FORMATOS_ALT)[number];
+
+export function columnaAlt(f: FormatoAlt, info: boolean): keyof PosterColumns {
+  return `poster_alt_${f}${info ? "_info" : ""}_path` as keyof PosterColumns;
+}
+
+/** Ruta del póster alterno en ese formato y versión (o null). */
+export function posterAlt(p: PosterColumns | null | undefined, f: FormatoAlt, info: boolean): string | null {
+  return (p?.[columnaAlt(f, info)] as string | null | undefined) ?? null;
 }
 
 /** Ruta del póster en ese formato y versión (o null). */

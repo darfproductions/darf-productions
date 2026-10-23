@@ -1,3 +1,4 @@
+import type { BeneficioCorto } from "@/lib/beneficios-rules";
 import { env } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
 import { themeFromKit, type KitColumns, type ProductionTheme } from "@/lib/themes";
@@ -69,7 +70,8 @@ export type Performance = {
   preventa_desde?: string | null;
 };
 
-export type ZonePrice = { nombre: string; price: number; /** Color de la zona en el mapa (0062). */ color?: string | null; /** Orden de la zona (0117). */ orden?: number };
+export type ZonePrice = { nombre: string; price: number; /** Color de la zona en el mapa (0062). */ color?: string | null; /** Orden de la zona (0117). */ orden?: number;
+  /** Lo que incluye la zona además del lugar (0122). */ beneficios?: BeneficioCorto[] };
 
 const PRODUCTION_COLUMNS =
   `id, nombre, venue, temporada, price, on_sale, concluded, destacada, created_at, estado, frase, color_fondo, color_superficie, color_texto, color_acento, logo_path, ambiente_path, funciones_publicadas, modo_venta, mostrar_precios, mostrar_total, ${POSTER_COLUMNS}` as const;
@@ -137,6 +139,9 @@ export async function getProduction(id: string, opts: { includeDrafts?: boolean 
       if (prev === undefined || price < prev.price) byZone.set(cat.nombre, { nombre: cat.nombre, price, color: cat.color, orden: cat.orden ?? 0 });
     }
     prices = [...byZone.values()].sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0) || b.price - a.price);
+    // 0122: beneficios de cada zona (los activos; la base no da los ocultos al público).
+    const porNombre = await beneficiosPorNombreDeZona(id);
+    prices = prices.map((z) => ({ ...z, beneficios: porNombre.get(z.nombre) ?? [] }));
   }
 
   return {
@@ -144,6 +149,20 @@ export async function getProduction(id: string, opts: { includeDrafts?: boolean 
     performances: funciones as Performance[],
     prices,
   };
+}
+
+/** Beneficios activos de la obra agrupados por nombre de zona (0122). */
+export async function beneficiosPorNombreDeZona(pid: string): Promise<Map<string, BeneficioCorto[]>> {
+  const supabase = await createClient();
+  const { data } = await supabase.from("zona_beneficios")
+    .select("tipo, nombre, detalle, minutos_antes, cupo, funciones, orden, activo, entrega, entrega_dias, zona_beneficio_zonas(price_categories(nombre))")
+    .eq("production_id", pid).eq("activo", true).order("orden").order("created_at");
+  const m = new Map<string, BeneficioCorto[]>();
+  for (const b of (data ?? []) as unknown as (BeneficioCorto & { zona_beneficio_zonas: { price_categories: { nombre: string } | null }[] })[]) {
+    const { zona_beneficio_zonas: zs, ...corto } = b;
+    for (const z of zs) if (z.price_categories) m.set(z.price_categories.nombre, [...(m.get(z.price_categories.nombre) ?? []), corto]);
+  }
+  return m;
 }
 
 export function formatPerformanceDate(iso: string | null): string {

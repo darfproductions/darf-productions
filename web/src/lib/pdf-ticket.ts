@@ -11,6 +11,8 @@ export type PdfTicket = {
   orden: string;
   comprador: string;
   qr: string; // qr_token
+  /** 0122: "Acceso anticipado (15 min antes) · Póster firmado · Puertas para ti: 7:45 p.m." */
+  incluye?: string | null;
 };
 
 const W = 360; // ancho de página (pt)
@@ -81,7 +83,10 @@ function pageContent(t: PdfTicket): string {
   if (t.lugar) row("Lugar", t.lugar);
   row("Asiento", t.asiento);
   row("Orden", `${t.orden} · ${t.comprador}`);
-  ops.push(qrPath(t.qr, (W - 220) / 2, 70, 220));
+  if (t.incluye) row("Incluye", t.incluye);
+  // Con "Incluye" el QR se hace un poco más chico para que quepa todo.
+  const q = t.incluye ? 170 : 220;
+  ops.push(qrPath(t.qr, (W - q) / 2, 60, q));
   ops.push("0.45 0.45 0.45 rg", text(24, 44, 9, "Presenta este código en la entrada. Cada código vale una sola vez."));
   return ops.join("\n");
 }

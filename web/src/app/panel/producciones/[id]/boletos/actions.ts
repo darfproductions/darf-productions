@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { localMxToIso } from "@/lib/dates";
 import { formatMoney } from "@/lib/tickets";
 import { esMetodo } from "@/lib/ventas-rules";
+import { esMomentoEntrega, MOMENTOS_ENTREGA, momentoPorOmision, type TipoBeneficio } from "@/lib/beneficios-rules";
 import { mensajeError } from "@/lib/errores";
 import { createClient } from "@/lib/supabase/server";
 
@@ -238,6 +239,13 @@ export async function updatePerformance(_p: TicketState, f: FormData): Promise<T
     .eq("production_id", pid);
   if (error) return { ok: false, message: error.message };
   if (!count) return { ok: false, message: "No tienes permiso para editar esta función." };
+  // 0123: con fechas propias, su preventa privada propia (con las de la obra la pone la base).
+  if (!deObra) {
+    const pv = fecha2("preventa_privada");
+    if (pv.t && !pv.iso) return { ok: false, message: "Revisa la fecha de la preventa privada." };
+    const { error: ePriv } = await supabase.rpc("funcion_preventa_privada", { pfid: id, p_desde: pv.iso });
+    if (ePriv) { refresh(pid); return { ok: false, message: `Se guardó la función, pero no la preventa privada: ${mensajeError(ePriv)}` }; }
+  }
   refresh(pid);
   const ahora = Date.now();
   return { ok: true, message: !on_sale ? "Guardado." : preventa_desde && new Date(preventa_desde).getTime() > ahora ? "Guardado: la venta abre en la fecha de inicio."
@@ -267,6 +275,14 @@ export async function savePreventaObra(_p: TicketState, f: FormData): Promise<Ti
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("obra_preventa", { pid, p_desde: d.iso, p_hasta: h.iso });
   if (error) return { ok: false, message: mensajeError(error) };
+  // 0123: preventa privada (con código) antes del inicio; máximo de boletos por persona.
+  const pv = leer("privada");
+  if (pv.t && !pv.iso) return { ok: false, message: "Revisa la fecha de la preventa privada." };
+  const maxTxt = String(f.get("privada_max") ?? "").trim();
+  const max = maxTxt ? Number(maxTxt) : null;
+  if (max != null && (!Number.isInteger(max) || max < 1 || max > 50)) return { ok: false, message: "El máximo por persona va de 1 a 50 (o vacío)." };
+  const { error: ePriv } = await supabase.rpc("obra_preventa_privada", { pid, p_desde: pv.iso, p_max: max });
+  if (ePriv) { refresh(pid); return { ok: false, message: `Se guardó la del Club Fan, pero no la privada: ${mensajeError(ePriv)}` }; }
   refresh(pid);
   const r = data as { funciones: number; antes_del_fin: number };
   const extra = r.antes_del_fin ? ` ${r.antes_del_fin === 1 ? "1 función empieza" : `${r.antes_del_fin} funciones empiezan`} antes del fin de la preventa y no cambió.` : "";
@@ -568,4 +584,108 @@ export async function borrarZona(pid: string, zid: string, destino: string | nul
   refresh(pid);
   const n = Number(data ?? 0);
   return { ok: true, message: n ? `Zona borrada; sus ${n} asientos pasaron a la otra zona.` : "Zona borrada." };
+}
+
+// ──────── Beneficios por zona (0122) ────────
+// La base revisa funciones.gestionar en esta obra y que las zonas sean de la obra.
+
+export async function guardarBeneficio(_p: TicketState, f: FormData): Promise<TicketState> {
+  const pid = String(f.get("pid"));
+  const id = String(f.get("id") ?? "");
+  const tipo = String(f.get("tipo") ?? "otro");
+  const nombre = String(f.get("nombre") ?? "").trim();
+  if (nombre.length < 2) return { ok: false, message: "Escribe el nombre del beneficio." };
+  if (!["experiencia", "acceso", "souvenir", "atencion", "otro"].includes(tipo)) return { ok: false, message: "Tipo no válido." };
+  const num = (k: string) => { const v = String(f.get(k) ?? "").trim(); return v ? Number(v) : null; };
+  const minutos = tipo === "acceso" ? num("minutos_antes") : null;
+  const cupo = num("cupo");
+  if (minutos != null && (!Number.isInteger(minutos) || minutos < 1 || minutos > 240)) return { ok: false, message: "Los minutos deben ser de 1 a 240." };
+  if (cupo != null && (!Number.isInteger(cupo) || cupo < 1)) return { ok: false, message: "El cupo debe ser un número entero mayor a 0 (o vacío)." };
+  const funciones = f.get("cuando") === "algunas" ? f.getAll("funciones").map(String) : [];
+  if (f.get("cuando") === "algunas" && !funciones.length) return { ok: false, message: "Marca al menos una función (o elige \"Todas\")." };
+  // 0125: cuándo se entrega (y los días, si el momento los pide).
+  const m = String(f.get("entrega") ?? "");
+  const entrega = esMomentoEntrega(m) ? m : momentoPorOmision(tipo as TipoBeneficio);
+  const reglaDias = MOMENTOS_ENTREGA[entrega].dias;
+  const dias = reglaDias ? num("entrega_dias") ?? 1 : null;
+  if (reglaDias && dias != null && (!Number.isInteger(dias) || dias < 1 || dias > reglaDias.max)) return { ok: false, message: `Los días deben ser de 1 a ${reglaDias.max}.` };
+  const row = {
+    tipo, nombre, detalle: String(f.get("detalle") ?? "").trim() || null, minutos_antes: minutos, cupo,
+    funciones: funciones.length ? funciones : null, entrega, entrega_dias: dias, activo: f.has("activo") ? f.get("activo") === "on" : true, updated_at: new Date().toISOString(),
+  };
+  const supabase = await createClient();
+  let bid = id;
+  if (id) {
+    const { error, count } = await supabase.from("zona_beneficios").update(row, { count: "exact" }).eq("id", id).eq("production_id", pid);
+    if (error) return { ok: false, message: mensajeError(error) };
+    if (!count) return { ok: false, message: "No se guardó: revisa tus permisos." };
+  } else {
+    const { data: ult } = await supabase.from("zona_beneficios").select("orden").eq("production_id", pid).order("orden", { ascending: false }).limit(1).maybeSingle();
+    const { data, error } = await supabase.from("zona_beneficios").insert({ ...row, production_id: pid, orden: (ult?.orden ?? 0) + 1 }).select("id").single();
+    if (error) return { ok: false, message: mensajeError(error) };
+    bid = data.id as string;
+  }
+  if (f.get("con_zonas") === "1") {
+    const zonas = f.getAll("zonas").map(String);
+    const { error: e1 } = await supabase.from("zona_beneficio_zonas").delete().eq("beneficio_id", bid);
+    if (e1) return { ok: false, message: mensajeError(e1) };
+    if (zonas.length) {
+      const { error: e2 } = await supabase.from("zona_beneficio_zonas").insert(zonas.map((z) => ({ beneficio_id: bid, price_category_id: z })));
+      if (e2) return { ok: false, message: mensajeError(e2) };
+    }
+  }
+  refresh(pid);
+  return { ok: true, message: id ? "Beneficio guardado." : "Beneficio creado. Revisa en qué zonas aplica." };
+}
+
+export async function borrarBeneficio(_p: TicketState, f: FormData): Promise<TicketState> {
+  const pid = String(f.get("pid"));
+  const supabase = await createClient();
+  const { error, count } = await supabase.from("zona_beneficios").delete({ count: "exact" }).eq("id", String(f.get("id"))).eq("production_id", pid);
+  if (error) return { ok: false, message: mensajeError(error) };
+  if (!count) return { ok: false, message: "No se borró: revisa tus permisos." };
+  refresh(pid);
+  return { ok: true, message: "Beneficio borrado." };
+}
+
+export async function moverBeneficio(_p: TicketState, f: FormData): Promise<TicketState> {
+  const pid = String(f.get("pid"));
+  const supabase = await createClient();
+  const { data } = await supabase.from("zona_beneficios").select("id, orden").eq("production_id", pid).order("orden").order("created_at");
+  const xs = (data ?? []) as { id: string; orden: number }[];
+  const i = xs.findIndex((x) => x.id === String(f.get("id")));
+  const j = f.get("dir") === "arriba" ? i - 1 : i + 1;
+  if (i < 0 || j < 0 || j >= xs.length) return null;
+  [xs[i], xs[j]] = [xs[j], xs[i]];
+  for (const [k, x] of xs.entries()) {
+    const { error } = await supabase.from("zona_beneficios").update({ orden: k + 1 }).eq("id", x.id);
+    if (error) return { ok: false, message: mensajeError(error) };
+  }
+  refresh(pid);
+  return { ok: true, message: "Orden guardado." };
+}
+
+// ──────── Preventa privada (0123) ────────
+
+export async function crearCodigoPreventa(_p: TicketState, f: FormData): Promise<TicketState> {
+  const pid = String(f.get("pid"));
+  const nombre = String(f.get("nombre") ?? "").trim();
+  const maxTxt = String(f.get("max_personas") ?? "").trim();
+  const max = maxTxt ? Number(maxTxt) : null;
+  if (max != null && (!Number.isInteger(max) || max < 1)) return { ok: false, message: "El máximo de personas debe ser un número entero (o vacío)." };
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("preventa_codigo_crear", { pid, p_nombre: nombre, p_max: max });
+  if (error) return { ok: false, message: mensajeError(error) };
+  refresh(pid);
+  return { ok: true, message: `Código ${(data as { codigo: string }).codigo} creado. Copia la liga y compártela.` };
+}
+
+export async function estadoCodigoPreventa(_p: TicketState, f: FormData): Promise<TicketState> {
+  const pid = String(f.get("pid"));
+  const activo = f.get("activo") === "1";
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("preventa_codigo_estado", { p_id: String(f.get("id")), p_activo: activo });
+  if (error) return { ok: false, message: mensajeError(error) };
+  refresh(pid);
+  return { ok: true, message: activo ? "Código activado." : "Código desactivado: ya no da acceso (tampoco a quien ya lo usó)." };
 }

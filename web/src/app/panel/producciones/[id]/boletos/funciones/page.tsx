@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ActionForm } from "@/components/panel/ActionForm";
 import { AjustesSeccion } from "@/components/panel/AjustesSeccion";
@@ -37,6 +38,12 @@ export default async function PerformancesPage({ params }: PageProps<"/panel/pro
   const supabase = await createClient();
   // 0118: fechas de preventa de la obra (las funciones que no tienen fechas propias las siguen).
   const { data: obraPre } = await supabase.from("productions").select("preventa_desde, preventa_hasta, funciones_publicadas, modo_venta, mostrar_precios, mostrar_total").eq("id", id).maybeSingle();
+  // 0123: preventa privada (con código) de la obra y de cada función.
+  const [{ data: privObra }, { data: privFn }] = await Promise.all([
+    supabase.from("preventa_privada_obras").select("desde, max_por_persona").eq("production_id", id).maybeSingle(),
+    funciones.length ? supabase.from("preventa_privada_funciones").select("performance_id, desde").in("performance_id", funciones.map((x) => x.id)) : Promise.resolve({ data: [] }),
+  ]);
+  const privadaDe = new Map(((privFn ?? []) as { performance_id: string; desde: string }[]).map((r) => [r.performance_id, r.desde]));
   const [asientosRes, vendidoRes] = gestionar ? await Promise.all([
     todasLasFilas((a, b) => supabase.from("seats").select("price_category_id").eq("production_id", id).eq("is_active", true).order("id").range(a, b)),
     funciones.length ? supabase.from("orders").select("performance_id, total").eq("status", "aprobado").in("performance_id", funciones.map((f) => f.id)) : Promise.resolve({ data: [] }),
@@ -74,9 +81,15 @@ export default async function PerformancesPage({ params }: PageProps<"/panel/pro
       {gestionar && (
         <Card className="flex flex-col gap-3">
           <div>
-            <h2 className="titular text-xl">Preventa del Club Fan</h2>
+            <h2 className="titular text-xl">Preventas</h2>
+            <p className="mt-1 flex flex-wrap items-center gap-2 text-xs font-bold uppercase tracking-[0.12em]">
+              <span className="rounded-full bg-white/10 px-2.5 py-1">1 · Privada (con código)</span><Icono nombre="flecha-der" />
+              <span className="rounded-full bg-oro/20 px-2.5 py-1 text-oro-claro">2 · Club Fan</span><Icono nombre="flecha-der" />
+              <span className="rounded-full bg-exito/20 px-2.5 py-1">3 · Venta general</span>
+            </p>
             <p className="text-sm text-texto-2">
-              Antes del <b>inicio</b> nadie puede comprar en línea; entre el inicio y el <b>fin</b> solo compran los socios del Club Fan; después, todos.
+              <b>Preventa privada</b> (opcional): desde esa fecha y hasta el inicio de la del Club Fan solo compran quienes usaron un código de <Link href={`/panel/producciones/${id}/boletos/preventa`} className="font-bold text-violeta-claro underline">Preventa privada</Link>; el público solo ve &quot;La venta abre el…&quot;.
+              Antes del <b>inicio</b> nadie más puede comprar en línea; entre el inicio y el <b>fin</b> compran los socios del Club Fan (y quien tiene código); después, todos.
               Se pone en todas las funciones que no tengan fechas propias (en cada función puedes cambiarlas). Deja el fin vacío si no hay preventa: el inicio queda como apertura de la venta.
             </p>
           </div>
@@ -84,6 +97,8 @@ export default async function PerformancesPage({ params }: PageProps<"/panel/pro
             <div className="grid gap-3 sm:grid-cols-2">
               <label className="flex flex-col gap-1.5 text-sm font-semibold">Inicio (CDMX)<input className={input} type="datetime-local" name="desde" defaultValue={isoToLocalMx((obraPre?.preventa_desde as string | null) ?? null)} /></label>
               <label className="flex flex-col gap-1.5 text-sm font-semibold">Fin: abre para todos (CDMX)<input className={input} type="datetime-local" name="hasta" defaultValue={isoToLocalMx((obraPre?.preventa_hasta as string | null) ?? null)} /></label>
+              <label className="flex flex-col gap-1.5 text-sm font-semibold">Preventa privada desde (CDMX, opcional)<input className={input} type="datetime-local" name="privada" defaultValue={isoToLocalMx((privObra?.desde as string | null) ?? null)} /></label>
+              <label className="flex flex-col gap-1.5 text-sm font-semibold">Máx. boletos por persona en la privada (vacío = sin límite)<input className={input} type="number" min={1} max={50} name="privada_max" defaultValue={(privObra?.max_por_persona as number | null) ?? ""} /></label>
             </div>
           </ActionForm>
         </Card>
@@ -165,6 +180,7 @@ export default async function PerformancesPage({ params }: PageProps<"/panel/pro
                 <span className="flex flex-wrap items-center gap-2">
                   <b>{formatPerformanceDate(f.starts_at)}</b>
                   {f.on_sale ? <span className="rounded-full bg-[#14532d] px-2 py-0.5 text-[11px] uppercase text-[#bbf7d0]">en venta</span> : <span className="rounded-full bg-white/10 px-2 py-0.5 text-[11px] uppercase text-texto-3">sin venta</span>}
+                  {privadaDe.has(f.id) && f.preventa_desde && f.preventa_desde > new Date().toISOString() && <span className="rounded-full border border-white/25 px-2 py-0.5 text-[11px] uppercase text-texto-2">privada desde {formatPerformanceDate(privadaDe.get(f.id)!).replace(/^\S+ /, "")}</span>}
                   {f.preventa_hasta && <span className="rounded-full border border-oro/40 px-2 py-0.5 text-[11px] uppercase text-oro-claro">preventa</span>}
                   {f.preventa_desde && f.preventa_desde > new Date().toISOString() && <span className="rounded-full border border-white/25 px-2 py-0.5 text-[11px] uppercase text-texto-2">abre {formatPerformanceDate(f.preventa_desde).replace(/^\S+ /, "")}</span>}
                   {f.prices.some((x) => x.propio) && <span className="rounded-full border border-violeta-claro/50 px-2 py-0.5 text-[11px] uppercase text-violeta-claro">precio propio</span>}
@@ -206,6 +222,9 @@ export default async function PerformancesPage({ params }: PageProps<"/panel/pro
                     </label>
                     <label className="flex flex-col gap-1.5 text-sm font-semibold">Fin (después compran todos)
                       <input className={input} type="datetime-local" name="preventa_hasta" defaultValue={isoToLocalMx(f.preventa_hasta)} />
+                    </label>
+                    <label className="flex flex-col gap-1.5 text-sm font-semibold sm:col-span-2">Preventa privada desde (con código; antes del inicio)
+                      <input className={input} type="datetime-local" name="preventa_privada" defaultValue={isoToLocalMx(privadaDe.get(f.id) ?? null)} />
                     </label>
                   </div>
                   <span className="text-xs text-texto-3">Para fechas solo de esta función, quita la palomita. Entre inicio y fin solo compran los socios (a quienes activaron el recordatorio les avisamos al abrir).</span>

@@ -1,7 +1,7 @@
 // Inicio del panel "Tu día" (Bloque 2, migración 0061). Funciones puras: panel-home-rules.test.ts.
 import { partesMx } from "@/lib/dates";
 
-export type PendienteTipo = "ordenes" | "pagos_evento" | "solicitudes" | "solicitudes_elenco" | "ofertas" | "documentos" | "adeudos" | "decision" | "advertencias" | "evaluaciones" | "propuestas" | "entregas" | "notas_equipo" | "avisos_equipo" | "elenco_sin_publicar";
+export type PendienteTipo = "ordenes" | "pagos_evento" | "solicitudes" | "solicitudes_elenco" | "ofertas" | "documentos" | "adeudos" | "decision" | "advertencias" | "evaluaciones" | "propuestas" | "entregas" | "notas_equipo" | "avisos_equipo" | "elenco_sin_publicar" | "beneficios_vencidos" | "beneficios_hoy";
 /** ref_id/ref_titulo (0085): la convocatoria o el evento al que se refiere, para ir directo. */
 export type Pendiente = { tipo: PendienteTipo; production_id: string | null; n: number; ref_id?: string | null; ref_titulo?: string | null };
 
@@ -21,8 +21,10 @@ const TEXTO: Record<PendienteTipo, [string, string]> = {
   notas_equipo: ["nota de dirección para ti", "notas de dirección para ti"],
   avisos_equipo: ["aviso del equipo sin leer", "avisos del equipo sin leer"],
   elenco_sin_publicar: ["persona del elenco sin publicar", "personas del elenco sin publicar"],
+  beneficios_vencidos: ["beneficio vencido sin entregar", "beneficios vencidos sin entregar"],
+  beneficios_hoy: ["beneficio que ya se puede entregar", "beneficios que ya se pueden entregar"],
 };
-const ORDEN: PendienteTipo[] = ["notas_equipo", "ordenes", "pagos_evento", "solicitudes_elenco", "decision", "solicitudes", "ofertas", "documentos", "adeudos", "entregas", "propuestas", "evaluaciones", "elenco_sin_publicar", "avisos_equipo", "advertencias"];
+const ORDEN: PendienteTipo[] = ["notas_equipo", "ordenes", "beneficios_vencidos", "beneficios_hoy", "pagos_evento", "solicitudes_elenco", "decision", "solicitudes", "ofertas", "documentos", "adeudos", "entregas", "propuestas", "evaluaciones", "elenco_sin_publicar", "avisos_equipo", "advertencias"];
 
 export function pendienteTexto(p: Pendiente): string {
   return `${p.n} ${TEXTO[p.tipo][p.n === 1 ? 0 : 1]}`;
@@ -47,6 +49,8 @@ export function pendienteHref(p: Pendiente): string {
     case "propuestas":
     case "entregas": return `${base}/evaluaciones`;
     case "solicitudes_elenco": return `${base}/solicitudes`;
+    case "beneficios_vencidos":
+    case "beneficios_hoy": return `${base}/boletos/beneficios/entregas?${p.ref_id ? `funcion=${p.ref_id}&` : ""}ver=${p.tipo === "beneficios_vencidos" ? "vencidos" : "hoy"}`;
   }
 }
 
@@ -110,7 +114,7 @@ export function cumplesProximos<T extends { user_id: string; nombre: string; dia
 
 /** Pestaña de la obra donde se resuelve cada pendiente (para los números en las pestañas, 0085). */
 const PESTANA: Partial<Record<PendienteTipo, string>> = {
-  ordenes: "boletos", pagos_evento: "fanzone", solicitudes: "audiciones", solicitudes_elenco: "solicitudes", ofertas: "elenco", elenco_sin_publicar: "elenco",
+  ordenes: "boletos", beneficios_vencidos: "boletos", beneficios_hoy: "boletos", pagos_evento: "fanzone", solicitudes: "audiciones", solicitudes_elenco: "solicitudes", ofertas: "elenco", elenco_sin_publicar: "elenco",
   documentos: "expedientes", adeudos: "expedientes", decision: "expedientes", evaluaciones: "evaluaciones", propuestas: "evaluaciones", entregas: "evaluaciones",
 };
 

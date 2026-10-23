@@ -1,3 +1,5 @@
+import { listarBeneficios } from "@/lib/beneficios";
+import { porZona, type Beneficio } from "@/lib/beneficios-rules";
 import type { Metadata } from "next";
 import { leerDiseno } from "@/lib/mapa-libre";
 import Link from "next/link";
@@ -5,7 +7,8 @@ import { notFound, redirect } from "next/navigation";
 import { PageHeading } from "@/components/PageHeading";
 import { PasosBarra, PasosProvider } from "@/components/PasosCompra";
 import { UnirseClub } from "@/components/fanzone/UnirseClub";
-import { enPreventa, partesFuncion, ventaPorAbrir } from "@/lib/disponibilidad";
+import { enPreventa, enPrivada, partesFuncion, privadaPorAbrir, ventaPorAbrir } from "@/lib/disponibilidad";
+import { miPreventaPrivada } from "@/lib/preventa-privada";
 import { getPromos } from "@/lib/promos";
 import { conPromo, mejorPromo, pctZona } from "@/lib/promo-rules";
 import { getCredencial } from "@/lib/fanzone";
@@ -53,11 +56,15 @@ export default async function ComprarPage({ params, searchParams }: PageProps<"/
   const vendible = funcionVendible(f, p.concluded);
   const yaPaso = !!f.starts_at && !funcionVendible({ on_sale: true, starts_at: f.starts_at }, false);
   // Preventa del Club Fan (0076): quien no es socio puede unirse aquí mismo (la base lo exige igual).
+  // 0123: con código, su preventa privada (antes que la del Club Fan) y el máximo por persona.
+  const mia = await miPreventaPrivada(p.id, !!session);
+  const privada = vendible && enPrivada(f, mia);
   const preventa = vendible && enPreventa(f);
-  const bloqueada = preventa && !(await getCredencial());
+  const bloqueada = preventa && !mia?.acceso && !(await getCredencial());
   const hasta = preventa && f.preventa_hasta ? partesFuncion(f.preventa_hasta) : null;
   // 0118: antes del inicio nadie compra en línea (la base lo exige igual).
-  const abre = vendible && ventaPorAbrir(f) && f.preventa_desde ? partesFuncion(f.preventa_desde) : null;
+  const privadaAbre = vendible ? privadaPorAbrir(f, mia) : null;
+  const abre = vendible && !privada && ventaPorAbrir(f) && f.preventa_desde ? partesFuncion(privadaAbre ?? f.preventa_desde) : null;
 
   const supabase = await createClient();
   // Antes de mostrar el mapa se liberan los asientos de órdenes vencidas (0054).
@@ -78,9 +85,12 @@ export default async function ComprarPage({ params, searchParams }: PageProps<"/
   const seats = ((seatsRes?.data ?? []) as (MapSeat & { is_active: boolean })[]).filter((s) => s.is_active);
   const taken = (takenRes?.data ?? []) as string[];
   // Zonas con asiento para el mapa; las de entrada general van aparte (0055).
+  // 0122: lo que incluye cada zona en ESTA función.
+  const benef = vendible && !abre && !porWhatsApp ? porZona(await listarBeneficios(p.id), f.id) : new Map<string, Beneficio[]>();
   const general = (vendible && !abre && !porWhatsApp ? await generalAvailability(f.id) : []).map((z) => {
     const pct = pctZona(promos, z.price_category_id);
-    return pct ? { ...z, precio: conPromo(z.precio, pct), antes: z.precio } : z;
+    const conB = { ...z, beneficios: benef.get(z.price_category_id) ?? [] };
+    return pct ? { ...conB, precio: conPromo(z.precio, pct), antes: z.precio } : conB;
   });
   const prices: ZonePrice[] = (pricesRes?.data ?? []).filter((r) => (r.price_categories as unknown as { cupo: number | null } | null)?.cupo == null).map((r) => ({
     categoryId: r.price_category_id as string,
@@ -89,6 +99,7 @@ export default async function ComprarPage({ params, searchParams }: PageProps<"/
     nombre: (r.price_categories as unknown as { nombre: string } | null)?.nombre ?? "",
     color: (r.price_categories as unknown as { color: string | null } | null)?.color ?? null,
     orden: (r.price_categories as unknown as { orden: number | null } | null)?.orden ?? 0,
+    beneficios: benef.get(r.price_category_id as string) ?? [],
   }));
   // Link de vendedor: el código se revisa aquí para mostrar su nombre desde el inicio.
   const sellerRes = vendible && vendedor && session ? await supabase.rpc("preview_seller_code", { target_performance_id: f.id, target_code: vendedor }) : null;
@@ -117,12 +128,12 @@ export default async function ComprarPage({ params, searchParams }: PageProps<"/
           </div>
         ) : abre ? (
           <div className="flex max-w-2xl flex-col items-start gap-4 rounded-2xl bg-telon p-8">
-            <p className="text-2xl font-black uppercase tracking-[-0.02em]">{f.preventa_hasta ? <>La preventa del <span className="txt-oro">Club Fan</span> abre pronto</> : "La venta abre pronto"}</p>
+            <p className="text-2xl font-black uppercase tracking-[-0.02em]">{privadaAbre ? "Tu preventa privada abre pronto" : f.preventa_hasta ? <>La preventa del <span className="txt-oro">Club Fan</span> abre pronto</> : "La venta abre pronto"}</p>
             <p className="text-texto-2">
-              {f.preventa_hasta ? `Los socios del Club Fan pueden ${verbo}` : `Puedes ${verbo}`} desde el {abre.dia} {abre.numero} {abre.mes}, {abre.hora}.
-              {f.preventa_hasta && ` Únete gratis al Club Fan para ${verbo} antes que nadie.`}
+              {privadaAbre ? `Con tu código puedes ${verbo}` : f.preventa_hasta ? `Los socios del Club Fan pueden ${verbo}` : `Puedes ${verbo}`} desde el {abre.dia} {abre.numero} {abre.mes}, {abre.hora}.
+              {!privadaAbre && f.preventa_hasta && ` Únete gratis al Club Fan para ${verbo} antes que nadie.`}
             </p>
-            {f.preventa_hasta && !(await getCredencial()) && (session ? <UnirseClub /> : (
+            {!privadaAbre && f.preventa_hasta && !(await getCredencial()) && (session ? <UnirseClub /> : (
               <Link href={`/entrar?next=${encodeURIComponent(`/comprar/${f.id}`)}`} className="fb fb-fz">Entra o crea tu cuenta para unirte</Link>
             ))}
             <Link href={`/producciones/${p.id}`} className="text-sm font-bold text-texto-3 hover:text-texto"><Icono nombre="flecha-izq" /> Volver a la obra</Link>
@@ -146,6 +157,11 @@ export default async function ComprarPage({ params, searchParams }: PageProps<"/
           <PasosProvider>
           <div className="flex flex-col gap-10">
           <PasosBarra pasos={tv.pasos} />
+          {privada && (
+            <p className="rounded-2xl border border-obra-acento/40 bg-telon p-4 font-semibold">
+              Preventa privada: tienes acceso con tu código antes que nadie.{mia?.max ? ` Máximo ${mia.max} ${mia.max === 1 ? "lugar" : "lugares"} por persona en esta función.` : ""}
+            </p>
+          )}
           {promo && mostrarTotal && <p className="rounded-2xl border border-obra-acento/40 bg-telon p-4 font-semibold">Promo {promo.nombre}: {promo.percent}% de descuento ya aplicado{[...prices, ...general].some((z) => !("antes" in z) || z.antes == null) ? " en algunas zonas" : ""}.</p>}
           {general.length > 0 && (
             <GeneralPicker performanceId={f.id} productionName={p.nombre} zones={general} modo={modo} mostrarTotal={mostrarTotal}

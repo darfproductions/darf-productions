@@ -1,6 +1,6 @@
 import { getBanner } from "@/lib/banner";
 import { createClient } from "@/lib/supabase/server";
-import { POSTER_COLUMNS, type PosterColumns } from "@/lib/poster";
+import { POSTER_ALT_COLUMNS, POSTER_COLUMNS, type PosterColumns } from "@/lib/poster";
 
 // Datos para los editores del panel (con RLS: el equipo ve su obra aunque sea borrador).
 
@@ -31,7 +31,7 @@ export async function getEditorData(id: string) {
   const [prod, acts, songs, facts, thanks, media, banner] = await Promise.all([
     supabase
       .from("productions")
-      .select(`id, nombre, estado, venue, temporada, fecha, duracion, clasificacion, idioma, basada_en, frase, sinopsis, color_fondo, color_superficie, color_texto, color_acento, logo_path, ambiente_path, on_sale, ${POSTER_COLUMNS}`)
+      .select(`id, nombre, estado, venue, temporada, fecha, duracion, clasificacion, idioma, basada_en, frase, sinopsis, color_fondo, color_superficie, color_texto, color_acento, logo_path, ambiente_path, on_sale, ${POSTER_COLUMNS}, ${POSTER_ALT_COLUMNS}`)
       .eq("id", id)
       .maybeSingle(),
     supabase.from("production_acts").select("id, nombre").eq("production_id", id).order("orden"),

@@ -45,3 +45,18 @@ export function enPreventa(f: { on_sale: boolean; preventa_hasta?: string | null
 export function ventaPorAbrir(f: { on_sale: boolean; preventa_desde?: string | null }, ahora: number = Date.now()): boolean {
   return f.on_sale && !!f.preventa_desde && new Date(f.preventa_desde).getTime() > ahora;
 }
+
+/** 0123: lo que sé de la preventa privada de una obra (solo si canjeé un código: mi_preventa_privada). */
+export type MiPreventaPrivada = { acceso: boolean; max?: number | null; funciones?: Record<string, string> };
+
+/** 0123: ¿Esta persona está en su preventa privada ahora? (con código, de su inicio al inicio de la del Club Fan). */
+export function enPrivada(f: { id: string; on_sale: boolean; preventa_desde?: string | null }, mia: MiPreventaPrivada | null | undefined, ahora: number = Date.now()): boolean {
+  const desde = mia?.acceso ? mia.funciones?.[f.id] : null;
+  return f.on_sale && !!desde && !!f.preventa_desde && Date.parse(desde) <= ahora && ahora < Date.parse(f.preventa_desde);
+}
+
+/** 0123: su preventa privada aún no abre (la tiene, pero falta). */
+export function privadaPorAbrir(f: { id: string; on_sale: boolean; preventa_desde?: string | null }, mia: MiPreventaPrivada | null | undefined, ahora: number = Date.now()): string | null {
+  const desde = mia?.acceso ? mia.funciones?.[f.id] : null;
+  return f.on_sale && desde && f.preventa_desde && ahora < Date.parse(desde) ? desde : null;
+}

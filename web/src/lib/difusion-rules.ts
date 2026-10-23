@@ -21,7 +21,7 @@ export function tipoValido(v: unknown): TipoDifusion | null {
   return DISENOS.some((d) => d.id === v) ? (v as TipoDifusion) : null;
 }
 
-export type FuncionDifusion = { starts_at: string; venue?: string | null; preventa_hasta?: string | null };
+export type FuncionDifusion = { starts_at: string; venue?: string | null; preventa_hasta?: string | null; preventa_desde?: string | null };
 export type DatosDifusion = {
   /** La función elegida (si el diseño la usa). */
   funcion?: FuncionDifusion | null;

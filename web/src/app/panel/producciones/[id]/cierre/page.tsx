@@ -43,6 +43,8 @@ async function datosCierre(id: string) {
     ? await supabase.from("orders").select("id", { count: "exact", head: true }).in("performance_id", canceladas).eq("status", "aprobado")
     : { count: 0 };
   const n = (tipo: string) => pend.filter((x) => x.production_id === id && x.tipo === tipo).reduce((a, x) => a + x.n, 0);
+  const { data: benef } = await supabase.rpc("beneficios_pendientes", { pid: id }).maybeSingle();
+  const b = benef as { pendientes: number; vencidos: number } | null;
   return listaCierre({
     pid: id,
     ordenesPendientes: n("ordenes"),
@@ -53,6 +55,8 @@ async function datosCierre(id: string) {
     documentosPorRevisar: n("documentos"),
     fotosGaleria: fotos.count ?? 0,
     creditos: creditos.count ?? 0,
+    beneficiosPendientes: b?.pendientes ?? 0,
+    beneficiosVencidos: b?.vencidos ?? 0,
   });
 }
 
@@ -113,7 +117,7 @@ export default async function Cierre({ params }: PageProps<"/panel/producciones/
 
       {revisar && (
         <ListaRevision className="print:hidden" titulo="Antes de cerrar la temporada" listo={revisar.pendientes === 0}
-          resumen={revisar.pendientes === 0 ? "Todo resuelto: puedes cerrar la temporada." : !revisar.puedeCerrar ? "Hay órdenes por aprobar: resuélvelas para poder cerrar." : `${revisar.pendientes} ${revisar.pendientes === 1 ? "cosa por revisar" : "cosas por revisar"} (no impiden cerrar).`}
+          resumen={revisar.pendientes === 0 ? "Todo resuelto: puedes cerrar la temporada." : !revisar.puedeCerrar ? "Hay pendientes obligatorios (órdenes por aprobar o beneficios por entregar): resuélvelos para poder cerrar." : `${revisar.pendientes} ${revisar.pendientes === 1 ? "cosa por revisar" : "cosas por revisar"} (no impiden cerrar).`}
           puntos={revisar.puntos.map((x) => ({ ...x, nivel: x.bloquea ? "obligatorio" : "aviso" }))} />
       )}
       {cierra && p.estado !== "archivada" && (
@@ -123,7 +127,7 @@ export default async function Cierre({ params }: PageProps<"/panel/producciones/
             <li>Quita de venta todas las funciones y pasa la obra al archivo (su página sigue visible como obra pasada).</li>
             <li>Guarda este resumen congelado, con tus notas, para imprimir o guardar en PDF.</li>
             <li>El elenco y los créditos quedan como están en la página de archivo.</li>
-            <li>No se puede cerrar si hay órdenes por aprobar.</li>
+            <li>No se puede cerrar si hay órdenes por aprobar o beneficios pagados sin entregar.</li>
           </ul>
           <ActionForm action={closeSeason} hidden={{ pid: id }} confirm={`¿Cerrar la temporada de ${p.nombre}?`} submit="Cerrar temporada">
             <label className="flex flex-col gap-1.5 text-sm font-semibold">Notas del cierre (opcional)
