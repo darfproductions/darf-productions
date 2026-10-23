@@ -72,5 +72,5 @@ export function textoPreventaCodigo(c: { nombre: string; codigo: string; desde?:
 
 /** "darfproductions.com" desde la URL del sitio (sin https:// ni / final). */
 export function sitioCorto(url: string | null | undefined): string {
-  return (url || "https://darfproductions.com").replace(/^https?:\/\//, "").replace(/\/$/, "");
+  return (url || "https://darfproductions.com").replace(/^https?:\/\//, "").replace(/^www\./, "").replace(/\/$/, "");
 }
