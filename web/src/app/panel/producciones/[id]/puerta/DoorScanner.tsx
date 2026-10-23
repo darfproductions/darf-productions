@@ -6,7 +6,7 @@ import { QrScanner } from "@/components/panel/QrScanner";
 import { bip } from "@/lib/aviso-sonido";
 import { mayus } from "@/lib/dates";
 import { beneficiosPuerta, buscarPuerta, checkIn, conteoPuerta, deshacerEntrada, entregarBeneficio, visitaPuerta, type BoletoPuerta, type CheckIn, type Conteo, type Visita } from "./actions";
-import { TIPOS_BENEFICIO, horaAcceso, minutosAcceso, textoBeneficio, type BeneficioBoleto } from "@/lib/beneficios-rules";
+import { ESTADOS_ENTREGA, MOMENTOS_ENTREGA, TIPOS_BENEFICIO, horaAcceso, minutosAcceso, textoBeneficio, type BeneficioBoleto } from "@/lib/beneficios-rules";
 import { esPaseClub, etiquetaBoleto } from "./door-rules";
 import { Icono, type IconoNombre } from "@/components/Icono";
 
@@ -43,6 +43,7 @@ export function DoorScanner({ pid, funciones, inicial }: { pid: string; funcione
   const [pending, start] = useTransition();
   // 0122: beneficios del último boleto leído (token para marcar entregas).
   const [benef, setBenef] = useState<{ token: string; lista: BeneficioBoleto[] } | null>(null);
+  const [nota, setNota] = useState("");
   const cargarBenef = async (token: string, r: CheckIn | Visita) => {
     if (r.result === "ok" || r.result === "ya_usado") {
       const lista = await beneficiosPuerta(token);
@@ -51,8 +52,8 @@ export function DoorScanner({ pid, funciones, inicial }: { pid: string; funcione
   };
   const entregar = (b: BeneficioBoleto, si: boolean) => start(async () => {
     if (!benef) return;
-    const r = await entregarBeneficio(benef.token, b.beneficio_id, si);
-    if (r.ok) setBenef({ token: benef.token, lista: r.beneficios }); else setAviso(r.message);
+    const r = await entregarBeneficio(benef.token, b.beneficio_id, si, si ? nota : undefined);
+    if (r.ok) { setBenef({ token: benef.token, lista: r.beneficios }); if (si) setNota(""); } else setAviso(r.message);
   });
   const inicio = funciones.find((f) => f.id === funcion)?.starts_at ?? null;
   const v = res ? VISTA[res.result] : null;
@@ -158,7 +159,12 @@ export function DoorScanner({ pid, funciones, inicial }: { pid: string; funcione
                   <span>
                     <b>{textoBeneficio(b)}</b>
                     {b.alcanza === false && <span className="block text-xs font-bold text-[#ff8fa3]">No alcanzó: el cupo es de {b.cupo}</span>}
-                    {b.entregado_at && <span className="block text-xs text-exito">Entregado a las {hora(b.entregado_at)}</span>}
+                    {b.entregado_at && <span className="block text-xs text-exito">Entregado a las {hora(b.entregado_at)}{b.nota ? ` · "${b.nota}"` : ""}</span>}
+                    {!b.entregado_at && b.entrega && b.tipo !== "acceso" && b.alcanza !== false && (
+                      <span className={`block text-xs ${b.estado === "vencido" ? "font-bold text-[#ff8fa3]" : "text-texto-3"}`}>
+                        Se entrega {MOMENTOS_ENTREGA[b.entrega].corto}{b.estado === "vencido" || b.estado === "por_pagar" ? ` · ${ESTADOS_ENTREGA[b.estado].label}` : ""}
+                      </span>
+                    )}
                   </span>
                 </span>
                 {b.tipo !== "acceso" && b.alcanza !== false && (b.entregado_at
@@ -167,6 +173,11 @@ export function DoorScanner({ pid, funciones, inicial }: { pid: string; funcione
               </li>
             ))}
           </ul>
+          {benef.lista.some((b) => b.tipo !== "acceso" && b.alcanza !== false && !b.entregado_at) && (
+            <input value={nota} onChange={(e) => setNota(e.target.value)} maxLength={200} aria-label="Nota de la entrega (opcional)"
+              placeholder="Nota de la entrega (opcional): lo recogió su hermana…" className="rounded-lg bg-sala px-3 py-2 text-sm" />
+          )}
+          <a href={`/panel/producciones/${pid}/boletos/beneficios/entregas?funcion=${funcion}`} className="text-xs font-bold text-[#d7bb5f] underline">Ver todas las entregas de la función</a>
         </section>
       )}
       <QrScanner busy={pending} placeholder="Código del boleto o del pase (DRF-XXXX)" onCode={leer} />

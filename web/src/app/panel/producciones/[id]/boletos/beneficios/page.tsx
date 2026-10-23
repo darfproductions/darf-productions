@@ -6,7 +6,7 @@ import { Card, input } from "@/components/panel/ui";
 import { Icono } from "@/components/Icono";
 import { listPerformances, listZones } from "@/lib/boleteria";
 import { listarBeneficios } from "@/lib/beneficios";
-import { PLANTILLAS_BENEFICIO, TIPOS_BENEFICIO, porZona, textoBeneficio, textoCupo, type Beneficio, type TipoBeneficio } from "@/lib/beneficios-rules";
+import { MOMENTOS_ENTREGA, PLANTILLAS_BENEFICIO, TIPOS_BENEFICIO, porZona, textoBeneficio, textoCupo, type Beneficio, type MomentoEntrega, type TipoBeneficio } from "@/lib/beneficios-rules";
 import { can, salidaBoletos } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
 import { formatPerformanceDate } from "@/lib/productions";
@@ -18,7 +18,10 @@ export const metadata: Metadata = { title: "Beneficios por zona" };
 const ghost = "rounded-full border border-white/25 px-3 py-1.5 text-xs font-bold hover:border-white/50 disabled:opacity-60";
 type Fn = { id: string; starts_at: string | null };
 type Zona = { id: string; nombre: string };
-type Fila = { beneficio_id: string; nombre: string; tipo: TipoBeneficio; cupo: number | null; con_derecho: number; entregados: number };
+type Fila = { beneficio_id: string; nombre: string; tipo: TipoBeneficio; cupo: number | null; con_derecho: number; entregados: number; pendientes: number; vencidos: number };
+
+/** "Al terminar la función" / "Después de la función (7 días)". */
+const momento = (b: Pick<Beneficio, "entrega" | "entrega_dias">) => `${MOMENTOS_ENTREGA[b.entrega].label}${b.entrega_dias ? ` (${b.entrega_dias} ${b.entrega_dias === 1 ? "día" : "días"})` : ""}`;
 
 function Campos({ b, zonas, funciones }: { b?: Beneficio; zonas: Zona[]; funciones: Fn[] }) {
   const algunas = !!b?.funciones?.length;
@@ -37,6 +40,15 @@ function Campos({ b, zonas, funciones }: { b?: Beneficio; zonas: Zona[]; funcion
       </label>
       <label className="flex flex-col gap-1.5 text-sm font-semibold">Minutos antes (solo tipo Acceso)
         <input className={input} name="minutos_antes" type="number" min={1} max={240} defaultValue={b?.minutos_antes ?? ""} placeholder="15" />
+      </label>
+      <label className="flex flex-col gap-1.5 text-sm font-semibold">¿Cuándo se entrega?
+        <select className={input} name="entrega" defaultValue={b?.entrega ?? ""}>
+          {!b && <option value="">Según el tipo (acceso: antes de la función; lo demás: al terminar)</option>}
+          {(Object.keys(MOMENTOS_ENTREGA) as MomentoEntrega[]).map((m) => <option key={m} value={m}>{MOMENTOS_ENTREGA[m].label}</option>)}
+        </select>
+      </label>
+      <label className="flex flex-col gap-1.5 text-sm font-semibold">Días (solo &quot;antes del día&quot; o &quot;después del día&quot;)
+        <input className={input} name="entrega_dias" type="number" min={1} max={90} defaultValue={b?.entrega_dias ?? ""} placeholder="Antes: desde cuántos días antes. Después: plazo." />
       </label>
       <label className="flex flex-col gap-1.5 text-sm font-semibold">Cupo por función (vacío = todos)
         <input className={input} name="cupo" type="number" min={1} defaultValue={b?.cupo ?? ""} placeholder="20" />
@@ -84,7 +96,7 @@ export default async function BeneficiosPage({ params, searchParams }: PageProps
       <Card className="flex flex-col gap-3">
         <div>
           <h2 className="titular text-xl">Beneficios por zona</h2>
-          <p className="text-sm text-texto-2">Lo que incluye cada zona además del lugar: acceso anticipado, souvenirs, experiencias o atención especial. Se ve en la página de la obra, al elegir lugares, en el mensaje de WhatsApp, en el boleto y en la puerta (donde se marca lo entregado).</p>
+          <p className="text-sm text-texto-2">Lo que incluye cada zona además del lugar: acceso anticipado, souvenirs, experiencias o atención especial. Se ve en la página de la obra, al elegir lugares, en el mensaje de WhatsApp, en el boleto y en la puerta. Cada beneficio dice cuándo se entrega; la lista de entregas lleva el control de lo que falta.</p>
         </div>
         {zonas.length > 0 && (
           <ul className="grid gap-2 sm:grid-cols-2">
@@ -108,7 +120,7 @@ export default async function BeneficiosPage({ params, searchParams }: PageProps
             <summary className="flex cursor-pointer flex-wrap items-center justify-between gap-2">
               <span className="flex flex-wrap items-center gap-2">
                 <Icono nombre={TIPOS_BENEFICIO[b.tipo].icono} /><b>{textoBeneficio(b)}</b>
-                <span className="text-xs text-texto-3">{TIPOS_BENEFICIO[b.tipo].label}{b.cupo ? ` · ${textoCupo(b.cupo)}` : ""}{b.funciones?.length ? ` · ${b.funciones.length} función(es)` : ""}</span>
+                <span className="text-xs text-texto-3">{TIPOS_BENEFICIO[b.tipo].label} · {momento(b)}{b.cupo ? ` · ${textoCupo(b.cupo)}` : ""}{b.funciones?.length ? ` · ${b.funciones.length} función(es)` : ""}</span>
                 {!b.activo && <span className="text-xs text-texto-3">oculto</span>}
                 {!b.zonas.length && <span className="text-xs font-bold text-aviso">Sin zonas: no se ve en ningún lado</span>}
               </span>
@@ -144,7 +156,10 @@ export default async function BeneficiosPage({ params, searchParams }: PageProps
       )}
 
       <Card className="flex flex-col gap-3">
-        <h2 className="titular text-xl">Entregas por función</h2>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="titular text-xl">Entregas por función</h2>
+          <Link href={`/panel/producciones/${id}/boletos/beneficios/entregas${elegida ? `?funcion=${elegida.id}` : ""}`} className="rounded-full bg-texto px-4 py-2 text-sm font-bold text-sala">Ver lista de entregas</Link>
+        </div>
         {funciones.length === 0 ? <p className="text-sm text-texto-3">Todavía no hay funciones.</p> : (
           <>
             <nav aria-label="Función" className="flex flex-wrap gap-2 text-sm">
@@ -158,12 +173,13 @@ export default async function BeneficiosPage({ params, searchParams }: PageProps
                 {reporte.map((r) => (
                   <li key={r.beneficio_id} className="flex flex-wrap items-center justify-between gap-2 py-2">
                     <span className="flex items-center gap-2"><Icono nombre={TIPOS_BENEFICIO[r.tipo].icono} />{r.nombre}</span>
-                    <span><b className="num">{r.entregados}</b> entregados · <span className="num">{r.con_derecho}</span> boletos con derecho{r.cupo ? ` (cupo ${r.cupo})` : ""}</span>
+                    <span><b className="num">{r.entregados}</b> entregados · <span className="num">{r.con_derecho}</span> boletos con derecho{r.cupo ? ` (cupo ${r.cupo})` : ""}
+                      {r.pendientes > 0 && <> · <b className={r.vencidos ? "text-pulso" : "text-aviso"}>{r.vencidos ? `${r.vencidos} vencidos` : `${r.pendientes} por entregar`}</b></>}</span>
                   </li>
                 ))}
               </ul>
             )}
-            <p className="text-xs text-texto-3">Se marcan en Puerta al escanear el boleto. &quot;Con derecho&quot; cuenta boletos pagados de las zonas del beneficio (hasta su cupo).</p>
+            <p className="text-xs text-texto-3">Se marcan en Puerta al escanear el boleto o en la lista de entregas. &quot;Con derecho&quot; cuenta boletos pagados de las zonas del beneficio (hasta su cupo).</p>
           </>
         )}
       </Card>

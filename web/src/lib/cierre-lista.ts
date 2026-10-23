@@ -1,5 +1,6 @@
 // Lista antes del cierre de temporada (Bloque 4C): lo que conviene dejar resuelto antes de pasar la
-// obra al archivo. Solo las órdenes por aprobar impiden cerrar (la base también lo revisa). Puro,
+// obra al archivo. Impiden cerrar las órdenes por aprobar (la base también lo revisa) y, desde 0125, los
+// beneficios pagados sin entregar (lo pagado se tiene que entregar). Puro,
 // con pruebas en cierre-lista.test.ts.
 
 export type DatosCierre = {
@@ -14,6 +15,9 @@ export type DatosCierre = {
   documentosPorRevisar: number;
   fotosGaleria: number;
   creditos: number;
+  /** 0125: beneficios pagados que faltan por entregar (vencidos o no). */
+  beneficiosPendientes?: number;
+  beneficiosVencidos?: number;
 };
 
 export type PuntoCierre = { clave: string; texto: string; ok: boolean; bloquea: boolean; detalle?: string; href: string };
@@ -26,6 +30,9 @@ export function listaCierre(d: DatosCierre): { puntos: PuntoCierre[]; puedeCerra
     { clave: "ordenes", texto: "Sin órdenes de boletos por aprobar", ok: d.ordenesPendientes === 0, bloquea: true,
       detalle: d.ordenesPendientes ? `${n(d.ordenesPendientes, "orden espera", "órdenes esperan")} aprobación o rechazo. Sin esto no se puede cerrar.` : undefined,
       href: `${base}/boletos?estado=pendiente` },
+    { clave: "beneficios", texto: "Beneficios entregados", ok: !d.beneficiosPendientes, bloquea: true,
+      detalle: d.beneficiosPendientes ? `${n(d.beneficiosPendientes, "beneficio pagado falta", "beneficios pagados faltan")} por entregar${d.beneficiosVencidos ? ` (${d.beneficiosVencidos} ya ${d.beneficiosVencidos === 1 ? "venció" : "vencieron"})` : ""}. Márcalos al entregarlos; si alguien no lo recogió, anótalo en la nota.` : undefined,
+      href: `${base}/boletos/beneficios/entregas?ver=pendientes` },
     { clave: "funciones", texto: "Ya pasaron todas las funciones", ok: d.funcionesPorVenir === 0, bloquea: false,
       detalle: d.funcionesPorVenir ? `${n(d.funcionesPorVenir, "función aún no pasa", "funciones aún no pasan")}: al cerrar se quita su venta.` : undefined,
       href: `${base}/boletos/funciones` },
@@ -46,5 +53,5 @@ export function listaCierre(d: DatosCierre): { puntos: PuntoCierre[]; puedeCerra
     { clave: "galeria", texto: "Galería de fotos para el archivo", ok: d.fotosGaleria > 0, bloquea: false,
       detalle: d.fotosGaleria ? undefined : "La página de archivo se verá sin fotos de la obra.", href: `${base}/fanzone` },
   ];
-  return { puntos, puedeCerrar: d.ordenesPendientes === 0, pendientes: puntos.filter((p) => !p.ok).length };
+  return { puntos, puedeCerrar: d.ordenesPendientes === 0 && !d.beneficiosPendientes, pendientes: puntos.filter((p) => !p.ok).length };
 }

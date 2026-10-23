@@ -1,5 +1,5 @@
 import { Icono } from "@/components/Icono";
-import { TIPOS_BENEFICIO, textoBeneficio, textoCupo, type BeneficioCorto } from "@/lib/beneficios-rules";
+import { MOMENTOS_ENTREGA, TIPOS_BENEFICIO, textoBeneficio, textoCupo, type BeneficioCorto } from "@/lib/beneficios-rules";
 
 /** Lo que incluye una zona (0122): ícono por tipo, cupo y funciones en las que aplica. Sirve en página, compra y boleto. */
 export function BeneficiosZona({ beneficios, fechas, className = "" }: {
@@ -13,7 +13,9 @@ export function BeneficiosZona({ beneficios, fechas, className = "" }: {
     <ul className={`flex flex-col gap-1 text-[13px] ${className}`} aria-label="Incluye">
       {beneficios.map((b, i) => {
         const solo = b.funciones?.length && fechas ? b.funciones.map((f) => fechas.get(f)).filter(Boolean).join(", ") : "";
-        const extra = [textoCupo(b.cupo), solo ? `Solo ${solo}` : null].filter(Boolean).join(" · ");
+        // 0125: cuándo se entrega (el acceso ya dice cuántos minutos antes).
+        const cuando = b.entrega && b.tipo !== "acceso" ? `Se entrega ${MOMENTOS_ENTREGA[b.entrega].corto}` : null;
+        const extra = [cuando, textoCupo(b.cupo), solo ? `Solo ${solo}` : null].filter(Boolean).join(" · ");
         return (
           <li key={`${b.nombre}-${i}`} className="flex items-start gap-2">
             <Icono nombre={TIPOS_BENEFICIO[b.tipo]?.icono ?? "destello"} className="mt-0.5 shrink-0 opacity-80" />

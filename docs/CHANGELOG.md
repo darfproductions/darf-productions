@@ -5,6 +5,24 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-10-22 — 0125 Entregas de beneficios: cuándo, lista por persona y avisos
+
+- Lo pagado se tiene que entregar. Cada beneficio dice cuándo se entrega: antes del día de la función (desde N días
+  antes), el día antes de empezar, el día al terminar, o después del día (plazo de N días). Con eso cada boleto
+  tiene fecha límite (hora de México) y estado: pendiente, ya se puede entregar, vencido, entregado (o sin cupo / falta
+  el pago, que no cuentan). Los beneficios existentes quedan: acceso = antes de empezar; lo demás = al terminar.
+- Panel → Boletos → Beneficios → "Ver lista de entregas": por función, persona por persona, con filtros (por entregar,
+  vencidos, ya se pueden, entregados), buscador, WhatsApp con mensaje listo para coordinar, "Entregado" con nota
+  opcional (o "Deshacer") y Excel. En la puerta se sigue marcando al escanear, ahora con nota y el momento visible.
+  Quién y cuándo entregó queda guardado y en la bitácora.
+- Avisos: la bandeja "Por hacer" muestra beneficios vencidos y los que ya se pueden entregar (liga directa a la
+  función); la lista antes del cierre no deja cerrar la temporada con beneficios pagados sin entregar.
+- El comprador ve en su boleto, PDF, Wallet y Mi cuenta cuándo se entrega cada beneficio y, ya entregado, la fecha;
+  la página de la obra, la compra y el WhatsApp dicen cuándo se entrega.
+- Base: `zona_beneficios.entrega/entrega_dias`, `beneficio_entregas.nota`, `beneficio_limite`,
+  `beneficio_entregar_boleto`, `beneficios_entregas`, `beneficios_pendientes`; `beneficios_de_ticket`,
+  `beneficio_entregar`, `beneficios_reporte` y `orden_beneficios` reemplazadas.
+
 ## 2026-10-22 — 0124 Póster alterno y fondos de "Para invitar y vender"
 
 - Kit de la obra: "Póster alterno" opcional en 3:4 y 9:16, cada uno con información y sin textos ni logo (columnas

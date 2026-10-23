@@ -60,9 +60,9 @@ export async function beneficiosPuerta(token: string): Promise<BeneficioBoleto[]
   return ((data as { beneficios?: BeneficioBoleto[] } | null)?.beneficios ?? []);
 }
 
-/** 0122: marcar (o desmarcar) que ya se entregó un beneficio. */
-export async function entregarBeneficio(token: string, beneficio: string, entregado: boolean): Promise<{ ok: true; beneficios: BeneficioBoleto[] } | { ok: false; message: string }> {
-  const { data, error } = await (await createClient()).rpc("beneficio_entregar", { p_token: token.trim(), p_beneficio: beneficio, p_entregado: entregado });
+/** 0122: marcar (o desmarcar) que ya se entregó un beneficio. 0125: con nota opcional. */
+export async function entregarBeneficio(token: string, beneficio: string, entregado: boolean, nota?: string): Promise<{ ok: true; beneficios: BeneficioBoleto[] } | { ok: false; message: string }> {
+  const { data, error } = await (await createClient()).rpc("beneficio_entregar", { p_token: token.trim(), p_beneficio: beneficio, p_entregado: entregado, p_nota: nota?.trim().slice(0, 200) || null });
   if (error) return { ok: false, message: mensajeError(error) };
   return { ok: true, beneficios: ((data as { beneficios?: BeneficioBoleto[] } | null)?.beneficios ?? []) };
 }

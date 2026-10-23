@@ -101,8 +101,9 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
     for (const t of o.tickets) if (t.is_active) qrs.set(t.id, await QRCode.toDataURL(t.qr_token, { margin: 1, width: 240 }));
   }
 
-  // 0122: lo que incluye la zona de cada boleto (órdenes que siguen vigentes).
-  const vigentes = orders.filter((o) => o.status !== "rechazado" && !funcionPasada(o.performances?.starts_at ?? null)).flatMap((o) => o.tickets.filter((t) => t.is_active).map((t) => t.id));
+  // 0122: lo que incluye la zona de cada boleto (órdenes que siguen vigentes). 0125: también las pagadas de funciones
+  // que ya pasaron, porque hay beneficios que se entregan después (y se ve "Entregado el …").
+  const vigentes = orders.filter((o) => o.status !== "rechazado" && (o.status === "aprobado" || !funcionPasada(o.performances?.starts_at ?? null))).flatMap((o) => o.tickets.filter((t) => t.is_active).map((t) => t.id));
   const { data: benefRows } = vigentes.length ? await supabase.rpc("beneficios_boletos", { p_tickets: vigentes }) : { data: [] };
   const benef = new Map(((benefRows ?? []) as { ticket_id: string; beneficios: BeneficioBoleto[] }[]).map((r) => [r.ticket_id, r.beneficios]));
 

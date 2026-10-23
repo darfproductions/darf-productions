@@ -155,7 +155,7 @@ export async function getProduction(id: string, opts: { includeDrafts?: boolean 
 export async function beneficiosPorNombreDeZona(pid: string): Promise<Map<string, BeneficioCorto[]>> {
   const supabase = await createClient();
   const { data } = await supabase.from("zona_beneficios")
-    .select("tipo, nombre, detalle, minutos_antes, cupo, funciones, orden, activo, zona_beneficio_zonas(price_categories(nombre))")
+    .select("tipo, nombre, detalle, minutos_antes, cupo, funciones, orden, activo, entrega, entrega_dias, zona_beneficio_zonas(price_categories(nombre))")
     .eq("production_id", pid).eq("activo", true).order("orden").order("created_at");
   const m = new Map<string, BeneficioCorto[]>();
   for (const b of (data ?? []) as unknown as (BeneficioCorto & { zona_beneficio_zonas: { price_categories: { nombre: string } | null }[] })[]) {

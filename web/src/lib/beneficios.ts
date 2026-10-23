@@ -5,7 +5,7 @@ import { lineaWhatsapp, type Beneficio, type BeneficioCorto } from "@/lib/benefi
 export async function listarBeneficios(pid: string): Promise<Beneficio[]> {
   const supabase = await createClient();
   const { data } = await supabase.from("zona_beneficios")
-    .select("id, tipo, nombre, detalle, minutos_antes, cupo, funciones, orden, activo, zona_beneficio_zonas(price_category_id)")
+    .select("id, tipo, nombre, detalle, minutos_antes, cupo, funciones, orden, activo, entrega, entrega_dias, zona_beneficio_zonas(price_category_id)")
     .eq("production_id", pid).order("orden").order("created_at");
   return ((data ?? []) as (Omit<Beneficio, "zonas"> & { zona_beneficio_zonas: { price_category_id: string }[] })[])
     .map(({ zona_beneficio_zonas: zs, ...b }) => ({ ...b, zonas: zs.map((z) => z.price_category_id) }));

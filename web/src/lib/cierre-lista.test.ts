@@ -17,4 +17,9 @@ describe("lista antes del cierre", () => {
     expect(r.puntos.find((p) => p.clave === "adeudos")!.detalle).toBe("1 persona con pagos vencidos.");
     expect(listaCierre({ ...limpio, adeudos: 5, reembolsos: 1 }).puedeCerrar).toBe(true);
   });
+  it("beneficios pagados sin entregar impiden cerrar (0125)", () => {
+    const r = listaCierre({ ...limpio, beneficiosPendientes: 3, beneficiosVencidos: 1 });
+    expect(r.puedeCerrar).toBe(false);
+    expect(r.puntos.find((p) => p.clave === "beneficios")!.detalle).toContain("3 beneficios pagados faltan por entregar (1 ya venció)");
+  });
 });

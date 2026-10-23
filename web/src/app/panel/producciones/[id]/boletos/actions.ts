@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { localMxToIso } from "@/lib/dates";
 import { formatMoney } from "@/lib/tickets";
 import { esMetodo } from "@/lib/ventas-rules";
+import { esMomentoEntrega, MOMENTOS_ENTREGA, momentoPorOmision, type TipoBeneficio } from "@/lib/beneficios-rules";
 import { mensajeError } from "@/lib/errores";
 import { createClient } from "@/lib/supabase/server";
 
@@ -602,9 +603,15 @@ export async function guardarBeneficio(_p: TicketState, f: FormData): Promise<Ti
   if (cupo != null && (!Number.isInteger(cupo) || cupo < 1)) return { ok: false, message: "El cupo debe ser un número entero mayor a 0 (o vacío)." };
   const funciones = f.get("cuando") === "algunas" ? f.getAll("funciones").map(String) : [];
   if (f.get("cuando") === "algunas" && !funciones.length) return { ok: false, message: "Marca al menos una función (o elige \"Todas\")." };
+  // 0125: cuándo se entrega (y los días, si el momento los pide).
+  const m = String(f.get("entrega") ?? "");
+  const entrega = esMomentoEntrega(m) ? m : momentoPorOmision(tipo as TipoBeneficio);
+  const reglaDias = MOMENTOS_ENTREGA[entrega].dias;
+  const dias = reglaDias ? num("entrega_dias") ?? 1 : null;
+  if (reglaDias && dias != null && (!Number.isInteger(dias) || dias < 1 || dias > reglaDias.max)) return { ok: false, message: `Los días deben ser de 1 a ${reglaDias.max}.` };
   const row = {
     tipo, nombre, detalle: String(f.get("detalle") ?? "").trim() || null, minutos_antes: minutos, cupo,
-    funciones: funciones.length ? funciones : null, activo: f.has("activo") ? f.get("activo") === "on" : true, updated_at: new Date().toISOString(),
+    funciones: funciones.length ? funciones : null, entrega, entrega_dias: dias, activo: f.has("activo") ? f.get("activo") === "on" : true, updated_at: new Date().toISOString(),
   };
   const supabase = await createClient();
   let bid = id;

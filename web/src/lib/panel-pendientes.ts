@@ -8,7 +8,8 @@ import type { Pendiente } from "@/lib/panel-home-rules";
 import { createClient } from "@/lib/supabase/server";
 
 // Bandeja "Por hacer" (0085): lo de la base (panel_pendientes), las órdenes de boletos de las obras
-// donde puedo aprobar y los adeudos vencidos (se calculan igual que en la pestaña Adeudos).
+// donde puedo aprobar, los adeudos vencidos (se calculan igual que en la pestaña Adeudos) y las entregas de
+// beneficios vencidas o que ya tocan (0125).
 // Con cache() se pide una sola vez por página (el menú, el Inicio y la obra usan lo mismo).
 export const getPendientes = cache(async (): Promise<Pendiente[]> => {
   const access = await getPanelAccess(await requireSession("/panel"));
@@ -28,5 +29,16 @@ export const getPendientes = cache(async (): Promise<Pendiente[]> => {
       return { tipo: "adeudos", production_id: pid, n };
     }),
   );
-  return [...deOrdenes, ...base, ...adeudos.filter((a) => a.n > 0)];
+  const beneficios = (await Promise.all(
+    obras.filter((pid) => can(access, pid, "ventas.ver") || can(access, pid, "puerta.validar") || can(access, pid, "funciones.gestionar")).map(async (pid): Promise<Pendiente[]> => {
+      const { data: b } = await supabase.rpc("beneficios_pendientes", { pid }).maybeSingle();
+      const r = b as { vencidos: number; hoy: number; funcion: string | null } | null;
+      if (!r) return [];
+      return [
+        { tipo: "beneficios_vencidos" as const, production_id: pid, n: r.vencidos, ref_id: r.funcion },
+        { tipo: "beneficios_hoy" as const, production_id: pid, n: r.hoy, ref_id: r.funcion },
+      ].filter((x) => x.n > 0);
+    }),
+  )).flat();
+  return [...deOrdenes, ...beneficios, ...base, ...adeudos.filter((a) => a.n > 0)];
 });

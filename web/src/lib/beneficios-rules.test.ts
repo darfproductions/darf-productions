@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { aplicaEnFuncion, horaAcceso, lineaWhatsapp, lineasDesdeBoletos, minutosAcceso, porZona, textoBeneficio, textoCupo, textosBoleto, type Beneficio } from "./beneficios-rules";
+import { aplicaEnFuncion, cuentaComoPendiente, mensajeEntrega, horaAcceso, lineaWhatsapp, lineasDesdeBoletos, minutosAcceso, momentoPorOmision, ORDEN_ESTADO, porZona, textoBeneficio, textoCupo, textoEntrega, textoLimite, textosBoleto, type Beneficio, type EstadoEntrega } from "./beneficios-rules";
 
-const b = (x: Partial<Beneficio>): Beneficio => ({ id: "b", tipo: "otro", nombre: "X", detalle: null, minutos_antes: null, cupo: null, funciones: null, orden: 0, activo: true, zonas: [], ...x });
+const b = (x: Partial<Beneficio>): Beneficio => ({ id: "b", tipo: "otro", nombre: "X", detalle: null, minutos_antes: null, cupo: null, funciones: null, orden: 0, activo: true, zonas: [], entrega: "dia_despues", entrega_dias: null, ...x });
 
 describe("beneficios por zona (0122)", () => {
   it("textos", () => {
@@ -12,7 +12,7 @@ describe("beneficios por zona (0122)", () => {
   });
   it("WhatsApp", () => {
     expect(lineaWhatsapp("VIP", [b({ tipo: "acceso", nombre: "Acceso anticipado", minutos_antes: 15 }), b({ nombre: "Póster firmado", cupo: 20 })]))
-      .toBe("Incluye (VIP): Acceso anticipado (15 min antes), Póster firmado (primeros 20)");
+      .toBe("Incluye (VIP): Acceso anticipado (15 min antes), Póster firmado (primeros 20, al terminar la función)");
     expect(lineaWhatsapp("VIP", [])).toBeNull();
   });
   it("hora de acceso y minutos", () => {
@@ -38,8 +38,53 @@ describe("beneficios en el boleto (0122)", () => {
     expect(r.incluye).toEqual(["Acceso anticipado (15 min antes)", "Foto (sujeto a cupo)"]);
     expect(r.acceso).toBe("Puertas para ti: 7:45 p.m.");
   });
+  it("el boleto dice cuándo se entrega o cuándo se entregó (0125)", () => {
+    const r = textosBoleto([
+      bb({ tipo: "acceso", nombre: "Acceso anticipado", minutos_antes: 15, entrega: "dia_antes" }),
+      bb({ beneficio_id: "2", nombre: "Póster", entrega: "dia_despues", estado: "pendiente" }),
+      bb({ beneficio_id: "3", nombre: "Foto", entrega: "despues", entrega_dias: 3, estado: "entregado", entregado_at: "2027-03-12T18:00:00Z" }),
+    ], null);
+    expect(r.incluye).toEqual(["Acceso anticipado (15 min antes)", "Póster. Se entrega al terminar la función", "Foto. Entregado el 12 de marzo"]);
+  });
   it("WhatsApp desde boletos sin repetir", () => {
     expect(lineasDesdeBoletos([bb({ nombre: "Póster" }), bb({ nombre: "Póster" }), bb({ beneficio_id: "9", zona: "Pista", nombre: "Pulsera" })]))
       .toEqual(["Incluye (VIP): Póster", "Incluye (Pista): Pulsera"]);
+  });
+});
+
+describe("entrega de beneficios (0125)", () => {
+  it("momento por omisión según el tipo", () => {
+    expect(momentoPorOmision("acceso")).toBe("dia_antes");
+    expect(momentoPorOmision("souvenir")).toBe("dia_despues");
+  });
+  it("texto para el comprador", () => {
+    expect(textoEntrega({ entrega: "dia_despues", entrega_dias: null, limite: null })).toBe("Se entrega al terminar la función");
+    expect(textoEntrega({ entrega: "antes", entrega_dias: 3, limite: null })).toBe("Se entrega antes de la función (desde 3 días antes)");
+    // Límite: medianoche del 18 de marzo (hora de México) = último día el 17.
+    expect(textoEntrega({ entrega: "despues", entrega_dias: 7, limite: "2027-03-18T06:00:00Z" })).toBe("Te lo entregamos a más tardar el 17 de marzo");
+    expect(textoEntrega({ entrega: "despues", entrega_dias: 7, limite: null, estado: "entregado", entregado_at: "2027-03-12T18:00:00Z" })).toBe("Entregado el 12 de marzo");
+  });
+  it("límite para el panel", () => {
+    expect(textoLimite("2027-03-11T02:00:00Z", "dia_antes")).toBe("Antes de las 8:00 p.m. del 10 de marzo");
+    expect(textoLimite("2027-03-11T06:00:00Z", "dia_despues")).toBe("Hasta el 10 de marzo");
+  });
+  it("WhatsApp dice cuándo se entrega (menos el acceso)", () => {
+    expect(lineaWhatsapp("VIP", [
+      { tipo: "acceso", nombre: "Acceso anticipado", minutos_antes: 15, cupo: null, entrega: "dia_antes" },
+      { tipo: "souvenir", nombre: "Póster firmado", minutos_antes: null, cupo: 20, entrega: "dia_despues" },
+    ])).toBe("Incluye (VIP): Acceso anticipado (15 min antes), Póster firmado (primeros 20, al terminar la función)");
+  });
+  it("orden de la lista y pendientes", () => {
+    const xs: EstadoEntrega[] = ["entregado", "pendiente", "vencido", "hoy"];
+    expect([...xs].sort((a, b) => ORDEN_ESTADO[a] - ORDEN_ESTADO[b])).toEqual(["vencido", "hoy", "pendiente", "entregado"]);
+    expect(cuentaComoPendiente("sin_cupo")).toBe(false);
+    expect(cuentaComoPendiente("hoy")).toBe(true);
+  });
+});
+
+describe("WhatsApp de entrega (0125)", () => {
+  it("mensaje para coordinar", () => {
+    expect(mensajeEntrega({ comprador: "Ana López", beneficio: "Póster firmado", obra: "Showman", lugar: "VIP-A-1", limite: "2027-03-18T06:00:00Z", entrega: "despues" }))
+      .toBe("Hola Ana, te escribimos de DARF Productions por tu póster firmado de Showman (lugar VIP-A-1). Queremos coordinar la entrega (hasta el 17 de marzo). ¿Cómo te queda mejor?");
   });
 });
