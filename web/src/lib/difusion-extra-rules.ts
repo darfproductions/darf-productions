@@ -5,7 +5,7 @@ import type { Forma } from "@/lib/mapa-libre";
 
 export type DisenoExtra = "mapa" | "comprar" | "invitacion" | "calendario" | "incluye";
 export const DISENOS_EXTRA: { id: DisenoExtra; label: string; ayuda: string; funcion: boolean }[] = [
-  { id: "invitacion", label: "Invitación", ayuda: "\"DARF Productions te invita a…\" con la fecha, WhatsApp, página y QR.", funcion: true },
+  { id: "invitacion", label: "Invitación", ayuda: "\"DARF Productions te invita a…\" con todas las funciones, WhatsApp, página y QR.", funcion: false },
   { id: "mapa", label: "Mapa de zonas", ayuda: "El mapa del teatro con el color y precio de cada zona.", funcion: true },
   { id: "comprar", label: "¿Cómo aseguro mi lugar?", ayuda: "Dos opciones: por WhatsApp o en la página.", funcion: false },
   { id: "calendario", label: "Calendario de funciones", ayuda: "Todas las fechas y horarios de la temporada.", funcion: false },

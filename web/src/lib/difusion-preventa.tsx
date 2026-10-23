@@ -45,7 +45,7 @@ export async function preventaPng(d: DatosImagenPreventa): Promise<Buffer> {
   // Tamaños según el formato (el cuadrado es el más justo).
   const s = (c: number, p: number, hi: number) => (cuadrado ? c : historia ? hi : p);
   const tam = tamGrande(t.grande, s(118, 150, 170));
-  const qrLado = s(200, 250, 300);
+  const qrLado = s(210, 230, 260);
 
   const res = new ImageResponse(
     (
@@ -73,14 +73,16 @@ export async function preventaPng(d: DatosImagenPreventa): Promise<Buffer> {
           </div>
           {t.abajo && <span style={{ marginTop: s(10, 14, 20), fontSize: s(32, 36, 42), fontWeight: 800, textAlign: "center" }}>{t.abajo}</span>}
           {d.codigo && (
-            <div style={{ marginTop: s(18, 26, 40), display: "flex", alignItems: "center", gap: s(26, 32, 40) }}>
-              {qr && <img src={qr} width={qrLado} height={qrLado} style={{ width: qrLado, height: qrLado, borderRadius: 18 }} alt="" />}
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
-                <span style={{ fontSize: s(24, 28, 32), fontWeight: 800, letterSpacing: 6, color: acento }}>TU CÓDIGO</span>
-                <span style={{ marginTop: 6, padding: "8px 22px", border: `4px solid ${acento}`, borderRadius: 16, fontSize: s(54, 64, 74), fontWeight: 900, letterSpacing: 4 }}>{d.codigo.codigo}</span>
-                <span style={{ marginTop: 14, fontSize: s(22, 25, 28), fontWeight: 800, opacity: 0.85 }}>Entra a</span>
-                <span style={{ fontSize: s(24, 27, 30), fontWeight: 900 }}>{d.codigo.liga}</span>
+            // QR y código lado a lado (medidas que caben en el ancho), y la liga en su propio renglón centrado.
+            <div style={{ marginTop: s(18, 26, 40), width: w - 120, display: "flex", flexDirection: "column", alignItems: "center" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: s(24, 28, 36) }}>
+                {qr && <img src={qr} width={qrLado} height={qrLado} style={{ width: qrLado, height: qrLado, borderRadius: 18, flexShrink: 0 }} alt="" />}
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
+                  <span style={{ fontSize: s(22, 26, 30), fontWeight: 800, letterSpacing: 6, color: acento }}>TU CÓDIGO</span>
+                  <span style={{ marginTop: 6, padding: "8px 20px", border: `4px solid ${acento}`, borderRadius: 16, fontSize: s(44, 52, 60), fontWeight: 900, letterSpacing: 3 }}>{d.codigo.codigo}</span>
+                </div>
               </div>
+              <span style={{ marginTop: s(14, 18, 24), fontSize: s(22, 25, 28), fontWeight: 800, textAlign: "center" }}>{`Entra a ${d.codigo.liga}`}</span>
             </div>
           )}
           {/* Franja itálica (satori no trae itálica: se inclina). */}

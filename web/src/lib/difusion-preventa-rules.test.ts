@@ -32,5 +32,6 @@ describe("diseños de preventa", () => {
   it("sitio corto", () => {
     expect(sitioCorto("https://darfproductions.com/")).toBe("darfproductions.com");
     expect(sitioCorto("")).toBe("darfproductions.com");
+    expect(sitioCorto("https://www.darfproductions.com")).toBe("darfproductions.com");
   });
 });

@@ -41,7 +41,9 @@ export async function GET(req: Request, ctx: RouteContext<"/panel/producciones/[
     whatsapp: telefonoLegible(env.whatsapp), lugar: (funcion?.venue ?? obra.venue) || null,
     fecha: fecha.fecha, hora: fecha.hora, extra,
     pasos: diseno === "comprar" ? pasosComprar({ whatsapp: env.whatsapp, liga: `${sitioCorto(base)}/producciones/${id}`, modo: extra?.modoVenta }) : undefined,
-    calendario: diseno === "calendario" ? renglonesCalendario(obra.funciones, formato === "historia" ? 9 : formato === "post" ? 6 : 4) : undefined,
+    // La invitación lleva todas las funciones (las que caben; el resto como "y N fechas más").
+    calendario: diseno === "calendario" ? renglonesCalendario(obra.funciones, formato === "historia" ? 9 : formato === "post" ? 6 : 4)
+      : diseno === "invitacion" ? renglonesCalendario(obra.funciones, formato === "historia" ? 6 : formato === "post" ? 4 : 3) : undefined,
   });
   const archivo = `${obra.nombre}-${diseno}-${formato}`.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^A-Za-z0-9-]+/g, "-");
   return new NextResponse(new Uint8Array(png), {
