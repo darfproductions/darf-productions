@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 // Lecturas de solicitudes (0070). Pasan por RLS: el integrante ve las suyas; la producción,
 // las de los tipos que puede revisar (ensayos, expedientes o mensualidades).
 
-const COLS = "id, production_id, user_id, tipo, estado, motivo, archivo_path, doc_type_id, doc_nombre, concepto, periodo, monto, metodo, monto_aprobado, respuesta, revisado_at, created_at, member_request_rehearsals(rehearsals(id, titulo, inicia))";
+const COLS = "id, production_id, user_id, tipo, estado, motivo, archivo_path, doc_type_id, doc_nombre, concepto, periodo, monto, metodo, monto_aprobado, respuesta, revisado_at, created_at, llegada_hora, member_request_rehearsals(rehearsals(id, titulo, inicia))";
 
 type Row = Omit<MemberRequest, "ensayos"> & { member_request_rehearsals: { rehearsals: { id: string; titulo: string; inicia: string } | null }[] };
 
@@ -22,6 +22,13 @@ export async function listRequests(pid: string, opts: { uid?: string; limit?: nu
   if (opts.uid) q = q.eq("user_id", opts.uid);
   const { data } = await q;
   return limpiar((data ?? []) as unknown as Row[]);
+}
+
+/** Minutos de tolerancia de la obra (10 por omisión): aplican también sobre la hora de una llegada tarde (0126). */
+export async function toleranciaMin(pid: string): Promise<number> {
+  const supabase = await createClient();
+  const { data } = await supabase.from("production_discipline").select("tolerancia_min").eq("production_id", pid).maybeSingle();
+  return (data?.tolerancia_min as number | undefined) ?? 10;
 }
 
 /** Horas de anticipación para pedir una falta en la obra (24 por omisión). */

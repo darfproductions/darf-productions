@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { getSession } from "@/lib/auth";
-import { montoValido, periodoDeMes } from "@/lib/request-rules";
+import { llegadaIso, montoValido, periodoDeMes } from "@/lib/request-rules";
 import { createClient } from "@/lib/supabase/server";
 import { mensajeError } from "@/lib/errores";
 
@@ -25,6 +25,25 @@ export async function requestAbsence(_p: ReqState, f: FormData): Promise<ReqStat
   if (!motivo) return { ok: false, message: "Escribe la razón." };
   const supabase = await createClient();
   const { error } = await supabase.rpc("request_absence", { pid, rehearsal_ids: ensayos, p_motivo: motivo });
+  if (error) return { ok: false, message: errorClaro(error) };
+  revalidatePath(`/cuenta/produccion/${pid}`);
+  return { ok: true, message: "Solicitud enviada. Te avisamos cuando la revisen." };
+}
+
+// 0126: llegada tarde a un ensayo (hasta que empieza). La base valida la hora y que no haya otra solicitud.
+export async function requestLate(_p: ReqState, f: FormData): Promise<ReqState> {
+  const session = await getSession();
+  if (!session) return { ok: false, message: "Tu sesión expiró. Vuelve a entrar." };
+  const pid = String(f.get("pid"));
+  const ensayo = String(f.get("ensayo") ?? "");
+  const inicia = String(f.get("inicia_" + ensayo) ?? "");
+  const motivo = String(f.get("motivo") ?? "").trim().slice(0, 1000);
+  if (!ensayo || !inicia) return { ok: false, message: "Elige el ensayo al que llegarás tarde." };
+  const hora = llegadaIso(inicia, String(f.get("hora") ?? ""));
+  if (!hora) return { ok: false, message: "Escribe a qué hora vas a llegar." };
+  if (!motivo) return { ok: false, message: "Escribe la razón." };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("request_late", { pid, rid: ensayo, p_hora: hora, p_motivo: motivo });
   if (error) return { ok: false, message: errorClaro(error) };
   revalidatePath(`/cuenta/produccion/${pid}`);
   return { ok: true, message: "Solicitud enviada. Te avisamos cuando la revisen." };

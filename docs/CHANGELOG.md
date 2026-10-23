@@ -5,6 +5,20 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-10-23 — 0126 Solicitud de llegada tarde
+
+- En Solicitudes del portal del elenco, además de avisar una falta: "Avisar que llegaré tarde". Se elige el ensayo (solo
+  los que no han empezado), la hora a la que llegará y la razón; se manda hasta que empieza el ensayo. El aviso dice la
+  regla: "Tu hora de entrada será las 7:30 p.m.; tienes 10 minutos de tolerancia. Si llegas después de las 7:40 p.m.,
+  cuenta como retardo y los minutos se cuentan desde las 7:30 p.m.".
+- La aprueba quien lleva los ensayos (Panel → Solicitudes). Aprobada, esa hora es su hora de entrada para el gafete y al
+  abrir el ensayo (`hora_entrada`); si la aprueban cuando ya llegó, se recalcula su registro y se anulan las
+  advertencias automáticas de retardo que sobren. Rechazada, cuenta la hora normal. La lista del ensayo muestra
+  "Llega a las 7:30 p.m. (aprobada)". No se puede pedir falta y llegada tarde para el mismo ensayo.
+- Base: `member_requests.llegada_hora`, tipo `llegada`, `request_late`, `hora_entrada`, `hora_mx`; reemplazadas
+  `request_absence`, `request_review`, `can_review_request`, `request_label`, `notify_request`, `_llegada` y
+  `rehearsal_roster`.
+
 ## 2026-10-22 — 0125 Entregas de beneficios: cuándo, lista por persona y avisos
 
 - Lo pagado se tiene que entregar. Cada beneficio dice cuándo se entrega: antes del día de la función (desde N días

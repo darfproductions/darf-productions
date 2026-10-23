@@ -17,7 +17,7 @@ export const metadata: Metadata = { title: "Solicitudes del elenco" };
 const ESTADOS: [RequestEstado | "todas", string][] = [["pendiente", "Por revisar"], ["aprobada", "Aprobadas"], ["rechazada", "Rechazadas"], ["todas", "Todas"]];
 
 // Solicitudes del elenco (0070): cada quien ve y revisa los tipos de su permiso
-// (faltas: ensayos · documentos: expedientes · pagos: mensualidades).
+// (faltas y llegadas tarde: ensayos · documentos: expedientes · pagos: mensualidades).
 export default async function Solicitudes({ params, searchParams }: PageProps<"/panel/producciones/[id]/solicitudes">) {
   const { id } = await params;
   const sp = await searchParams;
@@ -40,8 +40,8 @@ export default async function Solicitudes({ params, searchParams }: PageProps<"/
       <Card className="flex flex-col gap-3">
         <h2 className="titular text-xl">Solicitudes del elenco</h2>
         <p className="text-sm text-texto-2">
-          Faltas con aviso, documentos, comprobantes de pago y otros temas que manda el elenco desde su portal. Al aprobar, la falta queda justificada,
-          el pago se registra o el documento queda recibido. Al rechazar, escribe la razón: el integrante la ve.
+          Faltas con aviso, llegadas tarde, documentos, comprobantes de pago y otros temas que manda el elenco desde su portal. Al aprobar, la falta queda justificada,
+          la hora de la llegada tarde se vuelve su hora de entrada, el pago se registra o el documento queda recibido. Al rechazar, escribe la razón: el integrante la ve.
         </p>
         <nav aria-label="Estado" className="flex flex-wrap gap-2 text-sm">
           {ESTADOS.map(([k, l]) => (

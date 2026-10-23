@@ -3,8 +3,8 @@
 import { useActionState, useState } from "react";
 import { ACCEPT_EXPEDIENTE, subirAExpediente } from "@/lib/expediente-upload";
 import { fechaEnsayo } from "@/lib/rehearsal-rules";
-import { METODOS, TIPO_SOLICITUD, textoLimite, type RequestTipo } from "@/lib/request-rules";
-import { requestAbsence, submitRequest, type ReqState } from "./actions";
+import { METODOS, TIPO_SOLICITUD, horaMx, llegadaIso, puedeAvisarLlegada, textoLimite, textoLlegada, type RequestTipo } from "@/lib/request-rules";
+import { requestAbsence, requestLate, submitRequest, type ReqState } from "./actions";
 import { isoMx } from "@/lib/dates";
 import { Icono } from "@/components/Icono";
 
@@ -87,7 +87,60 @@ function FaltaForm({ pid, ensayos, horas, marcado, onDone }: { pid: string; ensa
   );
 }
 
-function OtraForm({ pid, uid, tipo, docTipos, cuota, onDone }: { pid: string; uid: string; tipo: Exclude<RequestTipo, "falta">; docTipos: { id: string; nombre: string }[]; cuota: number | null; onDone: () => void }) {
+// 0126: llegada tarde. Un ensayo que no ha empezado, la hora a la que llegará y la razón; el aviso de la regla
+// cambia con la hora que escribe.
+function LlegadaForm({ pid, ensayos, tolerancia, marcado, onDone }: { pid: string; ensayos: EnsayoOpcion[]; tolerancia: number; marcado: string | null; onDone: () => void }) {
+  const [state, run, pending] = useActionState<ReqState, FormData>(async (p, f) => {
+    const r = await requestLate(p, f);
+    if (r?.ok) onDone();
+    return r;
+  }, null);
+  const opciones = ensayos.filter((e) => puedeAvisarLlegada(e.inicia));
+  const disponibles = opciones.filter((e) => !e.pedida);
+  const [sel, setSel] = useState<string>(disponibles.find((e) => e.id === marcado)?.id ?? disponibles[0]?.id ?? "");
+  const [hora, setHora] = useState("");
+  const elegido = opciones.find((e) => e.id === sel);
+  const iso = elegido && hora ? llegadaIso(elegido.inicia, hora) : null;
+  return (
+    <form action={run} className="flex flex-col gap-4">
+      <input type="hidden" name="pid" value={pid} />
+      {opciones.map((e) => <input key={e.id} type="hidden" name={`inicia_${e.id}`} value={e.inicia} />)}
+      {opciones.length === 0 ? <p className="rounded-lg bg-sala px-3 py-3 text-sm text-texto-2">No tienes ensayos próximos.</p> : (
+        <fieldset className="flex flex-col gap-2">
+          <legend className="mb-1 text-sm font-semibold">¿A qué ensayo llegarás tarde?</legend>
+          {opciones.map((e) => (
+            <label key={e.id} className={`flex items-start gap-3 rounded-lg border border-white/10 bg-sala px-3 py-2.5 text-sm ${e.pedida ? "opacity-55" : "cursor-pointer hover:border-white/30"}`}>
+              <input type="radio" name="ensayo" value={e.id} disabled={e.pedida} checked={sel === e.id} onChange={() => setSel(e.id)} className="mt-1 h-4 w-4" />
+              <span className="min-w-0">
+                <b>{e.titulo}</b>
+                <span className="block text-texto-2">{(([c, ...r]) => c.toUpperCase() + r.join(""))(fechaEnsayo(e.inicia, e.termina))}</span>
+                {e.pedida && <span className="block text-xs text-texto-3">Ya mandaste una solicitud para este ensayo</span>}
+              </span>
+            </label>
+          ))}
+        </fieldset>
+      )}
+      <label className={`${etiqueta} sm:max-w-56`}>¿A qué hora vas a llegar?
+        <input type="time" name="hora" required value={hora} onChange={(e) => setHora(e.target.value)} className={campo}
+          min={elegido ? new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "America/Mexico_City" }).format(new Date(elegido.inicia)) : undefined} />
+        {elegido && <span className="text-xs font-normal text-texto-3">El ensayo empieza a las {horaMx(elegido.inicia)}</span>}
+      </label>
+      <p className="flex gap-2 rounded-lg border border-aviso/40 bg-aviso/10 px-3 py-2.5 text-sm text-texto">
+        <Icono nombre="reloj" className="mt-0.5 shrink-0 text-aviso" />
+        <span>{textoLlegada(iso, tolerancia)} Si la producción la rechaza, cuenta la hora normal del ensayo.</span>
+      </p>
+      <label className={etiqueta}>Razón
+        <textarea name="motivo" required maxLength={1000} rows={3} className={campo} placeholder="Ej. Salgo de la escuela a las 7:00." />
+      </label>
+      <button disabled={pending || disponibles.length === 0} className="self-start rounded-full bg-texto px-6 py-3 text-sm font-bold text-sala disabled:opacity-50">
+        {pending ? "Enviando…" : "Enviar solicitud"}
+      </button>
+      <Resultado state={state} />
+    </form>
+  );
+}
+
+function OtraForm({ pid, uid, tipo, docTipos, cuota, onDone }: { pid: string; uid: string; tipo: Exclude<RequestTipo, "falta" | "llegada">; docTipos: { id: string; nombre: string }[]; cuota: number | null; onDone: () => void }) {
   const [state, run, pending] = useActionState<ReqState, FormData>(async (p, f) => {
     const r = await submitRequest(p, f);
     if (r?.ok) onDone();
@@ -159,8 +212,8 @@ function OtraForm({ pid, uid, tipo, docTipos, cuota, onDone }: { pid: string; ui
 }
 
 // Nueva solicitud: el integrante elige qué quiere mandar y llena solo lo necesario.
-export function RequestForm({ pid, uid, ensayos, horas, docTipos, cuota, inicial }: {
-  pid: string; uid: string; ensayos: EnsayoOpcion[]; horas: number; docTipos: { id: string; nombre: string }[];
+export function RequestForm({ pid, uid, ensayos, horas, tolerancia, docTipos, cuota, inicial }: {
+  pid: string; uid: string; ensayos: EnsayoOpcion[]; horas: number; tolerancia: number; docTipos: { id: string; nombre: string }[];
   cuota: number | null; inicial: { tipo: RequestTipo | null; falta: string | null };
 }) {
   const [tipo, setTipo] = useState<RequestTipo | null>(inicial.tipo);
@@ -170,7 +223,7 @@ export function RequestForm({ pid, uid, ensayos, horas, docTipos, cuota, inicial
   const tipos = Object.keys(TIPO_SOLICITUD) as RequestTipo[];
   return (
     <div className="flex flex-col gap-4">
-      <div className="grid grid-cols-2 gap-2 lg:grid-cols-4" role="group" aria-label="¿Qué quieres mandar?">
+      <div className="grid grid-cols-2 gap-2 lg:grid-cols-5" role="group" aria-label="¿Qué quieres mandar?">
         {tipos.map((t) => (
           <button key={t} type="button" onClick={() => { setTipo(t); setHecho(null); }} aria-pressed={tipo === t}
             className={`flex min-h-24 flex-col items-start gap-1 rounded-xl border p-3 text-left text-sm transition-colors ${tipo === t ? "border-violeta-claro bg-ciruela/20" : "border-white/10 bg-sala hover:border-white/30"}`}>
@@ -182,7 +235,8 @@ export function RequestForm({ pid, uid, ensayos, horas, docTipos, cuota, inicial
       {hecho && <p role="status" className="rounded-lg bg-[#14532d]/60 px-4 py-3 text-sm font-semibold text-[#bbf7d0]"><Icono nombre="check" /> {hecho}</p>}
       {tipo && <p className="text-sm text-texto-2">{TIPO_SOLICITUD[tipo].ayuda}</p>}
       {tipo === "falta" && <FaltaForm key={`f${vuelta}`} pid={pid} ensayos={ensayos} horas={horas} marcado={inicial.falta} onDone={listo} />}
-      {tipo && tipo !== "falta" && <OtraForm key={`${tipo}${vuelta}`} pid={pid} uid={uid} tipo={tipo} docTipos={docTipos} cuota={cuota} onDone={listo} />}
+      {tipo === "llegada" && <LlegadaForm key={`l${vuelta}`} pid={pid} ensayos={ensayos} tolerancia={tolerancia} marcado={inicial.falta} onDone={listo} />}
+      {tipo && tipo !== "falta" && tipo !== "llegada" && <OtraForm key={`${tipo}${vuelta}`} pid={pid} uid={uid} tipo={tipo} docTipos={docTipos} cuota={cuota} onDone={listo} />}
     </div>
   );
 }
