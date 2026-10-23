@@ -196,12 +196,13 @@ export async function extraPng(d: DatosImagenExtra): Promise<Buffer> {
   const masInv = invitacion ? d.calendario?.mas ?? 0 : 0;
   const invitacionCuerpo = invitacion && (
     <div style={{ position: "absolute", left: 0, top: 0, width: w, height: h, display: "flex", flexDirection: "column", alignItems: "center",
-      justifyContent: "space-between", padding: `${margenArriba + s(110, 140, 190)}px ${lado}px ${margenAbajo}px` }}>
+      justifyContent: "space-between", padding: `${margenArriba + s(104, 132, 160)}px ${lado}px ${margenAbajo}px` }}>
+      {/* El logo de DARF ya está arriba: aquí solo "te invita a" (sin logo, el nombre en texto). */}
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-        <span style={{ fontSize: s(30, 36, 44), fontWeight: 800, letterSpacing: 10, color: acento }}>DARF PRODUCTIONS</span>
-        <span style={{ marginTop: s(6, 10, 14), fontSize: s(48, 58, 70), fontWeight: 900 }}>TE INVITA A</span>
+        {!marca && <span style={{ fontSize: s(30, 36, 44), fontWeight: 800, letterSpacing: 10, color: acento }}>DARF PRODUCTIONS</span>}
+        <span style={{ marginTop: marca ? 0 : s(6, 10, 14), fontSize: s(48, 58, 70), fontWeight: 900 }}>TE INVITA A</span>
       </div>
-      {logoObra ? <img src={logoObra} style={{ maxWidth: s(760, 880, 940), maxHeight: funcionesInv.length > 1 ? s(170, 250, 360) : s(230, 330, 460), objectFit: "contain" }} alt="" />
+      {logoObra ? <img src={logoObra} style={{ maxWidth: s(860, 940, 960), maxHeight: funcionesInv.length > 1 ? s(290, 400, 440) : s(360, 470, 500), objectFit: "contain" }} alt="" />
         : <span style={{ fontSize: 110, fontWeight: 900 }}>{d.obra.toUpperCase()}</span>}
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
         {funcionesInv.length > 1 ? (
