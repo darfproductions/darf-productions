@@ -159,7 +159,7 @@ export function SeatMapBuilder({ pid, seats, zonas, conBoletos, obras, diseno }:
       <Card className="flex flex-col gap-4">
         <div>
           <h2 className="titular text-xl">Zonas</h2>
-          <p className="text-sm text-texto-2">Cada asiento pertenece a una zona (ej. VIP, Preferente). Ordénalas de la más a la menos importante con las flechas: así salen en la compra. El precio que pongas aquí se aplica a todas las funciones que aún no pasan (y a las nuevas); si una función lleva un precio distinto, ajústalo en Funciones y precios.</p>
+          <p className="text-sm text-texto-2">Cada asiento pertenece a una zona (ej. VIP, Preferente). Ordénalas de la más a la menos importante con las flechas: así salen en la compra. El precio que pongas aquí se aplica a todas las funciones que aún no pasan (y a las nuevas); si una función lleva un precio distinto, ajústalo en Funciones y horarios.</p>
         </div>
         {zonas.map((z, i) => (
           <div key={z.id} className="flex flex-col gap-2 border-b border-white/10 pb-3 last:border-0">

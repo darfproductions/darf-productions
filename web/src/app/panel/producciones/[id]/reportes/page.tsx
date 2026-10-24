@@ -14,6 +14,10 @@ import { createClient } from "@/lib/supabase/server";
 import { formatMoney } from "@/lib/tickets";
 import { mayus } from "@/lib/dates";
 import { todasLasFilas } from "@/lib/supabase/paginar";
+import { AjustesSeccion } from "@/components/panel/AjustesSeccion";
+import { PrintButton } from "@/components/PrintButton";
+import { SeasonSummaryView } from "@/components/panel/SeasonSummaryView";
+import type { SeasonSummary } from "@/lib/season-rules";
 
 export const metadata: Metadata = { title: "Reportes" };
 
@@ -41,6 +45,7 @@ export default async function Reportes({ params }: PageProps<"/panel/produccione
   const verAsist = can(access, id, "ensayos.gestionar") || can(access, id, "expedientes.ver");
   const verAud = can(access, id, "audiciones.gestionar");
   const supabase = await createClient();
+  const temporada = ((await supabase.rpc("season_summary", { pid: id })).data ?? null) as SeasonSummary | null;
   const none = Promise.resolve({ data: [] });
 
   const [funciones, orders, resumen, asientos, pagos, asist, roster, auds, vend, zonas] = await Promise.all([
@@ -196,6 +201,11 @@ export default async function Reportes({ params }: PageProps<"/panel/produccione
           {audiciones.length === 0 && <p className="text-sm text-texto-3">Esta obra no tiene audiciones.</p>}
         </Card>
       )}
+      {/* Resumen de la temporada (el mismo que se congela al cerrar), para imprimir o guardar en PDF. */}
+      <AjustesSeccion id="temporada" titulo="Resumen de la temporada" resumen="Así quedará el resumen si cierras hoy · se puede imprimir">
+        <div className="flex justify-end"><PrintButton /></div>
+        {temporada ? <SeasonSummaryView s={temporada} verTaller={verTaller || can(access, id, "obra.publicar")} /> : <p className="text-sm text-texto-3">No se pudo calcular.</p>}
+      </AjustesSeccion>
     </div>
   );
 }

@@ -1,5 +1,6 @@
 /* La tabla de pagos imita la hoja de Excel de DARF: una fila por integrante y una columna por mes. */
 import type { Metadata } from "next";
+import { AjustesSeccion } from "@/components/panel/AjustesSeccion";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ActionForm } from "@/components/panel/ActionForm";
@@ -15,7 +16,6 @@ import { requirePanel } from "@/lib/permissions";
 import { createClient } from "@/lib/supabase/server";
 import { todasLasFilas } from "@/lib/supabase/paginar";
 import { saveFee, savePagosTabla, toggleCobro } from "../actions";
-import { ExpTabs } from "../ExpTabs";
 
 export const metadata: Metadata = { title: "Cuotas" };
 
@@ -65,7 +65,6 @@ export default async function Cuotas({ params }: PageProps<"/panel/producciones/
 
   return (
     <div className="flex flex-col gap-4">
-      <ExpTabs pid={id} actual="cuotas" pagos cobra={cobra} />
 
       <Card className={`flex flex-wrap items-center justify-between gap-3 border ${cobra ? "border-[#14532d]" : "border-white/10"}`}>
         <div className="min-w-0 flex-1 basis-64">
@@ -131,23 +130,6 @@ export default async function Cuotas({ params }: PageProps<"/panel/producciones/
         </Card>
       )}
 
-      {(
-        <Card>
-          <h2 className="titular mb-1 text-xl">Montos y fechas</h2>
-          <p className="mb-3 text-sm text-texto-2">Inscripción (un solo pago, completo aunque entren tarde) y mensualidad (de qué mes a qué mes). Quien entra tarde paga desde su mes de ingreso. La beca, un monto especial o “sin inscripción” se ponen en el expediente de cada persona.</p>
-          <ActionForm action={saveFee} hidden={h} submit="Guardar pagos">
-            <input type="hidden" name="cobrar" value={cobra || !cuota ? "on" : ""} />
-            <div className="grid gap-2 sm:grid-cols-5">
-              <label className="flex flex-col gap-1 text-xs font-semibold">Inscripción (MXN)<input className={input} type="number" min={0} step="1" name="inscripcion" defaultValue={cuota?.inscripcion ?? 0} /></label>
-              <label className="flex flex-col gap-1 text-xs font-semibold">Mensualidad (MXN)<input className={input} type="number" min={0} step="1" name="monto" required defaultValue={cuota?.monto ?? ""} /></label>
-              <label className="flex flex-col gap-1 text-xs font-semibold">Primer mes<input className={input} type="month" name="desde" required defaultValue={cuota?.desde.slice(0, 7) ?? ""} /></label>
-              <label className="flex flex-col gap-1 text-xs font-semibold">Último mes<input className={input} type="month" name="hasta" required defaultValue={cuota?.hasta.slice(0, 7) ?? ""} /></label>
-              <label className="flex flex-col gap-1 text-xs font-semibold">Pagar antes del día<input className={input} type="number" min={1} max={28} name="dia_limite" defaultValue={cuota?.dia_limite ?? 10} /></label>
-            </div>
-            <label className="flex items-center gap-2 text-sm font-semibold"><input type="checkbox" name="vence_sabado" defaultChecked={!!cuota?.vence_sabado} /> Se paga el primer sábado del mes, con tolerancia hasta el segundo sábado (en lugar del día fijo)</label>
-          </ActionForm>
-        </Card>
-      )}
 
       {rec.meses.length > 0 && (
         <Card className="overflow-x-auto p-0 md:p-0">
@@ -173,6 +155,24 @@ export default async function Cuotas({ params }: PageProps<"/panel/producciones/
           </table>
         </Card>
       )}
+      {/* Montos y fechas se ponen una vez: abajo y plegado (abierto si todavía no hay). */}
+      <AjustesSeccion id="montos" titulo="Montos y fechas" resumen="Inscripción y mensualidad" abierto={!cuota}>
+        <Card>
+          <h2 className="titular mb-1 text-xl">Montos y fechas</h2>
+          <p className="mb-3 text-sm text-texto-2">Inscripción (un solo pago, completo aunque entren tarde) y mensualidad (de qué mes a qué mes). Quien entra tarde paga desde su mes de ingreso. La beca, un monto especial o “sin inscripción” se ponen en el expediente de cada persona.</p>
+          <ActionForm action={saveFee} hidden={h} submit="Guardar pagos">
+            <input type="hidden" name="cobrar" value={cobra || !cuota ? "on" : ""} />
+            <div className="grid gap-2 sm:grid-cols-5">
+              <label className="flex flex-col gap-1 text-xs font-semibold">Inscripción (MXN)<input className={input} type="number" min={0} step="1" name="inscripcion" defaultValue={cuota?.inscripcion ?? 0} /></label>
+              <label className="flex flex-col gap-1 text-xs font-semibold">Mensualidad (MXN)<input className={input} type="number" min={0} step="1" name="monto" required defaultValue={cuota?.monto ?? ""} /></label>
+              <label className="flex flex-col gap-1 text-xs font-semibold">Primer mes<input className={input} type="month" name="desde" required defaultValue={cuota?.desde.slice(0, 7) ?? ""} /></label>
+              <label className="flex flex-col gap-1 text-xs font-semibold">Último mes<input className={input} type="month" name="hasta" required defaultValue={cuota?.hasta.slice(0, 7) ?? ""} /></label>
+              <label className="flex flex-col gap-1 text-xs font-semibold">Pagar antes del día<input className={input} type="number" min={1} max={28} name="dia_limite" defaultValue={cuota?.dia_limite ?? 10} /></label>
+            </div>
+            <label className="flex items-center gap-2 text-sm font-semibold"><input type="checkbox" name="vence_sabado" defaultChecked={!!cuota?.vence_sabado} /> Se paga el primer sábado del mes, con tolerancia hasta el segundo sábado (en lugar del día fijo)</label>
+          </ActionForm>
+        </Card>
+      </AjustesSeccion>
     </div>
   );
 }

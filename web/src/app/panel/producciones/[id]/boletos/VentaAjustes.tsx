@@ -7,7 +7,7 @@ const ghost = "rounded-full border border-white/25 px-4 py-2 text-sm font-bold h
 export type ValoresVenta = { funciones_publicadas?: boolean | null; modo_venta?: string | null; mostrar_precios?: boolean | null; mostrar_total?: boolean | null } | null;
 
 // 0120: cómo se vende la obra (funciones publicadas, precios en la página, precios y total al apartar, esquema de
-// venta). La misma tarjeta está en Funciones y precios y en Página pública.
+// venta). La misma tarjeta está en Funciones y horarios y en Página pública.
 export function VentaAjustes({ pid, v }: { pid: string; v: ValoresVenta }) {
   const publicadas = v?.funciones_publicadas !== false;
   return (
@@ -33,7 +33,7 @@ export function VentaAjustes({ pid, v }: { pid: string; v: ValoresVenta }) {
             <span><b>Híbrido</b> — &quot;Aparta tu lugar&quot;: eligen su lugar en el mapa (con su cuenta), tocan Siguiente y se abre WhatsApp con su código para seguir ahí.</span></label>
           <label className="flex items-start gap-2"><input type="radio" name="modo_venta" value="whatsapp" defaultChecked={v?.modo_venta === "whatsapp"} className="mt-1" />
             <span><b>Todo por WhatsApp</b> — &quot;Más información por WhatsApp&quot;: la página no aparta y el botón abre WhatsApp; el equipo vende desde Taquilla.</span></label>
-          <span className="text-xs text-texto-3">La Taquilla funciona igual en los tres. Los precios de cada zona se cambian en Funciones y precios.</span>
+          <span className="text-xs text-texto-3">La Taquilla funciona igual en los tres. Los precios de cada zona se cambian en Funciones y horarios.</span>
         </fieldset>
       </ActionForm>
     </Card>

@@ -64,7 +64,7 @@ export default async function Contacto({ searchParams }: PageProps<"/panel/conta
 
   return (
     <>
-      <PanelTitle eyebrow="Personas" title="Mensajes de contacto">Lo que llega desde la página de Contacto. Asígnalo a alguien y marca cuando ya se respondió.</PanelTitle>
+      <PanelTitle eyebrow="Sitio y público" title="Mensajes de contacto">Lo que llega desde la página de Contacto. Asígnalo a alguien y marca cuando ya se respondió.</PanelTitle>
       <nav aria-label="Ver mensajes" className="flex flex-wrap gap-2 text-sm">
         {VISTAS.map((v) => (
           <Link key={v.id} href={v.id === "pendientes" ? "/panel/contacto" : `/panel/contacto?ver=${v.id}`} aria-current={vista === v.id ? "page" : undefined}

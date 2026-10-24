@@ -165,7 +165,7 @@ export async function boxOfficeSale(input: { pid: string; performanceId: string;
   return { ok: true, orderCode: r.order_code, total: ex.total ?? Number(r.total), tickets, aviso: ex.aviso, cuenta: ex.cuenta };
 }
 
-// ──────── Funciones y precios (funciones.gestionar) ────────
+// ──────── Funciones y horarios (funciones.gestionar) ────────
 
 export async function createPerformance(_p: TicketState, f: FormData): Promise<TicketState> {
   const pid = String(f.get("pid"));

@@ -56,7 +56,7 @@ function Campos({ b, zonas, funciones }: { b?: Beneficio; zonas: Zona[]; funcion
       <fieldset className="flex flex-col gap-1.5 text-sm sm:col-span-2">
         <legend className="mb-1 font-semibold">Zonas que lo incluyen</legend>
         <input type="hidden" name="con_zonas" value="1" />
-        {zonas.length === 0 && <span className="text-texto-3">Primero crea zonas en Funciones y precios o en el Mapa.</span>}
+        {zonas.length === 0 && <span className="text-texto-3">Primero crea zonas en Funciones y horarios o en el Mapa.</span>}
         <div className="flex flex-wrap gap-x-4 gap-y-1.5">
           {zonas.map((z) => <label key={z.id} className="flex items-center gap-2"><input type="checkbox" name="zonas" value={z.id} defaultChecked={b?.zonas.includes(z.id)} /> {z.nombre}</label>)}
         </div>

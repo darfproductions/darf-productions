@@ -5,6 +5,39 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-10-24 — Panel ordenado: secciones en cada obra y menú general
+
+- Cada grupo de la obra se divide en secciones, como Boletos, con sus páginas en una tercera fila. Las rutas no
+  cambian:
+  - **Personas:** Elenco · Integrantes (Expedientes, Cuotas, Adeudos) · Revisar (Solicitudes, Evaluaciones).
+  - **Ensayos y equipo:** Ensayos · Comunicar (Avisos al elenco, Materiales, Notas y juntas del equipo).
+  - **Público:** Página (Publicar, Contenido, Imagen y pósters, Avisos) · Promoción (Difusión, Programa) · Fans (Fan
+    Zone y eventos, Fotos y galería).
+  - **Más:** Reportes (Reportes, Cierre) · Equipo y permisos (Permisos, Guía de tu rol).
+- **Página pública** pasa de una sola página de 256 líneas a 4: `pagina` (publicar), `pagina/contenido`,
+  `pagina/imagen` y `pagina/avisos`. Las ligas viejas (`pagina#kit`, `#canciones`…) llevan a su página nueva. "Venta y
+  precios" queda solo en Boletos → Funciones y horarios.
+- Fan Zone: las fotos de cada función y la galería pasan a `fanzone/fotos`. Un pago de evento pendiente de una obra
+  lleva a su Fan Zone.
+- **Ajustes de asistencia juntos en Ensayos:** tolerancia de retardo y advertencias automáticas por retardos y faltas,
+  junto a "faltas con aviso". `saveDiscipline` guarda solo los campos que trae el formulario, así que Expedientes
+  conserva el límite de advertencias y la mensualidad sin pisar lo de Ensayos.
+- **Plegados** (lo que se configura una vez): Personajes en Elenco, la rúbrica en Evaluaciones y "Montos y fechas" en
+  Cuotas. En Comunicados, el formulario nuevo se pliega y se muestran los últimos 20 ("Ver todos").
+- **Resumen de la obra:**
+  - muestra "Listo para vender" o, ya pasadas todas las funciones, "Antes de cerrar la temporada"
+    (`lib/cierre-datos.ts`);
+  - se quita la tarjeta del kit, que estaba repetida;
+  - el equipo queda en una línea.
+- **Cierre** ya no repite el resumen. "Resumen de la temporada" (imprimible) está en Reportes de la obra.
+- **Menú general:**
+  - Notificaciones sale del menú: se queda en Inicio, con su número junto a Inicio.
+  - Reportes es una sola página.
+  - "Sitio y público", sección nueva: Sitio, Club Fan, Difusión DARF, Contacto y DARFY.
+  - Ajustes se queda con Casa DARF, Roles y Bitácora.
+  - Showcases y cada convocatoria usan la misma barra de subpestañas (`TabsBar`) que el resto.
+- No hay cambios en la base.
+
 ## 2026-10-24 — 0127 Logística de funciones y Boletos en 3 secciones
 
 - Boletos de cada obra pasa de 10 pestañas sueltas a 3 secciones según el momento: **Preparar** (Funciones y horarios,

@@ -6,7 +6,6 @@ import { getAdeudos } from "@/lib/adeudos";
 import { mesNombre, pesos } from "@/lib/member-rules";
 import { can } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
-import { ExpTabs } from "../ExpTabs";
 import { mayus } from "@/lib/dates";
 import { Icono } from "@/components/Icono";
 
@@ -32,7 +31,6 @@ export default async function Adeudos({ params, searchParams }: PageProps<"/pane
 
   return (
     <div className="flex flex-col gap-4">
-      <ExpTabs pid={id} actual="adeudos" pagos />
       {!cobra ? (
         <Card><p className="text-texto-2">Este taller no tiene pagos. Se configuran en Expedientes <Icono nombre="flecha-der" /> Pagos del taller.</p></Card>
       ) : (

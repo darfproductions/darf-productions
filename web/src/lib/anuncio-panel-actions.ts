@@ -22,7 +22,7 @@ function refrescar(pid: string | null) {
   revalidatePath("/panel/ajustes/sitio");
   if (pid) {
     revalidatePath(`/producciones/${pid}`);
-    revalidatePath(`/panel/producciones/${pid}/pagina`);
+    revalidatePath(`/panel/producciones/${pid}/pagina`, "layout");
   }
 }
 

@@ -57,9 +57,9 @@ export default async function BoxOfficePage({ params, searchParams }: PageProps<
         ))}
       </div>
       {pasadas > 0 && <p className="text-xs text-texto-3">{pasadas === 1 ? "1 función que ya pasó no aparece" : `${pasadas} funciones que ya pasaron no aparecen`}: ya no se puede vender para ellas.</p>}
-      {!funcion && <Card>{todas.length ? "No hay funciones próximas para vender." : "Esta obra no tiene funciones con fecha. Créalas en Funciones y precios."}</Card>}
+      {!funcion && <Card>{todas.length ? "No hay funciones próximas para vender." : "Esta obra no tiene funciones con fecha. Créalas en Funciones y horarios."}</Card>}
       {data?.error && <Card>No se pudo cargar el mapa: {data.error.message}</Card>}
-      {data && !data.error && data.prices.length === 0 && <Card>Esta función no tiene precios. Agrégalos en Funciones y precios.</Card>}
+      {data && !data.error && data.prices.length === 0 && <Card>Esta función no tiene precios. Agrégalos en Funciones y horarios.</Card>}
       {zonasConBenef.length > 0 && (
         <Card className="grid gap-3 sm:grid-cols-2">
           {zonasConBenef.map((z) => (

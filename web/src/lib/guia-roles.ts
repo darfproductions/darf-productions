@@ -20,7 +20,7 @@ const GUIA: [string, PasoGuia][] = [
   ["rubrica.gestionar", { titulo: "Evaluaciones del taller", que: "Definir criterios, evaluar y publicar boletas.", path: "evaluaciones" }],
   ["rubrica.aprobar", { titulo: "Aprobar boletas", que: "Revisar las calificaciones que entregan los maestros, corregir cualquier materia y publicar las boletas.", consejo: "Si algo no cuadra, regresa la entrega al maestro con una nota.", path: "evaluaciones" }],
   ["rubrica.proponer", { titulo: "Proponer calificaciones", que: "Calificar a los alumnos en tus materias del taller. Tu propuesta la aprueba o corrige el maestro de la materia.", consejo: "Hasta que se aprueba, el alumno no la ve.", path: "evaluaciones" }],
-  ["funciones.gestionar", { titulo: "Funciones y precios", que: "Crear funciones, zonas y precios, y abrir o cerrar la venta.", path: "boletos/funciones" }],
+  ["funciones.gestionar", { titulo: "Funciones y horarios", que: "Crear funciones, zonas y precios, y abrir o cerrar la venta.", path: "boletos/funciones" }],
   ["ventas.ver", { titulo: "Órdenes", que: "Ver las órdenes de boletos y cómo va la venta.", path: "boletos" }],
   ["ventas.operar", { titulo: "Taquilla", que: "Aprobar o rechazar pagos y vender en taquilla.", consejo: "Al final del día, revisa el corte de caja.", path: "boletos/taquilla" }],
   ["descuentos.gestionar", { titulo: "Códigos de descuento", que: "Crear y editar códigos de descuento.", path: "boletos/descuentos" }],

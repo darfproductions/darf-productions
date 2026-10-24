@@ -93,7 +93,7 @@ export default async function Difusion({ params, searchParams }: PageProps<"/pan
           <h2 className="titular text-xl">Preventa Club Fan</h2>
           <p className="text-sm text-texto-2">Con el póster de la obra de fondo y el logo de la Fan Zone. Se descargan en cuadrado (1:1), post (3:4) o historia (9:16).
             {prevDesde || prevHasta ? ` Fechas: ${rangoCorto(prevDesde, prevHasta)}${pedida ? " (de la función elegida)" : " (de la obra)"}.` : ""}</p>
-          {!prevDesde && !prevHasta && <p className="mt-1 text-sm font-semibold text-aviso">Esta obra aún no tiene fechas de preventa: ponlas en <Link href={`/panel/producciones/${id}/boletos/funciones`} className="underline">Funciones y precios, en Preventas</Link>.</p>}
+          {!prevDesde && !prevHasta && <p className="mt-1 text-sm font-semibold text-aviso">Esta obra aún no tiene fechas de preventa: ponlas en <Link href={`/panel/producciones/${id}/boletos/funciones`} className="underline">Funciones y horarios, en Preventas</Link>.</p>}
         </div>
         <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {MODOS_FAN.map((m) => (

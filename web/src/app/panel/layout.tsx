@@ -6,7 +6,7 @@ import { totalPendientes } from "@/lib/panel-home-rules";
 import { BuscadorPanel } from "@/components/panel/BuscadorPanel";
 import { listPanelProductions } from "@/lib/panel-data";
 import type { Atajo } from "@/lib/panel-buscar-rules";
-import { esCasa, myProductionIds, panelMenu, productionGroups } from "@/lib/panel-nav";
+import { esCasa, myProductionIds, panelMenu, paginasDeGrupos, productionGroups } from "@/lib/panel-nav";
 import { getPendientes } from "@/lib/panel-pendientes";
 import { requirePanel } from "@/lib/permissions";
 import { Icono } from "@/components/Icono";
@@ -26,9 +26,9 @@ export default async function PanelLayout({ children }: LayoutProps<"/panel">) {
     }))),
     ...obras.flatMap((p) => [
       { tipo: "obra", titulo: p.nombre, detalle: "Resumen de la obra", href: `/panel/producciones/${p.id}`, claves: `${p.nombre} obra resumen` },
-      ...productionGroups(access, p.id, p.estado === "archivada").flatMap((g) => g.tabs.filter((t) => t.path).map((t) => ({
-        tipo: "seccion", titulo: `${p.nombre} · ${t.label}`, detalle: g.label, href: `/panel/producciones/${p.id}/${t.path}`, claves: `${p.nombre} ${g.label} ${t.label}`,
-      }))),
+      ...paginasDeGrupos(productionGroups(access, p.id, p.estado === "archivada")).filter((t) => t.path).map((t) => ({
+        tipo: "seccion", titulo: `${p.nombre} · ${t.label}`, detalle: t.grupo, href: `/panel/producciones/${p.id}/${t.path}`, claves: `${p.nombre} ${t.grupo} ${t.label}`,
+      })),
     ]),
   ];
   const nombre = access.session.profile?.nombre || access.session.email;

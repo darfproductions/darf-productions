@@ -12,6 +12,7 @@ import { createClient } from "@/lib/supabase/server";
 import { textoLimite } from "@/lib/request-rules";
 import { avisoFaltaHoras } from "@/lib/requests";
 import { cancelSeries, createRehearsal, setAvisoHoras, setRehearsalEstado } from "./actions";
+import { saveDiscipline } from "../expedientes/actions";
 import { isoMx } from "@/lib/dates";
 import { Icono } from "@/components/Icono";
 import { EquipoEncargados } from "@/components/ensayos/EquipoEncargados";
@@ -35,6 +36,8 @@ export default async function Ensayos({ params }: PageProps<"/panel/producciones
     supabase.from("member_requests").select("id", { count: "exact", head: true }).eq("production_id", id).in("tipo", ["falta", "llegada"]).eq("estado", "pendiente"),
     supabase.rpc("equipo_ensayos", { pid: id }),
   ]);
+  const { data: reglasData } = await supabase.from("production_discipline").select("tolerancia_min, auto_retardos, auto_faltas").eq("production_id", id).maybeSingle();
+  const reglas = reglasData as { tolerancia_min: number | null; auto_retardos: number | null; auto_faltas: number | null } | null;
   const equipo = ((team ?? []) as { user_id: string; nombre: string; roles: string[] }[]).map((x) => ({ user_id: x.user_id, nombre: x.nombre, papeles: x.roles, detalle: x.roles.join(", ") }));
   const ensayos = (reh ?? []) as Rehearsal[];
   const gente = (roster ?? []) as Roster[];
@@ -157,7 +160,28 @@ export default async function Ensayos({ params }: PageProps<"/panel/producciones
         </details>
       )}
 
-      <AjustesSeccion resumen="Faltas con aviso">
+      <AjustesSeccion titulo="Ajustes de asistencia" resumen="Tolerancia, advertencias automáticas y faltas con aviso">
+        <h3 className="font-bold">Retardos y faltas</h3>
+        <ActionForm action={saveDiscipline} hidden={h} submit="Guardar" submitClass="rounded-full bg-texto px-4 py-2 text-xs font-bold text-sala">
+          <div className="grid gap-3 text-sm sm:grid-cols-2">
+            <label className="flex flex-col gap-1 font-semibold">Tolerancia de retardo (minutos)
+              <input className={`${input} w-28`} type="number" min={0} max={120} name="tolerancia" defaultValue={reglas?.tolerancia_min ?? 10} />
+              <span className="text-xs font-normal text-texto-3">Al checar con gafete: después de la hora del ensayo (o del llamado) más estos minutos, se marca retardo.</span>
+            </label>
+            <div className="flex flex-col gap-2">
+              {([
+                ["retardos", "Retardos: 1 advertencia por cada", "retardos", reglas ? reglas.auto_retardos : 3],
+                ["faltas", "Faltas sin justificar: 1 advertencia por cada", "faltas", reglas ? reglas.auto_faltas : 2],
+              ] as const).map(([k, a, b, v]) => (
+                <label key={k} className="flex flex-wrap items-center gap-2">
+                  <input type="checkbox" name={`${k}_on`} defaultChecked={v !== null} /> {a}
+                  <input className={`${input} w-16 py-1`} type="number" min={1} max={20} name={k} defaultValue={v ?? ""} /> {b}
+                </label>
+              ))}
+              <span className="text-xs text-texto-3">El límite de advertencias y las de mensualidad se ajustan en Expedientes.</span>
+            </div>
+          </div>
+        </ActionForm>
         <h3 className="font-bold">Faltas con aviso</h3>
         <p className="text-sm text-texto-2">El elenco pide sus faltas desde su portal. Si las apruebas, el ensayo queda como <b>justificada</b> sola. Hoy se pueden pedir hasta <b>{textoLimite(horas)}</b>.</p>
         <ActionForm inline action={setAvisoHoras} hidden={h} submit="Guardar" submitClass="rounded-full bg-texto px-4 py-2 text-xs font-bold text-sala">

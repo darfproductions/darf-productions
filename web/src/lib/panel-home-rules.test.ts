@@ -17,6 +17,7 @@ describe("pendientes del inicio", () => {
   });
   it("0085: ligas directas a la acción", () => {
     expect(pendienteHref({ tipo: "pagos_evento", production_id: null, n: 2, ref_id: "e1" })).toBe("/panel/eventos#e-e1");
+    expect(pendienteHref({ tipo: "pagos_evento", production_id: "mm", n: 1, ref_id: "e2" })).toBe("/panel/producciones/mm/fanzone#e-e2");
     expect(pendienteHref({ tipo: "solicitudes", production_id: "mm", n: 1, ref_id: "a1" })).toBe("/panel/audiciones/a1/solicitudes");
     expect(pendienteHref({ tipo: "ofertas", production_id: "mm", n: 1 })).toBe("/panel/producciones/mm/elenco");
     expect(pendienteHref({ tipo: "documentos", production_id: "mm", n: 1 })).toBe("/panel/producciones/mm/expedientes?docs=subidos");

@@ -33,7 +33,11 @@ export function pendienteTexto(p: Pendiente): string {
 /** A dónde se resuelve cada pendiente: directo a la acción (0085). */
 export function pendienteHref(p: Pendiente): string {
   if (p.tipo === "notas_equipo" || p.tipo === "avisos_equipo") return `/cuenta/equipo/${p.production_id ?? "general"}`;
-  if (p.tipo === "pagos_evento") return p.ref_id ? `/panel/eventos#e-${p.ref_id}` : "/panel/eventos";
+  // Eventos de una obra: en su Fan Zone (ahí está la lista, con su pestaña marcada); los de DARF, en Eventos.
+  if (p.tipo === "pagos_evento") {
+    const base = p.production_id ? `/panel/producciones/${p.production_id}/fanzone` : "/panel/eventos";
+    return p.ref_id ? `${base}#e-${p.ref_id}` : base;
+  }
   if (p.tipo === "solicitudes") return p.ref_id ? `/panel/audiciones/${p.ref_id}/solicitudes` : "/panel/audiciones";
   if (!p.production_id) return "/panel/audiciones";
   const base = `/panel/producciones/${p.production_id}`;

@@ -4,6 +4,7 @@ import { requireAudition } from "@/lib/panel-auditions";
 import { createClient } from "@/lib/supabase/server";
 import { Etapas } from "./Etapas";
 import { Icono } from "@/components/Icono";
+import { TabsBar } from "@/components/panel/PanelNav";
 
 // Una convocatoria (de obra o general): subsecciones según mis permisos en ELLA.
 export default async function AuditionLayout({ children, params }: LayoutProps<"/panel/audiciones/[aid]">) {
@@ -34,9 +35,7 @@ export default async function AuditionLayout({ children, params }: LayoutProps<"
         <p className="text-xl font-bold">{a.titulo} <span className="ml-2 text-sm font-normal text-texto-3">{ESTADO_CONVOCATORIA[a.estado]}</span></p>
       </div>
       {votacion && <Etapas aid={aid} fase={a.fase} conCallback={a.con_callback} gestiona={g} evalua={may("audiciones.evaluar")} />}
-      <nav aria-label="Audición" className="flex flex-wrap gap-2 text-sm">
-        {links.map((l) => <Link key={l.href} href={`${root}${l.href}`} className="rounded-full border border-white/20 px-3 py-1.5 font-semibold hover:border-white/50">{l.label}</Link>)}
-      </nav>
+      <TabsBar label="Audición" links={links.map((l) => ({ href: `${root}${l.href}`, label: l.label }))} />
       {children}
     </div>
   );

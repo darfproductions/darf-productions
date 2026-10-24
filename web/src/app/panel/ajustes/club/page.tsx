@@ -30,7 +30,7 @@ export default async function ClubFanBase({ searchParams }: PageProps<"/panel/aj
 
   return (
     <>
-      <PanelTitle eyebrow="Ajustes" title="Club Fan">
+      <PanelTitle eyebrow="Sitio y público" title="Club Fan">
         Todos los socios del Club Fan con su número, datos, cumpleaños, producciones en DARF, visitas y compras. Son datos personales: no los compartas fuera del equipo.
       </PanelTitle>
       <div className="grid grid-cols-3 gap-3">

@@ -13,7 +13,6 @@ import { requirePanel } from "@/lib/permissions";
 import { createClient } from "@/lib/supabase/server";
 import { addBasicDocs, addDocType, removeDocType, saveDiscipline } from "./actions";
 import { AjustesSeccion } from "@/components/panel/AjustesSeccion";
-import { ExpTabs } from "./ExpTabs";
 import { todasLasFilas } from "@/lib/supabase/paginar";
 import { Icono } from "@/components/Icono";
 
@@ -79,7 +78,6 @@ export default async function Expedientes({ params, searchParams }: PageProps<"/
 
   return (
     <div className="flex flex-col gap-4">
-      <ExpTabs pid={id} actual="integrantes" pagos={verCuotas} cobra={cobra} />
       {verExp && (
         <div className="flex flex-wrap justify-end gap-x-5 gap-y-1">
           <a href={`/panel/producciones/${id}/expedientes/exportar/medidas`} className="text-sm font-bold text-violeta-claro">Descargar medidas de vestuario (Excel) <Icono nombre="flecha-abajo" /></a>
@@ -206,21 +204,15 @@ export default async function Expedientes({ params, searchParams }: PageProps<"/
       {verDisc && (
         <Card>
           <h2 className="titular mb-1 text-xl">Advertencias</h2>
-          <p className="mb-3 text-sm text-texto-2">Al llegar al límite, la persona aparece en “Requiere decisión”. Las automáticas se crean solas (retardos y faltas, cuando haya asistencia de ensayos).</p>
+          <p className="mb-3 text-sm text-texto-2">Al llegar al límite, la persona aparece en “Requiere decisión”. Las de retardos, faltas y la tolerancia se ajustan en Ensayos <Icono nombre="flecha-der" /> Ajustes de asistencia.</p>
           <ActionForm action={saveDiscipline} hidden={h} submit="Guardar reglas">
             <div className="grid gap-3 text-sm sm:grid-cols-2">
               <div className="flex flex-col gap-3">
                 <label className="flex flex-col gap-1 font-semibold">Límite de advertencias<input className={`${input} w-28`} type="number" min={1} max={20} name="limite" defaultValue={reglas?.limite_advertencias ?? 3} /></label>
-                <label className="flex flex-col gap-1 font-semibold">Tolerancia de retardo (minutos)
-                  <input className={`${input} w-28`} type="number" min={0} max={120} name="tolerancia" defaultValue={reglas?.tolerancia_min ?? 10} />
-                  <span className="text-xs font-normal text-texto-3">Al checar con gafete: después de la hora del ensayo más estos minutos, se marca retardo.</span>
-                </label>
               </div>
               <div className="flex flex-col gap-2">
                 {([
                   ["meses", "Mensualidad: 1 advertencia por cada", "meses vencidos", reglas ? reglas.auto_mensualidad_meses : 2],
-                  ["retardos", "Retardos: 1 advertencia por cada", "retardos", reglas ? reglas.auto_retardos : 3],
-                  ["faltas", "Faltas sin justificar: 1 advertencia por cada", "faltas", reglas ? reglas.auto_faltas : 2],
                 ] as const).map(([k, a, b, v]) => (
                   <label key={k} className="flex flex-wrap items-center gap-2">
                     <input type="checkbox" name={`${k}_on`} defaultChecked={v !== null} /> {a}

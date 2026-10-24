@@ -19,7 +19,7 @@ export default async function DifusionDarf() {
   const liga = (tipo: string, f: "post" | "historia", descargar = false) => `/panel/ajustes/difusion/${tipo}?${new URLSearchParams({ f, ...(descargar ? { descargar: "1" } : {}) })}`;
   return (
     <div className="flex flex-col gap-4">
-      <PanelTitle eyebrow="Ajustes" title="Difusión de DARF" />
+      <PanelTitle eyebrow="Sitio y público" title="Difusión de DARF" />
       <Card>
         <p className="text-sm text-texto-2">
           Guías paso a paso para Instagram, Facebook y WhatsApp, con los colores de la casa y un QR que lleva a la página.

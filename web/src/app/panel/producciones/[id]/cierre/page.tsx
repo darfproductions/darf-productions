@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { PrintButton } from "@/components/PrintButton";
 import { ActionForm } from "@/components/panel/ActionForm";
@@ -10,10 +11,8 @@ import { requirePanel } from "@/lib/permissions";
 import type { SeasonSummary } from "@/lib/season-rules";
 import { createClient } from "@/lib/supabase/server";
 import { ListaRevision } from "@/components/panel/ListaRevision";
-import { listPerformances } from "@/lib/boleteria";
-import { listaCierre } from "@/lib/cierre-lista";
-import { getPendientes } from "@/lib/panel-pendientes";
 import { closeSeason, reopenSeason } from "./actions";
+import { datosCierre } from "@/lib/cierre-datos";
 
 export const metadata: Metadata = { title: "Cierre de temporada" };
 
@@ -29,37 +28,6 @@ function Reactivar({ id }: { id: string }) {
   );
 }
 
-async function datosCierre(id: string) {
-  const supabase = await createClient();
-  const ahora = Date.now();
-  const [fs, pend, fotos, creditos] = await Promise.all([
-    listPerformances(id),
-    getPendientes(),
-    supabase.from("gallery_photos").select("id", { count: "exact", head: true }).eq("production_id", id).eq("kind", "galeria"),
-    supabase.from("production_credits").select("id", { count: "exact", head: true }).eq("production_id", id).eq("activo", true),
-  ]);
-  const canceladas = fs.filter((f) => f.cancelada_at).map((f) => f.id);
-  const { count: reembolsos } = canceladas.length
-    ? await supabase.from("orders").select("id", { count: "exact", head: true }).in("performance_id", canceladas).eq("status", "aprobado")
-    : { count: 0 };
-  const n = (tipo: string) => pend.filter((x) => x.production_id === id && x.tipo === tipo).reduce((a, x) => a + x.n, 0);
-  const { data: benef } = await supabase.rpc("beneficios_pendientes", { pid: id }).maybeSingle();
-  const b = benef as { pendientes: number; vencidos: number } | null;
-  return listaCierre({
-    pid: id,
-    ordenesPendientes: n("ordenes"),
-    funcionesPorVenir: fs.filter((f) => !f.cancelada_at && f.starts_at && new Date(f.starts_at).getTime() > ahora).length,
-    reembolsos: reembolsos ?? 0,
-    adeudos: n("adeudos"),
-    ofertasSinResponder: n("ofertas"),
-    documentosPorRevisar: n("documentos"),
-    fotosGaleria: fotos.count ?? 0,
-    creditos: creditos.count ?? 0,
-    beneficiosPendientes: b?.pendientes ?? 0,
-    beneficiosVencidos: b?.vencidos ?? 0,
-  });
-}
-
 const fecha = (iso: string) => new Intl.DateTimeFormat("es-MX", { dateStyle: "long", timeZone: "America/Mexico_City" }).format(new Date(iso));
 
 // Cierre de temporada: resumen en vivo, cerrar (archiva y congela) y el resumen final imprimible.
@@ -70,17 +38,15 @@ export default async function Cierre({ params }: PageProps<"/panel/producciones/
   if (!cierra && !can(access, id, "reportes.ver")) redirect(`/panel/producciones/${id}`);
   const verTaller = cierra || can(access, id, "mensualidades.gestionar");
   const supabase = await createClient();
-  const [p, closures, live] = await Promise.all([
+  const [p, closures] = await Promise.all([
     getPanelProduction(id),
     supabase.from("season_closures").select("id, cerrado_at, notas, bajas, resumen, reabierto_at").eq("production_id", id).order("cerrado_at", { ascending: false }),
-    supabase.rpc("season_summary", { pid: id }),
   ]);
   if (!p) redirect("/panel/producciones");
   const cierres = (closures.data ?? []) as Closure[];
   // Bloque 4C: lista de lo que conviene resolver antes de cerrar.
   const revisar = p.estado !== "archivada" ? await datosCierre(id) : null;
   const vigente = p.estado === "archivada" ? cierres.find((c) => !c.reabierto_at) ?? null : null;
-  const resumen = live.data as SeasonSummary | null;
 
   if (vigente) {
     return (
@@ -104,15 +70,9 @@ export default async function Cierre({ params }: PageProps<"/panel/producciones/
 
   return (
     <div className="flex flex-col gap-4">
-      <Card className="flex flex-col gap-4">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h2 className="titular text-xl">Cómo va la temporada</h2>
-            <p className="text-sm text-texto-2">Así quedará el resumen si cierras hoy.</p>
-          </div>
-          <PrintButton />
-        </div>
-        {resumen ? <SeasonSummaryView s={resumen} verTaller={verTaller} /> : <p className="text-sm text-[#ff8fa3]">{live.error?.message ?? "No se pudo calcular."}</p>}
+      <Card className="flex flex-wrap items-center justify-between gap-3 print:hidden">
+        <p className="text-sm text-texto-2">Los números de la temporada (y el resumen que quedará si cierras hoy, para imprimir) están en Reportes.</p>
+        <Link href={`/panel/producciones/${id}/reportes#temporada`} className="rounded-full border border-white/25 px-4 py-2 text-sm font-bold hover:border-white/50">Ver en Reportes</Link>
       </Card>
 
       {revisar && (
