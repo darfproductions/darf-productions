@@ -27,6 +27,8 @@ import { asientosOcupados } from "@/lib/ocupados";
 import { Icono } from "@/components/Icono";
 import { env } from "@/lib/env";
 import { whatsappPedirUrl } from "@/lib/tickets";
+import { getLogistica } from "@/lib/logistica";
+import { hora, horario } from "@/lib/logistica-rules";
 
 export async function generateMetadata({ params }: PageProps<"/comprar/[funcion]">): Promise<Metadata> {
   const data = await getPerformanceForSale((await params).funcion);
@@ -106,12 +108,16 @@ export default async function ComprarPage({ params, searchParams }: PageProps<"/
   const sellerCheck = sellerRes && vendedor
     ? (sellerRes.error ? { ok: false, text: mensajeError(sellerRes.error), code: vendedor } : { ok: true, text: `Vendedor: ${sellerRes.data as string}`, code: vendedor })
     : null;
+  // 0127: hora de puertas (solo si la obra configuró su logística o la función tiene la suya).
+  const logistica = await getLogistica(p.id);
+  const hCompra = f.starts_at && (logistica || f.puertas_at) ? horario({ ...f, starts_at: f.starts_at }, logistica) : null;
   const loadError = seatsRes?.error || takenRes?.error || pricesRes?.error;
 
   return (
     <main style={themeStyle(getTheme(p))} className="pb-10">
       <PageHeading eyebrow={`${tv.eyebrow} · ${p.nombre}`} title={modo === "hibrido" ? tv.titulo : prices.length === 0 && general.length > 0 ? "Elige tus boletos" : "Elige tus asientos"}>
         <span>{formatPerformanceDate(f.starts_at)}</span> · {f.venue ?? p.venue}
+        {hCompra && <span> · Puertas {hora(hCompra.puertas)}</span>}
       </PageHeading>
       <div className="mx-auto max-w-[1440px] px-5 md:px-16">
         {!vendible ? (

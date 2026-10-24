@@ -41,6 +41,8 @@ import {
   themeStyle,
 } from "@/lib/productions";
 import { Icono } from "@/components/Icono";
+import { getLogistica } from "@/lib/logistica";
+import { ACCESO_TARDIO_OMISION, hora, horario, ligaMaps, porVenir, textoDuracion } from "@/lib/logistica-rules";
 
 // Plantilla única de la página de obra (pública y vista previa del panel), con la guía de UI.
 // Todo sale de la base: venta (funciones, precios, cupo) y contenido (migración 0029).
@@ -83,7 +85,7 @@ export async function ProductionView({
   const posterPagina = posterUrl(p, "pagina");
   // 0088: una función que ya empezó deja de venderse aunque siga "en venta".
   const vendibles = performances.filter((fn) => funcionVendible(fn, p.concluded));
-  const [c, gallery, ensayos, audiciones, programa, franja, ocupacion, socio, eventos, cartelera, sesion, promos] = await Promise.all([
+  const [c, gallery, ensayos, audiciones, programa, franja, ocupacion, socio, eventos, cartelera, sesion, promos, logistica] = await Promise.all([
     getProductionContent(p.id, vistaPrevia, capa),
     getGallery(p.id),
     fanzoneCount(p.id),
@@ -96,6 +98,7 @@ export async function ProductionView({
     getEventosCartelera(30),
     getSession(),
     getPromos(p.id),
+    getLogistica(p.id),
   ]);
   // 0123: si canjeó un código, sus fechas de preventa privada (el público no las ve).
   const mia = await miPreventaPrivada(p.id, !!sesion);
@@ -135,7 +138,11 @@ export async function ProductionView({
   const hayEquipo = equipos.some((g) => g.items.length > 0 || (g.staff?.length ?? 0) > 0);
   const ficha = c.ficha;
   const dato = (etiqueta: string) => ficha.find((x) => x.etiqueta === etiqueta)?.valor;
-  const duracion = dato("Duración");
+  // 0127: horario (puertas y salida) y "Antes de ir" solo si la obra configuró su logística.
+  const conHorario = (fn: { starts_at: string | null; puertas_at?: string | null; termina_at?: string | null }) =>
+    fn.starts_at && (logistica || fn.puertas_at || fn.termina_at) ? horario({ ...fn, starts_at: fn.starts_at }, logistica) : null;
+  const hProxima = proxima ? conHorario(proxima) : performances.map(conHorario).find(Boolean) ?? null;
+  const duracion = dato("Duración") ?? (logistica && hProxima ? textoDuracion(hProxima) : null);
   const estado = estadoPublico(p, performances.map((f) => ({ ...f, production_id: p.id })));
 
   // Funciones primero mientras la obra está viva; en el archivo, primero la historia.
@@ -197,6 +204,7 @@ export async function ProductionView({
                     {fn.venue ?? p.venue}
                     {duracion && <> · Duración aprox. {duracion}</>}
                   </span>
+                  {!p.concluded && porVenir(fn.starts_at) && (() => { const h = conHorario(fn); return h && <span className="text-[12.5px] font-semibold">Puertas abren {hora(h.puertas)} · Termina aprox. {hora(h.termina)}</span>; })()}
                   {pre && fn.preventa_hasta && (() => { const h = partesFuncion(fn.preventa_hasta); return <span className="text-[12.5px] font-semibold text-obra-acento">Preventa Club Fan hasta el {h.dia} {h.numero} {h.mes}, {h.hora}</span>; })()}
                   {privada && fn.preventa_desde && (() => { const d = partesFuncion(fn.preventa_desde); return <span className="text-[12.5px] font-semibold text-obra-acento">Preventa privada · tienes acceso hasta el {d.dia} {d.numero} {d.mes}, {d.hora}</span>; })()}
                   {privadaAbre && (() => { const d = partesFuncion(privadaAbre); return <span className="text-[12.5px] font-semibold text-obra-acento">Tu preventa privada abre el {d.dia} {d.numero} {d.mes}, {d.hora}</span>; })()}
@@ -242,6 +250,28 @@ export async function ProductionView({
           })}
         </ul>
       )}
+      {/* 0127: lo que hay que saber antes de llegar. */}
+      {logistica && !p.concluded && performances.length > 0 && (() => {
+        const lugar = proxima?.venue ?? p.venue;
+        const maps = ligaMaps(logistica, lugar);
+        const indicaciones = (logistica.indicaciones ?? "").split("\n").map((x) => x.trim()).filter(Boolean);
+        return (
+          <div className="rounded-[22px] border border-current/12 bg-obra-superficie px-6 py-6 md:px-9 md:py-8">
+            <div className="mb-3 flex flex-wrap items-baseline justify-between gap-3">
+              <h3 className="text-[22px] font-extrabold tracking-[-0.02em]">Antes de ir</h3>
+              {maps && <a href={maps} target="_blank" rel="noopener noreferrer" className="fb fb-luz fb-sm">Cómo llegar <Icono nombre="externo" /></a>}
+            </div>
+            <dl className="grid gap-4 text-[14.5px] sm:grid-cols-2">
+              {(lugar || logistica.direccion) && <div><dt className="text-[11px] font-bold uppercase tracking-[0.18em] opacity-60">Lugar</dt><dd className="mt-1 font-semibold">{lugar}{logistica.direccion && <span className="block font-normal opacity-80">{logistica.direccion}</span>}</dd></div>}
+              {hProxima && <div><dt className="text-[11px] font-bold uppercase tracking-[0.18em] opacity-60">Horario</dt><dd className="mt-1">Las puertas abren {logistica.puertas_min} min antes de la función.{textoDuracion(hProxima) && <span className="block opacity-80">Dura {textoDuracion(hProxima)}.</span>}</dd></div>}
+              <div><dt className="text-[11px] font-bold uppercase tracking-[0.18em] opacity-60">Si llegas tarde</dt><dd className="mt-1">{logistica.acceso_tardio || ACCESO_TARDIO_OMISION}</dd></div>
+              <div><dt className="text-[11px] font-bold uppercase tracking-[0.18em] opacity-60">Tu boleto</dt><dd className="mt-1">Llega con tu QR a la mano: en tu cuenta, en el PDF o en tu Wallet.</dd></div>
+              {indicaciones.length > 0 && <div className="sm:col-span-2"><dt className="text-[11px] font-bold uppercase tracking-[0.18em] opacity-60">Indicaciones</dt>
+                <dd className="mt-1"><ul className="list-disc space-y-1 pl-5">{indicaciones.map((x) => <li key={x}>{x}</li>)}</ul></dd></div>}
+            </dl>
+          </div>
+        );
+      })()}
       {/* 0120: sin precios, las zonas salen solo con su nombre. */}
       {prices.length > 0 && (
         <div className="rounded-[22px] border border-current/12 bg-obra-superficie px-6 py-6 md:px-9 md:py-8">

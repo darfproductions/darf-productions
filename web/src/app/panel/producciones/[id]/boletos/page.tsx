@@ -14,6 +14,8 @@ import { getPanelProduction } from "@/lib/panel-data";
 import { origenSitio } from "@/lib/site-origin";
 import { estadoOrden, metodoLabel, textoBusqueda } from "@/lib/ventas-rules";
 import { OrderActions } from "./OrderActions";
+import { getLogistica } from "@/lib/logistica";
+import { horario, textoPuertas } from "@/lib/logistica-rules";
 import { Icono } from "@/components/Icono";
 
 export const metadata: Metadata = { title: "Ventas y órdenes" };
@@ -40,19 +42,22 @@ export default async function SalesPage({ params, searchParams }: PageProps<"/pa
   const buscar = typeof sp.q === "string" ? textoBusqueda(sp.q) : "";
 
   await (await createClient()).rpc("expire_due_orders", { pid: id });
-  const [funciones, s, filtradas, asientos, zonas, actores] = await Promise.all([
+  const [funciones, s, filtradas, asientos, zonas, actores, logistica] = await Promise.all([
     listPerformances(id),
     salesSummary(id),
     listOrders(id, { funcion: funcion || undefined, estado: estado || undefined, codigo: codigo || undefined, buscar: buscar || undefined }),
     seatCount(id),
     listZones(id),
     ventasActores(id),
+    getLogistica(id),
   ]);
   const quien = (uid: string | null | undefined) => (uid ? actores.get(uid) ?? "equipo" : null);
   const ordenes = filtradas;
   const obra = (await getPanelProduction(id))?.nombre ?? "DARF";
   const ligaCuenta = `${await origenSitio()}/cuenta`;
   const nombreFuncion = new Map(funciones.map((f) => [f.id, formatPerformanceDate(f.starts_at)]));
+  // 0127: "Las puertas abren a las…" en el WhatsApp de pago confirmado (si la obra tiene su logística).
+  const puertasDe = new Map(funciones.flatMap((f) => (f.starts_at && (logistica || f.puertas_at) ? [[f.id, textoPuertas(horario({ ...f, starts_at: f.starts_at }, logistica))] as const] : [])));
   const q = (k: string, v: string) => {
     const p = new URLSearchParams({ ...(funcion && { funcion }), ...(estado && { estado }), ...(buscar && { q: buscar }) });
     if (v) p.set(k, v); else p.delete(k);
@@ -159,7 +164,7 @@ export default async function SalesPage({ params, searchParams }: PageProps<"/pa
                   {o.tickets.filter((t) => t.cancelled_by).map((t) => `${t.seat_label ?? "General"} cancelado por ${quien(t.cancelled_by)}${t.cancel_motivo ? ` (${t.cancel_motivo})` : ""}`).join(" · ")}
                 </p>
               )}
-              {operar && <OrderActions pid={id} o={o} obra={obra} funcion={nombreFuncion.get(o.performance_id) ?? ""} limite={o.status === "pendiente" && o.expires_at ? limiteTexto(o.expires_at) : null} ligaCuenta={ligaCuenta} />}
+              {operar && <OrderActions pid={id} o={o} obra={obra} funcion={nombreFuncion.get(o.performance_id) ?? ""} limite={o.status === "pendiente" && o.expires_at ? limiteTexto(o.expires_at) : null} ligaCuenta={ligaCuenta} puertas={puertasDe.get(o.performance_id) ?? null} />}
             </li>
           ))}
           {ordenes.length === 0 && <li className="px-5 py-4 text-texto-2">No hay órdenes con este filtro.</li>}

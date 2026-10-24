@@ -60,6 +60,12 @@ describe("paseBoleto", () => {
     expect(s.vence).toBeUndefined();
     expect(s.secundarios[1].value).toBe("Por anunciar");
   });
+  it("0127: puertas y dirección al reverso", () => {
+    const r = paseBoleto({ ...boleto, puertas: "2027-01-24T01:30:00Z", direccion: "Av. Siempre Viva 742" }).reverso;
+    expect(r.find((c) => c.key === "puertas")?.value).toBe("Abren 7:30 p.m.");
+    expect(r.find((c) => c.key === "direccion")?.value).toBe("Av. Siempre Viva 742");
+    expect(paseBoleto(boleto).reverso.some((c) => c.key === "puertas")).toBe(false);
+  });
   it("obra sin kit: colores de DARF", () => {
     expect(paseBoleto({ ...boleto, estilo: ESTILO_DARF }).colores.fondo).toBe("#0b0910");
   });

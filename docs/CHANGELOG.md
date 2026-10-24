@@ -5,6 +5,27 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-10-24 — 0127 Logística de funciones y Boletos en 3 secciones
+
+- Boletos de cada obra pasa de 10 pestañas sueltas a 3 secciones según el momento: **Preparar** (Funciones y horarios,
+  Zonas y mapa, Beneficios, Preventa privada, Descuentos), **Vender** (Órdenes, Taquilla, Vendedores, Corte) y **Día de
+  función** (Hoy, Puerta, Entregas de beneficios). Las rutas no cambian; cada quien ve solo lo que su rol permite.
+- Nueva **Hoy**: la función del día (o la próxima) en una pantalla: primer llamado, puertas, función y salida; quién
+  falta de llegar a cada llamado; boletos escaneados de los vendidos y beneficios por entregar, con ligas a cada página.
+- **Horarios y cómo llegar** por obra (puertas N min antes, duración con intermedio, dirección, liga de Google Maps,
+  acceso tardío e indicaciones), con ajuste de puertas y salida por función. Si la función se mueve, su horario propio
+  se mueve con ella. El público lo ve en cada función ("Puertas abren 7:30 p.m. · Termina aprox. 10:10 p.m."), en el
+  bloque "Antes de ir" de la página de la obra, en la compra, en su boleto (Mi cuenta, PDF y Wallet), en el calendario
+  y en el WhatsApp de pago confirmado. Sin logística configurada no se muestra nada nuevo.
+- **Llamados**: por obra ("Elenco 2 h antes", "Producción 3 h antes", a todo el elenco, por grupos de créditos y/o al
+  equipo). Cada función crea sus llamados como ensayos ligados a ella (`rehearsals.performance_id/llamado_id`): gafete,
+  retardos, faltas, llegada tarde y portal igual que un ensayo. Se mueven con la función; los que ya tienen asistencia o
+  se movieron a mano (`llamado_fijo`) no. Crearlos no manda avisos; moverlos o cancelarlos sí.
+- Difusión: nuevo diseño **"Prepárate para tu función"** (cuadrado, 3:4 y 9:16) con las tres horas, el lugar con QR a
+  Google Maps y tres recordatorios.
+- Base: `obra_logistica`, `obra_llamados`, `performances.puertas_at/termina_at`, `sync_llamados`, `funcion_termina`,
+  triggers de sincronía y `performances_mover_horario`; reemplazada `notify_rehearsal`.
+
 ## 2026-10-23 — 0126 Solicitud de llegada tarde
 
 - En Solicitudes del portal del elenco, además de avisar una falta: "Avisar que llegaré tarde". Se elige el ensayo (solo

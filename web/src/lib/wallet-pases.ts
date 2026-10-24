@@ -48,6 +48,9 @@ export type DatosBoleto = {
   /** 0122: lo que incluye la zona y la hora de acceso anticipado. */
   incluye?: string[];
   acceso?: string | null;
+  /** 0127: hora de puertas (ISO) y dirección del teatro. */
+  puertas?: string | null;
+  direccion?: string | null;
 };
 
 export type DatosCredencial = {
@@ -147,6 +150,8 @@ export function paseBoleto(b: DatosBoleto): PaseWallet {
       { key: "funcion", label: "Función", value: conFecha ? fechaLarga(b.startsAt!) : "Fecha por anunciar" },
       ...(b.incluye?.length ? [{ key: "incluye", label: "Incluye", value: b.incluye.join(" · ") }] : []),
       ...(b.acceso ? [{ key: "acceso", label: "Acceso anticipado", value: b.acceso }] : []),
+      ...(b.puertas ? [{ key: "puertas", label: "Puertas", value: `Abren ${hora(b.puertas)}` }] : []),
+      ...(b.direccion ? [{ key: "direccion", label: "Dirección", value: b.direccion }] : []),
       { key: "ayuda", label: "Cómo entrar", value: AVISO_BOLETO },
       { key: "web", label: "Mis boletos", value: "darfproductions.com/cuenta" },
     ],

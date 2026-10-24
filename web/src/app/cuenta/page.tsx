@@ -39,6 +39,8 @@ import { VoyAIr } from "@/components/tickets/VoyAIr";
 import { isoMx } from "@/lib/dates";
 import { Icono } from "@/components/Icono";
 import { MisEnsayosEquipo, type MiEnsayoEquipo } from "@/components/ensayos/MisEnsayosEquipo";
+import { getLogistica } from "@/lib/logistica";
+import { hora, horario, ligaMaps, textoPuertas } from "@/lib/logistica-rules";
 
 export const metadata: Metadata = { title: "Mi cuenta" };
 
@@ -56,7 +58,7 @@ type OrderRow = {
   motivo: string | null;
   cancelada_por_comprador_at: string | null;
   buyer_nombre: string;
-  performances: { starts_at: string | null; venue: string | null; production_id: string; cancelada_at?: string | null; cancelada_motivo?: string | null; productions: (KitColumns & PosterColumns & { nombre: string; venue: string | null; estado?: string }) | null } | null;
+  performances: { starts_at: string | null; venue: string | null; production_id: string; puertas_at?: string | null; termina_at?: string | null; cancelada_at?: string | null; cancelada_motivo?: string | null; productions: (KitColumns & PosterColumns & { nombre: string; venue: string | null; estado?: string }) | null } | null;
   tickets: { id: string; is_active: boolean; qr_token: string; checked_in_at: string | null; seats: { seat_label: string } | null; price_categories: { nombre: string } | null }[];
 };
 
@@ -83,10 +85,18 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
   await supabase.rpc("expire_due_orders", { pid: null });
   const { data, error } = await supabase
     .from("orders")
-    .select(`id, order_code, status, total, discount_amount, discount_codigo, buyer_telefono, buyer_nombre, created_at, expires_at, vencida_at, motivo, cancelada_por_comprador_at, performances(starts_at, venue, production_id, cancelada_at, cancelada_motivo, productions(nombre, venue, estado, color_fondo, color_superficie, color_texto, color_acento, logo_path, ambiente_path, frase, ${POSTER_COLUMNS})), tickets(id, is_active, qr_token, checked_in_at, seats(seat_label), price_categories(nombre))`)
+    .select(`id, order_code, status, total, discount_amount, discount_codigo, buyer_telefono, buyer_nombre, created_at, expires_at, vencida_at, motivo, cancelada_por_comprador_at, performances(starts_at, venue, production_id, puertas_at, termina_at, cancelada_at, cancelada_motivo, productions(nombre, venue, estado, color_fondo, color_superficie, color_texto, color_acento, logo_path, ambiente_path, frase, ${POSTER_COLUMNS})), tickets(id, is_active, qr_token, checked_in_at, seats(seat_label), price_categories(nombre))`)
     .eq("buyer_user_id", session.userId)
     .order("created_at", { ascending: false });
   const orders = (data ?? []) as unknown as OrderRow[];
+  // 0127: logística de las obras con funciones por venir (puertas, fin y dirección).
+  const obrasProximas = [...new Set(orders.filter((o) => !funcionPasada(o.performances?.starts_at ?? null)).map((o) => o.performances?.production_id).filter((x): x is string => !!x))];
+  const logisticas = new Map(await Promise.all(obrasProximas.map(async (pid) => [pid, await getLogistica(pid)] as const)));
+  const horarioDe = (o: OrderRow) => {
+    const f = o.performances;
+    const l = f ? logisticas.get(f.production_id) ?? null : null;
+    return f?.starts_at && (l || f.puertas_at || f.termina_at) ? { h: horario({ ...f, starts_at: f.starts_at }, l), l } : null;
+  };
   // Los boletos de una orden pendiente no se ven (ni su QR) hasta aprobarse; aquí solo sus asientos (0068).
   const asientosPendientes = new Map<string, string[]>();
   if (orders.some((o) => o.status === "pendiente")) {
@@ -183,7 +193,7 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
                     ) : null}
                     <div className="min-w-0 flex-1">
                       <p className="text-lg font-bold">{nombre}</p>
-                      <p className="text-sm opacity-85">{formatPerformanceDate(o.performances?.starts_at ?? null)}</p>
+                      <p className="text-sm opacity-85">{formatPerformanceDate(o.performances?.starts_at ?? null)}{(() => { const x = !funcionPasada(o.performances?.starts_at ?? null) && horarioDe(o); return x ? ` · Puertas ${hora(x.h.puertas)}` : ""; })()}</p>
                       {o.performances?.cancelada_at && <p className="text-sm font-bold">Función cancelada{o.performances.cancelada_motivo ? `: ${o.performances.cancelada_motivo}` : ""}{o.status === "aprobado" ? " · te contactamos para tu reembolso" : ""}</p>}
                     </div>
                     <span className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-bold ${STATUS[o.status].cls}`}>{estadoOrden(o, "comprador")}</span>
@@ -221,7 +231,7 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
                   {o.status === "aprobado" && boletos.length > 0 && o.performances?.starts_at && !o.performances.cancelada_at && !funcionPasada(o.performances.starts_at) && (
                     <div className="flex flex-col gap-3 border-t border-white/10 pt-4">
                       <AgregarCalendario ics={`/calendario/boleto/${encodeURIComponent(o.order_code)}`}
-                        evento={{ uid: `orden-${o.order_code}`, titulo: `${nombre} · DARF Productions`, inicia: o.performances.starts_at, lugar: o.performances.venue ?? prod?.venue ?? null, detalle: `Orden ${o.order_code}` }} />
+                        evento={{ uid: `orden-${o.order_code}`, titulo: `${nombre} · DARF Productions`, inicia: o.performances.starts_at, termina: horarioDe(o)?.h.termina ?? null, lugar: o.performances.venue ?? prod?.venue ?? null, detalle: `${(() => { const x = horarioDe(o); return x ? `${textoPuertas(x.h)} ` : ""; })()}Orden ${o.order_code}` }} />
                       <VoyAIr obra={nombre} funcion={formatPerformanceDate(o.performances.starts_at)} lugar={o.performances.venue ?? prod?.venue ?? null}
                         ambiente={tema?.ambiente ?? (prod?.ambiente_path ? assetUrl(prod.ambiente_path) : null)} poster={posterUrl(prod, "voy")?.url ?? null}
                         logo={tema?.logo ?? (prod?.logo_path ? assetUrl(prod.logo_path) : null)}
@@ -242,12 +252,14 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
         {deHoy.map((o) => {
           const lugar = o.performances?.venue ?? o.performances?.productions?.venue ?? null;
           const hora = new Intl.DateTimeFormat("es-MX", { hour: "numeric", minute: "2-digit", timeZone: "America/Mexico_City" }).format(new Date(o.performances!.starts_at!));
+          const x = horarioDe(o);
+          const maps = ligaMaps(x?.l, lugar);
           return (
             <section key={o.id} aria-label="Hoy es tu función" className="boton-compra flex flex-col gap-3 rounded-2xl p-6 lg:col-span-12">
               <p className="text-xs font-black uppercase tracking-[0.16em]">Hoy es tu función</p>
               <p className="titular text-3xl">{o.performances?.productions?.nombre ?? "DARF"} · {hora}</p>
-              {lugar && <p className="text-sm">{lugar} · <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(lugar)}`} target="_blank" rel="noreferrer" className="font-bold underline">Cómo llegar</a></p>}
-              <p className="text-sm">Llega 30 minutos antes. Dentro de la sala a veces no hay señal: <b>descarga tu PDF</b> o deja abierto tu boleto.</p>
+              {lugar && <p className="text-sm">{lugar}{x?.l?.direccion ? `, ${x.l.direccion}` : ""}{maps && <> · <a href={maps} target="_blank" rel="noreferrer" className="font-bold underline">Cómo llegar</a></>}</p>}
+              <p className="text-sm">{x ? textoPuertas(x.h) : "Llega 30 minutos antes."} Dentro de la sala a veces no hay señal: <b>descarga tu PDF</b> o deja abierto tu boleto.</p>
               <a href={`#o-${o.order_code}`} className="self-start rounded-full bg-white px-5 py-2.5 text-sm font-bold text-[#0b0910]">Ver mis boletos</a>
             </section>
           );

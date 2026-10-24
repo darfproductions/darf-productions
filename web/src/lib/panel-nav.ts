@@ -159,7 +159,8 @@ export function productionTabs(a: PanelAccessData, productionId: string, conclui
 // Las 18 pestañas se ordenan en 6 grupos; cada grupo con sus sub-pestañas. Las rutas no cambian.
 
 export type GrupoObra = "resumen" | "personas" | "ensayos" | "boletos" | "publico" | "mas";
-export type SubTab = { id: string; label: string; path: string };
+/** `items`: páginas dentro de una sección (Boletos, 0127): tercera fila chica. */
+export type SubTab = { id: string; label: string; path: string; items?: SubTab[] };
 export type GrupoTabs = { id: GrupoObra; label: string; path: string; tabs: SubTab[] };
 
 const GRUPOS: { id: GrupoObra; label: string; tabs: string[] }[] = [
@@ -189,6 +190,32 @@ export function boletosSubtabs(a: PanelAccessData, pid: string): SubTab[] {
   ].filter((t) => t.show).map(({ id, label, path }) => ({ id, label, path }));
 }
 
+// 0127: Boletos en 3 secciones según el momento en que se usa cada cosa. Las rutas no cambian.
+const SECCIONES_BOLETOS: { id: string; label: string; items: string[] }[] = [
+  { id: "preparar", label: "Preparar", items: ["funciones", "mapa", "beneficios", "preventa", "descuentos"] },
+  { id: "vender", label: "Vender", items: ["boletos", "taquilla", "vendedores", "corte"] },
+  { id: "dia", label: "Día de función", items: ["hoy", "puerta", "entregas"] },
+];
+const ETIQUETA_BOLETOS: Record<string, string> = {
+  funciones: "Funciones y horarios", mapa: "Zonas y mapa", boletos: "Órdenes", preventa: "Preventa privada",
+};
+
+/** Páginas de boletería que veo agrupadas en Preparar · Vender · Día de función (solo las que tienen algo). */
+export function boletosSecciones(a: PanelAccessData, pid: string, conPuerta: boolean): SubTab[] {
+  const paginas = new Map(boletosSubtabs(a, pid).map((t) => [t.id, { ...t, label: ETIQUETA_BOLETOS[t.id] ?? t.label }]));
+  // "Hoy" junta el día de función para quien lo coordina; quien solo escanea entra directo a Puerta.
+  const dia = can(a, pid, "ventas.ver") || can(a, pid, "funciones.gestionar") || can(a, pid, "ensayos.gestionar");
+  if (dia) paginas.set("hoy", { id: "hoy", label: "Hoy", path: "boletos/hoy" });
+  if (conPuerta) paginas.set("puerta", { id: "puerta", label: "Puerta", path: "puerta" });
+  if (can(a, pid, "ventas.ver") || can(a, pid, "puerta.validar") || can(a, pid, "funciones.gestionar")) {
+    paginas.set("entregas", { id: "entregas", label: "Entregas de beneficios", path: "boletos/beneficios/entregas" });
+  }
+  return SECCIONES_BOLETOS.map((sec) => {
+    const items = sec.items.flatMap((id) => (paginas.has(id) ? [paginas.get(id)!] : []));
+    return { id: sec.id, label: sec.label, path: items[0]?.path ?? "", items };
+  }).filter((sec) => sec.items.length > 0);
+}
+
 /** A dónde mandar a quien abre una página de boletería que no le toca: su primera sub-pestaña
  *  permitida o el Resumen de la obra (nunca de regreso a /boletos, que causaba un ciclo). */
 export function salidaBoletos(a: PanelAccessData, pid: string, desde: string): string {
@@ -203,22 +230,29 @@ export function productionGroups(a: PanelAccessData, pid: string, concluida = fa
     const tabs = g.tabs.flatMap((id): SubTab[] => {
       const t = mias.get(id);
       if (!t) return [];
-      if (id === "boletos") return boletosSubtabs(a, pid);
+      if (id === "boletos") return boletosSecciones(a, pid, mias.has("puerta"));
+      // La puerta va dentro de "Día de función"; sin acceso a boletería, esa sección sale sola.
+      if (id === "puerta") return mias.has("boletos") ? [] : boletosSecciones(a, pid, true);
       return [{ id, label: ETIQUETA[id] ?? t.label, path: t.path }];
     });
     return { id: g.id, label: g.label, path: tabs[0]?.path ?? "", tabs };
   }).filter((g) => g.tabs.length > 0);
 }
 
-/** Qué grupo y qué pestaña están abiertos: la ruta más larga que coincide (Resumen solo exacto). */
-export function tabActiva(grupos: GrupoTabs[], sub: string): { grupo: GrupoObra | null; tab: string | null } {
+/** Qué grupo, pestaña y página están abiertos: la ruta más larga que coincide (Resumen solo exacto).
+ *  En Boletos (0127) la pestaña es la sección (Preparar, Vender, Día de función) y `item` la página. */
+export function tabActiva(grupos: GrupoTabs[], sub: string): { grupo: GrupoObra | null; tab: string | null; item?: string | null } {
   const limpio = sub.replace(/^\/+|\/+$/g, "");
-  let mejor: { grupo: GrupoObra; tab: string; largo: number } | null = null;
+  const coincide = (path: string) => (path === "" ? limpio === "" : limpio === path || limpio.startsWith(`${path}/`));
+  let mejor: { grupo: GrupoObra; tab: string; item: string | null; largo: number } | null = null;
   for (const g of grupos) for (const t of g.tabs) {
-    const ok = t.path === "" ? limpio === "" : limpio === t.path || limpio.startsWith(`${t.path}/`);
-    if (ok && (!mejor || t.path.length > mejor.largo)) mejor = { grupo: g.id, tab: t.id, largo: t.path.length };
+    for (const it of t.items ?? []) {
+      if (coincide(it.path) && (!mejor || it.path.length > mejor.largo)) mejor = { grupo: g.id, tab: t.id, item: it.id, largo: it.path.length };
+    }
+    if (!t.items && coincide(t.path) && (!mejor || t.path.length > mejor.largo)) mejor = { grupo: g.id, tab: t.id, item: null, largo: t.path.length };
   }
-  return mejor ? { grupo: mejor.grupo, tab: mejor.tab } : { grupo: null, tab: null };
+  if (!mejor) return { grupo: null, tab: null };
+  return mejor.item ? { grupo: mejor.grupo, tab: mejor.tab, item: mejor.item } : { grupo: mejor.grupo, tab: mejor.tab };
 }
 
 export type Section = { href: string; label: string };

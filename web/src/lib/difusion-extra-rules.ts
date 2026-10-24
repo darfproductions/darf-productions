@@ -2,14 +2,16 @@
 // zona. Funciones puras: difusion-extra-rules.test.ts. El dibujo está en difusion-extra.tsx.
 import { fechaLarga, hora } from "@/lib/difusion-rules";
 import type { Forma } from "@/lib/mapa-libre";
+import { ACCESO_TARDIO_OMISION, hora as horaCorta, type Horario, type Logistica } from "@/lib/logistica-rules";
 
-export type DisenoExtra = "mapa" | "comprar" | "invitacion" | "calendario" | "incluye";
+export type DisenoExtra = "mapa" | "comprar" | "invitacion" | "calendario" | "incluye" | "preparate";
 export const DISENOS_EXTRA: { id: DisenoExtra; label: string; ayuda: string; funcion: boolean }[] = [
   { id: "invitacion", label: "Invitación", ayuda: "\"DARF Productions te invita a…\" con todas las funciones, WhatsApp, página y QR.", funcion: false },
   { id: "mapa", label: "Mapa de zonas", ayuda: "El mapa del teatro con el color y precio de cada zona.", funcion: true },
   { id: "comprar", label: "¿Cómo aseguro mi lugar?", ayuda: "Dos opciones: por WhatsApp o en la página.", funcion: false },
   { id: "calendario", label: "Calendario de funciones", ayuda: "Todas las fechas y horarios de la temporada.", funcion: false },
   { id: "incluye", label: "Lo que incluye cada zona", ayuda: "Zonas con sus beneficios (acceso anticipado, souvenirs…).", funcion: false },
+  { id: "preparate", label: "Prepárate para tu función", ayuda: "Puertas, inicio y salida, el lugar con QR a Google Maps y tres recordatorios. Se llena con Funciones y horarios.", funcion: true },
 ];
 export const esDisenoExtra = (x: unknown): x is DisenoExtra => DISENOS_EXTRA.some((d) => d.id === x);
 
@@ -106,4 +108,22 @@ export function renglonesCalendario(funciones: { starts_at: string }[], max: num
 // ──────── Invitación ────────
 export function textoInvitacion(o: { funcion?: { starts_at: string } | null; rango: string }): { fecha: string; hora: string | null } {
   return o.funcion ? { fecha: fechaLarga(o.funcion.starts_at), hora: hora(o.funcion.starts_at) } : { fecha: o.rango, hora: null };
+}
+
+// ──────── Prepárate para tu función (0127) ────────
+/** Las tres horas (puertas, función, salida) y tres recordatorios: QR a la mano, acceso tardío y la primera indicación. */
+export function textosPreparate(h: Horario, l: Logistica | null): { horas: { etiqueta: string; hora: string }[]; recordatorios: string[] } {
+  const indicacion = (l?.indicaciones ?? "").split("\n").map((x) => x.trim()).find(Boolean);
+  return {
+    horas: [
+      { etiqueta: "Puertas", hora: horaCorta(h.puertas) },
+      { etiqueta: "Función", hora: horaCorta(h.inicio) },
+      { etiqueta: "Salida aprox.", hora: horaCorta(h.termina) },
+    ],
+    recordatorios: [
+      "Ten tu boleto con QR a la mano: en tu cuenta, PDF o Wallet.",
+      l?.acceso_tardio?.trim() || ACCESO_TARDIO_OMISION,
+      indicacion ?? "Dentro de la sala puede no haber señal: descarga tu boleto antes.",
+    ],
+  };
 }

@@ -114,7 +114,7 @@ export function cumplesProximos<T extends { user_id: string; nombre: string; dia
 
 /** Pestaña de la obra donde se resuelve cada pendiente (para los números en las pestañas, 0085). */
 const PESTANA: Partial<Record<PendienteTipo, string>> = {
-  ordenes: "boletos", beneficios_vencidos: "boletos", beneficios_hoy: "boletos", pagos_evento: "fanzone", solicitudes: "audiciones", solicitudes_elenco: "solicitudes", ofertas: "elenco", elenco_sin_publicar: "elenco",
+  ordenes: "boletos", beneficios_vencidos: "entregas", beneficios_hoy: "entregas", pagos_evento: "fanzone", solicitudes: "audiciones", solicitudes_elenco: "solicitudes", ofertas: "elenco", elenco_sin_publicar: "elenco",
   documentos: "expedientes", adeudos: "expedientes", decision: "expedientes", evaluaciones: "evaluaciones", propuestas: "evaluaciones", entregas: "evaluaciones",
 };
 

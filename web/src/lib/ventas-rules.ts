@@ -72,14 +72,14 @@ export function funcionVendible(fn: { on_sale: boolean; starts_at: string | null
 }
 
 /** Mensajes de WhatsApp con un toque desde la orden (Bloque 4A). */
-export function mensajeOrden(tipo: "recordar" | "aprobada", o: { order_code: string; buyer_nombre: string; total: number }, d: { obra: string; funcion: string; limite?: string | null; liga: string }): string {
+export function mensajeOrden(tipo: "recordar" | "aprobada", o: { order_code: string; buyer_nombre: string; total: number }, d: { obra: string; funcion: string; limite?: string | null; liga: string; /** 0127: "Las puertas abren a las…" */ puertas?: string | null }): string {
   const nombre = o.buyer_nombre.split(" ")[0] || o.buyer_nombre;
   const total = `$${Number(o.total).toLocaleString("es-MX", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
   if (tipo === "recordar") {
     return `¡Hola ${nombre}! Te escribimos de DARF Productions por tu orden ${o.order_code} de ${d.obra} (${d.funcion}), por ${total}.` +
       `${d.limite ? ` ${conPunto(`Tus lugares siguen apartados hasta ${d.limite}`)}` : ""} ¿Nos compartes tu comprobante de pago? ¡Gracias!`;
   }
-  return `¡Hola ${nombre}! Tu pago de la orden ${o.order_code} quedó confirmado. Tus boletos de ${d.obra} (${d.funcion}) ya están en ${d.liga}. ¡Nos vemos en el teatro!`;
+  return `¡Hola ${nombre}! Tu pago de la orden ${o.order_code} quedó confirmado. Tus boletos de ${d.obra} (${d.funcion}) ya están en ${d.liga}.${d.puertas ? ` ${d.puertas}` : ""} ¡Nos vemos en el teatro!`;
 }
 
 /** Texto de búsqueda de órdenes por nombre o teléfono, sin caracteres que rompan el filtro. */

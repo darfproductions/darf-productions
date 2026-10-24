@@ -68,6 +68,9 @@ export type Performance = {
   preventa_hasta?: string | null;
   /** 0118: antes de esta fecha nadie compra en línea (con preventa_hasta, abre para el Club Fan). */
   preventa_desde?: string | null;
+  /** 0127: horario propio (vacío = el de la logística de la obra). */
+  puertas_at?: string | null;
+  termina_at?: string | null;
 };
 
 export type ZonePrice = { nombre: string; price: number; /** Color de la zona en el mapa (0062). */ color?: string | null; /** Orden de la zona (0117). */ orden?: number;
@@ -112,7 +115,7 @@ export async function getProduction(id: string, opts: { includeDrafts?: boolean 
       .maybeSingle(),
     supabase
       .from("performances")
-      .select("id, starts_at, venue, on_sale, preventa_hasta, preventa_desde")
+      .select("id, starts_at, venue, on_sale, preventa_hasta, preventa_desde, puertas_at, termina_at")
       .eq("production_id", id)
       .is("cancelada_at", null)
       .order("starts_at", { nullsFirst: false }),
@@ -186,14 +189,14 @@ export async function getPerformanceForSale(performanceId: string) {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("performances")
-    .select(`id, starts_at, venue, on_sale, preventa_hasta, preventa_desde, production_id, productions(${PRODUCTION_COLUMNS})`)
+    .select(`id, starts_at, venue, on_sale, preventa_hasta, preventa_desde, puertas_at, termina_at, production_id, productions(${PRODUCTION_COLUMNS})`)
     .eq("id", performanceId)
     .maybeSingle();
   if (error || !data) return null;
   const production = data.productions as unknown as Production | null;
   if (!production) return null;
   return {
-    performance: { id: data.id, starts_at: data.starts_at, venue: data.venue, on_sale: data.on_sale, preventa_hasta: data.preventa_hasta, preventa_desde: data.preventa_desde } as Performance,
+    performance: { id: data.id, starts_at: data.starts_at, venue: data.venue, on_sale: data.on_sale, preventa_hasta: data.preventa_hasta, preventa_desde: data.preventa_desde, puertas_at: data.puertas_at, termina_at: data.termina_at } as Performance,
     production,
   };
 }

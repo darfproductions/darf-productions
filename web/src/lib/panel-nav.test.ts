@@ -176,19 +176,36 @@ describe("pestañas agrupadas de la obra (0085)", () => {
   it("el Director ve 6 grupos y boletería dentro de Boletos", () => {
     const g = productionGroups(directorG, "showman");
     expect(g.map((x) => x.label)).toEqual(["Resumen", "Personas", "Ensayos y equipo", "Boletos", "Público", "Más"]);
-    expect(g.find((x) => x.id === "boletos")?.tabs.map((t) => t.label)).toEqual(["Ventas y órdenes", "Taquilla", "Funciones y precios", "Mapa de asientos", "Preventa privada", "Beneficios", "Descuentos", "Corte de caja", "Vendedores", "Puerta"]);
+    // 0127: Boletos en 3 secciones, cada una con sus páginas.
+    const bol = g.find((x) => x.id === "boletos")!;
+    expect(bol.tabs.map((t) => t.label)).toEqual(["Preparar", "Vender", "Día de función"]);
+    expect(bol.tabs.map((t) => t.items?.map((i) => i.label))).toEqual([
+      ["Funciones y horarios", "Zonas y mapa", "Beneficios", "Preventa privada", "Descuentos"],
+      ["Órdenes", "Taquilla", "Vendedores", "Corte de caja"],
+      ["Hoy", "Puerta", "Entregas de beneficios"],
+    ]);
+    expect(bol.path).toBe("boletos/funciones");
     expect(g.find((x) => x.id === "publico")?.tabs.map((t) => t.label)).toEqual(["Página pública", "Programa digital", "Fan Zone y eventos", "Difusión"]);
   });
   it("con pocos permisos, pocos grupos; la liga del grupo es su primera pestaña", () => {
+    // Quien solo escanea: Boletos con "Día de función" (Puerta y Entregas), directo a Puerta.
     expect(productionGroups(puertaG, "showman").map((x) => [x.id, x.path])).toEqual([["resumen", ""], ["boletos", "puerta"]]);
+    expect(productionGroups(puertaG, "showman").find((x) => x.id === "boletos")?.tabs.map((t) => [t.id, t.items?.map((i) => i.id)])).toEqual([["dia", ["puerta", "entregas"]]]);
     expect(productionGroups(taquillaG, "showman").map((x) => x.id)).toEqual(["resumen", "boletos", "mas"]);
-    expect(productionGroups(taquillaG, "showman").find((x) => x.id === "boletos")?.tabs.map((t) => t.id)).toEqual(["boletos", "taquilla", "funciones", "preventa", "beneficios", "corte", "vendedores"]);
+    expect(productionGroups(taquillaG, "showman").find((x) => x.id === "boletos")?.tabs.map((t) => [t.id, t.items?.map((i) => i.id)])).toEqual([
+      ["preparar", ["funciones", "beneficios", "preventa"]],
+      ["vender", ["boletos", "taquilla", "vendedores", "corte"]],
+      ["dia", ["hoy", "entregas"]],
+    ]);
   });
   it("pestaña activa: la ruta más larga que coincide", () => {
     const g = productionGroups(directorG, "showman");
     expect(tabActiva(g, "")).toEqual({ grupo: "resumen", tab: "resumen" });
-    expect(tabActiva(g, "boletos")).toEqual({ grupo: "boletos", tab: "boletos" });
-    expect(tabActiva(g, "boletos/taquilla")).toEqual({ grupo: "boletos", tab: "taquilla" });
+    expect(tabActiva(g, "boletos")).toEqual({ grupo: "boletos", tab: "vender", item: "boletos" });
+    expect(tabActiva(g, "boletos/taquilla")).toEqual({ grupo: "boletos", tab: "vender", item: "taquilla" });
+    expect(tabActiva(g, "boletos/beneficios/entregas")).toEqual({ grupo: "boletos", tab: "dia", item: "entregas" });
+    expect(tabActiva(g, "boletos/beneficios")).toEqual({ grupo: "boletos", tab: "preparar", item: "beneficios" });
+    expect(tabActiva(g, "puerta/lista/x")).toEqual({ grupo: "boletos", tab: "dia", item: "puerta" });
     expect(tabActiva(g, "expedientes/abc/")).toEqual({ grupo: "personas", tab: "expedientes" });
     expect(tabActiva(g, "nada")).toEqual({ grupo: null, tab: null });
   });

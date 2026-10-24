@@ -30,6 +30,8 @@ export type DatosImagenExtra = {
   extra?: DatosExtra;
   pasos?: OpcionCompra[];
   calendario?: { renglones: { fecha: string; hora: string }[]; mas: number };
+  /** 0127: "Prepárate para tu función" (el QR lleva a Google Maps). */
+  preparate?: { horas: { etiqueta: string; hora: string }[]; recordatorios: string[]; direccion: string | null; maps: string | null };
 };
 
 export async function extraPng(d: DatosImagenExtra): Promise<Buffer> {
@@ -39,12 +41,12 @@ export async function extraPng(d: DatosImagenExtra): Promise<Buffer> {
   const s = (c: number, p: number, hi: number) => (cuadrado ? c : historia ? hi : p);
   const acento = d.colores.acento;
   const invitacion = d.diseno === "invitacion";
-  const conQr = d.diseno === "invitacion" || d.diseno === "comprar" || d.diseno === "calendario";
+  const conQr = d.diseno === "invitacion" || d.diseno === "comprar" || d.diseno === "calendario" || (d.diseno === "preparate" && !!d.preparate?.maps);
   const [fondo, logoObra, marca, qr] = await Promise.all([
     comoPng(d.fondoUrl, w),
     comoPng(d.logoUrl, invitacion ? 960 : 520),
     comoPng("/marca/darf-horizontal-blanco.svg", 520),
-    conQr ? QRCode.toDataURL(d.url, { margin: 1, width: 360, color: { dark: "#0b0910", light: "#ffffff" } }) : Promise.resolve(null),
+    conQr ? QRCode.toDataURL(d.diseno === "preparate" ? d.preparate!.maps! : d.url, { margin: 1, width: 360, color: { dark: "#0b0910", light: "#ffffff" } }) : Promise.resolve(null),
   ]);
 
   // Medidas comunes.
@@ -163,6 +165,51 @@ export async function extraPng(d: DatosImagenExtra): Promise<Buffer> {
       </div>
     );
     pie = pieInfo;
+  } else if (d.diseno === "preparate" && d.preparate) {
+    // Título y fecha; las tres horas (la función resaltada); el lugar con QR a Google Maps; tres recordatorios.
+    const ancho = w - lado * 2;
+    const gap = s(14, 18, 22);
+    const tile = (ancho - gap * 2) / 3;
+    const qrMapa = s(210, 240, 270);
+    centro = (
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: s(22, 32, 46), width: w }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+          {titulo("Prepárate para\ntu función", s(58, 70, 86))}
+          {subtitulo(d.fecha)}
+        </div>
+        <div style={{ display: "flex", gap, width: ancho }}>
+          {d.preparate.horas.map((x, i) => (
+            <div key={x.etiqueta} style={{ width: tile, display: "flex", flexDirection: "column", alignItems: "center", padding: `${s(16, 22, 30)}px 0`, borderRadius: 26,
+              background: i === 1 ? acento : "rgba(11,9,16,0.75)", color: i === 1 ? "#0b0910" : "#ffffff", border: i === 1 ? "none" : "2px solid rgba(255,255,255,0.18)" }}>
+              <span style={{ fontSize: s(20, 23, 28), fontWeight: 900, letterSpacing: 4, color: i === 1 ? "#0b0910" : acento }}>{x.etiqueta.toUpperCase()}</span>
+              <span style={{ marginTop: s(4, 8, 10), fontSize: s(40, 46, 50), fontWeight: 900 }}>{x.hora}</span>
+            </div>
+          ))}
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: s(20, 26, 32), width: ancho, padding: `${s(18, 24, 32)}px ${s(24, 30, 36)}px`, borderRadius: 28, background: "rgba(11,9,16,0.75)" }}>
+          <div style={{ display: "flex", flexDirection: "column", flexGrow: 1, flexShrink: 1 }}>
+            <span style={{ fontSize: s(20, 23, 28), fontWeight: 900, letterSpacing: 4, color: acento }}>LUGAR</span>
+            <span style={{ marginTop: s(4, 8, 10), fontSize: s(34, 40, 48), fontWeight: 900 }}>{d.lugar ?? "Por anunciar"}</span>
+            {d.preparate.direccion && <span style={{ marginTop: s(4, 6, 8), fontSize: s(23, 27, 32), fontWeight: 700, opacity: 0.85 }}>{d.preparate.direccion}</span>}
+          </div>
+          {qr && (
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0 }}>
+              <img src={qr} width={qrMapa} height={qrMapa} style={{ width: qrMapa, height: qrMapa, borderRadius: 14 }} alt="" />
+              <span style={{ marginTop: 8, fontSize: s(17, 19, 23), fontWeight: 900, letterSpacing: 3 }}>CÓMO LLEGAR</span>
+            </div>
+          )}
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: s(10, 14, 20), width: ancho }}>
+          {d.preparate.recordatorios.map((t) => (
+            <div key={t} style={{ display: "flex", alignItems: "center", gap: s(14, 16, 20) }}>
+              <div style={{ width: s(14, 16, 20), height: s(14, 16, 20), borderRadius: 999, background: acento, flexShrink: 0 }} />
+              <span style={{ fontSize: s(24, 28, 34), fontWeight: 800 }}>{t}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+    pie = <span style={{ fontSize: s(24, 28, 34), fontWeight: 800, textAlign: "center" }}>{d.whatsapp ? `¿Dudas? WhatsApp ${d.whatsapp}` : `Tus boletos en ${d.liga}`}</span>;
   } else if (d.diseno === "incluye" && d.extra) {
     const zonas = d.extra.zonas.slice(0, s(3, 4, 6));
     centro = (
