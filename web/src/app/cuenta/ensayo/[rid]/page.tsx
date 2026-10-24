@@ -33,7 +33,7 @@ export default async function PasarLista({ params }: PageProps<"/cuenta/ensayo/[
 
   return (
     <main className="mx-auto flex max-w-3xl flex-col gap-5 px-5 pb-16 pt-8">
-      {puede && <AutoRefresh seconds={10} />}
+      {puede && <AutoRefresh seconds={30} />}
       <Link href="/cuenta" className="text-sm font-bold text-lila"><Icono nombre="flecha-izq" /> Mi cuenta</Link>
       <div>
         <p className="text-xs font-bold uppercase tracking-[0.16em] text-texto-3">{e.productions?.nombre ?? "Ensayo"}</p>

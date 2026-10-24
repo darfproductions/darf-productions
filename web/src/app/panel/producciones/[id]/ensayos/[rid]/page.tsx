@@ -34,7 +34,7 @@ export default async function Asistencia({ params }: PageProps<"/panel/produccio
   const equipo: Persona[] = ((team ?? []) as { user_id: string; nombre: string; roles: string[] }[]).map((x) => ({ user_id: x.user_id, nombre: x.nombre, detalle: x.roles.join(", ") }));
   return (
     <div className="flex flex-col gap-4">
-      <AutoRefresh seconds={10} />
+      <AutoRefresh seconds={30} />
       <div>
         <Link href={`/panel/producciones/${id}/ensayos`} className="text-sm font-bold text-violeta-claro"><Icono nombre="flecha-izq" /> Ensayos</Link>
         <p className="mt-2 text-xl font-bold">{e.titulo}{e.estado === "cancelado" && <span className="ml-2 text-sm text-[#fecdd3]">Cancelado</span>}</p>
