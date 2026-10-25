@@ -6,6 +6,7 @@ import { casa } from "@/lib/panel-nav";
 import { getPanelAccess } from "@/lib/permissions";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { refrescarPublico } from "@/lib/supabase/publico";
 
 // Fichas de persona (0042): unir duplicadas y ligar a una cuenta. Solo el Director.
 
@@ -45,6 +46,7 @@ export async function renamePerson(_p: TalentState, f: FormData): Promise<Talent
   if (!count) return { ok: false, message: "No se encontró la ficha." };
   revalidatePath("/panel", "layout");
   revalidatePath("/producciones", "layout");
+  refrescarPublico();
   revalidatePath("/programa", "layout");
   return { ok: true, message: `Listo: ahora sale como "${nombre}" en todas sus obras.` };
 }

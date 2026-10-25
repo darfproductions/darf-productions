@@ -27,6 +27,9 @@ import { MiCredencial } from "@/components/credencial/MiCredencial";
 import { BarraLealtad } from "@/components/credencial/BarraLealtad";
 import { ActionForm } from "@/components/panel/ActionForm";
 import { getMiCredencial } from "@/lib/credencial";
+import { paseCredencial } from "@/lib/credencial-rules";
+import { avatarUrl } from "@/lib/avatar";
+import { GuardarSinConexion } from "@/components/pwa/SinConexion";
 import { GOOGLE_WALLET_PUBLICO, walletAppleActivo, walletGoogleActivo } from "@/lib/wallet-env";
 import { SalirClub } from "@/components/fanzone/SalirClub";
 import { numeroSocio } from "@/lib/fanzone-rules";
@@ -39,6 +42,8 @@ import { VoyAIr } from "@/components/tickets/VoyAIr";
 import { isoMx } from "@/lib/dates";
 import { Icono } from "@/components/Icono";
 import { MisEnsayosEquipo, type MiEnsayoEquipo } from "@/components/ensayos/MisEnsayosEquipo";
+import { getLogistica } from "@/lib/logistica";
+import { hora, horario, ligaMaps, textoPuertas } from "@/lib/logistica-rules";
 
 export const metadata: Metadata = { title: "Mi cuenta" };
 
@@ -56,7 +61,7 @@ type OrderRow = {
   motivo: string | null;
   cancelada_por_comprador_at: string | null;
   buyer_nombre: string;
-  performances: { starts_at: string | null; venue: string | null; production_id: string; cancelada_at?: string | null; cancelada_motivo?: string | null; productions: (KitColumns & PosterColumns & { nombre: string; venue: string | null; estado?: string }) | null } | null;
+  performances: { starts_at: string | null; venue: string | null; production_id: string; puertas_at?: string | null; termina_at?: string | null; cancelada_at?: string | null; cancelada_motivo?: string | null; productions: (KitColumns & PosterColumns & { nombre: string; venue: string | null; estado?: string }) | null } | null;
   tickets: { id: string; is_active: boolean; qr_token: string; checked_in_at: string | null; seats: { seat_label: string } | null; price_categories: { nombre: string } | null }[];
 };
 
@@ -80,13 +85,26 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
 
   const supabase = await createClient();
   const sitio = await origenSitio();
-  await supabase.rpc("expire_due_orders", { pid: null });
+  // Lo que no depende de las órdenes se pide desde ya, junto con ellas (la página tarda lo de la consulta más lenta).
+  const resto = Promise.all([
+    listMyApplications(session.userId), listMyInvites(), listMyOffers(), supabase.rpc("my_productions"), supabase.rpc("my_unread_announcements"),
+    supabase.rpc("my_seller"), supabase.rpc("my_team_productions"), supabase.rpc("my_team_unread"),
+    listNotifications({ limit: 3 }), unreadCount(), getMiCredencial(), supabase.rpc("mis_ensayos_equipo"),
+  ]);
   const { data, error } = await supabase
     .from("orders")
-    .select(`id, order_code, status, total, discount_amount, discount_codigo, buyer_telefono, buyer_nombre, created_at, expires_at, vencida_at, motivo, cancelada_por_comprador_at, performances(starts_at, venue, production_id, cancelada_at, cancelada_motivo, productions(nombre, venue, estado, color_fondo, color_superficie, color_texto, color_acento, logo_path, ambiente_path, frase, ${POSTER_COLUMNS})), tickets(id, is_active, qr_token, checked_in_at, seats(seat_label), price_categories(nombre))`)
+    .select(`id, order_code, status, total, discount_amount, discount_codigo, buyer_telefono, buyer_nombre, created_at, expires_at, vencida_at, motivo, cancelada_por_comprador_at, performances(starts_at, venue, production_id, puertas_at, termina_at, cancelada_at, cancelada_motivo, productions(nombre, venue, estado, color_fondo, color_superficie, color_texto, color_acento, logo_path, ambiente_path, frase, ${POSTER_COLUMNS})), tickets(id, is_active, qr_token, checked_in_at, seats(seat_label), price_categories(nombre))`)
     .eq("buyer_user_id", session.userId)
     .order("created_at", { ascending: false });
   const orders = (data ?? []) as unknown as OrderRow[];
+  // 0127: logística de las obras con funciones por venir (puertas, fin y dirección).
+  const obrasProximas = [...new Set(orders.filter((o) => !funcionPasada(o.performances?.starts_at ?? null)).map((o) => o.performances?.production_id).filter((x): x is string => !!x))];
+  const logisticas = new Map(await Promise.all(obrasProximas.map(async (pid) => [pid, await getLogistica(pid)] as const)));
+  const horarioDe = (o: OrderRow) => {
+    const f = o.performances;
+    const l = f ? logisticas.get(f.production_id) ?? null : null;
+    return f?.starts_at && (l || f.puertas_at || f.termina_at) ? { h: horario({ ...f, starts_at: f.starts_at }, l), l } : null;
+  };
   // Los boletos de una orden pendiente no se ven (ni su QR) hasta aprobarse; aquí solo sus asientos (0068).
   const asientosPendientes = new Map<string, string[]>();
   if (orders.some((o) => o.status === "pendiente")) {
@@ -108,12 +126,8 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
   const benef = new Map(((benefRows ?? []) as { ticket_id: string; beneficios: BeneficioBoleto[] }[]).map((r) => [r.ticket_id, r.beneficios]));
 
   // Mis audiciones (0036): solo las propias; QR mientras no haya llegado.
-  const [audiciones, invitaciones, ofertas, misObras, sinLeer, misVentas, miEquipo, equipoPend, notis, notisNuevas, credencial] = await Promise.all([
-    listMyApplications(session.userId), listMyInvites(), listMyOffers(), supabase.rpc("my_productions"), supabase.rpc("my_unread_announcements"),
-    supabase.rpc("my_seller"), supabase.rpc("my_team_productions"), supabase.rpc("my_team_unread"),
-    listNotifications({ limit: 3 }), unreadCount(), getMiCredencial(),
-  ]);
-  const misEnsayosEquipo = ((await supabase.rpc("mis_ensayos_equipo")).data ?? []) as MiEnsayoEquipo[];
+  const [audiciones, invitaciones, ofertas, misObras, sinLeer, misVentas, miEquipo, equipoPend, notis, notisNuevas, credencial, ensayosEq] = await resto;
+  const misEnsayosEquipo = (ensayosEq.data ?? []) as MiEnsayoEquipo[];
   // 0114: regalo de cumpleaños del Club Fan (solo el del mes en curso y si aún no se usó).
   const mesMx = new Intl.DateTimeFormat("es-MX", { timeZone: "America/Mexico_City", year: "numeric", month: "numeric" }).formatToParts(new Date());
   const anioMx = Number(mesMx.find((x) => x.type === "year")?.value);
@@ -137,9 +151,7 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
     if (!a.checked_in_at && a.auditions?.estado !== "cancelada" && !["cancelado", "no_cumple"].includes(a.estado)) audQr.set(a.id, await QRCode.toDataURL(a.qr_token, { margin: 1, width: 200 }));
   }
 
-  const fotoUrl = session.profile?.foto_path
-    ? (await supabase.storage.from("avatares").createSignedUrl(session.profile.foto_path, 3600)).data?.signedUrl ?? null
-    : null;
+  const fotoUrl = await avatarUrl(session.profile?.foto_path);
   const ahora = new Date();
   const recordatorios = orders.filter((o) => o.status === "aprobado" && o.tickets.some((t) => t.is_active) && recordatorio(o.performances?.starts_at ?? null));
   const proximas = orders.filter((o) => !funcionPasada(o.performances?.starts_at ?? null, ahora));
@@ -183,7 +195,7 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
                     ) : null}
                     <div className="min-w-0 flex-1">
                       <p className="text-lg font-bold">{nombre}</p>
-                      <p className="text-sm opacity-85">{formatPerformanceDate(o.performances?.starts_at ?? null)}</p>
+                      <p className="text-sm opacity-85">{formatPerformanceDate(o.performances?.starts_at ?? null)}{(() => { const x = !funcionPasada(o.performances?.starts_at ?? null) && horarioDe(o); return x ? ` · Puertas ${hora(x.h.puertas)}` : ""; })()}</p>
                       {o.performances?.cancelada_at && <p className="text-sm font-bold">Función cancelada{o.performances.cancelada_motivo ? `: ${o.performances.cancelada_motivo}` : ""}{o.status === "aprobado" ? " · te contactamos para tu reembolso" : ""}</p>}
                     </div>
                     <span className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-bold ${STATUS[o.status].cls}`}>{estadoOrden(o, "comprador")}</span>
@@ -221,7 +233,7 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
                   {o.status === "aprobado" && boletos.length > 0 && o.performances?.starts_at && !o.performances.cancelada_at && !funcionPasada(o.performances.starts_at) && (
                     <div className="flex flex-col gap-3 border-t border-white/10 pt-4">
                       <AgregarCalendario ics={`/calendario/boleto/${encodeURIComponent(o.order_code)}`}
-                        evento={{ uid: `orden-${o.order_code}`, titulo: `${nombre} · DARF Productions`, inicia: o.performances.starts_at, lugar: o.performances.venue ?? prod?.venue ?? null, detalle: `Orden ${o.order_code}` }} />
+                        evento={{ uid: `orden-${o.order_code}`, titulo: `${nombre} · DARF Productions`, inicia: o.performances.starts_at, termina: horarioDe(o)?.h.termina ?? null, lugar: o.performances.venue ?? prod?.venue ?? null, detalle: `${(() => { const x = horarioDe(o); return x ? `${textoPuertas(x.h)} ` : ""; })()}Orden ${o.order_code}` }} />
                       <VoyAIr obra={nombre} funcion={formatPerformanceDate(o.performances.starts_at)} lugar={o.performances.venue ?? prod?.venue ?? null}
                         ambiente={tema?.ambiente ?? (prod?.ambiente_path ? assetUrl(prod.ambiente_path) : null)} poster={posterUrl(prod, "voy")?.url ?? null}
                         logo={tema?.logo ?? (prod?.logo_path ? assetUrl(prod.logo_path) : null)}
@@ -235,19 +247,32 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
               );
   };
 
+  // Sin internet en la fila del teatro: la credencial y los boletos que vienen quedan guardados en este teléfono.
+  const sinConexion = {
+    nombre: session.profile?.nombre ?? "",
+    credencial: credencial ? { titulo: paseCredencial(credencial).titulo, codigo: credencial.codigo, qr: credencial.qr } : null,
+    boletos: proximas.filter((o) => o.status === "aprobado").flatMap((o) => o.tickets.filter((t) => qrs.has(t.id) && !t.checked_in_at).map((t) => ({
+      obra: o.performances?.productions?.nombre ?? "Producción", funcion: formatPerformanceDate(o.performances?.starts_at ?? null),
+      lugar: o.performances?.venue ?? o.performances?.productions?.venue ?? null, asiento: etiqueta(t), qr: qrs.get(t.id)!,
+    }))).slice(0, 20),
+  };
+
   return (
     <main className="pb-10">
+      <GuardarSinConexion datos={sinConexion} />
       <PageHeading eyebrow="Mi cuenta" title={`Hola, ${session.profile?.nombre || "fan DARF"}`} />
       <div className="mx-auto grid max-w-[1440px] gap-10 px-5 md:px-16 lg:grid-cols-12">
         {deHoy.map((o) => {
           const lugar = o.performances?.venue ?? o.performances?.productions?.venue ?? null;
           const hora = new Intl.DateTimeFormat("es-MX", { hour: "numeric", minute: "2-digit", timeZone: "America/Mexico_City" }).format(new Date(o.performances!.starts_at!));
+          const x = horarioDe(o);
+          const maps = ligaMaps(x?.l, lugar);
           return (
             <section key={o.id} aria-label="Hoy es tu función" className="boton-compra flex flex-col gap-3 rounded-2xl p-6 lg:col-span-12">
               <p className="text-xs font-black uppercase tracking-[0.16em]">Hoy es tu función</p>
               <p className="titular text-3xl">{o.performances?.productions?.nombre ?? "DARF"} · {hora}</p>
-              {lugar && <p className="text-sm">{lugar} · <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(lugar)}`} target="_blank" rel="noreferrer" className="font-bold underline">Cómo llegar</a></p>}
-              <p className="text-sm">Llega 30 minutos antes. Dentro de la sala a veces no hay señal: <b>descarga tu PDF</b> o deja abierto tu boleto.</p>
+              {lugar && <p className="text-sm">{lugar}{x?.l?.direccion ? `, ${x.l.direccion}` : ""}{maps && <> · <a href={maps} target="_blank" rel="noreferrer" className="font-bold underline">Cómo llegar</a></>}</p>}
+              <p className="text-sm">{x ? textoPuertas(x.h) : "Llega 30 minutos antes."} Dentro de la sala a veces no hay señal: <b>descarga tu PDF</b> o deja abierto tu boleto.</p>
               <a href={`#o-${o.order_code}`} className="self-start rounded-full bg-white px-5 py-2.5 text-sm font-bold text-[#0b0910]">Ver mis boletos</a>
             </section>
           );

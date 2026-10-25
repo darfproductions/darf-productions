@@ -13,6 +13,9 @@ export type PdfTicket = {
   qr: string; // qr_token
   /** 0122: "Acceso anticipado (15 min antes) · Póster firmado · Puertas para ti: 7:45 p.m." */
   incluye?: string | null;
+  /** 0127: "Puertas 7:30 p.m." y la dirección del teatro. */
+  puertas?: string | null;
+  direccion?: string | null;
 };
 
 const W = 360; // ancho de página (pt)
@@ -79,8 +82,8 @@ function pageContent(t: PdfTicket): string {
     for (const l of wrap(v, 44).slice(0, 2)) { ops.push(text(24, y, 12, l)); y -= 15; }
     y -= 6;
   };
-  row("Función", t.funcion);
-  if (t.lugar) row("Lugar", t.lugar);
+  row("Función", t.puertas ? `${t.funcion} · ${t.puertas}` : t.funcion);
+  if (t.lugar || t.direccion) row("Lugar", [t.lugar, t.direccion].filter(Boolean).join(" · "));
   row("Asiento", t.asiento);
   row("Orden", `${t.orden} · ${t.comprador}`);
   if (t.incluye) row("Incluye", t.incluye);

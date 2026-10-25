@@ -19,8 +19,12 @@ import { ingresoPotencial } from "@/lib/sales";
 import { createClient } from "@/lib/supabase/server";
 import { todasLasFilas } from "@/lib/supabase/paginar";
 import { Icono } from "@/components/Icono";
+import { getLlamados, getLogistica } from "@/lib/logistica";
+import { hora, horario, horasLlamados, lineaHorario } from "@/lib/logistica-rules";
+import { saveHorarioFuncion } from "./actions";
+import { LlamadosObra, LogisticaObra } from "./Logistica";
 
-export const metadata: Metadata = { title: "Funciones y precios" };
+export const metadata: Metadata = { title: "Funciones y horarios" };
 
 const ghost = "rounded-full border border-white/25 px-4 py-2 text-sm font-bold hover:border-white/50 disabled:opacity-60";
 
@@ -31,7 +35,7 @@ export default async function PerformancesPage({ params }: PageProps<"/panel/pro
   const gestionar = can(access, id, "funciones.gestionar");
   const ventas = can(access, id, "ventas.operar");
   if (!gestionar && !ventas) redirect(salidaBoletos(access, id, "boletos/funciones"));
-  const [p, funciones, zonas] = await Promise.all([getPanelProduction(id), listPerformances(id), listZones(id)]);
+  const [p, funciones, zonas, logistica, llamados] = await Promise.all([getPanelProduction(id), listPerformances(id), listZones(id), getLogistica(id), gestionar ? getLlamados(id) : Promise.resolve([])]);
   if (!p) redirect("/panel/producciones");
   // Funciones canceladas (0091): quién pagó y hay que reembolsar, con WhatsApp para avisarle.
   // 0117: cuánto deja cada función si se vende todo, y lo vendido (aprobado) hasta hoy.
@@ -143,6 +147,9 @@ export default async function PerformancesPage({ params }: PageProps<"/panel/pro
 
       {gestionar && (
         <>
+          {/* 0127: horarios de la obra y llamados (se crean solos en cada función). */}
+          <LogisticaObra pid={id} l={logistica} />
+          <LlamadosObra pid={id} llamados={llamados} />
           {/* 0085: cada función es un renglón compacto; "Editar" despliega su formulario. */}
           {funciones.map((f) => {
             const precios = f.prices.map((x) => x.price);
@@ -184,6 +191,7 @@ export default async function PerformancesPage({ params }: PageProps<"/panel/pro
                   {f.preventa_hasta && <span className="rounded-full border border-oro/40 px-2 py-0.5 text-[11px] uppercase text-oro-claro">preventa</span>}
                   {f.preventa_desde && f.preventa_desde > new Date().toISOString() && <span className="rounded-full border border-white/25 px-2 py-0.5 text-[11px] uppercase text-texto-2">abre {formatPerformanceDate(f.preventa_desde).replace(/^\S+ /, "")}</span>}
                   {f.prices.some((x) => x.propio) && <span className="rounded-full border border-violeta-claro/50 px-2 py-0.5 text-[11px] uppercase text-violeta-claro">precio propio</span>}
+                  {f.starts_at && <span className="w-full text-xs text-texto-2">{lineaHorario(horario({ ...f, starts_at: f.starts_at }, logistica))}{f.puertas_at || f.termina_at ? " (propio)" : ""}</span>}
                   <span className="text-sm text-texto-3">{f.venue ? `${f.venue} · ` : ""}{precios.length ? `$${Math.min(...precios)}–$${Math.max(...precios)} · llena ${formatMoney(potencial.get(f.id)?.total ?? 0)}` : "sin precios"}</span>
                 </span>
                 <span className="text-sm font-bold text-violeta-claro">Editar <span className="inline-block transition-transform group-open:rotate-180"><Icono nombre="chevron-abajo" /></span></span>
@@ -230,6 +238,28 @@ export default async function PerformancesPage({ params }: PageProps<"/panel/pro
                   <span className="text-xs text-texto-3">Para fechas solo de esta función, quita la palomita. Entre inicio y fin solo compran los socios (a quienes activaron el recordatorio les avisamos al abrir).</span>
                 </fieldset>
               </ActionForm>
+              {f.starts_at && (() => {
+                const h = horario({ ...f, starts_at: f.starts_at }, logistica);
+                const ls = horasLlamados({ starts_at: f.starts_at }, llamados);
+                return (
+                  <div className="mt-3 flex flex-col gap-2 border-t border-white/10 pt-3">
+                    <p className="text-sm font-semibold">Horario de esta función</p>
+                    {ls.length > 0 && <p className="text-xs text-texto-2">Llamados: {ls.map((x) => `${x.nombre} ${hora(x.hora)}`).join(" · ")}</p>}
+                    <ActionForm action={saveHorarioFuncion} hidden={{ pid: id, perf: f.id }} submit="Guardar horario" submitClass={ghost}>
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <label className="flex flex-col gap-1.5 text-sm font-semibold">Puertas abren (CDMX)
+                          <input className={input} type="datetime-local" name="puertas_at" defaultValue={isoToLocalMx(f.puertas_at ?? null)} />
+                          <span className="text-xs font-normal text-texto-3">Vacío = la de la obra ({hora(h.puertas)}).</span>
+                        </label>
+                        <label className="flex flex-col gap-1.5 text-sm font-semibold">Termina aprox. (CDMX)
+                          <input className={input} type="datetime-local" name="termina_at" defaultValue={isoToLocalMx(f.termina_at ?? null)} />
+                          <span className="text-xs font-normal text-texto-3">Vacío = con la duración de la obra ({hora(h.termina)}).</span>
+                        </label>
+                      </div>
+                    </ActionForm>
+                  </div>
+                );
+              })()}
               <div className="mt-3 border-t border-white/10 pt-3">
                 <ActionForm inline action={deletePerformance} hidden={{ pid: id, perf: f.id }} confirm="¿Eliminar esta función? Solo se puede si no tiene boletos activos." submit="Eliminar función" submitClass={ghost} />
                 <details className="mt-3">

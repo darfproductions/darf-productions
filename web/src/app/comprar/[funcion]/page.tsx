@@ -23,10 +23,25 @@ import { GeneralPicker } from "./GeneralPicker";
 import { SeatPicker, type ZonePrice } from "./SeatPicker";
 import { mensajeError } from "@/lib/errores";
 import { todasLasFilas } from "@/lib/supabase/paginar";
+import { publico } from "@/lib/supabase/publico";
 import { asientosOcupados } from "@/lib/ocupados";
 import { Icono } from "@/components/Icono";
 import { env } from "@/lib/env";
 import { whatsappPedirUrl } from "@/lib/tickets";
+import { getLogistica } from "@/lib/logistica";
+import { hora, horario } from "@/lib/logistica-rules";
+
+const mapaDeVenta = publico("mapa-venta", async (supabase, pid: string, fid: string) => {
+  const [seats, prices, diseno, beneficios] = await Promise.all([
+    todasLasFilas((a, b) => supabase.from("seats").select("id, seat_label, seat_row, seat_number, lado, price_category_id, is_active, pos_x, pos_y, section").eq("production_id", pid).order("id").range(a, b)),
+    supabase.from("performance_price_categories").select("price_category_id, price, price_categories(nombre, cupo, color, orden)").eq("performance_id", fid),
+    // 0113: escenario del mapa libre.
+    supabase.from("mapas_diseno").select("diseno").eq("production_id", pid).maybeSingle(),
+    listarBeneficios(pid, supabase),
+  ]);
+  if (seats.error || prices.error) throw new Error((seats.error ?? prices.error)!.message); // sin guardar: se reintenta
+  return { seats: { data: seats.data, error: null }, prices: { data: prices.data, error: null }, diseno: diseno.data?.diseno ?? null, beneficios };
+});
 
 export async function generateMetadata({ params }: PageProps<"/comprar/[funcion]">): Promise<Metadata> {
   const data = await getPerformanceForSale((await params).funcion);
@@ -67,27 +82,21 @@ export default async function ComprarPage({ params, searchParams }: PageProps<"/
   const abre = vendible && !privada && ventaPorAbrir(f) && f.preventa_desde ? partesFuncion(privadaAbre ?? f.preventa_desde) : null;
 
   const supabase = await createClient();
-  // Antes de mostrar el mapa se liberan los asientos de órdenes vencidas (0054).
-  if (vendible && session) await supabase.rpc("expire_due_orders", { pid: p.id });
+  // Las órdenes vencidas las libera la base cada minuto (0068); ver la página ya no escribe en la base.
   const promos = vendible ? (await getPromos(p.id)).get(f.id) : undefined;
   const promo = mejorPromo(promos);
-  const [seatsRes, takenRes, pricesRes, disenoRes] = vendible && !abre && !porWhatsApp
-    ? await Promise.all([
-        todasLasFilas((a, b) => supabase.from("seats").select("id, seat_label, seat_row, seat_number, lado, price_category_id, is_active, pos_x, pos_y, section").eq("production_id", p.id).order("id").range(a, b)),
-        asientosOcupados(supabase, f.id),
-        supabase.from("performance_price_categories").select("price_category_id, price, price_categories(nombre, cupo, color, orden)").eq("performance_id", f.id),
-        // 0113: escenario del mapa libre.
-        supabase.from("mapas_diseno").select("diseno").eq("production_id", p.id).maybeSingle(),
-      ])
-    : [null, null, null, null];
-  const formas = leerDiseno(disenoRes?.data?.diseno)?.formas ?? [];
+  // Mapa, precios, escenario y beneficios son iguales para todos: guardados 60 s. Lo ocupado se pregunta al momento.
+  const conMapa = vendible && !abre && !porWhatsApp;
+  const [mapa, takenRes] = conMapa ? await Promise.all([mapaDeVenta(p.id, f.id).catch(() => null), asientosOcupados(supabase, f.id)]) : [null, null];
+  const seatsRes = mapa?.seats, pricesRes = mapa?.prices;
+  const formas = leerDiseno(mapa?.diseno)?.formas ?? [];
 
   const seats = ((seatsRes?.data ?? []) as (MapSeat & { is_active: boolean })[]).filter((s) => s.is_active);
   const taken = (takenRes?.data ?? []) as string[];
   // Zonas con asiento para el mapa; las de entrada general van aparte (0055).
   // 0122: lo que incluye cada zona en ESTA función.
-  const benef = vendible && !abre && !porWhatsApp ? porZona(await listarBeneficios(p.id), f.id) : new Map<string, Beneficio[]>();
-  const general = (vendible && !abre && !porWhatsApp ? await generalAvailability(f.id) : []).map((z) => {
+  const benef = conMapa && mapa ? porZona(mapa.beneficios, f.id) : new Map<string, Beneficio[]>();
+  const general = (conMapa ? await generalAvailability(f.id) : []).map((z) => {
     const pct = pctZona(promos, z.price_category_id);
     const conB = { ...z, beneficios: benef.get(z.price_category_id) ?? [] };
     return pct ? { ...conB, precio: conPromo(z.precio, pct), antes: z.precio } : conB;
@@ -106,12 +115,16 @@ export default async function ComprarPage({ params, searchParams }: PageProps<"/
   const sellerCheck = sellerRes && vendedor
     ? (sellerRes.error ? { ok: false, text: mensajeError(sellerRes.error), code: vendedor } : { ok: true, text: `Vendedor: ${sellerRes.data as string}`, code: vendedor })
     : null;
-  const loadError = seatsRes?.error || takenRes?.error || pricesRes?.error;
+  // 0127: hora de puertas (solo si la obra configuró su logística o la función tiene la suya).
+  const logistica = await getLogistica(p.id);
+  const hCompra = f.starts_at && (logistica || f.puertas_at) ? horario({ ...f, starts_at: f.starts_at }, logistica) : null;
+  const loadError = (conMapa && !mapa) || takenRes?.error;
 
   return (
     <main style={themeStyle(getTheme(p))} className="pb-10">
       <PageHeading eyebrow={`${tv.eyebrow} · ${p.nombre}`} title={modo === "hibrido" ? tv.titulo : prices.length === 0 && general.length > 0 ? "Elige tus boletos" : "Elige tus asientos"}>
         <span>{formatPerformanceDate(f.starts_at)}</span> · {f.venue ?? p.venue}
+        {hCompra && <span> · Puertas {hora(hCompra.puertas)}</span>}
       </PageHeading>
       <div className="mx-auto max-w-[1440px] px-5 md:px-16">
         {!vendible ? (

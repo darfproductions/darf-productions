@@ -8,6 +8,7 @@ import { esMetodo } from "@/lib/ventas-rules";
 import { esMomentoEntrega, MOMENTOS_ENTREGA, momentoPorOmision, type TipoBeneficio } from "@/lib/beneficios-rules";
 import { mensajeError } from "@/lib/errores";
 import { createClient } from "@/lib/supabase/server";
+import { refrescarPublico } from "@/lib/supabase/publico";
 
 // Boletería de la obra en el panel. Usa las MISMAS funciones de la base que la
 // 1.0 (approve_order, admin_create_seated_order, …); 0034 solo cambió quién
@@ -19,6 +20,7 @@ const refresh = (pid: string) => {
   revalidatePath(`/panel/producciones/${pid}`, "layout");
   revalidatePath(`/producciones/${pid}`);
   revalidatePath("/producciones");
+  refrescarPublico();
 };
 
 const motivoDe = (f: FormData) => String(f.get("motivo") ?? "").trim().slice(0, 300) || null;
@@ -165,7 +167,7 @@ export async function boxOfficeSale(input: { pid: string; performanceId: string;
   return { ok: true, orderCode: r.order_code, total: ex.total ?? Number(r.total), tickets, aviso: ex.aviso, cuenta: ex.cuenta };
 }
 
-// ──────── Funciones y precios (funciones.gestionar) ────────
+// ──────── Funciones y horarios (funciones.gestionar) ────────
 
 export async function createPerformance(_p: TicketState, f: FormData): Promise<TicketState> {
   const pid = String(f.get("pid"));

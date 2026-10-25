@@ -65,7 +65,8 @@ export async function logout() {
   const supabase = await createClient();
   await supabase.auth.signOut();
   (await cookies()).delete({ name: RECOVERY_COOKIE, path: RECOVERY_PATH });
-  redirect("/");
+  // ?salio: la portada borra la credencial guardada para sin internet (components/pwa/SinConexion.tsx).
+  redirect("/?salio=1");
 }
 
 /** "Olvidé mi contraseña": manda el enlace para poner una nueva. No dice si el correo tiene cuenta. */

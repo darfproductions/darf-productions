@@ -142,10 +142,12 @@ export const PRODUCTION_TABS: Tab[] = [
   { id: "difusion", label: "Difusión", path: "difusion", perms: ["obra.editar", "obra.publicar"], etapa: null },
   { id: "cierre", label: "Cierre de temporada", path: "cierre", perms: ["obra.publicar", "reportes.ver"], etapa: null },
   { id: "permisos", label: "Permisos", path: "permisos", perms: ["permisos.gestionar"], etapa: null },
+  // Guía de tu rol: la ve cualquiera de la obra.
+  { id: "guia", label: "Guía de tu rol", path: "guia", perms: [], etapa: null },
 ];
 
 /** Pestañas que siguen visibles cuando la producción está concluida (decisión de Diego). */
-export const CONCLUIDA_TABS = ["resumen", "pagina", "elenco", "expedientes", "solicitudes", "fanzone", "difusion", "cierre", "permisos", "reportes", "equipo"];
+export const CONCLUIDA_TABS = ["resumen", "pagina", "elenco", "expedientes", "solicitudes", "fanzone", "difusion", "cierre", "permisos", "reportes", "equipo", "guia"];
 
 /** Pestañas que veo en una obra: Resumen si tengo cualquier permiso ahí; el resto según su permiso.
  *  Si la obra está concluida, solo las de CONCLUIDA_TABS. */
@@ -159,7 +161,8 @@ export function productionTabs(a: PanelAccessData, productionId: string, conclui
 // Las 18 pestañas se ordenan en 6 grupos; cada grupo con sus sub-pestañas. Las rutas no cambian.
 
 export type GrupoObra = "resumen" | "personas" | "ensayos" | "boletos" | "publico" | "mas";
-export type SubTab = { id: string; label: string; path: string };
+/** `items`: páginas dentro de una sección (Boletos, 0127): tercera fila chica. */
+export type SubTab = { id: string; label: string; path: string; items?: SubTab[] };
 export type GrupoTabs = { id: GrupoObra; label: string; path: string; tabs: SubTab[] };
 
 const GRUPOS: { id: GrupoObra; label: string; tabs: string[] }[] = [
@@ -168,8 +171,50 @@ const GRUPOS: { id: GrupoObra; label: string; tabs: string[] }[] = [
   { id: "ensayos", label: "Ensayos y equipo", tabs: ["ensayos", "equipo", "materiales", "comunicados"] },
   { id: "boletos", label: "Boletos", tabs: ["boletos", "puerta"] },
   { id: "publico", label: "Público", tabs: ["pagina", "programa", "fanzone", "difusion"] },
-  { id: "mas", label: "Más", tabs: ["reportes", "cierre", "permisos"] },
+  { id: "mas", label: "Más", tabs: ["reportes", "cierre", "permisos", "guia"] },
 ];
+
+// Secciones de cada grupo (como Boletos, 0127): las páginas se juntan según para qué sirven. Las rutas no cambian.
+// Los ids de sección no repiten ids de página (el número de pendientes se suma por página).
+const SECCIONES_OBRA: Partial<Record<GrupoObra, { id: string; label: string; items: string[] }[]>> = {
+  personas: [
+    { id: "sec-elenco", label: "Elenco", items: ["elenco", "audiciones"] },
+    { id: "sec-integrantes", label: "Integrantes", items: ["expedientes", "cuotas", "adeudos"] },
+    { id: "sec-revisar", label: "Revisar", items: ["solicitudes", "evaluaciones"] },
+  ],
+  ensayos: [
+    { id: "sec-ensayos", label: "Ensayos", items: ["ensayos"] },
+    { id: "sec-comunicar", label: "Comunicar", items: ["comunicados", "materiales", "equipo"] },
+  ],
+  publico: [
+    { id: "sec-pagina", label: "Página", items: ["pagina", "contenido", "imagen", "avisos"] },
+    { id: "sec-promocion", label: "Promoción", items: ["difusion", "programa"] },
+    { id: "sec-fans", label: "Fans", items: ["fanzone", "fotos"] },
+  ],
+  mas: [
+    { id: "sec-reportes", label: "Reportes", items: ["reportes", "cierre"] },
+    { id: "sec-equipo", label: "Equipo y permisos", items: ["permisos", "guia"] },
+  ],
+};
+const ETIQUETA_PAGINA: Record<string, string> = {
+  comunicados: "Avisos al elenco", equipo: "Notas y juntas del equipo", pagina: "Publicar", fanzone: "Fan Zone y eventos",
+  cierre: "Cierre de temporada",
+};
+
+/** Páginas de la obra que veo: sus pestañas más las páginas que viven dentro de otra (Cuotas, Contenido, Fotos…). */
+function paginasObra(a: PanelAccessData, pid: string, mias: Map<string, Tab>): Map<string, SubTab> {
+  const out = new Map<string, SubTab>([...mias.values()].map((t) => [t.id, { id: t.id, label: ETIQUETA_PAGINA[t.id] ?? ETIQUETA[t.id] ?? t.label, path: t.path }]));
+  const extra = (id: string, label: string, path: string, show: boolean) => { if (show) out.set(id, { id, label, path }); };
+  const cobra = mias.has("expedientes") && can(a, pid, "mensualidades.gestionar");
+  extra("cuotas", "Cuotas y recaudación", "expedientes/cuotas", cobra);
+  extra("adeudos", "Adeudos", "expedientes/adeudos", cobra);
+  const edita = mias.has("pagina") && can(a, pid, "obra.editar");
+  extra("contenido", "Contenido", "pagina/contenido", edita);
+  extra("imagen", "Imagen y pósters", "pagina/imagen", edita);
+  extra("avisos", "Avisos", "pagina/avisos", edita);
+  extra("fotos", "Fotos y galería", "fanzone/fotos", mias.has("fanzone"));
+  return out;
+}
 const ETIQUETA: Record<string, string> = { fanzone: "Fan Zone y eventos", elenco: "Elenco y equipos" };
 
 /** Las páginas de boletería que veo (antes eran pastillas dentro de "Funciones y boletos"). */
@@ -177,7 +222,7 @@ export function boletosSubtabs(a: PanelAccessData, pid: string): SubTab[] {
   return [
     { id: "boletos", label: "Ventas y órdenes", path: "boletos", show: can(a, pid, "ventas.ver") },
     { id: "taquilla", label: "Taquilla", path: "boletos/taquilla", show: can(a, pid, "ventas.operar") },
-    { id: "funciones", label: "Funciones y precios", path: "boletos/funciones", show: can(a, pid, "funciones.gestionar") || can(a, pid, "ventas.operar") },
+    { id: "funciones", label: "Funciones y horarios", path: "boletos/funciones", show: can(a, pid, "funciones.gestionar") || can(a, pid, "ventas.operar") },
     { id: "mapa", label: "Mapa de asientos", path: "boletos/mapa", show: can(a, pid, "funciones.gestionar") },
     // 0122: beneficios por zona (VIP: acceso anticipado, póster…) y su reporte de entregas.
     // 0123: códigos de preventa privada (antes de la del Club Fan).
@@ -187,6 +232,32 @@ export function boletosSubtabs(a: PanelAccessData, pid: string): SubTab[] {
     { id: "corte", label: "Corte de caja", path: "boletos/corte", show: can(a, pid, "ventas.ver") || can(a, pid, "reportes.ver") },
     { id: "vendedores", label: "Vendedores", path: "boletos/vendedores", show: can(a, pid, "ventas.ver") || can(a, pid, "vendedores.gestionar") },
   ].filter((t) => t.show).map(({ id, label, path }) => ({ id, label, path }));
+}
+
+// 0127: Boletos en 3 secciones según el momento en que se usa cada cosa. Las rutas no cambian.
+const SECCIONES_BOLETOS: { id: string; label: string; items: string[] }[] = [
+  { id: "preparar", label: "Preparar", items: ["funciones", "mapa", "beneficios", "preventa", "descuentos"] },
+  { id: "vender", label: "Vender", items: ["boletos", "taquilla", "vendedores", "corte"] },
+  { id: "dia", label: "Día de función", items: ["hoy", "puerta", "entregas"] },
+];
+const ETIQUETA_BOLETOS: Record<string, string> = {
+  funciones: "Funciones y horarios", mapa: "Zonas y mapa", boletos: "Órdenes", preventa: "Preventa privada",
+};
+
+/** Páginas de boletería que veo agrupadas en Preparar · Vender · Día de función (solo las que tienen algo). */
+export function boletosSecciones(a: PanelAccessData, pid: string, conPuerta: boolean): SubTab[] {
+  const paginas = new Map(boletosSubtabs(a, pid).map((t) => [t.id, { ...t, label: ETIQUETA_BOLETOS[t.id] ?? t.label }]));
+  // "Hoy" junta el día de función para quien lo coordina; quien solo escanea entra directo a Puerta.
+  const dia = can(a, pid, "ventas.ver") || can(a, pid, "funciones.gestionar") || can(a, pid, "ensayos.gestionar");
+  if (dia) paginas.set("hoy", { id: "hoy", label: "Hoy", path: "boletos/hoy" });
+  if (conPuerta) paginas.set("puerta", { id: "puerta", label: "Puerta", path: "puerta" });
+  if (can(a, pid, "ventas.ver") || can(a, pid, "puerta.validar") || can(a, pid, "funciones.gestionar")) {
+    paginas.set("entregas", { id: "entregas", label: "Entregas de beneficios", path: "boletos/beneficios/entregas" });
+  }
+  return SECCIONES_BOLETOS.map((sec) => {
+    const items = sec.items.flatMap((id) => (paginas.has(id) ? [paginas.get(id)!] : []));
+    return { id: sec.id, label: sec.label, path: items[0]?.path ?? "", items };
+  }).filter((sec) => sec.items.length > 0);
 }
 
 /** A dónde mandar a quien abre una página de boletería que no le toca: su primera sub-pestaña
@@ -199,32 +270,49 @@ export function salidaBoletos(a: PanelAccessData, pid: string, desde: string): s
 /** Grupos de pestañas que veo en una obra (solo los que tienen algo), con su primera pestaña como liga. */
 export function productionGroups(a: PanelAccessData, pid: string, concluida = false): GrupoTabs[] {
   const mias = new Map(productionTabs(a, pid, concluida).map((t) => [t.id, t]));
+  const paginas = paginasObra(a, pid, mias);
   return GRUPOS.map((g) => {
-    const tabs = g.tabs.flatMap((id): SubTab[] => {
-      const t = mias.get(id);
-      if (!t) return [];
-      if (id === "boletos") return boletosSubtabs(a, pid);
-      return [{ id, label: ETIQUETA[id] ?? t.label, path: t.path }];
-    });
+    let tabs: SubTab[];
+    if (g.id === "boletos") {
+      // La puerta va dentro de "Día de función"; sin acceso a boletería, esa sección sale sola.
+      tabs = mias.has("boletos") ? boletosSecciones(a, pid, mias.has("puerta")) : mias.has("puerta") ? boletosSecciones(a, pid, true) : [];
+    } else if (SECCIONES_OBRA[g.id]) {
+      tabs = SECCIONES_OBRA[g.id]!.map((sec) => {
+        const items = sec.items.flatMap((id) => (paginas.has(id) ? [paginas.get(id)!] : []));
+        return { id: sec.id, label: sec.label, path: items[0]?.path ?? "", items };
+      }).filter((sec) => sec.items.length > 0);
+    } else {
+      tabs = g.tabs.flatMap((id) => (paginas.has(id) ? [paginas.get(id)!] : []));
+    }
     return { id: g.id, label: g.label, path: tabs[0]?.path ?? "", tabs };
   }).filter((g) => g.tabs.length > 0);
 }
 
-/** Qué grupo y qué pestaña están abiertos: la ruta más larga que coincide (Resumen solo exacto). */
-export function tabActiva(grupos: GrupoTabs[], sub: string): { grupo: GrupoObra | null; tab: string | null } {
+/** Todas las páginas de los grupos en una lista (para el buscador del panel). */
+export function paginasDeGrupos(grupos: GrupoTabs[]): { grupo: string; label: string; path: string }[] {
+  return grupos.flatMap((g) => g.tabs.flatMap((t) => (t.items ?? [t]).map((i) => ({ grupo: g.label, label: i.label, path: i.path }))));
+}
+
+/** Qué grupo, pestaña y página están abiertos: la ruta más larga que coincide (Resumen solo exacto).
+ *  En Boletos (0127) la pestaña es la sección (Preparar, Vender, Día de función) y `item` la página. */
+export function tabActiva(grupos: GrupoTabs[], sub: string): { grupo: GrupoObra | null; tab: string | null; item?: string | null } {
   const limpio = sub.replace(/^\/+|\/+$/g, "");
-  let mejor: { grupo: GrupoObra; tab: string; largo: number } | null = null;
+  const coincide = (path: string) => (path === "" ? limpio === "" : limpio === path || limpio.startsWith(`${path}/`));
+  let mejor: { grupo: GrupoObra; tab: string; item: string | null; largo: number } | null = null;
   for (const g of grupos) for (const t of g.tabs) {
-    const ok = t.path === "" ? limpio === "" : limpio === t.path || limpio.startsWith(`${t.path}/`);
-    if (ok && (!mejor || t.path.length > mejor.largo)) mejor = { grupo: g.id, tab: t.id, largo: t.path.length };
+    for (const it of t.items ?? []) {
+      if (coincide(it.path) && (!mejor || it.path.length > mejor.largo)) mejor = { grupo: g.id, tab: t.id, item: it.id, largo: it.path.length };
+    }
+    if (!t.items && coincide(t.path) && (!mejor || t.path.length > mejor.largo)) mejor = { grupo: g.id, tab: t.id, item: null, largo: t.path.length };
   }
-  return mejor ? { grupo: mejor.grupo, tab: mejor.tab } : { grupo: null, tab: null };
+  if (!mejor) return { grupo: null, tab: null };
+  return mejor.item ? { grupo: mejor.grupo, tab: mejor.tab, item: mejor.item } : { grupo: mejor.grupo, tab: mejor.tab };
 }
 
 export type Section = { href: string; label: string };
 
 export type NavSection = {
-  id: "inicio" | "notificaciones" | "proyectos" | "personas" | "reportes" | "ajustes";
+  id: "inicio" | "notificaciones" | "proyectos" | "personas" | "reportes" | "sitio" | "ajustes";
   label: string;
   /** A dónde lleva la sección (su primera subpestaña). */
   href: string;
@@ -246,9 +334,8 @@ export function hasReportAccess(a: PanelAccessData): boolean {
  */
 export function panelMenu(a: PanelAccessData): NavSection[] {
   const out: NavSection[] = [
-    { id: "inicio", label: "Inicio", href: "/panel", subs: [], match: [] },
-    // 0085: las notificaciones tienen su lugar en el menú (antes solo se llegaba desde Inicio).
-    { id: "notificaciones", label: "Notificaciones", href: "/panel/notificaciones", subs: [], match: ["/panel/notificaciones"] },
+    // Notificaciones vive en Inicio (sus últimas, "Ver todas" y el número de nuevas): ya no es una entrada aparte.
+    { id: "inicio", label: "Inicio", href: "/panel", subs: [], match: ["/panel/notificaciones"] },
   ];
   // Quien solo está en el equipo de una convocatoria general no tiene obras: solo ve Audiciones.
   const proyectos: Section[] = a.isDirector || casa(a, "casa.producciones") || myProductionIds(a).length ? [{ href: "/panel/producciones", label: "Producciones" }] : [];
@@ -264,32 +351,38 @@ export function panelMenu(a: PanelAccessData): NavSection[] {
     ...(casa(a, "casa.personas") ? [{ href: "/panel/personas", label: "Directorio" }, { href: "/panel/cumpleanos", label: "Cumpleaños" }] : []),
     // 0105: el equipo de la empresa es Casa DARF (Ajustes); aquí queda su portal (avisos, material, juntas).
     ...(casa(a, "casa.equipo") ? [{ href: "/panel/personas/equipo/portal", label: "Portal del equipo" }] : []),
-    ...(casa(a, "casa.contacto") ? [{ href: "/panel/contacto", label: "Contacto" }] : []),
   ];
   if (personas.length) {
     out.push({
       id: "personas", label: "Personas", href: personas[0].href, subs: personas,
-      match: ["/panel/personas", "/panel/talento", "/panel/usuarios", "/panel/cumpleanos", "/panel/contacto"],
+      match: ["/panel/personas", "/panel/talento", "/panel/usuarios", "/panel/cumpleanos"],
     });
   }
   if (hasReportAccess(a)) {
-    const subs: Section[] = casa(a, "casa.reportes") ? [{ href: "/panel/reportes", label: "General" }] : [];
-    subs.push({ href: "/panel/reportes/obras", label: "Por producción" });
-    out.push({ id: "reportes", label: "Reportes", href: subs[0].href, subs, match: ["/panel/reportes"] });
+    // Una sola página: el General (con la lista "Por producción" abajo); sin el general, directo a la lista de obras.
+    const href = casa(a, "casa.reportes") ? "/panel/reportes" : "/panel/reportes/obras";
+    out.push({ id: "reportes", label: "Reportes", href, subs: [{ href, label: "Reportes" }], match: ["/panel/reportes"] });
   }
-  const ajustes: Section[] = [
-    ...(a.isDirector ? [{ href: "/panel/ajustes/casa", label: "Casa DARF" }] : []),
-    ...(casa(a, "casa.roles") ? [{ href: "/panel/roles", label: "Roles y permisos" }] : []),
+  // Sitio y público: lo que ve y pregunta el público de DARF (antes repartido entre Personas y Ajustes).
+  const sitio: Section[] = [
     ...(casa(a, "casa.sitio") ? [{ href: "/panel/ajustes/sitio", label: "Sitio" }] : []),
     // 0112: base de socios del Club Fan.
     ...(casa(a, "casa.club") ? [{ href: "/panel/ajustes/club", label: "Club Fan" }] : []),
     // Guías para redes de DARF (cómo unirte al Club Fan, cómo crear tu cuenta).
-    ...(casa(a, "casa.sitio") || casa(a, "casa.club") ? [{ href: "/panel/ajustes/difusion", label: "Difusión" }] : []),
-    ...(casa(a, "casa.contacto") ? [{ href: "/panel/ajustes/darfy", label: "DARFY" }] : []),
+    ...(casa(a, "casa.sitio") || casa(a, "casa.club") ? [{ href: "/panel/ajustes/difusion", label: "Difusión DARF" }] : []),
+    ...(casa(a, "casa.contacto") ? [{ href: "/panel/contacto", label: "Contacto" }, { href: "/panel/ajustes/darfy", label: "DARFY" }] : []),
+  ];
+  if (sitio.length) {
+    out.push({ id: "sitio", label: "Sitio y público", href: sitio[0].href, subs: sitio,
+      match: ["/panel/ajustes/sitio", "/panel/ajustes/club", "/panel/ajustes/difusion", "/panel/ajustes/darfy", "/panel/contacto"] });
+  }
+  const ajustes: Section[] = [
+    ...(a.isDirector ? [{ href: "/panel/ajustes/casa", label: "Casa DARF" }] : []),
+    ...(casa(a, "casa.roles") ? [{ href: "/panel/roles", label: "Roles y permisos" }] : []),
     ...(casa(a, "casa.bitacora") ? [{ href: "/panel/bitacora", label: "Bitácora" }] : []),
   ];
   if (ajustes.length) {
-    out.push({ id: "ajustes", label: "Ajustes", href: ajustes[0].href, subs: ajustes, match: ["/panel/roles", "/panel/bitacora", "/panel/ajustes"] });
+    out.push({ id: "ajustes", label: "Ajustes", href: ajustes[0].href, subs: ajustes, match: ["/panel/roles", "/panel/bitacora", "/panel/ajustes/casa"] });
   }
   return out;
 }

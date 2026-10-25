@@ -7,6 +7,9 @@ import { esFormatoPreventa, sitioCorto, type FormatoPreventa } from "@/lib/difus
 import { rangoFechas } from "@/lib/difusion-rules";
 import { env } from "@/lib/env";
 import { can } from "@/lib/panel-nav";
+import { horarioDeFuncion } from "@/lib/logistica";
+import { horario, ligaMaps } from "@/lib/logistica-rules";
+import { textosPreparate } from "@/lib/difusion-extra-rules";
 import { requirePanel } from "@/lib/permissions";
 
 // Más diseños: invitación, mapa de zonas, cómo comprar, calendario y lo que incluye cada zona.
@@ -34,14 +37,22 @@ export async function GET(req: Request, ctx: RouteContext<"/panel/producciones/[
   const fondoUrl = diseno === "invitacion"
     ? (historia ? obra.alterno.p9x16 ?? obra.alterno.p3x4 : obra.alterno.p3x4 ?? obra.alterno.p9x16) ?? obra.ambiente ?? poster
     : obra.ambiente ?? poster;
+  // 0127: el horario sale de Funciones y horarios (sin logística: puertas 30 min antes, 2 h de duración).
+  const prep = diseno === "preparate" && funcion ? await horarioDeFuncion(funcion.id, id) : null;
+  const preparate = prep && funcion ? (() => {
+    const h = prep.h ?? horario(funcion, prep.l);
+    return { ...textosPreparate(h, prep.l), direccion: prep.l?.direccion ?? null, maps: ligaMaps(prep.l, funcion.venue ?? obra.venue) };
+  })() : undefined;
   const png = await extraPng({
     diseno, formato, obra: obra.nombre, logoUrl: obra.logoUrl, colores: obra.colores,
     fondoUrl,
     liga: `${sitioCorto(base)}/producciones/${id}`, url: `${base}/producciones/${id}`,
     whatsapp: telefonoLegible(env.whatsapp), lugar: (funcion?.venue ?? obra.venue) || null,
-    fecha: fecha.fecha, hora: fecha.hora, extra,
+    fecha: fecha.fecha, hora: fecha.hora, extra, preparate,
     pasos: diseno === "comprar" ? pasosComprar({ whatsapp: env.whatsapp, liga: `${sitioCorto(base)}/producciones/${id}`, modo: extra?.modoVenta }) : undefined,
-    calendario: diseno === "calendario" ? renglonesCalendario(obra.funciones, formato === "historia" ? 9 : formato === "post" ? 6 : 4) : undefined,
+    // La invitación lleva todas las funciones (las que caben; el resto como "y N fechas más").
+    calendario: diseno === "calendario" ? renglonesCalendario(obra.funciones, formato === "historia" ? 9 : formato === "post" ? 6 : 4)
+      : diseno === "invitacion" ? renglonesCalendario(obra.funciones, formato === "historia" ? 6 : formato === "post" ? 4 : 3) : undefined,
   });
   const archivo = `${obra.nombre}-${diseno}-${formato}`.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^A-Za-z0-9-]+/g, "-");
   return new NextResponse(new Uint8Array(png), {

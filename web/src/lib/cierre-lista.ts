@@ -51,7 +51,7 @@ export function listaCierre(d: DatosCierre): { puntos: PuntoCierre[]; puedeCerra
     { clave: "creditos", texto: "Elenco y equipos en los créditos", ok: d.creditos > 0, bloquea: false,
       detalle: d.creditos ? undefined : "La página de archivo se verá sin elenco.", href: `${base}/elenco` },
     { clave: "galeria", texto: "Galería de fotos para el archivo", ok: d.fotosGaleria > 0, bloquea: false,
-      detalle: d.fotosGaleria ? undefined : "La página de archivo se verá sin fotos de la obra.", href: `${base}/fanzone` },
+      detalle: d.fotosGaleria ? undefined : "La página de archivo se verá sin fotos de la obra.", href: `${base}/fanzone/fotos` },
   ];
   return { puntos, puedeCerrar: d.ordenesPendientes === 0 && !d.beneficiosPendientes, pendientes: puntos.filter((p) => !p.ok).length };
 }

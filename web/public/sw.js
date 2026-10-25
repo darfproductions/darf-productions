@@ -1,10 +1,12 @@
 // Service worker de DARF (app instalable + notificaciones push).
-// No guarda en caché páginas ni datos privados: solo la página "Sin conexión".
+// No guarda en caché páginas ni datos privados: solo la página "Sin conexión" (que muestra la credencial y los
+// boletos que Mi cuenta dejó guardados en este teléfono, ver components/pwa/SinConexion.tsx).
 const OFFLINE = "/offline.html";
-const CACHE = "darf-offline-v1";
+const CACHE = "darf-offline-v2";
+const LOGO = "/icons/icon-192.png";
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(caches.open(CACHE).then((c) => c.add(OFFLINE)).then(() => self.skipWaiting()));
+  event.waitUntil(caches.open(CACHE).then((c) => c.addAll([OFFLINE, LOGO])).then(() => self.skipWaiting()));
 });
 
 self.addEventListener("activate", (event) => {
@@ -15,8 +17,12 @@ self.addEventListener("activate", (event) => {
   );
 });
 
-// Solo navegación: si no hay internet, muestra la página "Sin conexión".
+// Solo navegación: si no hay internet, muestra la página "Sin conexión" (y su logo).
 self.addEventListener("fetch", (event) => {
+  if (event.request.method === "GET" && new URL(event.request.url).pathname === LOGO) {
+    event.respondWith(fetch(event.request).catch(() => caches.match(LOGO)));
+    return;
+  }
   if (event.request.mode !== "navigate") return;
   event.respondWith(fetch(event.request).catch(() => caches.match(OFFLINE)));
 });

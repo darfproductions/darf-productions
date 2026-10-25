@@ -2,6 +2,7 @@ import { cache } from "react";
 import { redirect } from "next/navigation";
 import { requireSession, type Session } from "@/lib/auth";
 import { casa, hasAnyAccess, type PanelAccessData, type PapelEvento } from "@/lib/panel-nav";
+import { memoriaCorta } from "@/lib/memoria";
 import { createClient } from "@/lib/supabase/server";
 
 // Permisos del panel desde la base (my_panel_access 0031, my_audition_access 0037, my_evento_access 0084).
@@ -12,9 +13,20 @@ export async function getPanelAccess(session: Session): Promise<PanelAccess> {
   return { ...(await cargarAcceso(session.userId)), session, isDirector: session.profile?.rol === "admin" };
 }
 
-// Una sola vez por página para la misma persona (layout, encabezado y página la comparten).
-const cargarAcceso = cache(async function cargarAcceso(userId: string): Promise<Omit<PanelAccess, "session" | "isDirector">> {
+type Acceso = Omit<PanelAccess, "session" | "isDirector">;
+// Una sola vez por página para la misma persona (layout, encabezado y página la comparten), y además se recuerda 30 s
+// por persona: el encabezado los pide en cada página con sesión (4 consultas) y con mucha gente a la vez saturaban la
+// base. Un permiso nuevo tarda a lo más 30 s en aparecer; la base revisa los permisos de nuevo en cada acción.
+const memoria = memoriaCorta<Acceso>(30_000);
+const cargarAcceso = cache(async function cargarAcceso(userId: string): Promise<Acceso> {
   if (!userId) return { byProduction: {}, byAudition: {}, byEvento: {}, casa: [] };
+  return memoria.get(userId, () => consultarAcceso());
+});
+
+/** Tras aceptar una invitación o un papel: el acceso nuevo se ve al instante (en este servidor). */
+export function olvidarAcceso(userId: string) { memoria.olvidar(userId); }
+
+async function consultarAcceso(): Promise<Acceso> {
   const supabase = await createClient();
   const [{ data, error }, aud, ev, cs] = await Promise.all([
     supabase.rpc("my_panel_access"), supabase.rpc("my_audition_access"), supabase.rpc("my_evento_access"), supabase.rpc("mis_permisos_casa"),
@@ -34,7 +46,7 @@ const cargarAcceso = cache(async function cargarAcceso(userId: string): Promise<
   for (const r of (ev.data ?? []) as { encuentro_id: string; papel: PapelEvento }[]) byEvento[r.encuentro_id] = r.papel;
   // Casa DARF (0102). Si la base aún no la tiene, no hay permisos globales.
   return { byProduction, byAudition, byEvento, casa: (cs.data ?? []) as string[] };
-});
+}
 
 /** Para páginas del panel: exige sesión y algún permiso; si no, manda a Mi cuenta. */
 export async function requirePanel(next = "/panel"): Promise<PanelAccess> {

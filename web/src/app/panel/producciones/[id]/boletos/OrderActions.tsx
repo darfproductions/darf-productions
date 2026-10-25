@@ -22,12 +22,12 @@ function Motivo({ id, placeholder }: { id: string; placeholder: string }) {
 
 // Acciones de una orden (0088): aprobar con método y referencia, rechazar o cancelar con motivo,
 // cancelar un boleto y dar más tiempo a un apartado (también a uno vencido).
-export function OrderActions({ pid, o, obra, funcion, limite, ligaCuenta }: { pid: string; o: SaleOrder; obra: string; funcion: string; limite?: string | null; ligaCuenta: string }) {
+export function OrderActions({ pid, o, obra, funcion, limite, ligaCuenta, puertas }: { pid: string; o: SaleOrder; obra: string; funcion: string; limite?: string | null; ligaCuenta: string; puertas?: string | null }) {
   const activos = o.tickets.filter((t) => t.is_active);
   const h = { pid, order: o.id };
   // WhatsApp con un toque (Bloque 4A): mensaje ya escrito al teléfono del comprador.
   const wa = o.status === "pendiente" ? ligaWhatsApp(o.buyer_telefono, mensajeOrden("recordar", o, { obra, funcion, limite, liga: ligaCuenta }))
-    : o.status === "aprobado" && !o.created_by_staff_id ? ligaWhatsApp(o.buyer_telefono, mensajeOrden("aprobada", o, { obra, funcion, liga: ligaCuenta })) : null;
+    : o.status === "aprobado" && !o.created_by_staff_id ? ligaWhatsApp(o.buyer_telefono, mensajeOrden("aprobada", o, { obra, funcion, liga: ligaCuenta, puertas })) : null;
   return (
     <div className="flex flex-wrap items-start gap-2">
       {wa && <a href={wa} target="_blank" rel="noreferrer" className={small}>{o.status === "pendiente" ? "WhatsApp: recordar pago" : "WhatsApp: avisar que se aprobó"}</a>}

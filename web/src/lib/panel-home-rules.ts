@@ -33,7 +33,11 @@ export function pendienteTexto(p: Pendiente): string {
 /** A dónde se resuelve cada pendiente: directo a la acción (0085). */
 export function pendienteHref(p: Pendiente): string {
   if (p.tipo === "notas_equipo" || p.tipo === "avisos_equipo") return `/cuenta/equipo/${p.production_id ?? "general"}`;
-  if (p.tipo === "pagos_evento") return p.ref_id ? `/panel/eventos#e-${p.ref_id}` : "/panel/eventos";
+  // Eventos de una obra: en su Fan Zone (ahí está la lista, con su pestaña marcada); los de DARF, en Eventos.
+  if (p.tipo === "pagos_evento") {
+    const base = p.production_id ? `/panel/producciones/${p.production_id}/fanzone` : "/panel/eventos";
+    return p.ref_id ? `${base}#e-${p.ref_id}` : base;
+  }
   if (p.tipo === "solicitudes") return p.ref_id ? `/panel/audiciones/${p.ref_id}/solicitudes` : "/panel/audiciones";
   if (!p.production_id) return "/panel/audiciones";
   const base = `/panel/producciones/${p.production_id}`;
@@ -114,7 +118,7 @@ export function cumplesProximos<T extends { user_id: string; nombre: string; dia
 
 /** Pestaña de la obra donde se resuelve cada pendiente (para los números en las pestañas, 0085). */
 const PESTANA: Partial<Record<PendienteTipo, string>> = {
-  ordenes: "boletos", beneficios_vencidos: "boletos", beneficios_hoy: "boletos", pagos_evento: "fanzone", solicitudes: "audiciones", solicitudes_elenco: "solicitudes", ofertas: "elenco", elenco_sin_publicar: "elenco",
+  ordenes: "boletos", beneficios_vencidos: "entregas", beneficios_hoy: "entregas", pagos_evento: "fanzone", solicitudes: "audiciones", solicitudes_elenco: "solicitudes", ofertas: "elenco", elenco_sin_publicar: "elenco",
   documentos: "expedientes", adeudos: "expedientes", decision: "expedientes", evaluaciones: "evaluaciones", propuestas: "evaluaciones", entregas: "evaluaciones",
 };
 

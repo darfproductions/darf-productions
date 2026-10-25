@@ -7,6 +7,7 @@ import { horaMx, type Lectura } from "@/lib/acceso-rules";
 import { ACCESO_FAN, type AccesoFan } from "@/lib/credencial-fan-rules";
 import { mensajeError } from "@/lib/errores";
 import { createClient } from "@/lib/supabase/server";
+import { refrescarPublico } from "@/lib/supabase/publico";
 
 // Galería pública de la obra (tabla gallery_photos + bucket gallery, 0028).
 // La base exige fanzone.editar en ESTA obra (0032).
@@ -17,8 +18,9 @@ export async function addGalleryPhoto(pid: string, path: string): Promise<{ ok: 
   const { data: last } = await supabase.from("gallery_photos").select("sort_order").eq("production_id", pid).eq("kind", "galeria").order("sort_order", { ascending: false }).limit(1);
   const { error } = await supabase.from("gallery_photos").insert({ production_id: pid, kind: "galeria", path, sort_order: ((last?.[0]?.sort_order as number) ?? 0) + 1 });
   if (error) return { ok: false, message: error.message };
-  revalidatePath(`/panel/producciones/${pid}/fanzone`);
+  revalidatePath(`/panel/producciones/${pid}/fanzone`, "layout");
   revalidatePath(`/producciones/${pid}`);
+  refrescarPublico();
   return { ok: true, message: "Foto agregada a la galería." };
 }
 
@@ -29,8 +31,9 @@ export async function addFotoFuncion(pid: string, perf: string, path: string): P
   const { data: last } = await supabase.from("gallery_photos").select("sort_order").eq("production_id", pid).eq("kind", "galeria").order("sort_order", { ascending: false }).limit(1);
   const { error } = await supabase.from("gallery_photos").insert({ production_id: pid, kind: "galeria", path, performance_id: perf, sort_order: ((last?.[0]?.sort_order as number) ?? 0) + 1 });
   if (error) return { ok: false, message: mensajeError(error) };
-  revalidatePath(`/panel/producciones/${pid}/fanzone`);
+  revalidatePath(`/panel/producciones/${pid}/fanzone`, "layout");
   revalidatePath(`/producciones/${pid}`);
+  refrescarPublico();
   return { ok: true, message: "Foto agregada." };
 }
 
@@ -40,7 +43,7 @@ export async function avisarFotosFuncion(_p: { ok: boolean; message: string } | 
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("fotos_funcion_avisar", { pid, perf });
   if (error) return { ok: false, message: mensajeError(error) };
-  revalidatePath(`/panel/producciones/${pid}/fanzone`);
+  revalidatePath(`/panel/producciones/${pid}/fanzone`, "layout");
   const n = Number(data ?? 0);
   return { ok: true, message: n === 0 ? "Listo. Nadie de esa función tiene cuenta, así que no hubo a quién avisar." : `Listo: se avisó a ${n} ${n === 1 ? "persona" : "personas"}.` };
 }
@@ -56,8 +59,9 @@ export async function removeGalleryPhoto(_p: { ok: boolean; message: string } | 
   if (error) return { ok: false, message: mensajeError(error) };
   if (!count) return { ok: false, message: "No tienes permiso para quitar fotos de esta obra." };
   await supabase.storage.from("gallery").remove([data.path as string]);
-  revalidatePath(`/panel/producciones/${pid}/fanzone`);
+  revalidatePath(`/panel/producciones/${pid}/fanzone`, "layout");
   revalidatePath(`/producciones/${pid}`);
+  refrescarPublico();
   return { ok: true, message: "Foto quitada." };
 }
 
@@ -65,7 +69,7 @@ export async function removeGalleryPhoto(_p: { ok: boolean; message: string } | 
 type State = { ok: boolean; message: string } | null;
 const str = (f: FormData, k: string) => String(f.get(k) ?? "").trim();
 const refresh = (pid: string) => {
-  revalidatePath(`/panel/producciones/${pid}/fanzone`);
+  revalidatePath(`/panel/producciones/${pid}/fanzone`, "layout");
   revalidatePath("/fan-zone", "layout");
 };
 
@@ -154,7 +158,7 @@ export async function validarCredencial(pid: string, eid: string, code: string):
   const socio = [r.nivel === "equipo" ? "Equipo DARF" : null, r.numero ? `Socio ${numeroSocio(r.numero)}${r.fundador ? " · Fan fundador" : ""}` : null].filter(Boolean).join(" · ") || undefined;
   const base = { ok: true, nombre: r.nombre ?? "", fotoUrl, detalle: socio };
   if (r.resultado === "ok") {
-    revalidatePath(`/panel/producciones/${pid}/fanzone`);
+    revalidatePath(`/panel/producciones/${pid}/fanzone`, "layout");
     revalidatePath(`/panel/producciones/${pid}/puerta`);
     return { ...base, tono: "ok", titulo: `${ACCESO_FAN.ok.titulo} · ${horaMx(r.llegada)}`, llegada: horaMx(r.llegada) };
   }

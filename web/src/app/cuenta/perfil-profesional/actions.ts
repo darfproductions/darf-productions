@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { httpsOrNull, LISTAS, parseList, trayectoriaDe, usuarioRed, type Habilidades, type Trayecto } from "@/lib/pro-rules";
 import { createClient } from "@/lib/supabase/server";
 import { mensajeError } from "@/lib/errores";
+import { refrescarPublico } from "@/lib/supabase/publico";
 
 // Perfil profesional (0057). Lo usan Mi cuenta y el panel; la base revisa quién puede editar.
 
@@ -15,6 +16,7 @@ function refresh() {
   revalidatePath("/panel/talento", "layout");
   revalidatePath("/artistas", "layout");
   revalidatePath("/producciones", "layout");
+  refrescarPublico();
 }
 
 /** Crea la fila del perfil si no existe (el slug lo pone la base). */

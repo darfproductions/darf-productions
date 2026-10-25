@@ -62,7 +62,7 @@ export default async function PanelProductions() {
                   </div>
                 </Link>
                 {p.estado === "publicada" && can(access, p.id, "obra.publicar") && !conPoster.has(p.id) && (
-                  <Link href={`/panel/producciones/${p.id}/pagina#poster`} className="text-xs text-texto-3 underline-offset-4 hover:underline" title="Sin póster oficial la portada usa la imagen de ambiente">
+                  <Link href={`/panel/producciones/${p.id}/pagina/imagen#poster`} className="text-xs text-texto-3 underline-offset-4 hover:underline" title="Sin póster oficial la portada usa la imagen de ambiente">
                     Sin póster destacado
                   </Link>
                 )}

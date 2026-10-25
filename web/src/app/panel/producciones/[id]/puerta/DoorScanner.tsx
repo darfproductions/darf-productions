@@ -5,9 +5,11 @@ import { useCallback, useEffect, useState, useTransition } from "react";
 import { QrScanner } from "@/components/panel/QrScanner";
 import { bip } from "@/lib/aviso-sonido";
 import { mayus } from "@/lib/dates";
-import { beneficiosPuerta, buscarPuerta, checkIn, conteoPuerta, deshacerEntrada, entregarBeneficio, visitaPuerta, type BoletoPuerta, type CheckIn, type Conteo, type Visita } from "./actions";
+import { beneficiosPuerta, buscarPuerta, conteoPuerta, deshacerEntrada, entregarBeneficio, visitaPuerta, type BoletoPuerta, type CheckIn, type Conteo, type Visita } from "./actions";
 import { ESTADOS_ENTREGA, MOMENTOS_ENTREGA, TIPOS_BENEFICIO, horaAcceso, minutosAcceso, textoBeneficio, type BeneficioBoleto } from "@/lib/beneficios-rules";
 import { esPaseClub, etiquetaBoleto } from "./door-rules";
+import type { ResultadoLocal } from "./sin-conexion-rules";
+import { usePuertaSinConexion } from "./usePuertaSinConexion";
 import { Icono, type IconoNombre } from "@/components/Icono";
 
 const VISTA: Record<string, { bg: string; title: string; icono: IconoNombre }> = {
@@ -17,6 +19,8 @@ const VISTA: Record<string, { bg: string; title: string; icono: IconoNombre }> =
   no_aprobado: { bg: "bg-[#7c2d12]", title: "Compra sin aprobar", icono: "alerta" },
   otra_funcion: { bg: "bg-[#5a1a22]", title: "Boleto de otra función", icono: "x" },
   no_encontrado: { bg: "bg-[#5a1a22]", title: "QR no válido", icono: "x" },
+  // Sin internet: el boleto no está en la lista guardada de esta función.
+  no_en_lista: { bg: "bg-[#5a1a22]", title: "No está en la lista", icono: "x" },
   error: { bg: "bg-[#5a1a22]", title: "No se pudo validar", icono: "alerta" },
   // 0110: pases del Club Fan (suman la visita de esa cuenta en esta función).
   visita_ok: { bg: "bg-[#14532d]", title: "Visita sumada", icono: "check" },
@@ -33,9 +37,19 @@ const chico = "rounded-full border border-white/25 px-3 py-1.5 text-xs font-bold
 
 // Puerta: valida boletos de la función elegida con el lector de QR del panel. Bloque 4A: contador en
 // vivo, sonido y vibración, buscar por nombre/código si el QR no abre, deshacer y lista descargable.
+// 2026-10-25: sin internet valida contra la lista guardada en el celular y sube las entradas al volver la señal.
+type Mostrado = CheckIn | Visita | { result: "no_en_lista" };
+const comoCheckIn = (r: ResultadoLocal): Mostrado =>
+  r.result === "ok" ? { result: "ok", seat_label: r.lugar, buyer_nombre: r.nombre }
+    : r.result === "ya_usado" ? { result: "ya_usado", seat_label: r.lugar, buyer_nombre: r.nombre, checked_in_at: r.entro }
+      : { result: "no_en_lista" };
+const sinAcentos = (t: string) => t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
 export function DoorScanner({ pid, funciones, inicial }: { pid: string; funciones: { id: string; starts_at: string }[]; inicial: string | null }) {
   const [funcion, setFuncion] = useState(inicial ?? funciones[0]?.id ?? "");
-  const [res, setRes] = useState<CheckIn | Visita | null>(null);
+  const [res, setRes] = useState<Mostrado | null>(null);
+  const [sinRed, setSinRed] = useState(false);
+  const sc = usePuertaSinConexion(funcion);
   const [conteo, setConteo] = useState<Conteo | null>(null);
   const [q, setQ] = useState("");
   const [hallados, setHallados] = useState<BoletoPuerta[] | null>(null);
@@ -44,7 +58,7 @@ export function DoorScanner({ pid, funciones, inicial }: { pid: string; funcione
   // 0122: beneficios del último boleto leído (token para marcar entregas).
   const [benef, setBenef] = useState<{ token: string; lista: BeneficioBoleto[] } | null>(null);
   const [nota, setNota] = useState("");
-  const cargarBenef = async (token: string, r: CheckIn | Visita) => {
+  const cargarBenef = async (token: string, r: Mostrado) => {
     if (r.result === "ok" || r.result === "ya_usado") {
       const lista = await beneficiosPuerta(token);
       setBenef(lista.length ? { token, lista } : null);
@@ -59,44 +73,79 @@ export function DoorScanner({ pid, funciones, inicial }: { pid: string; funcione
   const v = res ? VISTA[res.result] : null;
 
   const actualizar = useCallback(async () => {
-    if (funcion) setConteo(await conteoPuerta(funcion));
+    if (funcion) setConteo(await conteoPuerta(funcion).catch(() => null));
   }, [funcion]);
 
-  // El contador se actualiza solo cada 15 s (varias puertas a la vez) y después de cada lectura.
+  // El contador se actualiza solo cada 15 s (varias puertas a la vez) y después de cada lectura; con la pestaña oculta
+  // no pregunta. Sin internet se cuenta con la lista guardada.
   useEffect(() => {
     let vivo = true;
-    const tick = async () => { const c = funcion ? await conteoPuerta(funcion) : null; if (vivo) setConteo(c); };
+    const tick = async () => {
+      if (document.visibilityState === "hidden") return;
+      const c = funcion ? await conteoPuerta(funcion).catch(() => null) : null;
+      if (vivo) setConteo(c);
+    };
     tick();
     const t = setInterval(tick, 15000);
     return () => { vivo = false; clearInterval(t); };
   }, [funcion]);
+  const conteoVisto = sc.enLinea && conteo ? conteo : sc.conteo ?? conteo;
+
+  // Un boleto (escaneado o de la búsqueda): en línea si se puede; si no, con la lista guardada.
+  const validarBoleto = async (token: string) => {
+    const v = await sc.validar(token);
+    if (!v) {
+      setSinRed(true);
+      setRes({ result: "error", message: "Sin conexión y este celular no tiene la lista de la función. Abre Puerta con internet antes de que empiece la entrada." });
+      setBenef(null);
+      bip(false);
+      return;
+    }
+    const r = v.local ? comoCheckIn(v.r) : v.r;
+    setSinRed(v.local);
+    setRes(r);
+    if (v.local) setBenef(null); else await cargarBenef(token, r);
+    bip(r.result === "ok");
+    if (!v.local) await actualizar();
+  };
 
   // El mismo escáner lee boletos y pases del Club Fan: una persona revisa boletos y otra, pases.
   const leer = (token: string) => start(async () => {
-    const r = esPaseClub(token) ? await visitaPuerta(token, funcion) : await checkIn(token, funcion);
-    setRes(r);
-    if (esPaseClub(token)) setBenef(null); else await cargarBenef(token, r);
-    bip(r.result === "ok" || r.result === "visita_ok");
+    if (!esPaseClub(token)) return validarBoleto(token);
+    setBenef(null);
+    setSinRed(false);
+    const r = await visitaPuerta(token, funcion).catch(() => null);
+    const final: Mostrado = r ?? { result: "error", message: "Sin conexión: los pases del Club Fan se escanean cuando vuelva la señal. El boleto sí se valida." };
+    setRes(final);
+    bip(final.result === "visita_ok");
     await actualizar();
   });
 
+  // Sin internet se busca en la lista guardada (nombre o lugar).
+  const buscarLocal = (): BoletoPuerta[] | null => {
+    if (!sc.lista) return null;
+    const t = sinAcentos(q.trim());
+    if (t.length < 2) return [];
+    return sc.lista.boletos.filter((b) => sinAcentos(b.nombre).includes(t) || sinAcentos(b.lugar) === t).slice(0, 30)
+      .map((b) => ({ ticket_id: b.t, qr_token: b.t, order_code: "", buyer_nombre: b.nombre, buyer_telefono: "", lugar: b.lugar, checked_in_at: b.entro }));
+  };
   const buscar = () => start(async () => {
     setAviso("");
-    const r = await buscarPuerta(funcion, q);
-    if (r.ok) setHallados(r.boletos); else setAviso(r.message);
+    const r = sc.enLinea ? await buscarPuerta(funcion, q).catch(() => null) : null;
+    if (r?.ok) { setHallados(r.boletos); return; }
+    const local = buscarLocal();
+    if (local) { setHallados(local); setAviso("Sin conexión: resultados de la lista guardada (nombre o asiento)."); }
+    else setAviso(r && !r.ok ? r.message : "Sin conexión y sin lista guardada.");
   });
 
   const marcar = (b: BoletoPuerta) => start(async () => {
-    const r = await checkIn(b.qr_token, funcion);
-    setRes(r);
-    await cargarBenef(b.qr_token, r);
-    bip(r.result === "ok");
-    await actualizar();
-    const n = await buscarPuerta(funcion, q);
-    if (n.ok) setHallados(n.boletos);
+    await validarBoleto(b.qr_token);
+    const n = sc.enLinea ? await buscarPuerta(funcion, q).catch(() => null) : null;
+    setHallados(n?.ok ? n.boletos : buscarLocal());
   });
 
   const deshacer = (b: BoletoPuerta) => start(async () => {
+    if (!sc.enLinea) { setAviso("Sin conexión: deshacer una entrada se puede cuando vuelva la señal."); return; }
     if (!window.confirm(`¿Deshacer la entrada de ${b.buyer_nombre} (${b.lugar})? El boleto vuelve a servir.`)) return;
     const r = await deshacerEntrada(b.ticket_id);
     setAviso(r.message);
@@ -113,9 +162,28 @@ export function DoorScanner({ pid, funciones, inicial }: { pid: string; funcione
           {funciones.map((f) => <option key={f.id} value={f.id}>{fecha(f.starts_at)}</option>)}
         </select>
       </label>
-      {conteo && (
+      <div role="status" className={`flex flex-wrap items-center justify-between gap-2 rounded-2xl px-4 py-2.5 text-sm ${sc.enLinea ? "bg-telon" : "bg-[#7c2d12] text-white"}`}>
+        <span className="flex items-center gap-2 font-bold">
+          <span aria-hidden="true" className={`h-2.5 w-2.5 rounded-full ${sc.enLinea ? "bg-[#22c55e]" : "bg-[#fbbf24]"}`} />
+          {sc.enLinea ? "En línea" : "Sin conexión · validando con la lista guardada"}
+          {sc.pendientes > 0 && <span>· {sc.pendientes} por subir</span>}
+        </span>
+        <span className="text-xs opacity-90">
+          {sc.lista ? `Lista de ${sc.lista.boletos.length} boletos, ${hora(sc.lista.descargada)}` : "Aún no hay lista guardada en este celular"}
+          {sc.pendientes > 0 && sc.enLinea && <button type="button" onClick={() => void sc.subir()} disabled={sc.subiendo} className={`${chico} ml-2`}>{sc.subiendo ? "Subiendo…" : "Subir ahora"}</button>}
+        </span>
+      </div>
+      {sc.resumen && (
+        <div role="status" className="flex flex-col gap-1 rounded-2xl border border-white/15 bg-telon px-4 py-3 text-sm">
+          <p className="font-bold">Entradas sin internet subidas: {sc.resumen.subidas}</p>
+          {sc.resumen.dobles.length > 0 && <p className="font-bold text-[#ff8fa3]">Doble entrada (otro celular ya lo había dejado pasar): {sc.resumen.dobles.map((d) => `${d.nombre} ${d.lugar}`.trim()).join(", ")}</p>}
+          {sc.resumen.rechazadas.length > 0 && <p className="font-bold text-[#ff8fa3]">La base no las aceptó (cancelado o sin aprobar): {sc.resumen.rechazadas.map((d) => `${d.nombre} ${d.lugar}`.trim()).join(", ")}</p>}
+          <button type="button" onClick={sc.cerrarResumen} className={`${chico} self-start`}>Entendido</button>
+        </div>
+      )}
+      {conteoVisto && (
         <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-telon px-4 py-3">
-          <p className="text-lg"><b className="text-2xl">{conteo.entraron}</b> de {conteo.vendidos} ya entraron</p>
+          <p className="text-lg"><b className="text-2xl">{conteoVisto.entraron}</b> de {conteoVisto.vendidos} ya entraron{!sc.enLinea && <span className="text-sm text-texto-3"> (en este celular)</span>}</p>
           <a href={`/panel/producciones/${pid}/puerta/lista/${funcion}`} className={chico}>Descargar lista (plan B)</a>
         </div>
       )}
@@ -143,6 +211,8 @@ export function DoorScanner({ pid, funciones, inicial }: { pid: string; funcione
           )}
           {res.result === "ya_usado" && "checked_in_at" in res && res.checked_in_at && <p className="mt-1 text-lg font-bold">Entró a las {hora(String(res.checked_in_at))}</p>}
           {res.result === "otra_funcion" && <p className="mt-1 text-sm">No se marcó como usado. Mándalo a taquilla.</p>}
+          {res.result === "no_en_lista" && <p className="mt-1 text-sm">Puede ser de otra función, estar cancelado o ser una compra muy reciente. Búscalo por nombre o mándalo a taquilla.</p>}
+          {sinRed && res.result === "ok" && <p className="mt-2 text-sm font-bold">Validado sin internet: se sube solo al volver la señal.</p>}
           {res.result === "error" && <p>{res.message}</p>}
         </div>
       )}

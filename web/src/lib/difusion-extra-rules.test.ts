@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { pasosComprar, precioCorto, puntosMapa, renglonesCalendario, telefonoLegible, textoInvitacion } from "./difusion-extra-rules";
+import { pasosComprar, precioCorto, puntosMapa, renglonesCalendario, telefonoLegible, textoInvitacion, textosPreparate } from "./difusion-extra-rules";
+import { ACCESO_TARDIO_OMISION, LOGISTICA_OMISION } from "./logistica-rules";
 
 describe("más diseños de difusión", () => {
   it("mapa por filas: cabe en el lienzo y deja lugar al escenario", () => {
@@ -32,3 +33,18 @@ describe("más diseños de difusión", () => {
     expect(textoInvitacion({ funcion: null, rango: "4 al 6 de diciembre" }).hora).toBeNull();
   });
 });
+
+describe("Prepárate para tu función (0127)", () => {
+  const h = { puertas: "2027-01-24T01:30:00Z", inicio: "2027-01-24T02:00:00Z", termina: "2027-01-24T04:10:00Z", intermedio: 15 };
+  it("tres horas y recordatorios con la logística de la obra", () => {
+    const x = textosPreparate(h, { ...LOGISTICA_OMISION, acceso_tardio: "Después de iniciar no hay acceso.", indicaciones: "\n Estacionamiento gratis en la explanada \nNo se permiten alimentos" });
+    expect(x.horas.map((y) => `${y.etiqueta} ${y.hora}`)).toEqual(["Puertas 7:30 p.m.", "Función 8:00 p.m.", "Salida aprox. 10:10 p.m."]);
+    expect(x.recordatorios).toEqual(["Ten tu boleto con QR a la mano: en tu cuenta, PDF o Wallet.", "Después de iniciar no hay acceso.", "Estacionamiento gratis en la explanada"]);
+  });
+  it("sin textos: los de omisión", () => {
+    const x = textosPreparate(h, null);
+    expect(x.recordatorios[1]).toBe(ACCESO_TARDIO_OMISION);
+    expect(x.recordatorios[2]).toContain("señal");
+  });
+});
+

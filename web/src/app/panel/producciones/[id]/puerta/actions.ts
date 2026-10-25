@@ -3,6 +3,8 @@
 import type { BeneficioBoleto } from "@/lib/beneficios-rules";
 import { mensajeError } from "@/lib/errores";
 import { createClient } from "@/lib/supabase/server";
+import { todasLasFilas } from "@/lib/supabase/paginar";
+import type { ListaPuerta } from "./sin-conexion-rules";
 
 type Datos = { seat_label?: string; buyer_nombre?: string; category?: string; checked_in_at?: string; production?: string; performance_starts_at?: string };
 export type CheckIn =
@@ -44,6 +46,14 @@ export async function buscarPuerta(funcion: string, q: string): Promise<{ ok: tr
   const { data, error } = await (await createClient()).rpc("puerta_lista", { p_performance: funcion, p_q: q.trim().slice(0, 60) });
   if (error) return { ok: false, message: mensajeError(error) };
   return { ok: true, boletos: ((data ?? []) as BoletoPuerta[]).slice(0, 30) };
+}
+
+/** Puerta sin internet (2026-10-25): todos los boletos válidos de la función para guardarlos en el celular. */
+export async function listaPuerta(funcion: string): Promise<ListaPuerta | null> {
+  const supabase = await createClient();
+  const { data, error } = await todasLasFilas<BoletoPuerta>((a, b) => supabase.rpc("puerta_lista", { p_performance: funcion, p_q: null }).range(a, b));
+  if (error) return null;
+  return { funcion, descargada: new Date().toISOString(), boletos: data.map((b) => ({ t: String(b.qr_token).toLowerCase(), lugar: b.lugar, nombre: b.buyer_nombre, entro: b.checked_in_at })) };
 }
 
 /** Deshacer una entrada marcada por error (0091). */

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { localMxToIso } from "@/lib/dates";
 import { mensajeError } from "@/lib/errores";
 import { createClient } from "@/lib/supabase/server";
+import { refrescarPublico } from "@/lib/supabase/publico";
 
 // Elenco y equipos de una obra. La base exige elenco.gestionar u obra.editar
 // en ESTA obra (0032). La foto es de la obra (sesión de esa obra), no de la persona.
@@ -14,6 +15,7 @@ const TIPOS = ["reparto", "ensamble", "creativo", "produccion", "crew", "tecnico
 const refresh = (pid: string) => {
   revalidatePath(`/panel/producciones/${pid}`, "layout");
   revalidatePath(`/producciones/${pid}`);
+  refrescarPublico();
 };
 
 /** Busca a la persona por nombre exacto (sin importar mayúsculas); si no existe, la da de alta. */

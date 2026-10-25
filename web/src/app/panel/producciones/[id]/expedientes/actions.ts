@@ -5,6 +5,7 @@ import { getSession } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { mensajeError } from "@/lib/errores";
 import { leerCasilla } from "@/lib/pago-tabla";
+import { refrescarPublico } from "@/lib/supabase/publico";
 
 // Expedientes y mensualidades desde el panel (0041). La base revisa expedientes.ver y
 // mensualidades.gestionar en la obra.
@@ -153,13 +154,15 @@ export async function annulPayment(_p: ExpState, f: FormData): Promise<ExpState>
 export async function saveDiscipline(_p: ExpState, f: FormData): Promise<ExpState> {
   const pid = str(f, "pid");
   const n = (k: string) => (f.get(`${k}_on`) === "on" ? Number(str(f, k) || 0) || null : null);
+  // Solo lo que trae el formulario: las reglas de advertencias están en Expedientes y las de asistencia en Ensayos.
+  const fila: Record<string, unknown> = { production_id: pid };
+  if (f.has("limite")) fila.limite_advertencias = Number(str(f, "limite") || 3);
+  for (const [k, col] of [["meses", "auto_mensualidad_meses"], ["retardos", "auto_retardos"], ["faltas", "auto_faltas"]] as const) if (f.has(k)) fila[col] = n(k);
+  if (f.has("tolerancia")) fila.tolerancia_min = Math.min(120, Math.max(0, Number(str(f, "tolerancia") || 10) || 0));
   const supabase = await createClient();
-  const { error } = await supabase.from("production_discipline").upsert({
-    production_id: pid, limite_advertencias: Number(str(f, "limite") || 3),
-    auto_mensualidad_meses: n("meses"), auto_retardos: n("retardos"), auto_faltas: n("faltas"),
-    tolerancia_min: Math.min(120, Math.max(0, Number(str(f, "tolerancia") || 10) || 0)),
-  });
+  const { error } = await supabase.from("production_discipline").upsert(fila);
   if (error) return { ok: false, message: error.message };
+  revalidatePath(`/panel/producciones/${pid}/ensayos`, "layout");
   return ok(pid, null, "Reglas guardadas.");
 }
 
@@ -219,6 +222,7 @@ export async function withdrawMember(_p: ExpState, f: FormData): Promise<ExpStat
   const { error } = await supabase.rpc("member_withdraw", { pid, uid, fecha: str(f, "fecha") || null, motivo: str(f, "motivo") });
   if (error) return { ok: false, message: /check/.test(error.message) ? "La baja no puede ser antes de su ingreso." : error.message };
   revalidatePath(`/producciones/${pid}`);
+  refrescarPublico();
   return ok(pid, uid, "Baja registrada. Su historial se conserva.");
 }
 
@@ -229,6 +233,7 @@ export async function reactivateMember(_p: ExpState, f: FormData): Promise<ExpSt
   const { error } = await supabase.rpc("member_reactivate", { pid, uid });
   if (error) return { ok: false, message: error.message };
   revalidatePath(`/producciones/${pid}`);
+  refrescarPublico();
   return ok(pid, uid, "Reactivado: vuelve a los ensayos y a los créditos.");
 }
 

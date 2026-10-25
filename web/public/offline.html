@@ -6,19 +6,53 @@
 <title>Sin conexión · DARF Productions</title>
 <style>
   body { margin: 0; min-height: 100dvh; display: grid; place-items: center; background: #0b0910; color: #f4f1f8;
-         font-family: system-ui, -apple-system, "Segoe UI", sans-serif; text-align: center; padding: 24px; }
-  img { width: 140px; height: auto; }
+         font-family: system-ui, -apple-system, "Segoe UI", sans-serif; text-align: center; padding: 24px; box-sizing: border-box; }
+  main { width: 100%; max-width: 380px; }
+  .logo { width: 110px; height: auto; }
   h1 { font-size: 22px; margin: 20px 0 8px; }
-  p { color: #d3cddd; margin: 0 0 24px; }
+  h2 { font-size: 17px; margin: 0 0 4px; }
+  p { color: #d3cddd; margin: 0 0 20px; }
+  .tarjeta { background: #f4f1f8; color: #0b0910; border-radius: 18px; padding: 18px; margin: 0 0 16px; }
+  .tarjeta p { color: #3b3644; margin: 0; font-size: 14px; }
+  .tarjeta img { width: 100%; max-width: 260px; height: auto; display: block; margin: 12px auto; image-rendering: pixelated; }
+  .codigo { font-family: ui-monospace, monospace; font-weight: 700; letter-spacing: .08em; }
+  .nota { font-size: 13px; color: #a69fb3; }
   button { background: #f4f1f8; color: #0b0910; border: 0; border-radius: 999px; padding: 12px 24px; font-weight: 700; font-size: 15px; }
 </style>
 </head>
 <body>
   <main>
-    <img src="/icons/icon-192.png" alt="DARF">
+    <img class="logo" src="/icons/icon-192.png" alt="DARF">
     <h1>Sin conexión</h1>
-    <p>Revisa tu internet y vuelve a intentarlo.</p>
+    <p id="ayuda">Revisa tu internet y vuelve a intentarlo.</p>
+    <div id="guardado"></div>
     <button onclick="location.reload()">Reintentar</button>
   </main>
+  <script>
+    // Credencial y boletos que Mi cuenta guardó en este teléfono (components/pwa/SinConexion.tsx).
+    (function () {
+      var d;
+      try { d = JSON.parse(localStorage.getItem("darf-sin-conexion") || "null"); } catch (e) { d = null; }
+      if (!d || (!d.credencial && !(d.boletos && d.boletos.length))) return;
+      var caja = document.getElementById("guardado");
+      var texto = function (el, t) { el.textContent = t; return el; };
+      var tarjeta = function (titulo, lineas, qr, codigo) {
+        var t = document.createElement("section"); t.className = "tarjeta";
+        t.appendChild(texto(document.createElement("h2"), titulo));
+        lineas.forEach(function (l) { if (l) t.appendChild(texto(document.createElement("p"), l)); });
+        if (typeof qr === "string" && qr.indexOf("data:image/") === 0) { var i = document.createElement("img"); i.src = qr; i.alt = "Código QR"; t.appendChild(i); }
+        if (codigo) { var c = texto(document.createElement("p"), codigo); c.className = "codigo"; t.appendChild(c); }
+        caja.appendChild(t);
+      };
+      document.getElementById("ayuda").textContent = "Tus códigos guardados en este teléfono. Sube el brillo para que se lean fácil.";
+      (d.boletos || []).forEach(function (b) { tarjeta(b.obra, [b.funcion, b.lugar, b.asiento], b.qr); });
+      if (d.credencial) tarjeta(d.credencial.titulo, [d.nombre], d.credencial.qr, d.credencial.codigo);
+      if (d.guardado) {
+        var n = document.createElement("p"); n.className = "nota";
+        n.textContent = "Guardado el " + new Date(d.guardado).toLocaleString("es-MX", { dateStyle: "medium", timeStyle: "short" }) + ". Si cambió algo, se actualiza al volver a abrir Mi cuenta con internet.";
+        caja.appendChild(n);
+      }
+    })();
+  </script>
 </body>
 </html>

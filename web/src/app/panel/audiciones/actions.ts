@@ -9,6 +9,7 @@ import { getSession } from "@/lib/auth";
 import { localMxToIso } from "@/lib/dates";
 import { mensajeError } from "@/lib/errores";
 import { createClient } from "@/lib/supabase/server";
+import { refrescarPublico } from "@/lib/supabase/publico";
 
 // Audiciones en el panel (0036, 0037). La base decide qué puede cada quien:
 // gestionar (dirección), registro (mesa) y evaluar (jueces), por obra o por el
@@ -20,6 +21,7 @@ const base = (aid: string) => `/panel/audiciones/${aid}`;
 const done = (aid: string, message: string): AudState => {
   revalidatePath(base(aid), "layout");
   revalidatePath(`/audiciones/${aid}`);
+  refrescarPublico();
   revalidatePath("/audiciones");
   return { ok: true, message };
 };

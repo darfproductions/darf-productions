@@ -1,6 +1,9 @@
 import type { BeneficioCorto } from "@/lib/beneficios-rules";
 import { env } from "@/lib/env";
+import { cache } from "react";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
+import { publico } from "@/lib/supabase/publico";
 import { themeFromKit, type KitColumns, type ProductionTheme } from "@/lib/themes";
 export { themeProblems, themeStyle, type ProductionTheme } from "@/lib/themes";
 import { clasificar, elegirPortada, ordenarObras, type ConEstado, type Featured } from "@/lib/home-rules";
@@ -68,6 +71,9 @@ export type Performance = {
   preventa_hasta?: string | null;
   /** 0118: antes de esta fecha nadie compra en línea (con preventa_hasta, abre para el Club Fan). */
   preventa_desde?: string | null;
+  /** 0127: horario propio (vacío = el de la logística de la obra). */
+  puertas_at?: string | null;
+  termina_at?: string | null;
 };
 
 export type ZonePrice = { nombre: string; price: number; /** Color de la zona en el mapa (0062). */ color?: string | null; /** Orden de la zona (0117). */ orden?: number;
@@ -84,25 +90,41 @@ export type HomeData = {
   featured: Featured<Production> | null;
 };
 
-export async function getHomeData(): Promise<HomeData> {
-  const supabase = await createClient();
+// Las tres lecturas de la portada y la cartelera son públicas: se guardan 60 s (lib/supabase/publico.ts). Lo que
+// depende de la hora (cartelera, próximamente) se calcula afuera, en cada visita.
+const leerHome = publico("home", async (supabase) => {
   const [prods, perfs, desde] = await Promise.all([
     supabase.from("productions").select(PRODUCTION_COLUMNS).in("estado", PUBLIC_STATES),
     supabase.from("performances").select("production_id, starts_at, on_sale").is("cancelada_at", null),
     supabase.rpc("productions_desde"),
   ]);
   if (prods.error) throw new Error(`No se pudieron cargar las producciones: ${prods.error.message}`);
+  return { prods: (prods.data ?? []) as Production[], perfs: (perfs.data ?? []) as { production_id: string; starts_at: string | null; on_sale: boolean }[], desde: (desde.data ?? []) as { production_id: string; desde: number }[] };
+});
+
+export const getHomeData = cache(async function getHomeData(): Promise<HomeData> {
+  const { prods, perfs, desde } = await leerHome();
   // "Desde $" con el precio real de las funciones que vienen (0088), no la columna vieja de la 1.0.
-  const minimo = new Map(((desde.data ?? []) as { production_id: string; desde: number }[]).map((r) => [r.production_id, Number(r.desde)]));
-  const conPrecio = ((prods.data ?? []) as Production[]).map((p) => ({ ...p, price: minimo.get(p.id) ?? 0 }));
+  const minimo = new Map(desde.map((r) => [r.production_id, Number(r.desde)]));
+  const conPrecio = prods.map((p) => ({ ...p, price: minimo.get(p.id) ?? 0 }));
   // 0120: funciones sin publicar no cuentan (ni para el equipo con sesión): sin fechas ni cuenta regresiva.
   const publicadas = new Set(conPrecio.filter((p) => p.funciones_publicadas !== false).map((p) => p.id));
-  const productions = ordenarObras(clasificar(conPrecio, (perfs.data ?? []).filter((f) => publicadas.has(f.production_id as string))));
+  const productions = ordenarObras(clasificar(conPrecio, perfs.filter((f) => publicadas.has(f.production_id))));
   return { productions, featured: elegirPortada(productions) };
-}
+});
 
-export async function getProduction(id: string, opts: { includeDrafts?: boolean } = {}) {
-  const supabase = await createClient();
+/** La obra, sus funciones y precios. La página pública la lee como visitante y guardada 60 s (también la piden el
+ *  título, la imagen para compartir y la página en el mismo render: cache() la pide una vez). La vista previa del
+ *  panel (`includeDrafts`) la lee con la sesión, sin guardar. */
+export function getProduction(id: string, opts: { includeDrafts?: boolean } = {}) {
+  return cargarProduction(id, !!opts.includeDrafts);
+}
+const cargarProduction = cache(async (id: string, borradores: boolean) =>
+  borradores ? leerProduction(await createClient(), id, true) : leerProductionPublica(id));
+const leerProductionPublica = publico("obra", (sb, id: string) => leerProduction(sb, id, false));
+
+async function leerProduction(supabase: SupabaseClient, id: string, includeDrafts: boolean) {
+  const opts = { includeDrafts };
   const [prod, perfs] = await Promise.all([
     supabase
       .from("productions")
@@ -112,7 +134,7 @@ export async function getProduction(id: string, opts: { includeDrafts?: boolean 
       .maybeSingle(),
     supabase
       .from("performances")
-      .select("id, starts_at, venue, on_sale, preventa_hasta, preventa_desde")
+      .select("id, starts_at, venue, on_sale, preventa_hasta, preventa_desde, puertas_at, termina_at")
       .eq("production_id", id)
       .is("cancelada_at", null)
       .order("starts_at", { nullsFirst: false }),
@@ -140,7 +162,7 @@ export async function getProduction(id: string, opts: { includeDrafts?: boolean 
     }
     prices = [...byZone.values()].sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0) || b.price - a.price);
     // 0122: beneficios de cada zona (los activos; la base no da los ocultos al público).
-    const porNombre = await beneficiosPorNombreDeZona(id);
+    const porNombre = await leerBeneficiosPorZona(supabase, id);
     prices = prices.map((z) => ({ ...z, beneficios: porNombre.get(z.nombre) ?? [] }));
   }
 
@@ -153,7 +175,11 @@ export async function getProduction(id: string, opts: { includeDrafts?: boolean 
 
 /** Beneficios activos de la obra agrupados por nombre de zona (0122). */
 export async function beneficiosPorNombreDeZona(pid: string): Promise<Map<string, BeneficioCorto[]>> {
-  const supabase = await createClient();
+  return new Map(await leerBeneficiosPublicos(pid));
+}
+const leerBeneficiosPublicos = publico("beneficios", async (sb, pid: string) => [...(await leerBeneficiosPorZona(sb, pid)).entries()]);
+
+async function leerBeneficiosPorZona(supabase: SupabaseClient, pid: string): Promise<Map<string, BeneficioCorto[]>> {
   const { data } = await supabase.from("zona_beneficios")
     .select("tipo, nombre, detalle, minutos_antes, cupo, funciones, orden, activo, entrega, entrega_dias, zona_beneficio_zonas(price_categories(nombre))")
     .eq("production_id", pid).eq("activo", true).order("orden").order("created_at");
@@ -181,26 +207,30 @@ export function formatPrice(n: number): string {
   return `$${n.toLocaleString("es-MX", { maximumFractionDigits: 0 })}`;
 }
 
-/** Una función con su producción, para la página de compra. */
-export async function getPerformanceForSale(performanceId: string) {
-  const supabase = await createClient();
+/** Una función con su producción, para la página de compra (pública: guardada 60 s; cache() une título y página). */
+export const getPerformanceForSale = cache((performanceId: string) => leerFuncionVenta(performanceId));
+const leerFuncionVenta = publico("funcion-venta", async (supabase, performanceId: string) => {
   const { data, error } = await supabase
     .from("performances")
-    .select(`id, starts_at, venue, on_sale, preventa_hasta, preventa_desde, production_id, productions(${PRODUCTION_COLUMNS})`)
+    .select(`id, starts_at, venue, on_sale, preventa_hasta, preventa_desde, puertas_at, termina_at, production_id, productions(${PRODUCTION_COLUMNS})`)
     .eq("id", performanceId)
     .maybeSingle();
   if (error || !data) return null;
   const production = data.productions as unknown as Production | null;
   if (!production) return null;
   return {
-    performance: { id: data.id, starts_at: data.starts_at, venue: data.venue, on_sale: data.on_sale, preventa_hasta: data.preventa_hasta, preventa_desde: data.preventa_desde } as Performance,
+    performance: { id: data.id, starts_at: data.starts_at, venue: data.venue, on_sale: data.on_sale, preventa_hasta: data.preventa_hasta, preventa_desde: data.preventa_desde, puertas_at: data.puertas_at, termina_at: data.termina_at } as Performance,
     production,
   };
-}
+});
 
-/** Fotos de la galería pública de una obra (tabla gallery_photos + Storage `gallery`). */
-export async function getGallery(productionId: string): Promise<{ id: string; url: string; funcion: boolean }[]> {
-  const supabase = await createClient();
+/** Fotos de la galería pública de una obra (tabla gallery_photos + Storage `gallery`). La página pública la lee
+ *  guardada 60 s; el panel (`fresca`) la lee al momento para ver lo que acaba de subir. */
+export async function getGallery(productionId: string, fresca = false): Promise<{ id: string; url: string; funcion: boolean }[]> {
+  return fresca ? leerGaleria(await createClient(), productionId) : leerGaleriaPublica(productionId);
+}
+const leerGaleriaPublica = publico("galeria", (sb, pid: string) => leerGaleria(sb, pid));
+async function leerGaleria(supabase: SupabaseClient, productionId: string) {
   const { data } = await supabase
     .from("gallery_photos")
     .select("id, path, performance_id")
@@ -210,21 +240,20 @@ export async function getGallery(productionId: string): Promise<{ id: string; ur
   return (data ?? []).map((r) => ({ id: r.id, url: supabase.storage.from("gallery").getPublicUrl(r.path).data.publicUrl, funcion: !!r.performance_id }));
 }
 
-/** Capacidad y lugares ocupados de cada función (mapa + entrada general). Solo lectura. */
+/** Capacidad y lugares ocupados de cada función (mapa + entrada general). Solo lectura.
+ *  Es para "Quedan pocos / Agotado" en la página de la obra: se guarda 30 s por función (el mapa de compra pregunta
+ *  aparte, al momento). */
 export async function performanceOccupancy(ids: string[]): Promise<Map<string, { capacidad: number; ocupados: number }>> {
-  const supabase = await createClient();
-  const out = new Map<string, { capacidad: number; ocupados: number }>();
-  await Promise.all(
-    ids.map(async (id) => {
-      const [cap, taken, general] = await Promise.all([
-        supabase.rpc("performance_capacity", { pfid: id }),
-        asientosOcupados(supabase, id),
-        supabase.rpc("general_availability", { target_performance_id: id }),
-      ]);
-      if (cap.error || taken.error || general.error) return; // sin datos: la fila no muestra estado
-      const ocupadosGeneral = ((general.data ?? []) as { ocupados: number }[]).reduce((n, z) => n + Number(z.ocupados), 0);
-      out.set(id, { capacidad: Number(cap.data ?? 0), ocupados: ((taken.data ?? []) as unknown[]).length + ocupadosGeneral });
-    }),
-  );
-  return out;
+  const filas = await Promise.all(ids.map(async (id) => [id, await leerOcupacion(id)] as const));
+  return new Map(filas.filter((f): f is readonly [string, { capacidad: number; ocupados: number }] => !!f[1]));
 }
+const leerOcupacion = publico("ocupacion", async (supabase, id: string): Promise<{ capacidad: number; ocupados: number } | null> => {
+  const [cap, taken, general] = await Promise.all([
+    supabase.rpc("performance_capacity", { pfid: id }),
+    asientosOcupados(supabase, id),
+    supabase.rpc("general_availability", { target_performance_id: id }),
+  ]);
+  if (cap.error || taken.error || general.error) return null; // sin datos: la fila no muestra estado
+  const ocupadosGeneral = ((general.data ?? []) as { ocupados: number }[]).reduce((n, z) => n + Number(z.ocupados), 0);
+  return { capacidad: Number(cap.data ?? 0), ocupados: ((taken.data ?? []) as unknown[]).length + ocupadosGeneral };
+}, 30);

@@ -27,34 +27,37 @@ describe("acceso al panel", () => {
 
 describe("pestañas de la obra", () => {
   it("taquilla ve Resumen, Funciones y Reportes; no Audiciones ni Permisos", () => {
-    expect(ids(taquillaMM, "mm")).toEqual(["resumen", "boletos", "reportes", "cierre"]);
+    expect(ids(taquillaMM, "mm")).toEqual(["resumen", "boletos", "reportes", "cierre", "guia"]);
   });
   it("un juez solo ve Resumen y Audiciones", () => {
-    expect(ids(juezMM, "mm")).toEqual(["resumen", "audiciones"]);
+    expect(ids(juezMM, "mm")).toEqual(["resumen", "audiciones", "guia"]);
   });
   it("sin permisos en la obra no hay pestañas", () => {
     expect(ids(taquillaMM, "hsm")).toEqual([]);
   });
-  it("el Director ve todas, con Permisos al final", () => {
+  it("el Director ve todas, con Permisos y la Guía al final", () => {
     const tabs = ids(director, "hsm");
     expect(tabs[0]).toBe("resumen");
-    expect(tabs.at(-1)).toBe("permisos");
-    expect(tabs).toHaveLength(19);
+    expect(tabs.slice(-2)).toEqual(["permisos", "guia"]);
+    expect(tabs).toHaveLength(20);
   });
 });
 
 describe("secciones generales", () => {
   it("taquilla: Inicio, Proyectos y Reportes por obra; el Director todo", () => {
-    expect(globalSections(taquillaMM).map((s) => s.label)).toEqual(["Inicio", "Notificaciones", "Proyectos", "Reportes"]);
-    expect(globalSections(juezMM).map((s) => s.label)).toEqual(["Inicio", "Notificaciones", "Proyectos"]);
-    expect(globalSections(director).map((s) => s.label)).toEqual(["Inicio", "Notificaciones", "Proyectos", "Personas", "Reportes", "Ajustes"]);
+    expect(globalSections(taquillaMM).map((s) => s.label)).toEqual(["Inicio", "Proyectos", "Reportes"]);
+    expect(globalSections(juezMM).map((s) => s.label)).toEqual(["Inicio", "Proyectos"]);
+    expect(globalSections(director).map((s) => s.label)).toEqual(["Inicio", "Proyectos", "Personas", "Reportes", "Sitio y público", "Ajustes"]);
   });
   it("subpestañas según permisos", () => {
     const t = panelMenu(taquillaMM);
     expect(t.find((s) => s.id === "proyectos")?.subs.map((x) => x.label)).toEqual(["Producciones", "Eventos"]) // 0084: taquilla aprueba pagos de eventos;
     expect(t.find((s) => s.id === "reportes")?.href).toBe("/panel/reportes/obras");
     expect(panelMenu(juezMM).find((s) => s.id === "proyectos")?.subs.map((x) => x.label)).toEqual(["Producciones", "Audiciones"]);
-    expect(panelMenu(director).find((s) => s.id === "personas")?.subs.map((x) => x.label)).toEqual(["Directorio", "Cumpleaños", "Portal del equipo", "Contacto"]);
+    expect(panelMenu(director).find((s) => s.id === "personas")?.subs.map((x) => x.label)).toEqual(["Directorio", "Cumpleaños", "Portal del equipo"]);
+    expect(panelMenu(director).find((s) => s.id === "sitio")?.subs.map((x) => x.label)).toEqual(["Sitio", "Club Fan", "Difusión DARF", "Contacto", "DARFY"]);
+    expect(panelMenu(director).find((s) => s.id === "ajustes")?.subs.map((x) => x.label)).toEqual(["Casa DARF", "Roles y permisos", "Bitácora"]);
+    expect(panelMenu(director).find((s) => s.id === "reportes")?.href).toBe("/panel/reportes");
     expect(activeNav(panelMenu(director), "/panel/personas/equipo/portal").sub?.label).toBe("Portal del equipo");
   });
   it("sección activa: las direcciones viejas caen en su sección nueva", () => {
@@ -63,7 +66,11 @@ describe("secciones generales", () => {
     expect(activeNav(m, "/panel/talento/abc").section?.id).toBe("personas");
     expect(activeNav(m, "/panel/usuarios").section?.id).toBe("personas");
     expect(activeNav(m, "/panel/producciones/mm/boletos").section?.id).toBe("proyectos");
-    expect(activeNav(m, "/panel/reportes/obras").sub?.label).toBe("Por producción");
+    expect(activeNav(m, "/panel/reportes/obras").section?.id).toBe("reportes");
+    expect(activeNav(m, "/panel/notificaciones").section?.id).toBe("inicio");
+    expect(activeNav(m, "/panel/ajustes/sitio").section?.id).toBe("sitio");
+    expect(activeNav(m, "/panel/contacto").section?.id).toBe("sitio");
+    expect(activeNav(m, "/panel/ajustes/casa").section?.id).toBe("ajustes");
     expect(activeNav(m, "/panel/bitacora").showSubs).toBe(true);
     expect(activeNav(m, "/panel/producciones/mm").showSubs).toBe(false);
     expect(activeNav(m, "/panel/producciones-x").section).toBeNull();
@@ -118,7 +125,7 @@ describe("convocatorias de obra y generales (0037)", () => {
   });
   it("el equipo propio entra al panel y ve Audiciones en el menú", () => {
     expect(hasAnyAccess(juezGeneral)).toBe(true);
-    expect(globalSections(juezGeneral)).toEqual([{ href: "/panel", label: "Inicio" }, { href: "/panel/notificaciones", label: "Notificaciones" }, { href: "/panel/audiciones", label: "Proyectos" }]);
+    expect(globalSections(juezGeneral)).toEqual([{ href: "/panel", label: "Inicio" }, { href: "/panel/audiciones", label: "Proyectos" }]);
     expect(panelMenu(juezMM).find((s) => s.id === "proyectos")?.subs.map((x) => x.label)).toContain("Audiciones");
   });
 });
@@ -142,8 +149,8 @@ describe("registro permanente (0064)", () => {
 
 describe("producción concluida (0066)", () => {
   it("solo quedan las pestañas de archivo", () => {
-    expect(productionTabs(director, "hsm", true).map((t) => t.id)).toEqual(["resumen", "pagina", "elenco", "expedientes", "solicitudes", "fanzone", "difusion", "equipo", "reportes", "cierre", "permisos"].sort((x, y) => productionTabs(director, "hsm").findIndex((t) => t.id === x) - productionTabs(director, "hsm").findIndex((t) => t.id === y)));
-    expect(productionTabs(taquillaMM, "mm", true).map((t) => t.id)).toEqual(["resumen", "reportes", "cierre"]);
+    expect(productionTabs(director, "hsm", true).map((t) => t.id)).toEqual(["resumen", "pagina", "elenco", "expedientes", "solicitudes", "fanzone", "difusion", "equipo", "reportes", "cierre", "permisos", "guia"].sort((x, y) => productionTabs(director, "hsm").findIndex((t) => t.id === x) - productionTabs(director, "hsm").findIndex((t) => t.id === y)));
+    expect(productionTabs(taquillaMM, "mm", true).map((t) => t.id)).toEqual(["resumen", "reportes", "cierre", "guia"]);
   });
 });
 
@@ -176,20 +183,63 @@ describe("pestañas agrupadas de la obra (0085)", () => {
   it("el Director ve 6 grupos y boletería dentro de Boletos", () => {
     const g = productionGroups(directorG, "showman");
     expect(g.map((x) => x.label)).toEqual(["Resumen", "Personas", "Ensayos y equipo", "Boletos", "Público", "Más"]);
-    expect(g.find((x) => x.id === "boletos")?.tabs.map((t) => t.label)).toEqual(["Ventas y órdenes", "Taquilla", "Funciones y precios", "Mapa de asientos", "Preventa privada", "Beneficios", "Descuentos", "Corte de caja", "Vendedores", "Puerta"]);
-    expect(g.find((x) => x.id === "publico")?.tabs.map((t) => t.label)).toEqual(["Página pública", "Programa digital", "Fan Zone y eventos", "Difusión"]);
+    // 0127: Boletos en 3 secciones, cada una con sus páginas.
+    const bol = g.find((x) => x.id === "boletos")!;
+    expect(bol.tabs.map((t) => t.label)).toEqual(["Preparar", "Vender", "Día de función"]);
+    expect(bol.tabs.map((t) => t.items?.map((i) => i.label))).toEqual([
+      ["Funciones y horarios", "Zonas y mapa", "Beneficios", "Preventa privada", "Descuentos"],
+      ["Órdenes", "Taquilla", "Vendedores", "Corte de caja"],
+      ["Hoy", "Puerta", "Entregas de beneficios"],
+    ]);
+    expect(bol.path).toBe("boletos/funciones");
+  });
+  it("los demás grupos también van en secciones con sus páginas", () => {
+    const g = productionGroups(directorG, "showman");
+    const sec = (id: string) => g.find((x) => x.id === id)!.tabs.map((t) => [t.label, t.items?.map((i) => i.label)]);
+    expect(sec("personas")).toEqual([
+      ["Elenco", ["Elenco y equipos", "Audiciones"]],
+      ["Integrantes", ["Expedientes", "Cuotas y recaudación", "Adeudos"]],
+      ["Revisar", ["Solicitudes", "Evaluaciones"]],
+    ]);
+    expect(sec("ensayos")).toEqual([["Ensayos", ["Ensayos"]], ["Comunicar", ["Avisos al elenco", "Materiales", "Notas y juntas del equipo"]]]);
+    expect(sec("publico")).toEqual([
+      ["Página", ["Publicar", "Contenido", "Imagen y pósters", "Avisos"]],
+      ["Promoción", ["Difusión", "Programa digital"]],
+      ["Fans", ["Fan Zone y eventos", "Fotos y galería"]],
+    ]);
+    expect(sec("mas")).toEqual([["Reportes", ["Reportes", "Cierre de temporada"]], ["Equipo y permisos", ["Permisos", "Guía de tu rol"]]]);
+    expect(g.find((x) => x.id === "personas")!.path).toBe("elenco");
+  });
+  it("sin el permiso, la página de adentro no sale (Cuotas sin mensualidades; Contenido sin editar)", () => {
+    const exp: PanelAccessData = { isDirector: false, byProduction: { showman: ["expedientes.ver", "obra.publicar"] } };
+    const g = productionGroups(exp, "showman");
+    expect(g.find((x) => x.id === "personas")!.tabs.map((t) => [t.id, t.items?.map((i) => i.id)])).toEqual([["sec-integrantes", ["expedientes"]], ["sec-revisar", ["solicitudes"]]]);
+    expect(g.find((x) => x.id === "publico")!.tabs.map((t) => [t.id, t.items?.map((i) => i.id)])).toEqual([["sec-pagina", ["pagina"]], ["sec-promocion", ["difusion"]]]);
   });
   it("con pocos permisos, pocos grupos; la liga del grupo es su primera pestaña", () => {
-    expect(productionGroups(puertaG, "showman").map((x) => [x.id, x.path])).toEqual([["resumen", ""], ["boletos", "puerta"]]);
+    // Quien solo escanea: Boletos con "Día de función" (Puerta y Entregas), directo a Puerta.
+    expect(productionGroups(puertaG, "showman").map((x) => [x.id, x.path])).toEqual([["resumen", ""], ["boletos", "puerta"], ["mas", "guia"]]);
+    expect(productionGroups(puertaG, "showman").find((x) => x.id === "boletos")?.tabs.map((t) => [t.id, t.items?.map((i) => i.id)])).toEqual([["dia", ["puerta", "entregas"]]]);
     expect(productionGroups(taquillaG, "showman").map((x) => x.id)).toEqual(["resumen", "boletos", "mas"]);
-    expect(productionGroups(taquillaG, "showman").find((x) => x.id === "boletos")?.tabs.map((t) => t.id)).toEqual(["boletos", "taquilla", "funciones", "preventa", "beneficios", "corte", "vendedores"]);
+    expect(productionGroups(taquillaG, "showman").find((x) => x.id === "boletos")?.tabs.map((t) => [t.id, t.items?.map((i) => i.id)])).toEqual([
+      ["preparar", ["funciones", "beneficios", "preventa"]],
+      ["vender", ["boletos", "taquilla", "vendedores", "corte"]],
+      ["dia", ["hoy", "entregas"]],
+    ]);
   });
   it("pestaña activa: la ruta más larga que coincide", () => {
     const g = productionGroups(directorG, "showman");
     expect(tabActiva(g, "")).toEqual({ grupo: "resumen", tab: "resumen" });
-    expect(tabActiva(g, "boletos")).toEqual({ grupo: "boletos", tab: "boletos" });
-    expect(tabActiva(g, "boletos/taquilla")).toEqual({ grupo: "boletos", tab: "taquilla" });
-    expect(tabActiva(g, "expedientes/abc/")).toEqual({ grupo: "personas", tab: "expedientes" });
+    expect(tabActiva(g, "boletos")).toEqual({ grupo: "boletos", tab: "vender", item: "boletos" });
+    expect(tabActiva(g, "boletos/taquilla")).toEqual({ grupo: "boletos", tab: "vender", item: "taquilla" });
+    expect(tabActiva(g, "boletos/beneficios/entregas")).toEqual({ grupo: "boletos", tab: "dia", item: "entregas" });
+    expect(tabActiva(g, "boletos/beneficios")).toEqual({ grupo: "boletos", tab: "preparar", item: "beneficios" });
+    expect(tabActiva(g, "puerta/lista/x")).toEqual({ grupo: "boletos", tab: "dia", item: "puerta" });
+    expect(tabActiva(g, "expedientes/abc/")).toEqual({ grupo: "personas", tab: "sec-integrantes", item: "expedientes" });
+    expect(tabActiva(g, "expedientes/cuotas")).toEqual({ grupo: "personas", tab: "sec-integrantes", item: "cuotas" });
+    expect(tabActiva(g, "pagina/imagen")).toEqual({ grupo: "publico", tab: "sec-pagina", item: "imagen" });
+    expect(tabActiva(g, "fanzone/fotos")).toEqual({ grupo: "publico", tab: "sec-fans", item: "fotos" });
+    expect(tabActiva(g, "ensayos/xyz")).toEqual({ grupo: "ensayos", tab: "sec-ensayos", item: "ensayos" });
     expect(tabActiva(g, "nada")).toEqual({ grupo: null, tab: null });
   });
 });
@@ -200,8 +250,9 @@ describe("Casa DARF (0102)", () => {
   it("Comunicación ve sitio, Difusión, DARFY, contacto y eventos DARF; no reportes ni Casa DARF", () => {
     const a = { ...base, casa: ["casa.sitio", "casa.eventos", "casa.club", "casa.contacto"] };
     expect(hasAnyAccess(a)).toBe(true);
-    expect(subs(a, "ajustes")).toEqual(["/panel/ajustes/sitio", "/panel/ajustes/club", "/panel/ajustes/difusion", "/panel/ajustes/darfy"]);
-    expect(subs(a, "personas")).toEqual(["/panel/contacto"]);
+    expect(subs(a, "sitio")).toEqual(["/panel/ajustes/sitio", "/panel/ajustes/club", "/panel/ajustes/difusion", "/panel/contacto", "/panel/ajustes/darfy"]);
+    expect(subs(a, "personas")).toEqual([]);
+    expect(subs(a, "ajustes")).toEqual([]);
     expect(panelMenu(a).some((s) => s.id === "reportes")).toBe(false);
     expect(hasEventoAccess(a)).toBe(true);
     expect(permisosEvento(a, { id: "e1", production_id: null }).editar).toBe(true);

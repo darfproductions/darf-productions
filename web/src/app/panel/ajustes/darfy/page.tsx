@@ -67,7 +67,7 @@ export default async function DarfyAjustes({ searchParams }: PageProps<"/panel/a
 
   return (
     <>
-      <PanelTitle eyebrow="Ajustes" title="DARFY">
+      <PanelTitle eyebrow="Sitio y público" title="DARFY">
         Las preguntas frecuentes que contesta el asistente de la página. Las obras, funciones, precios y audiciones las toma solo de lo publicado.
         Si DARFY no sabe algo, ofrece WhatsApp o dejar datos (llegan a Contacto).
       </PanelTitle>

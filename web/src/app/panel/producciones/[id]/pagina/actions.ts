@@ -7,6 +7,7 @@ import { themeProblems } from "@/lib/themes";
 import { parseYoutube } from "@/lib/youtube";
 import { FORMATOS, FORMATOS_ALT, POSTER_ALT_COLUMNS, columna, columnaAlt, type Formato, type FormatoAlt } from "@/lib/poster";
 import { SECCIONES, type Seccion } from "@/lib/obra-capa-rules";
+import { refrescarPublico } from "@/lib/supabase/publico";
 
 // Editor de la página de la obra. La base decide qué puede cada quien
 // (0032: obra.editar para contenido, obra.publicar para el estado).
@@ -20,6 +21,7 @@ const txt = (f: FormData, k: string) => {
 const done = (pid: string, message: string): EditState => {
   revalidatePath(`/panel/producciones/${pid}`, "layout");
   revalidatePath(`/producciones/${pid}`);
+  refrescarPublico();
   return { ok: true, message };
 };
 const fail = (e: { message: string } | null, fallback = "No se pudo guardar."): EditState => ({ ok: false, message: e?.message ?? fallback });

@@ -18,7 +18,7 @@ export default async function SitioAjustes() {
   const banner = await getSiteBanner();
   return (
     <>
-      <PanelTitle eyebrow="Ajustes" title="Sitio">
+      <PanelTitle eyebrow="Sitio y público" title="Sitio">
         La franja de avisos del inicio y los anuncios generales del inicio y de la Fan Zone.
       </PanelTitle>
       <Card className="flex flex-col gap-4">

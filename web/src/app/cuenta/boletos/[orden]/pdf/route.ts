@@ -2,12 +2,14 @@ import { textosBoleto, type BeneficioBoleto } from "@/lib/beneficios-rules";
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { ticketsPdf } from "@/lib/pdf-ticket";
+import { horarioDeFuncion } from "@/lib/logistica";
+import { hora } from "@/lib/logistica-rules";
 import { formatPerformanceDate } from "@/lib/productions";
 import { createClient } from "@/lib/supabase/server";
 
 type Row = {
   order_code: string; status: string; buyer_nombre: string;
-  performances: { starts_at: string | null; venue: string | null; productions: { nombre: string; venue: string | null } | null } | null;
+  performances: { id: string; production_id: string; starts_at: string | null; venue: string | null; productions: { nombre: string; venue: string | null } | null } | null;
   tickets: { id: string; is_active: boolean; qr_token: string; seats: { seat_label: string } | null; price_categories: { nombre: string } | null }[];
 };
 
@@ -19,7 +21,7 @@ export async function GET(_req: Request, ctx: RouteContext<"/cuenta/boletos/[ord
   const supabase = await createClient();
   const { data } = await supabase
     .from("orders")
-    .select("order_code, status, buyer_nombre, performances(starts_at, venue, productions(nombre, venue)), tickets(id, is_active, qr_token, seats(seat_label), price_categories(nombre))")
+    .select("order_code, status, buyer_nombre, performances(id, production_id, starts_at, venue, productions(nombre, venue)), tickets(id, is_active, qr_token, seats(seat_label), price_categories(nombre))")
     .eq("order_code", orden)
     .eq("buyer_user_id", session.userId)
     .maybeSingle();
@@ -34,8 +36,12 @@ export async function GET(_req: Request, ctx: RouteContext<"/cuenta/boletos/[ord
     const x = textosBoleto(benef.get(id) ?? [], o.performances?.starts_at);
     return [...x.incluye, ...(x.acceso ? [x.acceso] : [])].join(" · ") || null;
   };
+  // 0127: hora de puertas y dirección (si la obra tiene su logística).
+  const { h, l } = o.performances ? await horarioDeFuncion(o.performances.id, o.performances.production_id) : { h: null, l: null };
   const pdf = ticketsPdf(activos.map((t) => ({
     incluye: incluyeDe(t.id),
+    puertas: h ? `Puertas ${hora(h.puertas)}` : null,
+    direccion: l?.direccion ?? null,
     obra: o.performances?.productions?.nombre ?? "DARF Productions",
     funcion: formatPerformanceDate(o.performances?.starts_at ?? null),
     lugar: o.performances?.venue ?? o.performances?.productions?.venue ?? null,

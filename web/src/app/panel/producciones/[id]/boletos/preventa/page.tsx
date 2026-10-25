@@ -47,7 +47,7 @@ export default async function PreventaPrivadaPage({ params }: PageProps<"/panel/
         {desde ? (
           <p className="text-sm"><b>Fechas:</b> privada desde el {formatPerformanceDate(desde)}{hasta ? ` hasta el ${formatPerformanceDate(hasta)} (abre el Club Fan)` : ""}{obra?.max_por_persona ? ` · máximo ${obra.max_por_persona} por persona y función` : ""}.</p>
         ) : (
-          <p className="text-sm font-semibold text-aviso">Todavía no hay fecha de preventa privada: ponla en <Link href={`/panel/producciones/${id}/boletos/funciones`} className="underline">Funciones y precios, en Preventas</Link>{conPrivada ? "" : " (y crea funciones)"}. Los códigos ya se pueden repartir.</p>
+          <p className="text-sm font-semibold text-aviso">Todavía no hay fecha de preventa privada: ponla en <Link href={`/panel/producciones/${id}/boletos/funciones`} className="underline">Funciones y horarios, en Preventas</Link>{conPrivada ? "" : " (y crea funciones)"}. Los códigos ya se pueden repartir.</p>
         )}
       </Card>
 

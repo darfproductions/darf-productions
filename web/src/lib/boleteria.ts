@@ -19,6 +19,9 @@ export type PanelPerformance = {
   preventa_propia: boolean;
   cancelada_at: string | null;
   cancelada_motivo: string | null;
+  /** 0127: horario propio de la función (vacío = se calcula con la logística de la obra). */
+  puertas_at?: string | null;
+  termina_at?: string | null;
   /** `propio` (0118): precio puesto en esta función; "Poner en todas las funciones" no lo cambia. */
   prices: { categoryId: string; nombre: string; price: number; cupo: number | null; propio?: boolean }[];
 };
@@ -27,7 +30,7 @@ export async function listPerformances(pid: string): Promise<PanelPerformance[]>
   const supabase = await createClient();
   const { data } = await supabase
     .from("performances")
-    .select("id, starts_at, venue, on_sale, preventa_hasta, preventa_desde, preventa_propia, cancelada_at, cancelada_motivo, performance_price_categories(price, cupo, propio, price_category_id, price_categories(nombre))")
+    .select("id, starts_at, venue, on_sale, preventa_hasta, preventa_desde, preventa_propia, cancelada_at, cancelada_motivo, puertas_at, termina_at, performance_price_categories(price, cupo, propio, price_category_id, price_categories(nombre))")
     .eq("production_id", pid)
     .order("starts_at", { nullsFirst: false });
   return (data ?? []).map((p) => ({
@@ -40,6 +43,8 @@ export async function listPerformances(pid: string): Promise<PanelPerformance[]>
     preventa_propia: !!p.preventa_propia,
     cancelada_at: (p.cancelada_at as string | null) ?? null,
     cancelada_motivo: (p.cancelada_motivo as string | null) ?? null,
+    puertas_at: (p.puertas_at as string | null) ?? null,
+    termina_at: (p.termina_at as string | null) ?? null,
     prices: ((p.performance_price_categories ?? []) as unknown as { price: number; cupo: number | null; propio: boolean; price_category_id: string; price_categories: { nombre: string } | null }[])
       .map((r) => ({ categoryId: r.price_category_id, nombre: r.price_categories?.nombre ?? "", price: Number(r.price), cupo: r.cupo, propio: !!r.propio }))
       .sort((a, b) => b.price - a.price),

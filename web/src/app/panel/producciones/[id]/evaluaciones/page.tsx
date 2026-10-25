@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { AjustesSeccion } from "@/components/panel/AjustesSeccion";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ActionForm } from "@/components/panel/ActionForm";
@@ -124,11 +125,6 @@ export default async function Evaluaciones({ params }: PageProps<"/panel/producc
 
   return (
     <div className="flex flex-col gap-4">
-      {encender && (
-        <div className="flex justify-end">
-          <ActionForm inline action={toggleRubric} hidden={{ pid: id, on: "no" }} confirm="¿Apagar las evaluaciones? Los maestros no podrán capturar y los alumnos dejarán de ver sus boletas (se conservan)." submit="Apagar evaluaciones" submitClass={small} />
-        </div>
-      )}
       {!coordina && (
         <Card className="text-sm">
           Calificas: <b>{criterios.filter((c) => yo?.criterios.includes(c.id)).map((c) => c.nombre).join(", ") || "—"}</b>
@@ -186,6 +182,8 @@ export default async function Evaluaciones({ params }: PageProps<"/panel/producc
         <p className="text-xs text-texto-3">Las fechas definen qué ensayos, faltas, retardos y llamadas de atención salen en la boleta de ese periodo.</p>
       </Card>
 
+      {/* Lo que se arma una vez (maestros, asistentes, materias, niveles y apagar): abajo y plegado. */}
+      <AjustesSeccion titulo="Ajustes de la rúbrica" resumen="Maestros, asistentes, materias y niveles" abierto={coordina && criterios.length === 0}>
       {coordina && (
         <Card className="flex flex-col gap-3">
           <div>
@@ -238,6 +236,12 @@ export default async function Evaluaciones({ params }: PageProps<"/panel/producc
         <Lista pid={id} tipo="criterio" titulo="Materias" ayuda="Lo que se evalúa. Marca “Todos los maestros” en la que califican todos y se promedia (ej. Actitud y conducta)." items={criterios} conDescripcion edita={coordina} />
         <Lista pid={id} tipo="nivel" titulo="Niveles" ayuda="Del mejor al que necesita más apoyo. Además de nivel, cada materia lleva número de 0 a 10." items={niveles} edita={coordina} />
       </div>
+      {encender && (
+        <div className="flex justify-end">
+          <ActionForm inline action={toggleRubric} hidden={{ pid: id, on: "no" }} confirm="¿Apagar las evaluaciones? Los maestros no podrán capturar y los alumnos dejarán de ver sus boletas (se conservan)." submit="Apagar evaluaciones" submitClass={small} />
+        </div>
+      )}
+      </AjustesSeccion>
     </div>
   );
 }

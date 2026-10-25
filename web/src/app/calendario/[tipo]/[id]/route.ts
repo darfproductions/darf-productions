@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { archivoIcs, type EventoCal } from "@/lib/calendario";
 import { origenSitio } from "@/lib/site-origin";
 import { createClient } from "@/lib/supabase/server";
+import { getLogistica } from "@/lib/logistica";
+import { horario, textoPuertas } from "@/lib/logistica-rules";
 
 // "Agregar al calendario" (Bloque 4B): archivo .ics de una función con boleto, un ensayo o un evento.
 // Cada quien solo puede bajar lo suyo: la base (RLS) solo le deja leer sus órdenes y sus ensayos.
@@ -12,12 +14,17 @@ export async function GET(_req: Request, ctx: RouteContext<"/calendario/[tipo]/[
   let ev: EventoCal | null = null;
   if (tipo === "boleto") {
     const { data } = await supabase.from("orders")
-      .select("order_code, status, performances(starts_at, venue, productions(nombre, venue))")
+      .select("order_code, status, performances(starts_at, venue, puertas_at, termina_at, production_id, productions(nombre, venue))")
       .eq("order_code", id.toUpperCase()).maybeSingle();
-    const o = data as unknown as { order_code: string; status: string; performances: { starts_at: string | null; venue: string | null; productions: { nombre: string; venue: string | null } | null } | null } | null;
+    const o = data as unknown as { order_code: string; status: string; performances: { starts_at: string | null; venue: string | null; puertas_at: string | null; termina_at: string | null; production_id: string; productions: { nombre: string; venue: string | null } | null } | null } | null;
     if (o?.status === "aprobado" && o.performances?.starts_at) {
-      ev = { uid: `orden-${o.order_code}`, titulo: `${o.performances.productions?.nombre ?? "DARF"} · DARF Productions`, inicia: o.performances.starts_at,
-        lugar: o.performances.venue ?? o.performances.productions?.venue ?? null, detalle: `Orden ${o.order_code}. Tus boletos con QR están en Mi cuenta.`, url: `${sitio}/cuenta` };
+      // 0127: con la logística de la obra, termina a su hora y lleva puertas y dirección.
+      const pf = o.performances;
+      const lg = await getLogistica(pf.production_id);
+      const h = lg || pf.puertas_at || pf.termina_at ? horario({ ...pf, starts_at: pf.starts_at! }, lg) : null;
+      const lugar = [pf.venue ?? pf.productions?.venue, lg?.direccion].filter(Boolean).join(", ") || null;
+      ev = { uid: `orden-${o.order_code}`, titulo: `${pf.productions?.nombre ?? "DARF"} · DARF Productions`, inicia: pf.starts_at!, termina: h?.termina ?? null,
+        lugar, detalle: `${h ? `${textoPuertas(h)} ` : ""}Orden ${o.order_code}. Tus boletos con QR están en Mi cuenta.`, url: `${sitio}/cuenta` };
     }
   } else if (tipo === "ensayo") {
     const { data } = await supabase.from("rehearsals").select("id, titulo, inicia, termina, lugar, notas, production_id, estado").eq("id", id).maybeSingle();

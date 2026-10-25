@@ -5,6 +5,87 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-10-25 — Que la página aguante: venta con mucha gente, credenciales y puerta sin internet
+
+Por qué: el 24/10 el sitio se trabó dos veces (ensayo y credenciales) con unas 4,300 peticiones en 15 min sobre
+Supabase Free/Nano. Cada visita pedía todo a la base; la página de la obra hacía unas 47 consultas.
+
+- **Datos públicos guardados 60 s** (`lib/supabase/publico.ts`, `unstable_cache` con un cliente sin sesión): obra,
+  funciones y precios, contenido, galería, programa, logística, promos, franjas, convocatorias, eventos de la
+  cartelera, equipo de la portada, y en la compra el mapa, precios, escenario y beneficios. La ocupación de cada
+  función se guarda 30 s. Lo de cada persona (sesión, Club Fan, órdenes, asientos ocupados) sigue al momento. Al
+  guardar desde el panel, `refrescarPublico()` lo actualiza al instante; la vista previa y el panel leen sin caché.
+  En la copia local: la obra pasa a ~6 consultas por visita, la compra a ~4 y la portada a ~3.
+- **Memoria corta por persona** (`lib/memoria.ts`): permisos del panel 30 s (aceptar invitación o papel la borra),
+  pendientes 60 s y la foto firmada 50 min. `esSocio` y `getMiCredencial` una vez por página;
+  `getMiCredencial` reutiliza sesión y foto. Mi cuenta pide todo en paralelo.
+- **Ver ya no escribe:** la compra y Mi cuenta dejan de correr `expire_due_orders` (la base lo corre cada minuto);
+  al comprar se limpia solo la obra.
+- **Mapa de asientos:** pregunta cada 30 s (antes 20), no con la pestaña oculta, y al volver.
+- **Puerta sin internet:** el celular guarda la lista de la función (`puerta_lista`, sin cambios en la base) y la
+  renueva cada minuto. Si la red no contesta en 3 s, valida contra la lista; la entrada queda en una fila que se
+  sube sola al volver la señal (avisa "doble entrada" si otro celular ya lo había dejado pasar). Indicador en línea
+  / sin conexión, búsqueda en la lista guardada y conteo local. Los pases del Club Fan y deshacer siguen necesitando
+  red. Hay que abrir Puerta con internet antes de la entrada.
+- **Credencial y boletos sin internet:** Mi cuenta los guarda en el teléfono y la página "Sin conexión" del service
+  worker los muestra (QR firmados). Se borran al cerrar sesión.
+- **Asistencia:** marcar ya no dibuja la página dos veces, y el gafete en fila refresca la lista una vez al calmarse.
+  El contador de Puerta no pregunta con la pestaña oculta.
+
+## 2026-10-24 — Panel ordenado: secciones en cada obra y menú general
+
+- Cada grupo de la obra se divide en secciones, como Boletos, con sus páginas en una tercera fila. Las rutas no
+  cambian:
+  - **Personas:** Elenco · Integrantes (Expedientes, Cuotas, Adeudos) · Revisar (Solicitudes, Evaluaciones).
+  - **Ensayos y equipo:** Ensayos · Comunicar (Avisos al elenco, Materiales, Notas y juntas del equipo).
+  - **Público:** Página (Publicar, Contenido, Imagen y pósters, Avisos) · Promoción (Difusión, Programa) · Fans (Fan
+    Zone y eventos, Fotos y galería).
+  - **Más:** Reportes (Reportes, Cierre) · Equipo y permisos (Permisos, Guía de tu rol).
+- **Página pública** pasa de una sola página de 256 líneas a 4: `pagina` (publicar), `pagina/contenido`,
+  `pagina/imagen` y `pagina/avisos`. Las ligas viejas (`pagina#kit`, `#canciones`…) llevan a su página nueva. "Venta y
+  precios" queda solo en Boletos → Funciones y horarios.
+- Fan Zone: las fotos de cada función y la galería pasan a `fanzone/fotos`. Un pago de evento pendiente de una obra
+  lleva a su Fan Zone.
+- **Ajustes de asistencia juntos en Ensayos:** tolerancia de retardo y advertencias automáticas por retardos y faltas,
+  junto a "faltas con aviso". `saveDiscipline` guarda solo los campos que trae el formulario, así que Expedientes
+  conserva el límite de advertencias y la mensualidad sin pisar lo de Ensayos.
+- **Plegados** (lo que se configura una vez): Personajes en Elenco, la rúbrica en Evaluaciones y "Montos y fechas" en
+  Cuotas. En Comunicados, el formulario nuevo se pliega y se muestran los últimos 20 ("Ver todos").
+- **Resumen de la obra:**
+  - muestra "Listo para vender" o, ya pasadas todas las funciones, "Antes de cerrar la temporada"
+    (`lib/cierre-datos.ts`);
+  - se quita la tarjeta del kit, que estaba repetida;
+  - el equipo queda en una línea.
+- **Cierre** ya no repite el resumen. "Resumen de la temporada" (imprimible) está en Reportes de la obra.
+- **Menú general:**
+  - Notificaciones sale del menú: se queda en Inicio, con su número junto a Inicio.
+  - Reportes es una sola página.
+  - "Sitio y público", sección nueva: Sitio, Club Fan, Difusión DARF, Contacto y DARFY.
+  - Ajustes se queda con Casa DARF, Roles y Bitácora.
+  - Showcases y cada convocatoria usan la misma barra de subpestañas (`TabsBar`) que el resto.
+- No hay cambios en la base.
+
+## 2026-10-24 — 0127 Logística de funciones y Boletos en 3 secciones
+
+- Boletos de cada obra pasa de 10 pestañas sueltas a 3 secciones según el momento: **Preparar** (Funciones y horarios,
+  Zonas y mapa, Beneficios, Preventa privada, Descuentos), **Vender** (Órdenes, Taquilla, Vendedores, Corte) y **Día de
+  función** (Hoy, Puerta, Entregas de beneficios). Las rutas no cambian; cada quien ve solo lo que su rol permite.
+- Nueva **Hoy**: la función del día (o la próxima) en una pantalla: primer llamado, puertas, función y salida; quién
+  falta de llegar a cada llamado; boletos escaneados de los vendidos y beneficios por entregar, con ligas a cada página.
+- **Horarios y cómo llegar** por obra (puertas N min antes, duración con intermedio, dirección, liga de Google Maps,
+  acceso tardío e indicaciones), con ajuste de puertas y salida por función. Si la función se mueve, su horario propio
+  se mueve con ella. El público lo ve en cada función ("Puertas abren 7:30 p.m. · Termina aprox. 10:10 p.m."), en el
+  bloque "Antes de ir" de la página de la obra, en la compra, en su boleto (Mi cuenta, PDF y Wallet), en el calendario
+  y en el WhatsApp de pago confirmado. Sin logística configurada no se muestra nada nuevo.
+- **Llamados**: por obra ("Elenco 2 h antes", "Producción 3 h antes", a todo el elenco, por grupos de créditos y/o al
+  equipo). Cada función crea sus llamados como ensayos ligados a ella (`rehearsals.performance_id/llamado_id`): gafete,
+  retardos, faltas, llegada tarde y portal igual que un ensayo. Se mueven con la función; los que ya tienen asistencia o
+  se movieron a mano (`llamado_fijo`) no. Crearlos no manda avisos; moverlos o cancelarlos sí.
+- Difusión: nuevo diseño **"Prepárate para tu función"** (cuadrado, 3:4 y 9:16) con las tres horas, el lugar con QR a
+  Google Maps y tres recordatorios.
+- Base: `obra_logistica`, `obra_llamados`, `performances.puertas_at/termina_at`, `sync_llamados`, `funcion_termina`,
+  triggers de sincronía y `performances_mover_horario`; reemplazada `notify_rehearsal`.
+
 ## 2026-10-23 — 0126 Solicitud de llegada tarde
 
 - En Solicitudes del portal del elenco, además de avisar una falta: "Avisar que llegaré tarde". Se elige el ensayo (solo

@@ -158,7 +158,8 @@ export async function checkinGafete(pid: string, rid: string, code: string): Pro
   if (error) return { ok: false, message: error.message };
   const r = data as { resultado: CheckinResult["resultado"]; nombre?: string; foto_path?: string | null; minutos?: number | null; llegada?: string; estado?: string };
   const fotoUrl = r.foto_path ? (await supabase.storage.from("avatares").createSignedUrl(r.foto_path, 600)).data?.signedUrl ?? null : null;
-  if (r.resultado === "presente" || r.resultado === "retardo") refrescar(pid, rid);
+  // Sin refrescar aquí (2026-10-25): con el elenco llegando en fila, cada lectura redibujaba la página y la base se
+  // saturó. La mesa de entrada (EscanerAcceso) refresca la lista una vez cuando se calma la fila.
   return { ok: true, resultado: r.resultado, nombre: r.nombre, fotoUrl, minutos: r.minutos ?? null, llegada: r.llegada, estado: r.estado };
 }
 

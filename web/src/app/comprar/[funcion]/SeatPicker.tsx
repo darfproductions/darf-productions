@@ -56,15 +56,18 @@ export function SeatPicker(props: {
   const [result, setResult] = useState<Extract<OrderResult, { ok: true }> | null>(null);
   const [pending, startTransition] = useTransition();
 
-  // Disponibilidad en vivo (Fase 4B): cada 20 s se vuelve a preguntar qué está ocupado. Si alguien
+  // Disponibilidad en vivo (Fase 4B): cada 30 s (y al volver a la pestaña) se vuelve a preguntar qué está ocupado; con
+  // la pestaña oculta no se pregunta (con cientos comprando a la vez, eso cuida la base). Si alguien
   // apartó un asiento que tenías elegido, se quita de tu selección y se avisa.
   const [polled, setPolled] = useState<string[] | null>(null);
   const [aviso, setAviso] = useState("");
   const taken = useMemo(() => new Set(polled ?? props.taken), [polled, props.taken]);
   useEffect(() => {
-    const id = setInterval(async () => {
-      const sb = createClient();
+    let ultima = Date.now();
+    const revisar = async () => {
       if (document.visibilityState === "hidden") return; // las vencidas las libera la base cada minuto (0068)
+      ultima = Date.now();
+      const sb = createClient();
       const { data } = await asientosOcupados(sb, props.performanceId);
       if (!data) return;
       const ocupados = new Set(data as string[]);
@@ -76,8 +79,11 @@ export function SeatPicker(props: {
         setAviso(`Alguien acaba de apartar ${labels}. Lo quitamos de tu selección; elige otro.`);
         return new Set([...prev].filter((sid) => !ocupados.has(sid)));
       });
-    }, 20000);
-    return () => clearInterval(id);
+    };
+    const id = setInterval(revisar, 30000);
+    const alVolver = () => { if (Date.now() - ultima > 15000) void revisar(); };
+    document.addEventListener("visibilitychange", alVolver);
+    return () => { clearInterval(id); document.removeEventListener("visibilitychange", alVolver); };
   }, [props.performanceId, props.productionId, props.seats]);
   const priceByCat = useMemo(() => new Map(props.prices.map((p) => [p.categoryId, p])), [props.prices]);
   const chosen = props.seats.filter((s) => selected.has(s.id));
@@ -133,6 +139,7 @@ export function SeatPicker(props: {
       const r = await placeOrder({
         hibrido,
         performanceId: props.performanceId,
+        productionId: props.productionId,
         productionName: props.productionName,
         seatIds: [...selected],
         phone,

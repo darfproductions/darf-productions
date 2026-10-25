@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ActionForm } from "@/components/panel/ActionForm";
 import { AudienceFields } from "@/components/panel/AudienceFields";
@@ -14,15 +15,18 @@ export const metadata: Metadata = { title: "Comunicados" };
 
 type Ann = Audience & { id: string; titulo: string; cuerpo: string; importante: boolean; created_at: string };
 type St = { user_id: string; nombre: string; leido_at: string | null };
+const POR_PAGINA = 20;
 
 // Comunicados con confirmación de lectura: quién ya lo leyó y quién no.
-export default async function Comunicados({ params }: PageProps<"/panel/producciones/[id]/comunicados">) {
+export default async function Comunicados({ params, searchParams }: PageProps<"/panel/producciones/[id]/comunicados">) {
   const { id } = await params;
+  const todos = (await searchParams).todos === "1";
   const access = await requirePanel(`/panel/producciones/${id}/comunicados`);
   if (!can(access, id, "comunicados.enviar")) redirect(`/panel/producciones/${id}`);
   const supabase = await createClient();
-  const [{ data: anns }, { data: roster }] = await Promise.all([
-    supabase.from("announcements").select("*").eq("production_id", id).order("created_at", { ascending: false }),
+  const [{ data: anns, count }, { data: roster }] = await Promise.all([
+    // Los 20 más recientes (con "Ver todos"); cada uno pide su lista de lectura.
+    supabase.from("announcements").select("*", { count: "exact" }).eq("production_id", id).order("created_at", { ascending: false }).limit(todos ? 1000 : POR_PAGINA),
     supabase.rpc("cast_roster", { pid: id }),
   ]);
   const lista = (anns ?? []) as Ann[];
@@ -33,15 +37,17 @@ export default async function Comunicados({ params }: PageProps<"/panel/producci
 
   return (
     <div className="flex flex-col gap-4">
-      <Card>
-        <h2 className="titular mb-3 text-xl">Nuevo comunicado</h2>
+      <details className="group rounded-[22px] border border-linea bg-telon" open={lista.length === 0}>
+        <summary className="cursor-pointer list-none px-5 py-4 font-bold text-violeta-claro">+ Nuevo comunicado</summary>
+        <div className="border-t border-linea p-5">
         <ActionForm action={sendAnnouncement} hidden={{ pid: id }} submit="Enviar comunicado">
           <input className={input} name="titulo" required maxLength={160} placeholder="Ej. Cambio de horario del ensayo general" />
           <textarea className={`${input} min-h-28`} name="cuerpo" required maxLength={5000} placeholder="Mensaje" />
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="importante" /> Importante (se destaca arriba en su portal)</label>
           <AudienceFields gente={gente} />
         </ActionForm>
-      </Card>
+        </div>
+      </details>
       {lista.map((a, i) => {
         const st = (estados[i].data ?? []) as St[];
         const leidos = st.filter((x) => x.leido_at);
@@ -67,6 +73,9 @@ export default async function Comunicados({ params }: PageProps<"/panel/producci
         );
       })}
       {lista.length === 0 && <Card>Aún no hay comunicados.</Card>}
+      {!todos && (count ?? 0) > lista.length && (
+        <Link href="?todos=1" className="self-center rounded-full border border-white/25 px-4 py-2 text-sm font-bold hover:border-white/50">Ver todos ({count})</Link>
+      )}
     </div>
   );
 }

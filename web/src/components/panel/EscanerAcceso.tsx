@@ -2,7 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element -- foto firmada de la persona */
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { QrScanner } from "@/components/panel/QrScanner";
 import type { Lectura } from "@/lib/acceso-rules";
@@ -40,6 +40,14 @@ export function EscanerAcceso({ boton, titulo, placeholder, ayuda, leer, botonCl
     return () => document.removeEventListener("keydown", esc);
   }, [abierto]);
 
+  // La lista de atrás se actualiza una vez cuando pasan 3 s sin lecturas (no una por persona en la fila).
+  const espera = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const refrescarLuego = () => {
+    if (espera.current) clearTimeout(espera.current);
+    espera.current = setTimeout(() => router.refresh(), 3000);
+  };
+  useEffect(() => () => { if (espera.current) clearTimeout(espera.current); }, []);
+
   async function onCode(code: string) {
     setBusy(true);
     try {
@@ -47,7 +55,7 @@ export function EscanerAcceso({ boton, titulo, placeholder, ayuda, leer, botonCl
       if (r.ok && (r.llegada || r.tono === "neutro")) leidos.set(code, r);
       setUltimo(r);
       bip(r.ok && !!r.llegada);
-      if (r.ok && r.llegada) { setLista((l) => [r, ...l].slice(0, 8)); router.refresh(); }
+      if (r.ok && r.llegada) { setLista((l) => [r, ...l].slice(0, 8)); refrescarLuego(); }
     } finally {
       setBusy(false);
     }
