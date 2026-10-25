@@ -5,6 +5,18 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-10-25 — Difusión: precios, beneficios completos y dos invitaciones generales
+
+- **Precios en los diseños:** "Mapa de zonas y precios" y "Precios y lo que incluye cada zona" muestran el precio aunque
+  la página web lo oculte (`mostrar_precios`), porque el diseño se publica a propósito. Si el precio cambia entre
+  funciones dice "Desde $X". Cada uno tiene descargas "Sin precios" (`?precios=0`).
+- **Lo que incluye cada zona:** antes se dibujaban solo las primeras 3, 4 o 6 zonas por orden del mapa, y en Showman VIP
+  (con sus 3 beneficios) quedaba fuera. Ahora van primero las zonas con beneficios, de la más cara a la más barata,
+  con todos sus beneficios; las demás van juntas en un renglón "También" con su precio (`zonasIncluye`).
+- **Dos invitaciones generales:** póster alterno y ambiente. Llevan todas las funciones agrupadas por día ("Sábado
+  23 de enero · 5:00 p.m. y 8:30 p.m.", `funcionesPorDia`), sin depender de la función elegida. Si la obra no tiene
+  póster alterno, la página lo avisa.
+
 ## 2026-10-25 — Que la página aguante: venta con mucha gente, credenciales y puerta sin internet
 
 Por qué: el 24/10 el sitio se trabó dos veces (ensayo y credenciales) con unas 4,300 peticiones en 15 min sobre

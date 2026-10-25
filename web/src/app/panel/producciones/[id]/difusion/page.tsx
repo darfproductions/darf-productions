@@ -66,22 +66,30 @@ export default async function Difusion({ params, searchParams }: PageProps<"/pan
       <Card className="flex flex-col gap-3">
         <div>
           <h2 className="titular text-xl">Para invitar y vender</h2>
-          <p className="text-sm text-texto-2">Con el póster de la obra de fondo. La invitación y el mapa usan la función elegida arriba. Se descargan en cuadrado (1:1), post (3:4) o historia (9:16).</p>
+          <p className="text-sm text-texto-2">Con el póster de la obra de fondo. Las invitaciones llevan todas las funciones; el mapa y &quot;Prepárate&quot; usan la función elegida arriba. Los precios salen aunque la página web los oculte (cada uno tiene su versión &quot;sin precios&quot;). Se descargan en cuadrado (1:1), post (3:4) o historia (9:16).</p>
         </div>
         <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {DISENOS_EXTRA.map((x) => {
-            const ligaX = (f: FormatoPreventa, descargar = false) =>
-              `/panel/producciones/${id}/difusion/mas/${x.id}?${new URLSearchParams({ f, ...(x.funcion && funcion ? { funcion: funcion.id } : {}), ...(descargar ? { descargar: "1" } : {}) })}`;
+            const ligaX = (f: FormatoPreventa, descargar = false, sinPrecios = false) =>
+              `/panel/producciones/${id}/difusion/mas/${x.id}?${new URLSearchParams({ f, ...(x.funcion && funcion ? { funcion: funcion.id } : {}), ...(descargar ? { descargar: "1" } : {}), ...(sinPrecios ? { precios: "0" } : {}) })}`;
+            const sinAlterno = x.id === "invitacion" && !obra.alterno.p3x4 && !obra.alterno.p9x16;
             return (
               <li key={x.id} className="flex flex-col gap-2 rounded-xl bg-telon-2 p-3">
                 <div>
                   <h3 className="font-bold">{x.label}</h3>
                   <p className="text-xs text-texto-3">{x.ayuda}</p>
+                  {sinAlterno && <p className="mt-1 text-xs font-semibold text-aviso">Esta obra no tiene póster alterno: sale sobre el ambiente. Súbelo en <Link href={`/panel/producciones/${id}/pagina/imagen`} className="underline">Página, en Imagen y pósters</Link>.</p>}
                 </div>
                 <img src={ligaX("post")} alt={`Vista previa: ${x.label}`} loading="lazy" width={1080} height={1440} className="aspect-[3/4] w-full rounded-lg bg-sala object-cover" />
                 <div className="mt-auto flex flex-wrap gap-2">
                   {formatos.map(([f, t]) => <a key={f} href={ligaX(f, true)} className={pill}>{t.label} <Icono nombre="flecha-abajo" /></a>)}
                 </div>
+                {x.precios && (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-xs text-texto-3">Sin precios:</span>
+                    {formatos.map(([f, t]) => <a key={f} href={ligaX(f, true, true)} className={pill}>{t.label} <Icono nombre="flecha-abajo" /></a>)}
+                  </div>
+                )}
               </li>
             );
           })}

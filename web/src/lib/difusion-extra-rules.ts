@@ -4,16 +4,18 @@ import { fechaLarga, hora } from "@/lib/difusion-rules";
 import type { Forma } from "@/lib/mapa-libre";
 import { ACCESO_TARDIO_OMISION, hora as horaCorta, type Horario, type Logistica } from "@/lib/logistica-rules";
 
-export type DisenoExtra = "mapa" | "comprar" | "invitacion" | "calendario" | "incluye" | "preparate";
-export const DISENOS_EXTRA: { id: DisenoExtra; label: string; ayuda: string; funcion: boolean }[] = [
-  { id: "invitacion", label: "Invitación", ayuda: "\"DARF Productions te invita a…\" con todas las funciones, WhatsApp, página y QR.", funcion: false },
-  { id: "mapa", label: "Mapa de zonas", ayuda: "El mapa del teatro con el color y precio de cada zona.", funcion: true },
+export type DisenoExtra = "mapa" | "comprar" | "invitacion" | "invitacion-ambiente" | "calendario" | "incluye" | "preparate";
+export const DISENOS_EXTRA: { id: DisenoExtra; label: string; ayuda: string; funcion: boolean; precios?: boolean }[] = [
+  { id: "invitacion", label: "Invitación · póster alterno", ayuda: "\"DARF Productions te invita a…\" sobre el póster alterno, con todas las funciones, WhatsApp, página y QR.", funcion: false },
+  { id: "invitacion-ambiente", label: "Invitación · ambiente", ayuda: "La misma invitación con todas las funciones, sobre la imagen de ambiente.", funcion: false },
+  { id: "mapa", label: "Mapa de zonas y precios", ayuda: "El mapa del teatro con el color y precio de cada zona.", funcion: true, precios: true },
   { id: "comprar", label: "¿Cómo aseguro mi lugar?", ayuda: "Dos opciones: por WhatsApp o en la página.", funcion: false },
   { id: "calendario", label: "Calendario de funciones", ayuda: "Todas las fechas y horarios de la temporada.", funcion: false },
-  { id: "incluye", label: "Lo que incluye cada zona", ayuda: "Zonas con sus beneficios (acceso anticipado, souvenirs…).", funcion: false },
+  { id: "incluye", label: "Precios y lo que incluye cada zona", ayuda: "Cada zona con su precio y sus beneficios (acceso anticipado, souvenirs…). Primero las que incluyen algo.", funcion: false, precios: true },
   { id: "preparate", label: "Prepárate para tu función", ayuda: "Puertas, inicio y salida, el lugar con QR a Google Maps y tres recordatorios. Se llena con Funciones y horarios.", funcion: true },
 ];
 export const esDisenoExtra = (x: unknown): x is DisenoExtra => DISENOS_EXTRA.some((d) => d.id === x);
+export const esInvitacion = (d: DisenoExtra) => d === "invitacion" || d === "invitacion-ambiente";
 
 // ──────── Mapa ────────
 export type AsientoMapa = { x: number | null; y: number | null; fila: string | null; numero: number | null; lado: string | null; zona: string | null };
@@ -72,6 +74,22 @@ export function precioCorto(n: number | null | undefined): string {
   return n == null ? "" : `$${Math.round(Number(n)).toLocaleString("es-MX")}`;
 }
 
+/** Precio de una zona en el diseño: "$350", o "Desde $350" si cambia entre funciones. */
+export function precioZona(z: { precio: number | null; precioMax?: number | null }): string {
+  if (z.precio == null) return "";
+  return z.precioMax != null && z.precioMax > z.precio ? `Desde ${precioCorto(z.precio)}` : precioCorto(z.precio);
+}
+
+// ──────── Lo que incluye cada zona ────────
+/** Primero las zonas con beneficios (de la más cara a la más barata); las demás van juntas en un renglón. Así una
+ *  zona con beneficios nunca se queda fuera por el orden del mapa (2026-10-25: VIP no salía en Showman). */
+export function zonasIncluye<Z extends { precio: number | null; beneficios: unknown[] }>(zonas: Z[], max: number): { conBeneficios: Z[]; resto: Z[] } {
+  const caro = (a: Z, b: Z) => (b.precio ?? -1) - (a.precio ?? -1);
+  const con = zonas.filter((z) => z.beneficios.length).sort(caro);
+  const sin = zonas.filter((z) => !z.beneficios.length).sort(caro);
+  return { conBeneficios: con.slice(0, max), resto: [...con.slice(max), ...sin] };
+}
+
 // ──────── Cómo comprar ────────
 /** "446 522 0560" desde "524465220560". */
 export function telefonoLegible(wa: string): string {
@@ -106,6 +124,20 @@ export function renglonesCalendario(funciones: { starts_at: string }[], max: num
 }
 
 // ──────── Invitación ────────
+/** Funciones agrupadas por día ("Sábado 23 de enero" · "4:00 p.m. y 7:00 p.m."): caben todas en la invitación. */
+export function funcionesPorDia(funciones: { starts_at: string }[], max: number, hoy: Date = new Date()): { dias: { fecha: string; horas: string }[]; mas: number } {
+  const futuras = funciones.filter((f) => Date.parse(f.starts_at) > hoy.getTime() - 3 * 3600_000).sort((a, b) => a.starts_at.localeCompare(b.starts_at));
+  const xs = futuras.length ? futuras : [...funciones].sort((a, b) => a.starts_at.localeCompare(b.starts_at));
+  const dias: { fecha: string; horas: string[] }[] = [];
+  for (const f of xs) {
+    const fecha = fechaLarga(f.starts_at);
+    const d = dias.find((x) => x.fecha === fecha);
+    if (d) d.horas.push(hora(f.starts_at)); else dias.push({ fecha, horas: [hora(f.starts_at)] });
+  }
+  const y = (hs: string[]) => (hs.length > 1 ? `${hs.slice(0, -1).join(", ")} y ${hs[hs.length - 1]}` : hs[0]);
+  return { dias: dias.slice(0, max).map((d) => ({ fecha: d.fecha, horas: y(d.horas) })), mas: Math.max(0, dias.length - max) };
+}
+
 export function textoInvitacion(o: { funcion?: { starts_at: string } | null; rango: string }): { fecha: string; hora: string | null } {
   return o.funcion ? { fecha: fechaLarga(o.funcion.starts_at), hora: hora(o.funcion.starts_at) } : { fecha: o.rango, hora: null };
 }
