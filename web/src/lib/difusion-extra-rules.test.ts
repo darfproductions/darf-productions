@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { pasosComprar, precioCorto, puntosMapa, renglonesCalendario, telefonoLegible, textoInvitacion, textosPreparate } from "./difusion-extra-rules";
+import { funcionesPorDia, pasosComprar, precioCorto, precioZona, zonasIncluye, puntosMapa, renglonesCalendario, telefonoLegible, textoInvitacion, textosPreparate } from "./difusion-extra-rules";
 import { ACCESO_TARDIO_OMISION, LOGISTICA_OMISION } from "./logistica-rules";
 
 describe("más diseños de difusión", () => {
@@ -46,5 +46,29 @@ describe("Prepárate para tu función (0127)", () => {
     expect(x.recordatorios[1]).toBe(ACCESO_TARDIO_OMISION);
     expect(x.recordatorios[2]).toContain("señal");
   });
-});
 
+  it("lo que incluye: primero las zonas con beneficios (VIP arriba), las demás juntas", () => {
+    const z = (nombre: string, precio: number, n: number) => ({ nombre, precio, beneficios: Array.from({ length: n }, (_, i) => i) });
+    // El orden de Showman: Discapacitados, General, Orquesta, Preferente A, VIP.
+    const zonas = [z("Discapacitados", 300, 0), z("General", 350, 0), z("Orquesta", 450, 0), z("Preferente A", 600, 1), z("VIP", 900, 3)];
+    const r = zonasIncluye(zonas, 3);
+    expect(r.conBeneficios.map((x) => x.nombre)).toEqual(["VIP", "Preferente A"]);
+    expect(r.resto.map((x) => x.nombre)).toEqual(["Orquesta", "General", "Discapacitados"]);
+    expect(zonasIncluye(zonas, 1).resto[0].nombre).toBe("Preferente A");
+  });
+  it("precio de zona: fijo o desde", () => {
+    expect(precioZona({ precio: 350, precioMax: 350 })).toBe("$350");
+    expect(precioZona({ precio: 350, precioMax: 450 })).toBe("Desde $350");
+    expect(precioZona({ precio: null, precioMax: null })).toBe("");
+  });
+  it("invitación: funciones agrupadas por día", () => {
+    const hoy = new Date("2026-10-25T12:00:00Z");
+    const fs = ["2027-01-23T22:00:00Z", "2027-01-24T01:00:00Z", "2027-01-30T22:00:00Z", "2027-01-31T22:00:00Z"].map((starts_at) => ({ starts_at }));
+    const r = funcionesPorDia(fs, 2, hoy);
+    expect(r.dias).toHaveLength(2);
+    // 4:00 p.m. y 7:00 p.m. de México caen el mismo sábado 23.
+    expect(r.dias[0].fecha).toMatch(/23 de enero/);
+    expect(r.dias[0].horas).toBe("4:00 p.m. y 7:00 p.m.");
+    expect(r.mas).toBe(1);
+  });
+});

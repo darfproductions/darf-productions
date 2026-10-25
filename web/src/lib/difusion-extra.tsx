@@ -3,7 +3,7 @@ import { ImageResponse } from "next/og";
 import QRCode from "qrcode";
 import { textoBeneficio } from "@/lib/beneficios-rules";
 import { TAMANO_PREVENTA, type FormatoPreventa } from "@/lib/difusion-preventa-rules";
-import { precioCorto, puntosMapa, type DisenoExtra, type OpcionCompra } from "@/lib/difusion-extra-rules";
+import { esInvitacion, precioZona, puntosMapa, zonasIncluye, type DisenoExtra, type OpcionCompra } from "@/lib/difusion-extra-rules";
 import type { DatosExtra } from "@/lib/difusion-extra-datos";
 import { cargarFuentes } from "@/lib/medalla";
 import { comoPng } from "@/lib/tarjeta-elenco";
@@ -30,6 +30,8 @@ export type DatosImagenExtra = {
   extra?: DatosExtra;
   pasos?: OpcionCompra[];
   calendario?: { renglones: { fecha: string; hora: string }[]; mas: number };
+  /** Invitaciones: todas las funciones agrupadas por día. */
+  dias?: { dias: { fecha: string; horas: string }[]; mas: number };
   /** 0127: "Prepárate para tu función" (el QR lleva a Google Maps). */
   preparate?: { horas: { etiqueta: string; hora: string }[]; recordatorios: string[]; direccion: string | null; maps: string | null };
 };
@@ -40,8 +42,8 @@ export async function extraPng(d: DatosImagenExtra): Promise<Buffer> {
   /** Valor según el formato: cuadrado, post 3:4, historia 9:16. */
   const s = (c: number, p: number, hi: number) => (cuadrado ? c : historia ? hi : p);
   const acento = d.colores.acento;
-  const invitacion = d.diseno === "invitacion";
-  const conQr = d.diseno === "invitacion" || d.diseno === "comprar" || d.diseno === "calendario" || (d.diseno === "preparate" && !!d.preparate?.maps);
+  const invitacion = esInvitacion(d.diseno);
+  const conQr = invitacion || d.diseno === "comprar" || d.diseno === "calendario" || (d.diseno === "preparate" && !!d.preparate?.maps);
   const [fondo, logoObra, marca, qr] = await Promise.all([
     comoPng(d.fondoUrl, w),
     comoPng(d.logoUrl, invitacion ? 960 : 520),
@@ -115,7 +117,7 @@ export async function extraPng(d: DatosImagenExtra): Promise<Buffer> {
             <div key={z.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: `${s(9, 11, 14)}px ${s(18, 22, 26)}px`, borderRadius: 999, background: "rgba(11,9,16,0.75)", border: `3px solid ${z.color}` }}>
               <div style={{ width: s(22, 24, 28), height: s(22, 24, 28), borderRadius: 999, background: z.color }} />
               <span style={{ fontSize: s(25, 29, 35), fontWeight: 900 }}>{z.nombre}{z.general ? " (general)" : ""}</span>
-              {d.extra!.mostrarPrecios && z.precio != null && <span style={{ fontSize: s(25, 29, 35), fontWeight: 900, color: acento }}>{precioCorto(z.precio)}</span>}
+              {d.extra!.mostrarPrecios && z.precio != null && <span style={{ fontSize: s(25, 29, 35), fontWeight: 900, color: acento }}>{precioZona(z)}</span>}
             </div>
           ))}
         </div>
@@ -211,27 +213,45 @@ export async function extraPng(d: DatosImagenExtra): Promise<Buffer> {
     );
     pie = <span style={{ fontSize: s(24, 28, 34), fontWeight: 800, textAlign: "center" }}>{d.whatsapp ? `¿Dudas? WhatsApp ${d.whatsapp}` : `Tus boletos en ${d.liga}`}</span>;
   } else if (d.diseno === "incluye" && d.extra) {
-    const zonas = d.extra.zonas.slice(0, s(3, 4, 6));
+    // Primero las zonas con beneficios (VIP arriba) con todos sus beneficios; las demás juntas en un renglón.
+    const { conBeneficios, resto } = zonasIncluye(d.extra.zonas, s(3, 4, 5));
+    const precios = d.extra.mostrarPrecios;
+    const renglones = conBeneficios.reduce((n, z) => n + 1 + z.beneficios.length, 0) + (resto.length ? 2 : 0);
+    // Con muchos renglones la letra baja un poco para que todo quepa.
+    const k = renglones > s(9, 12, 16) ? 0.82 : renglones > s(7, 9, 12) ? 0.9 : 1;
     centro = (
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: separacion, width: w }}>
-        {titulo("¿Qué incluye\ntu lugar?", s(62, 76, 92))}
-        <div style={{ display: "flex", flexDirection: "column", gap: s(14, 20, 28), width: w - lado * 2 }}>
-          {zonas.map((z) => (
-            <div key={z.id} style={{ display: "flex", flexDirection: "column", padding: `${s(18, 24, 32)}px ${s(24, 30, 36)}px`, borderRadius: 26, background: "rgba(11,9,16,0.75)", borderLeft: `14px solid ${z.color}` }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span style={{ fontSize: s(36, 42, 50), fontWeight: 900 }}>{z.nombre.toUpperCase()}</span>
-                {d.extra!.mostrarPrecios && z.precio != null && <span style={{ fontSize: s(34, 40, 48), fontWeight: 900, color: acento }}>{precioCorto(z.precio)}</span>}
+        {titulo(precios ? "Precios y lo que\nincluye tu lugar" : "¿Qué incluye\ntu lugar?", s(56, 68, 84))}
+        <div style={{ display: "flex", flexDirection: "column", gap: s(14, 20, 26), width: w - lado * 2 }}>
+          {conBeneficios.map((z) => (
+            <div key={z.id} style={{ display: "flex", flexDirection: "column", padding: `${s(16, 22, 30)}px ${s(24, 30, 36)}px`, borderRadius: 26, background: "rgba(11,9,16,0.75)", borderLeft: `14px solid ${z.color}` }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16 }}>
+                <span style={{ fontSize: s(36, 42, 50) * k, fontWeight: 900 }}>{z.nombre.toUpperCase()}</span>
+                {precios && z.precio != null && <span style={{ fontSize: s(34, 40, 48) * k, fontWeight: 900, color: acento }}>{precioZona(z)}</span>}
               </div>
-              {z.beneficios.length
-                ? z.beneficios.slice(0, 4).map((b) => (
-                  <div key={b.id} style={{ display: "flex", alignItems: "center", gap: 14, marginTop: s(8, 10, 14) }}>
-                    <div style={{ width: 12, height: 12, borderRadius: 6, background: acento }} />
-                    <span style={{ fontSize: s(25, 29, 35), fontWeight: 700 }}>{textoBeneficio(b)}</span>
-                  </div>
-                ))
-                : <span style={{ marginTop: s(8, 10, 14), fontSize: s(25, 29, 35), fontWeight: 700, opacity: 0.75 }}>Tu lugar en {z.nombre}</span>}
+              {z.beneficios.map((b) => (
+                <div key={b.id} style={{ display: "flex", alignItems: "center", gap: 14, marginTop: s(6, 9, 12) * k }}>
+                  <div style={{ width: 12, height: 12, borderRadius: 6, background: acento, flexShrink: 0 }} />
+                  <span style={{ fontSize: s(25, 29, 35) * k, fontWeight: 700 }}>{textoBeneficio(b)}</span>
+                </div>
+              ))}
             </div>
           ))}
+          {resto.length > 0 && (
+            <div style={{ display: "flex", flexDirection: "column", padding: `${s(14, 20, 26)}px ${s(24, 30, 36)}px`, borderRadius: 26, background: "rgba(11,9,16,0.6)" }}>
+              <span style={{ fontSize: s(20, 23, 28), fontWeight: 900, letterSpacing: 4, color: acento }}>{conBeneficios.length ? "TAMBIÉN" : "ZONAS"}</span>
+              <div style={{ display: "flex", flexWrap: "wrap", columnGap: s(22, 26, 30), rowGap: s(4, 6, 8), marginTop: s(6, 8, 10) }}>
+                {resto.map((z) => (
+                  <div key={z.id} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <div style={{ width: s(16, 18, 22), height: s(16, 18, 22), borderRadius: 999, background: z.color }} />
+                    <span style={{ fontSize: s(25, 29, 35) * k, fontWeight: 800 }}>{z.nombre}</span>
+                    {precios && z.precio != null && <span style={{ fontSize: s(25, 29, 35) * k, fontWeight: 900, color: acento }}>{precioZona(z)}</span>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {d.extra.zonas.length === 0 && <span style={{ fontSize: 34, fontWeight: 800, textAlign: "center" }}>Zonas por anunciar</span>}
         </div>
       </div>
     );
@@ -239,8 +259,8 @@ export async function extraPng(d: DatosImagenExtra): Promise<Buffer> {
   }
 
   // Invitación: tres bloques repartidos en todo el alto (invita / logo / funciones), el pie con QR hasta abajo.
-  const funcionesInv = invitacion ? d.calendario?.renglones ?? [] : [];
-  const masInv = invitacion ? d.calendario?.mas ?? 0 : 0;
+  const funcionesInv = invitacion ? (d.dias?.dias ?? []).map((x) => ({ fecha: x.fecha, hora: x.horas })) : [];
+  const masInv = invitacion ? d.dias?.mas ?? 0 : 0;
   const invitacionCuerpo = invitacion && (
     <div style={{ position: "absolute", left: 0, top: 0, width: w, height: h, display: "flex", flexDirection: "column", alignItems: "center",
       justifyContent: "space-between", padding: `${margenArriba + s(104, 132, 160)}px ${lado}px ${margenAbajo}px` }}>
@@ -287,7 +307,10 @@ export async function extraPng(d: DatosImagenExtra): Promise<Buffer> {
           ? <img src={fondo} width={w} height={h} style={{ position: "absolute", left: 0, top: 0, width: w, height: h, objectFit: "cover" }} alt="" />
           : <div style={{ position: "absolute", left: 0, top: 0, width: w, height: h, display: "flex", backgroundImage: `radial-gradient(circle at 50% 30%, ${acento}66 0%, ${d.colores.fondo} 70%)` }} />}
         <div style={{ position: "absolute", left: 0, top: 0, width: w, height: h, display: "flex",
-          backgroundImage: invitacion
+          backgroundImage: d.diseno === "invitacion-ambiente"
+            // El ambiente suele ser más claro y con más detalle que el póster alterno: un poco más oscuro.
+            ? "linear-gradient(180deg, rgba(11,9,16,0.78) 0%, rgba(11,9,16,0.58) 30%, rgba(11,9,16,0.85) 68%, rgba(11,9,16,0.96) 100%)"
+            : invitacion
             ? "linear-gradient(180deg, rgba(11,9,16,0.7) 0%, rgba(11,9,16,0.45) 30%, rgba(11,9,16,0.8) 70%, rgba(11,9,16,0.95) 100%)"
             : "linear-gradient(180deg, rgba(11,9,16,0.8) 0%, rgba(11,9,16,0.72) 30%, rgba(11,9,16,0.88) 100%)" }} />
         {/* Franja de arriba: logos. */}
