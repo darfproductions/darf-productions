@@ -3,6 +3,7 @@ import { getAdeudos } from "@/lib/adeudos";
 import { pendingOrdersByProduction } from "@/lib/panel-data";
 import { requireSession } from "@/lib/auth";
 import { can, myProductionIds } from "@/lib/panel-nav";
+import { memoriaCorta } from "@/lib/memoria";
 import { getPanelAccess } from "@/lib/permissions";
 import type { Pendiente } from "@/lib/panel-home-rules";
 import { createClient } from "@/lib/supabase/server";
@@ -13,19 +14,11 @@ import { createClient } from "@/lib/supabase/server";
 // Con cache() se pide una sola vez por página (el menú, el Inicio y la obra usan lo mismo).
 // Además se recuerda 60 s por persona (2026-10-24): la lista de asistencia se recarga sola y cada marca con gafete
 // vuelve a dibujar el panel; recalcular los adeudos de todas las obras en cada una saturó la base en un ensayo.
-const MEMORIA_MS = 60_000;
-const memoria = new Map<string, { at: number; v: Pendiente[] }>();
+const memoria = memoriaCorta<Pendiente[]>(60_000, 300);
 
 export const getPendientes = cache(async (): Promise<Pendiente[]> => {
   const session = await requireSession("/panel");
-  const ahora = Date.now();
-  const guardado = memoria.get(session.userId);
-  if (guardado && ahora - guardado.at < MEMORIA_MS) return guardado.v;
-  const v = await calcularPendientes(session);
-  memoria.set(session.userId, { at: ahora, v });
-  // Sin crecer sin fin: se olvidan las viejas.
-  if (memoria.size > 300) for (const [k, x] of memoria) if (ahora - x.at >= MEMORIA_MS) memoria.delete(k);
-  return v;
+  return memoria.get(session.userId, () => calcularPendientes(session));
 });
 
 async function calcularPendientes(session: Awaited<ReturnType<typeof requireSession>>): Promise<Pendiente[]> {

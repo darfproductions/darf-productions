@@ -1,9 +1,10 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { lineaWhatsapp, type Beneficio, type BeneficioCorto } from "@/lib/beneficios-rules";
 
 // Beneficios por zona (0122). Lectura pública de los activos (RLS); el equipo con funciones.gestionar ve todos.
-export async function listarBeneficios(pid: string): Promise<Beneficio[]> {
-  const supabase = await createClient();
+export async function listarBeneficios(pid: string, cliente?: SupabaseClient): Promise<Beneficio[]> {
+  const supabase = cliente ?? await createClient();
   const { data } = await supabase.from("zona_beneficios")
     .select("id, tipo, nombre, detalle, minutos_antes, cupo, funciones, orden, activo, entrega, entrega_dias, zona_beneficio_zonas(price_category_id)")
     .eq("production_id", pid).order("orden").order("created_at");

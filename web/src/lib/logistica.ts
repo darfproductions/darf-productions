@@ -1,14 +1,15 @@
 import { createClient } from "@/lib/supabase/server";
 import { horario, type Horario, type Llamado, type Logistica } from "@/lib/logistica-rules";
+import { publico } from "@/lib/supabase/publico";
 
 // 0127: carga de la logística de la obra (pública) y de sus llamados (solo producción; RLS).
 
-export async function getLogistica(pid: string): Promise<Logistica | null> {
-  const supabase = await createClient();
+// Pública (la pide la página de la obra, la compra, Mi cuenta y el calendario): guardada 60 s; se refresca al guardar.
+export const getLogistica = publico("logistica", async (supabase, pid: string): Promise<Logistica | null> => {
   const { data } = await supabase.from("obra_logistica")
     .select("puertas_min, duracion_min, intermedio_min, direccion, maps_url, acceso_tardio, indicaciones").eq("production_id", pid).maybeSingle();
   return (data as Logistica | null) ?? null;
-}
+});
 
 export async function getLlamados(pid: string): Promise<Llamado[]> {
   const supabase = await createClient();

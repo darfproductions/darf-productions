@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { leerAnuncio, type AnuncioLugar } from "@/lib/anuncio-rules";
 import { leerFranja } from "@/lib/banner-form";
 import { createClient } from "@/lib/supabase/server";
+import { refrescarPublico } from "@/lib/supabase/publico";
 
 // Acciones del panel para anuncios y la franja del sitio (0074). La base decide quién puede:
 // el Director todo; el equipo de una obra (obra.editar) los anuncios de su obra.
@@ -18,10 +19,12 @@ const alcance = (f: FormData) => {
 
 function refrescar(pid: string | null) {
   revalidatePath("/");
+  refrescarPublico();
   revalidatePath("/fan-zone", "layout");
   revalidatePath("/panel/ajustes/sitio");
   if (pid) {
     revalidatePath(`/producciones/${pid}`);
+    refrescarPublico();
     revalidatePath(`/panel/producciones/${pid}/pagina`, "layout");
   }
 }
@@ -77,6 +80,7 @@ export async function saveSiteBanner(_p: State, f: FormData): Promise<State> {
   const { error } = await supabase.rpc("panel_set_site_banner", { p_estilo: r.estilo, p_color: r.color || null, p_activa: f.get("activa") === "1", items: r.items });
   if (error) return { ok: false, message: error.message };
   revalidatePath("/");
+  refrescarPublico();
   revalidatePath("/panel/ajustes/sitio");
   return { ok: true, message: "Franja del sitio guardada." };
 }

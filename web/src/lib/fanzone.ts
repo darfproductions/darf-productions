@@ -1,6 +1,7 @@
 import type { Evento } from "@/lib/eventos-rules";
 import { createClient } from "@/lib/supabase/server";
 import { ordenFanzone, type FanCategoria, type FanItem, type FanTipo } from "@/lib/fanzone-rules";
+import { publico } from "@/lib/supabase/publico";
 
 // Lecturas de la Fan Zone (0052, 0075). Pasan por RLS: solo socios del Club Fan ven contenidos,
 // y lo bloqueado por fecha llega hasta su día.
@@ -29,11 +30,10 @@ export async function fanzoneCounts(): Promise<Map<string, number>> {
 }
 
 /** Cuántos contenidos tiene la Fan Zone de una obra, también sin sesión. */
-export async function fanzoneCount(pid: string): Promise<number> {
-  const supabase = await createClient();
+export const fanzoneCount = publico("fanzone-conteo", async (supabase, pid: string): Promise<number> => {
   const { data } = await supabase.rpc("production_fanzone_count", { pid });
   return Number(data ?? 0);
-}
+});
 
 /** Lo que se desbloquea después (solo título y fecha). */
 export type FanProximo = { id: string; production_id: string; tipo: FanTipo; categoria: FanCategoria; titulo: string; disponible_desde: string };
@@ -74,11 +74,11 @@ export type EventoCartelera = {
   lugar: string | null; starts_at: string; termina: string; acceso: Evento["acceso"]; requiere_registro: boolean; en_vivo: boolean;
   precio: number | null; precio_socio: number | null;
 };
-export async function getEventosCartelera(limite = 6): Promise<EventoCartelera[]> {
-  const supabase = await createClient();
+// Igual para todos (la base solo da los de obras visibles): guardada 60 s.
+export const getEventosCartelera = publico("eventos-cartelera", async (supabase, limite: number = 6): Promise<EventoCartelera[]> => {
   const { data } = await supabase.rpc("eventos_cartelera", { p_limite: limite });
   return (data ?? []) as EventoCartelera[];
-}
+});
 
 /** Lo que aparté o pagué (0083): Mi cuenta → Mis eventos. */
 export type MiEvento = {

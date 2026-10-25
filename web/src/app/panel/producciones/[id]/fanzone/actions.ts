@@ -7,6 +7,7 @@ import { horaMx, type Lectura } from "@/lib/acceso-rules";
 import { ACCESO_FAN, type AccesoFan } from "@/lib/credencial-fan-rules";
 import { mensajeError } from "@/lib/errores";
 import { createClient } from "@/lib/supabase/server";
+import { refrescarPublico } from "@/lib/supabase/publico";
 
 // Galería pública de la obra (tabla gallery_photos + bucket gallery, 0028).
 // La base exige fanzone.editar en ESTA obra (0032).
@@ -19,6 +20,7 @@ export async function addGalleryPhoto(pid: string, path: string): Promise<{ ok: 
   if (error) return { ok: false, message: error.message };
   revalidatePath(`/panel/producciones/${pid}/fanzone`, "layout");
   revalidatePath(`/producciones/${pid}`);
+  refrescarPublico();
   return { ok: true, message: "Foto agregada a la galería." };
 }
 
@@ -31,6 +33,7 @@ export async function addFotoFuncion(pid: string, perf: string, path: string): P
   if (error) return { ok: false, message: mensajeError(error) };
   revalidatePath(`/panel/producciones/${pid}/fanzone`, "layout");
   revalidatePath(`/producciones/${pid}`);
+  refrescarPublico();
   return { ok: true, message: "Foto agregada." };
 }
 
@@ -58,6 +61,7 @@ export async function removeGalleryPhoto(_p: { ok: boolean; message: string } | 
   await supabase.storage.from("gallery").remove([data.path as string]);
   revalidatePath(`/panel/producciones/${pid}/fanzone`, "layout");
   revalidatePath(`/producciones/${pid}`);
+  refrescarPublico();
   return { ok: true, message: "Foto quitada." };
 }
 

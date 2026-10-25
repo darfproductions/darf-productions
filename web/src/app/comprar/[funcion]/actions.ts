@@ -18,6 +18,8 @@ export type OrderResult =
 // tope de órdenes pendientes. Aquí no se calcula ningún precio.
 export async function placeOrder(input: {
   performanceId: string;
+  /** Solo acota la limpieza de vencidas; la base decide todo lo demás. */
+  productionId?: string;
   productionName: string;
   seatIds: string[];
   phone: string;
@@ -34,8 +36,8 @@ export async function placeOrder(input: {
   if (!telefonoOk(phone)) return { ok: false, message: "Revisa tu teléfono: escribe tus 10 dígitos (puedes incluir la lada)." };
 
   const supabase = await createClient();
-  // Libera lo vencido de esa función antes de apartar (0054).
-  await supabase.rpc("expire_due_orders", { pid: null });
+  // Libera lo vencido de esa obra antes de apartar (0054); el resto lo libera la base cada minuto (0068).
+  await supabase.rpc("expire_due_orders", { pid: input.productionId ?? null });
   const { data, error } = await supabase.rpc("create_seated_ticket_order", {
     target_performance_id: input.performanceId,
     target_buyer_nombre: session.profile?.nombre || session.email,
@@ -75,6 +77,8 @@ export async function placeOrder(input: {
 /** Entrada general (0055): N lugares de una zona, sin asiento. La base cuenta el cupo. */
 export async function placeGeneralOrder(input: {
   performanceId: string;
+  /** Solo acota la limpieza de vencidas; la base decide todo lo demás. */
+  productionId?: string;
   productionName: string;
   zoneId: string;
   cantidad: number;

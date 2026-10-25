@@ -7,6 +7,7 @@ import { origenSitio } from "@/lib/site-origin";
 import { getSession } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { mensajeError } from "@/lib/errores";
+import { olvidarAcceso } from "@/lib/permissions";
 
 export type ProfileState = { ok: boolean; message: string } | null;
 
@@ -86,6 +87,8 @@ export async function replyOffer(_prev: OfferReply, form: FormData): Promise<Off
   const supabase = await createClient();
   const { error } = await supabase.rpc("casting_offer_respond", { oid: String(form.get("id")), acepta });
   if (error) return { ok: false, message: mensajeError(error) };
+  const s = await getSession();
+  if (s) olvidarAcceso(s.userId);
   revalidatePath("/cuenta");
   return { ok: true, message: acepta ? "¡Bienvenido al elenco! Ya apareces en la obra." : "Respuesta enviada. Gracias por avisar." };
 }

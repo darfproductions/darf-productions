@@ -1,5 +1,7 @@
 import { perfilUrl, assetUrl } from "@/lib/productions";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
+import { publico } from "@/lib/supabase/publico";
 import type { Capa } from "@/lib/obra-capa-rules";
 
 // Contenido artístico de una obra (tablas de la migración 0029): sinopsis,
@@ -43,7 +45,13 @@ type CreditRow = { tipo: string; papel: string | null; foto_path: string | null;
 /** `conSinPublicar`: la vista previa del panel también muestra el elenco aún no publicado (0107).
  *  `capa` (0119): cambios de fans o del borrador encima de lo publicado. */
 export async function getProductionContent(id: string, conSinPublicar = false, capa: Capa = {}): Promise<ProductionContent> {
-  const supabase = await createClient();
+  // La página pública lo lee como visitante y guardado 60 s (lib/supabase/publico.ts); la vista previa, con la sesión.
+  const raw = conSinPublicar ? await leerContenido(await createClient(), id, true) : await leerContenidoPublico(id);
+  return armarContenido(raw, capa);
+}
+const leerContenidoPublico = publico("contenido", (sb, id: string) => leerContenido(sb, id, false));
+
+async function leerContenido(supabase: SupabaseClient, id: string, conSinPublicar: boolean) {
   // 0107: la página pública solo muestra el Reparto y Ensamble publicados, aunque quien la vea sea del equipo.
   let creditos = supabase.from("production_credits").select("tipo, papel, foto_path, person_id, people(nombre)").eq("production_id", id).eq("activo", true);
   if (!conSinPublicar) creditos = creditos.eq("publicado", true);
@@ -59,21 +67,30 @@ export async function getProductionContent(id: string, conSinPublicar = false, c
   ]);
   const failed = [prod, acts, songs, credits, media, facts, thanks].find((r) => r.error);
   if (failed?.error) throw new Error(`No se pudo cargar el contenido de la obra: ${failed.error.message}`);
+  return {
+    prod: prod.data as FichaRow | null, acts: (acts.data ?? []) as { id: string; nombre: string }[], songs: (songs.data ?? []) as { act_id: string | null; titulo: string }[],
+    credits: (credits.data ?? []) as unknown as CreditRow[], media: (media.data ?? []) as { titulo: string; youtube_id: string }[],
+    facts: (facts.data ?? []) as { etiqueta: string; valor: string }[], thanks: (thanks.data ?? []) as { texto: string }[],
+    pro: (pro.data ?? []) as { person_id: string; retrato_path: string | null; slug: string | null }[],
+  };
+}
 
-  const p = (prod.data && capa.datos ? { ...prod.data, ...capa.datos } : prod.data) as FichaRow | null;
-  const songRows = songs.data ?? [];
-  let actos = (acts.data ?? []).map((a) => ({
-    nombre: a.nombre as string,
-    canciones: songRows.filter((s) => s.act_id === a.id).map((s) => s.titulo as string),
+function armarContenido(raw: Awaited<ReturnType<typeof leerContenido>>, capa: Capa): ProductionContent {
+  const { prod, acts, songs, credits, media, facts, thanks, pro } = raw;
+  const p = (prod && capa.datos ? { ...prod, ...capa.datos } : prod) as FichaRow | null;
+  const songRows = songs;
+  let actos = acts.map((a) => ({
+    nombre: a.nombre,
+    canciones: songRows.filter((s) => s.act_id === a.id).map((s) => s.titulo),
   }));
-  const sueltas = songRows.filter((s) => !s.act_id).map((s) => s.titulo as string);
+  const sueltas = songRows.filter((s) => !s.act_id).map((s) => s.titulo);
   if (sueltas.length) actos.unshift({ nombre: "", canciones: sueltas });
   if (capa.canciones) actos = capa.canciones.actos.map((a) => ({ nombre: a.nombre ?? "", canciones: (a.canciones ?? []).filter(Boolean) }));
 
-  const rows = (credits.data ?? []) as unknown as CreditRow[];
+  const rows = credits;
   const of = (tipo: string) => rows.filter((r) => r.tipo === tipo && r.people);
   // Foto de la obra; si no hay, el retrato del perfil profesional. Enlace solo si el perfil es público (0057).
-  const proInfo = new Map(((pro.data ?? []) as { person_id: string; retrato_path: string | null; slug: string | null }[]).map((x) => [x.person_id, x]));
+  const proInfo = new Map(pro.map((x) => [x.person_id, x]));
   const foto = (r: CreditRow) => {
     if (r.foto_path) return assetUrl(r.foto_path);
     const ret = proInfo.get(r.person_id)?.retrato_path;
@@ -90,13 +107,13 @@ export async function getProductionContent(id: string, conSinPublicar = false, c
     { etiqueta: "Clasificación", valor: p?.clasificacion },
     { etiqueta: "Idioma", valor: p?.idioma },
     { etiqueta: "Basada en", valor: p?.basada_en },
-    ...(capa.ficha ? capa.ficha.items : (facts.data ?? [])),
+    ...(capa.ficha ? capa.ficha.items : facts),
   ].filter((x): x is { etiqueta: string; valor: string } => !!x.valor);
 
   return {
     sinopsis: (p?.sinopsis ?? "").split(/\n\s*\n/).map((t) => t.trim()).filter(Boolean),
     actos: actos.filter((a) => a.canciones.length > 0),
-    videos: capa.videos ? capa.videos.items.map((m) => ({ titulo: m.titulo, youtube: m.youtube_id })) : (media.data ?? []).map((m) => ({ titulo: m.titulo as string, youtube: m.youtube_id as string })),
+    videos: capa.videos ? capa.videos.items.map((m) => ({ titulo: m.titulo, youtube: m.youtube_id })) : media.map((m) => ({ titulo: m.titulo, youtube: m.youtube_id })),
     reparto: of("reparto").map((r) => ({ personaje: r.papel ?? "", persona: r.people!.nombre, foto: foto(r), perfil: perfil(r) })),
     ensamble: of("ensamble").map((r) => ({ persona: r.people!.nombre, foto: foto(r), perfil: perfil(r) })),
     creativo: team("creativo"),
@@ -104,7 +121,7 @@ export async function getProductionContent(id: string, conSinPublicar = false, c
     crew: team("crew"),
     tecnico: team("tecnico"),
     staff: team("staff"),
-    agradecimientos: capa.gracias ? capa.gracias.items : (thanks.data ?? []).map((t) => t.texto as string),
+    agradecimientos: capa.gracias ? capa.gracias.items : thanks.map((t) => t.texto),
     ficha,
   };
 }

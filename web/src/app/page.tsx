@@ -9,10 +9,11 @@ import { ArtFill } from "@/components/PosterArt";
 import { ProductionCard } from "@/components/ProductionCard";
 import { ETIQUETA_ESTADO, type EstadoPublico } from "@/lib/home-rules";
 import { formatPrice, getHomeData, getTheme, perfilUrl, posterUrl } from "@/lib/productions";
-import { createClient } from "@/lib/supabase/server";
 import { EventosInicio } from "@/components/eventos/EventosInicio";
 import { getEventosCartelera } from "@/lib/fanzone";
 import { Icono } from "@/components/Icono";
+import { publico } from "@/lib/supabase/publico";
+import { OlvidarSinConexion } from "@/components/pwa/SinConexion";
 
 type Miembro = { id: string; nombre: string; retrato_path: string | null };
 
@@ -22,10 +23,11 @@ const iniciales = (n: string) => n.split(/\s+/).filter(Boolean).slice(0, 2).map(
 // Portada (guía de UI · Fusión): habla con la voz de DARF; la obra destacada es invitada.
 // Destacada = la elegida en el panel o la de cartelera con la función más cercana;
 // si no hay cartelera, la próxima; si no, la más reciente del archivo (home-rules.ts).
+const equipoPublico = publico("equipo", async (sb) => { const r = await sb.rpc("team_public"); return { data: r.data, error: r.error ? { message: r.error.message } : null }; });
+
 export default async function Home({ searchParams }: PageProps<"/">) {
   const sp = await searchParams;
-  const supabase = await createClient();
-  const [{ productions, featured }, equipoRes, franja, eventos] = await Promise.all([getHomeData(), supabase.rpc("team_public"), getPublicSiteBanner(), getEventosCartelera(5)]);
+  const [{ productions, featured }, equipoRes, franja, eventos] = await Promise.all([getHomeData(), equipoPublico(), getPublicSiteBanner(), getEventosCartelera(5)]);
   const equipo = ((equipoRes.data ?? []) as Miembro[]).slice(0, 5);
   const current = featured?.production ?? null;
   const enCartelera = featured?.mode === "cartelera";
@@ -38,6 +40,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
 
   return (
     <main className="relative overflow-hidden">
+      {sp.salio && <OlvidarSinConexion />}
       {sp.cuenta === "eliminada" && (
         <p role="status" className="relative z-10 bg-telon-2 px-5 py-3 text-center text-sm">Tu cuenta se eliminó. Gracias por acompañarnos; aquí estaremos cuando quieras volver.</p>
       )}

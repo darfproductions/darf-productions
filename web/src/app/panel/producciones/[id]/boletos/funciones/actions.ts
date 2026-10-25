@@ -5,6 +5,7 @@ import { localMxToIso } from "@/lib/dates";
 import { mensajeError } from "@/lib/errores";
 import { GRUPOS_LLAMADO } from "@/lib/logistica-rules";
 import { createClient } from "@/lib/supabase/server";
+import { refrescarPublico } from "@/lib/supabase/publico";
 
 // 0127: logística de la obra (horarios y "Antes de ir") y sus llamados. La base revisa el permiso
 // (logística: funciones.gestionar; llamados: ensayos.gestionar o funciones.gestionar) y sincroniza los llamados
@@ -15,6 +16,7 @@ export type LogisticaState = { ok: boolean; message: string } | null;
 const refresh = (pid: string) => {
   revalidatePath(`/panel/producciones/${pid}`, "layout");
   revalidatePath(`/producciones/${pid}`);
+  refrescarPublico();
 };
 const texto = (f: FormData, k: string, max: number) => String(f.get(k) ?? "").trim().slice(0, max) || null;
 const entero = (f: FormData, k: string) => { const t = String(f.get(k) ?? "").trim(); return t === "" ? null : Number(t); };

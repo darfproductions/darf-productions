@@ -5,6 +5,33 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-10-25 — Que la página aguante: venta con mucha gente, credenciales y puerta sin internet
+
+Por qué: el 24/10 el sitio se trabó dos veces (ensayo y credenciales) con unas 4,300 peticiones en 15 min sobre
+Supabase Free/Nano. Cada visita pedía todo a la base; la página de la obra hacía unas 47 consultas.
+
+- **Datos públicos guardados 60 s** (`lib/supabase/publico.ts`, `unstable_cache` con un cliente sin sesión): obra,
+  funciones y precios, contenido, galería, programa, logística, promos, franjas, convocatorias, eventos de la
+  cartelera, equipo de la portada, y en la compra el mapa, precios, escenario y beneficios. La ocupación de cada
+  función se guarda 30 s. Lo de cada persona (sesión, Club Fan, órdenes, asientos ocupados) sigue al momento. Al
+  guardar desde el panel, `refrescarPublico()` lo actualiza al instante; la vista previa y el panel leen sin caché.
+  En la copia local: la obra pasa a ~6 consultas por visita, la compra a ~4 y la portada a ~3.
+- **Memoria corta por persona** (`lib/memoria.ts`): permisos del panel 30 s (aceptar invitación o papel la borra),
+  pendientes 60 s y la foto firmada 50 min. `esSocio` y `getMiCredencial` una vez por página;
+  `getMiCredencial` reutiliza sesión y foto. Mi cuenta pide todo en paralelo.
+- **Ver ya no escribe:** la compra y Mi cuenta dejan de correr `expire_due_orders` (la base lo corre cada minuto);
+  al comprar se limpia solo la obra.
+- **Mapa de asientos:** pregunta cada 30 s (antes 20), no con la pestaña oculta, y al volver.
+- **Puerta sin internet:** el celular guarda la lista de la función (`puerta_lista`, sin cambios en la base) y la
+  renueva cada minuto. Si la red no contesta en 3 s, valida contra la lista; la entrada queda en una fila que se
+  sube sola al volver la señal (avisa "doble entrada" si otro celular ya lo había dejado pasar). Indicador en línea
+  / sin conexión, búsqueda en la lista guardada y conteo local. Los pases del Club Fan y deshacer siguen necesitando
+  red. Hay que abrir Puerta con internet antes de la entrada.
+- **Credencial y boletos sin internet:** Mi cuenta los guarda en el teléfono y la página "Sin conexión" del service
+  worker los muestra (QR firmados). Se borran al cerrar sesión.
+- **Asistencia:** marcar ya no dibuja la página dos veces, y el gafete en fila refresca la lista una vez al calmarse.
+  El contador de Puerta no pregunta con la pestaña oculta.
+
 ## 2026-10-24 — Panel ordenado: secciones en cada obra y menú general
 
 - Cada grupo de la obra se divide en secciones, como Boletos, con sus páginas en una tercera fila. Las rutas no

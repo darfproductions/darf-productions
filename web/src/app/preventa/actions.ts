@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { mensajeError } from "@/lib/errores";
 import { createClient } from "@/lib/supabase/server";
+import { refrescarPublico } from "@/lib/supabase/publico";
 
 /** 0123: canjear un código de preventa privada desde la página de la obra. */
 export async function canjearPreventa(codigo: string): Promise<{ ok: boolean; message: string }> {
@@ -13,5 +14,6 @@ export async function canjearPreventa(codigo: string): Promise<{ ok: boolean; me
   const r = data as { production_id?: string; obra?: string; error?: string };
   if (r.error) return { ok: false, message: r.error };
   revalidatePath(`/producciones/${r.production_id}`);
+  refrescarPublico();
   return { ok: true, message: `Listo: tienes acceso a la preventa privada de ${r.obra}.` };
 }

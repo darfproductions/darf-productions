@@ -24,7 +24,7 @@ export default async function FotosPage({ params }: PageProps<"/panel/produccion
   const access = await requirePanel(`/panel/producciones/${id}/fanzone/fotos`);
   if (!can(access, id, "fanzone.editar")) redirect(`/panel/producciones/${id}`);
   const supabase = await createClient();
-  const [gallery, estado] = await Promise.all([getGallery(id), supabase.rpc("fotos_funcion_estado", { pid: id })]);
+  const [gallery, estado] = await Promise.all([getGallery(id, true), supabase.rpc("fotos_funcion_estado", { pid: id })]);
   type Funcion = { performance_id: string; starts_at: string; fotos: number; con_boleto: number; avisados: number | null; avisado_at: string | null };
   // Funciones que ya empezaron (la base da también las de hoy).
   const ahora = new Date().toISOString();

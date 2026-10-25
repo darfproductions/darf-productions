@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { mayus } from "@/lib/dates";
 import type { KitColumns } from "@/lib/themes";
+import { publico } from "@/lib/supabase/publico";
 
 // Lecturas de audiciones (0036, 0037). Pasan por RLS: el público ve convocatorias
 // abiertas, cerradas o finalizadas; cada aspirante, solo su inscripción. Las de
@@ -66,12 +67,12 @@ export async function getPermanentRegistry(): Promise<{ id: string; titulo: stri
 
 /** Convocatorias abiertas y públicas de una obra (aviso en su página). */
 export async function listOpenAuditionsFor(pid: string): Promise<{ id: string; titulo: string }[]> {
-  const supabase = await createClient();
-  const { data } = await supabase.from("auditions").select("id, titulo, inscripcion_cierra")
-    .eq("production_id", pid).eq("estado", "abierta").eq("visibilidad", "publica").order("created_at", { ascending: false });
+  const data = await leerAudicionesAbiertas(pid);
   const now = Date.now();
   return (data ?? []).filter((a) => !a.inscripcion_cierra || new Date(a.inscripcion_cierra as string).getTime() > now).map((a) => ({ id: a.id as string, titulo: a.titulo as string }));
 }
+const leerAudicionesAbiertas = publico("audiciones-obra", async (supabase, pid: string) => ((await supabase.from("auditions").select("id, titulo, inscripcion_cierra")
+  .eq("production_id", pid).eq("estado", "abierta").eq("visibilidad", "publica").order("created_at", { ascending: false })).data ?? []) as { id: string; titulo: string; inscripcion_cierra: string | null }[]);
 
 export async function getAudition(id: string) {
   if (!/^[0-9a-f-]{36}$/.test(id)) return null;

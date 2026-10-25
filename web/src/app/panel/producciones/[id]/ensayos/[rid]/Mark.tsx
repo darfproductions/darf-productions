@@ -18,8 +18,8 @@ export function Mark({ pid, rid, uid, actual }: { pid: string; rid: string; uid:
     }
     start(async () => {
       const r = await markAttendance(pid, rid, uid, estado, min);
-      if (!r.ok && r.message) window.alert(r.message);
-      router.refresh();
+      // Si guardó, la acción ya trae la página al día (revalidatePath); refrescar otra vez la dibujaba dos veces.
+      if (!r.ok) { if (r.message) window.alert(r.message); router.refresh(); }
     });
   };
   return (

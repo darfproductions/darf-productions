@@ -5,6 +5,7 @@ import { getSession } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { mensajeError } from "@/lib/errores";
 import { leerCasilla } from "@/lib/pago-tabla";
+import { refrescarPublico } from "@/lib/supabase/publico";
 
 // Expedientes y mensualidades desde el panel (0041). La base revisa expedientes.ver y
 // mensualidades.gestionar en la obra.
@@ -221,6 +222,7 @@ export async function withdrawMember(_p: ExpState, f: FormData): Promise<ExpStat
   const { error } = await supabase.rpc("member_withdraw", { pid, uid, fecha: str(f, "fecha") || null, motivo: str(f, "motivo") });
   if (error) return { ok: false, message: /check/.test(error.message) ? "La baja no puede ser antes de su ingreso." : error.message };
   revalidatePath(`/producciones/${pid}`);
+  refrescarPublico();
   return ok(pid, uid, "Baja registrada. Su historial se conserva.");
 }
 
@@ -231,6 +233,7 @@ export async function reactivateMember(_p: ExpState, f: FormData): Promise<ExpSt
   const { error } = await supabase.rpc("member_reactivate", { pid, uid });
   if (error) return { ok: false, message: error.message };
   revalidatePath(`/producciones/${pid}`);
+  refrescarPublico();
   return ok(pid, uid, "Reactivado: vuelve a los ensayos y a los créditos.");
 }
 

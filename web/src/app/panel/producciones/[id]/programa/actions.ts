@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { refrescarPublico } from "@/lib/supabase/publico";
 
 // Programa digital (0048). La base revisa programa.editar en la obra.
 
@@ -10,6 +11,7 @@ const str = (f: FormData, k: string) => String(f.get(k) ?? "").trim();
 const done = (pid: string, message: string): ProgState => {
   revalidatePath(`/panel/producciones/${pid}/programa`);
   revalidatePath(`/programa/${pid}`);
+  refrescarPublico();
   return { ok: true, message };
 };
 
@@ -72,6 +74,7 @@ export async function setSponsorLogo(pid: string, sid: string, path: string): Pr
   }
   revalidatePath(`/panel/producciones/${pid}/programa`);
   revalidatePath(`/programa/${pid}`);
+  refrescarPublico();
   return { ok: true, message: "Logo guardado." };
 }
 
@@ -100,5 +103,6 @@ export async function setProgramFile(pid: string, path: string): Promise<{ ok: b
   if (error) return { ok: false, message: error.message };
   revalidatePath(`/panel/producciones/${pid}/programa`);
   revalidatePath(`/programa/${pid}`);
+  refrescarPublico();
   return { ok: true, message: "Archivo del programa guardado." };
 }
