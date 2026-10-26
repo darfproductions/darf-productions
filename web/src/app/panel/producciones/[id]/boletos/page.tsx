@@ -134,6 +134,7 @@ export default async function SalesPage({ params, searchParams }: PageProps<"/pa
                     {o.created_by_staff_id && <span className="ml-1 text-xs text-texto-3">taquilla</span>}
                     {o.vencida_at && <span className="ml-1 text-xs font-bold text-[#ff8fa3]">no se pagó a tiempo</span>}
                     {o.status === "pendiente" && tiempoRestante(o.expires_at ?? null) && <span className="ml-1 text-xs text-aviso">vence en {tiempoRestante(o.expires_at ?? null)}</span>}
+                    {o.status === "pendiente" && !o.expires_at && <span className="ml-1 text-xs text-texto-3">sin vencimiento</span>}
                   </p>
                   <p className="text-sm text-texto-2">{o.buyer_nombre} · <a href={`tel:${o.buyer_telefono}`} className="underline">{o.buyer_telefono}</a></p>
                   <p className="text-xs text-texto-3"><span>{nombreFuncion.get(o.performance_id)}</span> · pidió {fecha(o.created_at)}</p>

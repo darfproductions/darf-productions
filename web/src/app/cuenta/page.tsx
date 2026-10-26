@@ -208,6 +208,9 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
                   {o.status === "rechazado" && !o.vencida_at && !o.cancelada_por_comprador_at && (
                     <p className="text-sm text-texto-2">{o.motivo ? <>Motivo: {o.motivo}. </> : null}Si tienes dudas, <Link href="/contacto" className="font-bold text-lila">escríbenos</Link>.</p>
                   )}
+                  {o.status === "pendiente" && !o.expires_at && (
+                    <p className="text-sm text-texto-2">Tus lugares siguen apartados a tu nombre hasta que se confirme tu pago.</p>
+                  )}
                   {o.status === "pendiente" && o.expires_at && tiempoRestante(o.expires_at) && (
                     <p className="text-sm text-aviso">Paga antes de <b>{limiteTexto(o.expires_at)}</b> (te quedan {tiempoRestante(o.expires_at)}). Si no, los asientos se liberan solos.</p>
                   )}

@@ -5,6 +5,23 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-10-26 — 0128: apartados de la página con vencimiento por obra
+
+- Antes, toda orden apartada en la página vencía sola: entre 30 min y 24 h, y a más tardar 3 h antes de la función
+  (0054). Diego quiere decidirlo por obra; por ejemplo, alguien aparta hoy, paga en un mes y se le respetan los asientos.
+- `productions.apartados_vencen` (por omisión true) y `apartados_horas` (por omisión 24, de 1 a 720).
+- `orders_set_expiry` usa `plazo_apartado()`. Con el interruptor apagado, la orden nace sin `expires_at` y el cron no
+  la toca. Encendido, se respetan el mínimo de 30 min y el tope de 3 h antes de la función.
+- RPC `obra_apartados(pid, vence, horas)` (ventas.operar o funciones.gestionar, con bitácora):
+  - al apagar, quita el plazo de los apartados pendientes;
+  - al encender, les da el plazo a los que no tenían; los que ya tenían plazo lo conservan.
+- **Panel:** en Funciones y horarios → Venta y precios hay una sección "Apartados sin pagar", con el interruptor y el
+  plazo en horas o días.
+- **Sin plazo:**
+  - el comprador ve "Tus lugares quedan apartados hasta que se confirme tu pago";
+  - Órdenes dice "sin vencimiento" y no ofrece "Dar 24 h más".
+- Las obras que ya existen siguen igual (encendido, 24 h).
+
 ## 2026-10-26 — Precio de zona: "Guardar precio" y funciones con precio propio
 
 - Diego cambiaba el precio de una zona, tocaba "Guardar" y el precio regresaba. Había dos causas:
