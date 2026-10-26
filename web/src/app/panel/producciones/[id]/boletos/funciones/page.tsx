@@ -41,7 +41,7 @@ export default async function PerformancesPage({ params }: PageProps<"/panel/pro
   // 0117: cuánto deja cada función si se vende todo, y lo vendido (aprobado) hasta hoy.
   const supabase = await createClient();
   // 0118: fechas de preventa de la obra (las funciones que no tienen fechas propias las siguen).
-  const { data: obraPre } = await supabase.from("productions").select("preventa_desde, preventa_hasta, funciones_publicadas, modo_venta, mostrar_precios, mostrar_total").eq("id", id).maybeSingle();
+  const { data: obraPre } = await supabase.from("productions").select("preventa_desde, preventa_hasta, funciones_publicadas, modo_venta, mostrar_precios, mostrar_total, apartados_vencen, apartados_horas").eq("id", id).maybeSingle();
   // 0123: preventa privada (con código) de la obra y de cada función.
   const [{ data: privObra }, { data: privFn }] = await Promise.all([
     supabase.from("preventa_privada_obras").select("desde, max_por_persona").eq("production_id", id).maybeSingle(),

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { aplicaEnFuncion, cuentaComoPendiente, mensajeEntrega, horaAcceso, lineaWhatsapp, lineasDesdeBoletos, minutosAcceso, momentoPorOmision, ORDEN_ESTADO, porZona, textoBeneficio, textoCupo, textoEntrega, textoLimite, textosBoleto, type Beneficio, type EstadoEntrega } from "./beneficios-rules";
+import { aplicaEnFuncion, cuentaComoPendiente, mensajeEntrega, horaAcceso, lineaWhatsapp, lineasDesdeBoletos, minutosAcceso, momentoPorOmision, ORDEN_ESTADO, porZona, textoBeneficio, textoCupo, textoEntrega, textoLimite, textosBoleto, type Beneficio, type EstadoEntrega, textoConNota } from "./beneficios-rules";
 
 const b = (x: Partial<Beneficio>): Beneficio => ({ id: "b", tipo: "otro", nombre: "X", detalle: null, minutos_antes: null, cupo: null, funciones: null, orden: 0, activo: true, zonas: [], entrega: "dia_despues", entrega_dias: null, ...x });
 
@@ -86,5 +86,13 @@ describe("WhatsApp de entrega (0125)", () => {
   it("mensaje para coordinar", () => {
     expect(mensajeEntrega({ comprador: "Ana López", beneficio: "Póster firmado", obra: "Showman", lugar: "VIP-A-1", limite: "2027-03-18T06:00:00Z", entrega: "despues" }))
       .toBe("Hola Ana, te escribimos de DARF Productions por tu póster firmado de Showman (lugar VIP-A-1). Queremos coordinar la entrega (hasta el 17 de marzo). ¿Cómo te queda mejor?");
+  });
+});
+
+describe("nota del beneficio", () => {
+  it("se agrega al nombre", () => {
+    expect(textoConNota({ tipo: "souvenir", nombre: "Póster firmado por el elenco", minutos_antes: null, cupo: null, detalle: "Uno por compra, no por boleto." }))
+      .toBe("Póster firmado por el elenco — uno por compra, no por boleto");
+    expect(textoConNota({ tipo: "acceso", nombre: "Acceso anticipado", minutos_antes: 30, cupo: null, detalle: "  " })).toBe("Acceso anticipado (30 min antes)");
   });
 });

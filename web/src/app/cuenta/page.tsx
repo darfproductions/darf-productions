@@ -1,4 +1,5 @@
 import { lineasDesdeBoletos, textosBoleto, type BeneficioBoleto } from "@/lib/beneficios-rules";
+import { textoAvance, type ComisionRow } from "@/lib/comision-rules";
 import type { Metadata } from "next";
 import QRCode from "qrcode";
 import { CopyLink } from "@/components/panel/CopyLink";
@@ -90,6 +91,7 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
     listMyApplications(session.userId), listMyInvites(), listMyOffers(), supabase.rpc("my_productions"), supabase.rpc("my_unread_announcements"),
     supabase.rpc("my_seller"), supabase.rpc("my_team_productions"), supabase.rpc("my_team_unread"),
     listNotifications({ limit: 3 }), unreadCount(), getMiCredencial(), supabase.rpc("mis_ensayos_equipo"),
+    supabase.rpc("mi_comision"),
   ]);
   const { data, error } = await supabase
     .from("orders")
@@ -126,7 +128,7 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
   const benef = new Map(((benefRows ?? []) as { ticket_id: string; beneficios: BeneficioBoleto[] }[]).map((r) => [r.ticket_id, r.beneficios]));
 
   // Mis audiciones (0036): solo las propias; QR mientras no haya llegado.
-  const [audiciones, invitaciones, ofertas, misObras, sinLeer, misVentas, miEquipo, equipoPend, notis, notisNuevas, credencial, ensayosEq] = await resto;
+  const [audiciones, invitaciones, ofertas, misObras, sinLeer, misVentas, miEquipo, equipoPend, notis, notisNuevas, credencial, ensayosEq, miComision] = await resto;
   const misEnsayosEquipo = (ensayosEq.data ?? []) as MiEnsayoEquipo[];
   // 0114: regalo de cumpleaños del Club Fan (solo el del mes en curso y si aún no se usó).
   const mesMx = new Intl.DateTimeFormat("es-MX", { timeZone: "America/Mexico_City", year: "numeric", month: "numeric" }).formatToParts(new Date());
@@ -142,6 +144,8 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
   const ventas = (misVentas.data ?? []) as MySale[];
   const miCodigo = ventas[0]?.codigo ?? null;
   const obrasVenta = ventas.filter((v) => v.production_id);
+  // 0129: mi comisión por obra (solo obras con tabla de comisiones).
+  const comisionObra = new Map(((miComision.data ?? []) as (ComisionRow & { production_id: string })[]).map((c) => [c.production_id, c]));
   const avisosDe = (pid: string) => ((sinLeer.data ?? []) as { production_id: string; sin_leer: number }[]).find((x) => x.production_id === pid)?.sin_leer ?? 0;
   const producciones = (misObras.data ?? []) as { production_id: string; nombre: string; papeles: string[] }[];
   const ofertasPendientes = ofertas.filter((o) => o.estado === "enviada");
@@ -207,6 +211,9 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
                   {o.vencida_at && <p className="text-sm text-texto-3">No se confirmó el pago a tiempo y los asientos se liberaron. Puedes volver a comprar si sigue habiendo lugares.</p>}
                   {o.status === "rechazado" && !o.vencida_at && !o.cancelada_por_comprador_at && (
                     <p className="text-sm text-texto-2">{o.motivo ? <>Motivo: {o.motivo}. </> : null}Si tienes dudas, <Link href="/contacto" className="font-bold text-lila">escríbenos</Link>.</p>
+                  )}
+                  {o.status === "pendiente" && !o.expires_at && (
+                    <p className="text-sm text-texto-2">Tus lugares siguen apartados a tu nombre hasta que se confirme tu pago.</p>
                   )}
                   {o.status === "pendiente" && o.expires_at && tiempoRestante(o.expires_at) && (
                     <p className="text-sm text-aviso">Paga antes de <b>{limiteTexto(o.expires_at)}</b> (te quedan {tiempoRestante(o.expires_at)}). Si no, los asientos se liberan solos.</p>
@@ -362,6 +369,17 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
                           {v.boletos} {v.boletos === 1 ? "boleto" : "boletos"} · {formatMoney(Number(v.monto))}{v.pendientes ? ` · ${v.pendientes} por aprobar` : ""}
                           {!v.activo && " · tu código ya no está activo aquí"}
                         </span>
+                        {(() => {
+                          const c = comisionObra.get(v.production_id!);
+                          return c && (
+                            <span className="block text-xs">
+                              <b className="text-oro">Tu comisión: {formatMoney(Number(c.comision))}</b>
+                              {Number(c.pagado) > 0 && ` · ya te pagaron ${formatMoney(Number(c.pagado))}`}
+                              {Number(c.por_pagar) > 0 && ` · por recibir ${formatMoney(Number(c.por_pagar))}`}
+                              {v.en_venta && <span className="text-texto-3"> · {textoAvance(c)}</span>}
+                            </span>
+                          );
+                        })()}
                       </span>
                       {v.en_venta && <CopyLink path={sellerPath(v.production_id!, miCodigo)} />}
                     </li>

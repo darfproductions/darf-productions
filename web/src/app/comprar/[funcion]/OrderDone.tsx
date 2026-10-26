@@ -33,9 +33,14 @@ export function OrderDone({ result, modo = "web", mostrarTotal = true }: { resul
             {result.incluye.map((x) => <li key={x}>{x}</li>)}
           </ul>
         )}
-        {result.expiresAt && (
+        {result.expiresAt ? (
           <p className="rounded-xl border border-aviso/40 bg-aviso/10 px-4 py-3 text-sm">
             Tus lugares quedan apartados hasta <b>{limiteTexto(result.expiresAt)}</b>; {modo === "hibrido" ? "si no se confirman para entonces" : "si no se confirma tu pago para entonces"}, se liberan solos.
+          </p>
+        ) : (
+          // 0128: la obra no cancela solos los apartados: se respetan hasta que se confirme el pago.
+          <p className="rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm">
+            Tus lugares quedan apartados a tu nombre {modo === "hibrido" ? "hasta que se confirmen" : "hasta que se confirme tu pago"}.
           </p>
         )}
         {modo === "hibrido" ? (

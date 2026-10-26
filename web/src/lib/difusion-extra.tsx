@@ -232,7 +232,11 @@ export async function extraPng(d: DatosImagenExtra): Promise<Buffer> {
               {z.beneficios.map((b) => (
                 <div key={b.id} style={{ display: "flex", alignItems: "center", gap: 14, marginTop: s(6, 9, 12) * k }}>
                   <div style={{ width: 12, height: 12, borderRadius: 6, background: acento, flexShrink: 0 }} />
-                  <span style={{ fontSize: s(25, 29, 35) * k, fontWeight: 700 }}>{textoBeneficio(b)}</span>
+                  <div style={{ display: "flex", flexDirection: "column" }}>
+                    <span style={{ fontSize: s(25, 29, 35) * k, fontWeight: 700 }}>{textoBeneficio(b)}</span>
+                    {/* Nota del beneficio ("uno por compra, no por boleto"). */}
+                    {b.detalle && <span style={{ fontSize: s(19, 22, 26) * k, fontWeight: 600, fontStyle: "italic", opacity: 0.8 }}>{b.detalle}</span>}
+                  </div>
                 </div>
               ))}
             </div>

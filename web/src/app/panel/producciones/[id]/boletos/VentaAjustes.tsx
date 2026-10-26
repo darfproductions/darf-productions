@@ -1,15 +1,18 @@
 import { ActionForm } from "@/components/panel/ActionForm";
 import { Card } from "@/components/panel/ui";
-import { saveVentaAjustes } from "./actions";
+import { plazoEnUnidad } from "@/lib/ventas-rules";
+import { saveApartados, saveVentaAjustes } from "./actions";
 
 const ghost = "rounded-full border border-white/25 px-4 py-2 text-sm font-bold hover:border-white/50 disabled:opacity-60";
 
-export type ValoresVenta = { funciones_publicadas?: boolean | null; modo_venta?: string | null; mostrar_precios?: boolean | null; mostrar_total?: boolean | null } | null;
+export type ValoresVenta = { funciones_publicadas?: boolean | null; modo_venta?: string | null; mostrar_precios?: boolean | null; mostrar_total?: boolean | null;
+  /** 0128 */ apartados_vencen?: boolean | null; apartados_horas?: number | null } | null;
 
 // 0120: cómo se vende la obra (funciones publicadas, precios en la página, precios y total al apartar, esquema de
 // venta). La misma tarjeta está en Funciones y horarios y en Página pública.
 export function VentaAjustes({ pid, v }: { pid: string; v: ValoresVenta }) {
   const publicadas = v?.funciones_publicadas !== false;
+  const plazo = plazoEnUnidad(v?.apartados_horas ?? 24);
   return (
     <Card className={`flex flex-col gap-3 ${publicadas ? "" : "border border-aviso/50"}`}>
       <div>
@@ -35,6 +38,24 @@ export function VentaAjustes({ pid, v }: { pid: string; v: ValoresVenta }) {
             <span><b>Todo por WhatsApp</b> — &quot;Más información por WhatsApp&quot;: la página no aparta y el botón abre WhatsApp; el equipo vende desde Taquilla.</span></label>
           <span className="text-xs text-texto-3">La Taquilla funciona igual en los tres. Los precios de cada zona se cambian en Funciones y horarios.</span>
         </fieldset>
+      </ActionForm>
+      {/* 0128: cada obra decide si los apartados sin pagar se cancelan solos y en cuánto tiempo. */}
+      <div className="border-t border-white/10 pt-3">
+        <h3 className="font-bold">Apartados sin pagar</h3>
+        <p className="text-sm text-texto-2">Cuando alguien aparta en la página y aún no paga.</p>
+      </div>
+      <ActionForm action={saveApartados} hidden={{ pid }} submit="Guardar apartados" submitClass={ghost}>
+        <label className="flex items-start gap-2 text-sm"><input type="checkbox" name="vence" defaultChecked={v?.apartados_vencen !== false} className="mt-1" />
+          <span><b>Se cancelan solos si no pagan a tiempo</b> — los lugares se liberan para que otros los compren. Sin la palomita, el apartado se respeta hasta que lo apruebes o lo canceles en Órdenes (aunque paguen en un mes).</span></label>
+        <div className="flex flex-wrap items-center gap-2 text-sm">
+          <span className="font-semibold">Plazo para pagar</span>
+          <input className="w-20 rounded-lg border border-white/10 bg-sala px-3 py-2" type="number" name="plazo" min={1} max={720} step={1} defaultValue={plazo.n} aria-label="Plazo para pagar" />
+          <select name="unidad" defaultValue={plazo.unidad} className="rounded-lg border border-white/10 bg-sala px-3 py-2" aria-label="Unidad del plazo">
+            <option value="horas">horas</option>
+            <option value="dias">días</option>
+          </select>
+          <span className="text-xs text-texto-3">De 1 hora a 30 días; nunca después de 3 h antes de la función. Solo cuenta con la palomita.</span>
+        </div>
       </ActionForm>
     </Card>
   );

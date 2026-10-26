@@ -228,6 +228,7 @@ export function DoorScanner({ pid, funciones, inicial }: { pid: string; funcione
                   <Icono nombre={TIPOS_BENEFICIO[b.tipo]?.icono ?? "destello"} />
                   <span>
                     <b>{textoBeneficio(b)}</b>
+                    {b.detalle && <span className="block text-xs font-bold text-[#d7bb5f]">{b.detalle}</span>}
                     {b.alcanza === false && <span className="block text-xs font-bold text-[#ff8fa3]">No alcanzó: el cupo es de {b.cupo}</span>}
                     {b.entregado_at && <span className="block text-xs text-exito">Entregado a las {hora(b.entregado_at)}{b.nota ? ` · "${b.nota}"` : ""}</span>}
                     {!b.entregado_at && b.entrega && b.tipo !== "acceso" && b.alcanza !== false && (

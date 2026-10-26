@@ -6,6 +6,7 @@ import type { Forma } from "@/lib/mapa-libre";
 import { useMemo, useState, useTransition } from "react";
 import { SeatMap, type ZonePrice } from "@/components/SeatMap";
 import { input } from "@/components/panel/ui";
+import { Icono } from "@/components/Icono";
 import { formatMoney, type MapSeat } from "@/lib/tickets";
 import { DespuesDeVenta, PAGO_INICIAL, PagoTaquilla, type Pago } from "./PagoTaquilla";
 import { boxOfficeSale, type SaleResult } from "../actions";
@@ -61,7 +62,13 @@ export function BoxOffice({ pid, performanceId, seats, taken, prices, formas = [
     <div className="grid gap-6 lg:grid-cols-12">
       <section aria-label="Mapa de asientos" className="flex flex-col gap-3 lg:col-span-8">
         <SeatMap formas={formas} seats={seats} prices={prices} taken={takenSet} selected={selected} onToggle={toggle} />
-        <button type="button" onClick={() => router.refresh()} className="self-start text-sm font-bold text-violeta-claro">Actualizar disponibilidad</button>
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+          <button type="button" onClick={() => router.refresh()} className="text-sm font-bold text-violeta-claro">Actualizar disponibilidad</button>
+          {/* Imagen del mapa con lo ocupado ahora, para mandarla por WhatsApp (2026-10-26). */}
+          <a href={`/panel/producciones/${pid}/boletos/taquilla/mapa?funcion=${performanceId}&descargar=1`} download className="text-sm font-bold text-violeta-claro">
+            Descargar mapa para WhatsApp <Icono nombre="flecha-abajo" />
+          </a>
+        </div>
       </section>
       <aside className="flex flex-col gap-3 rounded-2xl bg-telon p-5 lg:col-span-4 lg:self-start">
         <h2 className="text-lg font-bold">Venta en taquilla</h2>

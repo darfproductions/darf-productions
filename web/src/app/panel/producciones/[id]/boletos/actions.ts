@@ -4,7 +4,7 @@ import QRCode from "qrcode";
 import { revalidatePath } from "next/cache";
 import { localMxToIso } from "@/lib/dates";
 import { formatMoney } from "@/lib/tickets";
-import { esMetodo } from "@/lib/ventas-rules";
+import { esMetodo, horasDePlazo, textoPlazo } from "@/lib/ventas-rules";
 import { esMomentoEntrega, MOMENTOS_ENTREGA, momentoPorOmision, type TipoBeneficio } from "@/lib/beneficios-rules";
 import { mensajeError } from "@/lib/errores";
 import { createClient } from "@/lib/supabase/server";
@@ -265,6 +265,22 @@ export async function saveVentaAjustes(_p: TicketState, f: FormData): Promise<Ti
   if (error) return { ok: false, message: mensajeError(error) };
   refresh(pid);
   return { ok: true, message: publicadas ? "Guardado. Las funciones se ven en la página." : "Guardado. Las funciones están ocultas: el público no ve fechas ni cuenta regresiva." };
+}
+
+/** 0128: si los apartados de la página se cancelan solos y en cuánto tiempo. */
+export async function saveApartados(_p: TicketState, f: FormData): Promise<TicketState> {
+  const pid = String(f.get("pid"));
+  const vence = f.get("vence") === "on";
+  const horas = horasDePlazo(Number(f.get("plazo")), f.get("unidad") === "dias" ? "dias" : "horas");
+  if (vence && horas == null) return { ok: false, message: "El plazo va de 1 hora a 30 días (número entero)." };
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("obra_apartados", { pid, p_vence: vence, p_horas: horas ?? 24 });
+  if (error) return { ok: false, message: mensajeError(error) };
+  refresh(pid);
+  const n = Number(data ?? 0);
+  return { ok: true, message: vence
+    ? `Guardado: los apartados se cancelan solos si no se pagan en ${textoPlazo(horas!)}.${n ? ` ${n === 1 ? "1 apartado pendiente tomó" : `${n} apartados pendientes tomaron`} ese plazo.` : ""}`
+    : `Guardado: los apartados ya no se cancelan solos; se quedan hasta que los apruebes o canceles.${n ? ` ${n === 1 ? "1 apartado pendiente dejó" : `${n} apartados pendientes dejaron`} de vencer.` : ""}` };
 }
 
 /** 0118: fechas de preventa de la obra; se ponen a las funciones que siguen a la obra. */

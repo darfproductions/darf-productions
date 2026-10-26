@@ -62,8 +62,9 @@ export function estadoOrden(o: OrdenEstado, para: "panel" | "comprador" = "panel
 }
 
 /** ¿Se le puede dar más tiempo? Pendiente, o vencida sin que la cancelara el comprador. */
-export function puedeExtender(o: OrdenEstado): boolean {
-  return o.status === "pendiente" || (o.status === "rechazado" && !!o.vencida_at && !o.cancelada_por_comprador_at);
+export function puedeExtender(o: OrdenEstado & { expires_at?: string | null }): boolean {
+  // 0128: un apartado pendiente sin plazo (obra que no vence) no necesita más tiempo.
+  return (o.status === "pendiente" && o.expires_at !== null) || (o.status === "rechazado" && !!o.vencida_at && !o.cancelada_por_comprador_at);
 }
 
 /** ¿Se puede comprar en línea? En venta, con fecha futura y la obra no concluida (la base lo exige igual). */
@@ -85,4 +86,22 @@ export function mensajeOrden(tipo: "recordar" | "aprobada", o: { order_code: str
 /** Texto de búsqueda de órdenes por nombre o teléfono, sin caracteres que rompan el filtro. */
 export function textoBusqueda(q: string): string {
   return q.replace(/[,()*%\\]/g, " ").replace(/\s+/g, " ").trim().slice(0, 60);
+}
+
+// ──────── Apartados sin pagar (0128) ────────
+export type UnidadPlazo = "horas" | "dias";
+/** Horas del plazo (1 h a 30 días); null si no es válido. */
+export function horasDePlazo(n: number, unidad: UnidadPlazo): number | null {
+  if (!Number.isFinite(n) || n <= 0 || !Number.isInteger(n)) return null;
+  const h = unidad === "dias" ? n * 24 : n;
+  return h >= 1 && h <= 720 ? h : null;
+}
+/** Para mostrar el plazo guardado: 48 → 2 días, 36 → 36 horas. */
+export function plazoEnUnidad(horas: number): { n: number; unidad: UnidadPlazo } {
+  return horas % 24 === 0 ? { n: horas / 24, unidad: "dias" } : { n: horas, unidad: "horas" };
+}
+/** "24 horas", "1 día", "3 días". */
+export function textoPlazo(horas: number): string {
+  const { n, unidad } = plazoEnUnidad(horas);
+  return unidad === "dias" ? `${n} ${n === 1 ? "día" : "días"}` : `${n} ${n === 1 ? "hora" : "horas"}`;
 }

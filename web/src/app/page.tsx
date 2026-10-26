@@ -14,6 +14,7 @@ import { getEventosCartelera } from "@/lib/fanzone";
 import { Icono } from "@/components/Icono";
 import { publico } from "@/lib/supabase/publico";
 import { OlvidarSinConexion } from "@/components/pwa/SinConexion";
+import { textosVenta } from "@/lib/ventas-rules";
 
 type Miembro = { id: string; nombre: string; retrato_path: string | null };
 
@@ -105,7 +106,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                     </div>
                   )}
                   <div className="flex flex-wrap gap-3">
-                    {enCartelera && <Link href={`/producciones/${current.id}#funciones`} className="fb fb-luz flex-1">Comprar boletos</Link>}
+                    {enCartelera && <Link href={`/producciones/${current.id}#funciones`} className="fb fb-luz flex-1">{textosVenta(current.modo_venta).cta}</Link>}
                     <Link href={`/producciones/${current.id}`} className={`fb fb-oro ${enCartelera ? "" : "flex-1"}`}>
                       {enCartelera || proxima ? "Conocer la obra" : "Revivir la obra"}
                     </Link>
