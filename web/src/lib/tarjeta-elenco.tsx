@@ -42,8 +42,9 @@ export async function tarjetaPng(d: DatosTarjeta): Promise<Buffer> {
   const historia = d.formato === "historia";
   const claro = isLight(d.colores.fondo);
   const fotoAlto = historia ? 1240 : 860;
-  // En el post (más bajito) la foto sube un poco para que la cara no quede detrás del logo de la obra.
-  const subir = historia ? 0 : 150;
+  // En el post (más bajito) la foto sube para que la cara no quede detrás del logo de la obra (2026-10-26: un poco
+  // más, con el logo, la leyenda y DARF más chicos y pegados abajo).
+  const subir = historia ? 0 : 230;
   const [foto, logo, darf] = await Promise.all([
     comoPng(d.fotoUrl, w),
     comoPng(d.logoUrl, 760),
@@ -62,18 +63,18 @@ export async function tarjetaPng(d: DatosTarjeta): Promise<Buffer> {
             : <div style={{ width: w, height: fotoAlto, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 360, fontWeight: 900, color: d.colores.acento }}>{inicial}</div>}
           <div style={{ position: "absolute", left: 0, bottom: 0, width: w, height: historia ? 340 : 300, display: "flex", backgroundImage: `linear-gradient(180deg, transparent 0%, transparent 25%, ${d.colores.fondo} 100%)` }} />
         </div>
-        <div style={{ position: "absolute", left: 0, bottom: 0, width: w, display: "flex", flexDirection: "column", alignItems: "center", padding: `0 60px ${historia ? 100 : 52}px` }}>
+        <div style={{ position: "absolute", left: 0, bottom: 0, width: w, display: "flex", flexDirection: "column", alignItems: "center", padding: `0 60px ${historia ? 100 : 34}px` }}>
           {logo
-            ? <img src={logo} style={{ maxWidth: 820, maxHeight: historia ? 320 : 240, objectFit: "contain" }} alt="" />
+            ? <img src={logo} style={{ maxWidth: historia ? 820 : 700, maxHeight: historia ? 320 : 200, objectFit: "contain" }} alt="" />
             : <span style={{ fontSize: 72, fontWeight: 900, letterSpacing: 4 }}>{d.obra.toUpperCase()}</span>}
-          <span style={{ marginTop: historia ? 36 : 26, fontSize: historia ? 50 : 44, fontWeight: 800, letterSpacing: 8, color: d.colores.acento, textAlign: "center" }}>{d.papel.toUpperCase()}</span>
+          <span style={{ marginTop: historia ? 36 : 20, fontSize: historia ? 50 : 40, fontWeight: 800, letterSpacing: 8, color: d.colores.acento, textAlign: "center" }}>{d.papel.toUpperCase()}</span>
           <span style={{ marginTop: 10, fontSize: tamNombre, fontWeight: 900, textAlign: "center", lineHeight: 1.05 }}>{d.nombre}</span>
           {/* Leyenda con el estilo de la banda del gafete: negra, itálica y espaciada (satori no trae itálica: se inclina). */}
-          <div style={{ marginTop: historia ? 60 : 40, display: "flex", padding: "10px 34px", background: d.colores.acento, transform: "skewX(-10deg)" }}>
-            <span style={{ fontSize: historia ? 34 : 30, fontWeight: 900, letterSpacing: 4, color: d.colores.fondo }}>ADQUIERE TUS BOLETOS</span>
+          <div style={{ marginTop: historia ? 60 : 26, display: "flex", padding: historia ? "10px 34px" : "7px 26px", background: d.colores.acento, transform: "skewX(-10deg)" }}>
+            <span style={{ fontSize: historia ? 34 : 24, fontWeight: 900, letterSpacing: 4, color: d.colores.fondo }}>ADQUIERE TUS BOLETOS</span>
           </div>
-          {darf ? <img src={darf} style={{ marginTop: historia ? 34 : 26, width: 380, objectFit: "contain" }} alt="" /> : <span style={{ marginTop: 26, fontSize: 38, fontWeight: 900 }}>DARF PRODUCTIONS</span>}
-          <span style={{ marginTop: 10, fontSize: historia ? 30 : 26, fontWeight: 800, letterSpacing: 2 }}>darfproductions.com</span>
+          {darf ? <img src={darf} style={{ marginTop: historia ? 34 : 20, width: historia ? 380 : 290, objectFit: "contain" }} alt="" /> : <span style={{ marginTop: 26, fontSize: 38, fontWeight: 900 }}>DARF PRODUCTIONS</span>}
+          <span style={{ marginTop: historia ? 10 : 6, fontSize: historia ? 30 : 22, fontWeight: 800, letterSpacing: 2 }}>darfproductions.com</span>
         </div>
       </div>
     ),
