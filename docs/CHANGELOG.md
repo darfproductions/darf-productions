@@ -5,6 +5,55 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-10-26 — 0129: comisiones de vendedores
+
+- **Tramos por obra:** por ejemplo, del boleto 26 al 35 el 10 % y del 36 al 45 el 20 %. Cada % se aplica solo a los
+  boletos de su tramo. También sirve un solo % para todos, o "a partir del boleto N".
+- **Regla propia:** a un vendedor se le puede dar su propia tabla, que manda sobre la de la obra.
+- **Cómo se cuenta:**
+  - sobre lo que pagó cada boleto, ya con descuento;
+  - las cortesías no cuentan;
+  - se juntan todas las funciones, en el orden en que se pagaron;
+  - es en vivo: si se cancela un boleto, se recalcula.
+- **Base:**
+  - tablas `comision_tramos` y `comision_pagos`;
+  - `comision_calculo` (interna), `comisiones_obra` (mismo permiso que `seller_list`) y `mi_comision` (Mi cuenta);
+  - `comision_guardar`, `comision_pagar` y `comision_deshacer_pago` (`vendedores.gestionar`, con bitácora).
+- **Panel → Vendedores:**
+  - tarjeta "Comisiones" con el editor de tramos y una vista previa ("con 45 boletos de $250 se lleva $750");
+  - por vendedor: comisión, pagado y por pagar;
+  - "Marcar pagado" y "Darle una regla propia";
+  - cuando la obra concluye o pasan todas sus funciones, dice "corte final".
+- **Reportes:** la comisión sale en el ranking de vendedores.
+- **Mi cuenta → Mis ventas:** "Tu comisión", lo que ya le pagaron, lo que falta y el tramo en el que va.
+
+## 2026-10-26 — Mapa de la taquilla para WhatsApp
+
+- En Taquilla, "Descargar mapa para WhatsApp" baja un PNG de la función elegida (`boletos/taquilla/mapa`,
+  `ventas.operar`).
+- La imagen trae:
+  - la letra de cada fila a los dos lados;
+  - el número en cada asiento;
+  - los ocupados en gris y tachados;
+  - el escenario;
+  - las zonas con su precio y "Quedan X de Y";
+  - la hora en que se descargó.
+- Reglas en `taquilla-mapa-rules.ts`; el dibujo en `taquilla-mapa.tsx`.
+
+## 2026-10-26 — Boleto en PDF con diseño, "Aparta tu lugar" y foto de la cartelera
+
+- **PDF del boleto:** cada página es una imagen con los colores, el póster o ambiente y el logo de la obra
+  (`boleto-diseno.tsx`). Trae:
+  - la fecha y la hora en grande, el lugar, las puertas y la dirección;
+  - la zona, la fila y el asiento en grande;
+  - todo lo que incluye, completo (antes se cortaba);
+  - un talón punteado.
+- **El QR** va encima en vectores (`qrBoleto`), para que siempre se lea. Si la imagen falla, se usa el PDF sencillo
+  de antes.
+- **Portada y cartelera:** el botón usa el texto del modo de venta (en Showman, "Aparta tu lugar").
+- **Cartelera en computadora:** la foto se recorre a la derecha para que su centro quede junto a los textos y no
+  debajo de ellos.
+
 ## 2026-10-26 — Nota de los beneficios
 
 - Diego quiere aclarar cada beneficio, por ejemplo "póster firmado por el elenco: uno por compra, no por boleto".

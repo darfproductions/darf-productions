@@ -60,6 +60,9 @@ export default async function Reportes({ params }: PageProps<"/panel/produccione
     verVentas ? supabase.rpc("seller_list", { pid: id }) : none,
     verVentas ? listZones(id) : Promise.resolve([]),
   ]);
+  // 0129: comisión de cada vendedor (si la obra tiene tabla).
+  const com = verVentas ? await supabase.rpc("comisiones_obra", { pid: id }) : null;
+  const comisionDe = new Map(((com?.data ?? []) as { seller_id: string; comision: number }[]).map((c) => [c.seller_id, Number(c.comision)]));
   const vendedores = rankingVendedores(((vend.data ?? []) as SellerRow[]).filter((v) => v.ordenes > 0 || v.pendientes > 0));
 
   const s = resumen ?? summarizeSales([]);
@@ -130,7 +133,7 @@ export default async function Reportes({ params }: PageProps<"/panel/produccione
                 {vendedores.map((v, i) => (
                   <li key={v.seller_id} className="flex flex-wrap justify-between gap-2 py-2">
                     <span className="flex items-center gap-2"><span className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs font-black ${podio(i)}`}>{i + 1}</span><span><b>{v.nombre}</b> <span className="text-texto-3">· {TIPO_VENDEDOR[v.tipo]} · {v.codigo}</span></span></span>
-                    <span className="text-texto-2">{v.boletos} boletos · {formatMoney(Number(v.monto))}{v.pendientes ? ` · ${v.pendientes} por aprobar` : ""}</span>
+                    <span className="text-texto-2">{v.boletos} boletos · {formatMoney(Number(v.monto))}{comisionDe.has(v.seller_id) ? ` · comisión ${formatMoney(comisionDe.get(v.seller_id)!)}` : ""}{v.pendientes ? ` · ${v.pendientes} por aprobar` : ""}</span>
                   </li>
                 ))}
               </ol>
