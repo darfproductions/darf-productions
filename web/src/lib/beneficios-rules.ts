@@ -85,6 +85,12 @@ export function textoBeneficio(b: BeneficioCorto): string {
   return b.tipo === "acceso" && b.minutos_antes ? `${b.nombre} (${b.minutos_antes} min antes)` : b.nombre;
 }
 
+/** Con la nota del beneficio (2026-10-26): "Póster firmado por el elenco — uno por compra, no por boleto". */
+export function textoConNota(b: BeneficioCorto): string {
+  const nota = b.detalle?.trim().replace(/\.$/, "");
+  return nota ? `${textoBeneficio(b)} — ${nota.charAt(0).toLowerCase()}${nota.slice(1)}` : textoBeneficio(b);
+}
+
 /** "Solo los primeros 20" (o null). */
 export function textoCupo(cupo: number | null | undefined): string | null {
   return cupo ? `Solo los primeros ${cupo}` : null;
@@ -100,7 +106,7 @@ export function lineaWhatsapp(zona: string, bs: BeneficioCorto[]): string | null
   if (!bs.length) return null;
   const xs = bs.map((b) => {
     const extra = [b.cupo ? `primeros ${b.cupo}` : null, b.entrega && b.tipo !== "acceso" ? MOMENTOS_ENTREGA[b.entrega].corto : null].filter(Boolean);
-    return `${textoBeneficio(b)}${extra.length ? ` (${extra.join(", ")})` : ""}`;
+    return `${textoConNota(b)}${extra.length ? ` (${extra.join(", ")})` : ""}`;
   });
   return `Incluye (${zona}): ${xs.join(", ")}`;
 }
@@ -138,7 +144,7 @@ export function textosBoleto(bs: BeneficioBoleto[], inicioIso: string | null | u
   // 0125: cada uno dice cuándo se entrega o, ya entregado, cuándo se entregó (el acceso ya dice su hora).
   const incluye = bs.filter((b) => b.alcanza !== false).map((b) => {
     const cuando = b.tipo !== "acceso" && b.entrega ? textoEntrega(b) : null;
-    return `${textoBeneficio(b)}${b.cupo && b.alcanza == null ? " (sujeto a cupo)" : ""}${cuando ? `. ${cuando}` : ""}`;
+    return `${textoConNota(b)}${b.cupo && b.alcanza == null ? " (sujeto a cupo)" : ""}${cuando ? `. ${cuando}` : ""}`;
   });
   const hora = horaAcceso(inicioIso, minutosAcceso(bs));
   return { incluye, acceso: hora ? `Puertas para ti: ${hora}` : null };

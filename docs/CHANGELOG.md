@@ -5,6 +5,19 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-10-26 — Nota de los beneficios
+
+- Diego quiere aclarar cada beneficio, por ejemplo "póster firmado por el elenco: uno por compra, no por boleto".
+  `zona_beneficios.detalle` ya existía (0122), pero solo salía en la página de la obra, la compra y la taquilla.
+- **Panel → Beneficios:** el campo se llama "Nota para el público (opcional)" y tiene frases rápidas ("Uno por compra,
+  no por boleto", "Uno por boleto", "Sujeto a disponibilidad", "Solo presentando tu boleto"). La nota también sale en
+  las listas por zona y en el resumen.
+- `textoConNota()` en `beneficios-rules.ts` junta el beneficio y su nota. La usan el boleto (tarjeta, PDF, Wallet,
+  Mi cuenta) y el mensaje de WhatsApp.
+- Difusión ("Precios y lo que incluye tu lugar") pone la nota debajo de cada beneficio. La Puerta la muestra debajo del
+  nombre, para que quien entrega sepa si es uno por compra.
+- `orden_beneficios` (resumen de la orden, WhatsApp) ahora trae `detalle`; va dentro de 0128.
+
 ## 2026-10-26 — 0128: apartados de la página con vencimiento por obra
 
 - Antes, toda orden apartada en la página vencía sola: entre 30 min y 24 h, y a más tardar 3 h antes de la función

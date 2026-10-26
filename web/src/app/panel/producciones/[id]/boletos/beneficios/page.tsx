@@ -12,6 +12,7 @@ import { requirePanel } from "@/lib/permissions";
 import { formatPerformanceDate } from "@/lib/productions";
 import { createClient } from "@/lib/supabase/server";
 import { borrarBeneficio, guardarBeneficio, moverBeneficio } from "../actions";
+import { NotaBeneficio } from "./NotaBeneficio";
 
 export const metadata: Metadata = { title: "Beneficios por zona" };
 
@@ -35,9 +36,7 @@ function Campos({ b, zonas, funciones }: { b?: Beneficio; zonas: Zona[]; funcion
       <label className="flex flex-col gap-1.5 text-sm font-semibold">Nombre *
         <input className={input} name="nombre" required minLength={2} maxLength={120} defaultValue={b?.nombre ?? ""} placeholder="Póster firmado por el elenco" />
       </label>
-      <label className="flex flex-col gap-1.5 text-sm font-semibold sm:col-span-2">Detalle (opcional)
-        <input className={input} name="detalle" maxLength={400} defaultValue={b?.detalle ?? ""} placeholder="Se entrega al salir, en el lobby." />
-      </label>
+      <NotaBeneficio defaultValue={b?.detalle ?? ""} />
       <label className="flex flex-col gap-1.5 text-sm font-semibold">Minutos antes (solo tipo Acceso)
         <input className={input} name="minutos_antes" type="number" min={1} max={240} defaultValue={b?.minutos_antes ?? ""} placeholder="15" />
       </label>
@@ -105,7 +104,7 @@ export default async function BeneficiosPage({ params, searchParams }: PageProps
               return (
                 <li key={z.id} className="rounded-xl bg-telon-2 p-3 text-sm">
                   <b>{z.nombre}</b>
-                  {xs.length ? <ul className="mt-1 flex flex-col gap-0.5 text-texto-2">{xs.map((b) => <li key={b.id} className="flex items-center gap-1.5"><Icono nombre={TIPOS_BENEFICIO[b.tipo].icono} />{textoBeneficio(b)}{b.cupo ? ` · ${textoCupo(b.cupo)}` : ""}</li>)}</ul>
+                  {xs.length ? <ul className="mt-1 flex flex-col gap-0.5 text-texto-2">{xs.map((b) => <li key={b.id} className="flex items-center gap-1.5"><Icono nombre={TIPOS_BENEFICIO[b.tipo].icono} />{textoBeneficio(b)}{b.cupo ? ` · ${textoCupo(b.cupo)}` : ""}{b.detalle && <span className="text-texto-3">— {b.detalle}</span>}</li>)}</ul>
                     : <p className="text-texto-3">Solo el lugar.</p>}
                 </li>
               );
@@ -120,6 +119,7 @@ export default async function BeneficiosPage({ params, searchParams }: PageProps
             <summary className="flex cursor-pointer flex-wrap items-center justify-between gap-2">
               <span className="flex flex-wrap items-center gap-2">
                 <Icono nombre={TIPOS_BENEFICIO[b.tipo].icono} /><b>{textoBeneficio(b)}</b>
+                {b.detalle && <span className="text-xs text-texto-2">— {b.detalle}</span>}
                 <span className="text-xs text-texto-3">{TIPOS_BENEFICIO[b.tipo].label} · {momento(b)}{b.cupo ? ` · ${textoCupo(b.cupo)}` : ""}{b.funciones?.length ? ` · ${b.funciones.length} función(es)` : ""}</span>
                 {!b.activo && <span className="text-xs text-texto-3">oculto</span>}
                 {!b.zonas.length && <span className="text-xs font-bold text-aviso">Sin zonas: no se ve en ningún lado</span>}

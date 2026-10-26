@@ -5,6 +5,8 @@
 --   * Encendido: vence a las horas elegidas, nunca después de 3 h antes de la función (para no abrir puertas con
 --     asientos apartados sin pagar) ni antes de 30 min.
 --   * Las obras que ya existen siguen igual: encendido y 24 h.
+--   * Beneficios (2026-10-26): el resumen de la orden (WhatsApp) también trae la nota del beneficio ("uno por compra,
+--     no por boleto"), como ya la traía cada boleto.
 -- Precede: 0127.
 
 begin;
@@ -68,6 +70,33 @@ begin
             jsonb_build_object('vencen', antes.apartados_vencen, 'horas', antes.apartados_horas),
             jsonb_build_object('vencen', p_vence, 'horas', p_horas, 'ordenes', n));
   return n;
+end $$;
+
+-- La nota del beneficio también en el resumen de la orden (igual que 0125, más 'detalle').
+create or replace function orden_beneficios(p_order uuid) returns json
+language plpgsql stable security definer set search_path = public as $$
+declare pid text; dueno uuid;
+begin
+  select pf.production_id, o.buyer_user_id into pid, dueno from orders o join performances pf on pf.id = o.performance_id where o.id = p_order;
+  if pid is null then return '[]'::json; end if;
+  if not (coalesce(dueno = auth.uid(), false) or is_staff() or has_perm(pid, 'ventas.ver') or has_perm(pid, 'ventas.operar')) then
+    raise exception 'No autorizado';
+  end if;
+  return coalesce((
+    select json_agg(json_build_object('zona', z.zona, 'beneficios', z.bs) order by z.zona)
+    from (
+      select pc.nombre as zona,
+             json_agg(json_build_object('tipo', zb.tipo, 'nombre', zb.nombre, 'detalle', zb.detalle, 'minutos_antes', zb.minutos_antes, 'cupo', zb.cupo,
+                                        'entrega', zb.entrega, 'entrega_dias', zb.entrega_dias)
+                      order by zb.orden, zb.created_at) as bs
+      from (select distinct coalesce(t.price_category_id, s.price_category_id) as zona
+              from tickets t left join seats s on s.id = t.seat_id where t.order_id = p_order and t.is_active) tz
+      join price_categories pc on pc.id = tz.zona
+      join zona_beneficio_zonas zz on zz.price_category_id = tz.zona
+      join zona_beneficios zb on zb.id = zz.beneficio_id and zb.activo
+           and (zb.funciones is null or (select performance_id from orders where id = p_order) = any(zb.funciones))
+      group by pc.nombre
+    ) z), '[]'::json);
 end $$;
 
 revoke all on function plazo_apartado(uuid, timestamptz), obra_apartados(text, boolean, int) from public, anon;
