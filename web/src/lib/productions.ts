@@ -56,12 +56,14 @@ export function getTheme(p: KitColumns): ProductionTheme | null {
   return themeFromKit(p, assetUrl);
 }
 
-/** Hero de la obra (Diego, 2026-10-26): la destacada horizontal del póster oficial (16:9) en computadora y la de
- *  celular (4:3) en el teléfono; null si la obra no tiene póster oficial (queda el ambiente). */
+/** Hero de la obra (Diego, 2026-10-26): la destacada horizontal del póster oficial (16:9) en computadora y, en el
+ *  teléfono, la versión vertical sin textos (historia 9:16 o póster 3:4; si no hay, la destacada). null si la obra
+ *  no tiene póster oficial (queda el ambiente). */
 export function posterHero(p: PosterColumns | null | undefined): { ancho: string; alto: string } | null {
-  const ancho = posterUrl(p, "destacada")?.url;
+  const vertical = posterUrl(p, "voy")?.url;
+  const ancho = posterUrl(p, "destacada")?.url ?? vertical;
   if (!ancho) return null;
-  return { ancho, alto: posterUrl(p, "destacada-celular")?.url ?? ancho };
+  return { ancho, alto: vertical ?? posterUrl(p, "destacada-celular")?.url ?? ancho };
 }
 
 /** Póster oficial (0093) para ese lugar, ya como URL; null = usar la imagen de ambiente. */

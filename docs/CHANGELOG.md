@@ -21,7 +21,8 @@ solo *qué*.
   - el PDF, Wallet y WhatsApp;
   - Difusión y la Puerta.
 - **Página de la obra:**
-  - el hero usa la destacada horizontal del póster oficial (16:9; en celular la 4:3) en lugar del ambiente;
+  - el hero usa la destacada horizontal del póster oficial (16:9) en lugar del ambiente; en celular, la versión
+    vertical sin textos (historia 9:16 o póster 3:4), porque la 4:3 se veía recortada;
   - en computadora va recorrida a la derecha (desde el 30 % del ancho) con el degradado sobre el resto;
   - sin póster oficial, el ambiente como antes;
   - Diego probó primero el póster alterno y no le gustó.
