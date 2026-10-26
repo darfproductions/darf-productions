@@ -53,6 +53,14 @@ export function obraConCapa<T extends object>(p: T, c: Capa): T {
   return { ...p, ...(c.datos ?? {}), ...(c.colores ?? {}), ...(c.kit ?? {}), ...poster };
 }
 
+/** Difusión (2026-10-25): la obra con los cambios sin publicar de lo que usan los diseños (datos, colores, logo,
+ *  ambiente y pósters) y cuáles de esas secciones se tomaron del borrador. */
+export function capaDifusion<T extends object>(p: T, c: Capa): { obra: T; usa: string[] } {
+  const parcial: Capa = { datos: c.datos, colores: c.colores, kit: c.kit, poster: c.poster };
+  const usa = (["poster", "kit", "datos", "colores"] as const).filter((k) => c[k] && Object.keys(c[k]!).length);
+  return { obra: obraConCapa(p, parcial), usa };
+}
+
 export type EstadoCambio = { seccion: Seccion; borrador: boolean; fans: boolean; borrador_at: string | null; fans_at: string | null };
 
 /** Lo que falta por publicar, en el orden del editor. */

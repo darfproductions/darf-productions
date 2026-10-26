@@ -49,6 +49,12 @@ export default async function Difusion({ params, searchParams }: PageProps<"/pan
           Diseños listos para Instagram, Facebook y WhatsApp con los colores y el logo de la obra. Cada uno se descarga en post (4:5) o en historia (9:16).
           {obra.fondo.post ? " Usan la imagen de ambiente de la obra." : " Para que lleven foto, sube la imagen de ambiente en Página pública."}
         </p>
+        {obra.usaBorrador.length > 0 && (
+          <p role="status" className="mt-3 rounded-lg border border-aviso/40 bg-aviso/10 px-3 py-2 text-sm">
+            Los diseños usan cambios <b>sin publicar</b> ({obra.usaBorrador.map((k) => ({ poster: "pósters", kit: "logo o ambiente", datos: "datos", colores: "colores" } as Record<string, string>)[k] ?? k).join(", ")}). El público aún no los ve en la página:{" "}
+            <Link href={`/panel/producciones/${id}/pagina`} className="font-bold underline">publícalos en Página, en Publicar</Link>.
+          </p>
+        )}
         {obra.funciones.length > 0 ? (
           <form className="mt-3 flex flex-wrap items-end gap-2">
             <label className="flex min-w-0 flex-1 basis-64 flex-col gap-1 text-xs font-semibold">Función (para los diseños que hablan de una fecha)

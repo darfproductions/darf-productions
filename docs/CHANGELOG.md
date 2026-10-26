@@ -5,6 +5,14 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-10-26 — Difusión usa los cambios sin publicar
+
+- Diego subió los pósters de Showman y Difusión siguió con las imágenes viejas: la obra ya está publicada, así que los
+  pósters quedaron en borrador (0119) y `getObraDifusion` solo leía lo publicado.
+- Ahora Difusión encima el borrador de pósters, logo, ambiente, datos y colores (`capaDifusion` sobre
+  `getCapa(pid, "borrador")`), como la vista previa. Los diseños se preparan antes de anunciar.
+- La página de Difusión avisa cuando usa cambios sin publicar, con liga a Página → Publicar.
+
 ## 2026-10-25 — Difusión: precios, beneficios completos y dos invitaciones generales
 
 - **Precios en los diseños:** "Mapa de zonas y precios" y "Precios y lo que incluye cada zona" muestran el precio aunque
