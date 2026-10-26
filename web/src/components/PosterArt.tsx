@@ -52,15 +52,15 @@ export function ProductionLogo({ theme, nombre, priority }: { theme: ProductionT
 export function HeroBackdrop({ theme, poster }: { theme: ProductionTheme; poster?: { ancho: string; alto: string } | null }) {
   if (poster) {
     // Destacada del póster oficial (Diego, 2026-10-26): en computadora va recorrida a la derecha (su centro junto al
-    // logo y los textos, no debajo) y el degradado tapa el resto; en celular, la de celular con el velo abajo.
+    // logo y los textos, no debajo) y el degradado tapa el resto; en celular, la vertical sin textos con el velo abajo.
     return (
       <div aria-hidden="true" className="absolute inset-0 overflow-hidden">
-        <Image src={poster.alto} alt="" fill priority sizes="100vw" className="object-cover object-[50%_20%] md:hidden" />
+        <Image src={poster.alto} alt="" fill priority sizes="100vw" className="object-cover object-top md:hidden" />
         <div className="absolute inset-y-0 left-[30%] right-0 hidden md:block">
           <Image src={poster.ancho} alt="" fill priority sizes="70vw" className="object-cover object-center" />
         </div>
         <div className="absolute -left-40 -top-40 h-[40rem] w-[40rem] rounded-full bg-[radial-gradient(circle,rgb(52_15_235/0.32),transparent_65%)]" />
-        <div className="absolute inset-0 bg-[linear-gradient(0deg,var(--obra-fondo)_30%,color-mix(in_srgb,var(--obra-fondo)_60%,transparent)_60%,transparent_85%)] md:bg-[linear-gradient(90deg,var(--obra-fondo)_0%,var(--obra-fondo)_31%,color-mix(in_srgb,var(--obra-fondo)_70%,transparent)_43%,color-mix(in_srgb,var(--obra-fondo)_8%,transparent)_75%),linear-gradient(180deg,transparent_60%,var(--obra-fondo)_100%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(0deg,var(--obra-fondo)_22%,color-mix(in_srgb,var(--obra-fondo)_55%,transparent)_50%,transparent_72%)] md:bg-[linear-gradient(90deg,var(--obra-fondo)_0%,var(--obra-fondo)_31%,color-mix(in_srgb,var(--obra-fondo)_70%,transparent)_43%,color-mix(in_srgb,var(--obra-fondo)_8%,transparent)_75%),linear-gradient(180deg,transparent_60%,var(--obra-fondo)_100%)]" />
       </div>
     );
   }
