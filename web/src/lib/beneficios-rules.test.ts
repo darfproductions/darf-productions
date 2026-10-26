@@ -96,3 +96,21 @@ describe("nota del beneficio", () => {
     expect(textoConNota({ tipo: "acceso", nombre: "Acceso anticipado", minutos_antes: 30, cupo: null, detalle: "  " })).toBe("Acceso anticipado (30 min antes)");
   });
 });
+
+describe("uno por compra (0130)", () => {
+  it("agrega el aviso sin repetirlo si la nota ya lo dice", async () => {
+    const { notaBeneficio, textoConNota } = await import("./beneficios-rules");
+    expect(notaBeneficio({ por_compra: true, detalle: null })).toBe("Uno por compra, no por boleto");
+    expect(notaBeneficio({ por_compra: true, detalle: "Firmado por el elenco." })).toBe("Uno por compra, no por boleto. Firmado por el elenco");
+    expect(notaBeneficio({ por_compra: true, detalle: "Uno por compra, no por boleto" })).toBe("Uno por compra, no por boleto");
+    expect(notaBeneficio({ por_compra: false, detalle: null })).toBeNull();
+    expect(textoConNota({ tipo: "souvenir", nombre: "Póster firmado", minutos_antes: null, cupo: null, por_compra: true })).toBe("Póster firmado — uno por compra, no por boleto");
+  });
+
+  it("en los otros boletos de la orden dice con cuál va", async () => {
+    const { textosBoleto } = await import("./beneficios-rules");
+    const t = textosBoleto([{ beneficio_id: "p", tipo: "souvenir", nombre: "Póster firmado", minutos_antes: null, cupo: null, por_compra: true,
+      alcanza: false, entregado_at: null, zona: "VIP", estado: "otro_boleto", con_boleto: "A1" }], null);
+    expect(t.incluye).toEqual(["Póster firmado — uno por compra: va con tu boleto A1"]);
+  });
+});

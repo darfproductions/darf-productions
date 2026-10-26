@@ -1,5 +1,5 @@
 import { Icono } from "@/components/Icono";
-import { MOMENTOS_ENTREGA, TIPOS_BENEFICIO, textoBeneficio, textoCupo, type BeneficioCorto } from "@/lib/beneficios-rules";
+import { MOMENTOS_ENTREGA, TIPOS_BENEFICIO, notaBeneficio, textoBeneficio, textoCupo, type BeneficioCorto } from "@/lib/beneficios-rules";
 
 /** Lo que incluye una zona (0122): ícono por tipo, cupo y funciones en las que aplica. Sirve en página, compra y boleto. */
 export function BeneficiosZona({ beneficios, fechas, className = "" }: {
@@ -21,7 +21,7 @@ export function BeneficiosZona({ beneficios, fechas, className = "" }: {
             <Icono nombre={TIPOS_BENEFICIO[b.tipo]?.icono ?? "destello"} className="mt-0.5 shrink-0 opacity-80" />
             <span>
               <span className="font-semibold">{textoBeneficio(b)}</span>
-              {b.detalle && <span className="opacity-75"> — {b.detalle}</span>}
+              {notaBeneficio(b) && <span className="opacity-75"> — {notaBeneficio(b)}</span>}
               {extra && <span className="block text-[11.5px] font-bold uppercase tracking-[0.08em] opacity-70">{extra}</span>}
             </span>
           </li>

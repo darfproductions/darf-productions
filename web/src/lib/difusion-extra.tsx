@@ -1,7 +1,7 @@
 /* eslint-disable @next/next/no-img-element -- dentro de ImageResponse (satori), no es una página */
 import { ImageResponse } from "next/og";
 import QRCode from "qrcode";
-import { textoBeneficio } from "@/lib/beneficios-rules";
+import { notaBeneficio, textoBeneficio } from "@/lib/beneficios-rules";
 import { TAMANO_PREVENTA, type FormatoPreventa } from "@/lib/difusion-preventa-rules";
 import { esInvitacion, precioZona, puntosMapa, zonasIncluye, type DisenoExtra, type OpcionCompra } from "@/lib/difusion-extra-rules";
 import type { DatosExtra } from "@/lib/difusion-extra-datos";
@@ -235,7 +235,7 @@ export async function extraPng(d: DatosImagenExtra): Promise<Buffer> {
                   <div style={{ display: "flex", flexDirection: "column" }}>
                     <span style={{ fontSize: s(25, 29, 35) * k, fontWeight: 700 }}>{textoBeneficio(b)}</span>
                     {/* Nota del beneficio ("uno por compra, no por boleto"). */}
-                    {b.detalle && <span style={{ fontSize: s(19, 22, 26) * k, fontWeight: 600, fontStyle: "italic", opacity: 0.8 }}>{b.detalle}</span>}
+                    {notaBeneficio(b) && <span style={{ fontSize: s(19, 22, 26) * k, fontWeight: 600, fontStyle: "italic", opacity: 0.8 }}>{notaBeneficio(b)}</span>}
                   </div>
                 </div>
               ))}
