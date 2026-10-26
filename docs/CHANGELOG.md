@@ -21,10 +21,10 @@ solo *qué*.
   - el PDF, Wallet y WhatsApp;
   - Difusión y la Puerta.
 - **Página de la obra:**
-  - si la obra tiene póster alterno sin información, el hero lo usa en lugar del ambiente;
-  - en computadora va recorrido a la derecha (desde el 40 % del ancho) con el degradado sobre el resto;
-  - en celular, el 9:16 a lo alto;
-  - sin póster alterno, el ambiente como antes.
+  - el hero usa la destacada horizontal del póster oficial (16:9; en celular la 4:3) en lugar del ambiente;
+  - en computadora va recorrida a la derecha (desde el 30 % del ancho) con el degradado sobre el resto;
+  - sin póster oficial, el ambiente como antes;
+  - Diego probó primero el póster alterno y no le gustó.
 - **Fotos del elenco:** ya se comprimían (WebP, máx. 1600 px); en DEV pesan 165 KB en promedio.
 
 ## 2026-10-26 — 0129: comisiones de vendedores

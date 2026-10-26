@@ -9,7 +9,7 @@ export { themeProblems, themeStyle, type ProductionTheme } from "@/lib/themes";
 import { clasificar, elegirPortada, ordenarObras, type ConEstado, type Featured } from "@/lib/home-rules";
 import { mayus } from "@/lib/dates";
 import { asientosOcupados } from "@/lib/ocupados";
-import { elegir, POSTER_ALT_COLUMNS, POSTER_COLUMNS, posterAlt, type PosterColumns, type Uso } from "@/lib/poster";
+import { elegir, POSTER_COLUMNS, type PosterColumns, type Uso } from "@/lib/poster";
 
 // ─── Datos de producciones ────────────────────────────────────────────────
 // Todo sale de la base (plantilla: migración 0029) con la sesión del
@@ -56,11 +56,12 @@ export function getTheme(p: KitColumns): ProductionTheme | null {
   return themeFromKit(p, assetUrl);
 }
 
-/** Póster alterno sin información (0124) para el hero de la obra: 3:4 en computadora, 9:16 en celular (o el que haya). */
-export function posterAltHero(p: PosterColumns | null | undefined): { ancho: string; alto: string } | null {
-  const a = posterAlt(p, "3x4", false), b = posterAlt(p, "9x16", false);
-  if (!a && !b) return null;
-  return { ancho: assetUrl((a ?? b)!), alto: assetUrl((b ?? a)!) };
+/** Hero de la obra (Diego, 2026-10-26): la destacada horizontal del póster oficial (16:9) en computadora y la de
+ *  celular (4:3) en el teléfono; null si la obra no tiene póster oficial (queda el ambiente). */
+export function posterHero(p: PosterColumns | null | undefined): { ancho: string; alto: string } | null {
+  const ancho = posterUrl(p, "destacada")?.url;
+  if (!ancho) return null;
+  return { ancho, alto: posterUrl(p, "destacada-celular")?.url ?? ancho };
 }
 
 /** Póster oficial (0093) para ese lugar, ya como URL; null = usar la imagen de ambiente. */
@@ -87,7 +88,7 @@ export type ZonePrice = { nombre: string; price: number; /** Color de la zona en
   /** Lo que incluye la zona además del lugar (0122). */ beneficios?: BeneficioCorto[] };
 
 const PRODUCTION_COLUMNS =
-  `id, nombre, venue, temporada, price, on_sale, concluded, destacada, created_at, estado, frase, color_fondo, color_superficie, color_texto, color_acento, logo_path, ambiente_path, funciones_publicadas, modo_venta, mostrar_precios, mostrar_total, ${POSTER_COLUMNS}, ${POSTER_ALT_COLUMNS}` as const;
+  `id, nombre, venue, temporada, price, on_sale, concluded, destacada, created_at, estado, frase, color_fondo, color_superficie, color_texto, color_acento, logo_path, ambiente_path, funciones_publicadas, modo_venta, mostrar_precios, mostrar_total, ${POSTER_COLUMNS}` as const;
 
 export type PublicProduction = ConEstado<Production>;
 
