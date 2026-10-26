@@ -29,7 +29,7 @@ export async function GET(req: Request, ctx: RouteContext<"/panel/producciones/[
   const zonas = [...data.prices].filter((p) => !gen.has(p.categoryId)).sort((a, b) => a.nombre.localeCompare(b.nombre))
     .map((p, i) => ({ id: p.categoryId, nombre: p.nombre, color: colorZona(p, i, ZONE_COLORS), precio: p.price, orden: p.orden }))
     .sort((a, b) => a.orden - b.orden || a.nombre.localeCompare(b.nombre, "es"));
-  const plano = planoTaquilla(data.seats.map((s) => ({ id: s.id, x: s.pos_x ?? null, y: s.pos_y ?? null, fila: s.seat_row, numero: s.seat_number, lado: s.lado, zona: s.price_category_id })), data.formas);
+  const plano = planoTaquilla(data.seats.map((s) => ({ id: s.id, x: s.pos_x ?? null, y: s.pos_y ?? null, fila: s.seat_row, numero: s.seat_number, lado: s.lado, zona: s.price_category_id, grupo: s.section ?? null })), data.formas);
   const png = await mapaTaquillaPng({
     obra: obra.data?.nombre ?? "DARF Productions",
     funcion: formatPerformanceDate(f.starts_at),

@@ -2,6 +2,10 @@
 
 import { useMemo, useRef, useState } from "react";
 import type { Forma } from "@/lib/mapa-libre";
+import { etiquetasFila } from "@/lib/mapa-filas";
+
+/** Letras de fila (en lib/mapa-filas.ts para que también las usen las imágenes del servidor). */
+export { etiquetasFila };
 
 // Dibujo de un mapa libre (0113): el escenario y los asientos en su posición. Lo usan la compra, la taquilla y el
 // panel. Solo pinta; quién puede comprar lo decide la base.
@@ -24,45 +28,6 @@ export function encuadrePlano(formas: Forma[], asientos: { x: number; y: number 
   if (!xs.length) return { x: 0, y: 0, w: 1000, h: 800 };
   const m = 30, x0 = Math.min(...xs) - m, y0 = Math.min(...ys) - m;
   return { x: x0, y: y0, w: Math.max(...xs) + m - x0, h: Math.max(...ys) + m - y0 };
-}
-
-/** Letras de fila en las dos puntas de cada tramo (una fila partida en bloques da un tramo por bloque). */
-export function etiquetasFila(asientos: { x: number; y: number; numero: number | null; fila?: string | null; grupo?: string }[]) {
-  // Con grupo (el bloque), cada fila de cada bloque es un solo tramo aunque tenga huecos.
-  const porFila = new Map<string, { x: number; y: number; n: number }[]>();
-  const conGrupo = asientos.some((a) => a.grupo);
-  for (const a of asientos) {
-    if (!a.fila) continue;
-    const k = conGrupo ? `${a.fila}\u0000${a.grupo ?? ""}` : a.fila;
-    const l = porFila.get(k) ?? [];
-    l.push({ x: a.x, y: a.y, n: a.numero ?? 0 });
-    porFila.set(k, l);
-  }
-  const out: { fila: string; x: number; y: number }[] = [];
-  const punta = (fila: string, a: { x: number; y: number }, b: { x: number; y: number } | undefined, lado: -1 | 1) => {
-    if (!b) { out.push({ fila, x: a.x + lado * 17, y: a.y }); return; }
-    const d = Math.hypot(a.x - b.x, a.y - b.y) || 1;
-    out.push({ fila, x: a.x + ((a.x - b.x) / d) * 17, y: a.y + ((a.y - b.y) / d) * 17 });
-  };
-  for (const [clave, l] of porFila) {
-    const fila = clave.split("\u0000")[0];
-    l.sort((a, b) => a.n - b.n);
-    // Un salto grande entre asientos seguidos es un pasillo: ahí empieza otro tramo.
-    let tramo: typeof l = [];
-    const cerrar = () => {
-      if (!tramo.length) return;
-      punta(fila, tramo[0], tramo[1], -1);
-      if (tramo.length > 1) punta(fila, tramo[tramo.length - 1], tramo[tramo.length - 2], 1);
-      tramo = [];
-    };
-    for (const a of l) {
-      const prev = tramo[tramo.length - 1];
-      if (prev && !conGrupo && Math.hypot(a.x - prev.x, a.y - prev.y) > 45) cerrar();
-      tramo.push(a);
-    }
-    cerrar();
-  }
-  return out;
 }
 
 export function FormaSvg({ f, activa, onPointerDown }: { f: Forma; activa?: boolean; onPointerDown?: (e: React.PointerEvent) => void }) {

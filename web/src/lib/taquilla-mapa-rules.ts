@@ -1,10 +1,12 @@
 // Mapa de la taquilla para mandar por WhatsApp (2026-10-26): asientos con su número, letra de fila y ocupados.
 // Puro, con pruebas en taquilla-mapa-rules.test.ts. El dibujo está en taquilla-mapa.tsx.
 import type { Forma } from "@/lib/mapa-libre";
+import { etiquetasFila } from "@/lib/mapa-filas";
 
-export type AsientoTaquilla = { id: string; x: number | null; y: number | null; fila: string | null; numero: number | null; lado: string | null; zona: string | null };
+export type AsientoTaquilla = { id: string; x: number | null; y: number | null; fila: string | null; numero: number | null; lado: string | null; zona: string | null; /** Bloque del mapa libre. */ grupo?: string | null };
 export type PuntoTaquilla = { id: string; x: number; y: number; zona: string | null; fila: string; numero: number | null };
-export type FilaEtiqueta = { fila: string; izq: number; der: number; y: number };
+/** Letra de fila en una punta de la fila (en las dos puntas de cada fila de cada bloque). */
+export type FilaEtiqueta = { fila: string; x: number; y: number };
 export type FormaTaquilla = { x: number; y: number; ancho: number; alto: number; rot: number; etiqueta: string };
 export type Plano = { puntos: PuntoTaquilla[]; filas: FilaEtiqueta[]; formas: FormaTaquilla[]; ancho: number; alto: number; radio: number; escenarioArriba: boolean };
 
@@ -27,7 +29,7 @@ function distanciaMinima(ps: { x: number; y: number }[]): number {
  *  derecha con pasillos). Deja lugar a los lados para la letra de cada fila. */
 export function planoTaquilla(asientos: AsientoTaquilla[], formas: Forma[], radio = 20): Plano {
   const libre = asientos.some((a) => a.x != null);
-  type Crudo = { a: AsientoTaquilla; x: number; y: number };
+  type Crudo = { a: AsientoTaquilla; x: number; y: number; n?: number };
   let crudos: Crudo[] = [];
   let fs: FormaTaquilla[] = [];
   let k: number;
@@ -43,7 +45,7 @@ export function planoTaquilla(asientos: AsientoTaquilla[], formas: Forma[], radi
         const xs = asientos.filter((a) => (a.fila ?? "?") === f && (a.lado ?? "central") === lado).sort((a, b) => (a.numero ?? 0) - (b.numero ?? 0));
         if (!xs.length) continue;
         if (col) col += 2;
-        for (const a of xs) crudos.push({ a, x: col++ * 20, y: fi * 20 });
+        for (const a of xs) { crudos.push({ a, x: col * 20, y: fi * 20, n: col }); col++; }
       }
     });
     const ancho0 = Math.max(0, ...crudos.map((p) => p.x));
@@ -65,15 +67,12 @@ export function planoTaquilla(asientos: AsientoTaquilla[], formas: Forma[], radi
   const formasP = fs.map((f) => ({ ...f, x: lado + (f.x - x0) * k, y: arriba + (f.y - y0) * k, ancho: f.ancho * k, alto: f.alto * k }));
   const ancho = Math.ceil(lado * 2 + (Math.max(...xs) - x0) * k);
   const alto = Math.ceil(arriba + (Math.max(...ys) - y0) * k + radio + 10);
-  // Letra de fila a la izquierda del primer asiento y a la derecha del último (por renglón de la fila).
-  const porFila = new Map<string, PuntoTaquilla[]>();
-  for (const p of puntos) porFila.set(p.fila, [...(porFila.get(p.fila) ?? []), p]);
-  const filas: FilaEtiqueta[] = [...porFila.entries()].map(([fila, ps]) => ({
-    fila,
-    izq: Math.min(...ps.map((p) => p.x)) - radio - 6,
-    der: Math.max(...ps.map((p) => p.x)) + radio + 6,
-    y: ps.reduce((s, p) => s + p.y, 0) / ps.length,
-  }));
+  // Letras de fila con la misma regla que el mapa de la página: en las dos puntas de cada fila de cada bloque (sirve
+  // también para los bloques en ángulo del mapa libre). Se calculan sin escalar y luego se colocan igual que los asientos.
+  const filas: FilaEtiqueta[] = etiquetasFila(
+    crudos.map((p) => ({ x: p.x, y: p.y, numero: p.n ?? p.a.numero, fila: p.a.fila, grupo: libre ? p.a.grupo ?? undefined : "fila" })),
+    (radio + 24) / k,
+  ).map((e) => ({ fila: e.fila, x: lado + (e.x - x0) * k, y: arriba + (e.y - y0) * k }));
   return { puntos, filas, formas: formasP, ancho, alto, radio, escenarioArriba: !libre };
 }
 

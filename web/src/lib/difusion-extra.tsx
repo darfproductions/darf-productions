@@ -110,6 +110,11 @@ export async function extraPng(d: DatosImagenExtra): Promise<Buffer> {
           {m.puntos.map((p, i) => (
             <div key={i} style={{ position: "absolute", left: p.x - m.radio, top: p.y - m.radio, width: m.radio * 2, height: m.radio * 2, borderRadius: m.radio, background: color.get(p.zona ?? "") ?? "#555" }} />
           ))}
+          {/* Letra de cada fila en sus dos puntas (2026-10-26). */}
+          {m.filas.map((e, i) => {
+            const t = Math.max(12, Math.round(m.radio * 1.9));
+            return <span key={`f${i}`} style={{ position: "absolute", left: e.x - t, top: e.y - t * 0.62, width: t * 2, textAlign: "center", fontSize: t, fontWeight: 900, color: "#d7bb5f" }}>{e.fila}</span>;
+          })}
           {m.puntos.length === 0 && <span style={{ margin: "auto", fontSize: 30, fontWeight: 800, opacity: 0.7 }}>Entrada general</span>}
         </div>
         <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: s(12, 14, 18), width: w - lado * 2 }}>

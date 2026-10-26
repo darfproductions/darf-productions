@@ -61,10 +61,9 @@ export async function mapaTaquillaPng(d: DatosMapaTaquilla): Promise<Buffer> {
             borderRadius: 14, background: "rgba(215,187,95,0.18)", border: "3px solid #d7bb5f", color: "#d7bb5f", fontSize: 24, fontWeight: 900, transform: `rotate(${f.rot}deg)` }}>{f.etiqueta}</div>
         ))}
         {/* Letra de cada fila, a los dos lados */}
-        {plano.filas.flatMap((f) => [
-          <span key={`i${f.fila}`} style={{ position: "absolute", left: ox + f.izq - 44, top: oy + f.y - 18, width: 40, textAlign: "right", fontSize: 28, fontWeight: 900, color: "#d7bb5f" }}>{f.fila}</span>,
-          <span key={`d${f.fila}`} style={{ position: "absolute", left: ox + f.der + 4, top: oy + f.y - 18, width: 40, fontSize: 28, fontWeight: 900, color: "#d7bb5f" }}>{f.fila}</span>,
-        ])}
+        {plano.filas.map((f, i) => (
+          <span key={`f${i}`} style={{ position: "absolute", left: ox + f.x - 30, top: oy + f.y - 18, width: 60, textAlign: "center", fontSize: 28, fontWeight: 900, color: "#d7bb5f" }}>{f.fila}</span>
+        ))}
         {/* Asientos */}
         {plano.puntos.map((p) => {
           const color = p.zona ? colorDe.get(p.zona) : undefined;

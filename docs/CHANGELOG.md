@@ -5,6 +5,16 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-10-26 — Letras de fila en "Zonas y precios" y en el mapa de la taquilla
+
+- La imagen de Difusión "Zonas y precios" no traía las letras de fila. Ahora salen en las dos puntas de cada fila.
+- Usa la misma regla que el mapa de la página (`etiquetasFila`, ahora en `lib/mapa-filas.ts` para usarse también en
+  el servidor):
+  - en el mapa libre, una letra por punta de cada fila de cada bloque, siguiendo el ángulo del bloque;
+  - en filas rectas, solo en las puntas de toda la fila.
+- El mapa de la taquilla usa la misma regla; antes ponía las letras a la izquierda y la derecha, lo que fallaba con
+  bloques en ángulo.
+
 ## 2026-10-26 — 0130: beneficios "uno por compra" y hero con el póster alterno
 
 - **Uno por compra:** `zona_beneficios.por_compra`. El beneficio le toca una vez a cada orden, aunque traiga 10
