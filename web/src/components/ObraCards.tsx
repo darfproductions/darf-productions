@@ -7,6 +7,7 @@ import { partesFuncion } from "@/lib/disponibilidad";
 import { formatPrice, getTheme, posterUrl, themeStyle, type PublicProduction } from "@/lib/productions";
 import { mayus } from "@/lib/dates";
 import { Icono } from "@/components/Icono";
+import { textosVenta } from "@/lib/ventas-rules";
 
 // Tarjetas de la cartelera (guía de UI · Fusión). Toman los colores de cada obra.
 
@@ -34,8 +35,13 @@ export function ObraPanoramica({ p }: { p: PublicProduction }) {
   return (
     <article style={themeStyle(t)} className="relative flex min-h-[540px] overflow-hidden rounded-[28px] border border-linea bg-obra-fondo text-obra-texto md:min-h-[560px]">
       {t && ancha && movil !== ancha && <Image src={movil!} alt="" fill sizes="100vw" className="object-cover md:hidden" />}
-      {t && ancha && <Image src={ancha} alt="" fill sizes="(min-width: 1440px) 1312px, 100vw" className={`object-cover ${movil !== ancha ? "hidden md:block" : ""}`} />}
-      <div aria-hidden="true" className="absolute inset-0 bg-[linear-gradient(0deg,var(--obra-fondo)_35%,color-mix(in_srgb,var(--obra-fondo)_40%,transparent)_70%,transparent)] md:bg-[linear-gradient(90deg,var(--obra-fondo)_0%,color-mix(in_srgb,var(--obra-fondo)_85%,transparent)_38%,color-mix(in_srgb,var(--obra-fondo)_10%,transparent)_75%)]" />
+      {/* En computadora la foto va recorrida a la derecha (Diego, 2026-10-26): su centro queda junto a los textos, no debajo. */}
+      {t && ancha && (
+        <div className={`absolute inset-0 md:left-[32%] ${movil !== ancha ? "hidden md:block" : ""}`}>
+          <Image src={ancha} alt="" fill sizes="(min-width: 1440px) 900px, 100vw" className="object-cover" />
+        </div>
+      )}
+      <div aria-hidden="true" className="absolute inset-0 bg-[linear-gradient(0deg,var(--obra-fondo)_35%,color-mix(in_srgb,var(--obra-fondo)_40%,transparent)_70%,transparent)] md:bg-[linear-gradient(90deg,var(--obra-fondo)_0%,var(--obra-fondo)_33%,color-mix(in_srgb,var(--obra-fondo)_70%,transparent)_45%,color-mix(in_srgb,var(--obra-fondo)_5%,transparent)_75%)]" />
       <div aria-hidden="true" className="cono absolute -top-72 left-[40%] hidden h-[900px] w-[640px] md:block" />
       <div className="relative flex w-full flex-col justify-end gap-6 p-6 md:max-w-[640px] md:justify-center md:p-16">
         <EstadoObra estado={p.estadoPublico} className="self-start" />
@@ -52,7 +58,7 @@ export function ObraPanoramica({ p }: { p: PublicProduction }) {
           {p.price > 0 && <li className="chip chip-obra num">Desde {formatPrice(p.price)}</li>}
         </ul>
         <div className="flex flex-wrap gap-3">
-          <Link href={`/producciones/${p.id}#funciones`} className="fb fb-luz">Comprar boletos</Link>
+          <Link href={`/producciones/${p.id}#funciones`} className="fb fb-luz">{textosVenta(p.modo_venta).cta}</Link>
           <Link href={`/producciones/${p.id}`} className="fb fb-obra">Conocer la obra</Link>
         </div>
       </div>
