@@ -37,7 +37,7 @@ import {
   getProduction,
   getTheme,
   posterUrl,
-  posterAltHero,
+  posterHero,
   performanceOccupancy,
   themeStyle,
 } from "@/lib/productions";
@@ -348,7 +348,7 @@ export async function ProductionView({
       )}
       {/* Hero: ambiente a sangre, degradado desde la izquierda, cono de luz y grano. */}
       <section className="relative flex min-h-[560px] overflow-hidden md:min-h-[780px]">
-        {theme && <HeroBackdrop theme={theme} alterno={posterAltHero(p)} />}
+        {theme && <HeroBackdrop theme={theme} poster={posterHero(p)} />}
         <div aria-hidden="true" className="cono absolute -top-40 left-[52%] hidden h-[1000px] w-[760px] opacity-90 lg:block" />
         <div aria-hidden="true" className="grano absolute inset-0" />
         <div className="relative mx-auto grid w-full max-w-[1440px] items-end gap-10 px-5 pb-14 pt-16 md:px-16 md:pb-[88px] lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-16">
