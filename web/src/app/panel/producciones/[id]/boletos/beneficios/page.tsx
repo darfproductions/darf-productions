@@ -6,7 +6,7 @@ import { Card, input } from "@/components/panel/ui";
 import { Icono } from "@/components/Icono";
 import { listPerformances, listZones } from "@/lib/boleteria";
 import { listarBeneficios } from "@/lib/beneficios";
-import { MOMENTOS_ENTREGA, PLANTILLAS_BENEFICIO, TIPOS_BENEFICIO, porZona, textoBeneficio, textoCupo, type Beneficio, type MomentoEntrega, type TipoBeneficio } from "@/lib/beneficios-rules";
+import { MOMENTOS_ENTREGA, PLANTILLAS_BENEFICIO, TIPOS_BENEFICIO, notaBeneficio, porZona, textoBeneficio, textoCupo, type Beneficio, type MomentoEntrega, type TipoBeneficio } from "@/lib/beneficios-rules";
 import { can, salidaBoletos } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
 import { formatPerformanceDate } from "@/lib/productions";
@@ -37,6 +37,14 @@ function Campos({ b, zonas, funciones }: { b?: Beneficio; zonas: Zona[]; funcion
         <input className={input} name="nombre" required minLength={2} maxLength={120} defaultValue={b?.nombre ?? ""} placeholder="Póster firmado por el elenco" />
       </label>
       <NotaBeneficio defaultValue={b?.detalle ?? ""} />
+      {/* 0130: uno por compra (el póster firmado de VIP: uno por orden aunque traiga 10 boletos). */}
+      <fieldset className="flex flex-col gap-1.5 text-sm sm:col-span-2">
+        <legend className="mb-1 font-semibold">¿A quién le toca?</legend>
+        <label className="flex items-start gap-2"><input type="radio" name="por_compra" value="0" defaultChecked={!b?.por_compra} className="mt-1" />
+          <span><b>Uno por boleto</b> — cada boleto de la zona lo lleva (por ejemplo, el acceso anticipado).</span></label>
+        <label className="flex items-start gap-2"><input type="radio" name="por_compra" value="1" defaultChecked={!!b?.por_compra} className="mt-1" />
+          <span><b>Uno por compra</b> — una orden con 10 boletos lleva uno solo. Al público le sale &quot;Uno por compra, no por boleto&quot;.</span></label>
+      </fieldset>
       <label className="flex flex-col gap-1.5 text-sm font-semibold">Minutos antes (solo tipo Acceso)
         <input className={input} name="minutos_antes" type="number" min={1} max={240} defaultValue={b?.minutos_antes ?? ""} placeholder="15" />
       </label>
@@ -104,7 +112,7 @@ export default async function BeneficiosPage({ params, searchParams }: PageProps
               return (
                 <li key={z.id} className="rounded-xl bg-telon-2 p-3 text-sm">
                   <b>{z.nombre}</b>
-                  {xs.length ? <ul className="mt-1 flex flex-col gap-0.5 text-texto-2">{xs.map((b) => <li key={b.id} className="flex items-center gap-1.5"><Icono nombre={TIPOS_BENEFICIO[b.tipo].icono} />{textoBeneficio(b)}{b.cupo ? ` · ${textoCupo(b.cupo)}` : ""}{b.detalle && <span className="text-texto-3">— {b.detalle}</span>}</li>)}</ul>
+                  {xs.length ? <ul className="mt-1 flex flex-col gap-0.5 text-texto-2">{xs.map((b) => <li key={b.id} className="flex items-center gap-1.5"><Icono nombre={TIPOS_BENEFICIO[b.tipo].icono} />{textoBeneficio(b)}{b.cupo ? ` · ${textoCupo(b.cupo)}` : ""}{notaBeneficio(b) && <span className="text-texto-3">— {notaBeneficio(b)}</span>}</li>)}</ul>
                     : <p className="text-texto-3">Solo el lugar.</p>}
                 </li>
               );
@@ -119,7 +127,7 @@ export default async function BeneficiosPage({ params, searchParams }: PageProps
             <summary className="flex cursor-pointer flex-wrap items-center justify-between gap-2">
               <span className="flex flex-wrap items-center gap-2">
                 <Icono nombre={TIPOS_BENEFICIO[b.tipo].icono} /><b>{textoBeneficio(b)}</b>
-                {b.detalle && <span className="text-xs text-texto-2">— {b.detalle}</span>}
+                {notaBeneficio(b) && <span className="text-xs text-texto-2">— {notaBeneficio(b)}</span>}
                 <span className="text-xs text-texto-3">{TIPOS_BENEFICIO[b.tipo].label} · {momento(b)}{b.cupo ? ` · ${textoCupo(b.cupo)}` : ""}{b.funciones?.length ? ` · ${b.funciones.length} función(es)` : ""}</span>
                 {!b.activo && <span className="text-xs text-texto-3">oculto</span>}
                 {!b.zonas.length && <span className="text-xs font-bold text-aviso">Sin zonas: no se ve en ningún lado</span>}

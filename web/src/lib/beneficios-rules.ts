@@ -4,20 +4,24 @@ import type { IconoNombre } from "@/components/Icono";
 
 export type TipoBeneficio = "experiencia" | "acceso" | "souvenir" | "atencion" | "otro";
 export type MomentoEntrega = "antes" | "dia_antes" | "dia_despues" | "despues";
-export type EstadoEntrega = "entregado" | "por_pagar" | "sin_cupo" | "vencido" | "hoy" | "pendiente";
+export type EstadoEntrega = "entregado" | "por_pagar" | "sin_cupo" | "vencido" | "hoy" | "pendiente" | "otro_boleto";
 export type Beneficio = {
   id: string; tipo: TipoBeneficio; nombre: string; detalle: string | null; minutos_antes: number | null;
   cupo: number | null; funciones: string[] | null; orden: number; activo: boolean; zonas: string[];
   entrega: MomentoEntrega; entrega_dias: number | null;
+  /** 0130: uno por compra (lo lleva un boleto de la orden), no uno por boleto. */
+  por_compra?: boolean;
 };
 /** Lo mínimo para mostrarlo (página, compra, boleto, WhatsApp). */
 export type BeneficioCorto = Pick<Beneficio, "tipo" | "nombre" | "minutos_antes" | "cupo"> & {
-  detalle?: string | null; funciones?: string[] | null; entrega?: MomentoEntrega | null; entrega_dias?: number | null;
+  por_compra?: boolean | null; detalle?: string | null; funciones?: string[] | null; entrega?: MomentoEntrega | null; entrega_dias?: number | null;
 };
 /** Beneficio de un boleto (beneficios_boleto / beneficios_qr). */
 export type BeneficioBoleto = BeneficioCorto & {
   beneficio_id: string; alcanza: boolean | null; entregado_at: string | null; zona: string;
   desde?: string | null; limite?: string | null; nota?: string | null; estado?: EstadoEntrega;
+  /** 0130: en uno por compra, el boleto de la orden que lo lleva (si no es este). */
+  con_boleto?: string | null;
 };
 
 export const TIPOS_BENEFICIO: Record<TipoBeneficio, { label: string; icono: IconoNombre; ayuda: string }> = {
@@ -47,9 +51,10 @@ export const ESTADOS_ENTREGA: Record<EstadoEntrega, { label: string; tono: "ok" 
   entregado: { label: "Entregado", tono: "ok" },
   por_pagar: { label: "Falta el pago", tono: "neutro" },
   sin_cupo: { label: "Sin cupo", tono: "neutro" },
+  otro_boleto: { label: "Va con otro boleto de la orden", tono: "neutro" },
 };
 /** Orden de la lista: lo vencido primero, después lo que ya toca, lo pendiente y al final lo entregado. */
-export const ORDEN_ESTADO: Record<EstadoEntrega, number> = { vencido: 0, hoy: 1, pendiente: 2, entregado: 3, por_pagar: 4, sin_cupo: 5 };
+export const ORDEN_ESTADO: Record<EstadoEntrega, number> = { vencido: 0, hoy: 1, pendiente: 2, entregado: 3, por_pagar: 4, sin_cupo: 5, otro_boleto: 6 };
 export const cuentaComoPendiente = (e: EstadoEntrega | undefined) => e === "vencido" || e === "hoy" || e === "pendiente";
 
 const fechaCorta = (iso: string) => new Intl.DateTimeFormat("es-MX", { day: "numeric", month: "long", timeZone: "America/Mexico_City" }).format(new Date(iso));
@@ -87,8 +92,17 @@ export function textoBeneficio(b: BeneficioCorto): string {
 
 /** Con la nota del beneficio (2026-10-26): "Póster firmado por el elenco — uno por compra, no por boleto". */
 export function textoConNota(b: BeneficioCorto): string {
-  const nota = b.detalle?.trim().replace(/\.$/, "");
+  const nota = notaBeneficio(b);
   return nota ? `${textoBeneficio(b)} — ${nota.charAt(0).toLowerCase()}${nota.slice(1)}` : textoBeneficio(b);
+}
+
+/** 0130: el aviso de "uno por compra" (si no lo dice ya la nota) y la nota del equipo, sin punto final. */
+export const AVISO_POR_COMPRA = "Uno por compra, no por boleto";
+export function notaBeneficio(b: Pick<BeneficioCorto, "detalle" | "por_compra">): string | null {
+  const nota = b.detalle?.trim().replace(/\.$/, "") || null;
+  const aviso = b.por_compra && !/por compra/i.test(nota ?? "") ? AVISO_POR_COMPRA : null;
+  if (aviso && nota) return `${aviso}. ${nota}`;
+  return aviso ?? nota;
 }
 
 /** "Solo los primeros 20" (o null). */
@@ -142,7 +156,9 @@ export function porZona(bs: Beneficio[], funcionId?: string | null): Map<string,
 /** Lo que va en el boleto: lista "Incluye" (con el cupo resuelto) y la hora de acceso anticipado. */
 export function textosBoleto(bs: BeneficioBoleto[], inicioIso: string | null | undefined): { incluye: string[]; acceso: string | null } {
   // 0125: cada uno dice cuándo se entrega o, ya entregado, cuándo se entregó (el acceso ya dice su hora).
-  const incluye = bs.filter((b) => b.alcanza !== false).map((b) => {
+  // 0130: en uno por compra, los demás boletos de la orden dicen con cuál va.
+  const incluye = bs.filter((b) => b.alcanza !== false || b.estado === "otro_boleto").map((b) => {
+    if (b.estado === "otro_boleto") return `${textoBeneficio(b)} — uno por compra: va con tu boleto ${b.con_boleto ?? "principal"}`;
     const cuando = b.tipo !== "acceso" && b.entrega ? textoEntrega(b) : null;
     return `${textoConNota(b)}${b.cupo && b.alcanza == null ? " (sujeto a cupo)" : ""}${cuando ? `. ${cuando}` : ""}`;
   });

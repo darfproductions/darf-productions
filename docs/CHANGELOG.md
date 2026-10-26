@@ -5,6 +5,28 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-10-26 — 0130: beneficios "uno por compra" y hero con el póster alterno
+
+- **Uno por compra:** `zona_beneficios.por_compra`. El beneficio le toca una vez a cada orden, aunque traiga 10
+  boletos de la zona; dos órdenes de la misma persona son dos.
+  - Lo lleva el primer boleto de la orden en esa zona; si se cancela, pasa al siguiente.
+  - Los demás boletos quedan en estado `otro_boleto` ("va con tu boleto A1") y no se pueden marcar como entregados.
+  - Con cupo, se cuentan órdenes.
+  - `beneficios_de_ticket` agrega `por_compra` y `con_boleto`.
+  - La lista de entregas, el reporte y `orden_beneficios` lo toman en cuenta.
+- **Panel → Beneficios:** "¿A quién le toca?" (uno por boleto / uno por compra).
+- **Aviso al público:** con uno por compra sale solo "Uno por compra, no por boleto" (`notaBeneficio`), sin repetirlo
+  si la nota ya lo dice. Aparece en:
+  - la página, la compra y el boleto;
+  - el PDF, Wallet y WhatsApp;
+  - Difusión y la Puerta.
+- **Página de la obra:**
+  - si la obra tiene póster alterno sin información, el hero lo usa en lugar del ambiente;
+  - en computadora va recorrido a la derecha (desde el 40 % del ancho) con el degradado sobre el resto;
+  - en celular, el 9:16 a lo alto;
+  - sin póster alterno, el ambiente como antes.
+- **Fotos del elenco:** ya se comprimían (WebP, máx. 1600 px); en DEV pesan 165 KB en promedio.
+
 ## 2026-10-26 — 0129: comisiones de vendedores
 
 - **Tramos por obra:** por ejemplo, del boleto 26 al 35 el 10 % y del 36 al 45 el 20 %. Cada % se aplica solo a los

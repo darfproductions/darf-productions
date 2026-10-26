@@ -6,7 +6,7 @@ import { QrScanner } from "@/components/panel/QrScanner";
 import { bip } from "@/lib/aviso-sonido";
 import { mayus } from "@/lib/dates";
 import { beneficiosPuerta, buscarPuerta, conteoPuerta, deshacerEntrada, entregarBeneficio, visitaPuerta, type BoletoPuerta, type CheckIn, type Conteo, type Visita } from "./actions";
-import { ESTADOS_ENTREGA, MOMENTOS_ENTREGA, TIPOS_BENEFICIO, horaAcceso, minutosAcceso, textoBeneficio, type BeneficioBoleto } from "@/lib/beneficios-rules";
+import { ESTADOS_ENTREGA, MOMENTOS_ENTREGA, TIPOS_BENEFICIO, horaAcceso, minutosAcceso, notaBeneficio, textoBeneficio, type BeneficioBoleto } from "@/lib/beneficios-rules";
 import { esPaseClub, etiquetaBoleto } from "./door-rules";
 import type { ResultadoLocal } from "./sin-conexion-rules";
 import { usePuertaSinConexion } from "./usePuertaSinConexion";
@@ -228,8 +228,10 @@ export function DoorScanner({ pid, funciones, inicial }: { pid: string; funcione
                   <Icono nombre={TIPOS_BENEFICIO[b.tipo]?.icono ?? "destello"} />
                   <span>
                     <b>{textoBeneficio(b)}</b>
-                    {b.detalle && <span className="block text-xs font-bold text-[#d7bb5f]">{b.detalle}</span>}
-                    {b.alcanza === false && <span className="block text-xs font-bold text-[#ff8fa3]">No alcanzó: el cupo es de {b.cupo}</span>}
+                    {notaBeneficio(b) && <span className="block text-xs font-bold text-[#d7bb5f]">{notaBeneficio(b)}</span>}
+                    {b.estado === "otro_boleto"
+                      ? <span className="block text-xs font-bold text-texto-2">Ya va con el boleto {b.con_boleto ?? "principal"} de esta orden: no se entrega aquí</span>
+                      : b.alcanza === false && <span className="block text-xs font-bold text-[#ff8fa3]">No alcanzó: el cupo es de {b.cupo}</span>}
                     {b.entregado_at && <span className="block text-xs text-exito">Entregado a las {hora(b.entregado_at)}{b.nota ? ` · "${b.nota}"` : ""}</span>}
                     {!b.entregado_at && b.entrega && b.tipo !== "acceso" && b.alcanza !== false && (
                       <span className={`block text-xs ${b.estado === "vencido" ? "font-bold text-[#ff8fa3]" : "text-texto-3"}`}>

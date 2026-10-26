@@ -639,7 +639,7 @@ export async function guardarBeneficio(_p: TicketState, f: FormData): Promise<Ti
   if (reglaDias && dias != null && (!Number.isInteger(dias) || dias < 1 || dias > reglaDias.max)) return { ok: false, message: `Los días deben ser de 1 a ${reglaDias.max}.` };
   const row = {
     tipo, nombre, detalle: String(f.get("detalle") ?? "").trim() || null, minutos_antes: minutos, cupo,
-    funciones: funciones.length ? funciones : null, entrega, entrega_dias: dias, activo: f.has("activo") ? f.get("activo") === "on" : true, updated_at: new Date().toISOString(),
+    funciones: funciones.length ? funciones : null, entrega, entrega_dias: dias, por_compra: f.get("por_compra") === "1", activo: f.has("activo") ? f.get("activo") === "on" : true, updated_at: new Date().toISOString(),
   };
   const supabase = await createClient();
   let bid = id;
