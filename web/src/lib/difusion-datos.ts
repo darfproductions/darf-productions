@@ -1,4 +1,6 @@
 import type { FuncionDifusion } from "@/lib/difusion-rules";
+import { getCapa } from "@/lib/obra-capa";
+import { capaDifusion } from "@/lib/obra-capa-rules";
 import { assetUrl } from "@/lib/productions";
 import { createClient } from "@/lib/supabase/server";
 
@@ -21,15 +23,20 @@ export type ObraDifusion = {
   preventa: { desde: string | null; hasta: string | null };
   colores: { fondo: string; superficie: string; texto: string; acento: string };
   funciones: FuncionObra[];
+  /** Secciones tomadas de los cambios sin publicar (pósters, kit, datos, colores): Difusión lo avisa. */
+  usaBorrador: string[];
 };
 
 export async function getObraDifusion(pid: string): Promise<ObraDifusion | null> {
   const supabase = await createClient();
-  const [{ data: p }, { data: fs }] = await Promise.all([
+  const [{ data: pub }, { data: fs }, capa] = await Promise.all([
     supabase.from("productions").select("nombre, venue, color_fondo, color_superficie, color_texto, color_acento, logo_path, ambiente_path, poster_3x4_path, poster_9x16_path, poster_alt_3x4_path, poster_alt_9x16_path, preventa_desde, preventa_hasta").eq("id", pid).maybeSingle(),
     supabase.from("performances").select("id, starts_at, venue, preventa_hasta, preventa_desde").eq("production_id", pid).is("cancelada_at", null).order("starts_at"),
+    // 2026-10-25: los diseños se preparan antes de publicar; usan lo más nuevo que subió el equipo (borrador, 0119).
+    getCapa(pid, "borrador").catch(() => ({})),
   ]);
-  if (!p) return null;
+  if (!pub) return null;
+  const { obra: p, usa } = capaDifusion(pub as Record<string, unknown>, capa);
   const url = (x: unknown) => (typeof x === "string" && x ? assetUrl(x) : null);
   const ambiente = url(p.ambiente_path);
   return {
@@ -46,6 +53,7 @@ export async function getObraDifusion(pid: string): Promise<ObraDifusion | null>
       texto: (p.color_texto as string) ?? "#f4f1f8", acento: (p.color_acento as string) ?? "#a48bff",
     },
     funciones: (fs ?? []) as FuncionObra[],
+    usaBorrador: usa,
   };
 }
 

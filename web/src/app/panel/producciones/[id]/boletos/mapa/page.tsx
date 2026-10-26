@@ -31,7 +31,11 @@ export default async function SeatMapPage({ params }: PageProps<"/panel/producci
   const { data: proximos } = await supabase.from("performance_price_categories").select("price_category_id, price, performances!inner(starts_at, production_id, cancelada_at)")
     .eq("performances.production_id", id).is("performances.cancelada_at", null).gt("performances.starts_at", ahora);
   const precioActual = new Map<string, number>();
-  for (const r of (proximos ?? []) as { price_category_id: string; price: number }[]) if (!precioActual.has(r.price_category_id)) precioActual.set(r.price_category_id, Number(r.price));
+  const porZona = new Map<string, number[]>();
+  for (const r of (proximos ?? []) as { price_category_id: string; price: number }[]) {
+    if (!precioActual.has(r.price_category_id)) precioActual.set(r.price_category_id, Number(r.price));
+    porZona.set(r.price_category_id, [...(porZona.get(r.price_category_id) ?? []), Number(r.price)]);
+  }
   // Obras que ya tienen mapa (para "Copiar mapa de otra obra"): se cuenta en cada una, sin bajar sus asientos.
   const conMapa = await Promise.all(obras.filter((o) => o.id !== id).map(async (o) =>
     ((await supabase.from("seats").select("id", { count: "exact", head: true }).eq("production_id", o.id)).count ?? 0) > 0 ? o.id : null));
@@ -42,7 +46,7 @@ export default async function SeatMapPage({ params }: PageProps<"/panel/producci
       pid={id}
       diseno={leerDiseno(prod?.diseno)}
       seats={(seats ?? []) as BuilderSeat[]}
-      zonas={zonas.filter((z) => z.cupo == null).map((z) => ({ id: z.id, nombre: z.nombre, color: z.color ?? null, descripcion: z.descripcion, precio_base: z.precio_base ?? precioActual.get(z.id) ?? null }))}
+      zonas={zonas.filter((z) => z.cupo == null).map((z) => ({ id: z.id, nombre: z.nombre, color: z.color ?? null, descripcion: z.descripcion, precio_base: z.precio_base ?? precioActual.get(z.id) ?? null, actuales: porZona.get(z.id) ?? [] }))}
       conBoletos={!!vendidos}
       obras={obras.filter((o) => otras.has(o.id)).map((o) => ({ id: o.id, nombre: o.nombre }))}
     />

@@ -296,7 +296,7 @@ export default async function PerformancesPage({ params }: PageProps<"/panel/pro
           </details>
           <AjustesSeccion id="zonas" titulo="Zonas de entrada general" resumen={`${zonas.filter((z) => z.cupo != null).length} zonas`}>
             <div>
-              <p className="text-sm text-texto-2">Zonas sin asiento numerado (ej. Pista: 80 lugares). El cupo vale para todas las funciones; en cada función puedes poner otro. El precio que pongas aquí va a todas las funciones que aún no pasan.</p>
+              <p className="text-sm text-texto-2">Zonas sin asiento numerado (ej. Pista: 80 lugares). El cupo vale para todas las funciones; en cada función puedes poner otro. El precio se guarda con <b>Guardar precio</b> y va a todas las funciones que aún no pasan.</p>
             </div>
             {zonas.filter((z) => z.cupo != null).map((z, i, gz) => (
               <div key={z.id} className="flex flex-col gap-2 border-b border-white/10 pb-3 last:border-0">
@@ -308,7 +308,8 @@ export default async function PerformancesPage({ params }: PageProps<"/panel/pro
                 </div>
                 <label className="flex items-center gap-2 text-sm"><input type="hidden" name="activa" value="off" /><input type="checkbox" name="activa" value="on" defaultChecked={z.is_active} /> Activa (se vende)</label>
               </ActionForm>
-              <ZonaAcciones pid={id} zona={{ ...z, precio_base: z.precio_base ?? activas.find((f) => f.starts_at && f.starts_at > new Date().toISOString())?.prices.find((x) => x.categoryId === z.id)?.price ?? null }} primera={i === 0} ultima={i === gz.length - 1} asientos={0} otras={[]} />
+              <ZonaAcciones pid={id} zona={{ ...z, precio_base: z.precio_base ?? activas.find((f) => f.starts_at && f.starts_at > new Date().toISOString())?.prices.find((x) => x.categoryId === z.id)?.price ?? null }} primera={i === 0} ultima={i === gz.length - 1} asientos={0} otras={[]}
+                actuales={activas.filter((f) => f.starts_at && f.starts_at > new Date().toISOString()).flatMap((f) => f.prices.filter((x) => x.categoryId === z.id).map((x) => x.price))} />
               </div>
             ))}
             <ActionForm action={saveGeneralZone} hidden={{ pid: id }} submit="Crear zona">

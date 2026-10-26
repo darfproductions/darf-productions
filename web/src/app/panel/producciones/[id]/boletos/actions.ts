@@ -566,8 +566,18 @@ export async function moverZona(pid: string, zid: string, arriba: boolean): Prom
   return { ok: true, message: "" };
 }
 
-export async function precioZona(pid: string, zid: string, precio: number): Promise<{ ok: boolean; message: string }> {
+/** Precio de la zona en todas las funciones que aún no pasan. Con `tambienPropias`, también las que tenían un precio
+ *  propio (2026-10-26: en Showman, Orquesta y Preferente tenían precio propio y "no se guardaba" el nuevo). */
+export async function precioZona(pid: string, zid: string, precio: number, tambienPropias = false): Promise<{ ok: boolean; message: string }> {
   const supabase = await createClient();
+  if (tambienPropias) {
+    const { data: fs } = await supabase.from("performances").select("id").eq("production_id", pid).is("cancelada_at", null).gt("starts_at", new Date().toISOString());
+    const ids = ((fs ?? []) as { id: string }[]).map((x) => x.id);
+    if (ids.length) {
+      const { error: e } = await supabase.from("performance_price_categories").update({ propio: false }).eq("price_category_id", zid).in("performance_id", ids);
+      if (e) return { ok: false, message: mensajeError(e) };
+    }
+  }
   const { data, error } = await supabase.rpc("zona_precio", { zid, p_precio: precio });
   if (error) return { ok: false, message: mensajeError(error) };
   refresh(pid);

@@ -5,6 +5,24 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-10-26 — Precio de zona: "Guardar precio" y funciones con precio propio
+
+- Diego cambiaba el precio de una zona, tocaba "Guardar" y el precio regresaba. Había dos causas:
+  - "Guardar" solo guardaba el nombre y el color. El precio solo se guardaba con "Poner en todas las funciones".
+  - En Showman, Orquesta y Preferente tenían precio propio en sus funciones (0118), y "Poner en todas" no las tocaba.
+- Ahora cada zona tiene "Guardar nombre" y "Guardar precio" (resaltado cuando cambias el número).
+- Si hay funciones con otro precio, avisa ("En 2 funciones esta zona cuesta $300") y con la casilla marcada también
+  las cambia. `precioZona` quita el `propio` de las funciones que vienen y aplica `zona_precio`, sin cambios en la
+  base.
+
+## 2026-10-26 — Difusión usa los cambios sin publicar
+
+- Diego subió los pósters de Showman y Difusión siguió con las imágenes viejas: la obra ya está publicada, así que los
+  pósters quedaron en borrador (0119) y `getObraDifusion` solo leía lo publicado.
+- Ahora Difusión encima el borrador de pósters, logo, ambiente, datos y colores (`capaDifusion` sobre
+  `getCapa(pid, "borrador")`), como la vista previa. Los diseños se preparan antes de anunciar.
+- La página de Difusión avisa cuando usa cambios sin publicar, con liga a Página → Publicar.
+
 ## 2026-10-25 — Difusión: precios, beneficios completos y dos invitaciones generales
 
 - **Precios en los diseños:** "Mapa de zonas y precios" y "Precios y lo que incluye cada zona" muestran el precio aunque
