@@ -9,7 +9,9 @@ import { requireAudition } from "@/lib/panel-auditions";
 import { createClient } from "@/lib/supabase/server";
 import { autoOrder, numerarAhora, walkIn } from "../../actions";
 import { Desk } from "./Desk";
+import { AlFinal, FilaEnVivo } from "./Fila";
 import { OrderButtons, StepButtons } from "./StepButtons";
+import { enLaFila, esperando, quienSigue, textoCallback } from "@/lib/audicion-vivo-rules";
 import { Icono } from "@/components/Icono";
 
 export const metadata: Metadata = { title: "Día de la audición" };
@@ -28,7 +30,13 @@ export default async function DayPage({ params, searchParams }: PageProps<"/pane
   const gestiona = may("audiciones.gestionar");
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("audition_day_list", { aid });
-  const todos = (data ?? []) as Row[];
+  // 0131: en la ronda de callback la fila es solo de los llamados.
+  const todos = enLaFila((data ?? []) as Row[], a.fase);
+  const enEscena = a.en_escena ?? null;
+  const actual = todos.find((r) => r.id === enEscena) ?? null;
+  const sigue = quienSigue(todos, enEscena, a.fase);
+  const enVivo = a.modalidad !== "en_linea";
+  const cb = a.fase === "callback" ? textoCallback(a.callback_cuando, a.callback_fecha, a.callback_lugar) : null;
   const slot = typeof sp.horario === "string" ? sp.horario : "";
   const rows = slot ? todos.filter((r) => (r.slot_id ?? "sin") === slot) : todos;
   const resumen = daySummary(rows);
@@ -45,6 +53,7 @@ export default async function DayPage({ params, searchParams }: PageProps<"/pane
       <AutoRefresh seconds={20} />
       <div className="flex flex-col gap-4 lg:col-span-5">
         <Card><Desk aid={aid} /></Card>
+        {enVivo && <FilaEnVivo aid={aid} actual={actual} sigue={sigue} esperan={esperando(todos, enEscena, a.fase)} callback={a.fase === "callback"} />}
         {gestiona && a.numeracion === "personaje" && (
           <Card className="flex flex-col gap-2">
             <h2 className="font-bold">Lugares por personaje</h2>
@@ -94,13 +103,7 @@ export default async function DayPage({ params, searchParams }: PageProps<"/pane
             <div key={k}><p className="text-2xl font-black">{resumen[k]}</p><p className="text-xs text-texto-3">{label}</p></div>
           ))}
         </Card>
-        {resumen.sigue && (
-          <Card className="flex flex-wrap items-center justify-between gap-3 border border-aviso/40 p-4 md:p-4">
-            <p><span className="text-xs font-bold uppercase tracking-[0.2em] text-aviso">Sigue</span><br />
-              <b className="text-xl">{resumen.sigue.numero ? `Nº ${resumen.sigue.numero} · ` : ""}{resumen.sigue.nombre}</b></p>
-            <StepButtons aid={aid} app={resumen.sigue.id} nombre={resumen.sigue.nombre} status="llego" />
-          </Card>
-        )}
+        {cb && <Card className="border border-lila/40 p-4 text-sm md:p-4"><b>Callback:</b> {cb}. Los llamados entran con su mismo QR y conservan su número.</Card>}
         {horarios.length > 1 && (
           <div className="flex flex-wrap gap-2 text-xs">
             <Link href="?" className={`rounded-full border px-3 py-1.5 font-semibold ${!slot ? "border-texto" : "border-white/20"}`}>Todos ({todos.length})</Link>
@@ -135,7 +138,9 @@ export default async function DayPage({ params, searchParams }: PageProps<"/pane
                   {gestiona && (a.numeracion === "previa" || (a.numeracion === "personaje" && a.numeros_asignados_at)) && !r.checked_in_at && r.numero !== null && (
                     <OrderButtons aid={aid} app={r.id} prev={vecino(r.id, -1)} next={vecino(r.id, 1)} />
                   )}
-                  {st !== "no_cumple" && <StepButtons aid={aid} app={r.id} nombre={r.nombre} status={st} />}
+                  {r.id === enEscena && <span className="rounded-full bg-lila px-3 py-1 text-xs font-bold text-sala">En escena</span>}
+                  {enVivo && st === "llego" && r.id !== enEscena && <AlFinal aid={aid} app={r.id} nombre={r.nombre} />}
+                  {st !== "no_cumple" && r.id !== enEscena && <StepButtons aid={aid} app={r.id} nombre={r.nombre} status={st} soloLlegada={enVivo} />}
                 </li>
               );
             })}

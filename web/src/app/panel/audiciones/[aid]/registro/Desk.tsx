@@ -11,6 +11,7 @@ const VISTA: Record<string, { bg: string; title: string; icono: IconoNombre }> =
   ya_registrado: { bg: "bg-[#5a4313]", title: "Ya estaba registrado", icono: "alerta" },
   no_admitido: { bg: "bg-[#5a1a22]", title: "No admitido", icono: "x" },
   no_encontrado: { bg: "bg-[#5a1a22]", title: "No se encontró", icono: "x" },
+  no_callback: { bg: "bg-[#5a1a22]", title: "No está llamado a callback", icono: "x" },
   error: { bg: "bg-[#5a1a22]", title: "No se pudo registrar", icono: "alerta" },
 };
 
@@ -26,8 +27,9 @@ export function Desk({ aid }: { aid: string }) {
       {res && v && (
         <div role="status" className={`rounded-2xl p-6 text-white ${v.bg}`}>
           <p className="flex items-center gap-3 text-2xl font-black"><Icono nombre={v.icono} />{v.title}</p>
-          {"numero" in res && res.numero && <p className="text-5xl font-black">Nº {res.numero}</p>}
+          {"numero" in res && res.numero && <p className="text-5xl font-black">Turno {res.numero}</p>}
           {"nombre" in res && res.nombre && <p className="text-lg">{res.nombre}{"es_menor" in res && res.es_menor ? " · menor de edad" : ""}</p>}
+          {"personajes" in res && res.personajes?.length ? <p className="text-sm opacity-90">Personaje: {res.personajes.join(", ")}</p> : null}
           {res.result === "error" && "message" in res && <p>{res.message}</p>}
         </div>
       )}

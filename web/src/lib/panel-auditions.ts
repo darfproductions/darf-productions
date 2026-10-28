@@ -15,6 +15,9 @@ export type PanelAudition = AuditionOptions & {
   numeros_asignados_at: string | null;
   /** 0089: audiciones con votación. */
   con_callback: boolean; fase: import("@/lib/votacion-rules").Fase;
+  /** 0131: callback hoy o en otra fecha (con hora y lugar). */
+  en_escena?: string | null;
+  callback_cuando?: "hoy" | "otra_fecha" | null; callback_fecha?: string | null; callback_lugar?: string | null;
   /** 0112: preguntas del host el día de la audición. */
   preguntas_entrevista?: string[];
   productions?: { nombre: string } | null;

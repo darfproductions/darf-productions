@@ -36,7 +36,7 @@ export function EnEscenaJuez({ aid, ronda, criterios, roles, conVotacion, abiert
     return (
       <Card className="flex items-center gap-3 border border-dashed border-white/15">
         <span className="relative flex h-3 w-3"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-lila opacity-60" /><span className="relative inline-flex h-3 w-3 rounded-full bg-lila" /></span>
-        <p className="text-texto-2">Esperando al siguiente audicionante. Cuando el host lo pase, aparece aquí solo.</p>
+        <p className="text-texto-2">Esperando al siguiente audicionante. Cuando den “Siguiente”, aparece aquí solo.</p>
       </Card>
     );
   }

@@ -5,6 +5,35 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-10-28 — 0131: el día de audiciones en vivo
+
+- **Recepción ("Día de la audición")**: el escáner muestra el turno y el personaje. Justo debajo está el recuadro
+  "En escena / Sigue" con un botón grande **SIGUIENTE**.
+  - Lo pueden presionar recepción y el host, y no se duplica: `audition_siguiente` bloquea la audición y avanza desde
+    quien está en escena.
+  - "Cambiar el orden de quienes esperan" (`audition_reordenar`): por llegada, por registro o por personaje. Solo
+    se mueven quienes aún no pasan.
+  - "Al final" por persona (`audition_al_final`).
+  - Con la fila en vivo, "Entró" y "Terminó" ya no salen por persona: los marca Siguiente.
+- **Modo audición** (`/en-vivo`, pestaña para los jueces): solo quien está en escena, y cambia sola. Tiene botón de
+  pantalla completa. Cuando abren la votación, muestra "¡a votar!".
+- **Terminar audiciones** (host o quien gestiona, en Entrevista), con `audition_cerrar_ronda`:
+  - **Ir a votación**: sin callback, `con_callback` queda en falso y se vota con la ronda 1.
+  - **Hacer callbacks**: la lista va agrupada por personaje (marcas de los jueces y promedio,
+    `audition_cierre_datos`). Se elige **hoy** u **otra fecha** (con hora y lugar).
+  - Los llamados conservan su número y su QR. Lo de la ronda 1 se guarda en `rondas_previas` y la fila se limpia: en
+    otra fecha se vuelven a escanear en la entrada.
+  - En la ronda de callback, check-in, Siguiente y en escena solo aceptan a los llamados.
+- **QR por correo**: Edge Function `audition-qr`, hermana de `team-invite`, con la misma configuración y secretos. La
+  base la llama:
+  - al inscribirse;
+  - un día antes de su horario (`pg_cron` cada hora);
+  - al ser llamado a callback en otra fecha, más un recordatorio un día antes.
+  - El correo trae la imagen del QR (`/audiciones/qr/<token>`) y un botón para guardarlo en WhatsApp.
+  - Si la función no está publicada, no se detiene nada.
+- Por qué: Diego quiere un día de audiciones sencillo. Recepción controla el ritmo, el host entrevista y decide al
+  final, y los jueces solo miran y califican.
+
 ## 2026-10-26 — Letras de fila en "Zonas y precios" y en el mapa de la taquilla
 
 - La imagen de Difusión "Zonas y precios" no traía las letras de fila. Ahora salen en las dos puntas de cada fila.

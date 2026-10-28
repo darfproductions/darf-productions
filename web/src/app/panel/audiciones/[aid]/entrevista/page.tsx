@@ -6,6 +6,8 @@ import { Icono } from "@/components/Icono";
 import { requireAudition } from "@/lib/panel-auditions";
 import { createClient } from "@/lib/supabase/server";
 import { EnEscenaHost, PonerEnEscena } from "./EnEscenaHost";
+import { Terminar } from "./Terminar";
+import { enLaFila, type FilaVivo, type PersonaCierre } from "@/lib/audicion-vivo-rules";
 
 export const metadata: Metadata = { title: "Entrevista" };
 
@@ -15,12 +17,18 @@ type Fila = { id: string; numero: number | null; nombre: string; es_menor: boole
 export default async function Entrevistas({ params, searchParams }: PageProps<"/panel/audiciones/[aid]/entrevista">) {
   const { aid } = await params;
   const sp = await searchParams;
-  await requireAudition(aid, ["audiciones.entrevista", "audiciones.gestionar"], "/entrevista");
+  const { a } = await requireAudition(aid, ["audiciones.entrevista", "audiciones.gestionar"], "/entrevista");
   const supabase = await createClient();
-  const [{ data, error }, { data: escena }] = await Promise.all([
+  // 0131: con personajes, el host también termina las audiciones (votación o callbacks).
+  const terminar = !a.permanente && ["audicion", "seleccion_callback", "callback"].includes(a.fase);
+  const [{ data, error }, { data: escena }, { data: cierre }, { data: dia }] = await Promise.all([
     supabase.rpc("audition_entrevistas_lista", { aid }),
     supabase.rpc("audition_juez_actual", { aid }),
+    terminar ? supabase.rpc("audition_cierre_datos", { aid }) : Promise.resolve({ data: null }),
+    terminar ? supabase.rpc("audition_day_list", { aid }) : Promise.resolve({ data: null }),
   ]);
+  const datosCierre = cierre as { personajes: { id: string; nombre: string }[]; personas: PersonaCierre[] } | null;
+  const faltan = enLaFila((dia ?? []) as FilaVivo[], a.fase).filter((r) => r.checked_in_at && !r.finished_at && !["cancelado", "no_cumple"].includes(r.estado)).length;
   const actual = (escena as { app: string | null; numero: number | null; nombre: string } | null)?.app ? (escena as { app: string; numero: number | null; nombre: string }) : null;
   const todos = (data ?? []) as Fila[];
   const ver = sp.ver === "todos" ? "todos" : "pendientes";
@@ -37,6 +45,15 @@ export default async function Entrevistas({ params, searchParams }: PageProps<"/
         <p className="text-sm"><b>{todos.length - pendientes.length}</b> de <b>{todos.length}</b> entrevistados.</p>
       </Card>
       <EnEscenaHost aid={aid} actual={actual} />
+      {!a.permanente && ["votacion", "ajuste", "enviado"].includes(a.fase) && (
+        <Card className="flex flex-wrap items-center justify-between gap-3 border border-lila/40">
+          <p className="font-bold">{a.fase === "votacion" ? "Terminaron las audiciones: los jueces están votando." : "La votación ya cerró."}</p>
+          <Link href={`/panel/audiciones/${aid}/votacion`} className="rounded-full bg-texto px-4 py-2 text-sm font-bold text-sala">Ver la votación <Icono nombre="flecha-der" /></Link>
+        </Card>
+      )}
+      {datosCierre && datosCierre.personajes.length > 0 && (
+        <Terminar aid={aid} fase={a.fase} faltan={faltan} personajes={datosCierre.personajes} personas={datosCierre.personas} />
+      )}
       <nav aria-label="Filtro" className="flex gap-2">
         <Link href="?" className={pill(ver === "pendientes")}>Pendientes ({pendientes.length})</Link>
         <Link href="?ver=todos" className={pill(ver === "todos")}>Todos ({todos.length})</Link>

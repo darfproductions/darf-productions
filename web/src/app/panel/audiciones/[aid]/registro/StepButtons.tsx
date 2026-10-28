@@ -10,7 +10,8 @@ const main = "rounded-full bg-texto px-3 py-1.5 text-xs font-bold text-sala disa
 const ghost = "rounded-full border border-white/25 px-2.5 py-1.5 text-xs font-bold hover:border-white/50 disabled:opacity-60";
 
 // Botones del día para una persona: Llegó → Entró → Terminó, y deshacer el último paso.
-export function StepButtons({ aid, app, nombre, status }: { aid: string; app: string; nombre: string; status: DayStatus }) {
+// 0131: con la fila en vivo, entrar y terminar los marca "Siguiente"; aquí solo queda Llegó (y deshacer).
+export function StepButtons({ aid, app, nombre, status, soloLlegada = false }: { aid: string; app: string; nombre: string; status: DayStatus; soloLlegada?: boolean }) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const run = (fn: () => Promise<{ ok?: boolean; result?: string; message?: string }>) =>
@@ -24,8 +25,8 @@ export function StepButtons({ aid, app, nombre, status }: { aid: string; app: st
       {status === "pendiente" && (
         <button type="button" disabled={pending} className={main} onClick={() => window.confirm(`¿Registrar la llegada de ${nombre}?`) && run(() => deskCheckin(aid, app))}>Llegó</button>
       )}
-      {status === "llego" && <button type="button" disabled={pending} className={main} onClick={() => run(() => deskStep(aid, app, "entro"))}>Entró</button>}
-      {status === "en_sala" && <button type="button" disabled={pending} className={main} onClick={() => run(() => deskStep(aid, app, "termino"))}>Terminó</button>}
+      {status === "llego" && !soloLlegada && <button type="button" disabled={pending} className={main} onClick={() => run(() => deskStep(aid, app, "entro"))}>Entró</button>}
+      {status === "en_sala" && !soloLlegada && <button type="button" disabled={pending} className={main} onClick={() => run(() => deskStep(aid, app, "termino"))}>Terminó</button>}
       {(status === "en_sala" || status === "termino") && (
         <button type="button" disabled={pending} className={ghost} title="Deshacer el último paso" aria-label="Deshacer el último paso"
           onClick={() => window.confirm(`¿Deshacer el último paso de ${nombre}?`) && run(() => deskStep(aid, app, "deshacer"))}><Icono nombre="deshacer" /></button>

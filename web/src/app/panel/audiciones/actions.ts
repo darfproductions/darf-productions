@@ -7,6 +7,7 @@ import { criteriosFromText } from "@/lib/audition-rules";
 import { EN_BLANCO, PLANTILLAS, REGISTRO_PERMANENTE, type Plantilla } from "@/lib/audition-templates";
 import { getSession } from "@/lib/auth";
 import { localMxToIso } from "@/lib/dates";
+import type { OrdenFila } from "@/lib/audicion-vivo-rules";
 import { mensajeError } from "@/lib/errores";
 import { createClient } from "@/lib/supabase/server";
 import { refrescarPublico } from "@/lib/supabase/publico";
@@ -435,7 +436,7 @@ export async function swapOrder(aid: string, a1: string, a2: string): Promise<{ 
 
 // ──────── Día de la audición ────────
 
-export type DeskResult = { result: string; nombre?: string; numero?: number; es_menor?: boolean; estado?: string } | { result: "error"; message: string };
+export type DeskResult = { result: string; nombre?: string; numero?: number; es_menor?: boolean; estado?: string; personajes?: string[] | null; callback?: boolean } | { result: "error"; message: string };
 
 export async function deskCheckin(aid: string, ref: string): Promise<DeskResult> {
   const supabase = await createClient();
@@ -524,7 +525,7 @@ export async function ponerEnEscena(aid: string, app: string | null): Promise<En
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("audition_en_escena", { aid, app });
   if (error) return { ok: false, message: mensajeError(error) };
-  revalidatePath(`${base(aid)}/entrevista`);
+  revalidatePath(base(aid), "layout");
   const d = data as { app: string | null; nombre: string | null; numero: number | null };
   return { ok: true, ...d };
 }
@@ -533,9 +534,43 @@ export async function pasarSiguiente(aid: string): Promise<EnEscenaRes> {
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("audition_siguiente", { aid });
   if (error) return { ok: false, message: mensajeError(error) };
-  revalidatePath(`${base(aid)}/entrevista`);
+  revalidatePath(base(aid), "layout");
   const d = data as { app: string | null; nombre?: string | null; numero?: number | null };
   return { ok: true, ...d, message: d.app ? undefined : "Ya no hay nadie más esperando." };
+}
+
+// ════════ 0131: la fila del día (recepción y host) y terminar audiciones ════════
+
+/** Cambiar el orden de quienes esperan: por llegada, por registro o por personaje. */
+export async function reordenarFila(aid: string, modo: OrdenFila): Promise<{ ok: boolean; message: string }> {
+  const { data, error } = await (await createClient()).rpc("audition_reordenar", { aid, p_modo: modo });
+  if (error) return { ok: false, message: mensajeError(error) };
+  revalidatePath(base(aid), "layout");
+  const n = Number(data ?? 0);
+  return { ok: true, message: n ? `Listo: ${n} ${n === 1 ? "persona" : "personas"} en el nuevo orden.` : "No hay nadie esperando para ordenar." };
+}
+
+/** Mandar a alguien al final de la fila. */
+export async function mandarAlFinal(aid: string, app: string): Promise<{ ok: boolean; message?: string }> {
+  const { error } = await (await createClient()).rpc("audition_al_final", { aid, app });
+  if (error) return { ok: false, message: mensajeError(error) };
+  revalidatePath(base(aid), "layout");
+  return { ok: true };
+}
+
+/** Terminar audiciones (o el callback): a votación o a callbacks (hoy u otra fecha). */
+export async function cerrarRonda(aid: string, p: { destino: "votacion" | "callback"; pasan?: string[]; cuando?: "hoy" | "otra_fecha"; fecha?: string; lugar?: string }): Promise<{ ok: boolean; message: string }> {
+  const fecha = p.cuando === "otra_fecha" ? localMxToIso(p.fecha ?? "") : null;
+  if (p.cuando === "otra_fecha" && !fecha) return { ok: false, message: "Pon la fecha y hora del callback." };
+  const { error } = await (await createClient()).rpc("audition_cerrar_ronda", {
+    aid, p_destino: p.destino, p_pasan: p.destino === "callback" ? p.pasan ?? [] : null,
+    p_cuando: p.destino === "callback" ? p.cuando ?? null : null, p_fecha: fecha, p_lugar: p.lugar?.trim() || null,
+  });
+  if (error) return { ok: false, message: mensajeError(error) };
+  revalidatePath(base(aid), "layout");
+  if (p.destino === "votacion") return { ok: true, message: "Listo: los jueces ya pueden votar." };
+  const n = p.pasan?.length ?? 0;
+  return { ok: true, message: `Listo: ${n} ${n === 1 ? "persona llamada" : "personas llamadas"} a callback.${p.cuando === "otra_fecha" ? " Les llega el aviso con su QR." : " Ya les avisamos en su cuenta."}` };
 }
 
 export type JuezActual = {
