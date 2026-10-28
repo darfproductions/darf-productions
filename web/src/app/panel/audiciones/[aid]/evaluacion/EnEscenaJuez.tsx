@@ -22,10 +22,10 @@ export function EnEscenaJuez({ aid, ronda, criterios, roles, conVotacion, abiert
   useEffect(() => {
     const t = setInterval(async () => {
       if (document.visibilityState !== "visible") return;
-      const n = await juezActual(aid, ronda).catch(() => undefined);
-      if (n === undefined) return;
       const prev = actual.current;
-      // Misma persona: se conserva la foto (el enlace temporal cambia en cada consulta).
+      const n = await juezActual(aid, ronda, prev?.app).catch(() => undefined);
+      if (n === undefined) return;
+      // Misma persona: se conserva la foto (solo se firma al cambiar de persona).
       const sig = n && prev && n.app === prev.app ? { ...n, foto: prev.foto ?? n.foto } : n;
       if (JSON.stringify(sig) !== JSON.stringify(prev)) { actual.current = sig; setD(sig); }
     }, 4000);

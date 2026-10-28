@@ -581,14 +581,15 @@ export type JuezActual = {
   puntos: Record<string, number>; notas: string | null; picks: { opcion: number; role_id: string | null; ensamble: boolean }[];
 };
 
-/** Quien está en escena ahora, para la pantalla de los jueces (se vuelve a pedir cada pocos segundos). */
-export async function juezActual(aid: string, ronda: number): Promise<JuezActual | null> {
+/** Quien está en escena ahora, para la pantalla de los jueces (se vuelve a pedir cada pocos segundos).
+ *  yaTengo: la persona que el juez ya tiene en pantalla; si sigue siendo ella, no se vuelve a firmar su foto. */
+export async function juezActual(aid: string, ronda: number, yaTengo?: string | null): Promise<JuezActual | null> {
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("audition_juez_actual", { aid, p_ronda: ronda });
   if (error || !data || !(data as { app: string | null }).app) return null;
   const d = data as Omit<JuezActual, "foto"> & { foto_path: string | null };
   let foto: string | null = null;
-  if (d.foto_path) foto = (await supabase.storage.from("audiciones").createSignedUrl(d.foto_path, 3600)).data?.signedUrl ?? null;
+  if (d.foto_path && d.app !== yaTengo) foto = (await supabase.storage.from("audiciones").createSignedUrl(d.foto_path, 3600)).data?.signedUrl ?? null;
   const { foto_path: _f, ...resto } = d;
   void _f;
   return { ...resto, foto };
