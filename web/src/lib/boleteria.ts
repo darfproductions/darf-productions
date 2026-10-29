@@ -89,7 +89,8 @@ export async function listOrders(pid: string, opts: { funcion?: string; estado?:
       .order("created_at", { ascending: false })
       .order("id");
     if (opts.estado) q = q.eq("status", opts.estado);
-    if (opts.codigo) q = q.eq("order_code", opts.codigo);
+    // Código completo (DARF- y 6 más): exacto; si escribieron solo una parte, las que empiezan así.
+    if (opts.codigo) q = opts.codigo.length >= 11 ? q.eq("order_code", opts.codigo) : q.ilike("order_code", `${opts.codigo}%`);
     if (opts.buscar) {
       // Nombre (cualquier parte) o teléfono (al menos 4 dígitos, sin espacios ni guiones).
       const digitos = opts.buscar.replace(/\D/g, "");

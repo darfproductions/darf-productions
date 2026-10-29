@@ -5,6 +5,14 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-10-29 — Buscar órdenes por código de venta
+
+- En Boletos → órdenes hay una casilla "Código" con "DARF-" ya puesto. Solo se escribe lo que sigue, tal como viene en
+  el WhatsApp.
+- Acepta minúsculas, espacios y también el código completo pegado (`codigoOrden` en `lib/codigo-orden.ts`).
+- Busca en toda la historia de la obra, sin importar la función o el filtro elegido. Con el código completo, la
+  búsqueda es exacta; con solo una parte, muestra las órdenes que empiezan así.
+
 ## 2026-10-28 — 0131: el día de audiciones en vivo
 
 - **Recepción ("Día de la audición")**: el escáner muestra el turno y el personaje. Justo debajo está el recuadro
