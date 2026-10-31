@@ -5,6 +5,17 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-10-30 — 0132: venta por zona, hasta arriba en Boletos → Ventas
+
+- Tabla "Venta por zona": boletos y dinero de cada zona. Botones para ver todas las funciones o una sola; cambia al
+  instante.
+  - Cortesías y apartados (por aprobar) salen en chiquito bajo el número de boletos.
+  - Columnas Zona, Boletos y Dinero para que quepa en el celular.
+- `ventas_por_zona(pid)`: una sola consulta con una fila por función y zona. Permiso `ventas.ver` o `reportes.ver`.
+- Dinero de cada boleto: su parte de lo que pagó la orden. Los descuentos se reparten según el precio del boleto.
+  La suma de las zonas da exactamente "Ingresos aprobados". Las cortesías cuentan como boletos, con $0.
+- Las reglas de la tabla (`desglosePorZona`) están en `lib/ventas-zona-rules.ts`, con pruebas.
+
 ## 2026-10-29 — Buscar órdenes por código de venta
 
 - En Boletos → órdenes hay una casilla "Código" con "DARF-" ya puesto. Solo se escribe lo que sigue, tal como viene en

@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Card } from "@/components/panel/ui";
-import { listOrders, listPerformances, listZones, salesSummary, seatCount, ventasActores } from "@/lib/boleteria";
+import { listOrders, listPerformances, listZones, salesSummary, seatCount, ventasActores, ventasPorZona } from "@/lib/boleteria";
+import { DesgloseZonas } from "./DesgloseZonas";
 import { can, salidaBoletos } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
 import { formatPerformanceDate } from "@/lib/productions";
@@ -44,7 +45,7 @@ export default async function SalesPage({ params, searchParams }: PageProps<"/pa
   const buscar = typeof sp.q === "string" ? textoBusqueda(sp.q) : "";
 
   await (await createClient()).rpc("expire_due_orders", { pid: id });
-  const [funciones, s, filtradas, asientos, zonas, actores, logistica] = await Promise.all([
+  const [funciones, s, filtradas, asientos, zonas, actores, logistica, porZona] = await Promise.all([
     listPerformances(id),
     salesSummary(id),
     listOrders(id, { funcion: funcion || undefined, estado: estado || undefined, codigo: codigo || undefined, buscar: buscar || undefined }),
@@ -52,6 +53,7 @@ export default async function SalesPage({ params, searchParams }: PageProps<"/pa
     listZones(id),
     ventasActores(id),
     getLogistica(id),
+    ventasPorZona(id),
   ]);
   const quien = (uid: string | null | undefined) => (uid ? actores.get(uid) ?? "equipo" : null);
   const ordenes = filtradas;
@@ -69,6 +71,10 @@ export default async function SalesPage({ params, searchParams }: PageProps<"/pa
 
   return (
     <>
+      {porZona && (
+        <DesgloseZonas filas={porZona} zonas={zonas.map((z) => ({ id: z.id, nombre: z.nombre, color: z.color ?? null }))}
+          funciones={funciones.map((f) => ({ id: f.id, nombre: formatPerformanceDate(f.starts_at) }))} />
+      )}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {[
           ["Ingresos aprobados", formatMoney(s.ingresos)],

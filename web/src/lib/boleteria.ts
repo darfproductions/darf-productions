@@ -156,6 +156,17 @@ export async function salesSummary(pid: string): Promise<SalesSummary> {
   };
 }
 
+/** 0132: boletos y dinero por función y zona (para el desglose de arriba en Ventas). Si la base aún no tiene la
+ *  función, regresa null y la tabla no sale. */
+export async function ventasPorZona(pid: string): Promise<import("@/lib/ventas-zona-rules").FilaVentaZona[] | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("ventas_por_zona", { pid });
+  if (error) return null;
+  return ((data ?? []) as import("@/lib/ventas-zona-rules").FilaVentaZona[]).map((f) => ({
+    ...f, vendidos: Number(f.vendidos), cortesias: Number(f.cortesias), apartados: Number(f.apartados), ingresos: Number(f.ingresos),
+  }));
+}
+
 /** 0088: nombres de quien aprobó, rechazó, vendió o canceló en esta obra. */
 export async function ventasActores(pid: string): Promise<Map<string, string>> {
   const supabase = await createClient();
