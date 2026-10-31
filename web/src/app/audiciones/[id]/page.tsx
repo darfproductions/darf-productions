@@ -8,6 +8,7 @@ import { ESTADO_CONVOCATORIA, ESTADO_SOLICITUD, whatsappAudicionUrl } from "@/li
 import { env } from "@/lib/env";
 import { amInvited, formatSlot, getAudition, getAuditionObra, getMyApplication } from "@/lib/auditions";
 import { MODALIDAD } from "@/lib/audition-rules";
+import { textoCallback } from "@/lib/audicion-vivo-rules";
 import { getTheme, themeStyle } from "@/lib/productions";
 import { cancelMyApplication } from "./actions";
 import { ApplyForm } from "./ApplyForm";
@@ -59,6 +60,9 @@ export default async function AuditionPage({ params }: PageProps<"/audiciones/[i
               <div className="flex flex-col gap-1">
                 <p className="text-lg font-bold">Ya estás inscrito</p>
                 <p className="text-sm">Estado: <b>{ESTADO_SOLICITUD[mine.estado]?.label ?? mine.estado}</b>{mine.audition_slots ? ` · ${formatSlot(mine.audition_slots.inicia)}` : ""}</p>
+                {mine.estado === "callback" && mine.auditions?.fase === "callback" && textoCallback(mine.auditions.callback_cuando, mine.auditions.callback_fecha, mine.auditions.callback_lugar) && (
+                  <p className="text-sm font-bold text-exito">¡Pasaste a callback! {textoCallback(mine.auditions.callback_cuando, mine.auditions.callback_fecha, mine.auditions.callback_lugar)}.{qr ? " Lleva este mismo QR." : ""}</p>
+                )}
                 {mine.numero && <p className="text-sm">Tu {a.numeracion === "personaje" ? "lugar" : "número"}: <b>{mine.numero}</b>{!mine.checked_in_at && a.numeracion !== "llegada" ? " (puede ajustarse antes del día)" : ""}</p>}
                 {!mine.numero && a.numeracion === "personaje" && !mine.checked_in_at && <p className="text-sm">Tu lugar para audicionar te llega a tu cuenta cuando cierren las inscripciones (se ordena por personaje).</p>}
                 {!mine.audition_slots && !a.elegir_horario && <p className="text-sm text-texto-2">Te avisaremos tu horario.</p>}

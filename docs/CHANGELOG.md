@@ -5,6 +5,64 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-10-30 — 0132: venta por zona, hasta arriba en Boletos → Ventas
+
+- Tabla "Venta por zona": boletos y dinero de cada zona. Botones para ver todas las funciones o una sola; cambia al
+  instante.
+  - Cortesías y apartados (por aprobar) salen en chiquito bajo el número de boletos.
+  - Columnas Zona, Boletos y Dinero para que quepa en el celular.
+- `ventas_por_zona(pid)`: una sola consulta con una fila por función y zona. Permiso `ventas.ver` o `reportes.ver`.
+- Dinero de cada boleto: su parte de lo que pagó la orden. Los descuentos se reparten según el precio del boleto.
+  La suma de las zonas da exactamente "Ingresos aprobados". Las cortesías cuentan como boletos, con $0.
+- Las reglas de la tabla (`desglosePorZona`) están en `lib/ventas-zona-rules.ts`, con pruebas.
+
+## 2026-10-29 — Buscar órdenes por código de venta
+
+- En Boletos → órdenes hay una casilla "Código" con "DARF-" ya puesto. Solo se escribe lo que sigue, tal como viene en
+  el WhatsApp.
+- Acepta minúsculas, espacios y también el código completo pegado (`codigoOrden` en `lib/codigo-orden.ts`).
+- Busca en toda la historia de la obra, sin importar la función o el filtro elegido. Con el código completo, la
+  búsqueda es exacta; con solo una parte, muestra las órdenes que empiezan así.
+
+## 2026-10-28 — 0131: el día de audiciones en vivo
+
+- **Recepción ("Día de la audición")**: el escáner muestra el turno y el personaje. Justo debajo está el recuadro
+  "En escena / Sigue" con un botón grande **SIGUIENTE**.
+  - Lo pueden presionar recepción y el host, y no se duplica: `audition_siguiente` bloquea la audición y avanza desde
+    quien está en escena.
+  - "Cambiar el orden de quienes esperan" (`audition_reordenar`): por llegada, por registro o por personaje. Solo
+    se mueven quienes aún no pasan.
+  - "Al final" por persona (`audition_al_final`).
+  - Con la fila en vivo, "Entró" y "Terminó" ya no salen por persona: los marca Siguiente.
+- **Modo audición** (`/en-vivo`, pestaña para los jueces): solo quien está en escena, y cambia sola. Tiene botón de
+  pantalla completa. Cuando abren la votación, muestra "¡a votar!".
+- **Terminar audiciones** (host o quien gestiona, en Entrevista), con `audition_cerrar_ronda`:
+  - **Ir a votación**: sin callback, `con_callback` queda en falso y se vota con la ronda 1.
+  - **Hacer callbacks**: la lista va agrupada por personaje (marcas de los jueces y promedio,
+    `audition_cierre_datos`). Se elige **hoy** u **otra fecha** (con hora y lugar).
+  - Los llamados conservan su número y su QR. Lo de la ronda 1 se guarda en `rondas_previas` y la fila se limpia: en
+    otra fecha se vuelven a escanear en la entrada.
+  - En la ronda de callback, check-in, Siguiente y en escena solo aceptan a los llamados.
+- **QR por correo**: Edge Function `audition-qr`, hermana de `team-invite`, con la misma configuración y secretos. La
+  base la llama:
+  - al inscribirse;
+  - un día antes de su horario (`pg_cron` cada hora);
+  - al ser llamado a callback en otra fecha, más un recordatorio un día antes.
+  - El correo trae la imagen del QR (`/audiciones/qr/<token>`) y un botón para guardarlo en WhatsApp.
+  - Si la función no está publicada, no se detiene nada.
+- Por qué: Diego quiere un día de audiciones sencillo. Recepción controla el ritmo, el host entrevista y decide al
+  final, y los jueces solo miran y califican.
+
+## 2026-10-26 — Letras de fila en "Zonas y precios" y en el mapa de la taquilla
+
+- La imagen de Difusión "Zonas y precios" no traía las letras de fila. Ahora salen en las dos puntas de cada fila.
+- Usa la misma regla que el mapa de la página (`etiquetasFila`, ahora en `lib/mapa-filas.ts` para usarse también en
+  el servidor):
+  - en el mapa libre, una letra por punta de cada fila de cada bloque, siguiendo el ángulo del bloque;
+  - en filas rectas, solo en las puntas de toda la fila.
+- El mapa de la taquilla usa la misma regla; antes ponía las letras a la izquierda y la derecha, lo que fallaba con
+  bloques en ángulo.
+
 ## 2026-10-26 — 0130: beneficios "uno por compra" y hero con el póster alterno
 
 - **Uno por compra:** `zona_beneficios.por_compra`. El beneficio le toca una vez a cada orden, aunque traiga 10

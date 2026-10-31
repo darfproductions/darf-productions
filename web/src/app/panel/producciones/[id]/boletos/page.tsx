@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Card } from "@/components/panel/ui";
-import { listOrders, listPerformances, listZones, salesSummary, seatCount, ventasActores } from "@/lib/boleteria";
+import { listOrders, listPerformances, listZones, salesSummary, seatCount, ventasActores, ventasPorZona } from "@/lib/boleteria";
+import { DesgloseZonas } from "./DesgloseZonas";
 import { can, salidaBoletos } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
 import { formatPerformanceDate } from "@/lib/productions";
@@ -17,6 +18,7 @@ import { OrderActions } from "./OrderActions";
 import { getLogistica } from "@/lib/logistica";
 import { horario, textoPuertas } from "@/lib/logistica-rules";
 import { Icono } from "@/components/Icono";
+import { codigoOrden, PREFIJO_ORDEN, restoCodigo } from "@/lib/codigo-orden";
 
 export const metadata: Metadata = { title: "Ventas y órdenes" };
 
@@ -36,13 +38,14 @@ export default async function SalesPage({ params, searchParams }: PageProps<"/pa
   const operar = can(access, id, "ventas.operar");
   const funcion = typeof sp.funcion === "string" ? sp.funcion : "";
   const estado = typeof sp.estado === "string" ? sp.estado : "";
-  // Desde el buscador (0085): una orden por su código, aunque sea vieja.
-  const codigo = typeof sp.codigo === "string" ? sp.codigo.trim().toUpperCase() : "";
+  // Desde el buscador (0085) o la casilla "Código" (solo se escribe lo que va después de DARF-): una orden por su
+  // código, aunque sea vieja.
+  const codigo = typeof sp.codigo === "string" ? codigoOrden(sp.codigo) : "";
   // Bloque 4A: "Soy Juan, pagué ayer": buscar por nombre o teléfono en todas las órdenes.
   const buscar = typeof sp.q === "string" ? textoBusqueda(sp.q) : "";
 
   await (await createClient()).rpc("expire_due_orders", { pid: id });
-  const [funciones, s, filtradas, asientos, zonas, actores, logistica] = await Promise.all([
+  const [funciones, s, filtradas, asientos, zonas, actores, logistica, porZona] = await Promise.all([
     listPerformances(id),
     salesSummary(id),
     listOrders(id, { funcion: funcion || undefined, estado: estado || undefined, codigo: codigo || undefined, buscar: buscar || undefined }),
@@ -50,6 +53,7 @@ export default async function SalesPage({ params, searchParams }: PageProps<"/pa
     listZones(id),
     ventasActores(id),
     getLogistica(id),
+    ventasPorZona(id),
   ]);
   const quien = (uid: string | null | undefined) => (uid ? actores.get(uid) ?? "equipo" : null);
   const ordenes = filtradas;
@@ -67,6 +71,10 @@ export default async function SalesPage({ params, searchParams }: PageProps<"/pa
 
   return (
     <>
+      {porZona && (
+        <DesgloseZonas filas={porZona} zonas={zonas.map((z) => ({ id: z.id, nombre: z.nombre, color: z.color ?? null }))}
+          funciones={funciones.map((f) => ({ id: f.id, nombre: formatPerformanceDate(f.starts_at) }))} />
+      )}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {[
           ["Ingresos aprobados", formatMoney(s.ingresos)],
@@ -123,6 +131,14 @@ export default async function SalesPage({ params, searchParams }: PageProps<"/pa
           <button className="rounded-full border border-white/25 px-4 py-2 text-xs font-bold hover:border-white/50">Buscar</button>
           {buscar && <Link href={q("q", "")} className="self-center text-xs font-bold text-violeta-claro">Quitar búsqueda</Link>}
         </form>
+        <form className="mt-2 flex flex-wrap items-center gap-2 px-5" role="search" aria-label="Buscar por código de venta">
+          <label className="flex min-w-0 flex-1 items-center overflow-hidden rounded-lg bg-sala text-sm sm:max-w-xs">
+            <span className="select-none py-2 pl-3 font-mono font-bold text-texto-3" aria-hidden="true">{PREFIJO_ORDEN}</span>
+            <input name="codigo" defaultValue={restoCodigo(codigo)} aria-label="Código de venta (lo que va después de DARF-)" placeholder="A1B2C3"
+              autoCapitalize="characters" autoComplete="off" spellCheck={false} className="min-w-0 flex-1 bg-transparent py-2 pr-3 font-mono uppercase" />
+          </label>
+          <button className="rounded-full border border-white/25 px-4 py-2 text-xs font-bold hover:border-white/50">Buscar código</button>
+        </form>
         {codigo && <p className="mt-3 px-5 text-sm text-texto-2">Orden <b className="font-mono">{codigo}</b> · <Link href={`/panel/producciones/${id}/boletos`} className="font-bold text-violeta-claro">Ver todas</Link></p>}
         <ul className="mt-3 divide-y divide-white/10">
           {ordenes.map((o) => (
@@ -168,7 +184,7 @@ export default async function SalesPage({ params, searchParams }: PageProps<"/pa
               {operar && <OrderActions pid={id} o={o} obra={obra} funcion={nombreFuncion.get(o.performance_id) ?? ""} limite={o.status === "pendiente" && o.expires_at ? limiteTexto(o.expires_at) : null} ligaCuenta={ligaCuenta} puertas={puertasDe.get(o.performance_id) ?? null} />}
             </li>
           ))}
-          {ordenes.length === 0 && <li className="px-5 py-4 text-texto-2">No hay órdenes con este filtro.</li>}
+          {ordenes.length === 0 && <li className="px-5 py-4 text-texto-2">{codigo ? `No hay ninguna orden ${codigo} en esta obra. Revisa el código en el WhatsApp.` : "No hay órdenes con este filtro."}</li>}
           {filtradas.length >= 500 && <li className="px-5 py-4 text-sm text-texto-3">Mostrando las 500 más recientes. Usa los filtros de función y estado para ver las demás; los totales de arriba sí incluyen todas.</li>}
         </ul>
       </Card>

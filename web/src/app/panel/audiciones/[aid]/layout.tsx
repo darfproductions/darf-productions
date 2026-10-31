@@ -20,6 +20,8 @@ export default async function AuditionLayout({ children, params }: LayoutProps<"
     { href: "/registro", label: "Día de la audición", show: a.modalidad !== "en_linea" && (g || may("audiciones.registro")) },
     // 0112: el host entrevista a cada aspirante el día de la audición.
     { href: "/entrevista", label: "Entrevista", show: a.modalidad !== "en_linea" && (g || may("audiciones.entrevista")) },
+    // 0131: la pantalla del juez el día de la audición (sigue sola a quien está en escena).
+    { href: "/en-vivo", label: "Modo audición", show: a.modalidad !== "en_linea" && may("audiciones.evaluar") },
     { href: "/evaluacion", label: "Evaluación", show: may("audiciones.evaluar") },
     { href: "/votacion", label: "Votación", show: votacion && (g || may("audiciones.evaluar")) },
     { href: "/cast", label: "Cast", show: votacion && g },

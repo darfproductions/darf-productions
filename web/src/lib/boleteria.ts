@@ -89,7 +89,8 @@ export async function listOrders(pid: string, opts: { funcion?: string; estado?:
       .order("created_at", { ascending: false })
       .order("id");
     if (opts.estado) q = q.eq("status", opts.estado);
-    if (opts.codigo) q = q.eq("order_code", opts.codigo);
+    // Código completo (DARF- y 6 más): exacto; si escribieron solo una parte, las que empiezan así.
+    if (opts.codigo) q = opts.codigo.length >= 11 ? q.eq("order_code", opts.codigo) : q.ilike("order_code", `${opts.codigo}%`);
     if (opts.buscar) {
       // Nombre (cualquier parte) o teléfono (al menos 4 dígitos, sin espacios ni guiones).
       const digitos = opts.buscar.replace(/\D/g, "");
@@ -153,6 +154,17 @@ export async function salesSummary(pid: string): Promise<SalesSummary> {
     validados: num(d.validados), ordenesPendientes: num(d.ordenesPendientes), ordenes: num(d.ordenes),
     porFuncion: new Map(Object.entries(d.porFuncion ?? {}).map(([k, v]) => [k, { vendidos: num(v.vendidos), apartados: num(v.apartados), ingresos: num(v.ingresos), validados: num(v.validados) }])),
   };
+}
+
+/** 0132: boletos y dinero por función y zona (para el desglose de arriba en Ventas). Si la base aún no tiene la
+ *  función, regresa null y la tabla no sale. */
+export async function ventasPorZona(pid: string): Promise<import("@/lib/ventas-zona-rules").FilaVentaZona[] | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("ventas_por_zona", { pid });
+  if (error) return null;
+  return ((data ?? []) as import("@/lib/ventas-zona-rules").FilaVentaZona[]).map((f) => ({
+    ...f, vendidos: Number(f.vendidos), cortesias: Number(f.cortesias), apartados: Number(f.apartados), ingresos: Number(f.ingresos),
+  }));
 }
 
 /** 0088: nombres de quien aprobó, rechazó, vendió o canceló en esta obra. */

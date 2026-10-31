@@ -110,12 +110,12 @@ export type MyApplication = {
   qr_token: string;
   numero: number | null;
   checked_in_at: string | null;
-  auditions: { titulo: string; estado: string } | null;
+  auditions: { titulo: string; estado: string; fase?: string; callback_cuando?: "hoy" | "otra_fecha" | null; callback_fecha?: string | null; callback_lugar?: string | null } | null;
   audition_slots: { inicia: string; sala: string | null } | null;
 };
 
 const MY_COLS =
-  "id, audition_id, estado, nombre, telefono, fecha_nacimiento, slot_id, roles, respuestas, tutor_nombre, tutor_telefono, tutor_email, consentimiento_imagen, foto_path, qr_token, numero, checked_in_at, auditions!audition_applications_audition_id_fkey(titulo, estado), audition_slots(inicia, sala)";
+  "id, audition_id, estado, nombre, telefono, fecha_nacimiento, slot_id, roles, respuestas, tutor_nombre, tutor_telefono, tutor_email, consentimiento_imagen, foto_path, qr_token, numero, checked_in_at, auditions!audition_applications_audition_id_fkey(titulo, estado, fase, callback_cuando, callback_fecha, callback_lugar), audition_slots(inicia, sala)";
 
 export async function getMyApplication(auditionId: string, userId: string): Promise<MyApplication | null> {
   const supabase = await createClient();

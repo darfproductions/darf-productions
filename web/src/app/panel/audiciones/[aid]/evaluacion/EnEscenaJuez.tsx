@@ -22,10 +22,10 @@ export function EnEscenaJuez({ aid, ronda, criterios, roles, conVotacion, abiert
   useEffect(() => {
     const t = setInterval(async () => {
       if (document.visibilityState !== "visible") return;
-      const n = await juezActual(aid, ronda).catch(() => undefined);
-      if (n === undefined) return;
       const prev = actual.current;
-      // Misma persona: se conserva la foto (el enlace temporal cambia en cada consulta).
+      const n = await juezActual(aid, ronda, prev?.app).catch(() => undefined);
+      if (n === undefined) return;
+      // Misma persona: se conserva la foto (solo se firma al cambiar de persona).
       const sig = n && prev && n.app === prev.app ? { ...n, foto: prev.foto ?? n.foto } : n;
       if (JSON.stringify(sig) !== JSON.stringify(prev)) { actual.current = sig; setD(sig); }
     }, 4000);
@@ -36,7 +36,7 @@ export function EnEscenaJuez({ aid, ronda, criterios, roles, conVotacion, abiert
     return (
       <Card className="flex items-center gap-3 border border-dashed border-white/15">
         <span className="relative flex h-3 w-3"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-lila opacity-60" /><span className="relative inline-flex h-3 w-3 rounded-full bg-lila" /></span>
-        <p className="text-texto-2">Esperando al siguiente audicionante. Cuando el host lo pase, aparece aquí solo.</p>
+        <p className="text-texto-2">Esperando al siguiente audicionante. Cuando den “Siguiente”, aparece aquí solo.</p>
       </Card>
     );
   }

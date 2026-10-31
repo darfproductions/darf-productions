@@ -17,7 +17,7 @@ export async function getDatosExtra(pid: string, funcionId: string | null): Prom
     supabase.from("price_categories").select("id, nombre, color, orden, cupo, is_active").eq("production_id", pid).order("orden"),
     supabase.from("productions").select("modo_venta, mostrar_precios").eq("id", pid).maybeSingle(),
     supabase.from("performances").select("id, on_sale, performance_price_categories(price, price_category_id)").eq("production_id", pid).is("cancelada_at", null),
-    todasLasFilas((a, b) => supabase.from("seats").select("seat_row, seat_number, lado, pos_x, pos_y, price_category_id").eq("production_id", pid).eq("is_active", true).order("id").range(a, b)),
+    todasLasFilas((a, b) => supabase.from("seats").select("seat_row, seat_number, lado, pos_x, pos_y, price_category_id, section").eq("production_id", pid).eq("is_active", true).order("id").range(a, b)),
     supabase.from("mapas_diseno").select("diseno").eq("production_id", pid).maybeSingle(),
     listarBeneficios(pid),
   ]);
@@ -34,8 +34,8 @@ export async function getDatosExtra(pid: string, funcionId: string | null): Prom
   const zonas = ((zs ?? []) as { id: string; nombre: string; color: string | null; orden: number; cupo: number | null; is_active: boolean }[])
     .filter((z) => z.is_active)
     .map((z, i) => ({ id: z.id, nombre: z.nombre, color: colorZona(z, i, ZONE_COLORS), precio: precio.get(z.id) ?? null, precioMax: maximo.get(z.id) ?? null, general: z.cupo != null, beneficios: benef.get(z.id) ?? [] }));
-  const asientos = ((asientosRes.data ?? []) as { seat_row: string | null; seat_number: number | null; lado: string | null; pos_x: number | null; pos_y: number | null; price_category_id: string | null }[])
-    .map((s) => ({ x: s.pos_x, y: s.pos_y, fila: s.seat_row, numero: s.seat_number, lado: s.lado, zona: s.price_category_id }));
+  const asientos = ((asientosRes.data ?? []) as { seat_row: string | null; seat_number: number | null; lado: string | null; pos_x: number | null; pos_y: number | null; price_category_id: string | null; section: string | null }[])
+    .map((s) => ({ x: s.pos_x, y: s.pos_y, fila: s.seat_row, numero: s.seat_number, lado: s.lado, zona: s.price_category_id, grupo: s.section }));
   return {
     zonas, asientos, formas: leerDiseno(dis?.diseno)?.formas ?? [],
     modoVenta: (prod?.modo_venta as string | null) ?? null, mostrarPrecios: prod?.mostrar_precios !== false,

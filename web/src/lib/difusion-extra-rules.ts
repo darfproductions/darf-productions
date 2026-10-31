@@ -2,6 +2,7 @@
 // zona. Funciones puras: difusion-extra-rules.test.ts. El dibujo está en difusion-extra.tsx.
 import { fechaLarga, hora } from "@/lib/difusion-rules";
 import type { Forma } from "@/lib/mapa-libre";
+import { etiquetasFila } from "@/lib/mapa-filas";
 import { ACCESO_TARDIO_OMISION, hora as horaCorta, type Horario, type Logistica } from "@/lib/logistica-rules";
 
 export type DisenoExtra = "mapa" | "comprar" | "invitacion" | "invitacion-ambiente" | "calendario" | "incluye" | "preparate";
@@ -18,18 +19,20 @@ export const esDisenoExtra = (x: unknown): x is DisenoExtra => DISENOS_EXTRA.som
 export const esInvitacion = (d: DisenoExtra) => d === "invitacion" || d === "invitacion-ambiente";
 
 // ──────── Mapa ────────
-export type AsientoMapa = { x: number | null; y: number | null; fila: string | null; numero: number | null; lado: string | null; zona: string | null };
+export type AsientoMapa = { x: number | null; y: number | null; fila: string | null; numero: number | null; lado: string | null; zona: string | null; /** Bloque del mapa libre. */ grupo?: string | null };
 export type PuntoMapa = { x: number; y: number; zona: string | null };
+/** Letra de fila en una punta de la fila (2026-10-26). */
+export type LetraFila = { fila: string; x: number; y: number };
 export type FormaMapa = { x: number; y: number; ancho: number; alto: number; rot: number; etiqueta: string };
 
 /** Puntos del mapa en un lienzo de ancho×alto (con margen), y el escenario. Con posiciones (mapa libre) usa las
  *  suyas; si no, arma la cuadrícula de filas como la compra (izquierda, central, derecha con pasillos). */
-export function puntosMapa(asientos: AsientoMapa[], formas: Forma[], ancho: number, alto: number): { puntos: PuntoMapa[]; formas: FormaMapa[]; radio: number; escenarioArriba: boolean } {
+export function puntosMapa(asientos: AsientoMapa[], formas: Forma[], ancho: number, alto: number): { puntos: PuntoMapa[]; formas: FormaMapa[]; radio: number; escenarioArriba: boolean; filas: LetraFila[] } {
   const libre = asientos.some((a) => a.x != null);
-  let crudos: PuntoMapa[];
+  let crudos: (PuntoMapa & { fila: string | null; numero: number | null; grupo?: string })[];
   let fs: FormaMapa[] = [];
   if (libre) {
-    crudos = asientos.filter((a) => a.x != null).map((a) => ({ x: a.x!, y: a.y ?? 0, zona: a.zona }));
+    crudos = asientos.filter((a) => a.x != null).map((a) => ({ x: a.x!, y: a.y ?? 0, zona: a.zona, fila: a.fila, numero: a.numero, grupo: a.grupo ?? undefined }));
     fs = formas.map((f) => ({ x: f.x, y: f.y, ancho: f.ancho, alto: f.alto, rot: f.rot, etiqueta: f.etiqueta }));
   } else {
     const filas = [...new Set(asientos.map((a) => a.fila ?? "?"))].sort((a, b) => a.localeCompare(b, "es", { numeric: true }));
@@ -40,7 +43,8 @@ export function puntosMapa(asientos: AsientoMapa[], formas: Forma[], ancho: numb
         const xs = asientos.filter((a) => (a.fila ?? "?") === f && (a.lado ?? "central") === lado).sort((a, b) => (a.numero ?? 0) - (b.numero ?? 0));
         if (!xs.length) continue;
         if (col) col += 2;
-        for (const a of xs) crudos.push({ x: col++ * 20, y: fi * 22, zona: a.zona });
+        // Filas rectas: la letra va en las dos puntas de toda la fila (no en los pasillos), como en la página.
+        for (const a of xs) { crudos.push({ x: col * 20, y: fi * 22, zona: a.zona, fila: a.fila, numero: col, grupo: "fila" }); col++; }
       }
     });
     // Centra cada fila sobre la más ancha.
@@ -51,7 +55,7 @@ export function puntosMapa(asientos: AsientoMapa[], formas: Forma[], ancho: numb
       for (const p of fila) p.x += dx;
     }
   }
-  if (!crudos.length) return { puntos: [], formas: [], radio: 0, escenarioArriba: !libre };
+  if (!crudos.length) return { puntos: [], formas: [], radio: 0, escenarioArriba: !libre, filas: [] };
   const xs = [...crudos.map((p) => p.x), ...fs.flatMap((f) => [f.x - f.ancho / 2, f.x + f.ancho / 2])];
   const ys = [...crudos.map((p) => p.y), ...fs.flatMap((f) => [f.y - f.alto / 2, f.y + f.alto / 2])];
   const x0 = Math.min(...xs), y0 = Math.min(...ys), w0 = Math.max(1, Math.max(...xs) - x0), h0 = Math.max(1, Math.max(...ys) - y0);
@@ -61,7 +65,12 @@ export function puntosMapa(asientos: AsientoMapa[], formas: Forma[], ancho: numb
   // Con escenario arriba, los asientos van pegados a él (sin hueco); el mapa libre se centra.
   const ox = (ancho - w0 * esc) / 2, oy = libre ? (alto - h0 * esc) / 2 : reservaArriba + 10;
   const radio = Math.max(2, Math.min(14, esc * (libre ? 7 : 8.5)));
+  // Letras de fila: con la misma regla que el mapa de la página, en las puntas de cada fila de cada bloque (separadas
+  // del asiento poco más de un diámetro).
+  const dist = (Math.max(2, Math.min(14, esc * (libre ? 7 : 8.5))) * 2.6 + 8) / esc;
+  const filas = etiquetasFila(crudos, dist).map((e) => ({ fila: e.fila, x: ox + (e.x - x0) * esc, y: oy + (e.y - y0) * esc }));
   return {
+    filas,
     puntos: crudos.map((p) => ({ x: ox + (p.x - x0) * esc, y: oy + (p.y - y0) * esc, zona: p.zona })),
     formas: fs.map((f) => ({ ...f, x: ox + (f.x - x0) * esc, y: oy + (f.y - y0) * esc, ancho: f.ancho * esc, alto: f.alto * esc })),
     radio,
