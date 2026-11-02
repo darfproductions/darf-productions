@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Card } from "@/components/panel/ui";
-import { listOrders, listPerformances, listZones, salesSummary, seatCount, ventasActores, ventasPorZona } from "@/lib/boleteria";
+import { listOrders, listPerformances, listZones, salesSummary, seatCount, ventasActores, ordenesTabla } from "@/lib/boleteria";
+import { filasTabla } from "@/lib/ventas-tabla-rules";
 import { DesgloseZonas } from "./DesgloseZonas";
 import { can, salidaBoletos } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
@@ -29,6 +30,9 @@ const ESTADO: Record<string, string> = {
 };
 const fecha = (iso: string) => new Intl.DateTimeFormat("es-MX", { dateStyle: "medium", timeStyle: "short", timeZone: "America/Mexico_City" }).format(new Date(iso));
 
+// Fecha de la venta para la tabla por zona (se arma aquí para que el navegador no la formatee distinto).
+const fechaVenta = (iso: string) => new Intl.DateTimeFormat("es-MX", { timeZone: "America/Mexico_City", day: "2-digit", month: "2-digit", year: "numeric", hour: "numeric", minute: "2-digit" }).format(new Date(iso));
+
 // Ventas de la obra: resumen, ocupación por función y órdenes (aprobar/rechazar/cancelar).
 export default async function SalesPage({ params, searchParams }: PageProps<"/panel/producciones/[id]/boletos">) {
   const { id } = await params;
@@ -53,7 +57,7 @@ export default async function SalesPage({ params, searchParams }: PageProps<"/pa
     listZones(id),
     ventasActores(id),
     getLogistica(id),
-    ventasPorZona(id),
+    ordenesTabla(id),
   ]);
   const quien = (uid: string | null | undefined) => (uid ? actores.get(uid) ?? "equipo" : null);
   const ordenes = filtradas;
@@ -71,10 +75,9 @@ export default async function SalesPage({ params, searchParams }: PageProps<"/pa
 
   return (
     <>
-      {porZona && (
-        <DesgloseZonas filas={porZona} zonas={zonas.map((z) => ({ id: z.id, nombre: z.nombre, color: z.color ?? null }))}
-          funciones={funciones.map((f) => ({ id: f.id, nombre: formatPerformanceDate(f.starts_at) }))} />
-      )}
+      <DesgloseZonas pid={id} editar={operar} filas={filasTabla(porZona, zonas).map((f) => ({ ...f, fechaTexto: fechaVenta(f.fecha), funcionTexto: nombreFuncion.get(f.funcionId) ?? "" }))}
+        zonas={zonas.map((z) => ({ id: z.id, nombre: z.nombre, color: z.color ?? null }))}
+        funciones={funciones.map((f) => ({ id: f.id, nombre: formatPerformanceDate(f.starts_at) }))} />
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {[
           ["Ingresos aprobados", formatMoney(s.ingresos)],

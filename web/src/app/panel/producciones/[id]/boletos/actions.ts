@@ -717,3 +717,14 @@ export async function estadoCodigoPreventa(_p: TicketState, f: FormData): Promis
   refresh(pid);
   return { ok: true, message: activo ? "Código activado." : "Código desactivado: ya no da acceso (tampoco a quien ya lo usó)." };
 }
+
+/** Tabla de ventas (2026-11-02): corregir el método de pago de una orden. Conserva su referencia. No cambia
+ *  cortesías (esas tienen su propio botón). La base revisa el permiso (ventas.operar) y lo deja en la bitácora. */
+export async function cambiarMetodoPago(pid: string, orderId: string, metodo: string, referencia: string | null): Promise<{ ok: boolean; message?: string }> {
+  if (!esMetodo(metodo) || metodo === "cortesia") return { ok: false, message: "Método de pago no válido." };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("order_set_pago", { target_order_id: orderId, p_metodo: metodo, p_referencia: referencia });
+  if (error) return { ok: false, message: mensajeError(error) };
+  revalidatePath(`/panel/producciones/${pid}/boletos`, "layout");
+  return { ok: true };
+}
