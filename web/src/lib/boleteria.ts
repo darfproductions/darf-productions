@@ -156,14 +156,24 @@ export async function salesSummary(pid: string): Promise<SalesSummary> {
   };
 }
 
-/** 0132: boletos y dinero por función y zona (para el desglose de arriba en Ventas). Si la base aún no tiene la
- *  función, regresa null y la tabla no sale. */
-export async function ventasPorZona(pid: string): Promise<import("@/lib/ventas-zona-rules").FilaVentaZona[] | null> {
+/** Tabla de ventas (2026-11-02): todas las órdenes aprobadas y por aprobar de la obra, con sus boletos activos
+ *  (zona y precio), comprador, vendedor y método de pago. Sin tope: es para cuadrar todo. */
+export async function ordenesTabla(pid: string): Promise<import("@/lib/ventas-tabla-rules").OrdenTabla[]> {
   const supabase = await createClient();
-  const { data, error } = await supabase.rpc("ventas_por_zona", { pid });
-  if (error) return null;
-  return ((data ?? []) as import("@/lib/ventas-zona-rules").FilaVentaZona[]).map((f) => ({
-    ...f, vendidos: Number(f.vendidos), cortesias: Number(f.cortesias), apartados: Number(f.apartados), ingresos: Number(f.ingresos),
+  const perfIds = (await supabase.from("performances").select("id").eq("production_id", pid)).data?.map((p) => p.id as string) ?? [];
+  if (!perfIds.length) return [];
+  const { data, error } = await todasLasFilas((a, b) => supabase.from("orders")
+    .select("id, order_code, performance_id, status, created_at, buyer_nombre, buyer_telefono, total, metodo_pago, referencia, sellers(nombre), tickets(is_active, unit_price, price_category_id, seats(price_category_id))")
+    .in("performance_id", perfIds).in("status", ["aprobado", "pendiente"]).order("created_at").order("id").range(a, b));
+  if (error) throw new Error(`No se pudieron cargar las ventas: ${error.message}`);
+  type Fila = { id: string; order_code: string; performance_id: string; status: string; created_at: string; buyer_nombre: string; buyer_telefono: string;
+    total: number | string; metodo_pago: string | null; referencia: string | null; sellers: { nombre: string } | null;
+    tickets: { is_active: boolean; unit_price: number | string; price_category_id: string | null; seats: { price_category_id: string | null } | null }[] };
+  return ((data ?? []) as unknown as Fila[]).map((o) => ({
+    id: o.id, order_code: o.order_code, performance_id: o.performance_id, status: o.status, created_at: o.created_at,
+    buyer_nombre: o.buyer_nombre, buyer_telefono: o.buyer_telefono, total: Number(o.total), metodo_pago: o.metodo_pago, referencia: o.referencia,
+    vendedor: o.sellers?.nombre ?? null,
+    boletos: o.tickets.filter((t) => t.is_active).map((t) => ({ zona_id: t.seats?.price_category_id ?? t.price_category_id, precio: Number(t.unit_price) })),
   }));
 }
 

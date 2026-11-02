@@ -5,6 +5,22 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-11-02 — "Venta por zona" interactiva: órdenes por zona, método de pago editable, Excel
+
+- Motivo: el Excel de Diego no cuadraba con la página. La diferencia era un boleto VIP de $400 que no está registrado
+  en la página. Hacía falta ver orden por orden sin armar la hoja a mano.
+- En la misma tabla de arriba en Ventas:
+  - Se filtra por todas las funciones o por una.
+  - Casilla "Incluir órdenes por aprobar".
+  - Al tocar una zona se despliegan sus órdenes: código, comprador, teléfono, fecha, función, vendedor, cantidad ×
+    precio, lo cobrado (y el precio sin descuento si lo hubo) y el **método de pago editable** (`order_set_pago`,
+    queda en la bitácora; las cortesías no se cambian aquí).
+  - Abajo: lo cobrado por método de pago (efectivo / transferencia / depósito…) y los descuentos.
+  - "Descargar en Excel" con los mismos filtros: una fila por orden y tipo de boleto, como la hoja de Diego.
+- Una sola fuente de datos (`ordenesTabla` + `lib/ventas-tabla-rules.ts`, con pruebas): las zonas, las órdenes y los
+  totales salen del mismo cálculo y siempre cuadran con "Ingresos aprobados". La tabla ya no usa `ventas_por_zona`
+  (0132); esa función queda en la base, sin uso.
+
 ## 2026-10-30 — 0132: venta por zona, hasta arriba en Boletos → Ventas
 
 - Tabla "Venta por zona": boletos y dinero de cada zona. Botones para ver todas las funciones o una sola; cambia al
