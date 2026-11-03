@@ -112,12 +112,14 @@ export type MyApplication = {
   checked_in_at: string | null;
   /** 0133: el equipo pidió completar la inscripción. */
   completar_pedido_at?: string | null;
+  /** 0134: lo que el equipo le pidió corregir. */
+  completar_nota?: string | null;
   auditions: { titulo: string; estado: string; fase?: string; callback_cuando?: "hoy" | "otra_fecha" | null; callback_fecha?: string | null; callback_lugar?: string | null } | null;
   audition_slots: { inicia: string; sala: string | null } | null;
 };
 
 const MY_COLS =
-  "id, audition_id, estado, nombre, telefono, fecha_nacimiento, slot_id, roles, respuestas, tutor_nombre, tutor_telefono, tutor_email, consentimiento_imagen, foto_path, qr_token, numero, checked_in_at, completar_pedido_at, auditions!audition_applications_audition_id_fkey(titulo, estado, fase, callback_cuando, callback_fecha, callback_lugar), audition_slots(inicia, sala)";
+  "id, audition_id, estado, nombre, telefono, fecha_nacimiento, slot_id, roles, respuestas, tutor_nombre, tutor_telefono, tutor_email, consentimiento_imagen, foto_path, qr_token, numero, checked_in_at, completar_pedido_at, completar_nota, auditions!audition_applications_audition_id_fkey(titulo, estado, fase, callback_cuando, callback_fecha, callback_lugar), audition_slots(inicia, sala)";
 
 export async function getMyApplication(auditionId: string, userId: string): Promise<MyApplication | null> {
   const supabase = await createClient();

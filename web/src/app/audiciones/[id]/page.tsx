@@ -63,6 +63,8 @@ export default async function AuditionPage({ params }: PageProps<"/audiciones/[i
               {qr && !enLinea && <img src={qr} alt="Tu QR para la audición" width={160} height={160} className="rounded-xl bg-white p-2" />}
               <div className="flex flex-col gap-1">
                 <p className="text-lg font-bold">Ya estás inscrito</p>
+                {mine.estado === "inscrito" && !mine.completar_pedido_at && <p className="text-sm text-texto-2">Tu solicitud está en revisión: te avisamos en tu cuenta cuando la aprueben.</p>}
+                {mine.estado === "convocado" && <p className="text-sm font-semibold text-exito">¡Tu solicitud fue aprobada! Ya estás en la lista para audicionar.</p>}
                 <p className="text-sm">Estado: <b>{ESTADO_SOLICITUD[mine.estado]?.label ?? mine.estado}</b>{mine.audition_slots ? ` · ${formatSlot(mine.audition_slots.inicia)}` : ""}</p>
                 {mine.estado === "callback" && mine.auditions?.fase === "callback" && textoCallback(mine.auditions.callback_cuando, mine.auditions.callback_fecha, mine.auditions.callback_lugar) && (
                   <p className="text-sm font-bold text-exito">¡Pasaste a callback! {textoCallback(mine.auditions.callback_cuando, mine.auditions.callback_fecha, mine.auditions.callback_lugar)}.{qr ? " Lleva este mismo QR." : ""}</p>
@@ -100,7 +102,10 @@ export default async function AuditionPage({ params }: PageProps<"/audiciones/[i
           {pedido && (
             <div id="completar" role="status" className="rounded-2xl border border-aviso/50 bg-aviso/10 p-5">
               <p className="text-lg font-bold">Completa tu inscripción</p>
-              <p className="text-sm">El equipo te pidió completar o actualizar tu inscripción.{faltan.length ? <> Falta: <b>{faltan.join(", ")}</b>.</> : null} Llénalo abajo y dale guardar.</p>
+              <p className="text-sm">El equipo revisó tu solicitud y te la regresó para que la corrijas.</p>
+              {mine?.completar_nota && <p className="mt-2 rounded-xl bg-sala/60 px-3 py-2 text-sm"><span className="text-xs font-bold uppercase tracking-[0.15em] text-aviso">Nota del equipo</span><br />{mine.completar_nota}</p>}
+              {faltan.length > 0 && !mine?.completar_nota && <p className="mt-2 text-sm">Falta: <b>{faltan.join(", ")}</b>.</p>}
+              <p className="mt-2 text-sm">Corrígelo abajo y dale guardar; el equipo la vuelve a revisar.</p>
             </div>
           )}
           {(abierta || pedido) && session && (invitado || mine) && !mine?.checked_in_at && (

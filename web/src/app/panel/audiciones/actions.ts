@@ -436,7 +436,7 @@ export async function swapOrder(aid: string, a1: string, a2: string): Promise<{ 
 
 // ──────── Día de la audición ────────
 
-export type DeskResult = { result: string; nombre?: string; numero?: number; es_menor?: boolean; estado?: string; personajes?: string[] | null; callback?: boolean } | { result: "error"; message: string };
+export type DeskResult = { result: string; nombre?: string; numero?: number; es_menor?: boolean; estado?: string; personajes?: string[] | null; callback?: boolean; sin_aprobar?: boolean } | { result: "error"; message: string };
 
 export async function deskCheckin(aid: string, ref: string): Promise<DeskResult> {
   const supabase = await createClient();
@@ -631,4 +631,24 @@ export async function separarTurno(aid: string, app: string): Promise<{ ok: bool
   if (error) return { ok: false, message: mensajeError(error) };
   revalidatePath(base(aid), "layout");
   return { ok: true };
+}
+
+// ════════ 0134: revisar solicitudes (aprobar / regresar con nota) ════════
+
+export async function revisarSolicitud(_p: AudState, f: FormData): Promise<AudState> {
+  const aid = str(f, "aid");
+  const accion = str(f, "accion") === "regresar" ? "regresar" : "aprobar";
+  const { error } = await (await createClient()).rpc("audition_revisar", { aid, app: str(f, "app"), p_accion: accion, p_nota: str(f, "nota") || null });
+  if (error) return { ok: false, message: mensajeError(error) };
+  return done(aid, accion === "aprobar"
+    ? "Aprobada: ya está en la lista para audicionar y le llegó el aviso. Si quieres, avísale también por WhatsApp."
+    : "Regresada: le llegó el aviso con tu nota. Mándale también el WhatsApp con el botón verde.");
+}
+
+export async function aprobarCompletas(_p: AudState, f: FormData): Promise<AudState> {
+  const aid = str(f, "aid");
+  const { data, error } = await (await createClient()).rpc("audition_aprobar_completas", { aid });
+  if (error) return { ok: false, message: mensajeError(error) };
+  const n = Number(data ?? 0);
+  return done(aid, n ? `Listo: ${n} ${n === 1 ? "solicitud aprobada" : "solicitudes aprobadas"}.` : "No hay solicitudes completas por aprobar.");
 }

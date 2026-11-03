@@ -5,6 +5,26 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-11-03 — 0134: revisar solicitudes de audición (aprobar / regresar con nota + WhatsApp)
+
+- Toda solicitud nueva queda **En revisión** (estado `inscrito`; los nombres en pantalla cambiaron: Inscrito → "En
+  revisión", Convocado → "Aprobada").
+- En Solicitudes, cada una tiene **Revisar solicitud**:
+  - **Aprobar** (`audition_revisar`): pasa a la lista del día y le llega el aviso.
+  - **Regresar…** con una nota (viene llena con lo que le falta): le llega el aviso con la nota y puede corregir aunque
+    la inscripción haya cerrado.
+  - Al guardar, vuelve a revisión con "Ya corrigió su solicitud".
+- **WhatsApp**: botón verde con el mensaje ya armado.
+  - Al regresar: "Te regresamos tu solicitud: <nota> … complétala aquí".
+  - Al aprobar: "fue aprobada… tu QR está en tu cuenta".
+  - Si la persona es menor, va al teléfono del tutor.
+- **"Aprobar las completas"** (`audition_aprobar_completas`) para las que ya estaban inscritas y no les falta nada.
+- **Día de la audición**:
+  - Las que no están aprobadas van aparte, en "Solicitudes sin aprobar".
+  - Si alguien sin aprobar llega con su QR, se registra igual y la entrada avisa (`sin_aprobar`).
+- La persona ve en la página de la audición si su solicitud está en revisión, aprobada o regresada (con la nota del
+  equipo).
+
 ## 2026-11-03 — 0133: audiciones — pedir que completen y grupos que pasan juntos
 
 - **Pedir que completen**

@@ -3,11 +3,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ActionForm } from "@/components/panel/ActionForm";
 import { Card, input } from "@/components/panel/ui";
-import { ESTADO_SOLICITUD, ageAt, hora } from "@/lib/audition-rules";
+import { ESTADO_SOLICITUD, ageAt, hora, mensajeAprobada, mensajeRegreso } from "@/lib/audition-rules";
 import { formatSlot } from "@/lib/auditions";
 import { requireAudition, signPhotos } from "@/lib/panel-auditions";
 import { createClient } from "@/lib/supabase/server";
-import { addVideo, pedirCompletar, setApplicationEstado, setSlot } from "../../actions";
+import { addVideo, aprobarCompletas, pedirCompletar, revisarSolicitud, setApplicationEstado, setSlot } from "../../actions";
+import { ligaWhatsApp } from "@/lib/pago-rules";
+import { origenSitio } from "@/lib/site-origin";
 import { Icono } from "@/components/Icono";
 
 export const metadata: Metadata = { title: "Solicitudes" };
@@ -19,6 +21,7 @@ type App = {
   roles: string[]; respuestas: Record<string, string>; es_menor: boolean; tutor_nombre: string | null; tutor_telefono: string | null;
   tutor_email: string | null; consentimiento_imagen: boolean; walk_in: boolean; numero: number | null; checked_in_at: string | null;
   created_at: string; slot_id: string | null; audition_slots: { inicia: string } | null; user_id: string | null;
+  completar_pedido_at: string | null; completar_nota: string | null; revisada_at: string | null; completado_at: string | null;
 };
 type Faltante = { id: string; faltan: string[]; pedido_at: string | null; completado_at: string | null };
 const DECISIONES = ["convocado", "en_espera", "no_cumple", "inscrito"];
@@ -48,6 +51,12 @@ export default async function Applications({ params, searchParams }: PageProps<"
   const soloFalta = sp.falta === "1";
   const apps = todas.filter((a) => (!estado || a.estado === estado) && (!rol || a.roles.includes(rol)) && (!soloFalta || faltaAlgo(a)));
   const porPedir = todas.filter((a) => faltaAlgo(a) && puedePedir(a)).length;
+  // 0134: revisión de solicitudes. "En revisión" = inscrito; al aprobar pasa a la lista del día (convocado).
+  const enRevision = (a: App) => a.estado === "inscrito" && !a.checked_in_at;
+  const completasPorAprobar = todas.filter((a) => enRevision(a) && !a.completar_pedido_at && !faltaAlgo(a)).length;
+  const sitio = await origenSitio();
+  const titulo = aud.titulo;
+  const telWa = (a: App) => (a.es_menor && a.tutor_telefono ? a.tutor_telefono : a.telefono);
   const fotos = await signPhotos(apps.map((a) => a.foto_path));
   const roleName = new Map((roles.data ?? []).map((r) => [r.id as string, r.nombre as string]));
   const q = (k: string, v: string) => {
@@ -74,6 +83,19 @@ export default async function Applications({ params, searchParams }: PageProps<"
           </div>
         </details>
       </Card>
+      {todas.some(enRevision) && (
+        <Card className="flex flex-col gap-2 border border-lila/40">
+          <h2 className="font-bold">{todas.filter(enRevision).length} {todas.filter(enRevision).length === 1 ? "solicitud en revisión" : "solicitudes en revisión"}</h2>
+          <p className="text-sm text-texto-2">Revisa cada una: <b>Aprobar</b> la pasa a la lista de quienes audicionan; <b>Regresar</b> le avisa lo que tiene que corregir (con tu nota) y puede editarla aunque la inscripción ya haya cerrado.</p>
+          <div className="flex flex-wrap items-center gap-2">
+            <Link href={q("estado", "inscrito")} className="rounded-full border border-white/25 px-4 py-2 text-sm font-bold">Ver las que están en revisión</Link>
+            {completasPorAprobar > 0 && (
+              <ActionForm inline action={aprobarCompletas} hidden={{ aid }} confirm={`¿Aprobar ${completasPorAprobar} ${completasPorAprobar === 1 ? "solicitud que está completa" : "solicitudes que están completas"}? Pasan a la lista del día y les llega el aviso.`}
+                submit={`Aprobar las completas (${completasPorAprobar})`} submitClass="rounded-full bg-texto px-4 py-2 text-sm font-bold text-sala" />
+            )}
+          </div>
+        </Card>
+      )}
       {todas.some(faltaAlgo) && (
         <Card className="flex flex-col gap-2 border border-aviso/40">
           <h2 className="font-bold">A {todas.filter(faltaAlgo).length} {todas.filter(faltaAlgo).length === 1 ? "solicitud le falta" : "solicitudes les falta"} información</h2>
@@ -130,11 +152,39 @@ export default async function Applications({ params, searchParams }: PageProps<"
                   ))}
                   {!a.consentimiento_imagen && <p className="text-xs text-texto-3">No autorizó fotos o video.</p>}
                   {faltaAlgo(a) && <p className="text-xs font-semibold text-aviso">Le falta: {falta.get(a.id)!.faltan.join(", ")}</p>}
-                  {falta.get(a.id)?.pedido_at && <p className="text-xs text-aviso">Se le pidió completar ({fechaCorta(falta.get(a.id)!.pedido_at!)}); aún no lo hace.</p>}
-                  {!falta.get(a.id)?.pedido_at && falta.get(a.id)?.completado_at && <p className="text-xs text-exito">Completó su inscripción ({fechaCorta(falta.get(a.id)!.completado_at!)}).</p>}
-                  {puedePedir(a) && !falta.get(a.id)?.pedido_at && (
-                    <ActionForm inline action={pedirCompletar} hidden={{ aid, app: a.id }} confirm={`¿Pedir a ${a.nombre} que complete o actualice su inscripción?`}
-                      submit={faltaAlgo(a) ? "Pedir que complete" : "Regresar para que la actualice"} submitClass="self-start rounded-full border border-aviso/50 px-3 py-1.5 text-xs font-bold text-aviso" />
+                  {a.completar_pedido_at && !a.checked_in_at && (
+                    <div className="flex flex-col gap-1.5 rounded-lg bg-aviso/10 p-2.5 text-xs">
+                      <p><b className="text-aviso">Regresada el {fechaCorta(a.completar_pedido_at)}</b>{a.completar_nota ? <>: {a.completar_nota}</> : null} · aún no la corrige.</p>
+                      {ligaWhatsApp(telWa(a), mensajeRegreso(a.nombre, titulo, a.completar_nota ?? "Revisa y completa tu inscripción.", `${sitio}/audiciones/${aid}`)) && (
+                        <a href={ligaWhatsApp(telWa(a), mensajeRegreso(a.nombre, titulo, a.completar_nota ?? "Revisa y completa tu inscripción.", `${sitio}/audiciones/${aid}`))!} target="_blank" rel="noreferrer"
+                          className="self-start rounded-full bg-[#25d366] px-3 py-1.5 font-bold text-[#052e16]">Mandar por WhatsApp <Icono nombre="externo" /></a>
+                      )}
+                    </div>
+                  )}
+                  {!a.completar_pedido_at && a.completado_at && enRevision(a) && <p className="text-xs font-semibold text-exito">Ya corrigió su solicitud ({fechaCorta(a.completado_at)}): revísala de nuevo.</p>}
+                  {enRevision(a) && !a.completar_pedido_at && puedePedir(a) && (
+                    <div className="flex flex-col gap-2 rounded-lg border border-lila/30 p-2.5">
+                      <p className="text-xs font-bold uppercase tracking-[0.15em] text-lila">Revisar solicitud</p>
+                      <div className="flex flex-wrap items-start gap-2">
+                        <ActionForm inline action={revisarSolicitud} hidden={{ aid, app: a.id, accion: "aprobar" }}
+                          confirm={faltaAlgo(a) ? `A ${a.nombre} le falta: ${falta.get(a.id)!.faltan.join(", ")}. ¿Aprobarla de todos modos?` : undefined}
+                          submit="Aprobar" submitClass="rounded-full bg-[#22c55e] px-4 py-1.5 text-xs font-bold text-[#052e16]" />
+                        <details className="min-w-0 flex-1">
+                          <summary className="cursor-pointer rounded-full border border-aviso/50 px-4 py-1.5 text-xs font-bold text-aviso [list-style:none]">Regresar…</summary>
+                          <div className="mt-2">
+                            <ActionForm action={revisarSolicitud} hidden={{ aid, app: a.id, accion: "regresar" }} submit="Regresar y avisarle">
+                              <textarea name="nota" maxLength={500} rows={3} className={`${input} text-xs`} aria-label="Nota para la persona"
+                                placeholder="¿Qué tiene que corregir? Ej. Te falta la foto de cuerpo completo."
+                                defaultValue={faltaAlgo(a) ? `Falta: ${falta.get(a.id)!.faltan.join(", ")}.` : ""} />
+                            </ActionForm>
+                          </div>
+                        </details>
+                      </div>
+                    </div>
+                  )}
+                  {a.estado === "convocado" && a.revisada_at && !a.checked_in_at && ligaWhatsApp(telWa(a), mensajeAprobada(a.nombre, titulo, `${sitio}/cuenta`)) && (
+                    <a href={ligaWhatsApp(telWa(a), mensajeAprobada(a.nombre, titulo, `${sitio}/cuenta`))!} target="_blank" rel="noreferrer"
+                      className="self-start text-xs font-bold text-[#25d366]">Avisarle por WhatsApp que fue aprobada <Icono nombre="externo" /></a>
                   )}
                   <ActionForm inline action={setApplicationEstado} hidden={{ aid, app: a.id }} submit="Guardar" submitClass="rounded-full border border-white/25 px-3 py-1.5 text-xs font-bold">
                     <select name="estado" defaultValue={a.estado} className={`${input} py-1.5 text-xs`} aria-label="Decisión">

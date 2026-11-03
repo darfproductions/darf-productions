@@ -50,7 +50,10 @@ export default async function DayPage({ params, searchParams }: PageProps<"/pane
   const enVivo = a.modalidad !== "en_linea";
   const cb = a.fase === "callback" ? textoCallback(a.callback_cuando, a.callback_fecha, a.callback_lugar) : null;
   const slot = typeof sp.horario === "string" ? sp.horario : "";
-  const rows = slot ? todos.filter((r) => (r.slot_id ?? "sin") === slot) : todos;
+  const filtrados = slot ? todos.filter((r) => (r.slot_id ?? "sin") === slot) : todos;
+  // 0134: las solicitudes aún sin aprobar (en revisión) van aparte; si llegan, se registran igual (con aviso).
+  const sinAprobar = filtrados.filter((r) => r.estado === "inscrito" && !r.walk_in && !r.checked_in_at);
+  const rows = filtrados.filter((r) => !sinAprobar.includes(r));
   const resumen = daySummary(rows);
   const horarios = [...new Map(todos.map((r) => [r.slot_id ?? "sin", r.slot_inicia])).entries()];
   // Reordenar solo antes de llegar, sobre la lista completa con número.
@@ -169,6 +172,23 @@ export default async function DayPage({ params, searchParams }: PageProps<"/pane
           </ul>
           {rows.length === 0 && <p className="px-5 py-4 text-texto-2">Aún no hay personas en la lista.</p>}
         </Card>
+        {sinAprobar.length > 0 && (
+          <Card className="p-0 md:p-0">
+            <details>
+              <summary className="cursor-pointer px-5 py-4 font-bold">Solicitudes sin aprobar ({sinAprobar.length})</summary>
+              <p className="px-5 pb-2 text-xs text-texto-3">Todavía están en revisión (se aprueban en Solicitudes). Si alguien llega, se le puede registrar igual.</p>
+              <ul className="divide-y divide-white/10">
+                {sinAprobar.map((r) => (
+                  <li key={r.id} className="flex flex-wrap items-center gap-3 px-5 py-3 text-sm">
+                    <b className="w-12 shrink-0 text-lg">{r.numero ?? "—"}</b>
+                    <span className="min-w-0 flex-1">{gestiona ? <Link href={`/panel/audiciones/${aid}/aspirante/${r.id}`} className="font-bold hover:underline">{r.nombre}</Link> : <b>{r.nombre}</b>}</span>
+                    <StepButtons aid={aid} app={r.id} nombre={r.nombre} status="pendiente" soloLlegada={enVivo} />
+                  </li>
+                ))}
+              </ul>
+            </details>
+          </Card>
+        )}
         <p className="text-xs text-texto-3">La lista se actualiza sola cada 20 segundos. Las horas de llegada, entrada y salida quedan en la ficha de cada aspirante (sirven para ubicarlo en el video del día).</p>
       </div>
     </div>
