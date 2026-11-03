@@ -9,6 +9,7 @@ import { env } from "@/lib/env";
 import { amInvited, formatSlot, getAudition, getAuditionObra, getMyApplication } from "@/lib/auditions";
 import { MODALIDAD } from "@/lib/audition-rules";
 import { textoCallback } from "@/lib/audicion-vivo-rules";
+import { faltantesSolicitud } from "@/lib/audition-rules";
 import { getTheme, themeStyle } from "@/lib/productions";
 import { cancelMyApplication } from "./actions";
 import { ApplyForm } from "./ApplyForm";
@@ -39,6 +40,9 @@ export default async function AuditionPage({ params }: PageProps<"/audiciones/[i
   const enLinea = a.modalidad === "en_linea";
   const abierta = a.estado === "abierta" && (!a.inscripcion_cierra || new Date(a.inscripcion_cierra) > new Date());
   const qr = mine && a.estado !== "cancelada" && !mine.checked_in_at && !["cancelado", "no_cumple"].includes(mine.estado) ? await QRCode.toDataURL(mine.qr_token, { margin: 1, width: 240 }) : null;
+  // 0133: si el equipo le pidió completar su inscripción, puede editarla aunque ya haya cerrado.
+  const pedido = !!mine?.completar_pedido_at && !mine.checked_in_at && ["abierta", "cerrada"].includes(a.estado) && !["cancelado", "no_cumple"].includes(mine.estado);
+  const faltan = mine ? faltantesSolicitud(fields, mine.respuestas, a.pedir_foto, mine.foto_path) : [];
   const edades = a.edad_min || a.edad_max ? `${a.edad_min ? `de ${a.edad_min}` : ""}${a.edad_max ? ` hasta ${a.edad_max}` : ""} años` : null;
 
   return (
@@ -93,7 +97,13 @@ export default async function AuditionPage({ params }: PageProps<"/audiciones/[i
               <p className="mt-2 text-texto-2">Si te invitaron, entra con la cuenta del mismo correo al que te llegó la invitación.</p>
             </div>
           )}
-          {abierta && session && (invitado || mine) && !mine?.checked_in_at && (
+          {pedido && (
+            <div id="completar" role="status" className="rounded-2xl border border-aviso/50 bg-aviso/10 p-5">
+              <p className="text-lg font-bold">Completa tu inscripción</p>
+              <p className="text-sm">El equipo te pidió completar o actualizar tu inscripción.{faltan.length ? <> Falta: <b>{faltan.join(", ")}</b>.</> : null} Llénalo abajo y dale guardar.</p>
+            </div>
+          )}
+          {(abierta || pedido) && session && (invitado || mine) && !mine?.checked_in_at && (
             <>
               <h2 className="titular text-2xl">{mine && mine.estado !== "cancelado" ? "Editar mi inscripción" : "Inscripción"}</h2>
               <ApplyForm aid={a.id} userId={session.userId} roles={roles} fields={fields} slots={a.elegir_horario && !enLinea ? slots : []} fechaAudicion={slots[0]?.inicia ?? null}

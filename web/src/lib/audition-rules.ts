@@ -145,3 +145,12 @@ export function whatsappAudicionUrl(numero: string, obra: string, nombre?: strin
   const quien = nombre?.trim() ? ` Soy ${nombre.trim().slice(0, 80)}.` : "";
   return `https://wa.me/${numero}?text=${encodeURIComponent(`Hola DARF, tengo dudas sobre las audiciones de ${obra.trim().slice(0, 120)}.${quien}`)}`;
 }
+
+/** 0133: qué le falta a una inscripción (las preguntas obligatorias sin respuesta y la foto, si se pide). */
+export function faltantesSolicitud(fields: { id: string; etiqueta: string; obligatorio: boolean }[], respuestas: Record<string, string> | null | undefined,
+  pedirFoto: boolean, foto: string | null | undefined): string[] {
+  return [
+    ...(pedirFoto && !foto ? ["Foto"] : []),
+    ...fields.filter((f) => f.obligatorio && !String(respuestas?.[f.id] ?? "").trim()).map((f) => f.etiqueta),
+  ];
+}

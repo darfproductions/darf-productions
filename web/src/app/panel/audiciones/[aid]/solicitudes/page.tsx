@@ -3,21 +3,24 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ActionForm } from "@/components/panel/ActionForm";
 import { Card, input } from "@/components/panel/ui";
-import { ESTADO_SOLICITUD, ageAt } from "@/lib/audition-rules";
+import { ESTADO_SOLICITUD, ageAt, hora } from "@/lib/audition-rules";
 import { formatSlot } from "@/lib/auditions";
 import { requireAudition, signPhotos } from "@/lib/panel-auditions";
 import { createClient } from "@/lib/supabase/server";
-import { addVideo, setApplicationEstado, setSlot } from "../../actions";
+import { addVideo, pedirCompletar, setApplicationEstado, setSlot } from "../../actions";
 import { Icono } from "@/components/Icono";
 
 export const metadata: Metadata = { title: "Solicitudes" };
+
+const fechaCorta = (iso: string) => `${new Intl.DateTimeFormat("es-MX", { timeZone: "America/Mexico_City", day: "numeric", month: "short" }).format(new Date(iso))}, ${hora(iso)}`;
 
 type App = {
   id: string; estado: string; ronda: number; nombre: string; fecha_nacimiento: string; telefono: string; foto_path: string | null;
   roles: string[]; respuestas: Record<string, string>; es_menor: boolean; tutor_nombre: string | null; tutor_telefono: string | null;
   tutor_email: string | null; consentimiento_imagen: boolean; walk_in: boolean; numero: number | null; checked_in_at: string | null;
-  created_at: string; slot_id: string | null; audition_slots: { inicia: string } | null;
+  created_at: string; slot_id: string | null; audition_slots: { inicia: string } | null; user_id: string | null;
 };
+type Faltante = { id: string; faltan: string[]; pedido_at: string | null; completado_at: string | null };
 const DECISIONES = ["convocado", "en_espera", "no_cumple", "inscrito"];
 
 // Solicitudes (solo quien gestiona: aquí sí hay datos de contacto). Si la convocatoria
@@ -29,19 +32,26 @@ export default async function Applications({ params, searchParams }: PageProps<"
   const estado = typeof sp.estado === "string" ? sp.estado : "";
   const rol = typeof sp.rol === "string" ? sp.rol : "";
   const supabase = await createClient();
-  const [{ data }, roles, fields, slots] = await Promise.all([
+  const [{ data }, roles, fields, slots, { data: faltData }] = await Promise.all([
     supabase.from("audition_applications").select("*, audition_slots(inicia)").eq("audition_id", aid).order("numero", { nullsFirst: false }).order("created_at"),
     supabase.from("audition_roles").select("id, nombre").eq("audition_id", aid).order("orden"),
     supabase.from("audition_fields").select("id, etiqueta").eq("audition_id", aid).order("orden"),
     supabase.from("audition_slots").select("id, inicia").eq("audition_id", aid).order("inicia"),
+    supabase.rpc("audition_faltantes", { aid }),
   ]);
+  // 0133: qué le falta a cada solicitud (preguntas obligatorias nuevas o la foto) y si ya se le pidió completar.
+  const falta = new Map(((faltData ?? []) as Faltante[]).map((x) => [x.id, x]));
+  const puedePedir = (a: App) => !!a.user_id && !a.checked_in_at && !["cancelado", "no_cumple"].includes(a.estado) && ["abierta", "cerrada"].includes(aud.estado);
   const horarios = (slots.data ?? []) as { id: string; inicia: string }[];
   const todas = (data ?? []) as App[];
-  const apps = todas.filter((a) => (!estado || a.estado === estado) && (!rol || a.roles.includes(rol)));
+  const faltaAlgo = (a: App) => (falta.get(a.id)?.faltan.length ?? 0) > 0;
+  const soloFalta = sp.falta === "1";
+  const apps = todas.filter((a) => (!estado || a.estado === estado) && (!rol || a.roles.includes(rol)) && (!soloFalta || faltaAlgo(a)));
+  const porPedir = todas.filter((a) => faltaAlgo(a) && puedePedir(a)).length;
   const fotos = await signPhotos(apps.map((a) => a.foto_path));
   const roleName = new Map((roles.data ?? []).map((r) => [r.id as string, r.nombre as string]));
   const q = (k: string, v: string) => {
-    const p = new URLSearchParams({ ...(estado && { estado }), ...(rol && { rol }) });
+    const p = new URLSearchParams({ ...(estado && { estado }), ...(rol && { rol }), ...(soloFalta && { falta: "1" }) });
     if (v) p.set(k, v); else p.delete(k);
     return `?${p.toString()}`;
   };
@@ -64,6 +74,19 @@ export default async function Applications({ params, searchParams }: PageProps<"
           </div>
         </details>
       </Card>
+      {todas.some(faltaAlgo) && (
+        <Card className="flex flex-col gap-2 border border-aviso/40">
+          <h2 className="font-bold">A {todas.filter(faltaAlgo).length} {todas.filter(faltaAlgo).length === 1 ? "solicitud le falta" : "solicitudes les falta"} información</h2>
+          <p className="text-sm text-texto-2">Les faltan preguntas obligatorias que agregaste después, o la foto. Al pedirles que completen, les llega un aviso con lo que falta y pueden editar su inscripción aunque ya haya cerrado. Al guardar, se les quita el aviso.</p>
+          <div className="flex flex-wrap items-center gap-2">
+            {porPedir > 0 && (
+              <ActionForm inline action={pedirCompletar} hidden={{ aid }} confirm={`¿Pedir a ${porPedir} ${porPedir === 1 ? "persona" : "personas"} que completen su inscripción?`}
+                submit={`Pedir que completen (${porPedir})`} submitClass="rounded-full bg-texto px-4 py-2 text-sm font-bold text-sala" />
+            )}
+            <Link href={q("falta", soloFalta ? "" : "1")} className="text-sm font-bold text-violeta-claro">{soloFalta ? "Ver todas" : "Ver solo a quienes les falta algo"}</Link>
+          </div>
+        </Card>
+      )}
       <div className="flex flex-wrap gap-2 text-xs">
         <Link href={q("estado", "")} className={`rounded-full border px-3 py-1.5 font-semibold ${!estado ? "border-texto" : "border-white/20"}`}>Todas ({todas.length})</Link>
         {Object.entries(ESTADO_SOLICITUD).map(([k, v]) => conteo(k) > 0 && (
@@ -106,6 +129,13 @@ export default async function Applications({ params, searchParams }: PageProps<"
                     </p>
                   ))}
                   {!a.consentimiento_imagen && <p className="text-xs text-texto-3">No autorizó fotos o video.</p>}
+                  {faltaAlgo(a) && <p className="text-xs font-semibold text-aviso">Le falta: {falta.get(a.id)!.faltan.join(", ")}</p>}
+                  {falta.get(a.id)?.pedido_at && <p className="text-xs text-aviso">Se le pidió completar ({fechaCorta(falta.get(a.id)!.pedido_at!)}); aún no lo hace.</p>}
+                  {!falta.get(a.id)?.pedido_at && falta.get(a.id)?.completado_at && <p className="text-xs text-exito">Completó su inscripción ({fechaCorta(falta.get(a.id)!.completado_at!)}).</p>}
+                  {puedePedir(a) && !falta.get(a.id)?.pedido_at && (
+                    <ActionForm inline action={pedirCompletar} hidden={{ aid, app: a.id }} confirm={`¿Pedir a ${a.nombre} que complete o actualice su inscripción?`}
+                      submit={faltaAlgo(a) ? "Pedir que complete" : "Regresar para que la actualice"} submitClass="self-start rounded-full border border-aviso/50 px-3 py-1.5 text-xs font-bold text-aviso" />
+                  )}
                   <ActionForm inline action={setApplicationEstado} hidden={{ aid, app: a.id }} submit="Guardar" submitClass="rounded-full border border-white/25 px-3 py-1.5 text-xs font-bold">
                     <select name="estado" defaultValue={a.estado} className={`${input} py-1.5 text-xs`} aria-label="Decisión">
                       {[...new Set([a.estado, ...DECISIONES])].map((e) => <option key={e} value={e}>{ESTADO_SOLICITUD[e]?.label ?? e}</option>)}

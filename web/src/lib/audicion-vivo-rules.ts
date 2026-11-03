@@ -13,6 +13,8 @@ export const ORDEN_FILA: { valor: OrdenFila; label: string; ayuda: string }[] = 
 export type FilaVivo = {
   id: string; numero: number | null; estado: string;
   checked_in_at: string | null; entered_at: string | null; finished_at: string | null;
+  /** 0133: grupo que pasa junto en un turno. */
+  grupo?: string | null;
 };
 
 /** Quién está en la fila de hoy: en el callback, solo los llamados. */
@@ -23,9 +25,10 @@ export function enLaFila<T extends FilaVivo>(rows: T[], fase: string): T[] {
 /** Quién pasaría con "Siguiente" (misma regla que audition_siguiente): ya llegó, no ha pasado; primero los números
  *  después del que está en escena y luego los que se saltaron. */
 export function quienSigue<T extends FilaVivo>(rows: T[], enEscena: string | null, fase: string): T | null {
-  const actual = rows.find((r) => r.id === enEscena)?.numero ?? null;
+  const cur = rows.find((r) => r.id === enEscena);
+  const actual = cur?.numero ?? null;
   const listos = enLaFila(rows, fase).filter((r) => r.checked_in_at && !r.finished_at && r.id !== enEscena
-    && !["cancelado", "no_cumple"].includes(r.estado));
+    && !(cur?.grupo && r.grupo === cur.grupo) && !["cancelado", "no_cumple"].includes(r.estado));
   const clave = (r: T) => [actual !== null && (r.numero ?? Infinity) < actual ? 1 : 0, r.numero ?? Infinity, Date.parse(r.checked_in_at ?? "") || 0];
   return listos.sort((a, b) => {
     const x = clave(a), y = clave(b);
@@ -37,6 +40,19 @@ export function quienSigue<T extends FilaVivo>(rows: T[], enEscena: string | nul
 export function esperando(rows: FilaVivo[], enEscena: string | null, fase: string): number {
   return enLaFila(rows, fase).filter((r) => r.checked_in_at && !r.entered_at && !r.finished_at && r.id !== enEscena
     && !["cancelado", "no_cumple"].includes(r.estado)).length;
+}
+
+/** 0133: quienes pasan con esta persona (ella incluida), en orden de número; si no va en grupo, solo ella. */
+export function companeros<T extends FilaVivo & { nombre: string }>(rows: T[], fila: T): T[] {
+  if (!fila.grupo) return [fila];
+  return rows.filter((r) => r.grupo === fila.grupo).sort((a, b) => (a.numero ?? Infinity) - (b.numero ?? Infinity));
+}
+
+/** "Nº 7 · Ana + Caro" para la fila en vivo. */
+export function nombreTurno<T extends FilaVivo & { nombre: string }>(rows: T[], fila: T): string {
+  const g = companeros(rows, fila);
+  const n = g[0].numero ?? fila.numero;
+  return `${n ? `Nº ${n} · ` : ""}${g.map((x) => (g.length > 1 ? x.nombre.split(" ")[0] : x.nombre)).join(" + ")}`;
 }
 
 /** "Hoy" o "Sábado 8 de noviembre, 10:00 a.m. · Foro DARF". */

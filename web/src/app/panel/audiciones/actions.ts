@@ -573,24 +573,62 @@ export async function cerrarRonda(aid: string, p: { destino: "votacion" | "callb
   return { ok: true, message: `Listo: ${n} ${n === 1 ? "persona llamada" : "personas llamadas"} a callback.${p.cuando === "otra_fecha" ? " Les llega el aviso con su QR." : " Ya les avisamos en su cuenta."}` };
 }
 
-export type JuezActual = {
+export type PersonaJuez = {
   app: string | null; numero: number | null; nombre: string; edad: number | null; foto: string | null; desde: string | null;
   personajes: string[] | null; respuestas: { pregunta: string; respuesta: string }[]; enlaces: { titulo: string; url: string }[];
   entrevista: { pregunta: string; respuesta: string }[]; extra: string | null; entrevista_at: string | null;
   historial: { obra: string; temporada: string | null; tipo: string; papel: string | null }[];
   puntos: Record<string, number>; notas: string | null; picks: { opcion: number; role_id: string | null; ensamble: boolean }[];
 };
+/** 0133: si pasan en grupo, "grupo" trae a cada integrante (cada quien con su evaluación). */
+export type JuezActual = PersonaJuez & { grupo?: PersonaJuez[] | null };
 
-/** Quien está en escena ahora, para la pantalla de los jueces (se vuelve a pedir cada pocos segundos).
- *  yaTengo: la persona que el juez ya tiene en pantalla; si sigue siendo ella, no se vuelve a firmar su foto. */
-export async function juezActual(aid: string, ronda: number, yaTengo?: string | null): Promise<JuezActual | null> {
+/** Quien está en escena ahora (y su grupo, si pasan juntos), para la pantalla de los jueces (se vuelve a pedir cada
+ *  pocos segundos). yaTengo: personas que el juez ya tiene en pantalla; a ellas no se les vuelve a firmar la foto. */
+export async function juezActual(aid: string, ronda: number, yaTengo: string[] = []): Promise<JuezActual | null> {
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("audition_juez_actual", { aid, p_ronda: ronda });
   if (error || !data || !(data as { app: string | null }).app) return null;
-  const d = data as Omit<JuezActual, "foto"> & { foto_path: string | null };
-  let foto: string | null = null;
-  if (d.foto_path && d.app !== yaTengo) foto = (await supabase.storage.from("audiciones").createSignedUrl(d.foto_path, 3600)).data?.signedUrl ?? null;
-  const { foto_path: _f, ...resto } = d;
-  void _f;
-  return { ...resto, foto };
+  type ConFoto = Omit<PersonaJuez, "foto"> & { foto_path: string | null };
+  const d = data as ConFoto & { grupo?: ConFoto[] | null };
+  const conFoto = async (p: ConFoto): Promise<PersonaJuez> => {
+    const { foto_path, ...resto } = p;
+    const foto = foto_path && !yaTengo.includes(p.app ?? "")
+      ? (await supabase.storage.from("audiciones").createSignedUrl(foto_path, 3600)).data?.signedUrl ?? null : null;
+    return { ...resto, foto };
+  };
+  const grupo = d.grupo && d.grupo.length > 1 ? await Promise.all(d.grupo.map(conFoto)) : null;
+  const { grupo: _g, ...yo } = d;
+  void _g;
+  return { ...(await conFoto(yo)), grupo };
+}
+
+// ════════ 0133: pedir que completen la inscripción ════════
+
+/** A una solicitud (campo "app") o a todas las que les falte algo (sin "app"). Les llega el aviso y pueden editar
+ *  aunque la inscripción ya haya cerrado. */
+export async function pedirCompletar(_p: AudState, f: FormData): Promise<AudState> {
+  const aid = str(f, "aid");
+  const app = str(f, "app");
+  const { data, error } = await (await createClient()).rpc("audition_pedir_completar", { aid, p_apps: app ? [app] : null });
+  if (error) return { ok: false, message: mensajeError(error) };
+  const n = Number(data ?? 0);
+  if (!n) return { ok: true, message: app ? "No se pudo pedir: la persona ya se registró en la audición o no tiene cuenta." : "A nadie le falta información." };
+  return done(aid, app ? "Listo: le avisamos que complete su inscripción." : `Listo: avisamos a ${n} ${n === 1 ? "persona" : "personas"} que completen su inscripción.`);
+}
+
+// ════════ 0133: grupos que pasan juntos en un turno ════════
+
+export async function agruparTurno(aid: string, apps: string[]): Promise<{ ok: boolean; message: string }> {
+  const { error } = await (await createClient()).rpc("audition_agrupar", { aid, p_apps: apps });
+  if (error) return { ok: false, message: mensajeError(error) };
+  revalidatePath(base(aid), "layout");
+  return { ok: true, message: `Listo: ${apps.length} personas pasan juntas.` };
+}
+
+export async function separarTurno(aid: string, app: string): Promise<{ ok: boolean; message?: string }> {
+  const { error } = await (await createClient()).rpc("audition_separar", { aid, app });
+  if (error) return { ok: false, message: mensajeError(error) };
+  revalidatePath(base(aid), "layout");
+  return { ok: true };
 }

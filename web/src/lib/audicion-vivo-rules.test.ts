@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { enLaFila, esperando, gruposCierre, quienSigue, textoCallback, validarCallback, type FilaVivo, type PersonaCierre } from "./audicion-vivo-rules";
+import { companeros, enLaFila, esperando, gruposCierre, nombreTurno, quienSigue, textoCallback, validarCallback, type FilaVivo, type PersonaCierre } from "./audicion-vivo-rules";
 
 const f = (id: string, numero: number, extra: Partial<FilaVivo> = {}): FilaVivo =>
   ({ id, numero, estado: "convocado", checked_in_at: "2026-11-08T16:00:00Z", entered_at: null, finished_at: null, ...extra });
@@ -57,5 +57,19 @@ describe("día de audiciones en vivo", () => {
     expect(validarCallback("hoy", null, 2, ahora)).toBeNull();
     expect(validarCallback("otra_fecha", "2026-10-30T10:00", 2, ahora)).toMatch(/fecha/);
     expect(validarCallback("otra_fecha", "2026-11-08T10:00", 2, ahora)).toBeNull();
+  });
+});
+
+describe("grupos que pasan juntos (0133)", () => {
+  it("Siguiente no toma a quien va en el grupo que está en escena; el nombre del turno junta al grupo", () => {
+    const rows = [
+      { ...f("a", 1, { entered_at: "x", grupo: "g" }), nombre: "Ana López" },
+      { ...f("b", 2), nombre: "Beto Ruiz" },
+      { ...f("c", 3, { entered_at: "x", grupo: "g" }), nombre: "Caro Díaz" },
+    ];
+    expect(quienSigue(rows, "a", "audicion")?.id).toBe("b");
+    expect(companeros(rows, rows[2]).map((r) => r.id)).toEqual(["a", "c"]);
+    expect(nombreTurno(rows, rows[0])).toBe("Nº 1 · Ana + Caro");
+    expect(nombreTurno(rows, rows[1])).toBe("Nº 2 · Beto Ruiz");
   });
 });

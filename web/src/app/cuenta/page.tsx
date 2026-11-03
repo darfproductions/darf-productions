@@ -487,7 +487,9 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
                         : <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${ESTADO_SOLICITUD[a.estado]?.cls ?? ""}`}>{ESTADO_SOLICITUD[a.estado]?.label ?? a.estado}</span>}
                       {a.numero && <span className="ml-2">Número {a.numero}</span>}
                     </p>
-                    <Link href={`/audiciones/${a.audition_id}`} className="mt-1 text-sm font-bold text-violeta-claro">Ver convocatoria <Icono nombre="flecha-der" /></Link>
+                    {a.completar_pedido_at && !a.checked_in_at
+                      ? <Link href={`/audiciones/${a.audition_id}#completar`} className="mt-1 self-start rounded-full bg-aviso/15 px-3 py-1.5 text-sm font-bold text-aviso">El equipo te pidió completar tu inscripción <Icono nombre="flecha-der" /></Link>
+                      : <Link href={`/audiciones/${a.audition_id}`} className="mt-1 text-sm font-bold text-violeta-claro">Ver convocatoria <Icono nombre="flecha-der" /></Link>}
                   </div>
                 </li>
               ))}
