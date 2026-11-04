@@ -5,6 +5,46 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-11-03 — 0134: revisar solicitudes de audición (aprobar / regresar con nota + WhatsApp)
+
+- Toda solicitud nueva queda **En revisión** (estado `inscrito`; los nombres en pantalla cambiaron: Inscrito → "En
+  revisión", Convocado → "Aprobada").
+- En Solicitudes, cada una tiene **Revisar solicitud**:
+  - **Aprobar** (`audition_revisar`): pasa a la lista del día y le llega el aviso.
+  - **Regresar…** con una nota (viene llena con lo que le falta): le llega el aviso con la nota y puede corregir aunque
+    la inscripción haya cerrado.
+  - Al guardar, vuelve a revisión con "Ya corrigió su solicitud".
+- **WhatsApp**: botón verde con el mensaje ya armado.
+  - Al regresar: "Te regresamos tu solicitud: <nota> … complétala aquí".
+  - Al aprobar: "fue aprobada… tu QR está en tu cuenta".
+  - Si la persona es menor, va al teléfono del tutor.
+- **"Aprobar las completas"** (`audition_aprobar_completas`) para las que ya estaban inscritas y no les falta nada.
+- **Día de la audición**:
+  - Las que no están aprobadas van aparte, en "Solicitudes sin aprobar".
+  - Si alguien sin aprobar llega con su QR, se registra igual y la entrada avisa (`sin_aprobar`).
+- La persona ve en la página de la audición si su solicitud está en revisión, aprobada o regresada (con la nota del
+  equipo).
+
+## 2026-11-03 — 0133: audiciones — pedir que completen y grupos que pasan juntos
+
+- **Pedir que completen**
+  - Diego agregó preguntas y la foto cuando ya había solicitudes.
+  - En Solicitudes se ve qué le falta a cada una (`audition_faltantes`): la foto, si se pide, y las preguntas
+    obligatorias sin respuesta.
+  - Hay un botón para pedirlo a todas las que les falta algo, o "Pedir que complete" / "Regresar para que la
+    actualice" en cada una (`audition_pedir_completar`).
+  - A la persona le llega el aviso con lo que falta. En la página de la audición y en Mi cuenta ve "Completa tu
+    inscripción".
+  - Puede editar aunque la inscripción ya haya cerrado: `audition_apply` lo permite mientras tenga el pedido.
+  - Al guardar se quita el pedido y queda `completado_at`.
+- **Grupos que pasan juntos**: en Día de la audición, "Pasan en grupo (mismo turno)" junta a varias personas
+  (`audition_agrupar`; "Separar" con `audition_separar`).
+  - Cada quien conserva su número.
+  - Con un solo SIGUIENTE entra todo el grupo, y al pasar al siguiente sale todo el grupo.
+  - La fila muestra "Nº 1 · Valeria + Sofía".
+  - Los jueces ven una pestaña por integrante y califican a cada quien por separado (`audition_juez_actual` trae el
+    grupo).
+
 ## 2026-11-02 — "Venta por zona" interactiva: órdenes por zona, método de pago editable, Excel
 
 - Motivo: el Excel de Diego no cuadraba con la página. La diferencia era un boleto VIP de $400 que no está registrado

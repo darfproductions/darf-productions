@@ -30,6 +30,7 @@ export function Desk({ aid }: { aid: string }) {
           {"numero" in res && res.numero && <p className="text-5xl font-black">Turno {res.numero}</p>}
           {"nombre" in res && res.nombre && <p className="text-lg">{res.nombre}{"es_menor" in res && res.es_menor ? " · menor de edad" : ""}</p>}
           {"personajes" in res && res.personajes?.length ? <p className="text-sm opacity-90">Personaje: {res.personajes.join(", ")}</p> : null}
+          {"sin_aprobar" in res && res.sin_aprobar ? <p className="mt-2 rounded-lg bg-black/30 px-3 py-1.5 text-sm font-bold text-[#fde68a]">Ojo: su solicitud no estaba aprobada. Ya quedó registrado.</p> : null}
           {res.result === "error" && "message" in res && <p>{res.message}</p>}
         </div>
       )}

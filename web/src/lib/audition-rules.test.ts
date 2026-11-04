@@ -87,3 +87,19 @@ describe("WhatsApp de dudas de audición", () => {
     expect(whatsappAudicionUrl("", "Showman")).toBe("");
   });
 });
+
+describe("solicitudes: faltantes y mensajes (0133/0134)", () => {
+  it("qué le falta: foto (si se pide) y preguntas obligatorias vacías", async () => {
+    const { faltantesSolicitud } = await import("./audition-rules");
+    const fields = [{ id: "a", etiqueta: "Experiencia", obligatorio: true }, { id: "b", etiqueta: "Redes", obligatorio: false }];
+    expect(faltantesSolicitud(fields, { a: " " }, true, null)).toEqual(["Foto", "Experiencia"]);
+    expect(faltantesSolicitud(fields, { a: "Coro" }, true, "x.jpg")).toEqual([]);
+    expect(faltantesSolicitud(fields, {}, false, null)).toEqual(["Experiencia"]);
+  });
+  it("mensajes de WhatsApp con el primer nombre, la nota y la liga", async () => {
+    const { mensajeAprobada, mensajeRegreso } = await import("./audition-rules");
+    expect(mensajeRegreso("Ana López", "Teen Beach", "Te falta la foto.", "https://x/a")).toBe(
+      "Hola Ana, te escribimos de DARF Productions sobre tu inscripción a Teen Beach. Te regresamos tu solicitud: Te falta la foto.\n\nPor favor complétala aquí: https://x/a\n¡Gracias!");
+    expect(mensajeAprobada("Ana López", "Teen Beach", "https://x/cuenta")).toContain("¡Hola Ana! Tu solicitud para Teen Beach fue aprobada");
+  });
+});

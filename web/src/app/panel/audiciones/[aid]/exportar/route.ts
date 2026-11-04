@@ -4,7 +4,7 @@ import { csv } from "@/lib/pago-rules";
 import { createClient } from "@/lib/supabase/server";
 
 const ESTADO: Record<string, string> = {
-  inscrito: "Inscrito", convocado: "Convocado", en_espera: "En espera", no_cumple: "No cumple", callback: "Callback",
+  inscrito: "En revisión", convocado: "Aprobada", en_espera: "En espera", no_cumple: "No cumple", callback: "Callback",
   seleccionado: "Seleccionado", no_seleccionado: "No seleccionado", cancelado: "Canceló",
 };
 const hora = (iso: string | null) => (iso ? new Intl.DateTimeFormat("es-MX", { dateStyle: "short", timeStyle: "short", timeZone: "America/Mexico_City" }).format(new Date(iso)) : "");

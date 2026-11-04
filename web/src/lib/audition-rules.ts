@@ -2,8 +2,8 @@
 // La base vuelve a validar todo al inscribir (audition_apply, 0036).
 
 export const ESTADO_SOLICITUD: Record<string, { label: string; cls: string }> = {
-  inscrito: { label: "Inscrito", cls: "bg-[#3a3346] text-texto-2" },
-  convocado: { label: "Convocado", cls: "bg-[#1e3a8a] text-[#dbeafe]" },
+  inscrito: { label: "En revisión", cls: "bg-[#3a3346] text-texto-2" },
+  convocado: { label: "Aprobada", cls: "bg-[#1e3a8a] text-[#dbeafe]" },
   en_espera: { label: "En espera", cls: "bg-[#5a4313] text-[#fde68a]" },
   no_cumple: { label: "No cumple requisitos", cls: "bg-[#5a1a22] text-[#fecdd3]" },
   callback: { label: "Callback", cls: "bg-[#581c87] text-[#f3e8ff]" },
@@ -144,4 +144,25 @@ export function whatsappAudicionUrl(numero: string, obra: string, nombre?: strin
   if (!numero) return "";
   const quien = nombre?.trim() ? ` Soy ${nombre.trim().slice(0, 80)}.` : "";
   return `https://wa.me/${numero}?text=${encodeURIComponent(`Hola DARF, tengo dudas sobre las audiciones de ${obra.trim().slice(0, 120)}.${quien}`)}`;
+}
+
+/** 0133: qué le falta a una inscripción (las preguntas obligatorias sin respuesta y la foto, si se pide). */
+export function faltantesSolicitud(fields: { id: string; etiqueta: string; obligatorio: boolean }[], respuestas: Record<string, string> | null | undefined,
+  pedirFoto: boolean, foto: string | null | undefined): string[] {
+  return [
+    ...(pedirFoto && !foto ? ["Foto"] : []),
+    ...fields.filter((f) => f.obligatorio && !String(respuestas?.[f.id] ?? "").trim()).map((f) => f.etiqueta),
+  ];
+}
+
+/** 0134: mensaje de WhatsApp al regresar una solicitud (con la nota del equipo). */
+export function mensajeRegreso(nombre: string, convocatoria: string, nota: string, liga: string): string {
+  const n = nombre.trim().split(/\s+/)[0] || nombre;
+  return `Hola ${n}, te escribimos de DARF Productions sobre tu inscripción a ${convocatoria}. Te regresamos tu solicitud: ${nota.trim()}\n\nPor favor complétala aquí: ${liga}\n¡Gracias!`;
+}
+
+/** 0134: mensaje de WhatsApp al aprobar una solicitud. */
+export function mensajeAprobada(nombre: string, convocatoria: string, liga: string): string {
+  const n = nombre.trim().split(/\s+/)[0] || nombre;
+  return `¡Hola ${n}! Tu solicitud para ${convocatoria} fue aprobada: ya estás en la lista para audicionar. Tu QR para el día de la audición está en tu cuenta: ${liga}`;
 }

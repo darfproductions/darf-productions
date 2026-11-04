@@ -11,7 +11,8 @@ import { autoOrder, numerarAhora, walkIn } from "../../actions";
 import { Desk } from "./Desk";
 import { AlFinal, FilaEnVivo } from "./Fila";
 import { OrderButtons, StepButtons } from "./StepButtons";
-import { enLaFila, esperando, quienSigue, textoCallback } from "@/lib/audicion-vivo-rules";
+import { companeros, enLaFila, esperando, quienSigue, textoCallback } from "@/lib/audicion-vivo-rules";
+import { GruposTurno, Separar } from "./Grupos";
 import { Icono } from "@/components/Icono";
 
 export const metadata: Metadata = { title: "Día de la audición" };
@@ -19,6 +20,7 @@ export const metadata: Metadata = { title: "Día de la audición" };
 type Row = {
   id: string; numero: number | null; nombre: string; slot_id: string | null; slot_inicia: string | null; sala: string | null; estado: string;
   walk_in: boolean; es_menor: boolean; checked_in_at: string | null; entered_at: string | null; finished_at: string | null;
+  grupo?: string | null;
 };
 
 // Día de la audición: lista en orden (sin datos de contacto), QR, Llegó → Entró → Terminó
@@ -29,16 +31,29 @@ export default async function DayPage({ params, searchParams }: PageProps<"/pane
   const { a, may } = await requireAudition(aid, ["audiciones.registro", "audiciones.gestionar"], "/registro");
   const gestiona = may("audiciones.gestionar");
   const supabase = await createClient();
-  const { data, error } = await supabase.rpc("audition_day_list", { aid });
+  const [{ data, error }, { data: gruposData }] = await Promise.all([
+    supabase.rpc("audition_day_list", { aid }),
+    supabase.rpc("audition_grupos", { aid }),
+  ]);
+  // 0133: quienes pasan juntos en un turno.
+  const grupoDe = new Map(((gruposData ?? []) as { id: string; grupo_turno: string }[]).map((g) => [g.id, g.grupo_turno]));
   // 0131: en la ronda de callback la fila es solo de los llamados.
-  const todos = enLaFila((data ?? []) as Row[], a.fase);
+  const todos = enLaFila(((data ?? []) as Row[]).map((r) => ({ ...r, grupo: grupoDe.get(r.id) ?? null })), a.fase);
   const enEscena = a.en_escena ?? null;
-  const actual = todos.find((r) => r.id === enEscena) ?? null;
-  const sigue = quienSigue(todos, enEscena, a.fase);
+  const turno = (r: Row | null) => {
+    if (!r) return null;
+    const g = companeros(todos, r);
+    return { id: r.id, numero: g[0].numero ?? r.numero, nombre: g.map((x) => (g.length > 1 ? x.nombre.split(" ")[0] : x.nombre)).join(" + ") };
+  };
+  const actual = turno(todos.find((r) => r.id === enEscena) ?? null);
+  const sigue = turno(quienSigue(todos, enEscena, a.fase));
   const enVivo = a.modalidad !== "en_linea";
   const cb = a.fase === "callback" ? textoCallback(a.callback_cuando, a.callback_fecha, a.callback_lugar) : null;
   const slot = typeof sp.horario === "string" ? sp.horario : "";
-  const rows = slot ? todos.filter((r) => (r.slot_id ?? "sin") === slot) : todos;
+  const filtrados = slot ? todos.filter((r) => (r.slot_id ?? "sin") === slot) : todos;
+  // 0134: las solicitudes aún sin aprobar (en revisión) van aparte; si llegan, se registran igual (con aviso).
+  const sinAprobar = filtrados.filter((r) => r.estado === "inscrito" && !r.walk_in && !r.checked_in_at);
+  const rows = filtrados.filter((r) => !sinAprobar.includes(r));
   const resumen = daySummary(rows);
   const horarios = [...new Map(todos.map((r) => [r.slot_id ?? "sin", r.slot_inicia])).entries()];
   // Reordenar solo antes de llegar, sobre la lista completa con número.
@@ -54,6 +69,10 @@ export default async function DayPage({ params, searchParams }: PageProps<"/pane
       <div className="flex flex-col gap-4 lg:col-span-5">
         <Card><Desk aid={aid} /></Card>
         {enVivo && <FilaEnVivo aid={aid} actual={actual} sigue={sigue} esperan={esperando(todos, enEscena, a.fase)} callback={a.fase === "callback"} />}
+        {enVivo && (
+          <GruposTurno aid={aid} personas={todos.filter((r) => !r.entered_at && !["cancelado", "no_cumple"].includes(r.estado))
+            .map((r) => ({ id: r.id, numero: r.numero, nombre: r.nombre, llego: !!r.checked_in_at, grupo: r.grupo ?? null }))} />
+        )}
         {gestiona && a.numeracion === "personaje" && (
           <Card className="flex flex-col gap-2">
             <h2 className="font-bold">Lugares por personaje</h2>
@@ -127,6 +146,11 @@ export default async function DayPage({ params, searchParams }: PageProps<"/pane
                     {gestiona ? <Link href={`/panel/audiciones/${aid}/aspirante/${r.id}`} className="font-bold hover:underline">{r.nombre}</Link> : <b>{r.nombre}</b>}
                     {r.es_menor && <span className="ml-2 text-xs text-aviso">menor</span>}
                     {r.walk_in && <span className="ml-2 text-xs text-texto-3">sin cita</span>}
+                    {r.grupo && (
+                      <span className="ml-2 rounded-full bg-lila/20 px-2 py-0.5 text-[10px] font-bold text-lila">
+                        Pasa con {companeros(todos, r).filter((x) => x.id !== r.id).map((x) => x.nombre.split(" ")[0]).join(", ")}
+                      </span>
+                    )}
                     <span className={`ml-2 rounded-full px-2 py-0.5 text-[10px] font-bold ${DAY_LABEL[st].cls}`}>{DAY_LABEL[st].label}</span>
                     <span className="block text-xs text-texto-3">
                       {r.slot_inicia ? <span>{formatSlot(r.slot_inicia)}</span> : "Sin horario"}
@@ -140,6 +164,7 @@ export default async function DayPage({ params, searchParams }: PageProps<"/pane
                   )}
                   {r.id === enEscena && <span className="rounded-full bg-lila px-3 py-1 text-xs font-bold text-sala">En escena</span>}
                   {enVivo && st === "llego" && r.id !== enEscena && <AlFinal aid={aid} app={r.id} nombre={r.nombre} />}
+                  {r.grupo && !r.entered_at && <Separar aid={aid} app={r.id} nombre={r.nombre} />}
                   {st !== "no_cumple" && r.id !== enEscena && <StepButtons aid={aid} app={r.id} nombre={r.nombre} status={st} soloLlegada={enVivo} />}
                 </li>
               );
@@ -147,6 +172,23 @@ export default async function DayPage({ params, searchParams }: PageProps<"/pane
           </ul>
           {rows.length === 0 && <p className="px-5 py-4 text-texto-2">Aún no hay personas en la lista.</p>}
         </Card>
+        {sinAprobar.length > 0 && (
+          <Card className="p-0 md:p-0">
+            <details>
+              <summary className="cursor-pointer px-5 py-4 font-bold">Solicitudes sin aprobar ({sinAprobar.length})</summary>
+              <p className="px-5 pb-2 text-xs text-texto-3">Todavía están en revisión (se aprueban en Solicitudes). Si alguien llega, se le puede registrar igual.</p>
+              <ul className="divide-y divide-white/10">
+                {sinAprobar.map((r) => (
+                  <li key={r.id} className="flex flex-wrap items-center gap-3 px-5 py-3 text-sm">
+                    <b className="w-12 shrink-0 text-lg">{r.numero ?? "—"}</b>
+                    <span className="min-w-0 flex-1">{gestiona ? <Link href={`/panel/audiciones/${aid}/aspirante/${r.id}`} className="font-bold hover:underline">{r.nombre}</Link> : <b>{r.nombre}</b>}</span>
+                    <StepButtons aid={aid} app={r.id} nombre={r.nombre} status="pendiente" soloLlegada={enVivo} />
+                  </li>
+                ))}
+              </ul>
+            </details>
+          </Card>
+        )}
         <p className="text-xs text-texto-3">La lista se actualiza sola cada 20 segundos. Las horas de llegada, entrada y salida quedan en la ficha de cada aspirante (sirven para ubicarlo en el video del día).</p>
       </div>
     </div>
