@@ -7,7 +7,7 @@ import { sellerPath, type MySale } from "@/lib/seller-rules";
 import { PageHeading } from "@/components/PageHeading";
 import { requireSession } from "@/lib/auth";
 import { ESTADO_SOLICITUD } from "@/lib/audition-rules";
-import { formatSlot, listMyApplications, listMyInvites } from "@/lib/auditions";
+import { formatSlot, listMyApplications, listMyInvites, numeroVisible } from "@/lib/auditions";
 import { listMyOffers, offerLabel } from "@/lib/casting";
 import { OfferReplyForm } from "./OfferReplyForm";
 import { env } from "@/lib/env";
@@ -485,7 +485,7 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
                       {a.auditions?.estado === "cancelada"
                         ? <span className="rounded-full bg-[#5a1a22] px-2.5 py-1 text-xs font-bold text-[#fecdd3]">Convocatoria cancelada</span>
                         : <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${ESTADO_SOLICITUD[a.estado]?.cls ?? ""}`}>{ESTADO_SOLICITUD[a.estado]?.label ?? a.estado}</span>}
-                      {a.numero && <span className="ml-2">Número {a.numero}</span>}
+                      {numeroVisible(a) && <span className="ml-2">Número {numeroVisible(a)}</span>}
                     </p>
                     {a.completar_pedido_at && !a.checked_in_at
                       ? <Link href={`/audiciones/${a.audition_id}#completar`} className="mt-1 self-start rounded-full bg-aviso/15 px-3 py-1.5 text-sm font-bold text-aviso">El equipo te pidió completar tu inscripción <Icono nombre="flecha-der" /></Link>

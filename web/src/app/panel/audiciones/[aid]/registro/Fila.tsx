@@ -13,7 +13,7 @@ export function FilaEnVivo({ aid, actual, sigue, esperan, callback, conGrupo = f
   const router = useRouter();
   const [pending, start] = useTransition();
   const [msg, setMsg] = useState<string | null>(null);
-  const nombre = (p: Persona) => (p ? `${p.numero ? `Nº ${p.numero} · ` : ""}${p.nombre}` : "");
+  const nombre = (p: Persona) => (p ? `${p.numero ? `Turno ${p.numero} · ` : ""}${p.nombre}` : "");
 
   const siguiente = () => start(async () => {
     setMsg(null);
@@ -23,7 +23,7 @@ export function FilaEnVivo({ aid, actual, sigue, esperan, callback, conGrupo = f
   });
   const ordenar = (modo: OrdenFila) => start(async () => {
     const etiqueta = ORDEN_FILA.find((o) => o.valor === modo)!.label.toLowerCase();
-    if (!confirm(`¿Ordenar ${etiqueta} a quienes esperan? Sus números pueden cambiar; quien ya pasó no se mueve.`)) return;
+    if (!confirm(`¿Ordenar ${etiqueta} a todos los que aún no pasan? Sus números cambian; quien ya pasó no se mueve. Quienes se mencionaron en «¿con quién pasas?» quedan juntos en un turno.`)) return;
     const r = await reordenarFila(aid, modo);
     setMsg(r.message);
     router.refresh();
@@ -39,7 +39,7 @@ export function FilaEnVivo({ aid, actual, sigue, esperan, callback, conGrupo = f
         </div>
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-aviso">Sigue</p>
-          <p className="text-2xl font-black leading-tight">{sigue ? nombre(sigue) : <span className="text-base font-semibold text-texto-3">Nadie esperando</span>}</p>
+          <p className="text-2xl font-black leading-tight">{sigue ? nombre(sigue) : <span className="text-base font-semibold text-texto-3">{esperan === 0 ? "Nadie ha llegado todavía" : "Nadie esperando"}</span>}</p>
           <p className="text-xs text-texto-3">{esperan} {esperan === 1 ? "persona espera" : "personas esperan"}</p>
         </div>
       </div>
@@ -57,7 +57,7 @@ export function FilaEnVivo({ aid, actual, sigue, esperan, callback, conGrupo = f
               <b>{o.label}</b><span className="text-xs text-texto-3">{o.ayuda}</span>
             </button>
           ))}
-          <p className="text-xs text-texto-3">Quien llegue después se forma al final. Para mover a una sola persona, usa &ldquo;Al final&rdquo; en la lista.</p>
+          <p className="text-xs text-texto-3">El número es el lugar en la fila: todos lo tienen y quienes pasan juntos comparten uno. Para mover a una sola persona (o a su turno) usa las flechas, &ldquo;Mover a&rdquo; o &ldquo;Al final&rdquo; en la lista.</p>
         </div>
       </details>
     </section>

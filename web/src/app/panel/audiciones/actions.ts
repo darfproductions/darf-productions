@@ -9,7 +9,7 @@ import { criteriosFromText } from "@/lib/audition-rules";
 import { EN_BLANCO, PLANTILLAS, REGISTRO_PERMANENTE, type Plantilla } from "@/lib/audition-templates";
 import { getSession } from "@/lib/auth";
 import { localMxToIso } from "@/lib/dates";
-import type { OrdenFila } from "@/lib/audicion-vivo-rules";
+import { sugerirGrupos, type OrdenFila } from "@/lib/audicion-vivo-rules";
 import { mensajeError } from "@/lib/errores";
 import { createClient } from "@/lib/supabase/server";
 import { refrescarPublico } from "@/lib/supabase/publico";
@@ -328,7 +328,10 @@ export async function addSlot(_p: AudState, f: FormData): Promise<AudState> {
   const inicia = localMxToIso(str(f, "inicia"));
   if (!inicia) return { ok: false, message: "Elige fecha y hora." };
   const supabase = await createClient();
-  const { error } = await supabase.from("audition_slots").insert({ audition_id: aid, inicia, cupo: Number(f.get("cupo") ?? 0), sala: str(f, "sala") || null });
+  // 0140: hora de fin opcional ("de 11:50 a 12:10").
+  const termina = str(f, "termina") ? localMxToIso(str(f, "termina")) : null;
+  if (termina && termina <= inicia) return { ok: false, message: "La hora de fin debe ser después de la de inicio." };
+  const { error } = await supabase.from("audition_slots").insert({ audition_id: aid, inicia, termina, cupo: Number(f.get("cupo") ?? 0), sala: str(f, "sala") || null });
   if (error) return { ok: false, message: error.message };
   return done(aid, "Horario agregado.");
 }
@@ -419,13 +422,21 @@ export async function autoOrder(_p: AudState, f: FormData): Promise<AudState> {
   return done(aid, `Listo: ${data} personas ordenadas por horario.`);
 }
 
-/** 0116: repartir ya los números por personaje (si no, se reparten solos al cerrar inscripciones). */
+/** Repartir ya los turnos (si no, se reparten solos al cerrar la inscripción). 0140: en cualquier modo menos "al llegar". */
 export async function numerarAhora(_p: AudState, f: FormData): Promise<AudState> {
   const aid = str(f, "aid");
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("audition_numerar_ahora", { aid });
   if (error) return { ok: false, message: mensajeError(error) };
-  return done(aid, `Listo: ${data} personas con su lugar. Ya les llegó el aviso a su cuenta.`);
+  return done(aid, `Listo: ${data} ${Number(data) === 1 ? "persona" : "personas"} con su turno. Revisa el orden y, cuando esté, manda los turnos.`);
+}
+
+/** 0140: el horario de una persona, desde su renglón en la fila. */
+export async function asignarHorario(aid: string, app: string, slot: string | null): Promise<{ ok: boolean; message?: string }> {
+  const { error } = await (await createClient()).rpc("audition_set_slot", { aid, app, p_slot: slot });
+  if (error) return { ok: false, message: mensajeError(error) };
+  revalidatePath(base(aid), "layout");
+  return { ok: true };
 }
 
 /** Subir o bajar a alguien en la lista (intercambia su número con el de al lado). */
@@ -545,20 +556,51 @@ export async function pasarSiguiente(aid: string): Promise<EnEscenaRes> {
 // ════════ 0131: la fila del día (recepción y host) y terminar audiciones ════════
 
 /** Cambiar el orden de quienes esperan: por llegada, por registro o por personaje. */
-export async function reordenarFila(aid: string, modo: OrdenFila): Promise<{ ok: boolean; message: string }> {
+export async function reordenarFila(aid: string, modo: OrdenFila, juntar = true): Promise<{ ok: boolean; message: string }> {
+  // 0140: primero se juntan en un turno quienes se mencionaron entre sí; luego se ordena turno por turno.
+  const j = juntar ? await juntarSugeridos(aid) : { ok: true, grupos: 0 };
+  if (!j.ok) return { ok: false, message: j.message ?? "No se pudieron juntar los grupos." };
   const { data, error } = await (await createClient()).rpc("audition_reordenar", { aid, p_modo: modo });
   if (error) return { ok: false, message: mensajeError(error) };
   revalidatePath(base(aid), "layout");
   const n = Number(data ?? 0);
-  return { ok: true, message: n ? `Listo: ${n} ${n === 1 ? "persona" : "personas"} en el nuevo orden.` : "No hay nadie esperando para ordenar." };
+  const g = j.grupos ? ` Se juntaron ${j.grupos} ${j.grupos === 1 ? "grupo" : "grupos"} que pasan en el mismo turno.` : "";
+  return { ok: true, message: n ? `Listo: ${n} ${n === 1 ? "persona" : "personas"} en el nuevo orden.${g}` : "No hay nadie esperando para ordenar." };
 }
 
 /** Mandar a alguien al final de la fila. */
 export async function mandarAlFinal(aid: string, app: string): Promise<{ ok: boolean; message?: string }> {
-  const { error } = await (await createClient()).rpc("audition_al_final", { aid, app });
+  return moverFila(aid, app, "final");
+}
+
+/** 0140: mover un turno a mano (arriba, abajo, al final o al lugar N). Si va en grupo, se mueve todo el turno. */
+export async function moverFila(aid: string, app: string, a: "arriba" | "abajo" | "final" | number): Promise<{ ok: boolean; message?: string }> {
+  const { error } = await (await createClient()).rpc("audition_mover", typeof a === "number" ? { aid, app, p_lugar: a } : { aid, app, p_dir: a });
   if (error) return { ok: false, message: mensajeError(error) };
   revalidatePath(base(aid), "layout");
   return { ok: true };
+}
+
+/** 0140: juntar en un turno a quienes se mencionaron entre sí en «¿con quién pasas?» (solo los que aún no pasan y no
+ *  están ya en un grupo). Devuelve cuántos grupos se armaron. */
+export async function juntarSugeridos(aid: string): Promise<{ ok: boolean; grupos: number; message?: string }> {
+  const supabase = await createClient();
+  const [{ data: lista }, { data: sistema }, { data: grupos }] = await Promise.all([
+    supabase.rpc("audition_day_list", { aid }), supabase.rpc("audition_respuestas_sistema", { aid }), supabase.rpc("audition_grupos", { aid }),
+  ]);
+  const con = new Map(((sistema ?? []) as { id: string; companeros: string | null }[]).map((x) => [x.id, x.companeros]));
+  const enGrupo = new Set(((grupos ?? []) as { id: string }[]).map((g) => g.id));
+  const personas = ((lista ?? []) as { id: string; nombre: string; entered_at: string | null; estado: string }[])
+    .filter((r) => !r.entered_at && !["cancelado", "no_cumple"].includes(r.estado) && !enGrupo.has(r.id))
+    .map((r) => ({ id: r.id, nombre: r.nombre, con: con.get(r.id) ?? null }));
+  let n = 0;
+  for (const g of sugerirGrupos(personas)) {
+    const { error } = await supabase.rpc("audition_agrupar", { aid, p_apps: g.ids });
+    if (error) return { ok: false, grupos: n, message: mensajeError(error) };
+    n++;
+  }
+  if (n) revalidatePath(base(aid), "layout");
+  return { ok: true, grupos: n };
 }
 
 /** Terminar audiciones (o el callback): a votación o a callbacks (hoy u otra fecha). */
@@ -661,6 +703,18 @@ export async function aprobarCompletas(_p: AudState, f: FormData): Promise<AudSt
 // ──────── 0136: preguntas del sistema, horario por grupo, turnos, acciones en lote ────────
 
 /** Marca una pregunta existente como «Grupo» o «¿Con quién pasas?» (field), o crea la estándar. */
+/** 0140: opciones de la pregunta de Grupo (separadas por coma). Las respuestas ya dadas no cambian. */
+export async function opcionesGrupo(_p: AudState, f: FormData): Promise<AudState> {
+  const aid = str(f, "aid");
+  const field = str(f, "field");
+  const ops = [...new Set(str(f, "opciones").split(",").map((x) => x.trim()).filter(Boolean))];
+  if (ops.length < 2) return { ok: false, message: "Escribe al menos dos opciones, separadas por coma." };
+  const { error, count } = await (await createClient()).from("audition_fields").update({ tipo: "opcion", opciones: ops }, { count: "exact" }).eq("id", field).eq("audition_id", aid).eq("sistema", "grupo");
+  if (error) return { ok: false, message: mensajeError(error) };
+  if (!count) return { ok: false, message: "No se pudo guardar: revisa que sea la pregunta de Grupo y que tengas permiso." };
+  return done(aid, `Listo: ${ops.length} opciones de Grupo.`);
+}
+
 export async function preguntaSistema(_p: AudState, f: FormData): Promise<AudState> {
   const aid = str(f, "aid");
   const sistema = str(f, "sistema") === "companeros" ? "companeros" : "grupo";
@@ -668,7 +722,7 @@ export async function preguntaSistema(_p: AudState, f: FormData): Promise<AudSta
   const { error } = await (await createClient()).rpc("audition_pregunta_sistema", { aid, p_sistema: sistema, p_field: field });
   if (error) return { ok: false, message: mensajeError(error) };
   return done(aid, sistema === "grupo"
-    ? (field ? "Listo: esa pregunta ya es la de Grupo. Sus respuestas se usan tal cual." : "Listo: se preguntará el grupo al inscribirse.")
+    ? (field ? "Listo: esa pregunta ya es la de Grupo y quedó de opción múltiple con las respuestas que ya había (\"Grupo A\", \"A\" y \"grupo a\" cuentan como lo mismo)." : "Listo: se preguntará el grupo al inscribirse (opción múltiple: Grupo A, B, C; edita las opciones si hace falta).")
     : (field ? "Listo: esa pregunta ya es la de «¿con quién pasas?». Sus respuestas se usan tal cual." : "Listo: se preguntará con quién pasan."));
 }
 

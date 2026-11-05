@@ -118,12 +118,19 @@ export type MyApplication = {
   completar_nota?: string | null;
   /** 0135: su perfil (tesitura, canto, baile, género, habilidades). */
   perfil_tesitura?: string | null; perfil_canto?: string | null; perfil_baile?: string | null; perfil_genero?: string | null; perfil_habilidades?: string[];
-  auditions: { titulo: string; estado: string; fase?: string; callback_cuando?: "hoy" | "otra_fecha" | null; callback_fecha?: string | null; callback_lugar?: string | null } | null;
+  auditions: { titulo: string; estado: string; fase?: string; callback_cuando?: "hoy" | "otra_fecha" | null; callback_fecha?: string | null; callback_lugar?: string | null; numeracion?: string; numeros_asignados_at?: string | null } | null;
   audition_slots: { inicia: string; sala: string | null } | null;
 };
 
+/** 0140: el aspirante ve su turno solo cuando ya se repartieron (numeros_asignados_at) o al llegar. */
+export function numeroVisible(a: { numero: number | null; checked_in_at: string | null; auditions: { numeracion?: string; numeros_asignados_at?: string | null } | null }): number | null {
+  if (!a.numero) return null;
+  if (a.checked_in_at || a.auditions?.numeros_asignados_at) return a.numero;
+  return null;
+}
+
 const MY_COLS =
-  "id, audition_id, estado, nombre, telefono, fecha_nacimiento, slot_id, roles, respuestas, tutor_nombre, tutor_telefono, tutor_email, consentimiento_imagen, foto_path, qr_token, numero, checked_in_at, completar_pedido_at, completar_nota, perfil_tesitura, perfil_canto, perfil_baile, perfil_genero, perfil_habilidades, auditions!audition_applications_audition_id_fkey(titulo, estado, fase, callback_cuando, callback_fecha, callback_lugar), audition_slots(inicia, sala)";
+  "id, audition_id, estado, nombre, telefono, fecha_nacimiento, slot_id, roles, respuestas, tutor_nombre, tutor_telefono, tutor_email, consentimiento_imagen, foto_path, qr_token, numero, checked_in_at, completar_pedido_at, completar_nota, perfil_tesitura, perfil_canto, perfil_baile, perfil_genero, perfil_habilidades, auditions!audition_applications_audition_id_fkey(titulo, estado, fase, callback_cuando, callback_fecha, callback_lugar, numeracion, numeros_asignados_at), audition_slots(inicia, sala)";
 
 export async function getMyApplication(auditionId: string, userId: string): Promise<MyApplication | null> {
   const supabase = await createClient();
@@ -137,8 +144,12 @@ export async function listMyApplications(userId: string): Promise<MyApplication[
   return (data ?? []) as unknown as MyApplication[];
 }
 
-export function formatSlot(iso: string): string {
-  return mayus(new Intl.DateTimeFormat("es-MX", { weekday: "long", day: "numeric", month: "long", hour: "numeric", minute: "2-digit", timeZone: "America/Mexico_City" }).format(new Date(iso)));
+export function formatSlot(iso: string, termina?: string | null): string {
+  const texto = mayus(new Intl.DateTimeFormat("es-MX", { weekday: "long", day: "numeric", month: "long", hour: "numeric", minute: "2-digit", timeZone: "America/Mexico_City" }).format(new Date(iso)));
+  // 0140: con hora de fin, "… 11:50 a 12:10 p.m.".
+  if (!termina) return texto;
+  const fin = new Intl.DateTimeFormat("es-MX", { hour: "numeric", minute: "2-digit", timeZone: "America/Mexico_City" }).format(new Date(termina));
+  return `${texto} a ${fin}`;
 }
 
 export type MyInvite = { audition_id: string; titulo: string; obra: string | null; inscripcion_cierra: string | null; inscrito: boolean };

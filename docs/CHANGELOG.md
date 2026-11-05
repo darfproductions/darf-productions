@@ -5,6 +5,37 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-11-05 — 0140: la fila del día, clara y práctica (turnos al cerrar, Grupo como opción múltiple, mover a mano, horarios)
+
+Diego vio en Teen Beach Movie gente sin número, "Por grupo" que dejaba al mismo grupo arriba y abajo, y nada para
+mover a mano ni para asignar horarios. Diagnóstico: el número se repartía de tres formas distintas, reordenar ignoraba
+a quien no tenía número y los grupos que pasan juntos no contaban para el orden. Decisiones de Diego: los turnos se
+reparten al cerrar la inscripción (no al inscribirse), se mandan desde el panel y también uno por uno por WhatsApp; la
+pregunta de Grupo es de opción múltiple; horarios por persona y por grupo, con hora de fin.
+
+- **Turnos al cerrar la inscripción** (`_audition_asignar_turnos`, trigger al pasar a "cerrada" y cada 15 min al llegar
+  la fecha de cierre; o "Asignar turnos ahora"): por personaje si la convocatoria numera así; si no, por grupo (en el
+  orden de las opciones), por horario o por orden de inscripción. Antes de eso nadie tiene número ("sin turno"), tampoco
+  en "asignación previa" (trigger `audition_applications_numero_inicial`). Quien se inscribe después pasa al último.
+  "Al llegar" sigue dando el número en la entrada. Mi cuenta enseña el turno solo cuando ya se repartió (`numeroVisible`).
+- **Mandar turnos a todos** (`audition_avisar_turnos`, ahora con horario de inicio a fin y sede) y, por persona, un botón
+  de **WhatsApp** con el mensaje listo (`turno-rules.ts`: "Hola Ana, tu turno para la audición de X es el Nº 7. Tu
+  horario: … Lugar: …").
+- **Quienes pasan juntos comparten número** ("Turno 7 · Mateo + Sofía"): se quita el índice único. Al ordenar, cada turno
+  va donde le toca a su integrante mejor ubicado (el grupo más arriba posible) y se numera turno por turno, sin huecos
+  (`_audition_renumerar`). Juntar o separar renumera igual; al llegar, quien va en grupo toma el número de su compañero.
+- **Reordenar toma a todos** los que aún no pasan (`audition_reordenar`), y antes **junta en automático** a quienes se
+  mencionaron en «¿con quién pasas?» (`juntarSugeridos`).
+- **La pregunta de Grupo es de opción múltiple**: al marcarla, las respuestas que ya existen se convierten en opciones
+  (`audition_grupo_a_opciones`); "Grupo A", "A" y "grupo a." cuentan como lo mismo (`_grupo_clave`) y cada respuesta se
+  reescribe con su opción (gana la forma más usada; en empate, "Grupo…"). Las opciones se editan en Configuración.
+- **Horarios**: hora de fin opcional (`audition_slots.termina`, "de 11:50 a 12:10"); en Día de la audición, horario por
+  persona en cada renglón (`HorarioSelect`) y por grupo (`HorarioGrupo`), con liga a Configuración si no hay horarios.
+- **Mover a mano** (`audition_mover`): flechas arriba/abajo, "Mover a…" (escribes el lugar) y "Al final"; mueve el turno
+  completo. Cada renglón muestra su grupo; "Sin horario" solo si la convocatoria tiene horarios; "Nadie ha llegado todavía".
+- Script DEV: convierte la pregunta de Grupo de las convocatorias abiertas, pone "Turnos antes del día" donde era "al
+  llegar" y limpia los números provisionales (nunca se mandaron). No borra ninguna solicitud ni respuesta.
+
 ## 2026-11-05 — 0139: tipo de producción (profesional, showcase, taller, escuela) y boletería por obra (fase 4 del panel)
 
 Cuarta fase de `docs/DARF-2.0-PANEL-ESTRATEGIA.md` (bloque D). Decisiones de Diego: la boletería se prende o apaga por
