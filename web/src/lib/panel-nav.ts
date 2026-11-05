@@ -1,3 +1,5 @@
+import { paginasNoAplican, type ObraTipo } from "@/lib/tipo-obra-rules";
+
 // Reglas del panel: qué ve cada quien según sus permisos (migración 0031).
 // Funciones puras (sin base ni servidor) para poder probarlas: panel-nav.test.ts.
 // Ocultar algo aquí es solo comodidad: la base rechaza lo que no corresponde.
@@ -260,10 +262,17 @@ export function salidaBoletos(a: PanelAccessData, pid: string, desde: string): s
 
 /** Pestañas que veo en una obra (solo las que tienen algo), cada una con sus secciones y páginas, y su primera
  *  página como liga. */
-export function productionGroups(a: PanelAccessData, pid: string, concluida = false): GrupoTabs[] {
+export function productionGroups(a: PanelAccessData, pid: string, concluida = false, obra?: ObraTipo | null): GrupoTabs[] {
   const mias = new Map(productionTabs(a, pid, concluida).map((t) => [t.id, t]));
   const paginas = paginasObra(a, pid, mias);
-  return GRUPOS.map((g) => {
+  // 0139: lo que no aplica al tipo de obra sale de su pestaña y se junta en Más, marcado. Nada se pierde.
+  const fuera = obra ? paginasNoAplican(obra) : new Set<string>();
+  const noAplica: SubTab[] = [];
+  const quitar = (sec: SubTab): SubTab => {
+    const items = (sec.items ?? []).filter((i) => { if (fuera.has(i.id)) { noAplica.push(i); return false; } return true; });
+    return { ...sec, path: items[0]?.path ?? sec.path, items };
+  };
+  const grupos = GRUPOS.map((g) => {
     let tabs: SubTab[];
     if (g.id === "boletos") {
       // La puerta va dentro de "Día de función"; sin acceso a boletería, esa sección sale sola.
@@ -272,10 +281,17 @@ export function productionGroups(a: PanelAccessData, pid: string, concluida = fa
       tabs = g.secciones.map((sec) => {
         const items = sec.items.flatMap((id) => (paginas.has(id) ? [paginas.get(id)!] : []));
         return { id: sec.id, label: sec.label, path: items[0]?.path ?? "", items };
-      }).filter((sec) => sec.items.length > 0);
+      });
     }
+    tabs = tabs.map(quitar).filter((sec) => (sec.items?.length ?? 0) > 0);
     return { id: g.id, label: g.label, path: tabs[0]?.path ?? "", tabs };
-  }).filter((g) => g.tabs.length > 0);
+  });
+  if (noAplica.length) {
+    const mas = grupos.find((g) => g.id === "mas")!;
+    mas.tabs.push({ id: "sec-no-aplica", label: "No aplica a este tipo", path: noAplica[0].path, items: noAplica });
+    if (!mas.path) mas.path = noAplica[0].path;
+  }
+  return grupos.filter((g) => g.tabs.length > 0);
 }
 
 /** Las páginas de una pestaña en una sola fila, con el nombre de su sección (vacío si la pestaña no las agrupa). */

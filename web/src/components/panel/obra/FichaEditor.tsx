@@ -2,6 +2,7 @@ import { ActionForm } from "@/components/panel/ActionForm";
 import { Card, input } from "@/components/panel/ui";
 import { createClient } from "@/lib/supabase/server";
 import { mesAInput, textoMeses } from "@/lib/produccion-nueva-rules";
+import { TIPOS_OBRA, conBoleteria, tipoDe } from "@/lib/tipo-obra-rules";
 import { agregarHito, agregarLugar, borrarHito, borrarLugar, guardarFicha } from "@/app/panel/producciones/obra-actions";
 
 const ghost = "rounded-full border border-white/25 px-3 py-1.5 text-xs font-bold hover:border-white/50 disabled:opacity-60";
@@ -15,6 +16,8 @@ export const HITOS_SUGERIDOS = ["Audiciones", "Callbacks", "Primer ensayo", "Ens
 export type FichaObra = {
   estado: string; frase: string | null; sinopsis: string | null; duracion: string | null; clasificacion: string | null; basada_en: string | null;
   idioma: string | null; venue: string | null; tentativa_desde: string | null; tentativa_hasta: string | null;
+  /** 0139 */
+  tipo?: string | null; con_boleteria?: boolean | null;
 };
 export type Hito = { id: string; nombre: string; mes: string; dia: string | null; notas: string | null };
 export type Lugar = { id: string; tipo: string; nombre: string; direccion: string | null; mapa_url: string | null; notas: string | null };
@@ -41,6 +44,22 @@ export function FichaForm({ pid, f, submit = "Guardar ficha" }: { pid: string; f
   const publica = ["publicada", "archivada"].includes(f.estado);
   return (
     <ActionForm action={guardarFicha} hidden={{ pid }} submit={submit}>
+      <fieldset id="tipo" className="flex scroll-mt-24 flex-col gap-2 rounded-lg bg-sala p-3">
+        <legend className="px-1 text-sm font-bold">Tipo de producción</legend>
+        <p className="text-xs text-texto-3">Enciende y apaga secciones del panel de esta obra. No borra nada: lo que no aplica queda en la pestaña Más.</p>
+        <div className="grid gap-2 sm:grid-cols-2">
+          {TIPOS_OBRA.map((t) => (
+            <label key={t.id} className="flex cursor-pointer items-start gap-2 rounded-lg border border-white/15 p-3 has-[:checked]:border-texto has-[:checked]:bg-telon-2">
+              <input type="radio" name="tipo" value={t.id} defaultChecked={tipoDe(f) === t.id} className="mt-1" />
+              <span className="text-sm"><b>{t.label}</b><span className="block text-xs text-texto-2">{t.que}</span></span>
+            </label>
+          ))}
+        </div>
+        <label className="flex items-center gap-2 text-sm font-semibold">
+          <input type="checkbox" name="con_boleteria" value="1" defaultChecked={conBoleteria(f)} /> Vende boletos por DARF
+          <span className="text-xs font-normal text-texto-3">(apagado: se esconde Boletos y nadie pide «Listo para vender»)</span>
+        </label>
+      </fieldset>
       <fieldset className="flex flex-col gap-2 rounded-lg bg-sala p-3">
         <legend className="px-1 text-sm font-bold">Fechas tentativas de presentación</legend>
         <p className="text-xs text-texto-3">Solo mes y año. Pon un mes, o un rango (de marzo a abril). Se cambia cuando quieras.</p>

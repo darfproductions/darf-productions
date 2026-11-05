@@ -5,6 +5,22 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-11-05 — 0139: tipo de producción (profesional, showcase, taller, escuela) y boletería por obra (fase 4 del panel)
+
+Cuarta fase de `docs/DARF-2.0-PANEL-ESTRATEGIA.md` (bloque D). Decisiones de Diego: la boletería se prende o apaga por
+obra (a veces vende DARF, a veces la escuela reparte); lo que no aplica no desaparece, va a Más marcado.
+
+- **`productions.tipo`**: profesional (Showman), showcase, taller o escuela (Teen Beach Movie). Se elige al crear la obra
+  y se cambia en Ficha de la producción. **`productions.con_boleteria`**: si vende boletos por DARF; la escuela empieza
+  apagada.
+- **Enciende y apaga pestañas** (`tipo-obra-rules.ts`, puro): lo que no aplica al tipo sale de su pestaña y se junta en
+  **Más → "No aplica a este tipo"**; la ruta sigue abriendo. Sin boletería se esconde todo Boletos (Puerta incluida) y
+  el Resumen no pide "Listo para vender"; Ventas no lista la obra.
+  - Profesional esconde Cuotas, Adeudos y Evaluaciones. Taller, Vendedores. Escuela, Cuotas, Adeudos, Fan Zone, Fotos,
+    Vendedores, Preventa y Beneficios. Showcase, ensayos, expedientes, audiciones, Fan Zone y la boletería fina.
+- El encabezado de la obra muestra el tipo ("Escuela · sin boletería") con liga a la Ficha.
+- Script DEV: deja a Teen Beach Movie como escuela sin boletería; todo lo demás queda profesional (Showman no cambia).
+
 ## 2026-11-05 — 0138: esqueleto nuevo del panel (menú de 6, pestañas de la obra en una fila, Hoy, Ventas) y Página pública compacta (fase 3 del panel)
 
 Tercera fase de `docs/DARF-2.0-PANEL-ESTRATEGIA.md` (bloques A y E). Sin cambios en la base de datos. Ninguna ruta

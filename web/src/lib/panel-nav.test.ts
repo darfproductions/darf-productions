@@ -241,6 +241,32 @@ describe("pestañas de la obra (0085, esqueleto nuevo 0138)", () => {
       ["dia", ["hoy", "entregas"]],
     ]);
   });
+  it("tipo de producción (0139): lo que no aplica se va a Más, marcado; nada se pierde", () => {
+    // Escuela sin boletería: ni Boletos ni Cuotas ni Fan Zone en su lugar; todo eso en Más → No aplica a este tipo.
+    const g = productionGroups(directorG, "showman", false, { tipo: "escuela", con_boleteria: false });
+    expect(g.map((x) => x.id)).toEqual(["resumen", "gente", "ensayos", "audiciones", "publico", "mas"]);
+    expect(g.find((x) => x.id === "gente")!.tabs.map((t) => [t.label, t.items?.map((i) => i.id)])).toEqual([
+      ["Elenco", ["elenco"]], ["Integrantes", ["expedientes", "solicitudes", "evaluaciones"]], ["Equipo", ["equipo", "permisos"]],
+    ]);
+    expect(g.find((x) => x.id === "publico")!.tabs.map((t) => t.label)).toEqual(["Página", "Promoción"]);
+    const mas = g.find((x) => x.id === "mas")!;
+    expect(mas.tabs.map((t) => t.label)).toEqual(["", "No aplica a este tipo"]);
+    const ids = mas.tabs[1].items!.map((i) => i.id);
+    for (const id of ["cuotas", "adeudos", "fanzone", "fotos", "funciones", "boletos", "taquilla", "puerta", "hoy"]) expect(ids).toContain(id);
+    // Las rutas siguen: la página escondida se marca en Más.
+    expect(tabActiva(g, "boletos/taquilla")).toEqual({ grupo: "mas", tab: "sec-no-aplica", item: "taquilla" });
+    // Con la boletería prendida, Boletos vuelve (sin vendedores, preventa ni beneficios).
+    const gv = productionGroups(directorG, "showman", false, { tipo: "escuela", con_boleteria: true });
+    expect(gv.map((x) => x.id)).toContain("boletos");
+    expect(gv.find((x) => x.id === "boletos")!.tabs.map((t) => [t.id, t.items?.map((i) => i.id)])).toEqual([
+      ["preparar", ["funciones", "mapa", "descuentos"]], ["vender", ["boletos", "taquilla", "corte"]], ["dia", ["hoy", "puerta", "entregas"]],
+    ]);
+    // Profesional (Showman): solo Cuotas, Adeudos y Evaluaciones van a Más.
+    const gp = productionGroups(directorG, "showman", false, { tipo: "profesional", con_boleteria: true });
+    expect(gp.find((x) => x.id === "mas")!.tabs[1].items!.map((i) => i.id)).toEqual(["cuotas", "adeudos", "evaluaciones"]);
+    // Quien solo escanea en una escuela sin boletería: Resumen y Más (Puerta ahí, marcada).
+    expect(productionGroups(puertaG, "showman", false, { tipo: "escuela", con_boleteria: false }).map((x) => [x.id, x.path])).toEqual([["resumen", ""], ["mas", "guia"]]);
+  });
   it("pestaña activa: la ruta más larga que coincide", () => {
     const g = productionGroups(directorG, "showman");
     expect(tabActiva(g, "")).toEqual({ grupo: "resumen", tab: "sec-resumen", item: "resumen" });

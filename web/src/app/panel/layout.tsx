@@ -26,7 +26,7 @@ export default async function PanelLayout({ children }: LayoutProps<"/panel">) {
     }))),
     ...obras.flatMap((p) => [
       { tipo: "obra", titulo: p.nombre, detalle: "Resumen de la obra", href: `/panel/producciones/${p.id}`, claves: `${p.nombre} obra resumen` },
-      ...paginasDeGrupos(productionGroups(access, p.id, p.estado === "archivada")).filter((t) => t.path).map((t) => ({
+      ...paginasDeGrupos(productionGroups(access, p.id, p.estado === "archivada", p)).filter((t) => t.path).map((t) => ({
         tipo: "seccion", titulo: `${p.nombre} · ${t.label}`, detalle: t.grupo, href: `/panel/producciones/${p.id}/${t.path}`, claves: `${p.nombre} ${t.grupo} ${t.label}`,
       })),
     ]),

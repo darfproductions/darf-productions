@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { TIPOS_OBRA, boleteriaPorDefecto, tipoDe } from "@/lib/tipo-obra-rules";
 import { createClient } from "@/lib/supabase/server";
 import { mensajeError } from "@/lib/errores";
 import { refrescarPublico } from "@/lib/supabase/publico";
@@ -25,7 +26,9 @@ export async function crearProyecto(_p: ObraState, f: FormData): Promise<ObraSta
   if (!nombre) return { ok: false, message: "Escribe el nombre de la obra." };
   if (!ID.test(id)) return { ok: false, message: "La dirección web solo puede tener minúsculas, números y guiones." };
   const supabase = await createClient();
-  const { error } = await supabase.from("productions").insert({ id, nombre, temporada: str(f, "temporada") || null, asistente_paso: 1 });
+  // 0139: el tipo se elige al crear; la escuela empieza sin boletería por DARF (se cambia en Ficha).
+  const tipo = tipoDe({ tipo: str(f, "tipo") });
+  const { error } = await supabase.from("productions").insert({ id, nombre, temporada: str(f, "temporada") || null, asistente_paso: 1, tipo, con_boleteria: boleteriaPorDefecto(tipo) });
   if (error) return { ok: false, message: error.code === "23505" ? "Ya existe una obra con esa dirección web." : mensajeError(error) };
   revalidatePath("/panel", "layout");
   redirect(`/panel/producciones/${id}/asistente?paso=1`);
@@ -64,6 +67,13 @@ export async function guardarFicha(_p: ObraState, f: FormData): Promise<ObraStat
   const valores: Record<string, unknown> = {
     tentativa_desde: desde, tentativa_hasta: hasta && hasta !== desde ? hasta : null,
   };
+  // 0139: tipo de producción y si vende boletos por DARF (solo si el formulario los trae).
+  if (f.has("tipo")) {
+    const tipo = str(f, "tipo");
+    if (!TIPOS_OBRA.some((t) => t.id === tipo)) return { ok: false, message: "Elige un tipo de producción." };
+    valores.tipo = tipo;
+    valores.con_boleteria = f.get("con_boleteria") === "1";
+  }
   const supabase = await createClient();
   // Con la obra ya pública, los textos que ve el público se cambian en Página → Contenido (con borrador, 0119).
   const { data: obra } = await supabase.from("productions").select("estado").eq("id", pid).maybeSingle();
