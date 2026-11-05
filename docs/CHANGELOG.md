@@ -5,6 +5,23 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-11-05 — 0137: configuración en pestañas, Modo audición guiado y marca con solo logo (fase 2 del panel)
+
+Segunda fase de `docs/DARF-2.0-PANEL-ESTRATEGIA.md`. Sin cambios en la base de datos.
+
+- **Configuración de la audición en 4 pestañas** (`?seccion=`): **Básico** (publicación, datos, personajes),
+  **Inscripción** (inscripción y logística, preguntas del formulario, horarios, invitados), **Día y jueces** (equipo,
+  qué califican, entrevista) y **Avanzado** (plantilla, cancelar o borrar). Las secciones se ven abiertas; los enlaces
+  viejos por ancla (`#preguntas-del-formulario`) cambian solos a su pestaña (`IrASeccion`).
+- **Modo audición** (`/en-vivo`) es ahora la pantalla guiada de toda la convocatoria y va primero en el menú:
+  - **barra de etapas** (`GuiaFases`): Inscripción, Día de la audición, Callback, Votación, Ajuste del cast, Cast,
+    con lo que falta en la etapa y un solo botón "Siguiente: …" para quien gestiona;
+  - **cuerpo por rol**: juez (ficha de quien está en escena), host (en escena, quién sigue, Terminar) y recepción
+    (QR, fila, grupos, quiénes esperan). Quien tiene varios roles cambia con "Como juez / host / recepción".
+  - La fila del día se carga una sola vez (`registro/fila-datos.ts`) y la comparten Día de la audición y Modo audición.
+- **Marca de la obra con solo logo y colores**: la audición pública se viste con la obra aunque no tenga imagen de
+  fondo (`themeFromKitParcial`). Antes, sin fondo, salía con la marca de DARF.
+
 ## 2026-11-05 — 0136: audiciones — preguntas del sistema, orden por grupo y horario, turnos (fase 1 del panel)
 
 Primera fase de `docs/DARF-2.0-PANEL-ESTRATEGIA.md`.
