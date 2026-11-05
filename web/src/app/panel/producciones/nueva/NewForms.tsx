@@ -3,7 +3,8 @@
 import { useActionState, useState } from "react";
 import { Notice, button, input } from "@/components/panel/ui";
 import { productionIdFrom } from "@/lib/panel-nav";
-import { createProduction, duplicateProduction, type NewState } from "./actions";
+import { duplicateProduction, type NewState } from "./actions";
+import { crearProyecto } from "../obra-actions";
 
 function NameFields({ nombreDefault = "" }: { nombreDefault?: string }) {
   const [nombre, setNombre] = useState(nombreDefault);
@@ -31,11 +32,12 @@ function NameFields({ nombreDefault = "" }: { nombreDefault?: string }) {
 }
 
 export function CreateForm() {
-  const [state, run, pending] = useActionState<NewState, FormData>(createProduction, null);
+  const [state, run, pending] = useActionState<NewState, FormData>(crearProyecto, null);
   return (
     <form action={run} className="flex flex-col gap-4">
       <NameFields />
-      <button disabled={pending} className={`${button} self-start`}>{pending ? "Creando…" : "Crear en borrador"}</button>
+      <p className="text-sm text-texto-2">Luego te llevamos paso a paso: identidad (logo, fondo y colores), ficha, equipo y personajes.</p>
+      <button disabled={pending} className={`${button} self-start`}>{pending ? "Creando…" : "Empezar"}</button>
       {state && <Notice ok={state.ok}>{state.message}</Notice>}
     </form>
   );

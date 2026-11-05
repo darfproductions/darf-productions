@@ -3,6 +3,10 @@ import Link from "next/link";
 import { Card, EstadoChip } from "@/components/panel/ui";
 import { kitMissing } from "@/lib/themes";
 import { Icono } from "@/components/Icono";
+import { ActionForm } from "@/components/panel/ActionForm";
+import { input } from "@/components/panel/ui";
+import { casa } from "@/lib/panel-nav";
+import { borrarObra } from "../../obra-actions";
 import { AnclaVieja } from "./AnclaVieja";
 import { CambiosPanel } from "./CambiosPanel";
 import { EstadoPanel } from "./EstadoPanel";
@@ -14,7 +18,7 @@ export const metadata: Metadata = { title: "Página pública" };
 // en Contenido, Imagen y Avisos; la venta y los precios, en Boletos → Preparar → Funciones y horarios.
 export default async function PageEditor({ params }: PageProps<"/panel/producciones/[id]/pagina">) {
   const { id } = await params;
-  const { editar, publicar, p, data, cambios, cambio } = await cargarEditor(id, "pagina", false);
+  const { access, editar, publicar, p, data, cambios, cambio } = await cargarEditor(id, "pagina", false);
   const faltan = kitMissing(p);
   const publica = ["publicada", "archivada"].includes(data.production.estado);
   const base = `/panel/producciones/${id}`;
@@ -61,6 +65,17 @@ export default async function PageEditor({ params }: PageProps<"/panel/produccio
             ))}
           </ul>
         </Card>
+      )}
+
+      {casa(access, "casa.producciones") && (
+        <Block id="borrar" title="Borrar esta obra" note="Para siempre: se borran sus funciones, boletos y órdenes, audiciones, ensayos, elenco y todo lo demás. Las cuentas y fichas de las personas se conservan. Si solo quieres que no se vea, mejor ocúltala o archívala.">
+          <ActionForm action={borrarObra} hidden={{ pid: id }} confirm={`¿Borrar ${p.nombre} para siempre? No se puede deshacer.`} submit="Borrar para siempre"
+            submitClass="rounded-full bg-[#b91c1c] px-5 py-2.5 text-sm font-bold text-white disabled:opacity-60">
+            <label className="flex max-w-md flex-col gap-1.5 text-sm font-semibold">Para confirmar, escribe el nombre de la obra: <span className="font-mono text-texto-2">{p.nombre}</span>
+              <input className={input} name="confirmacion" required autoComplete="off" />
+            </label>
+          </ActionForm>
+        </Block>
       )}
 
       <p className="text-sm text-texto-3">

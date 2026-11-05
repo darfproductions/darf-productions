@@ -36,8 +36,9 @@ async function asientosDe(pid: string) {
 }
 
 // Resumen de la obra: estado del kit, funciones y equipo responsable.
-export default async function ProductionSummary({ params }: PageProps<"/panel/producciones/[id]">) {
+export default async function ProductionSummary({ params, searchParams }: PageProps<"/panel/producciones/[id]">) {
   const { id } = await params;
+  const creada = (await searchParams).creada === "1";
   const access = await requirePanel(`/panel/producciones/${id}`);
   const [p, funciones, miembros, todos] = await Promise.all([
     getPanelProduction(id),
@@ -66,6 +67,21 @@ export default async function ProductionSummary({ params }: PageProps<"/panel/pr
 
   return (
     <div className="grid gap-4 md:grid-cols-2">
+      {creada && (
+        <Card className="md:col-span-2 border border-exito/40">
+          <p className="font-bold text-exito">¡Proyecto creado!</p>
+          <p className="text-sm text-texto-2">Ya está en el panel como proyecto. Todo lo que llenaste lo encuentras en <Link href={`/panel/producciones/${id}/ficha`} className="font-bold text-violeta-claro">Ficha de la producción</Link>. Cuando quieras abrir audiciones, ve a Audiciones.</p>
+        </Card>
+      )}
+      {p.asistente_paso != null && can(access, id, "obra.editar") && (
+        <Card className="md:col-span-2 flex flex-wrap items-center justify-between gap-3 border border-lila/40">
+          <div>
+            <p className="font-bold">Sigue configurando esta producción</p>
+            <p className="text-sm text-texto-2">Te quedaste en el paso {p.asistente_paso} de 5.</p>
+          </div>
+          <Link href={`/panel/producciones/${id}/asistente?paso=${p.asistente_paso}`} className="rounded-full bg-texto px-5 py-2.5 text-sm font-bold text-sala">Continuar</Link>
+        </Card>
+      )}
       <Card className={`md:col-span-2 ${porHacer.length ? "border border-aviso/40" : ""}`}>
         <p className="text-xs font-bold uppercase tracking-[0.2em] text-texto-3">Por hacer en esta obra</p>
         {porHacer.length === 0 ? (

@@ -32,6 +32,18 @@ export async function applyToAudition(_p: ApplyState, f: FormData): Promise<Appl
   const supabase = await createClient();
   const { error } = await supabase.rpc("audition_apply", { aid, p: payload });
   if (error) return { ok: false, message: mensajeError(error) };
+  // 0135: su perfil (tesitura, canto, baile, habilidades) va aparte, en su propia solicitud.
+  if (f.get("perfil") === "1") {
+    const { data: app } = await supabase.from("audition_applications").select("id").eq("audition_id", aid).eq("user_id", session.userId).maybeSingle();
+    if (app) {
+      const extra = String(f.get("perfil_otra") ?? "").split(",").map((x) => x.trim()).filter(Boolean);
+      await supabase.rpc("audition_perfil_guardar", {
+        p_app: app.id, p_tesitura: String(f.get("perfil_tesitura") ?? ""), p_canto: String(f.get("perfil_canto") ?? ""),
+        p_baile: String(f.get("perfil_baile") ?? ""), p_genero: String(f.get("perfil_genero") ?? ""),
+        p_habilidades: [...f.getAll("perfil_habilidad").map(String), ...extra],
+      });
+    }
+  }
   revalidatePath(`/audiciones/${aid}`);
   revalidatePath("/cuenta");
   return { ok: true, message: "¡Listo! Tu inscripción quedó guardada. Tu QR para el día de la audición está arriba y en Mi cuenta. Si tienes dudas, ahí mismo está nuestro WhatsApp." };

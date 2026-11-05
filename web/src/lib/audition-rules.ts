@@ -54,6 +54,8 @@ export type AuditionOptions = {
   numeracion: "llegada" | "previa" | "personaje";
   modalidad: "presencial" | "en_linea" | "mixta";
   solo_invitados: boolean;
+  /** 0135: preguntas del perfil artístico (tesitura, canto, baile, genero, habilidades); vacío = ninguna. */
+  perfil_preguntas?: string[];
 };
 
 export type Criterio = { k: string; l: string };

@@ -504,3 +504,22 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .banda-holo { animation: none; }
 }
+
+/* 0135: en páginas con la marca de una obra (audiciones), los campos del formulario usan sus colores en lugar del
+   negro del sitio: fondo entre el de la página y el de las tarjetas, texto y borde de la obra, palomitas en acento. */
+.con-obra :is(input:not([type="checkbox"], [type="radio"], [type="file"], [type="hidden"]), select, textarea) {
+  background-color: color-mix(in srgb, var(--obra-fondo) 55%, var(--obra-superficie));
+  color: var(--obra-texto);
+  border: 1px solid color-mix(in srgb, var(--obra-texto) 22%, transparent);
+}
+.con-obra :is(input, textarea)::placeholder { color: color-mix(in srgb, var(--obra-texto) 55%, transparent); }
+.con-obra :is(input, select, textarea):focus-visible { outline: 2px solid var(--obra-acento); outline-offset: 1px; }
+.con-obra option { background-color: var(--obra-superficie); color: var(--obra-texto); }
+.con-obra :is(input[type="checkbox"], input[type="radio"]) { accent-color: var(--obra-acento); }
+.con-obra input[type="date"] { color-scheme: light dark; }
+/* El botón principal también con la marca de la obra (acento de fondo, texto con el fondo: contraste ≥ 3:1 por regla del kit). */
+.con-obra .boton-compra {
+  background: var(--obra-acento);
+  color: var(--obra-fondo);
+  box-shadow: 0 10px 40px -14px color-mix(in srgb, var(--obra-acento) 80%, transparent);
+}

@@ -5,6 +5,59 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-11-05 — 0135: crear una producción paso a paso, ficha de la producción y audiciones con la marca de la obra
+
+- **Nueva producción en 5 pasos** (`/panel/producciones/[id]/asistente`). Se guarda en cada paso; si alguien se sale,
+  el Resumen muestra "Continuar" (`productions.asistente_paso`).
+  1. **Identidad**: logo, imagen de fondo y colores. "Sugerir colores a partir del logo" lee el logo en el navegador
+     (`sugerirColores`) y siempre cumple las reglas de legibilidad. También está en Imagen y pósters.
+  2. **Ficha**:
+     - sinopsis, duración, clasificación, sede;
+     - **fechas tentativas por mes**: un mes o un rango (`tentativa_desde/hasta`);
+     - **calendario** de hitos por mes (`production_hitos`);
+     - **lugares** con dirección y mapa (`production_lugares`).
+  3. **Equipo**: **puestos** (`production_puestos`), con sugeridos que traen sus permisos. Cada puesto se ocupa de una
+     de tres formas:
+     - con una cuenta (le da sus roles);
+     - con **nombre y correo**: le llega la invitación de 0094 y, al aceptarla, el puesto y su ficha quedan ligados
+       solos;
+     - vacío.
+     Cada puesto crea su crédito en la obra. También está en Permisos → "Puestos del equipo".
+  4. **Personajes**: protagonistas, apoyo y **ensamble por grupos** (con cuántas personas). Cada uno con:
+     - descripción, quién lo interpreta y edad que aparenta;
+     - tesitura;
+     - canto, baile y actuación;
+     - habilidades especiales;
+     - rasgos y notas;
+     - canciones.
+     Subir y bajar se mueve dentro de su sección. Es el mismo editor que en Elenco.
+  5. **Revisar** y "Crear proyecto". La obra queda como **Proyecto** (borrador) en la lista.
+- **Ficha de la producción** (nueva pestaña junto a Resumen, la ve todo el equipo). En una sola página:
+  - datos y fechas tentativas;
+  - calendario, con funciones y próximos ensayos;
+  - lugares;
+  - equipo por área;
+  - personajes con quién quedó en cada uno;
+  - audiciones.
+  Tiene "Descargar PDF" (imprimir).
+- **Audiciones con la marca de la obra**:
+  - la página pública lleva la imagen de fondo, el logo y los colores de la obra;
+  - los personajes salen en tarjetas con su ficha (`audition_fichas`, que funciona aunque la obra siga en borrador).
+- **Perfil artístico** en la inscripción: tesitura, canto, baile, personajes que interpreta y habilidades. Todo es
+  opcional para quien se inscribe ("No sé" en tesitura). **Cada convocatoria elige qué se pregunta**
+  (`auditions.perfil_preguntas`; en Configuración → Inscripción y logística):
+  - las convocatorias nuevas preguntan todo;
+  - la plantilla "Audición en escuela" solo baile y habilidades;
+  - "Músicos" y "Equipo técnico", nada;
+  - "Cantantes" ya no repite la tesitura como pregunta aparte.
+  Se guarda con `audition_perfil_guardar`.
+- **Juez**: los personajes por los que audiciona son botones. Cada uno abre un pop-up con la ficha del personaje y la
+  tabla "lo que pide · lo que dijo" con ✓ / ✗ (`compararPerfil`, `_audition_juez_persona` → `fichas` y `perfil`).
+- **Borrar una obra completa** (`panel_borrar_produccion`): solo Casa DARF, escribiendo su nombre, en Página →
+  Publicar. Las fichas y cuentas de las personas se conservan.
+- Script aparte `supabase/dev/borrar_madrigal_dev.sql` para borrar "La Familia Madrigal" (aborta si no encuentra
+  exactamente una).
+
 ## 2026-11-03 — 0134: revisar solicitudes de audición (aprobar / regresar con nota + WhatsApp)
 
 - Toda solicitud nueva queda **En revisión** (estado `inscrito`; los nombres en pantalla cambiaron: Inscrito → "En

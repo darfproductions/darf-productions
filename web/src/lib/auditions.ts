@@ -29,13 +29,15 @@ export type Audition = {
   inscripcion_cierra: string | null;
   edad_min: number | null;
   edad_max: number | null;
+  /** 0135: qué preguntas del perfil artístico hace (tesitura, canto, baile, genero, habilidades). */
+  perfil_preguntas?: string[];
 };
 export type AuditionRole = { id: string; nombre: string; descripcion: string | null; orden: number };
 export type AuditionField = { id: string; etiqueta: string; tipo: "texto" | "parrafo" | "enlace" | "opcion" | "si_no"; opciones: string[] | null; obligatorio: boolean; orden: number };
 export type AuditionSlot = { id: string; inicia: string; sala: string | null; cupo: number; ocupados: number };
 
 const COLS =
-  "id, production_id, titulo, descripcion, requisitos, sede, estado, inscripcion_cierra, edad_min, edad_max, pedir_tutor, pedir_foto, elegir_horario, visibilidad, numeracion, numeros_asignados_at, modalidad, solo_invitados, permanente, productions(nombre)";
+  "id, production_id, titulo, descripcion, requisitos, sede, estado, inscripcion_cierra, edad_min, edad_max, pedir_tutor, pedir_foto, elegir_horario, visibilidad, numeracion, numeros_asignados_at, modalidad, solo_invitados, permanente, perfil_preguntas, productions(nombre)";
 
 export async function listPublicAuditions(): Promise<Audition[]> {
   const supabase = await createClient();
@@ -114,12 +116,14 @@ export type MyApplication = {
   completar_pedido_at?: string | null;
   /** 0134: lo que el equipo le pidió corregir. */
   completar_nota?: string | null;
+  /** 0135: su perfil (tesitura, canto, baile, género, habilidades). */
+  perfil_tesitura?: string | null; perfil_canto?: string | null; perfil_baile?: string | null; perfil_genero?: string | null; perfil_habilidades?: string[];
   auditions: { titulo: string; estado: string; fase?: string; callback_cuando?: "hoy" | "otra_fecha" | null; callback_fecha?: string | null; callback_lugar?: string | null } | null;
   audition_slots: { inicia: string; sala: string | null } | null;
 };
 
 const MY_COLS =
-  "id, audition_id, estado, nombre, telefono, fecha_nacimiento, slot_id, roles, respuestas, tutor_nombre, tutor_telefono, tutor_email, consentimiento_imagen, foto_path, qr_token, numero, checked_in_at, completar_pedido_at, completar_nota, auditions!audition_applications_audition_id_fkey(titulo, estado, fase, callback_cuando, callback_fecha, callback_lugar), audition_slots(inicia, sala)";
+  "id, audition_id, estado, nombre, telefono, fecha_nacimiento, slot_id, roles, respuestas, tutor_nombre, tutor_telefono, tutor_email, consentimiento_imagen, foto_path, qr_token, numero, checked_in_at, completar_pedido_at, completar_nota, perfil_tesitura, perfil_canto, perfil_baile, perfil_genero, perfil_habilidades, auditions!audition_applications_audition_id_fkey(titulo, estado, fase, callback_cuando, callback_fecha, callback_lugar), audition_slots(inicia, sala)";
 
 export async function getMyApplication(auditionId: string, userId: string): Promise<MyApplication | null> {
   const supabase = await createClient();
@@ -151,4 +155,11 @@ export async function amInvited(aid: string): Promise<boolean> {
   const supabase = await createClient();
   const { data } = await supabase.rpc("audition_am_invited", { aid });
   return data === true;
+}
+
+/** 0135: personajes de la convocatoria con su ficha (de la obra), aunque la obra aún no esté publicada. */
+export async function getAuditionFichas(aid: string): Promise<import("@/lib/produccion-nueva-rules").FichaAudicion[]> {
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("audition_fichas", { aid });
+  return (data ?? []) as import("@/lib/produccion-nueva-rules").FichaAudicion[];
 }

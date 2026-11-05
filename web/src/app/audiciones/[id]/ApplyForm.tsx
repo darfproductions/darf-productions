@@ -9,8 +9,9 @@ import { createClient } from "@/lib/supabase/client";
 import { applyToAudition, type ApplyState } from "./actions";
 import { mensajeError } from "@/lib/errores";
 import { mayus } from "@/lib/dates";
+import { GENEROS, HABILIDADES, NIVELES, TESITURAS } from "@/lib/produccion-nueva-rules";
 
-const field = "rounded-lg bg-sala px-3 py-3 font-normal";
+const field = "rounded-lg bg-sala px-3 py-3 font-normal text-texto";
 const fmt = (iso: string) =>
   mayus(new Intl.DateTimeFormat("es-MX", { weekday: "long", day: "numeric", month: "long", hour: "numeric", minute: "2-digit", timeZone: "America/Mexico_City" }).format(new Date(iso)));
 
@@ -24,7 +25,7 @@ export function ApplyForm(props: {
   fields: AuditionField[];
   slots: AuditionSlot[];
   fechaAudicion: string | null;
-  opciones: { pedirFoto: boolean; pedirTutor: boolean };
+  opciones: { pedirFoto: boolean; pedirTutor: boolean; perfil?: string[] };
   defaults: { nombre: string; telefono: string };
   previa: MyApplication | null;
 }) {
@@ -36,6 +37,7 @@ export function ApplyForm(props: {
   const [subiendo, setSubiendo] = useState(false);
   const fechaAudicion = props.fechaAudicion ? new Date(props.fechaAudicion) : new Date();
   const edad = nac ? ageAt(nac, fechaAudicion) : null;
+  const pide = (q: string) => props.opciones.perfil?.includes(q) ?? false;
   const menor = edad !== null && edad < 18 && props.opciones.pedirTutor;
 
   async function subirFoto(file: File) {
@@ -62,7 +64,7 @@ export function ApplyForm(props: {
   }
 
   return (
-    <form action={action} className="grid gap-4 rounded-2xl bg-telon p-6 sm:grid-cols-2">
+    <form action={action} className="grid gap-4 rounded-2xl bg-telon p-6 sm:grid-cols-2 [.con-obra_&]:bg-obra-superficie">
       <input type="hidden" name="aid" value={props.aid} />
       <input type="hidden" name="foto_path" value={foto} />
       <label className="flex flex-col gap-1.5 text-sm font-semibold">Nombre completo *
@@ -93,6 +95,62 @@ export function ApplyForm(props: {
               </label>
             ))}
           </div>
+        </fieldset>
+      )}
+
+      {(props.opciones.perfil?.length ?? 0) > 0 && (
+        <fieldset className="grid gap-3 rounded-xl border border-white/15 p-4 sm:col-span-2 sm:grid-cols-2">
+          <legend className="px-1 text-sm font-bold">Tu perfil artístico</legend>
+          <input type="hidden" name="perfil" value="1" />
+          <p className="text-xs text-texto-3 sm:col-span-2">Todo es opcional: ayuda al equipo a ver para qué personajes encajas. {pide("tesitura") ? "Si no sabes algo (por ejemplo tu tesitura), déjalo en blanco o elige «No sé»." : "Si no sabes algo, déjalo en blanco."}</p>
+          {pide("tesitura") && (
+          <label className="flex flex-col gap-1.5 text-sm font-semibold">Tesitura
+            <select className={field} name="perfil_tesitura" defaultValue={p?.perfil_tesitura ?? ""}>
+              <option value="">Sin especificar</option>
+              {TESITURAS.map((t) => <option key={t.valor} value={t.valor}>{t.label}</option>)}
+              <option value="no_se">No sé</option>
+            </select>
+          </label>
+          )}
+          {pide("genero") && (
+          <label className="flex flex-col gap-1.5 text-sm font-semibold">Interpreto personajes
+            <select className={field} name="perfil_genero" defaultValue={p?.perfil_genero ?? ""}>
+              <option value="">Sin especificar</option>
+              {GENEROS.filter((g) => g.valor !== "cualquiera").map((g) => <option key={g.valor} value={g.valor}>{g.valor === "mujer" ? "Femeninos" : "Masculinos"}</option>)}
+              <option value="otro">Ambos / otro</option>
+            </select>
+          </label>
+          )}
+          {pide("canto") && (
+          <label className="flex flex-col gap-1.5 text-sm font-semibold">Canto
+            <select className={field} name="perfil_canto" defaultValue={p?.perfil_canto ?? ""}>
+              <option value="">Sin especificar</option>
+              {NIVELES.map((n) => <option key={n.valor} value={n.valor}>{n.valor === "no" ? "No canto" : n.valor === "basico" ? "Básico" : "Con experiencia / formación"}</option>)}
+            </select>
+          </label>
+          )}
+          {pide("baile") && (
+          <label className="flex flex-col gap-1.5 text-sm font-semibold">Baile
+            <select className={field} name="perfil_baile" defaultValue={p?.perfil_baile ?? ""}>
+              <option value="">Sin especificar</option>
+              {NIVELES.map((n) => <option key={n.valor} value={n.valor}>{n.valor === "no" ? "No bailo" : n.valor === "basico" ? "Básico" : "Con experiencia / formación"}</option>)}
+            </select>
+          </label>
+          )}
+          {pide("habilidades") && (
+          <fieldset className="flex flex-col gap-2 sm:col-span-2">
+            <legend className="mb-1 text-sm font-semibold">Habilidades especiales</legend>
+            <div className="flex flex-wrap gap-2">
+              {HABILIDADES.map((h) => (
+                <label key={h} className="flex items-center gap-2 rounded-full border border-white/20 px-3 py-1.5 text-xs has-[:checked]:border-white">
+                  <input type="checkbox" name="perfil_habilidad" value={h} defaultChecked={p?.perfil_habilidades?.includes(h)} /> {h}
+                </label>
+              ))}
+            </div>
+            <input className={`${field} text-sm`} name="perfil_otra" placeholder="Otra (separa con comas)"
+              defaultValue={(p?.perfil_habilidades ?? []).filter((h) => !HABILIDADES.includes(h)).join(", ")} />
+          </fieldset>
+          )}
         </fieldset>
       )}
 

@@ -6,7 +6,8 @@ import { PageHeading } from "@/components/PageHeading";
 import { getSession } from "@/lib/auth";
 import { ESTADO_CONVOCATORIA, ESTADO_SOLICITUD, whatsappAudicionUrl } from "@/lib/audition-rules";
 import { env } from "@/lib/env";
-import { amInvited, formatSlot, getAudition, getAuditionObra, getMyApplication } from "@/lib/auditions";
+import { amInvited, formatSlot, getAudition, getAuditionFichas, getAuditionObra, getMyApplication } from "@/lib/auditions";
+import { resumenPersonaje, CATEGORIAS } from "@/lib/produccion-nueva-rules";
 import { MODALIDAD } from "@/lib/audition-rules";
 import { textoCallback } from "@/lib/audicion-vivo-rules";
 import { faltantesSolicitud } from "@/lib/audition-rules";
@@ -34,7 +35,8 @@ export default async function AuditionPage({ params }: PageProps<"/audiciones/[i
   const data = await getAudition(id);
   if (!data) notFound();
   const { audition: a, roles, fields, slots } = data;
-  const [session, obra] = await Promise.all([getSession(), a.production_id ? getAuditionObra(a.id) : null]);
+  const [session, obra, fichas] = await Promise.all([getSession(), a.production_id ? getAuditionObra(a.id) : null, getAuditionFichas(a.id)]);
+  const ficha = new Map(fichas.map((f) => [f.id, f]));
   const theme = obra ? getTheme(obra) : null;
   const [mine, invitado] = session ? await Promise.all([getMyApplication(a.id, session.userId), a.solo_invitados ? amInvited(a.id) : true]) : [null, false];
   const enLinea = a.modalidad === "en_linea";
@@ -46,15 +48,34 @@ export default async function AuditionPage({ params }: PageProps<"/audiciones/[i
   const edades = a.edad_min || a.edad_max ? `${a.edad_min ? `de ${a.edad_min}` : ""}${a.edad_max ? ` hasta ${a.edad_max}` : ""} años` : null;
 
   return (
-    <main style={themeStyle(theme)} className={`pb-10 ${theme ? "min-h-dvh bg-obra-fondo text-obra-texto" : ""}`}>
-      {obra?.publica && (
-        <div className="mx-auto max-w-[1440px] px-5 pt-6 md:px-16">
-          <Link href={`/producciones/${a.production_id}`} className="text-sm font-bold uppercase tracking-[0.2em] text-obra-acento"><Icono nombre="flecha-izq" /> {obra.nombre}</Link>
-        </div>
+    <main style={themeStyle(theme)} className={`pb-10 ${theme ? "con-obra min-h-dvh bg-obra-fondo text-obra-texto" : ""}`}>
+      {theme?.logo ? (
+        // 0135: con obra, la audición lleva su imagen de fondo, su logo y sus colores.
+        <header className="relative overflow-hidden">
+          {theme.ambiente && <img src={theme.ambiente} alt="" className="absolute inset-0 h-full w-full object-cover opacity-50" />}
+          <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, color-mix(in srgb, var(--obra-fondo) 30%, transparent), var(--obra-fondo))" }} />
+          <div className="relative mx-auto flex max-w-[1440px] flex-col items-center gap-4 px-5 pb-10 pt-8 text-center md:px-16 md:pb-14 md:pt-12">
+            {obra?.publica && (
+              <Link href={`/producciones/${a.production_id}`} className="self-start text-sm font-bold uppercase tracking-[0.2em] text-obra-acento"><Icono nombre="flecha-izq" /> {obra.nombre}</Link>
+            )}
+            <img src={theme.logo} alt={obra?.nombre ?? ""} className="max-h-36 w-auto max-w-[80%] object-contain drop-shadow-[0_6px_24px_var(--obra-sombra)] md:max-h-48" />
+            <p className="text-xs font-bold uppercase tracking-[0.3em] text-obra-acento">Audiciones · {ESTADO_CONVOCATORIA[a.estado] ?? a.estado}</p>
+            <h1 className="titular text-3xl md:text-5xl">{a.titulo}</h1>
+            {a.descripcion && <p className="max-w-2xl whitespace-pre-line text-base opacity-90 md:text-lg">{a.descripcion}</p>}
+          </div>
+        </header>
+      ) : (
+        <>
+          {obra?.publica && (
+            <div className="mx-auto max-w-[1440px] px-5 pt-6 md:px-16">
+              <Link href={`/producciones/${a.production_id}`} className="text-sm font-bold uppercase tracking-[0.2em] text-obra-acento"><Icono nombre="flecha-izq" /> {obra.nombre}</Link>
+            </div>
+          )}
+          <PageHeading eyebrow={`${obra ? obra.nombre : a.permanente ? "Registro permanente" : "Convocatoria general"} · Audiciones · ${ESTADO_CONVOCATORIA[a.estado] ?? a.estado}`} title={a.titulo}>
+            {a.descripcion}
+          </PageHeading>
+        </>
       )}
-      <PageHeading eyebrow={`${obra ? obra.nombre : a.permanente ? "Registro permanente" : "Convocatoria general"} · Audiciones · ${ESTADO_CONVOCATORIA[a.estado] ?? a.estado}`} title={a.titulo}>
-        {a.descripcion}
-      </PageHeading>
       <div className="mx-auto grid max-w-[1440px] gap-8 px-5 md:px-16 lg:grid-cols-12">
         <section className="flex flex-col gap-6 lg:col-span-7">
           {mine && mine.estado !== "cancelado" && a.estado !== "cancelada" && (
@@ -88,13 +109,13 @@ export default async function AuditionPage({ params }: PageProps<"/audiciones/[i
           )}
 
           {abierta && !session && (
-            <div className="rounded-2xl bg-telon p-6">
+            <div className="rounded-2xl bg-telon p-6 [.con-obra_&]:bg-obra-superficie">
               <p className="text-lg font-semibold">Para inscribirte necesitas una cuenta DARF.</p>
               <Link href={`/entrar?next=/audiciones/${a.id}`} className="boton-compra mt-4 inline-block rounded-full px-6 py-3 text-sm font-bold uppercase tracking-[0.1em]">Entrar o crear cuenta</Link>
             </div>
           )}
           {abierta && a.solo_invitados && session && !invitado && !mine && (
-            <div className="rounded-2xl bg-telon p-6">
+            <div className="rounded-2xl bg-telon p-6 [.con-obra_&]:bg-obra-superficie">
               <p className="text-lg font-semibold">Esta convocatoria es solo por invitación.</p>
               <p className="mt-2 text-texto-2">Si te invitaron, entra con la cuenta del mismo correo al que te llegó la invitación.</p>
             </div>
@@ -112,7 +133,7 @@ export default async function AuditionPage({ params }: PageProps<"/audiciones/[i
             <>
               <h2 className="titular text-2xl">{mine && mine.estado !== "cancelado" ? "Editar mi inscripción" : "Inscripción"}</h2>
               <ApplyForm aid={a.id} userId={session.userId} roles={roles} fields={fields} slots={a.elegir_horario && !enLinea ? slots : []} fechaAudicion={slots[0]?.inicia ?? null}
-                opciones={{ pedirFoto: a.pedir_foto, pedirTutor: a.pedir_tutor }} defaults={{ nombre: session.profile?.nombre ?? "", telefono: session.profile?.telefono ?? "" }} previa={mine} />
+                opciones={{ pedirFoto: a.pedir_foto, pedirTutor: a.pedir_tutor, perfil: a.perfil_preguntas ?? [] }} defaults={{ nombre: session.profile?.nombre ?? "", telefono: session.profile?.telefono ?? "" }} previa={mine} />
               {!mine && whatsappAudicionUrl(env.whatsapp, a.productions?.nombre || a.titulo) && (
                 <p className="text-sm text-texto-2">¿Dudas antes de inscribirte?{" "}
                   <a href={whatsappAudicionUrl(env.whatsapp, a.productions?.nombre || a.titulo, session.profile?.nombre)} target="_blank" rel="noreferrer" className="font-bold text-lila underline">Escríbenos por WhatsApp <Icono nombre="externo" /></a>
@@ -123,11 +144,11 @@ export default async function AuditionPage({ params }: PageProps<"/audiciones/[i
           {a.estado === "cancelada" && (
             <p role="status" className="rounded-2xl border border-[#ff8fa3]/40 bg-[#ff8fa3]/10 p-6">Esta convocatoria se canceló. Gracias por tu interés; te avisaremos de nuevas audiciones aquí.</p>
           )}
-          {!abierta && !mine && a.estado !== "cancelada" && <p className="rounded-2xl bg-telon p-6 text-texto-2">La inscripción a esta convocatoria está cerrada.</p>}
+          {!abierta && !mine && a.estado !== "cancelada" && <p className="rounded-2xl bg-telon p-6 [.con-obra_&]:bg-obra-superficie text-texto-2">La inscripción a esta convocatoria está cerrada.</p>}
         </section>
 
         <aside className="flex flex-col gap-4 lg:col-span-5">
-          <div className="rounded-2xl bg-telon p-6">
+          <div className="rounded-2xl bg-telon p-6 [.con-obra_&]:bg-obra-superficie">
             <p className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-texto-3">Detalles</p>
             <dl className="flex flex-col gap-2 text-sm">
               <div><dt className="text-texto-3">Forma</dt><dd className="font-semibold">{MODALIDAD[a.modalidad]}{a.solo_invitados ? " · por invitación" : ""}</dd></div>
@@ -138,10 +159,23 @@ export default async function AuditionPage({ params }: PageProps<"/audiciones/[i
             {a.requisitos && <p className="mt-4 whitespace-pre-line text-sm text-texto-2">{a.requisitos}</p>}
           </div>
           {roles.length > 0 && (
-            <div className="rounded-2xl bg-telon p-6">
+            <div className="rounded-2xl bg-telon p-6 [.con-obra_&]:bg-obra-superficie">
               <p className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-texto-3">Personajes</p>
               <ul className="flex flex-col gap-3">
-                {roles.map((r) => <li key={r.id}><p className="font-bold">{r.nombre}</p>{r.descripcion && <p className="text-sm text-texto-2">{r.descripcion}</p>}</li>)}
+                {roles.map((r) => {
+                  const f = ficha.get(r.id);
+                  const resumen = f ? resumenPersonaje({ ...f, categoria: (f.categoria ?? "protagonista") as "protagonista", cupo: f.cupo ?? 1 }) : "";
+                  const cat = f?.categoria ? CATEGORIAS.find((c) => c.valor === f.categoria)?.label : null;
+                  return (
+                    <li key={r.id} className="rounded-xl border border-white/10 p-3 [.con-obra_&]:border-[color-mix(in_srgb,var(--obra-texto)_15%,transparent)]">
+                      {cat && <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-obra-acento">{cat}</p>}
+                      <p className="text-lg font-bold">{r.nombre}</p>
+                      {resumen && <p className="text-sm font-semibold text-obra-acento">{resumen}</p>}
+                      {(f?.descripcion ?? r.descripcion) && <p className="mt-1 whitespace-pre-line text-sm opacity-85">{f?.descripcion ?? r.descripcion}</p>}
+                      {f?.rasgos && <p className="mt-1 text-xs opacity-70">{f.rasgos}</p>}
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           )}

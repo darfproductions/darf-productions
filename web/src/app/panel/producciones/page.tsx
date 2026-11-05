@@ -11,10 +11,12 @@ import { setFeatured } from "./actions";
 import { requirePanel } from "@/lib/permissions";
 import { kitMissing } from "@/lib/themes";
 import { Icono } from "@/components/Icono";
+import { textoMeses } from "@/lib/produccion-nueva-rules";
 
 export const metadata: Metadata = { title: "Producciones" };
 
-export default async function PanelProductions() {
+export default async function PanelProductions({ searchParams }: PageProps<"/panel/producciones">) {
+  const borrada = (await searchParams).borrada === "1";
   const access = await requirePanel("/panel/producciones");
   const [obras, home] = await Promise.all([listPanelProductions(access.isDirector ? undefined : myProductionIds(access)), getHomeData()]);
   const estadoPub = new Map(home.productions.map((p) => [p.id, p.estadoPublico]));
@@ -28,6 +30,7 @@ export default async function PanelProductions() {
       <PanelTitle eyebrow="Proyectos" title="Producciones">
         Cada obra tiene su espacio de trabajo: contenido, audiciones, elenco, funciones y permisos.
       </PanelTitle>
+      {borrada && <p role="status" className="rounded-xl bg-exito/15 px-4 py-3 text-sm font-semibold text-exito">La obra se borró por completo.</p>}
       {casa(access, "casa.producciones") && (
         <Link href="/panel/producciones/nueva" className="self-start rounded-full bg-texto px-5 py-2.5 text-sm font-bold text-sala">
           + Nueva producción o duplicar
@@ -52,10 +55,12 @@ export default async function PanelProductions() {
                   <div className="min-w-0">
                     <p className="font-bold">{p.nombre}</p>
                     <p className="text-sm text-texto-3">
-                      {[p.temporada && `Temporada ${p.temporada}`, p.venue, p.on_sale ? "En venta" : null].filter(Boolean).join(" · ") || "Sin datos"}
+                      {[p.temporada && `Temporada ${p.temporada}`, textoMeses(p.tentativa_desde, p.tentativa_hasta), p.venue, p.on_sale ? "En venta" : null].filter(Boolean).join(" · ") || "Sin datos"}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
+                    {p.asistente_paso != null && <span className="text-xs font-bold text-lila">Configuración: paso {p.asistente_paso} de 5</span>}
+                    {p.estado === "borrador" && p.asistente_paso == null && <span className="text-xs font-bold uppercase tracking-[0.12em] text-lila">Proyecto</span>}
                     {faltan > 0 && <span className="text-xs font-bold text-aviso">Kit incompleto</span>}
                     {estadoPub.get(p.id) && <span className="text-xs font-bold uppercase tracking-[0.12em] text-texto-3">{ETIQUETA_ESTADO[estadoPub.get(p.id)!]}</span>}
                     <EstadoChip estado={p.estado} />

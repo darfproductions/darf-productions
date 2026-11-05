@@ -27,10 +27,10 @@ describe("acceso al panel", () => {
 
 describe("pestañas de la obra", () => {
   it("taquilla ve Resumen, Funciones y Reportes; no Audiciones ni Permisos", () => {
-    expect(ids(taquillaMM, "mm")).toEqual(["resumen", "boletos", "reportes", "cierre", "guia"]);
+    expect(ids(taquillaMM, "mm")).toEqual(["resumen", "ficha", "boletos", "reportes", "cierre", "guia"]);
   });
   it("un juez solo ve Resumen y Audiciones", () => {
-    expect(ids(juezMM, "mm")).toEqual(["resumen", "audiciones", "guia"]);
+    expect(ids(juezMM, "mm")).toEqual(["resumen", "ficha", "audiciones", "guia"]);
   });
   it("sin permisos en la obra no hay pestañas", () => {
     expect(ids(taquillaMM, "hsm")).toEqual([]);
@@ -39,7 +39,7 @@ describe("pestañas de la obra", () => {
     const tabs = ids(director, "hsm");
     expect(tabs[0]).toBe("resumen");
     expect(tabs.slice(-2)).toEqual(["permisos", "guia"]);
-    expect(tabs).toHaveLength(20);
+    expect(tabs).toHaveLength(21);
   });
 });
 
@@ -149,8 +149,8 @@ describe("registro permanente (0064)", () => {
 
 describe("producción concluida (0066)", () => {
   it("solo quedan las pestañas de archivo", () => {
-    expect(productionTabs(director, "hsm", true).map((t) => t.id)).toEqual(["resumen", "pagina", "elenco", "expedientes", "solicitudes", "fanzone", "difusion", "equipo", "reportes", "cierre", "permisos", "guia"].sort((x, y) => productionTabs(director, "hsm").findIndex((t) => t.id === x) - productionTabs(director, "hsm").findIndex((t) => t.id === y)));
-    expect(productionTabs(taquillaMM, "mm", true).map((t) => t.id)).toEqual(["resumen", "reportes", "cierre", "guia"]);
+    expect(productionTabs(director, "hsm", true).map((t) => t.id)).toEqual(["resumen", "ficha", "pagina", "elenco", "expedientes", "solicitudes", "fanzone", "difusion", "equipo", "reportes", "cierre", "permisos", "guia"].sort((x, y) => productionTabs(director, "hsm").findIndex((t) => t.id === x) - productionTabs(director, "hsm").findIndex((t) => t.id === y)));
+    expect(productionTabs(taquillaMM, "mm", true).map((t) => t.id)).toEqual(["resumen", "ficha", "reportes", "cierre", "guia"]);
   });
 });
 

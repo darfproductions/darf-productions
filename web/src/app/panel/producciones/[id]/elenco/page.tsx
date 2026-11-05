@@ -11,7 +11,7 @@ import { createClient } from "@/lib/supabase/server";
 import { ActionForm } from "@/components/panel/ActionForm";
 import { ESTADO_OFERTA, listOffers, offerLabel } from "@/lib/casting";
 import { AddCreditForm, ChecksPersonajes, type OpcionPersonaje } from "./AddCreditForm";
-import { Personajes } from "./Personajes";
+import { PersonajesEditor } from "@/components/panel/obra/PersonajesEditor";
 import { AjustesSeccion } from "@/components/panel/AjustesSeccion";
 import { OfferForm } from "./OfferForm";
 import { withdrawOffer } from "./offer-actions";
@@ -191,8 +191,8 @@ export default async function CastEditor({ params }: PageProps<"/panel/produccio
         );
       })}
       {/* Se configura una vez (sirve a las audiciones): abajo y plegado. */}
-      <AjustesSeccion id="personajes" titulo="Personajes de la obra" resumen="Los usan las audiciones para el cast">
-        <Personajes pid={id} />
+      <AjustesSeccion id="personajes" titulo="Personajes de la obra" resumen="Protagonistas, apoyo y ensamble: los usan las audiciones">
+        <PersonajesEditor pid={id} />
       </AjustesSeccion>
     </div>
   );

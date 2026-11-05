@@ -20,6 +20,7 @@ export type Plantilla = {
 const ABIERTA: AuditionOptions = {
   pedir_tutor: true, autorizacion_escuela: false, pedir_foto: true, elegir_horario: true,
   visibilidad: "publica", numeracion: "llegada", modalidad: "presencial", solo_invitados: false,
+  perfil_preguntas: ["tesitura", "canto", "baile", "genero", "habilidades"],
 };
 const con = (o: Partial<AuditionOptions>): AuditionOptions => ({ ...ABIERTA, ...o });
 
@@ -36,7 +37,7 @@ export const PLANTILLAS: Record<string, Plantilla> = {
   escuela: {
     label: "Audición en escuela", grupo: "principal",
     descripcion: "Alumnos de una escuela: solo con enlace, sin datos de papás (la escuela ya tiene su autorización) y lista en orden previo.",
-    opciones: con({ pedir_tutor: false, autorizacion_escuela: true, pedir_foto: false, elegir_horario: false, visibilidad: "enlace", numeracion: "previa" }),
+    opciones: con({ pedir_tutor: false, autorizacion_escuela: true, pedir_foto: false, elegir_horario: false, visibilidad: "enlace", numeracion: "previa", perfil_preguntas: ["baile", "habilidades"] }),
     criterios: CRITERIOS_BASE, preguntas: [{ etiqueta: "Grado y grupo", tipo: "texto", obligatorio: true }],
   },
   cerrada: {
@@ -87,7 +88,6 @@ export const PLANTILLAS: Record<string, Plantilla> = {
     opciones: ABIERTA,
     criterios: [{ k: "afinacion", l: "Afinación" }, { k: "tecnica", l: "Técnica vocal" }, { k: "interpretacion", l: "Interpretación" }, { k: "actitud", l: "Actitud" }],
     preguntas: [
-      { etiqueta: "Tesitura", tipo: "opcion", opciones: ["Soprano", "Mezzosoprano", "Contralto", "Tenor", "Barítono", "Bajo", "No sé"], obligatorio: true },
       { etiqueta: "Canción que vas a cantar", tipo: "texto", obligatorio: true },
       { etiqueta: "Video cantando (opcional)", tipo: "enlace" },
     ],
@@ -140,7 +140,7 @@ export const PLANTILLAS: Record<string, Plantilla> = {
   musicos: {
     label: "Músicos", grupo: "perfil",
     descripcion: "Banda en vivo: instrumento, lectura de partitura y video.",
-    opciones: con({ pedir_foto: false }),
+    opciones: con({ pedir_foto: false, perfil_preguntas: [] }),
     criterios: [{ k: "tecnica", l: "Técnica" }, { k: "lectura", l: "Lectura" }, { k: "ensamble", l: "Trabajo en ensamble" }, { k: "actitud", l: "Actitud" }],
     preguntas: [
       { etiqueta: "Instrumento(s)", tipo: "texto", obligatorio: true },
@@ -151,7 +151,7 @@ export const PLANTILLAS: Record<string, Plantilla> = {
   tecnico: {
     label: "Equipo técnico y crew", grupo: "perfil",
     descripcion: "Luces, audio, escenario, vestuario, maquillaje: área y experiencia (sin audición artística).",
-    opciones: con({ pedir_foto: false, numeracion: "previa" }),
+    opciones: con({ pedir_foto: false, numeracion: "previa", perfil_preguntas: [] }),
     criterios: [{ k: "experiencia", l: "Experiencia" }, { k: "disponibilidad", l: "Disponibilidad" }, { k: "actitud", l: "Actitud" }],
     preguntas: [
       { etiqueta: "Área", tipo: "opcion", opciones: ["Luces", "Audio", "Escenario y tramoya", "Vestuario", "Maquillaje y peinado", "Utilería", "Producción"], obligatorio: true },
