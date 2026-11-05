@@ -3,11 +3,13 @@
 // (audition_siguiente, audition_cerrar_ronda).
 import { mayus } from "@/lib/dates";
 
-export type OrdenFila = "llegada" | "registro" | "personaje";
-export const ORDEN_FILA: { valor: OrdenFila; label: string; ayuda: string }[] = [
+export type OrdenFila = "llegada" | "registro" | "personaje" | "horario" | "grupo";
+export const ORDEN_FILA: { valor: OrdenFila; label: string; ayuda: string; necesita?: "grupo" }[] = [
   { valor: "llegada", label: "Por llegada", ayuda: "Pasa primero quien llegó primero." },
   { valor: "registro", label: "Por registro", ayuda: "En el orden en que se inscribieron." },
+  { valor: "horario", label: "Por horario", ayuda: "Primero el horario más temprano; sin horario, al final." },
   { valor: "personaje", label: "Por personaje", ayuda: "Primero el personaje más importante; sin personaje, al final." },
+  { valor: "grupo", label: "Por grupo", ayuda: "Por la respuesta a «Grupo» (salón, Grupo A, B…), y dentro de cada grupo por horario.", necesita: "grupo" },
 ];
 
 export type FilaVivo = {
@@ -100,4 +102,58 @@ export function validarCallback(cuando: string, fecha: string | null, llamados: 
   if (cuando !== "hoy" && cuando !== "otra_fecha") return "Elige si el callback es hoy o en otra fecha.";
   if (cuando === "otra_fecha" && (!fecha || Date.parse(fecha) <= ahora.getTime())) return "Pon una fecha y hora que no haya pasado.";
   return null;
+}
+
+// ──────── 0136: "¿Con quién pasas?" → grupos sugeridos ────────
+export type PersonaCon = { id: string; nombre: string; con: string | null };
+export type GrupoSugerido = { ids: string[]; porque: string[] };
+
+const plano = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+const palabras = (s: string) => plano(s).split(/[^a-z0-9ñ]+/).filter((w) => w.length >= 3 && !["con", "mis", "los", "las", "del", "por", "para", "hermano", "hermana", "amigo", "amiga", "prima", "primo", "solo", "sola", "nadie"].includes(w));
+
+/** A quién menciona cada quien: coincide si el texto trae el nombre completo, o el nombre de pila y alguna otra
+ *  palabra del nombre (apellido), o un nombre de pila que solo una persona tiene. */
+export function mencionados(personas: PersonaCon[], p: PersonaCon): string[] {
+  if (!p.con) return [];
+  const texto = plano(p.con);
+  const tokens = new Set(palabras(p.con));
+  const pila = new Map<string, number>();
+  for (const q of personas) { const n = palabras(q.nombre)[0]; if (n) pila.set(n, (pila.get(n) ?? 0) + 1); }
+  const out: string[] = [];
+  for (const q of personas) {
+    if (q.id === p.id) continue;
+    const partes = palabras(q.nombre);
+    if (!partes.length) continue;
+    const completo = plano(q.nombre).trim();
+    const [nombre, ...resto] = partes;
+    const hit = (completo && texto.includes(completo))
+      || (tokens.has(nombre) && resto.some((r) => tokens.has(r)))
+      || (tokens.has(nombre) && pila.get(nombre) === 1);
+    if (hit) out.push(q.id);
+  }
+  return out;
+}
+
+/** Grupos sugeridos: quien menciona a alguien y quienes son mencionados quedan juntos (uniendo cadenas: si Ana
+ *  menciona a Beto y Beto a Caro, van los tres). Solo grupos de 2 o más; cada quien en un solo grupo. */
+export function sugerirGrupos(personas: PersonaCon[]): GrupoSugerido[] {
+  const padre = new Map<string, string>(personas.map((p) => [p.id, p.id]));
+  const raiz = (x: string): string => { let r = x; while (padre.get(r) !== r) r = padre.get(r)!; padre.set(x, r); return r; };
+  const unir = (a: string, b: string) => { const ra = raiz(a), rb = raiz(b); if (ra !== rb) padre.set(ra, rb); };
+  const porque = new Map<string, string[]>();
+  const nombreDe = new Map(personas.map((p) => [p.id, p.nombre]));
+  for (const p of personas) {
+    const m = mencionados(personas, p);
+    for (const id of m) {
+      unir(p.id, id);
+      const k = raiz(p.id);
+      porque.set(k, [...(porque.get(k) ?? []), `${p.nombre.split(" ")[0]} dijo: «${p.con}»`]);
+    }
+  }
+  const grupos = new Map<string, string[]>();
+  for (const p of personas) { const r = raiz(p.id); grupos.set(r, [...(grupos.get(r) ?? []), p.id]); }
+  return [...grupos.entries()].filter(([, ids]) => ids.length >= 2).map(([r, ids]) => ({
+    ids: ids.sort((a, b) => (nombreDe.get(a) ?? "").localeCompare(nombreDe.get(b) ?? "")),
+    porque: [...new Set([...porque.values()].flat().filter((x) => ids.some((id) => x.startsWith(`${(nombreDe.get(id) ?? "").split(" ")[0]} dijo`))))].slice(0, 4),
+  })).filter((g) => g.ids.length >= 2);
 }

@@ -5,6 +5,25 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-11-05 — 0136: audiciones — preguntas del sistema, orden por grupo y horario, turnos (fase 1 del panel)
+
+Primera fase de `docs/DARF-2.0-PANEL-ESTRATEGIA.md`.
+
+- **Dos preguntas del sistema** (`audition_fields.sistema`):
+  - **Grupo** (salón, o Grupo A/B/C que asigna DARF): ordena la fila por grupo y da horario a todo el grupo de un
+    jalón (`audition_horario_grupo`).
+  - **¿Con quién pasas?**: arma los que pasan juntos en un turno; el sistema **sugiere los grupos** emparejando
+    los nombres mencionados (`sugerirGrupos`, puro) y se confirman con un clic.
+  - Una pregunta que ya existe se marca con "Usar como Grupo" / "Usar como «¿con quién pasas?»" (sus respuestas se
+    usan tal cual: Teen Beach Movie no vuelve a pedir nada). Si no existe, "Activar" la crea.
+- **Orden de la fila**: además de llegada, registro y personaje, **por horario** y **por grupo**.
+- **Avisar turnos** (`audition_avisar_turnos`): "Tu turno: Nº 3 · sábado 8 de noviembre, 11:50 a.m." a cada quien.
+- **Solicitudes como tabla**: ordena por nombre, edad, inscripción, estado, personajes, horario, grupo, pasa con,
+  le falta; casillas y **acciones en lote** (aprobar, regresar con nota, pedir que completen). "Tarjetas" sigue
+  disponible y es la vista del celular. Los grupos y el horario por grupo también se arman desde Solicitudes.
+- Script DEV: reconoce solas las preguntas existentes cuando hay una candidata clara; si no, se marcan desde
+  Configuración.
+
 ## 2026-11-05 — 0135: crear una producción paso a paso, ficha de la producción y audiciones con la marca de la obra
 
 - **Nueva producción en 5 pasos** (`/panel/producciones/[id]/asistente`). Se guarda en cada paso; si alguien se sale,
