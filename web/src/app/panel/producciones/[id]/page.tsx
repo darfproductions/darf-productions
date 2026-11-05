@@ -19,6 +19,7 @@ import { elegir } from "@/lib/poster";
 import { todasLasFilas } from "@/lib/supabase/paginar";
 import { Icono } from "@/components/Icono";
 import { datosCierre } from "@/lib/cierre-datos";
+import { conBoleteria } from "@/lib/tipo-obra-rules";
 
 const fechaCorta = (iso: string) =>
   mayus(new Intl.DateTimeFormat("es-MX", { weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit", timeZone: "America/Mexico_City" }).format(new Date(iso)));
@@ -54,7 +55,8 @@ export default async function ProductionSummary({ params, searchParams }: PagePr
   // "Antes de cerrar la temporada" cuando ya pasaron todas.
   const activa = !p.concluded && !["archivada", "cancelada"].includes(p.estado);
   const yaPasaron = activa && funciones.total > 0 && !funciones.proxima;
-  const vende = activa && !yaPasaron;
+  // 0139: sin boletería por DARF no hay "Listo para vender".
+  const vende = activa && !yaPasaron && conBoleteria(p);
   const cierre = yaPasaron && (can(access, id, "obra.publicar") || can(access, id, "reportes.ver")) ? await datosCierre(id) : null;
   const [fs, zs, as] = vende ? await Promise.all([listPerformances(id), listZones(id), asientosDe(id)]) : [[], [], null];
   const lista = vende && as

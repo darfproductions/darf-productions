@@ -9,6 +9,7 @@ import { ConcludedGuard } from "@/components/panel/ConcludedGuard";
 import { CONCLUIDA_TABS, can, productionGroups, productionTabs } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
 import { Icono } from "@/components/Icono";
+import { etiquetaTipo } from "@/lib/tipo-obra-rules";
 
 // Espacio de trabajo de una obra: encabezado y pestañas agrupadas (0085) según mis permisos en ELLA.
 export default async function ProductionWorkspace({ children, params }: LayoutProps<"/panel/producciones/[id]">) {
@@ -17,7 +18,7 @@ export default async function ProductionWorkspace({ children, params }: LayoutPr
   const p = productionTabs(access, id).length ? await getPanelProduction(id) : null;
   if (!p) notFound();
   const concluida = p.estado === "archivada";
-  const grupos = productionGroups(access, id, concluida);
+  const grupos = productionGroups(access, id, concluida, p);
   const conteo = conteoPorPestana(await getPendientes(), id);
 
   return (
@@ -27,6 +28,8 @@ export default async function ProductionWorkspace({ children, params }: LayoutPr
         <div className="flex flex-wrap items-center gap-3">
           <h1 className="titular text-3xl md:text-4xl">{p.nombre}</h1>
           <EstadoChip estado={p.estado} />
+          {/* 0139: el tipo de producción (y si vende boletos por DARF) se cambia en Ficha de la producción. */}
+          <Link href={`/panel/producciones/${id}/ficha#tipo`} className="rounded-full border border-white/15 px-2.5 py-1 text-xs font-bold uppercase tracking-[0.12em] text-texto-2 hover:border-white/40" title="Tipo de producción">{etiquetaTipo(p)}</Link>
         </div>
         {concluida && (
           <p className="rounded-xl border border-white/15 bg-telon px-4 py-3 text-sm text-texto-2 print:hidden">

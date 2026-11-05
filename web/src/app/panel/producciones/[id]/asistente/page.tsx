@@ -24,7 +24,7 @@ type Obra = FichaObra & {
   nombre: string; temporada: string | null; asistente_paso: number | null; logo_path: string | null; ambiente_path: string | null;
   color_fondo: string | null; color_superficie: string | null; color_texto: string | null; color_acento: string | null;
 };
-const COLS = "nombre, temporada, estado, asistente_paso, logo_path, ambiente_path, color_fondo, color_superficie, color_texto, color_acento, frase, sinopsis, duracion, clasificacion, basada_en, idioma, venue, tentativa_desde, tentativa_hasta";
+const COLS = "nombre, temporada, estado, asistente_paso, logo_path, ambiente_path, color_fondo, color_superficie, color_texto, color_acento, frase, sinopsis, duracion, clasificacion, basada_en, idioma, venue, tentativa_desde, tentativa_hasta, tipo, con_boleteria";
 const Check = ({ ok, children }: { ok: boolean; children: React.ReactNode }) => (
   <li className="flex items-start gap-2 text-sm"><span className={`mt-0.5 font-bold ${ok ? "text-exito" : "text-aviso"}`}>{ok ? <Icono nombre="check" etiqueta="Listo" /> : <Icono nombre="punto" className="h-2 w-2" etiqueta="Falta" />}</span><span className={ok ? "" : "text-texto-2"}>{children}</span></li>
 );

@@ -11,6 +11,7 @@ import { can } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
 import { assetUrl } from "@/lib/productions";
 import { AREAS, CATEGORIAS, resumenPersonaje, textoMeses } from "@/lib/produccion-nueva-rules";
+import { etiquetaTipo } from "@/lib/tipo-obra-rules";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Ficha de la producción" };
@@ -29,7 +30,7 @@ export default async function Ficha({ params }: PageProps<"/panel/producciones/[
   const supabase = await createClient();
   const ahora = new Date().toISOString();
   const [{ data }, { hitos, lugares }, puestos, { personajes }, funciones, ensayos, audiciones, reparto] = await Promise.all([
-    supabase.from("productions").select("nombre, temporada, estado, logo_path, fecha, frase, sinopsis, duracion, clasificacion, basada_en, idioma, venue, tentativa_desde, tentativa_hasta").eq("id", id).maybeSingle(),
+    supabase.from("productions").select("nombre, temporada, estado, logo_path, fecha, frase, sinopsis, duracion, clasificacion, basada_en, idioma, venue, tentativa_desde, tentativa_hasta, tipo, con_boleteria").eq("id", id).maybeSingle(),
     cargarHitosLugares(id),
     cargarPuestos(id),
     cargarPersonajes(id),
@@ -65,6 +66,7 @@ export default async function Ficha({ params }: PageProps<"/panel/producciones/[
       <Card className="flex flex-col gap-3">
         <h3 className="titular text-lg">Datos generales</h3>
         <dl className="grid gap-3 text-sm sm:grid-cols-3">
+          {dato("Tipo de producción", etiquetaTipo(o))}
           {dato("Fechas tentativas", fechas)}
           {dato("Fechas (página pública)", o.fecha)}
           {dato("Sede", o.venue)}
@@ -75,7 +77,7 @@ export default async function Ficha({ params }: PageProps<"/panel/producciones/[
         </dl>
         {o.sinopsis && <div className="text-sm"><p className="text-xs font-bold uppercase tracking-wide text-texto-3">Sinopsis</p>{o.sinopsis.split(/\n\s*\n/).map((p, i) => <p key={i} className="mt-1 whitespace-pre-line">{p}</p>)}</div>}
         {editar && (
-          <div className="print:hidden"><AjustesSeccion id="editar-ficha" titulo="Editar datos y fechas tentativas"><FichaForm pid={id} f={o} /></AjustesSeccion></div>
+          <div className="print:hidden"><AjustesSeccion id="editar-ficha" titulo="Editar tipo, datos y fechas tentativas"><FichaForm pid={id} f={o} /></AjustesSeccion></div>
         )}
       </Card>
 

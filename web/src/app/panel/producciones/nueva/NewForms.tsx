@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import { Notice, button, input } from "@/components/panel/ui";
 import { productionIdFrom } from "@/lib/panel-nav";
+import { TIPOS_OBRA } from "@/lib/tipo-obra-rules";
 import { duplicateProduction, type NewState } from "./actions";
 import { crearProyecto } from "../obra-actions";
 
@@ -36,6 +37,17 @@ export function CreateForm() {
   return (
     <form action={run} className="flex flex-col gap-4">
       <NameFields />
+      <fieldset className="flex flex-col gap-2">
+        <legend className="mb-1 text-sm font-semibold">Tipo de producción <span className="font-normal text-texto-3">(se puede cambiar después en Ficha de la producción)</span></legend>
+        <div className="grid gap-2 sm:grid-cols-2">
+          {TIPOS_OBRA.map((t, i) => (
+            <label key={t.id} className="flex cursor-pointer items-start gap-2 rounded-lg border border-white/15 p-3 has-[:checked]:border-texto has-[:checked]:bg-telon-2">
+              <input type="radio" name="tipo" value={t.id} defaultChecked={i === 0} className="mt-1" />
+              <span className="text-sm"><b>{t.label}</b><span className="block text-xs text-texto-2">{t.que}</span></span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
       <p className="text-sm text-texto-2">Luego te llevamos paso a paso: identidad (logo, fondo y colores), ficha, equipo y personajes.</p>
       <button disabled={pending} className={`${button} self-start`}>{pending ? "Creando…" : "Empezar"}</button>
       {state && <Notice ok={state.ok}>{state.message}</Notice>}

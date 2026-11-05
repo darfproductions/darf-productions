@@ -7,6 +7,7 @@ import { listPanelProductions, pendingOrdersByProduction, performanceSummary } f
 import { can, canAny, casa, hasVentasAccess, myProductionIds } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
 import { formatPerformanceDate } from "@/lib/productions";
+import { conBoleteria } from "@/lib/tipo-obra-rules";
 
 export const metadata: Metadata = { title: "Ventas" };
 
@@ -19,7 +20,7 @@ export default async function VentasPage() {
   const access = await requirePanel("/panel/ventas");
   if (!hasVentasAccess(access)) redirect("/panel");
   const obras = (await listPanelProductions(access.isDirector ? undefined : myProductionIds(access)))
-    .filter((p) => canAny(access, p.id, VENTAS) && !["archivada", "cancelada"].includes(p.estado));
+    .filter((p) => canAny(access, p.id, VENTAS) && conBoleteria(p) && !["archivada", "cancelada"].includes(p.estado));
   const [pendientes, funciones] = await Promise.all([
     pendingOrdersByProduction(),
     Promise.all(obras.map((p) => performanceSummary(p.id))),
