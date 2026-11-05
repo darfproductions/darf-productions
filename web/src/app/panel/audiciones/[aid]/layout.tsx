@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Etapas } from "./Etapas";
 import { Icono } from "@/components/Icono";
 import { TabsBar } from "@/components/panel/PanelNav";
+import { OcultarEn } from "@/components/panel/OcultarEn";
 
 // Una convocatoria (de obra o general): subsecciones según mis permisos en ELLA.
 export default async function AuditionLayout({ children, params }: LayoutProps<"/panel/audiciones/[aid]">) {
@@ -15,13 +16,13 @@ export default async function AuditionLayout({ children, params }: LayoutProps<"
   const { count: nRoles } = await (await createClient()).from("audition_roles").select("id", { count: "exact", head: true }).eq("audition_id", aid);
   const votacion = (nRoles ?? 0) > 0 && !a.permanente;
   const links = [
+    // 0137: una sola pantalla guiada para el día (recepción, host y jueces).
+    { href: "/en-vivo", label: "Modo audición", show: a.modalidad !== "en_linea" && (g || may("audiciones.evaluar") || may("audiciones.entrevista") || may("audiciones.registro")) },
     { href: "", label: "Configuración", show: g && config },
     { href: "/solicitudes", label: "Solicitudes", show: g },
     { href: "/registro", label: "Día de la audición", show: a.modalidad !== "en_linea" && (g || may("audiciones.registro")) },
     // 0112: el host entrevista a cada aspirante el día de la audición.
     { href: "/entrevista", label: "Entrevista", show: a.modalidad !== "en_linea" && (g || may("audiciones.entrevista")) },
-    // 0131: la pantalla del juez el día de la audición (sigue sola a quien está en escena).
-    { href: "/en-vivo", label: "Modo audición", show: a.modalidad !== "en_linea" && may("audiciones.evaluar") },
     { href: "/evaluacion", label: "Evaluación", show: may("audiciones.evaluar") },
     { href: "/votacion", label: "Votación", show: votacion && (g || may("audiciones.evaluar")) },
     { href: "/cast", label: "Cast", show: votacion && g },
@@ -36,7 +37,7 @@ export default async function AuditionLayout({ children, params }: LayoutProps<"
         <p className="mt-2 text-xs font-bold uppercase tracking-[0.2em] text-texto-3">{a.productions?.nombre ?? (a.permanente ? "Registro permanente" : "Convocatoria general")}{a.plantilla && !a.permanente ? ` · ${a.plantilla}` : ""}{a.modalidad !== "presencial" ? ` · ${MODALIDAD[a.modalidad]}` : ""}{a.solo_invitados ? " · por invitación" : ""}</p>
         <p className="text-xl font-bold">{a.titulo} <span className="ml-2 text-sm font-normal text-texto-3">{ESTADO_CONVOCATORIA[a.estado]}</span></p>
       </div>
-      {votacion && <Etapas aid={aid} fase={a.fase} conCallback={a.con_callback} gestiona={g} evalua={may("audiciones.evaluar")} />}
+      {votacion && <OcultarEn ruta={`${root}/en-vivo`}><Etapas aid={aid} fase={a.fase} conCallback={a.con_callback} gestiona={g} evalua={may("audiciones.evaluar")} /></OcultarEn>}
       <TabsBar label="Audición" links={links.map((l) => ({ href: `${root}${l.href}`, label: l.label }))} />
       {children}
     </div>

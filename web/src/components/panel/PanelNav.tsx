@@ -53,7 +53,7 @@ export function PanelSubTabs({ menu }: { menu: NavSection[] }) {
  *  (la ruta más larga que coincide; la primera, que es la raíz, solo exacta). */
 export function TabsBar({ label, links }: { label: string; links: { href: string; label: string }[] }) {
   const path = usePathname().replace(/\/+$/, "");
-  const raiz = links[0]?.href;
+  const raiz = [...links].sort((a, b) => a.href.length - b.href.length)[0]?.href;
   const activa = links
     .filter((x) => (x.href === raiz ? path === x.href : path === x.href || path.startsWith(`${x.href}/`)))
     .sort((a, b) => b.href.length - a.href.length)[0]?.href;

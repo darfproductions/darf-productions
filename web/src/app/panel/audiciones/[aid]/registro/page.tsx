@@ -11,7 +11,8 @@ import { autoOrder, numerarAhora, walkIn } from "../../actions";
 import { Desk } from "./Desk";
 import { AlFinal, FilaEnVivo } from "./Fila";
 import { OrderButtons, StepButtons } from "./StepButtons";
-import { companeros, enLaFila, esperando, quienSigue, textoCallback } from "@/lib/audicion-vivo-rules";
+import { companeros } from "@/lib/audicion-vivo-rules";
+import { cargarFila } from "./fila-datos";
 import { GruposTurno, Separar } from "./Grupos";
 import { Icono } from "@/components/Icono";
 
@@ -30,31 +31,8 @@ export default async function DayPage({ params, searchParams }: PageProps<"/pane
   const sp = await searchParams;
   const { a, may } = await requireAudition(aid, ["audiciones.registro", "audiciones.gestionar"], "/registro");
   const gestiona = may("audiciones.gestionar");
-  const supabase = await createClient();
-  const [{ data, error }, { data: gruposData }, { data: sistemaData }, { data: camposSistema }] = await Promise.all([
-    supabase.rpc("audition_day_list", { aid }),
-    supabase.rpc("audition_grupos", { aid }),
-    supabase.rpc("audition_respuestas_sistema", { aid }),
-    supabase.from("audition_fields").select("sistema").eq("audition_id", aid).not("sistema", "is", null),
-  ]);
-  // 0136: lo que respondieron a "¿con quién pasas?" (si la convocatoria lo pregunta) para sugerir los grupos.
-  const conQuien = new Map(((sistemaData ?? []) as { id: string; companeros: string | null }[]).map((x) => [x.id, x.companeros]));
-  const preguntaCon = ((camposSistema ?? []) as { sistema: string }[]).some((x) => x.sistema === "companeros");
-  const preguntaGrupo = ((camposSistema ?? []) as { sistema: string }[]).some((x) => x.sistema === "grupo");
-  // 0133: quienes pasan juntos en un turno.
-  const grupoDe = new Map(((gruposData ?? []) as { id: string; grupo_turno: string }[]).map((g) => [g.id, g.grupo_turno]));
-  // 0131: en la ronda de callback la fila es solo de los llamados.
-  const todos = enLaFila(((data ?? []) as Row[]).map((r) => ({ ...r, grupo: grupoDe.get(r.id) ?? null })), a.fase);
-  const enEscena = a.en_escena ?? null;
-  const turno = (r: Row | null) => {
-    if (!r) return null;
-    const g = companeros(todos, r);
-    return { id: r.id, numero: g[0].numero ?? r.numero, nombre: g.map((x) => (g.length > 1 ? x.nombre.split(" ")[0] : x.nombre)).join(" + ") };
-  };
-  const actual = turno(todos.find((r) => r.id === enEscena) ?? null);
-  const sigue = turno(quienSigue(todos, enEscena, a.fase));
+  const { todos, error, enEscena, actual, sigue, esperan, cb, preguntaCon, preguntaGrupo, conQuien, paraGrupos } = await cargarFila(aid, a);
   const enVivo = a.modalidad !== "en_linea";
-  const cb = a.fase === "callback" ? textoCallback(a.callback_cuando, a.callback_fecha, a.callback_lugar) : null;
   const slot = typeof sp.horario === "string" ? sp.horario : "";
   const filtrados = slot ? todos.filter((r) => (r.slot_id ?? "sin") === slot) : todos;
   // 0134: las solicitudes aún sin aprobar (en revisión) van aparte; si llegan, se registran igual (con aviso).
@@ -74,10 +52,9 @@ export default async function DayPage({ params, searchParams }: PageProps<"/pane
       <AutoRefresh seconds={20} />
       <div className="flex flex-col gap-4 lg:col-span-5">
         <Card><Desk aid={aid} /></Card>
-        {enVivo && <FilaEnVivo aid={aid} actual={actual} sigue={sigue} esperan={esperando(todos, enEscena, a.fase)} callback={a.fase === "callback"} conGrupo={preguntaGrupo} />}
+        {enVivo && <FilaEnVivo aid={aid} actual={actual} sigue={sigue} esperan={esperan} callback={a.fase === "callback"} conGrupo={preguntaGrupo} />}
         {enVivo && (
-          <GruposTurno aid={aid} personas={todos.filter((r) => !r.entered_at && !["cancelado", "no_cumple"].includes(r.estado))
-            .map((r) => ({ id: r.id, numero: r.numero, nombre: r.nombre, llego: !!r.checked_in_at, grupo: r.grupo ?? null, con: preguntaCon ? (conQuien.get(r.id) ?? null) : undefined }))} />
+          <GruposTurno aid={aid} personas={paraGrupos} />
         )}
         {gestiona && a.numeracion === "personaje" && (
           <Card className="flex flex-col gap-2">

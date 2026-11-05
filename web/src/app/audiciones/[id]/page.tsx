@@ -11,7 +11,8 @@ import { resumenPersonaje, CATEGORIAS } from "@/lib/produccion-nueva-rules";
 import { MODALIDAD } from "@/lib/audition-rules";
 import { textoCallback } from "@/lib/audicion-vivo-rules";
 import { faltantesSolicitud } from "@/lib/audition-rules";
-import { getTheme, themeStyle } from "@/lib/productions";
+import { assetUrl, themeStyle } from "@/lib/productions";
+import { themeFromKitParcial } from "@/lib/themes";
 import { cancelMyApplication } from "./actions";
 import { ApplyForm } from "./ApplyForm";
 import { MiniAction } from "@/components/panel/MiniAction";
@@ -37,7 +38,8 @@ export default async function AuditionPage({ params }: PageProps<"/audiciones/[i
   const { audition: a, roles, fields, slots } = data;
   const [session, obra, fichas] = await Promise.all([getSession(), a.production_id ? getAuditionObra(a.id) : null, getAuditionFichas(a.id)]);
   const ficha = new Map(fichas.map((f) => [f.id, f]));
-  const theme = obra ? getTheme(obra) : null;
+  // 0135: con logo y colores ya se usa la marca de la obra; la imagen de fondo es opcional.
+  const theme = obra ? themeFromKitParcial(obra, assetUrl) : null;
   const [mine, invitado] = session ? await Promise.all([getMyApplication(a.id, session.userId), a.solo_invitados ? amInvited(a.id) : true]) : [null, false];
   const enLinea = a.modalidad === "en_linea";
   const abierta = a.estado === "abierta" && (!a.inscripcion_cierra || new Date(a.inscripcion_cierra) > new Date());

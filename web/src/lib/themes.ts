@@ -55,6 +55,15 @@ export function themeProblems(t: Pick<ProductionTheme, "fondo" | "superficie" | 
   return out;
 }
 
+/** 0135: para la página de una audición basta con los 4 colores y el logo; la imagen de ambiente es opcional. */
+export function themeFromKitParcial(k: KitColumns, assetUrl: (path: string) => string): ProductionTheme | null {
+  if (!k.color_fondo || !k.color_superficie || !k.color_texto || !k.color_acento || !k.logo_path) return null;
+  return {
+    fondo: k.color_fondo, superficie: k.color_superficie, texto: k.color_texto, acento: k.color_acento,
+    logo: assetUrl(k.logo_path), ambiente: k.ambiente_path ? assetUrl(k.ambiente_path) : "", tagline: k.frase ?? "",
+  };
+}
+
 /** Fondo claro u oscuro: decide sombras y velos de la plantilla, no el diseño. */
 export function isLight(fondo: string): boolean {
   return contrastRatio(fondo, "#000000") > contrastRatio(fondo, "#ffffff");
