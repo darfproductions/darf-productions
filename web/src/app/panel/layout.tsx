@@ -35,7 +35,7 @@ export default async function PanelLayout({ children }: LayoutProps<"/panel">) {
 
   const links = (
     <>
-      <PanelNavLinks menu={menu} badges={{ inicio: totalPendientes(pendientes), notificaciones: nuevas }} />
+      <PanelNavLinks menu={menu} badges={{ hoy: totalPendientes(pendientes), notificaciones: nuevas }} />
       {env.panel1Url && (
         <a href={env.panel1Url} className="mt-2 rounded-lg px-3 py-2.5 text-sm text-texto-3 hover:bg-telon-2">
           Panel anterior (1.0) <Icono nombre="externo" />
@@ -56,7 +56,8 @@ export default async function PanelLayout({ children }: LayoutProps<"/panel">) {
         </details>
       </aside>
       <div className="flex min-w-0 flex-col gap-6">
-        <BuscadorPanel atajos={atajos} />
+        {/* Buscador fijo arriba (0138): se queda a la vista al bajar; en la impresión no sale. */}
+        <div className="sticky top-0 z-30 -mx-1 bg-sala/90 px-1 pb-2 pt-2 backdrop-blur print:hidden"><BuscadorPanel atajos={atajos} /></div>
         <PanelSubTabs menu={menu} />
         {children}
       </div>

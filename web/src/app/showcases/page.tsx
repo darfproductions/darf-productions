@@ -46,7 +46,7 @@ function Galeria({ items, titulo }: { items: ShowcaseMedia[]; titulo?: string })
   );
 }
 
-// DARF Showcase Shows (0121): planes, muestras y cómo contratar. Se edita en Panel → Proyectos → Showcases.
+// DARF Showcase Shows (0121): planes, muestras y cómo contratar. Se edita en Panel → Sitio → Showcases.
 export default async function ShowcasesPage() {
   const { ajustes: a, planes, media, editor } = await getShowcases();
   if (!a || (!a.publicado && !editor)) notFound();

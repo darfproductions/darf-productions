@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { activeNav, type NavSection } from "@/lib/panel-nav";
 
 // Menú lateral del panel con la sección activa marcada.
-export function PanelNavLinks({ menu, badges = {} }: { menu: NavSection[]; badges?: Partial<Record<NavSection["id"], number>> }) {
+export function PanelNavLinks({ menu, badges = {} }: { menu: NavSection[]; badges?: Partial<Record<NavSection["id"] | "notificaciones", number>> }) {
   const { section } = activeNav(menu, usePathname());
   return (
     <>
@@ -19,9 +19,9 @@ export function PanelNavLinks({ menu, badges = {} }: { menu: NavSection[]; badge
             className={`rounded-lg px-3 py-2.5 font-semibold hover:bg-telon-2 hover:text-texto ${on ? "bg-telon-2 text-texto" : "text-texto-2"}`}
           >
             {s.label}
-            {/* Las notificaciones sin leer se ven junto a Inicio (ya no tienen entrada propia). */}
-            {s.id === "inicio" && badges.notificaciones ? <span className="ml-2 rounded-full bg-ciruela px-1.5 py-0.5 text-[11px] font-bold text-white" aria-label={`${badges.notificaciones} notificaciones sin leer`}>{badges.notificaciones}</span> : null}
-            {badges[s.id] ? <span className={`ml-2 rounded-full px-1.5 py-0.5 ${s.id === "inicio" ? "bg-aviso text-sala" : "bg-ciruela text-white"} text-[11px] font-bold`} aria-label={s.id === "inicio" ? `${badges[s.id]} pendientes` : `${badges[s.id]} sin leer`}>{badges[s.id]}</span> : null}
+            {/* Las notificaciones sin leer se ven junto a Hoy (no tienen entrada propia). */}
+            {s.id === "hoy" && badges.notificaciones ? <span className="ml-2 rounded-full bg-ciruela px-1.5 py-0.5 text-[11px] font-bold text-white" aria-label={`${badges.notificaciones} notificaciones sin leer`}>{badges.notificaciones}</span> : null}
+            {badges[s.id] ? <span className={`ml-2 rounded-full px-1.5 py-0.5 ${s.id === "hoy" ? "bg-aviso text-sala" : "bg-ciruela text-white"} text-[11px] font-bold`} aria-label={s.id === "hoy" ? `${badges[s.id]} pendientes` : `${badges[s.id]} sin leer`}>{badges[s.id]}</span> : null}
           </Link>
         );
       })}

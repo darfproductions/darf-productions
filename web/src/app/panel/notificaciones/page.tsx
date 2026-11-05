@@ -21,7 +21,7 @@ export default async function Notificaciones({ searchParams }: PageProps<"/panel
   const [items, push] = await Promise.all([listNotifications({ soloNoLeidas }), getPushInfo()]);
   return (
     <>
-      <PanelTitle eyebrow="Inicio" title="Notificaciones">
+      <PanelTitle eyebrow="Hoy" title="Notificaciones">
         Lo nuevo que tiene que ver contigo: solicitudes, órdenes, mensajes, cambios y lo del equipo. Nunca lo que tú mismo hiciste.
       </PanelTitle>
       <div className="flex flex-wrap items-center gap-2 text-sm">

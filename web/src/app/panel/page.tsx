@@ -25,7 +25,7 @@ type Cumple = { user_id: string; nombre: string; dia: number; mes: number };
 const hace = (iso: string) =>
   new Intl.DateTimeFormat("es-MX", { dateStyle: "medium", timeStyle: "short", timeZone: "America/Mexico_City" }).format(new Date(iso));
 
-// Inicio del panel "Tu día" (0085): primero la bandeja "Por hacer" de todas mis obras (cada renglón
+// "Hoy" (0085, esqueleto nuevo 0138): primero la bandeja "Por hacer" de todas mis obras (cada renglón
 // lleva directo a la acción), luego lo de hoy con sus botones (puerta, taquilla), notificaciones,
 // la semana, cumpleaños, cambios recientes y mis obras.
 export default async function PanelHome() {
@@ -76,13 +76,16 @@ export default async function PanelHome() {
 
   const hoyFunciones = home.funciones.filter((f) => esHoy(f.starts_at));
   const hoyEventos = home.eventos.filter((e) => esHoy(e.inicia));
+  // 0138: "Hoy" junta todo lo de hoy (también ensayos y juntas); "Esta semana" sigue con lo que viene después.
+  const hoyOtros = agenda.filter((x) => !x.key.startsWith("f") && !x.key.startsWith("v") && esHoy(x.at));
+  const semana = agenda.filter((x) => !esHoy(x.at));
   const boton = "rounded-full border border-white/25 px-3 py-1.5 text-xs font-bold hover:border-white/60";
   const nombre = access.session.profile?.nombre?.split(" ")[0] || "";
   const obraDe = (pid: string | null, general = "Convocatoria general") => (pid ? nombreObra.get(pid) ?? pid : general);
 
   return (
     <>
-      <PanelTitle eyebrow="Tu día" title={nombre ? `Hola, ${nombre}` : "Inicio"}>
+      <PanelTitle eyebrow="Hoy" title={nombre ? `Hola, ${nombre}` : "Hoy"}>
         {access.isDirector ? "Tienes acceso de Director a todas las obras." : "Esto es lo que pasa en las obras en las que tienes un rol."}
       </PanelTitle>
 
@@ -111,7 +114,7 @@ export default async function PanelHome() {
         <Card className="text-texto-2">Todo al día: no hay nada por hacer en tus obras.</Card>
       )}
 
-      {(hoyFunciones.length > 0 || hoyEventos.length > 0) && (
+      {(hoyFunciones.length > 0 || hoyEventos.length > 0 || hoyOtros.length > 0) && (
         <Card className="flex flex-col gap-3">
           <h2 className="titular text-xl">Hoy</h2>
           <ul className="flex flex-col divide-y divide-white/10">
@@ -137,6 +140,12 @@ export default async function PanelHome() {
                 </span>
               </li>
             ))}
+            {hoyOtros.map((x) => (
+              <li key={x.key} className="flex flex-wrap items-center justify-between gap-2 py-2.5">
+                <span className="text-sm"><b>{cuando(x.at)}</b> · {x.titulo} · {obraDe(x.obra, "DARF (general)")}{x.lugar ? ` · ${x.lugar}` : ""}</span>
+                <Link href={x.href} className={boton}>Abrir</Link>
+              </li>
+            ))}
           </ul>
         </Card>
       )}
@@ -152,13 +161,13 @@ export default async function PanelHome() {
         <NotificationList items={notifs} />
       </Card>
 
-      {(agenda.length > 0 || cumples.length > 0) && (
+      {(semana.length > 0 || cumples.length > 0) && (
         <div className="grid gap-6 lg:grid-cols-2">
-          {agenda.length > 0 && (
+          {semana.length > 0 && (
             <Card className="flex flex-col gap-3">
               <h2 className="titular text-xl">Esta semana</h2>
               <ul className="flex flex-col divide-y divide-white/10">
-                {agenda.map((x) => (
+                {semana.map((x) => (
                   <li key={x.key}>
                     <Link href={x.href} className="flex flex-col py-2.5 hover:text-violeta-claro">
                       <span className="text-sm font-bold">{cuando(x.at)}</span>
