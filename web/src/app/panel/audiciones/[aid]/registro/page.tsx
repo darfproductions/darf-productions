@@ -31,10 +31,16 @@ export default async function DayPage({ params, searchParams }: PageProps<"/pane
   const { a, may } = await requireAudition(aid, ["audiciones.registro", "audiciones.gestionar"], "/registro");
   const gestiona = may("audiciones.gestionar");
   const supabase = await createClient();
-  const [{ data, error }, { data: gruposData }] = await Promise.all([
+  const [{ data, error }, { data: gruposData }, { data: sistemaData }, { data: camposSistema }] = await Promise.all([
     supabase.rpc("audition_day_list", { aid }),
     supabase.rpc("audition_grupos", { aid }),
+    supabase.rpc("audition_respuestas_sistema", { aid }),
+    supabase.from("audition_fields").select("sistema").eq("audition_id", aid).not("sistema", "is", null),
   ]);
+  // 0136: lo que respondieron a "¿con quién pasas?" (si la convocatoria lo pregunta) para sugerir los grupos.
+  const conQuien = new Map(((sistemaData ?? []) as { id: string; companeros: string | null }[]).map((x) => [x.id, x.companeros]));
+  const preguntaCon = ((camposSistema ?? []) as { sistema: string }[]).some((x) => x.sistema === "companeros");
+  const preguntaGrupo = ((camposSistema ?? []) as { sistema: string }[]).some((x) => x.sistema === "grupo");
   // 0133: quienes pasan juntos en un turno.
   const grupoDe = new Map(((gruposData ?? []) as { id: string; grupo_turno: string }[]).map((g) => [g.id, g.grupo_turno]));
   // 0131: en la ronda de callback la fila es solo de los llamados.
@@ -68,10 +74,10 @@ export default async function DayPage({ params, searchParams }: PageProps<"/pane
       <AutoRefresh seconds={20} />
       <div className="flex flex-col gap-4 lg:col-span-5">
         <Card><Desk aid={aid} /></Card>
-        {enVivo && <FilaEnVivo aid={aid} actual={actual} sigue={sigue} esperan={esperando(todos, enEscena, a.fase)} callback={a.fase === "callback"} />}
+        {enVivo && <FilaEnVivo aid={aid} actual={actual} sigue={sigue} esperan={esperando(todos, enEscena, a.fase)} callback={a.fase === "callback"} conGrupo={preguntaGrupo} />}
         {enVivo && (
           <GruposTurno aid={aid} personas={todos.filter((r) => !r.entered_at && !["cancelado", "no_cumple"].includes(r.estado))
-            .map((r) => ({ id: r.id, numero: r.numero, nombre: r.nombre, llego: !!r.checked_in_at, grupo: r.grupo ?? null }))} />
+            .map((r) => ({ id: r.id, numero: r.numero, nombre: r.nombre, llego: !!r.checked_in_at, grupo: r.grupo ?? null, con: preguntaCon ? (conQuien.get(r.id) ?? null) : undefined }))} />
         )}
         {gestiona && a.numeracion === "personaje" && (
           <Card className="flex flex-col gap-2">

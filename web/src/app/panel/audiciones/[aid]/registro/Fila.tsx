@@ -9,7 +9,7 @@ type Persona = { id: string; numero: number | null; nombre: string } | null;
 
 // 0131: la fila del día en la entrada. Recepción (o el host) da "Siguiente": termina quien está en escena y pasa el
 // siguiente que ya llegó; los jueces lo ven en su pantalla en unos segundos.
-export function FilaEnVivo({ aid, actual, sigue, esperan, callback }: { aid: string; actual: Persona; sigue: Persona; esperan: number; callback: boolean }) {
+export function FilaEnVivo({ aid, actual, sigue, esperan, callback, conGrupo = false }: { aid: string; actual: Persona; sigue: Persona; esperan: number; callback: boolean; conGrupo?: boolean }) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [msg, setMsg] = useState<string | null>(null);
@@ -51,7 +51,7 @@ export function FilaEnVivo({ aid, actual, sigue, esperan, callback }: { aid: str
       <details className="text-sm">
         <summary className="cursor-pointer font-bold text-texto-2">Cambiar el orden de quienes esperan</summary>
         <div className="mt-3 flex flex-col gap-2">
-          {ORDEN_FILA.map((o) => (
+          {ORDEN_FILA.filter((o) => !o.necesita || (o.necesita === "grupo" && conGrupo)).map((o) => (
             <button key={o.valor} type="button" disabled={pending} onClick={() => ordenar(o.valor)}
               className="flex flex-col items-start rounded-xl border border-white/15 px-4 py-2.5 text-left hover:border-white/40 disabled:opacity-60">
               <b>{o.label}</b><span className="text-xs text-texto-3">{o.ayuda}</span>

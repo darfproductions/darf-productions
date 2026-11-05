@@ -11,6 +11,9 @@ import { addVideo, aprobarCompletas, pedirCompletar, revisarSolicitud, setApplic
 import { ligaWhatsApp } from "@/lib/pago-rules";
 import { origenSitio } from "@/lib/site-origin";
 import { Icono } from "@/components/Icono";
+import { GruposTurno } from "../registro/Grupos";
+import { HorarioGrupo } from "./HorarioGrupo";
+import { TablaSolicitudes, type FilaSolicitud } from "./TablaSolicitudes";
 
 export const metadata: Metadata = { title: "Solicitudes" };
 
@@ -35,13 +38,21 @@ export default async function Applications({ params, searchParams }: PageProps<"
   const estado = typeof sp.estado === "string" ? sp.estado : "";
   const rol = typeof sp.rol === "string" ? sp.rol : "";
   const supabase = await createClient();
-  const [{ data }, roles, fields, slots, { data: faltData }] = await Promise.all([
+  const [{ data }, roles, fields, slots, { data: faltData }, { data: sistemaData }, { data: gruposData }] = await Promise.all([
     supabase.from("audition_applications").select("*, audition_slots(inicia)").eq("audition_id", aid).order("numero", { nullsFirst: false }).order("created_at"),
     supabase.from("audition_roles").select("id, nombre").eq("audition_id", aid).order("orden"),
-    supabase.from("audition_fields").select("id, etiqueta").eq("audition_id", aid).order("orden"),
+    supabase.from("audition_fields").select("id, etiqueta, sistema").eq("audition_id", aid).order("orden"),
     supabase.from("audition_slots").select("id, inicia").eq("audition_id", aid).order("inicia"),
     supabase.rpc("audition_faltantes", { aid }),
+    supabase.rpc("audition_respuestas_sistema", { aid }),
+    supabase.rpc("audition_grupos", { aid }),
   ]);
+  // 0136: respuestas a las preguntas del sistema (Grupo y ¿con quién pasas?) y quiénes ya pasan juntos.
+  const sistema = new Map(((sistemaData ?? []) as { id: string; grupo: string | null; companeros: string | null }[]).map((x) => [x.id, x]));
+  const preguntaGrupo = (fields.data ?? []).some((f) => (f as { sistema?: string | null }).sistema === "grupo");
+  const preguntaCon = (fields.data ?? []).some((f) => (f as { sistema?: string | null }).sistema === "companeros");
+  const grupoTurno = new Map(((gruposData ?? []) as { id: string; grupo_turno: string }[]).map((g) => [g.id, g.grupo_turno]));
+  const vista = sp.vista === "tarjetas" ? "tarjetas" : "tabla";
   // 0133: qué le falta a cada solicitud (preguntas obligatorias nuevas o la foto) y si ya se le pidió completar.
   const falta = new Map(((faltData ?? []) as Faltante[]).map((x) => [x.id, x]));
   const puedePedir = (a: App) => !!a.user_id && !a.checked_in_at && !["cancelado", "no_cumple"].includes(a.estado) && ["abierta", "cerrada"].includes(aud.estado);
@@ -60,11 +71,31 @@ export default async function Applications({ params, searchParams }: PageProps<"
   const fotos = await signPhotos(apps.map((a) => a.foto_path));
   const roleName = new Map((roles.data ?? []).map((r) => [r.id as string, r.nombre as string]));
   const q = (k: string, v: string) => {
-    const p = new URLSearchParams({ ...(estado && { estado }), ...(rol && { rol }), ...(soloFalta && { falta: "1" }) });
+    const p = new URLSearchParams({ ...(estado && { estado }), ...(rol && { rol }), ...(soloFalta && { falta: "1" }), ...(vista === "tarjetas" && { vista }) });
     if (v) p.set(k, v); else p.delete(k);
     return `?${p.toString()}`;
   };
   const conteo = (e: string) => todas.filter((a) => a.estado === e).length;
+  const filas: FilaSolicitud[] = apps.map((a) => ({
+    id: a.id, nombre: a.nombre, edad: ageAt(a.fecha_nacimiento, a.audition_slots ? new Date(a.audition_slots.inicia) : new Date()),
+    creada: a.created_at, creadaTexto: fechaCorta(a.created_at), estado: a.estado, estadoLabel: ESTADO_SOLICITUD[a.estado]?.label ?? a.estado,
+    estadoCls: ESTADO_SOLICITUD[a.estado]?.cls ?? "", personajes: a.roles.map((r) => roleName.get(r)).filter(Boolean).join(", "),
+    horario: a.audition_slots ? formatSlot(a.audition_slots.inicia) : null, horarioIso: a.audition_slots?.inicia ?? null,
+    grupo: sistema.get(a.id)?.grupo ?? null, con: sistema.get(a.id)?.companeros ?? null, faltan: falta.get(a.id)?.faltan.join(", ") ?? "",
+    telefono: a.telefono, enRevision: enRevision(a), puedePedir: puedePedir(a), regresada: !!a.completar_pedido_at && !a.checked_in_at,
+    href: `/panel/audiciones/${aid}/aspirante/${a.id}`,
+  }));
+  const columnas = (["nombre", "edad", "creada", "estadoLabel", "personajes", "horarioIso", ...(preguntaGrupo ? ["grupo"] : []), ...(preguntaCon ? ["con"] : []), "faltan"] as (keyof FilaSolicitud)[]);
+  const gruposHorario = [...todas.reduce((m, a) => {
+    const g = sistema.get(a.id)?.grupo?.trim();
+    if (!g || ["cancelado", "no_cumple"].includes(a.estado)) return m;
+    const k = g.toLowerCase(); const v = m.get(k) ?? { nombre: g, personas: 0, horarios: new Set<string>() };
+    v.personas++; if (a.audition_slots) v.horarios.add(formatSlot(a.audition_slots.inicia));
+    return m.set(k, v);
+  }, new Map<string, { nombre: string; personas: number; horarios: Set<string> }>()).values()]
+    .map((g) => ({ nombre: g.nombre, personas: g.personas, horarios: [...g.horarios] })).sort((x, y) => x.nombre.localeCompare(y.nombre, "es", { numeric: true }));
+  const paraGrupos = todas.filter((a) => !a.checked_in_at && !["cancelado", "no_cumple"].includes(a.estado))
+    .map((a) => ({ id: a.id, numero: a.numero, nombre: a.nombre, llego: !!a.checked_in_at, grupo: grupoTurno.get(a.id) ?? null, con: preguntaCon ? (sistema.get(a.id)?.companeros ?? null) : undefined }));
 
   return (
     <>
@@ -119,7 +150,17 @@ export default async function Applications({ params, searchParams }: PageProps<"
           <Link key={r.id} href={q("rol", rol === r.id ? "" : r.id)} className={`rounded-full border px-3 py-1.5 font-semibold ${rol === r.id ? "border-texto" : "border-white/20"}`}>{r.nombre}</Link>
         ))}
       </div>
-      <ul className="grid gap-3 lg:grid-cols-2">
+      {preguntaGrupo && <HorarioGrupo aid={aid} grupos={gruposHorario} horarios={horarios} conNumeros={todas.some((a) => a.numero !== null)} />}
+      {aud.modalidad !== "en_linea" && paraGrupos.length >= 2 && (
+        <GruposTurno aid={aid} personas={paraGrupos} titulo={preguntaCon ? "Pasan en grupo (mismo turno): arma los grupos desde ahora" : "Pasan en grupo (mismo turno)"} abierto={preguntaCon} />
+      )}
+      <div className="flex items-center justify-end gap-2 text-xs">
+        <span className="text-texto-3">Ver como</span>
+        <Link href={q("vista", "")} className={`rounded-full border px-3 py-1.5 font-semibold ${vista === "tabla" ? "border-texto" : "border-white/20"}`}>Tabla</Link>
+        <Link href={q("vista", "tarjetas")} className={`rounded-full border px-3 py-1.5 font-semibold ${vista === "tarjetas" ? "border-texto" : "border-white/20"}`}>Tarjetas</Link>
+      </div>
+      {vista === "tabla" && <div className="hidden md:block"><TablaSolicitudes aid={aid} filas={filas} columnas={columnas} /></div>}
+      <ul className={`grid gap-3 lg:grid-cols-2 ${vista === "tabla" ? "md:hidden" : ""}`}>
         {apps.map((a) => {
           const edad = ageAt(a.fecha_nacimiento, a.audition_slots ? new Date(a.audition_slots.inicia) : new Date());
           return (
@@ -197,7 +238,7 @@ export default async function Applications({ params, searchParams }: PageProps<"
           );
         })}
       </ul>
-      {apps.length === 0 && <Card>No hay solicitudes con este filtro.</Card>}
+      {apps.length === 0 && vista === "tarjetas" && <Card>No hay solicitudes con este filtro.</Card>}
     </>
   );
 }

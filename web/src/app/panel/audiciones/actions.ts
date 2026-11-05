@@ -657,3 +657,78 @@ export async function aprobarCompletas(_p: AudState, f: FormData): Promise<AudSt
   const n = Number(data ?? 0);
   return done(aid, n ? `Listo: ${n} ${n === 1 ? "solicitud aprobada" : "solicitudes aprobadas"}.` : "No hay solicitudes completas por aprobar.");
 }
+
+// ──────── 0136: preguntas del sistema, horario por grupo, turnos, acciones en lote ────────
+
+/** Marca una pregunta existente como «Grupo» o «¿Con quién pasas?» (field), o crea la estándar. */
+export async function preguntaSistema(_p: AudState, f: FormData): Promise<AudState> {
+  const aid = str(f, "aid");
+  const sistema = str(f, "sistema") === "companeros" ? "companeros" : "grupo";
+  const field = str(f, "field") || null;
+  const { error } = await (await createClient()).rpc("audition_pregunta_sistema", { aid, p_sistema: sistema, p_field: field });
+  if (error) return { ok: false, message: mensajeError(error) };
+  return done(aid, sistema === "grupo"
+    ? (field ? "Listo: esa pregunta ya es la de Grupo. Sus respuestas se usan tal cual." : "Listo: se preguntará el grupo al inscribirse.")
+    : (field ? "Listo: esa pregunta ya es la de «¿con quién pasas?». Sus respuestas se usan tal cual." : "Listo: se preguntará con quién pasan."));
+}
+
+export async function quitarPreguntaSistema(_p: AudState, f: FormData): Promise<AudState> {
+  const aid = str(f, "aid");
+  const sistema = str(f, "sistema") === "companeros" ? "companeros" : "grupo";
+  const { error } = await (await createClient()).rpc("audition_pregunta_sistema_quitar", { aid, p_sistema: sistema });
+  if (error) return { ok: false, message: mensajeError(error) };
+  return done(aid, "Listo. Si ya había respuestas, la pregunta se conserva como una pregunta normal.");
+}
+
+/** Horario para todas las personas de un grupo (respuesta a «Grupo»). */
+export async function horarioGrupo(_p: AudState, f: FormData): Promise<AudState> {
+  const aid = str(f, "aid");
+  const grupo = str(f, "grupo");
+  if (!grupo) return { ok: false, message: "Elige el grupo." };
+  const { data, error } = await (await createClient()).rpc("audition_horario_grupo", { aid, p_grupo: grupo, p_slot: str(f, "slot") || null });
+  if (error) return { ok: false, message: mensajeError(error) };
+  const n = Number(data ?? 0);
+  return done(aid, n ? `Listo: ${n} ${n === 1 ? "persona" : "personas"} del grupo ${grupo} con ese horario.` : `Nadie del grupo ${grupo} sin registrar en la entrada.`);
+}
+
+/** Ordena la fila (por grupo u horario) y avisa a cada quien su turno con número y hora. */
+export async function ordenarYAvisar(_p: AudState, f: FormData): Promise<AudState> {
+  const aid = str(f, "aid");
+  const modo = (["llegada", "registro", "personaje", "horario", "grupo"] as const).find((m) => m === str(f, "modo")) ?? "horario";
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("audition_reordenar", { aid, p_modo: modo });
+  if (error) return { ok: false, message: mensajeError(error) };
+  if (f.get("avisar") !== "on") return done(aid, "Listo: la fila quedó en el nuevo orden.");
+  const { data, error: e2 } = await supabase.rpc("audition_avisar_turnos", { aid });
+  if (e2) return { ok: false, message: mensajeError(e2) };
+  const n = Number(data ?? 0);
+  return done(aid, `Listo: la fila quedó en el nuevo orden y ${n} ${n === 1 ? "persona recibió" : "personas recibieron"} su turno (número y hora).`);
+}
+
+export async function avisarTurnos(_p: AudState, f: FormData): Promise<AudState> {
+  const aid = str(f, "aid");
+  const { data, error } = await (await createClient()).rpc("audition_avisar_turnos", { aid });
+  if (error) return { ok: false, message: mensajeError(error) };
+  const n = Number(data ?? 0);
+  return done(aid, n ? `Listo: ${n} ${n === 1 ? "persona recibió" : "personas recibieron"} su turno (número y hora).` : "Nadie tiene número todavía: ordena la fila primero.");
+}
+
+/** Acciones en lote desde la tabla de Solicitudes: aprobar, regresar con nota o pedir que completen. */
+export async function revisarVarias(aid: string, ids: string[], accion: "aprobar" | "regresar" | "completar", nota?: string): Promise<{ ok: boolean; message: string }> {
+  if (!ids.length) return { ok: false, message: "Palomea al menos una solicitud." };
+  const supabase = await createClient();
+  if (accion === "completar") {
+    const { data, error } = await supabase.rpc("audition_pedir_completar", { aid, p_apps: ids });
+    if (error) return { ok: false, message: mensajeError(error) };
+    revalidatePath(base(aid), "layout");
+    return { ok: true, message: `Listo: avisamos a ${Number(data ?? 0)} ${Number(data ?? 0) === 1 ? "persona" : "personas"} que completen su inscripción.` };
+  }
+  let n = 0; const errores: string[] = [];
+  for (const app of ids) {
+    const { error } = await supabase.rpc("audition_revisar", { aid, app, p_accion: accion, p_nota: nota?.trim() || null });
+    if (error) errores.push(mensajeError(error)); else n++;
+  }
+  revalidatePath(base(aid), "layout");
+  const verbo = accion === "aprobar" ? "aprobadas" : "regresadas";
+  return { ok: n > 0, message: `${n} ${n === 1 ? "solicitud " + verbo.slice(0, -1) : "solicitudes " + verbo}.${errores.length ? ` No se pudo con ${errores.length}: ${errores[0]}` : ""}` };
+}

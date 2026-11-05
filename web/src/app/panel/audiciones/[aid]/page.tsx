@@ -1,6 +1,7 @@
 /* eslint-disable @next/next/no-img-element -- QR generado en el servidor */
 import type { Metadata } from "next";
 import { PREGUNTAS_PERFIL } from "@/lib/produccion-nueva-rules";
+import { preguntaSistema, quitarPreguntaSistema } from "../actions";
 import Link from "next/link";
 import { AjustesSeccion } from "@/components/panel/AjustesSeccion";
 import { redirect } from "next/navigation";
@@ -45,7 +46,7 @@ export default async function AuditionConfig({ params }: PageProps<"/panel/audic
   const [roles, slots, fields, team, teamRoles, invites, inscritos] = await Promise.all([
     supabase.from("audition_roles").select("id, nombre, descripcion").eq("audition_id", aid).order("orden"),
     supabase.rpc("audition_slot_availability", { aid }),
-    supabase.from("audition_fields").select("id, etiqueta, tipo, opciones, obligatorio").eq("audition_id", aid).order("orden"),
+    supabase.from("audition_fields").select("id, etiqueta, tipo, opciones, obligatorio, sistema").eq("audition_id", aid).order("orden"),
     supabase.rpc("audition_list_members", { aid }),
     supabase.from("role_permissions").select("role_id, panel_roles(nombre, orden)").like("permission_id", "audiciones.%"),
     supabase.from("audition_invites").select("id, email, created_at").eq("audition_id", aid).order("created_at"),
@@ -152,6 +153,26 @@ export default async function AuditionConfig({ params }: PageProps<"/panel/audic
             </div>
           </div>
         </ActionForm>
+        <div className="mt-3">
+        <div className="flex flex-col gap-2 rounded-lg bg-sala p-3">
+          <p className="text-sm font-semibold">Grupos</p>
+          <p className="text-xs text-texto-3">Dos preguntas que el sistema entiende. Si ya tienes una pregunta parecida, abajo en «Preguntas del formulario» la puedes marcar y sus respuestas se usan tal cual.</p>
+          {(["grupo", "companeros"] as const).map((k) => {
+            const f = (fields.data ?? []).find((x) => x.sistema === k);
+            const txt = k === "grupo"
+              ? { on: "Preguntar su grupo (salón, o Grupo A, B, C…)", ayuda: "Sirve para ordenar la fila por grupo y dar horario a todo un grupo." }
+              : { on: "Preguntar con quién pasan (hermanos, dúos…)", ayuda: "Sirve para armar quiénes pasan juntos en un turno; el sistema sugiere los grupos." };
+            return (
+              <div key={k} className="flex flex-wrap items-center justify-between gap-2 text-sm">
+                <span><b>{txt.on}</b><span className="block text-xs text-texto-3">{f ? `Pregunta: «${f.etiqueta}»` : txt.ayuda}</span></span>
+                {f
+                  ? <ActionForm inline action={quitarPreguntaSistema} hidden={{ ...h, sistema: k }} confirm="¿Dejar de preguntarlo? Si ya hay respuestas, la pregunta se conserva como normal." submit="Quitar" submitClass={ghost} />
+                  : <ActionForm inline action={preguntaSistema} hidden={{ ...h, sistema: k }} submit="Activar" submitClass={ghost} />}
+              </div>
+            );
+          })}
+        </div>
+        </div>
       </AjustesSeccion>
 
       <AjustesSeccion id="que-califican-los-jueces" titulo="Qué califican los jueces">
@@ -272,8 +293,17 @@ export default async function AuditionConfig({ params }: PageProps<"/panel/audic
         <ul className="flex flex-col gap-2">
           {(fields.data ?? []).map((f) => (
             <li key={f.id} className="flex items-center justify-between gap-3 rounded-lg bg-sala px-3 py-2 text-sm">
-              <span><b>{f.etiqueta}</b> · {TIPOS[f.tipo]}{f.obligatorio ? " · obligatoria" : ""}{f.opciones ? ` (${(f.opciones as string[]).join(", ")})` : ""}</span>
-              <ActionForm inline action={removeItem} hidden={{ ...h, tabla: "audition_fields", id: f.id }} confirm="¿Quitar esta pregunta?" submit="Quitar" submitClass={ghost} />
+              <span><b>{f.etiqueta}</b> · {TIPOS[f.tipo]}{f.obligatorio ? " · obligatoria" : ""}{f.opciones ? ` (${(f.opciones as string[]).join(", ")})` : ""}
+                {f.sistema && <span className="ml-2 rounded-full bg-lila/20 px-2 py-0.5 text-[11px] font-bold text-lila">{f.sistema === "grupo" ? "Pregunta de Grupo" : "¿Con quién pasas?"}</span>}</span>
+              <span className="flex flex-wrap items-center gap-1.5">
+                {!f.sistema && ["texto", "parrafo", "opcion"].includes(f.tipo) && (
+                  <>
+                    <ActionForm inline action={preguntaSistema} hidden={{ ...h, sistema: "grupo", field: f.id }} submit="Usar como Grupo" submitClass={ghost} />
+                    <ActionForm inline action={preguntaSistema} hidden={{ ...h, sistema: "companeros", field: f.id }} submit="Usar como «¿con quién pasas?»" submitClass={ghost} />
+                  </>
+                )}
+                <ActionForm inline action={removeItem} hidden={{ ...h, tabla: "audition_fields", id: f.id }} confirm="¿Quitar esta pregunta?" submit="Quitar" submitClass={ghost} />
+              </span>
             </li>
           ))}
         </ul>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { companeros, enLaFila, esperando, gruposCierre, nombreTurno, quienSigue, textoCallback, validarCallback, type FilaVivo, type PersonaCierre } from "./audicion-vivo-rules";
+import { companeros, enLaFila, esperando, gruposCierre, mencionados, nombreTurno, quienSigue, sugerirGrupos, textoCallback, validarCallback, type FilaVivo, type PersonaCierre } from "./audicion-vivo-rules";
 
 const f = (id: string, numero: number, extra: Partial<FilaVivo> = {}): FilaVivo =>
   ({ id, numero, estado: "convocado", checked_in_at: "2026-11-08T16:00:00Z", entered_at: null, finished_at: null, ...extra });
@@ -71,5 +71,29 @@ describe("grupos que pasan juntos (0133)", () => {
     expect(companeros(rows, rows[2]).map((r) => r.id)).toEqual(["a", "c"]);
     expect(nombreTurno(rows, rows[0])).toBe("Nº 1 · Ana + Caro");
     expect(nombreTurno(rows, rows[1])).toBe("Nº 2 · Beto Ruiz");
+  });
+});
+
+describe("¿con quién pasas? → grupos sugeridos (0136)", () => {
+  const P = [
+    { id: "ana", nombre: "Ana López", con: "Con Beto Ruiz y Caro" },
+    { id: "beto", nombre: "Beto Ruiz", con: "con mi hermana Ana" },
+    { id: "caro", nombre: "Caro Díaz", con: null },
+    { id: "dani", nombre: "Daniela Pérez", con: "Sola" },
+    { id: "eli", nombre: "Elisa Mora", con: "con Sofía Herrera" },
+    { id: "sofi1", nombre: "Sofía Herrera", con: "" },
+    { id: "sofi2", nombre: "Sofía Torres", con: null },
+  ];
+  it("reconoce nombre completo, nombre + apellido y nombre de pila único; no adivina entre dos Sofías", () => {
+    expect(mencionados(P, P[0])).toEqual(["beto", "caro"]);
+    expect(mencionados(P, P[1])).toEqual(["ana"]);
+    expect(mencionados(P, P[4])).toEqual(["sofi1"]);
+    expect(mencionados(P, { id: "x", nombre: "X", con: "con Sofía" })).toEqual([]);
+    expect(mencionados(P, P[3])).toEqual([]);
+  });
+  it("junta cadenas y deja fuera a quien pasa solo", () => {
+    const g = sugerirGrupos(P);
+    expect(g.map((x) => x.ids)).toEqual([["ana", "beto", "caro"], ["eli", "sofi1"]]);
+    expect(g[0].porque[0]).toContain("Ana dijo");
   });
 });
