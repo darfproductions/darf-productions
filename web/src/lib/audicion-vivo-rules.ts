@@ -5,11 +5,11 @@ import { mayus } from "@/lib/dates";
 
 export type OrdenFila = "llegada" | "registro" | "personaje" | "horario" | "grupo";
 export const ORDEN_FILA: { valor: OrdenFila; label: string; ayuda: string; necesita?: "grupo" }[] = [
-  { valor: "llegada", label: "Por llegada", ayuda: "Pasa primero quien llegó primero." },
+  { valor: "llegada", label: "Por llegada", ayuda: "Pasa primero quien llegó primero; quien no ha llegado, después." },
   { valor: "registro", label: "Por registro", ayuda: "En el orden en que se inscribieron." },
   { valor: "horario", label: "Por horario", ayuda: "Primero el horario más temprano; sin horario, al final." },
   { valor: "personaje", label: "Por personaje", ayuda: "Primero el personaje más importante; sin personaje, al final." },
-  { valor: "grupo", label: "Por grupo", ayuda: "Por la respuesta a «Grupo» (salón, Grupo A, B…), y dentro de cada grupo por horario.", necesita: "grupo" },
+  { valor: "grupo", label: "Por grupo", ayuda: "En el orden de las opciones de «Grupo» (Grupo A, luego B…). Un turno de varios va con el grupo más alto de sus integrantes.", necesita: "grupo" },
 ];
 
 export type FilaVivo = {

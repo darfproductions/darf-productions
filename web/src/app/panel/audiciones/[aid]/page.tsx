@@ -1,7 +1,7 @@
 /* eslint-disable @next/next/no-img-element -- QR generado en el servidor */
 import type { Metadata } from "next";
 import { PREGUNTAS_PERFIL } from "@/lib/produccion-nueva-rules";
-import { preguntaSistema, quitarPreguntaSistema } from "../actions";
+import { preguntaSistema, quitarPreguntaSistema, opcionesGrupo } from "../actions";
 import Link from "next/link";
 import { AjustesSeccion } from "@/components/panel/AjustesSeccion";
 import { redirect } from "next/navigation";
@@ -213,9 +213,9 @@ export default async function AuditionConfig({ params, searchParams }: PageProps
               </label>
               <label className="flex flex-col gap-1.5 text-sm font-semibold">Números del día
                 <select className={input} name="numeracion" defaultValue={a.numeracion}>
-                  <option value="llegada">Al llegar (orden de llegada)</option>
-                  <option value="previa">Asignación previa (lista en orden desde antes)</option>
-                  <option value="personaje">Por personaje (se asignan al cerrar inscripciones)</option>
+                  <option value="llegada">Al llegar (el número se da en la entrada, por orden de llegada)</option>
+                  <option value="previa">Turnos antes del día (se reparten al cerrar la inscripción y se mandan a cada quien)</option>
+                  <option value="personaje">Turnos por personaje (al cerrar la inscripción; primero el personaje más importante)</option>
                 </select>
               </label>
             </div>
@@ -243,12 +243,17 @@ export default async function AuditionConfig({ params, searchParams }: PageProps
         </div>
       </AjustesSeccion>
       <AjustesSeccion id="preguntas-del-formulario" titulo="Preguntas del formulario" abierto>
-        <p className="text-sm text-texto-2">Nombre, teléfono y fecha de nacimiento se piden siempre; foto y horario según las opciones de arriba. Pide solo lo necesario.</p>
+        <p className="text-sm text-texto-2">Nombre, teléfono y fecha de nacimiento se piden siempre; foto y horario según las opciones de arriba. Pide solo lo necesario. La pregunta de Grupo es de opción múltiple: así nadie escribe el grupo distinto y la fila se ordena bien.</p>
         <ul className="flex flex-col gap-2">
           {(fields.data ?? []).map((f) => (
             <li key={f.id} className="flex items-center justify-between gap-3 rounded-lg bg-sala px-3 py-2 text-sm">
               <span><b>{f.etiqueta}</b> · {TIPOS[f.tipo]}{f.obligatorio ? " · obligatoria" : ""}{f.opciones ? ` (${(f.opciones as string[]).join(", ")})` : ""}
-                {f.sistema && <span className="ml-2 rounded-full bg-lila/20 px-2 py-0.5 text-[11px] font-bold text-lila">{f.sistema === "grupo" ? "Pregunta de Grupo" : "¿Con quién pasas?"}</span>}</span>
+                {f.sistema && <span className="ml-2 rounded-full bg-lila/20 px-2 py-0.5 text-[11px] font-bold text-lila">{f.sistema === "grupo" ? "Pregunta de Grupo" : "¿Con quién pasas?"}</span>}
+                {f.sistema === "grupo" && (
+                  <ActionForm inline action={opcionesGrupo} hidden={{ ...h, field: f.id }} submit="Guardar opciones" submitClass={ghost}>
+                    <input className={`${input} mt-1.5 w-full text-xs`} name="opciones" defaultValue={((f.opciones as string[] | null) ?? []).join(", ")} placeholder="Grupo A, Grupo B, Grupo C" aria-label="Opciones de Grupo (separadas por coma)" />
+                  </ActionForm>
+                )}</span>
               <span className="flex flex-wrap items-center gap-1.5">
                 {!f.sistema && ["texto", "parrafo", "opcion"].includes(f.tipo) && (
                   <>
@@ -272,18 +277,20 @@ export default async function AuditionConfig({ params, searchParams }: PageProps
       </AjustesSeccion>
       <AjustesSeccion id="horarios" titulo="Horarios" abierto>
         <ul className="flex flex-col gap-2">
-          {((slots.data ?? []) as { id: string; inicia: string; sala: string | null; cupo: number; ocupados: number }[]).map((s) => (
+          {((slots.data ?? []) as { id: string; inicia: string; termina?: string | null; sala: string | null; cupo: number; ocupados: number }[]).map((s) => (
             <li key={s.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-sala px-3 py-2 text-sm">
-              <span><b>{formatSlot(s.inicia)}</b>{s.sala ? ` · ${s.sala}` : ""} · {s.ocupados} de {s.cupo} ({lugares(s.cupo, s.ocupados)} libres)</span>
+              <span><b>{formatSlot(s.inicia, s.termina)}</b>{s.sala ? ` · ${s.sala}` : ""} · {s.ocupados} de {s.cupo} ({lugares(s.cupo, s.ocupados)} libres)</span>
               <ActionForm inline action={removeItem} hidden={{ ...h, tabla: "audition_slots", id: s.id }} confirm={s.ocupados ? `Este horario tiene ${s.ocupados} inscritos; quedarán sin horario. ¿Quitarlo?` : "¿Quitar este horario?"} submit="Quitar" submitClass={ghost} />
             </li>
           ))}
         </ul>
+        <p className="text-sm text-texto-2">Cada horario es un bloque (por ejemplo, de 11:50 a 12:10) con cupo. Se asignan por persona o por grupo en Solicitudes y en Día de la audición.</p>
         <ActionForm action={addSlot} hidden={h} submit="Agregar horario">
-          <div className="grid gap-2 sm:grid-cols-3">
-            <input className={input} type="datetime-local" name="inicia" required aria-label="Fecha y hora" />
-            <input className={input} type="number" min={1} max={500} name="cupo" required placeholder="Cupo" />
-            <input className={input} name="sala" placeholder="Sala (opcional)" />
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+            <label className="flex flex-col gap-1 text-xs font-semibold">Empieza<input className={input} type="datetime-local" name="inicia" required aria-label="Fecha y hora de inicio" /></label>
+            <label className="flex flex-col gap-1 text-xs font-semibold">Termina (opcional)<input className={input} type="datetime-local" name="termina" aria-label="Hora de fin" /></label>
+            <label className="flex flex-col gap-1 text-xs font-semibold">Cupo<input className={input} type="number" min={1} max={500} name="cupo" required placeholder="Cupo" /></label>
+            <label className="flex flex-col gap-1 text-xs font-semibold">Sala (opcional)<input className={input} name="sala" placeholder="Sala" /></label>
           </div>
         </ActionForm>
       </AjustesSeccion>
