@@ -5,6 +5,25 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-11-05 — 0138: esqueleto nuevo del panel (menú de 6, pestañas de la obra en una fila, Hoy, Ventas) y Página pública compacta (fase 3 del panel)
+
+Tercera fase de `docs/DARF-2.0-PANEL-ESTRATEGIA.md` (bloques A y E). Sin cambios en la base de datos. Ninguna ruta
+cambia: las ligas viejas siguen funcionando y caen en su sección nueva.
+
+- **Menú izquierdo de 6 entradas, iguales para todos** (cada quien ve las que le tocan): **Hoy** (antes Inicio),
+  **Mis obras** (Producciones, Audiciones), **Personas**, **Ventas** (nueva: todas las obras juntas + Reporte general),
+  **Sitio** (Sitio, Club Fan, Difusión, Contacto, DARFY, y ahora también Eventos y Showcases) y **Ajustes**.
+- **Pestañas de la obra: siete fijas** (Resumen · Equipo y elenco · Ensayos · Audiciones · Boletos · Página pública · Más)
+  y, dentro, **una sola fila** de páginas agrupadas por sección (Elenco · Integrantes · Equipo; Preparar · Vender · Día de
+  función; Página · Promoción · Fans). Desaparece la tercera fila: tres niveles como máximo (obra → pestaña → página).
+- **Ventas** (`/panel/ventas`): por obra, órdenes por aprobar, próxima función y botones Órdenes, Taquilla, Corte, Funciones,
+  Reporte; las obras sin funciones, en una línea abajo.
+- **Hoy**: la tarjeta "Hoy" junta funciones, eventos, ensayos y juntas del día; "Esta semana" sigue con lo que viene.
+- **Buscador fijo arriba**: se queda a la vista al bajar (Ctrl K sigue igual).
+- **Página pública compacta**: subpestañas Publicar · Textos · Imágenes · Avisos · Difusión · Programa · Fan Zone · Fotos;
+  **Imágenes** en miniaturas (logo y ambiente lado a lado, pósters en fila, "Cambiar" al pasar el cursor) y **vista previa
+  a la derecha** en pantallas grandes (la obra como se ve en celular, con el borrador; botón Actualizar).
+
 ## 2026-11-05 — 0137: configuración en pestañas, Modo audición guiado y marca con solo logo (fase 2 del panel)
 
 Segunda fase de `docs/DARF-2.0-PANEL-ESTRATEGIA.md`. Sin cambios en la base de datos.

@@ -81,7 +81,7 @@ export default async function EventosPanel({ searchParams }: PageProps<"/panel/e
 
   return (
     <div className="flex flex-col gap-4">
-      <PanelTitle eyebrow="Proyectos" title="Eventos">
+      <PanelTitle eyebrow="Sitio" title="Eventos">
         Por función (foto con el elenco, tour por backstage, early access), presenciales (ensayo abierto, meet &amp; greet, showcase) o en línea (transmisión, lanzamiento, preventa). Al publicarse se avisa a los socios del Club Fan y una hora antes se recuerda a quien apartó. En la entrada se valida la credencial del Club Fan o se marca la llegada a mano.
       </PanelTitle>
 

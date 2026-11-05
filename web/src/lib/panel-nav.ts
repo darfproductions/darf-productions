@@ -158,48 +158,38 @@ export function productionTabs(a: PanelAccessData, productionId: string, conclui
   return PRODUCTION_TABS.filter((t) => (t.perms.length === 0 || canAny(a, productionId, t.perms)) && (!concluida || CONCLUIDA_TABS.includes(t.id)));
 }
 
-// ──────── Pestañas agrupadas de la obra (0085) ────────
-// Las 18 pestañas se ordenan en 6 grupos; cada grupo con sus sub-pestañas. Las rutas no cambian.
+// ──────── Pestañas de la obra (0085, esqueleto nuevo 0138) ────────
+// Siete pestañas fijas (Resumen · Equipo y elenco · Ensayos · Audiciones · Boletos · Página pública · Más) y, dentro de
+// cada una, UNA fila de subpestañas agrupadas por sección. Tres niveles como máximo: obra → pestaña → página.
+// Las rutas no cambian: solo cambia dónde se ve cada página.
 
-export type GrupoObra = "resumen" | "personas" | "ensayos" | "boletos" | "publico" | "mas";
-/** `items`: páginas dentro de una sección (Boletos, 0127): tercera fila chica. */
+export type GrupoObra = "resumen" | "gente" | "ensayos" | "audiciones" | "boletos" | "publico" | "mas";
+/** Una sección de la pestaña (`items`: sus páginas) o, si no hay secciones, una página suelta. */
 export type SubTab = { id: string; label: string; path: string; items?: SubTab[] };
 export type GrupoTabs = { id: GrupoObra; label: string; path: string; tabs: SubTab[] };
 
-const GRUPOS: { id: GrupoObra; label: string; tabs: string[] }[] = [
-  { id: "resumen", label: "Resumen", tabs: ["resumen", "ficha"] },
-  { id: "personas", label: "Personas", tabs: ["elenco", "audiciones", "expedientes", "solicitudes", "evaluaciones"] },
-  { id: "ensayos", label: "Ensayos y equipo", tabs: ["ensayos", "equipo", "materiales", "comunicados"] },
-  { id: "boletos", label: "Boletos", tabs: ["boletos", "puerta"] },
-  { id: "publico", label: "Público", tabs: ["pagina", "programa", "fanzone", "difusion"] },
-  { id: "mas", label: "Más", tabs: ["reportes", "cierre", "permisos", "guia"] },
-];
-
-// Secciones de cada grupo (como Boletos, 0127): las páginas se juntan según para qué sirven. Las rutas no cambian.
-// Los ids de sección no repiten ids de página (el número de pendientes se suma por página).
-const SECCIONES_OBRA: Partial<Record<GrupoObra, { id: string; label: string; items: string[] }[]>> = {
-  personas: [
-    { id: "sec-elenco", label: "Elenco", items: ["elenco", "audiciones"] },
-    { id: "sec-integrantes", label: "Integrantes", items: ["expedientes", "cuotas", "adeudos"] },
-    { id: "sec-revisar", label: "Revisar", items: ["solicitudes", "evaluaciones"] },
-  ],
-  ensayos: [
-    { id: "sec-ensayos", label: "Ensayos", items: ["ensayos"] },
-    { id: "sec-comunicar", label: "Comunicar", items: ["comunicados", "materiales", "equipo"] },
-  ],
-  publico: [
+// Secciones de cada pestaña: las páginas se juntan según para qué sirven (los ids de sección no repiten ids de
+// página porque el número de pendientes se suma por página). Boletos arma las suyas aparte (0127).
+const GRUPOS: { id: GrupoObra; label: string; secciones: { id: string; label: string; items: string[] }[] }[] = [
+  { id: "resumen", label: "Resumen", secciones: [{ id: "sec-resumen", label: "", items: ["resumen", "ficha"] }] },
+  { id: "gente", label: "Equipo y elenco", secciones: [
+    { id: "sec-elenco", label: "Elenco", items: ["elenco"] },
+    { id: "sec-integrantes", label: "Integrantes", items: ["expedientes", "cuotas", "adeudos", "solicitudes", "evaluaciones"] },
+    { id: "sec-equipo", label: "Equipo", items: ["equipo", "permisos"] },
+  ] },
+  { id: "ensayos", label: "Ensayos", secciones: [{ id: "sec-ensayos", label: "", items: ["ensayos", "comunicados", "materiales"] }] },
+  { id: "audiciones", label: "Audiciones", secciones: [{ id: "sec-audiciones", label: "", items: ["audiciones"] }] },
+  { id: "boletos", label: "Boletos", secciones: [] },
+  { id: "publico", label: "Página pública", secciones: [
     { id: "sec-pagina", label: "Página", items: ["pagina", "contenido", "imagen", "avisos"] },
     { id: "sec-promocion", label: "Promoción", items: ["difusion", "programa"] },
     { id: "sec-fans", label: "Fans", items: ["fanzone", "fotos"] },
-  ],
-  mas: [
-    { id: "sec-reportes", label: "Reportes", items: ["reportes", "cierre"] },
-    { id: "sec-equipo", label: "Equipo y permisos", items: ["permisos", "guia"] },
-  ],
-};
+  ] },
+  { id: "mas", label: "Más", secciones: [{ id: "sec-mas", label: "", items: ["reportes", "cierre", "guia"] }] },
+];
 const ETIQUETA_PAGINA: Record<string, string> = {
-  comunicados: "Avisos al elenco", equipo: "Notas y juntas del equipo", pagina: "Publicar", fanzone: "Fan Zone y eventos",
-  cierre: "Cierre de temporada",
+  comunicados: "Avisos al elenco", equipo: "Notas y juntas", pagina: "Publicar", fanzone: "Fan Zone y eventos",
+  cierre: "Cierre de temporada", elenco: "Elenco y equipos",
 };
 
 /** Páginas de la obra que veo: sus pestañas más las páginas que viven dentro de otra (Cuotas, Contenido, Fotos…). */
@@ -210,13 +200,13 @@ function paginasObra(a: PanelAccessData, pid: string, mias: Map<string, Tab>): M
   extra("cuotas", "Cuotas y recaudación", "expedientes/cuotas", cobra);
   extra("adeudos", "Adeudos", "expedientes/adeudos", cobra);
   const edita = mias.has("pagina") && can(a, pid, "obra.editar");
-  extra("contenido", "Contenido", "pagina/contenido", edita);
-  extra("imagen", "Imagen y pósters", "pagina/imagen", edita);
+  extra("contenido", "Textos", "pagina/contenido", edita);
+  extra("imagen", "Imágenes", "pagina/imagen", edita);
   extra("avisos", "Avisos", "pagina/avisos", edita);
   extra("fotos", "Fotos y galería", "fanzone/fotos", mias.has("fanzone"));
   return out;
 }
-const ETIQUETA: Record<string, string> = { fanzone: "Fan Zone y eventos", elenco: "Elenco y equipos" };
+const ETIQUETA: Record<string, string> = {};
 
 /** Las páginas de boletería que veo (antes eran pastillas dentro de "Funciones y boletos"). */
 export function boletosSubtabs(a: PanelAccessData, pid: string): SubTab[] {
@@ -268,7 +258,8 @@ export function salidaBoletos(a: PanelAccessData, pid: string, desde: string): s
   return t ? `/panel/producciones/${pid}/${t.path}` : `/panel/producciones/${pid}`;
 }
 
-/** Grupos de pestañas que veo en una obra (solo los que tienen algo), con su primera pestaña como liga. */
+/** Pestañas que veo en una obra (solo las que tienen algo), cada una con sus secciones y páginas, y su primera
+ *  página como liga. */
 export function productionGroups(a: PanelAccessData, pid: string, concluida = false): GrupoTabs[] {
   const mias = new Map(productionTabs(a, pid, concluida).map((t) => [t.id, t]));
   const paginas = paginasObra(a, pid, mias);
@@ -277,16 +268,20 @@ export function productionGroups(a: PanelAccessData, pid: string, concluida = fa
     if (g.id === "boletos") {
       // La puerta va dentro de "Día de función"; sin acceso a boletería, esa sección sale sola.
       tabs = mias.has("boletos") ? boletosSecciones(a, pid, mias.has("puerta")) : mias.has("puerta") ? boletosSecciones(a, pid, true) : [];
-    } else if (SECCIONES_OBRA[g.id]) {
-      tabs = SECCIONES_OBRA[g.id]!.map((sec) => {
+    } else {
+      tabs = g.secciones.map((sec) => {
         const items = sec.items.flatMap((id) => (paginas.has(id) ? [paginas.get(id)!] : []));
         return { id: sec.id, label: sec.label, path: items[0]?.path ?? "", items };
       }).filter((sec) => sec.items.length > 0);
-    } else {
-      tabs = g.tabs.flatMap((id) => (paginas.has(id) ? [paginas.get(id)!] : []));
     }
     return { id: g.id, label: g.label, path: tabs[0]?.path ?? "", tabs };
   }).filter((g) => g.tabs.length > 0);
+}
+
+/** Las páginas de una pestaña en una sola fila, con el nombre de su sección (vacío si la pestaña no las agrupa). */
+export function paginasDePestana(g: GrupoTabs): { seccion: string; paginas: SubTab[] }[] {
+  const conNombre = g.tabs.length > 1;
+  return g.tabs.map((t) => ({ seccion: conNombre ? t.label : "", paginas: t.items ?? [t] }));
 }
 
 /** Todas las páginas de los grupos en una lista (para el buscador del panel). */
@@ -313,7 +308,7 @@ export function tabActiva(grupos: GrupoTabs[], sub: string): { grupo: GrupoObra 
 export type Section = { href: string; label: string };
 
 export type NavSection = {
-  id: "inicio" | "notificaciones" | "proyectos" | "personas" | "reportes" | "sitio" | "ajustes";
+  id: "hoy" | "obras" | "personas" | "ventas" | "sitio" | "ajustes";
   label: string;
   /** A dónde lleva la sección (su primera subpestaña). */
   href: string;
@@ -328,25 +323,28 @@ export function hasReportAccess(a: PanelAccessData): boolean {
   return casa(a, "casa.reportes") || Object.values(a.byProduction).some((p) => p.includes("reportes.ver"));
 }
 
+const VENTAS_PERMS = ["ventas.ver", "ventas.operar", "reportes.ver"];
+
+/** ¿Vendo o veo ventas en alguna obra? (sección Ventas del menú) */
+export function hasVentasAccess(a: PanelAccessData): boolean {
+  return casa(a, "casa.reportes") || Object.values(a.byProduction).some((p) => p.some((x) => VENTAS_PERMS.includes(x)));
+}
+
 /**
- * Menú del panel en cuatro secciones (más Ajustes para el Director):
- * Inicio · Proyectos (Producciones, Audiciones) · Personas (Directorio, Cumpleaños, Equipo DARF) · Reportes (General, Por producción) · Ajustes.
- * Las direcciones viejas (/panel/usuarios, /panel/talento…) siguen funcionando.
+ * Menú del panel (esqueleto nuevo, 0138): seis entradas iguales para todos; cada quien ve solo las que le tocan.
+ * Hoy · Mis obras (Producciones, Audiciones) · Personas (Directorio, Cumpleaños, Portal del equipo) ·
+ * Ventas (todas las obras, Reporte general) · Sitio (Sitio, Club Fan, Difusión, Contacto, DARFY, Eventos, Showcases) · Ajustes.
+ * Las direcciones viejas (/panel/usuarios, /panel/reportes…) siguen funcionando y caen en su sección.
  */
 export function panelMenu(a: PanelAccessData): NavSection[] {
   const out: NavSection[] = [
-    // Notificaciones vive en Inicio (sus últimas, "Ver todas" y el número de nuevas): ya no es una entrada aparte.
-    { id: "inicio", label: "Inicio", href: "/panel", subs: [], match: ["/panel/notificaciones"] },
+    // Notificaciones vive en Hoy (sus últimas, "Ver todas" y el número de nuevas): no es una entrada aparte.
+    { id: "hoy", label: "Hoy", href: "/panel", subs: [], match: ["/panel/notificaciones"] },
   ];
   // Quien solo está en el equipo de una convocatoria general no tiene obras: solo ve Audiciones.
-  const proyectos: Section[] = a.isDirector || casa(a, "casa.producciones") || myProductionIds(a).length ? [{ href: "/panel/producciones", label: "Producciones" }] : [];
-  if (hasAuditionAccess(a)) proyectos.push({ href: "/panel/audiciones", label: "Audiciones" });
-  // Eventos (0081/0084): Director, Fan Zone, puerta o taquilla de una obra, o equipo de un evento.
-  if (hasEventoAccess(a)) proyectos.push({ href: "/panel/eventos", label: "Eventos" });
-  // Showcases (0121): planes, página y solicitudes de DARF Showcase Shows.
-  if (casa(a, "casa.showcases")) proyectos.push({ href: "/panel/showcases", label: "Showcases" });
-  // Casa DARF sin obras ni audiciones (p. ej. solo Roles o Bitácora) no ve Proyectos.
-  if (proyectos.length) out.push({ id: "proyectos", label: "Proyectos", href: proyectos[0].href, subs: proyectos, match: ["/panel/producciones", "/panel/audiciones", "/panel/eventos", "/panel/showcases"] });
+  const obras: Section[] = a.isDirector || casa(a, "casa.producciones") || myProductionIds(a).length ? [{ href: "/panel/producciones", label: "Producciones" }] : [];
+  if (hasAuditionAccess(a)) obras.push({ href: "/panel/audiciones", label: "Audiciones" });
+  if (obras.length) out.push({ id: "obras", label: "Mis obras", href: obras[0].href, subs: obras, match: ["/panel/producciones", "/panel/audiciones"] });
   // Personas y Ajustes: cada subpestaña con su permiso de Casa DARF (0102).
   const personas: Section[] = [
     ...(casa(a, "casa.personas") ? [{ href: "/panel/personas", label: "Directorio" }, { href: "/panel/cumpleanos", label: "Cumpleaños" }] : []),
@@ -359,12 +357,12 @@ export function panelMenu(a: PanelAccessData): NavSection[] {
       match: ["/panel/personas", "/panel/talento", "/panel/usuarios", "/panel/cumpleanos"],
     });
   }
-  if (hasReportAccess(a)) {
-    // Una sola página: el General (con la lista "Por producción" abajo); sin el general, directo a la lista de obras.
-    const href = casa(a, "casa.reportes") ? "/panel/reportes" : "/panel/reportes/obras";
-    out.push({ id: "reportes", label: "Reportes", href, subs: [{ href, label: "Reportes" }], match: ["/panel/reportes"] });
+  // Ventas: todas las obras juntas (órdenes por aprobar, taquilla, corte) y el Reporte general de Casa DARF.
+  if (hasVentasAccess(a)) {
+    const ventas: Section[] = [{ href: "/panel/ventas", label: "Ventas" }, ...(casa(a, "casa.reportes") ? [{ href: "/panel/reportes", label: "Reporte general" }] : [])];
+    out.push({ id: "ventas", label: "Ventas", href: "/panel/ventas", subs: ventas, match: ["/panel/ventas", "/panel/reportes"] });
   }
-  // Sitio y público: lo que ve y pregunta el público de DARF (antes repartido entre Personas y Ajustes).
+  // Sitio: lo que ve y pregunta el público de DARF, más los eventos y los showcases.
   const sitio: Section[] = [
     ...(casa(a, "casa.sitio") ? [{ href: "/panel/ajustes/sitio", label: "Sitio" }] : []),
     // 0112: base de socios del Club Fan.
@@ -372,10 +370,14 @@ export function panelMenu(a: PanelAccessData): NavSection[] {
     // Guías para redes de DARF (cómo unirte al Club Fan, cómo crear tu cuenta).
     ...(casa(a, "casa.sitio") || casa(a, "casa.club") ? [{ href: "/panel/ajustes/difusion", label: "Difusión DARF" }] : []),
     ...(casa(a, "casa.contacto") ? [{ href: "/panel/contacto", label: "Contacto" }, { href: "/panel/ajustes/darfy", label: "DARFY" }] : []),
+    // Eventos (0081/0084): Director, Fan Zone, puerta o taquilla de una obra, o equipo de un evento.
+    ...(hasEventoAccess(a) ? [{ href: "/panel/eventos", label: "Eventos" }] : []),
+    // Showcases (0121): planes, página y solicitudes de DARF Showcase Shows.
+    ...(casa(a, "casa.showcases") ? [{ href: "/panel/showcases", label: "Showcases" }] : []),
   ];
   if (sitio.length) {
-    out.push({ id: "sitio", label: "Sitio y público", href: sitio[0].href, subs: sitio,
-      match: ["/panel/ajustes/sitio", "/panel/ajustes/club", "/panel/ajustes/difusion", "/panel/ajustes/darfy", "/panel/contacto"] });
+    out.push({ id: "sitio", label: "Sitio", href: sitio[0].href, subs: sitio,
+      match: ["/panel/ajustes/sitio", "/panel/ajustes/club", "/panel/ajustes/difusion", "/panel/ajustes/darfy", "/panel/contacto", "/panel/eventos", "/panel/showcases"] });
   }
   const ajustes: Section[] = [
     ...(a.isDirector ? [{ href: "/panel/ajustes/casa", label: "Casa DARF" }] : []),

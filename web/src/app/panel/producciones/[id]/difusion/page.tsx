@@ -84,7 +84,7 @@ export default async function Difusion({ params, searchParams }: PageProps<"/pan
                 <div>
                   <h3 className="font-bold">{x.label}</h3>
                   <p className="text-xs text-texto-3">{x.ayuda}</p>
-                  {sinAlterno && <p className="mt-1 text-xs font-semibold text-aviso">Esta obra no tiene póster alterno: sale sobre el ambiente. Súbelo en <Link href={`/panel/producciones/${id}/pagina/imagen`} className="underline">Página, en Imagen y pósters</Link>.</p>}
+                  {sinAlterno && <p className="mt-1 text-xs font-semibold text-aviso">Esta obra no tiene póster alterno: sale sobre el ambiente. Súbelo en <Link href={`/panel/producciones/${id}/pagina/imagen`} className="underline">Página pública, en Imágenes</Link>.</p>}
                 </div>
                 <img src={ligaX("post")} alt={`Vista previa: ${x.label}`} loading="lazy" width={1080} height={1440} className="aspect-[3/4] w-full rounded-lg bg-sala object-cover" />
                 <div className="mt-auto flex flex-wrap gap-2">

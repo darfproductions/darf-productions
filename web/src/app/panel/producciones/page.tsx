@@ -27,7 +27,7 @@ export default async function PanelProductions({ searchParams }: PageProps<"/pan
 
   return (
     <>
-      <PanelTitle eyebrow="Proyectos" title="Producciones">
+      <PanelTitle eyebrow="Mis obras" title="Producciones">
         Cada obra tiene su espacio de trabajo: contenido, audiciones, elenco, funciones y permisos.
       </PanelTitle>
       {borrada && <p role="status" className="rounded-xl bg-exito/15 px-4 py-3 text-sm font-semibold text-exito">La obra se borró por completo.</p>}

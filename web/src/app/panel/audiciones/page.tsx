@@ -39,7 +39,7 @@ export default async function AuditionsHome() {
   const deObra = all.filter((a) => a.production_id);
   return (
     <>
-      <PanelTitle eyebrow="Proyectos" title="Audiciones">
+      <PanelTitle eyebrow="Mis obras" title="Audiciones">
         Convocatorias generales (sin obra, como un llamado de bailarines) y las de cada producción.
       </PanelTitle>
       {(permanente || casa(access, "casa.audiciones")) && (

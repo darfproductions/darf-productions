@@ -15,7 +15,7 @@ import { Block, cargarEditor } from "./editor";
 export const metadata: Metadata = { title: "Página pública" };
 
 // Página pública → Publicar: estado, cambios sin publicar y a dónde ir para editar cada parte. Lo que se edita vive
-// en Contenido, Imagen y Avisos; la venta y los precios, en Boletos → Preparar → Funciones y horarios.
+// en Textos, Imágenes y Avisos; la venta y los precios, en Boletos → Preparar → Funciones y horarios.
 export default async function PageEditor({ params }: PageProps<"/panel/producciones/[id]/pagina">) {
   const { id } = await params;
   const { access, editar, publicar, p, data, cambios, cambio } = await cargarEditor(id, "pagina", false);
@@ -23,8 +23,8 @@ export default async function PageEditor({ params }: PageProps<"/panel/produccio
   const publica = ["publicada", "archivada"].includes(data.production.estado);
   const base = `/panel/producciones/${id}`;
   const partes = [
-    { href: "pagina/contenido", titulo: "Contenido", que: "Datos y ficha, sinopsis, canciones, videos y agradecimientos.", c: cambio("datos", "canciones", "ficha", "videos", "gracias") },
-    { href: "pagina/imagen", titulo: "Imagen y pósters", que: "Logo, imagen de ambiente, póster oficial y alterno, colores.", c: cambio("kit", "colores", "poster") },
+    { href: "pagina/contenido", titulo: "Textos", que: "Datos y ficha, sinopsis, canciones, videos y agradecimientos.", c: cambio("datos", "canciones", "ficha", "videos", "gracias") },
+    { href: "pagina/imagen", titulo: "Imágenes", que: "Logo, imagen de ambiente, póster oficial y alterno, colores.", c: cambio("kit", "colores", "poster") },
     { href: "pagina/avisos", titulo: "Avisos", que: "Franja de avisos y anuncios con cuenta regresiva.", c: cambio("franja") },
   ];
 
@@ -40,7 +40,7 @@ export default async function PageEditor({ params }: PageProps<"/panel/produccio
           <div className="rounded-lg bg-sala p-3 text-sm">
             <p className="font-bold text-aviso">Para publicar falta:</p>
             <ul className="mt-1 text-texto-2">{faltan.map((f) => <li key={f}><Icono nombre="punto" className="h-2 w-2 opacity-70" /> {f}</li>)}</ul>
-            {editar && <Link href={`${base}/pagina/imagen`} className="mt-2 inline-block font-bold text-violeta-claro">Completar en Imagen y pósters</Link>}
+            {editar && <Link href={`${base}/pagina/imagen`} className="mt-2 inline-block font-bold text-violeta-claro">Completar en Imágenes</Link>}
           </div>
         ) : (
           <p className="text-sm font-semibold text-[#bbf7d0]">El kit está completo.</p>

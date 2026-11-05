@@ -15,7 +15,7 @@ export default async function ReportesPorObra() {
     .filter((p) => can(access, p.id, "reportes.ver"));
   return (
     <>
-      <PanelTitle eyebrow="Reportes" title="Por producción">
+      <PanelTitle eyebrow="Ventas" title="Por producción">
         Ventas, ocupación, vendedores y asistencia de cada obra.
       </PanelTitle>
       {obras.length === 0 && <Card>No tienes reportes de ninguna obra.</Card>}

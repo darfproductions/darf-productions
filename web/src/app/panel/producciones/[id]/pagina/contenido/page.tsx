@@ -6,9 +6,9 @@ import { RowsEditor } from "../RowsEditor";
 import { SongsEditor } from "../SongsEditor";
 import { Block, cargarEditor, field } from "../editor";
 
-export const metadata: Metadata = { title: "Contenido de la página" };
+export const metadata: Metadata = { title: "Textos de la página" };
 
-// Página pública → Contenido: datos y ficha, canciones, ficha extra, videos y agradecimientos.
+// Página pública → Textos: datos y ficha, canciones, ficha extra, videos y agradecimientos.
 export default async function ContenidoPage({ params }: PageProps<"/panel/producciones/[id]/pagina/contenido">) {
   const { id } = await params;
   const { p, cambio, actos, facts, videos, thanks } = await cargarEditor(id, "pagina/contenido");
