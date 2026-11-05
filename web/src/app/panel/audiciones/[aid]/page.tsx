@@ -1,5 +1,6 @@
 /* eslint-disable @next/next/no-img-element -- QR generado en el servidor */
 import type { Metadata } from "next";
+import { PREGUNTAS_PERFIL } from "@/lib/produccion-nueva-rules";
 import Link from "next/link";
 import { AjustesSeccion } from "@/components/panel/AjustesSeccion";
 import { redirect } from "next/navigation";
@@ -111,7 +112,14 @@ export default async function AuditionConfig({ params }: PageProps<"/panel/audic
             <fieldset className="flex flex-col gap-2">
               <legend className="mb-1 text-sm font-semibold">Qué se pide</legend>
               <label className={check}><input type="checkbox" name="pedir_foto" defaultChecked={a.pedir_foto} className="mt-1" /> Foto del aspirante</label>
-              <label className={check}><input type="checkbox" name="pedir_perfil" defaultChecked={a.pedir_perfil} className="mt-1" /> Perfil artístico (tesitura, canto, baile y habilidades): el juez lo ve junto a la ficha de cada personaje</label>
+              <fieldset className="flex flex-col gap-1.5 rounded-lg bg-sala p-3">
+                <legend className="px-1 text-sm font-semibold">Perfil artístico: qué se les pregunta</legend>
+                <p className="text-xs text-texto-3">Todas son opcionales para quien se inscribe. Desmarca las que no quieras preguntar en esta audición; el juez ve las respuestas junto a la ficha de cada personaje.</p>
+                {PREGUNTAS_PERFIL.map((q) => (
+                  <label key={q.valor} className={check}><input type="checkbox" name="perfil_pregunta" value={q.valor} defaultChecked={(a.perfil_preguntas ?? []).includes(q.valor)} className="mt-1" />
+                    <span>{q.label}{"ayuda" in q && <span className="block text-xs text-texto-3">{q.ayuda}</span>}</span></label>
+                ))}
+              </fieldset>
               <label className={check}><input type="checkbox" name="elegir_horario" defaultChecked={a.elegir_horario} className="mt-1" /> El aspirante elige su horario (si no, se lo asignas tú en Solicitudes)</label>
               <label className={check}><input type="checkbox" name="pedir_tutor" defaultChecked={a.pedir_tutor} className="mt-1" /> Datos y autorización de mamá, papá o tutor para menores de edad</label>
               <label className={`${check} rounded-lg border border-aviso/40 p-2`}><input type="checkbox" name="autorizacion_escuela" defaultChecked={a.autorizacion_escuela} className="mt-1" />

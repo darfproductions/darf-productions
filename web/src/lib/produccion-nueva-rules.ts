@@ -166,6 +166,14 @@ export type Comparacion = { que: string; pide: string; tiene: string; ok: boolea
 
 const RANGO: Record<string, number> = { no: 0, basico: 1, fuerte: 2 };
 const nivel = (v: string | null) => (v ? etiqueta(NIVELES, v) ?? v : "—");
+/** Preguntas del perfil artístico que cada convocatoria puede hacer o no (0135). */
+export const PREGUNTAS_PERFIL = [
+  { valor: "tesitura", label: "Tesitura", ayuda: "Quítala con niños o principiantes que no la saben." },
+  { valor: "canto", label: "Nivel de canto" },
+  { valor: "baile", label: "Nivel de baile" },
+  { valor: "genero", label: "Personajes que interpreta (femeninos / masculinos)" },
+  { valor: "habilidades", label: "Habilidades especiales" },
+] as const;
 export const TESITURA_NO_SE = { valor: "no_se", label: "No sé" };
 
 /** Lo que pide el personaje junto a lo que dijo la persona: ✓ cumple, ✗ no cumple, null = no se puede saber. */

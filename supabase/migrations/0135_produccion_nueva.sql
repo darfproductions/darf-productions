@@ -320,8 +320,13 @@ grant execute on function panel_borrar_produccion(text, text) to authenticated;
 -- ════════ 5. Audiciones: perfil de la persona y ficha de los personajes ════════
 -- Preguntas estándar del registro (se pueden apagar por convocatoria): con las mismas opciones que los personajes,
 -- para que el juez vea "pide soprano · ella: mezzo".
-alter table auditions add column if not exists pedir_perfil boolean not null default false;
-alter table auditions alter column pedir_perfil set default true;
+-- Qué preguntas del perfil hace cada convocatoria (se eligen al crearla o editarla; vacío = ninguna).
+-- Las que ya existen no preguntan nada; las nuevas, todo (y se puede quitar, p. ej. la tesitura con niños).
+alter table auditions add column if not exists perfil_preguntas text[] not null default '{}';
+alter table auditions alter column perfil_preguntas set default '{tesitura,canto,baile,genero,habilidades}';
+do $$ begin
+  alter table auditions add constraint auditions_perfil_preguntas check (perfil_preguntas <@ array['tesitura', 'canto', 'baile', 'genero', 'habilidades']);
+exception when duplicate_object then null; end $$;
 alter table audition_applications add column if not exists perfil_tesitura text;
 alter table audition_applications add column if not exists perfil_canto text;
 alter table audition_applications add column if not exists perfil_baile text;

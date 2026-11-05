@@ -43,9 +43,14 @@ solo *qué*.
 - **Audiciones con la marca de la obra**:
   - la página pública lleva la imagen de fondo, el logo y los colores de la obra;
   - los personajes salen en tarjetas con su ficha (`audition_fichas`, que funciona aunque la obra siga en borrador).
-- **Perfil artístico** en la inscripción: tesitura, canto, baile, personajes que interpreta y habilidades
-  (`auditions.pedir_perfil`; ya viene encendido en las convocatorias nuevas). Se guarda con
-  `audition_perfil_guardar`.
+- **Perfil artístico** en la inscripción: tesitura, canto, baile, personajes que interpreta y habilidades. Todo es
+  opcional para quien se inscribe ("No sé" en tesitura). **Cada convocatoria elige qué se pregunta**
+  (`auditions.perfil_preguntas`; en Configuración → Inscripción y logística):
+  - las convocatorias nuevas preguntan todo;
+  - la plantilla "Audición en escuela" solo baile y habilidades;
+  - "Músicos" y "Equipo técnico", nada;
+  - "Cantantes" ya no repite la tesitura como pregunta aparte.
+  Se guarda con `audition_perfil_guardar`.
 - **Juez**: los personajes por los que audiciona son botones. Cada uno abre un pop-up con la ficha del personaje y la
   tabla "lo que pide · lo que dijo" con ✓ / ✗ (`compararPerfil`, `_audition_juez_persona` → `fichas` y `perfil`).
 - **Borrar una obra completa** (`panel_borrar_produccion`): solo Casa DARF, escribiendo su nombre, en Página →

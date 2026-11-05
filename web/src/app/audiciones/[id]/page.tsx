@@ -133,7 +133,7 @@ export default async function AuditionPage({ params }: PageProps<"/audiciones/[i
             <>
               <h2 className="titular text-2xl">{mine && mine.estado !== "cancelado" ? "Editar mi inscripción" : "Inscripción"}</h2>
               <ApplyForm aid={a.id} userId={session.userId} roles={roles} fields={fields} slots={a.elegir_horario && !enLinea ? slots : []} fechaAudicion={slots[0]?.inicia ?? null}
-                opciones={{ pedirFoto: a.pedir_foto, pedirTutor: a.pedir_tutor, pedirPerfil: !!a.pedir_perfil }} defaults={{ nombre: session.profile?.nombre ?? "", telefono: session.profile?.telefono ?? "" }} previa={mine} />
+                opciones={{ pedirFoto: a.pedir_foto, pedirTutor: a.pedir_tutor, perfil: a.perfil_preguntas ?? [] }} defaults={{ nombre: session.profile?.nombre ?? "", telefono: session.profile?.telefono ?? "" }} previa={mine} />
               {!mine && whatsappAudicionUrl(env.whatsapp, a.productions?.nombre || a.titulo) && (
                 <p className="text-sm text-texto-2">¿Dudas antes de inscribirte?{" "}
                   <a href={whatsappAudicionUrl(env.whatsapp, a.productions?.nombre || a.titulo, session.profile?.nombre)} target="_blank" rel="noreferrer" className="font-bold text-lila underline">Escríbenos por WhatsApp <Icono nombre="externo" /></a>

@@ -1,6 +1,6 @@
 "use server";
 
-import type { FichaAudicion, PerfilAspirante } from "@/lib/produccion-nueva-rules";
+import { PREGUNTAS_PERFIL, type FichaAudicion, type PerfilAspirante } from "@/lib/produccion-nueva-rules";
 
 import { correoDeCampo } from "@/lib/cuentas";
 import { revalidatePath } from "next/cache";
@@ -142,7 +142,7 @@ export async function saveOptions(_p: AudState, f: FormData): Promise<AudState> 
         pedir_tutor,
         autorizacion_escuela: pedir_tutor ? false : autorizacion_escuela,
         pedir_foto: on("pedir_foto"),
-        pedir_perfil: on("pedir_perfil"),
+        perfil_preguntas: f.getAll("perfil_pregunta").map(String).filter((x) => PREGUNTAS_PERFIL.some((p) => p.valor === x)),
         elegir_horario: on("elegir_horario"),
         // Por invitación siempre es "solo con enlace".
         visibilidad: solo_invitados || str(f, "visibilidad") === "enlace" ? "enlace" : "publica",
@@ -244,7 +244,7 @@ export async function saveAsTemplate(_p: AudState, f: FormData): Promise<AudStat
   ]);
   if (!a) return { ok: false, message: "No se encontró la convocatoria." };
   const opciones = Object.fromEntries(
-    ["pedir_tutor", "autorizacion_escuela", "pedir_foto", "elegir_horario", "visibilidad", "numeracion", "modalidad", "solo_invitados"].map((k) => [k, a[k]]),
+    ["pedir_tutor", "autorizacion_escuela", "pedir_foto", "elegir_horario", "visibilidad", "numeracion", "modalidad", "solo_invitados", "perfil_preguntas"].map((k) => [k, a[k]]),
   );
   const { error } = await supabase.from("audition_templates").insert({
     nombre,
