@@ -20,6 +20,8 @@ export type PanelAudition = AuditionOptions & {
   callback_cuando?: "hoy" | "otra_fecha" | null; callback_fecha?: string | null; callback_lugar?: string | null;
   /** 0112: preguntas del host el día de la audición. */
   preguntas_entrevista?: string[];
+  /** 0135: pide el perfil artístico (tesitura, canto, baile, habilidades). */
+  pedir_perfil?: boolean;
   productions?: { nombre: string } | null;
 };
 

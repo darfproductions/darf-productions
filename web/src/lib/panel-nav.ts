@@ -124,6 +124,7 @@ export type Tab = {
 // Pestañas del espacio de trabajo de una obra (docs/DARF-2.0-FASE-3.md §4).
 export const PRODUCTION_TABS: Tab[] = [
   { id: "resumen", label: "Resumen", path: "", perms: [], etapa: null },
+  { id: "ficha", label: "Ficha de la producción", path: "ficha", perms: [], etapa: null },
   { id: "pagina", label: "Página pública", path: "pagina", perms: ["obra.editar", "obra.publicar"], etapa: null },
   { id: "audiciones", label: "Audiciones", path: "audiciones", perms: ["audiciones.gestionar", "audiciones.registro", "audiciones.evaluar", "audiciones.entrevista"], etapa: null },
   { id: "elenco", label: "Elenco y equipos", path: "elenco", perms: ["elenco.gestionar", "obra.editar"], etapa: null },
@@ -147,7 +148,7 @@ export const PRODUCTION_TABS: Tab[] = [
 ];
 
 /** Pestañas que siguen visibles cuando la producción está concluida (decisión de Diego). */
-export const CONCLUIDA_TABS = ["resumen", "pagina", "elenco", "expedientes", "solicitudes", "fanzone", "difusion", "cierre", "permisos", "reportes", "equipo", "guia"];
+export const CONCLUIDA_TABS = ["resumen", "ficha", "pagina", "elenco", "expedientes", "solicitudes", "fanzone", "difusion", "cierre", "permisos", "reportes", "equipo", "guia"];
 
 /** Pestañas que veo en una obra: Resumen si tengo cualquier permiso ahí; el resto según su permiso.
  *  Si la obra está concluida, solo las de CONCLUIDA_TABS. */
@@ -166,7 +167,7 @@ export type SubTab = { id: string; label: string; path: string; items?: SubTab[]
 export type GrupoTabs = { id: GrupoObra; label: string; path: string; tabs: SubTab[] };
 
 const GRUPOS: { id: GrupoObra; label: string; tabs: string[] }[] = [
-  { id: "resumen", label: "Resumen", tabs: ["resumen"] },
+  { id: "resumen", label: "Resumen", tabs: ["resumen", "ficha"] },
   { id: "personas", label: "Personas", tabs: ["elenco", "audiciones", "expedientes", "solicitudes", "evaluaciones"] },
   { id: "ensayos", label: "Ensayos y equipo", tabs: ["ensayos", "equipo", "materiales", "comunicados"] },
   { id: "boletos", label: "Boletos", tabs: ["boletos", "puerta"] },

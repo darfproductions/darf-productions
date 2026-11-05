@@ -102,6 +102,7 @@ export default async function ImagenPage({ params }: PageProps<"/panel/produccio
             <ColorsForm
               pid={id}
               initial={{ fondo: p.color_fondo ?? "#0b0910", superficie: p.color_superficie ?? "#17121f", texto: p.color_texto ?? "#f4f1f8", acento: p.color_acento ?? "#a48bff" }}
+              logoUrl={p.logo_path ? assetUrl(p.logo_path) : null}
             />
           </Block>
 

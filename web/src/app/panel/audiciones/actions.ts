@@ -1,5 +1,7 @@
 "use server";
 
+import type { FichaAudicion, PerfilAspirante } from "@/lib/produccion-nueva-rules";
+
 import { correoDeCampo } from "@/lib/cuentas";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -140,6 +142,7 @@ export async function saveOptions(_p: AudState, f: FormData): Promise<AudState> 
         pedir_tutor,
         autorizacion_escuela: pedir_tutor ? false : autorizacion_escuela,
         pedir_foto: on("pedir_foto"),
+        pedir_perfil: on("pedir_perfil"),
         elegir_horario: on("elegir_horario"),
         // Por invitación siempre es "solo con enlace".
         visibilidad: solo_invitados || str(f, "visibilidad") === "enlace" ? "enlace" : "publica",
@@ -579,6 +582,8 @@ export type PersonaJuez = {
   entrevista: { pregunta: string; respuesta: string }[]; extra: string | null; entrevista_at: string | null;
   historial: { obra: string; temporada: string | null; tipo: string; papel: string | null }[];
   puntos: Record<string, number>; notas: string | null; picks: { opcion: number; role_id: string | null; ensamble: boolean }[];
+  /** 0135: ficha de cada personaje por el que audiciona y el perfil que dio la persona. */
+  fichas?: FichaAudicion[]; perfil?: PerfilAspirante | null;
 };
 /** 0133: si pasan en grupo, "grupo" trae a cada integrante (cada quien con su evaluación). */
 export type JuezActual = PersonaJuez & { grupo?: PersonaJuez[] | null };

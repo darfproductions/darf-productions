@@ -111,6 +111,7 @@ export default async function AuditionConfig({ params }: PageProps<"/panel/audic
             <fieldset className="flex flex-col gap-2">
               <legend className="mb-1 text-sm font-semibold">Qué se pide</legend>
               <label className={check}><input type="checkbox" name="pedir_foto" defaultChecked={a.pedir_foto} className="mt-1" /> Foto del aspirante</label>
+              <label className={check}><input type="checkbox" name="pedir_perfil" defaultChecked={a.pedir_perfil} className="mt-1" /> Perfil artístico (tesitura, canto, baile y habilidades): el juez lo ve junto a la ficha de cada personaje</label>
               <label className={check}><input type="checkbox" name="elegir_horario" defaultChecked={a.elegir_horario} className="mt-1" /> El aspirante elige su horario (si no, se lo asignas tú en Solicitudes)</label>
               <label className={check}><input type="checkbox" name="pedir_tutor" defaultChecked={a.pedir_tutor} className="mt-1" /> Datos y autorización de mamá, papá o tutor para menores de edad</label>
               <label className={`${check} rounded-lg border border-aviso/40 p-2`}><input type="checkbox" name="autorizacion_escuela" defaultChecked={a.autorizacion_escuela} className="mt-1" />

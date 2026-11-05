@@ -110,7 +110,7 @@ export async function mandarCast(_p: VotState, f: FormData): Promise<VotState> {
 
 // ──────── Personajes de la obra (Elenco y equipos) ────────
 
-const refrescaObra = (pid: string) => revalidatePath(`/panel/producciones/${pid}/elenco`);
+const refrescaObra = (pid: string) => revalidatePath(`/panel/producciones/${pid}`, "layout");
 
 export async function agregarPersonajeObra(_p: VotState, f: FormData): Promise<VotState> {
   const pid = str(f, "pid");

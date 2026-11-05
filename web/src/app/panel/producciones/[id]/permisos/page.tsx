@@ -5,6 +5,7 @@ import { Card } from "@/components/panel/ui";
 import { listMembers, listRoles } from "@/lib/panel-data";
 import { can, groupMembers } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
+import { PuestosEditor } from "@/components/panel/obra/PuestosEditor";
 import { AddMemberForm } from "./AddMemberForm";
 import { EditRolesForm } from "./EditRolesForm";
 import { invitacionAccion, removeMember } from "./actions";
@@ -40,9 +41,14 @@ export default async function ProductionPermissions({ params }: PageProps<"/pane
 
   return (
     <div className="flex flex-col gap-4">
+      <div id="puestos" className="flex scroll-mt-24 flex-col gap-2">
+        <h2 className="titular text-xl">Puestos del equipo</h2>
+        <p className="text-sm text-texto-2">Dirección vocal, coreografía, stage manager… Cada puesto da sus permisos a quien lo ocupa y aparece en los créditos. Si alguien aún no tiene cuenta, pon su nombre y correo: le llega la invitación.</p>
+        <PuestosEditor pid={id} obra={(obra.data?.nombre as string) ?? "la obra"} />
+      </div>
       <Card className="flex flex-col gap-4">
         <div>
-          <h2 className="titular text-xl">Dar acceso</h2>
+          <h2 className="titular text-xl">Dar acceso (sin puesto)</h2>
           <p className="mt-1 text-sm text-texto-2">
             Escribe su correo: si ya tiene cuenta en DARF entra de inmediato; si no, queda invitada y le mandas la liga
             (al crear su cuenta con ese correo entra sola). Puede tener varios roles y suma los permisos de todos

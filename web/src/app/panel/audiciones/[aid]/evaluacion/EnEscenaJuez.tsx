@@ -5,6 +5,8 @@ import { useEffect, useRef, useState } from "react";
 import { Card } from "@/components/panel/ui";
 import { Icono } from "@/components/Icono";
 import type { Criterio } from "@/lib/audition-rules";
+import { PersonajesPopup } from "@/components/audiciones/PersonajesPopup";
+import type { PerfilAspirante } from "@/lib/produccion-nueva-rules";
 import { juezActual, type JuezActual, type PersonaJuez } from "../../actions";
 import { ScoreForm } from "./ScoreForm";
 import { PickForm } from "./PickForm";
@@ -74,7 +76,9 @@ export function EnEscenaJuez({ aid, ronda, criterios, roles, conVotacion, abiert
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-lila">En escena ahora</p>
           <p className="text-3xl font-black leading-tight">{p.numero ? `Nº ${p.numero} · ` : ""}{p.nombre}</p>
           {p.edad != null && <p className="text-texto-2">{p.edad} años</p>}
-          {p.personajes?.length ? <p className="text-sm"><span className="text-texto-3">Quiere: </span><b>{p.personajes.join(", ")}</b></p> : null}
+          {p.fichas?.length
+            ? <PersonajesPopup fichas={p.fichas} perfil={perfilLleno(p.perfil)} edad={p.edad} />
+            : p.personajes?.length ? <p className="text-sm"><span className="text-texto-3">Quiere: </span><b>{p.personajes.join(", ")}</b></p> : null}
           {p.enlaces.map((v, i) => <a key={i} href={v.url} target="_blank" rel="noreferrer" className="text-sm text-violeta-claro underline">{v.titulo} <Icono nombre="externo" /></a>)}
         </div>
       </div>
@@ -112,4 +116,10 @@ export function EnEscenaJuez({ aid, ronda, criterios, roles, conVotacion, abiert
       </section>
     </Card>
   );
+}
+
+/** El perfil cuenta solo si la persona llenó algo. */
+function perfilLleno(p: PerfilAspirante | null | undefined): PerfilAspirante | null {
+  if (!p) return null;
+  return p.tesitura || p.canto || p.baile || p.genero || (p.habilidades?.length ?? 0) > 0 ? p : null;
 }
