@@ -18,6 +18,8 @@ import { elegir, POSTER_COLUMNS, type PosterColumns, type Uso } from "@/lib/post
 
 export type Production = KitColumns & PosterColumns & {
   id: string;
+  /** 0143: figura de la obra (opcional) que acompaña al logo en el encabezado. */
+  icono_path?: string | null;
   /** 0120: sin publicar, el público no ve funciones, fechas ni cuenta regresiva. */
   funciones_publicadas?: boolean;
   /** 0120: 'web' (cuenta, orden y checkout), 'hibrido' (eliges asientos → WhatsApp) o 'whatsapp' (todo por WhatsApp). */
@@ -90,7 +92,7 @@ export type ZonePrice = { nombre: string; price: number; /** Color de la zona en
   /** Lo que incluye la zona además del lugar (0122). */ beneficios?: BeneficioCorto[] };
 
 const PRODUCTION_COLUMNS =
-  `id, nombre, venue, temporada, price, on_sale, concluded, destacada, created_at, estado, frase, color_fondo, color_superficie, color_texto, color_acento, logo_path, ambiente_path, funciones_publicadas, modo_venta, mostrar_precios, mostrar_total, ${POSTER_COLUMNS}` as const;
+  `id, nombre, venue, temporada, price, on_sale, concluded, destacada, created_at, estado, frase, color_fondo, color_superficie, color_texto, color_acento, logo_path, ambiente_path, icono_path, funciones_publicadas, modo_venta, mostrar_precios, mostrar_total, ${POSTER_COLUMNS}` as const;
 
 export type PublicProduction = ConEstado<Production>;
 

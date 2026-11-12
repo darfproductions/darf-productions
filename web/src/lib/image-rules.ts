@@ -2,7 +2,7 @@
 // Funciones puras para poder probarlas: image-rules.test.ts. El navegador mide la
 // imagen antes de subirla; la base además limita tipo y tamaño del archivo.
 
-export type ImageKind = "logo" | "ambiente" | "retrato" | "galeria" | "patrocinador" | "poster";
+export type ImageKind = "logo" | "icono" | "ambiente" | "retrato" | "galeria" | "patrocinador" | "poster";
 
 export type ImageInfo = {
   type: string;
@@ -19,6 +19,7 @@ const MB = 1024 * 1024;
 
 export const IMAGE_RULES: Record<ImageKind, { types: string[]; maxSize: number; label: string; hint: string }> = {
   logo: { types: ["image/png", "image/webp"], maxSize: 8 * MB, label: "Logo", hint: "PNG o WebP con fondo transparente, mínimo 1200 px de ancho." },
+  icono: { types: ["image/png", "image/webp"], maxSize: 8 * MB, label: "Ícono", hint: "PNG o WebP con fondo transparente (solo la figura), mínimo 600 px de alto." },
   ambiente: { types: ["image/jpeg", "image/webp", "image/png"], maxSize: 8 * MB, label: "Imagen de ambiente", hint: "Horizontal 16:9, ideal 1920×1080, sin texto ni logos." },
   retrato: { types: ["image/jpeg", "image/webp", "image/png"], maxSize: 8 * MB, label: "Retrato", hint: "Vertical 3:4, ideal 900×1200, de la sesión de esta obra." },
   galeria: { types: ["image/jpeg", "image/webp", "image/png"], maxSize: 5 * MB, label: "Foto", hint: "JPG o WebP. Las fotos grandes se optimizan solas antes de subir." },
@@ -38,6 +39,11 @@ export function checkImage(kind: ImageKind, i: ImageInfo): ImageCheck {
     if (i.width < 600) errors.push("El logo es muy pequeño (mínimo 600 px de ancho).");
     else if (i.width < 1200) warnings.push("El logo mide menos de 1200 px de ancho; puede verse borroso.");
     if (i.transparent !== undefined && i.transparent < 0.01) errors.push("El logo no tiene fondo transparente.");
+  }
+  if (kind === "icono") {
+    if (Math.max(i.width, i.height) < 400) errors.push("El ícono es muy pequeño (mínimo 400 px de su lado mayor).");
+    else if (i.height < 600) warnings.push("El ícono mide menos de 600 px de alto; en computadora puede verse borroso.");
+    if (i.transparent !== undefined && i.transparent < 0.01) errors.push("El ícono no tiene fondo transparente: sube solo la figura, sin fondo.");
   }
   if (kind === "ambiente") {
     if (ratio < 1.6) errors.push("La imagen de ambiente debe ser horizontal 16:9.");

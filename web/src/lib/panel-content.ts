@@ -22,6 +22,8 @@ export type EditableProduction = {
   color_texto: string | null;
   color_acento: string | null;
   logo_path: string | null;
+  /** 0143: figura opcional de la obra. */
+  icono_path?: string | null;
   ambiente_path: string | null;
   on_sale: boolean;
 } & PosterColumns;
@@ -31,7 +33,7 @@ export async function getEditorData(id: string) {
   const [prod, acts, songs, facts, thanks, media, banner] = await Promise.all([
     supabase
       .from("productions")
-      .select(`id, nombre, estado, venue, temporada, fecha, duracion, clasificacion, idioma, basada_en, frase, sinopsis, color_fondo, color_superficie, color_texto, color_acento, logo_path, ambiente_path, on_sale, ${POSTER_COLUMNS}, ${POSTER_ALT_COLUMNS}`)
+      .select(`id, nombre, estado, venue, temporada, fecha, duracion, clasificacion, idioma, basada_en, frase, sinopsis, color_fondo, color_superficie, color_texto, color_acento, logo_path, ambiente_path, icono_path, on_sale, ${POSTER_COLUMNS}, ${POSTER_ALT_COLUMNS}`)
       .eq("id", id)
       .maybeSingle(),
     supabase.from("production_acts").select("id, nombre").eq("production_id", id).order("orden"),

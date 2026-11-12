@@ -48,7 +48,7 @@ export async function compressImage(file: File, kind: CompressKind): Promise<Com
     const bmp = await createImageBitmap(file);
     // Los logos con transparencia siempre se revisan: se les quitan los márgenes vacíos
     // para que en la página se vean del tamaño correcto.
-    const esLogoPng = kind === "logo" && file.type !== "image/jpeg";
+    const esLogoPng = (kind === "logo" || kind === "icono") && file.type !== "image/jpeg";
     // El póster oficial siempre queda en JPEG: lo leen la imagen al compartir y el PDF del boleto.
     const posterAJpeg = kind === "poster" && file.type !== "image/jpeg";
     if (!esLogoPng && !posterAJpeg && !hayQueComprimir(kind, { size: file.size, width: bmp.width, height: bmp.height })) { bmp.close(); return sinCambio; }
@@ -63,7 +63,7 @@ export async function compressImage(file: File, kind: CompressKind): Promise<Com
     bmp.close();
     const alpha = kind !== "poster" && file.type !== "image/jpeg" && tieneTransparencia(ctx, w, h);
     let recortado = false;
-    if (kind === "logo" && alpha) {
+    if ((kind === "logo" || kind === "icono") && alpha) {
       const r = recorteAlfa(cajaVisible(ctx, w, h), w, h);
       if (r) {
         const c2 = document.createElement("canvas");
