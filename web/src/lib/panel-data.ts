@@ -8,6 +8,8 @@ import { createClient } from "@/lib/supabase/server";
 
 export type PanelProduction = KitColumns & PosterColumns & {
   id: string;
+  /** 0143: figura de la obra (opcional). */
+  icono_path?: string | null;
   destacada?: boolean;
   nombre: string;
   estado: string;
@@ -28,7 +30,7 @@ export type PanelProduction = KitColumns & PosterColumns & {
 };
 
 const COLUMNS =
-  `id, nombre, estado, venue, temporada, on_sale, concluded, destacada, created_at, frase, color_fondo, color_superficie, color_texto, color_acento, logo_path, ambiente_path, funciones_publicadas, asistente_paso, tentativa_desde, tentativa_hasta, tipo, con_boleteria, ${POSTER_COLUMNS}` as const;
+  `id, nombre, estado, venue, temporada, on_sale, concluded, destacada, created_at, frase, color_fondo, color_superficie, color_texto, color_acento, logo_path, ambiente_path, icono_path, funciones_publicadas, asistente_paso, tentativa_desde, tentativa_hasta, tipo, con_boleteria, ${POSTER_COLUMNS}` as const;
 
 export async function listPanelProductions(ids?: string[]): Promise<PanelProduction[]> {
   const supabase = await createClient();

@@ -9,7 +9,7 @@ export type Seccion = (typeof SECCIONES)[number];
 export const NOMBRE_SECCION: Record<Seccion, string> = {
   datos: "Datos y sinopsis",
   colores: "Colores",
-  kit: "Logo e imagen de ambiente",
+  kit: "Logo, ícono e imagen de ambiente",
   poster: "Pósters (oficial y alterno)",
   franja: "Franja de avisos",
   canciones: "Canciones",
@@ -28,7 +28,7 @@ export type DatosObra = { nombre: string; frase: string | null; sinopsis: string
 export type Capa = Partial<{
   datos: DatosObra;
   colores: { color_fondo: string; color_superficie: string; color_texto: string; color_acento: string };
-  kit: { logo_path: string | null; ambiente_path: string | null };
+  kit: { logo_path: string | null; ambiente_path: string | null; icono_path?: string | null };
   poster: Record<string, string | null>;
   franja: Banner;
   canciones: { actos: { nombre: string; canciones: string[] }[] };

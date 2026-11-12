@@ -5,6 +5,21 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-11-12 — 0143: ícono de la obra
+
+Diego pidió que las obras con una figura propia (en Mamma Mia!, la silueta de Sophie que salía en todos los pósters)
+la puedan mostrar en su página.
+
+- **`productions.icono_path`** (opcional), en la carpeta del kit. Viaja con el logo en la sección "kit" de los
+  borradores (0119): borrador → fans → público. Un borrador viejo sin ícono no lo borra al publicarse.
+- **Panel → Página pública → Imágenes**: tercera miniatura "Ícono (opcional)" junto al logo y el ambiente, con
+  Subir/Cambiar/Quitar. PNG o WebP sin fondo; se recortan sus márgenes transparentes como al logo.
+- **Página de la obra**: en computadora, el ícono sale a la derecha del encabezado, sobre el degradado y arriba de la
+  tarjeta de próxima función. Sus bordes se difuminan con el fondo (abajo se desvanece del todo, para que una figura
+  de torso no se vea "plantada"; los lados y arriba se suavizan, por si la imagen es cuadrada o sólida). En celular no
+  se muestra. Sin ícono, la página queda igual que antes.
+- Prueba `0143_icono_obra_test.sql`; `dev/apply_0143_dev.sql`.
+
 ## 2026-11-12 — 0142: pasar boletos a otra persona
 
 Diego preguntó si se pueden transferir boletos entre cuentas; eligió la opción desde Mi cuenta.

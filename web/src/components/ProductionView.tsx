@@ -40,6 +40,7 @@ import {
   posterHero,
   performanceOccupancy,
   themeStyle,
+  assetUrl,
 } from "@/lib/productions";
 import { Icono } from "@/components/Icono";
 import { getLogistica } from "@/lib/logistica";
@@ -67,6 +68,15 @@ function Bloque({ id, eyebrow, titulo, children, className = "" }: { id: string;
   );
 }
 
+/** 0143: el ícono se funde con el encabezado: abajo se desvanece del todo (una figura de torso no se ve "plantada") y
+ *  los lados y la parte de arriba se suavizan, para que una imagen cuadrada o con bordes sólidos no se vea recortada. */
+const ICONO_DIFUMINADO: React.CSSProperties = {
+  maskImage: "linear-gradient(to bottom, transparent 0%, #000 14%, #000 58%, transparent 100%), linear-gradient(to right, transparent 0%, #000 22%, #000 78%, transparent 100%)",
+  WebkitMaskImage: "linear-gradient(to bottom, transparent 0%, #000 14%, #000 58%, transparent 100%), linear-gradient(to right, transparent 0%, #000 22%, #000 78%, transparent 100%)",
+  maskComposite: "intersect",
+  WebkitMaskComposite: "source-in",
+};
+
 export async function ProductionView({
   data,
   vendedor = null,
@@ -82,6 +92,7 @@ export async function ProductionView({
 }) {
   const { performances, prices } = data;
   const p = obraConCapa(data.production, capa);
+  const icono = p.icono_path ? assetUrl(p.icono_path) : null;
   const theme = getTheme(p);
   const posterPagina = posterUrl(p, "pagina");
   // 0088: una función que ya empezó deja de venderse aunque siga "en venta".
@@ -381,7 +392,14 @@ export async function ProductionView({
             </div>
           </div>
 
-          {/* Próxima función y precio, en vidrio (solo computadora; en celular está la barra de abajo). */}
+          {/* 0143: ícono de la obra (opcional) arriba de la tarjeta, solo en computadora. Próxima función y precio, en vidrio
+              (solo computadora; en celular está la barra de abajo). */}
+          {(icono || estreno || proxima?.starts_at) && (
+          <div className="flex flex-col items-center gap-6">
+          {icono && (
+            <Image src={icono} alt="" width={900} height={1200} priority sizes="360px" style={{ width: "auto", height: "auto", ...ICONO_DIFUMINADO }}
+              className="hidden max-h-[420px] max-w-[360px] object-contain object-bottom lg:block" />
+          )}
           {(estreno || proxima?.starts_at) && (
             <a href="#funciones" className={`glass gap-4 p-6 text-texto transition-colors hover:border-white/30 lg:grid ${estreno ? "grid" : "hidden"}`}>
               <span className="text-[10px] font-bold uppercase tracking-[0.32em] text-oro">{estreno ? "Estreno en" : "Próxima función"}</span>
@@ -396,6 +414,8 @@ export async function ProductionView({
                 </>
               )}
             </a>
+          )}
+          </div>
           )}
         </div>
       </section>

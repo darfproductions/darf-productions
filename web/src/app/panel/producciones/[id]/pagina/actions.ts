@@ -105,9 +105,12 @@ export async function saveColors(_p: EditState, f: FormData): Promise<EditState>
   return problems.length ? { ok: false, message: `Guardado, pero así no se puede publicar: ${problems.join(" ")}` } : r;
 }
 
-export async function saveKitImage(pid: string, kind: "logo" | "ambiente", path: string): Promise<{ ok: boolean; message: string }> {
-  if (!path.startsWith(`${pid}/kit/`)) return { ok: false, message: "Ruta de archivo no válida." };
-  const r = await conLimpieza(pid, () => guardar(pid, "kit", kind === "logo" ? { logo_path: path } : { ambiente_path: path }, kind === "logo" ? "Logo actualizado." : "Imagen de ambiente actualizada.", true));
+export async function saveKitImage(pid: string, kind: "logo" | "ambiente" | "icono", path: string): Promise<{ ok: boolean; message: string }> {
+  // 0143: el ícono es opcional; path vacío lo quita.
+  if (kind === "icono" ? path !== "" && !path.startsWith(`${pid}/kit/`) : !path.startsWith(`${pid}/kit/`)) return { ok: false, message: "Ruta de archivo no válida." };
+  const datos = kind === "logo" ? { logo_path: path } : kind === "icono" ? { icono_path: path || null } : { ambiente_path: path };
+  const msg = kind === "logo" ? "Logo actualizado." : kind === "icono" ? (path ? "Ícono actualizado." : "Ícono quitado.") : "Imagen de ambiente actualizada.";
+  const r = await conLimpieza(pid, () => guardar(pid, "kit", datos, msg, true));
   return { ok: !!r?.ok, message: r?.message ?? "No se pudo guardar." };
 }
 
@@ -123,6 +126,12 @@ export async function savePoster(pid: string, formato: string, info: boolean, pa
 /** Póster alterno (0124): igual que el oficial, en 3:4 y 9:16. */
 export async function savePosterAlt(pid: string, formato: string, info: boolean, path: string): Promise<{ ok: boolean; message: string }> {
   return savePoster(pid, formato, info, path, true);
+}
+
+export async function quitarIcono(_p: EditState, f: FormData): Promise<EditState> {
+  const pid = String(f.get("pid"));
+  const r = await saveKitImage(pid, "icono", "");
+  return r.ok ? done(pid, r.message) : { ok: false, message: r.message };
 }
 
 export async function quitarPoster(_p: EditState, f: FormData): Promise<EditState> {

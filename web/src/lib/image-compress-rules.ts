@@ -1,11 +1,12 @@
 // Compresión de fotos antes de subirlas (plan, bloque 1). Puro, con pruebas en
 // image-compress-rules.test.ts. El navegador hace el trabajo en lib/image-compress.ts.
 
-export type CompressKind = "logo" | "ambiente" | "retrato" | "galeria" | "patrocinador" | "avatar" | "perfil" | "fanzone" | "documento" | "poster";
+export type CompressKind = "logo" | "icono" | "ambiente" | "retrato" | "galeria" | "patrocinador" | "avatar" | "perfil" | "fanzone" | "documento" | "poster";
 
 /** Lado mayor máximo por uso (px) y calidad. */
 export const COMPRESS: Record<CompressKind, { maxDim: number; quality: number }> = {
   logo: { maxDim: 2400, quality: 0.92 },
+  icono: { maxDim: 1800, quality: 0.92 },
   ambiente: { maxDim: 2560, quality: 0.85 },
   retrato: { maxDim: 1600, quality: 0.85 },
   galeria: { maxDim: 2400, quality: 0.85 },

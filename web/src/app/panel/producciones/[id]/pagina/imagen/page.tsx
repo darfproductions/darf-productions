@@ -3,7 +3,7 @@ import { ActionForm } from "@/components/panel/ActionForm";
 import { ImageUpload } from "@/components/panel/ImageUpload";
 import { FORMATOS, FORMATOS_ALT, FORMATO_INFO, poster, posterAlt } from "@/lib/poster";
 import { assetUrl } from "@/lib/productions";
-import { quitarPoster, saveKitImage, savePoster, savePosterAlt } from "../actions";
+import { quitarIcono, quitarPoster, saveKitImage, savePoster, savePosterAlt } from "../actions";
 import { ColorsForm } from "../ColorsForm";
 import { Miniatura } from "../Miniatura";
 import { PosterSlot } from "../PosterSlot";
@@ -21,10 +21,15 @@ export default async function ImagenPage({ params }: PageProps<"/panel/produccio
   const fila = "flex flex-wrap gap-3";
   return (
     <div className="flex flex-col gap-4">
-      <Block id="kit" abierto cambio={cambio("kit", "colores", "poster")} title="Logo e imagen de ambiente" note="Las mismas piezas en todas las obras: el logo va en una caja fija y la imagen de ambiente al fondo del encabezado. Pasa el cursor por una imagen para cambiarla.">
+      <Block id="kit" abierto cambio={cambio("kit", "colores", "poster")} title="Logo, ícono e imagen de ambiente" note="Las mismas piezas en todas las obras: el logo va en una caja fija y la imagen de ambiente al fondo del encabezado. El ícono es opcional: la figura que acompaña al logo en los pósters (como Sophie en Mamma Mia!); en computadora sale junto al logo en el encabezado. Pasa el cursor por una imagen para cambiarla.">
         <div className={fila}>
           <Miniatura titulo="Logo" nota="PNG con fondo transparente" src={p.logo_path ? assetUrl(p.logo_path) : null} alt="Logo actual" ratio={1} fondo={p.color_fondo ?? "#17121f"} contener falta="Sin logo"
             acciones={<ImageUpload productionId={id} kind="logo" carpeta="kit" base="logo" save={saveKitImage.bind(null, id, "logo")} label={p.logo_path ? "Cambiar" : "Subir"} compact />} />
+          <Miniatura titulo="Ícono (opcional)" nota="Solo la figura, PNG sin fondo" src={p.icono_path ? assetUrl(p.icono_path) : null} alt="Ícono actual" ratio={3 / 4} fondo={p.color_fondo ?? "#17121f"} contener falta="Sin ícono"
+            acciones={<>
+              <ImageUpload productionId={id} kind="icono" carpeta="kit" base="icono" save={saveKitImage.bind(null, id, "icono")} label={p.icono_path ? "Cambiar" : "Subir"} compact />
+              {p.icono_path && <ActionForm inline action={quitarIcono} hidden={{ pid: id }} confirm="¿Quitar el ícono de la obra?" submit="Quitar" submitClass={quitar} />}
+            </>} />
           <Miniatura titulo="Imagen de ambiente" nota="Fondo del encabezado" src={p.ambiente_path ? assetUrl(p.ambiente_path) : null} alt="Ambiente actual" ratio={16 / 9} falta="Sin imagen"
             acciones={<ImageUpload productionId={id} kind="ambiente" carpeta="kit" base="ambiente" save={saveKitImage.bind(null, id, "ambiente")} label={p.ambiente_path ? "Cambiar" : "Subir"} compact />} />
         </div>

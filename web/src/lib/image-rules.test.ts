@@ -28,4 +28,11 @@ describe("reglas de imágenes", () => {
   it("ruta dentro de la carpeta de la obra", () => {
     expect(storagePath("mm", "creditos", "Adriana Alarcón", "image/jpeg")).toMatch(/^mm\/creditos\/adriana-alarcon-[a-z0-9]+\.jpg$/);
   });
+  it("ícono (0143): transparente, PNG o WebP y con tamaño suficiente", () => {
+    expect(checkImage("icono", { type: "image/png", size: MB, width: 700, height: 1000, transparent: 0.5 }).ok).toBe(true);
+    expect(checkImage("icono", { type: "image/jpeg", size: MB, width: 700, height: 1000 }).ok).toBe(false);
+    expect(checkImage("icono", { type: "image/png", size: MB, width: 700, height: 1000, transparent: 0 }).ok).toBe(false);
+    expect(checkImage("icono", { type: "image/png", size: MB, width: 300, height: 350, transparent: 0.5 }).ok).toBe(false);
+    expect(checkImage("icono", { type: "image/png", size: MB, width: 400, height: 500, transparent: 0.5 }).warnings.length).toBe(1);
+  });
 });

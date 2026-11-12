@@ -91,7 +91,7 @@ export function ImageUpload({
 
   async function subir(file: File): Promise<{ ok: boolean; lines: string[] }> {
     try {
-      const dims = await measure(file, kind === "logo");
+      const dims = await measure(file, kind === "logo" || kind === "icono");
       const c = await compressImage(file, kind);
       const check = checkImage(kind, { type: file.type, size: c.file.size, ...dims });
       const extra = revisar?.(dims.width, dims.height) ?? { errores: [], avisos: [] };
@@ -110,7 +110,7 @@ export function ImageUpload({
     setMsg(null);
     setBusy(true);
     try {
-      const dims = await measure(file, kind === "logo");
+      const dims = await measure(file, kind === "logo" || kind === "icono");
       // Se comprime antes de subir; el tamaño máximo se revisa sobre la foto ya optimizada.
       const c = await compressImage(file, kind);
       const check = checkImage(kind, { type: file.type, size: c.file.size, ...dims });
