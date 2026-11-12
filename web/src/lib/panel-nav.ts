@@ -134,6 +134,8 @@ export const PRODUCTION_TABS: Tab[] = [
   { id: "ensayos", label: "Ensayos", path: "ensayos", perms: ["ensayos.gestionar"], etapa: null },
   { id: "solicitudes", label: "Solicitudes", path: "solicitudes", perms: ["ensayos.gestionar", "expedientes.ver", "mensualidades.gestionar"], etapa: null },
   { id: "materiales", label: "Materiales", path: "materiales", perms: ["materiales.gestionar", "materiales.ver"], etapa: null },
+  // 0141: preguntas frecuentes de la obra (las ve el elenco en su portal y DARFY).
+  { id: "preguntas", label: "Preguntas frecuentes", path: "preguntas", perms: ["obra.editar", "comunicados.enviar"], etapa: null },
   { id: "comunicados", label: "Comunicados", path: "comunicados", perms: ["comunicados.enviar"], etapa: null },
   { id: "equipo", label: "Equipo", path: "equipo", perms: ["equipo.gestionar"], etapa: null },
   { id: "evaluaciones", label: "Evaluaciones", path: "evaluaciones", perms: ["rubrica.gestionar", "rubrica.proponer"], etapa: null },
@@ -179,7 +181,7 @@ const GRUPOS: { id: GrupoObra; label: string; secciones: { id: string; label: st
     { id: "sec-integrantes", label: "Integrantes", items: ["expedientes", "cuotas", "adeudos", "solicitudes", "evaluaciones"] },
     { id: "sec-equipo", label: "Equipo", items: ["equipo", "permisos"] },
   ] },
-  { id: "ensayos", label: "Ensayos", secciones: [{ id: "sec-ensayos", label: "", items: ["ensayos", "comunicados", "materiales"] }] },
+  { id: "ensayos", label: "Ensayos", secciones: [{ id: "sec-ensayos", label: "", items: ["ensayos", "comunicados", "materiales", "preguntas"] }] },
   { id: "audiciones", label: "Audiciones", secciones: [{ id: "sec-audiciones", label: "", items: ["audiciones"] }] },
   { id: "boletos", label: "Boletos", secciones: [] },
   { id: "publico", label: "Página pública", secciones: [
@@ -191,7 +193,7 @@ const GRUPOS: { id: GrupoObra; label: string; secciones: { id: string; label: st
 ];
 const ETIQUETA_PAGINA: Record<string, string> = {
   comunicados: "Avisos al elenco", equipo: "Notas y juntas", pagina: "Publicar", fanzone: "Fan Zone y eventos",
-  cierre: "Cierre de temporada", elenco: "Elenco y equipos",
+  cierre: "Cierre de temporada", elenco: "Elenco y equipos", preguntas: "Preguntas",
 };
 
 /** Páginas de la obra que veo: sus pestañas más las páginas que viven dentro de otra (Cuotas, Contenido, Fotos…). */

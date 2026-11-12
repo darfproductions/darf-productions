@@ -40,6 +40,10 @@ export default async function Ensayos({ params }: PageProps<"/panel/producciones
   const reglas = reglasData as { tolerancia_min: number | null; auto_retardos: number | null; auto_faltas: number | null } | null;
   const equipo = ((team ?? []) as { user_id: string; nombre: string; roles: string[] }[]).map((x) => ({ user_id: x.user_id, nombre: x.nombre, papeles: x.roles, detalle: x.roles.join(", ") }));
   const ensayos = (reh ?? []) as Rehearsal[];
+  // 0141: quiénes ya dijeron "Voy" (solo ensayos que no han pasado).
+  const { data: conf } = ensayos.length ? await supabase.from("rehearsal_confirmations").select("rehearsal_id").in("rehearsal_id", ensayos.filter((r) => r.inicia >= new Date().toISOString()).map((r) => r.id)) : { data: [] };
+  const confirmados = new Map<string, number>();
+  for (const c of (conf ?? []) as { rehearsal_id: string }[]) confirmados.set(c.rehearsal_id, (confirmados.get(c.rehearsal_id) ?? 0) + 1);
   const gente = (roster ?? []) as Roster[];
   const ahora = new Date().toISOString();
   const hoy = isoMx();
@@ -54,7 +58,7 @@ export default async function Ensayos({ params }: PageProps<"/panel/producciones
         <Link href={`/panel/producciones/${id}/ensayos/${r.id}`} className="font-bold hover:underline">{r.titulo}</Link>
         {r.estado === "cancelado" && <span className="ml-2 text-xs font-bold text-[#fecdd3]">Cancelado</span>}
         <span className="block text-texto-2">{fechaEnsayo(r.inicia, r.termina)}{r.lugar ? ` · ${r.lugar}` : ""}</span>
-        <span className="block text-xs text-texto-3">Citados: {citados(r)}{r.serie_id ? " · se repite" : ""}{r.encargados?.length ? ` · ${r.encargados.length === 1 ? "1 encargado" : `${r.encargados.length} encargados`}` : ""}</span>
+        <span className="block text-xs text-texto-3">Citados: {citados(r)}{r.serie_id ? " · se repite" : ""}{r.encargados?.length ? ` · ${r.encargados.length === 1 ? "1 encargado" : `${r.encargados.length} encargados`}` : ""}{confirmados.get(r.id) ? ` · ${confirmados.get(r.id)} ${confirmados.get(r.id) === 1 ? "confirmó" : "confirmaron"} que van` : ""}</span>
         {r.abierto_at && <span className="block text-xs text-exito"><Icono nombre="check" /> Abierto{r.cerrado_at ? " · lista cerrada" : ""}</span>}
       </span>
       <span className="flex items-center gap-2">

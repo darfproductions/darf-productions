@@ -34,7 +34,7 @@ export const PAGINAS_BOLETERIA = ["funciones", "mapa", "beneficios", "preventa",
 // Qué página de la obra NO aplica a cada tipo (ids de panel-nav). Lo demás se ve igual que siempre.
 const NO_APLICA: Record<TipoObra, string[]> = {
   profesional: ["cuotas", "adeudos", "evaluaciones"],
-  showcase: ["ensayos", "comunicados", "materiales", "expedientes", "cuotas", "adeudos", "solicitudes", "evaluaciones", "audiciones", "fanzone", "fotos", "vendedores", "preventa", "beneficios"],
+  showcase: ["ensayos", "comunicados", "materiales", "preguntas", "expedientes", "cuotas", "adeudos", "solicitudes", "evaluaciones", "audiciones", "fanzone", "fotos", "vendedores", "preventa", "beneficios"],
   taller: ["vendedores"],
   escuela: ["cuotas", "adeudos", "fanzone", "fotos", "vendedores", "preventa", "beneficios"],
 };

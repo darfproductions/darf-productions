@@ -39,7 +39,7 @@ describe("pestañas de la obra", () => {
     const tabs = ids(director, "hsm");
     expect(tabs[0]).toBe("resumen");
     expect(tabs.slice(-2)).toEqual(["permisos", "guia"]);
-    expect(tabs).toHaveLength(21);
+    expect(tabs).toHaveLength(22);
   });
 });
 
@@ -209,7 +209,7 @@ describe("pestañas de la obra (0085, esqueleto nuevo 0138)", () => {
       ["Integrantes", ["Expedientes", "Cuotas y recaudación", "Adeudos", "Solicitudes", "Evaluaciones"]],
       ["Equipo", ["Notas y juntas", "Permisos"]],
     ]);
-    expect(sec("ensayos")).toEqual([["", ["Ensayos", "Avisos al elenco", "Materiales"]]]);
+    expect(sec("ensayos")).toEqual([["", ["Ensayos", "Avisos al elenco", "Materiales", "Preguntas"]]]);
     expect(sec("audiciones")).toEqual([["", ["Audiciones"]]]);
     expect(sec("publico")).toEqual([
       ["Página", ["Publicar", "Textos", "Imágenes", "Avisos"]],
@@ -221,6 +221,7 @@ describe("pestañas de la obra (0085, esqueleto nuevo 0138)", () => {
     // La fila de páginas: el nombre de la sección solo cuando la pestaña agrupa.
     expect(paginasDePestana(g.find((x) => x.id === "ensayos")!)).toEqual([{ seccion: "", paginas: [
       { id: "ensayos", label: "Ensayos", path: "ensayos" }, { id: "comunicados", label: "Avisos al elenco", path: "comunicados" }, { id: "materiales", label: "Materiales", path: "materiales" },
+      { id: "preguntas", label: "Preguntas", path: "preguntas" },
     ] }]);
     expect(paginasDePestana(g.find((x) => x.id === "publico")!).map((s) => [s.seccion, s.paginas.length])).toEqual([["Página", 4], ["Promoción", 2], ["Fans", 2]]);
   });

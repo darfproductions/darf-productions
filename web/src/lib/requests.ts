@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 // Lecturas de solicitudes (0070). Pasan por RLS: el integrante ve las suyas; la producción,
 // las de los tipos que puede revisar (ensayos, expedientes o mensualidades).
 
-const COLS = "id, production_id, user_id, tipo, estado, motivo, archivo_path, doc_type_id, doc_nombre, concepto, periodo, monto, metodo, monto_aprobado, respuesta, revisado_at, created_at, llegada_hora, member_request_rehearsals(rehearsals(id, titulo, inicia))";
+const COLS = "id, production_id, user_id, tipo, estado, motivo, archivo_path, doc_type_id, doc_nombre, concepto, periodo, monto, metodo, monto_aprobado, respuesta, revisado_at, created_at, llegada_hora, para, member_request_rehearsals(rehearsals(id, titulo, inicia))";
 
 type Row = Omit<MemberRequest, "ensayos"> & { member_request_rehearsals: { rehearsals: { id: string; titulo: string; inicia: string } | null }[] };
 
