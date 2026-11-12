@@ -3,17 +3,20 @@
 import { getPermanentRegistry, listPublicAuditions } from "@/lib/auditions";
 import { responder, type DarfyContexto, type FaqItem, type ObraInfo, type Respuesta } from "@/lib/darfy-rules";
 import { formatPerformanceDate, formatPrice, getHomeData, getProduction } from "@/lib/productions";
+import { faqsParaDarfy, type FaqObra } from "@/lib/faq-rules";
 import { createClient } from "@/lib/supabase/server";
 
-// DARFY solo lee información pública (las mismas reglas RLS que ve un visitante).
+// DARFY lee información pública (las mismas reglas RLS que ve un visitante) y, si la persona ya entró, las preguntas
+// frecuentes de sus obras (0141; la base solo se las da a integrantes y equipo).
 
 const fechaCorta = (iso: string) =>
   new Intl.DateTimeFormat("es-MX", { day: "numeric", month: "long", timeZone: "America/Mexico_City" }).format(new Date(iso));
 
 async function contexto(): Promise<DarfyContexto> {
   const supabase = await createClient();
-  const [faqRes, home, auds, registro] = await Promise.all([
+  const [faqRes, obraFaqRes, home, auds, registro] = await Promise.all([
     supabase.from("darfy_faq").select("id, pregunta, respuesta, palabras, liga").eq("activa", true).order("orden"),
+    supabase.from("production_faq").select("id, production_id, clave, pregunta, respuesta, orden, activa, productions(nombre)").eq("activa", true).order("orden"),
     getHomeData(),
     listPublicAuditions(),
     getPermanentRegistry(),
@@ -32,8 +35,13 @@ async function contexto(): Promise<DarfyContexto> {
       return base;
     }),
   );
+  const deObras = ((obraFaqRes.data ?? []) as unknown as (FaqObra & { production_id: string; productions: { nombre: string } | null })[])
+    .reduce<Map<string, { nombre: string; faqs: FaqObra[] }>>((m, f) => {
+      const g = m.get(f.production_id) ?? { nombre: f.productions?.nombre ?? "Tu obra", faqs: [] };
+      g.faqs.push(f); m.set(f.production_id, g); return m;
+    }, new Map());
   return {
-    faq: (faqRes.data ?? []) as FaqItem[],
+    faq: [...[...deObras].flatMap(([pid, g]) => faqsParaDarfy(g.faqs, pid, g.nombre)), ...((faqRes.data ?? []) as FaqItem[])],
     obras,
     audiciones: auds
       .filter((a) => a.estado === "abierta")

@@ -10,6 +10,8 @@ values
   ('00000000-0000-0000-0000-0000000000d1', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 't_dir@test.local'),
   ('00000000-0000-0000-0000-0000000000e1', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 't_prod@test.local');
 update profiles set rol = 'admin' where id = '00000000-0000-0000-0000-0000000000a1';
+-- 0141: el aviso de cada solicitud es diferido (para ver sus ensayos); aquí se dispara de inmediato.
+set constraints all immediate;
 
 create or replace function pg_temp.as_user(uid text) returns void language plpgsql as $$
 begin

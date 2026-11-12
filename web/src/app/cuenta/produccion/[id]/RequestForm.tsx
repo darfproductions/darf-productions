@@ -4,11 +4,14 @@ import { useActionState, useState } from "react";
 import { ACCEPT_EXPEDIENTE, subirAExpediente } from "@/lib/expediente-upload";
 import { fechaEnsayo } from "@/lib/rehearsal-rules";
 import { METODOS, TIPO_SOLICITUD, horaMx, llegadaIso, puedeAvisarLlegada, textoLimite, textoLlegada, type RequestTipo } from "@/lib/request-rules";
-import { requestAbsence, requestLate, submitRequest, type ReqState } from "./actions";
+import { requestAbsence, requestLate, sendMessage, submitRequest, type ReqState } from "./actions";
 import { isoMx } from "@/lib/dates";
-import { Icono } from "@/components/Icono";
+import { Icono, type IconoNombre } from "@/components/Icono";
 
 export type EnsayoOpcion = { id: string; titulo: string; inicia: string; termina: string | null; permitido: boolean; pedida: boolean };
+/** 0141: alguien del equipo al que se le puede escribir (nombre y puesto; sin teléfono). */
+export type EquipoOpcion = { user_id: string; nombre: string; puesto: string | null };
+type TipoForm = RequestTipo | "mensaje";
 
 const campo = "w-full min-w-0 rounded-lg border border-white/10 bg-sala px-3 py-2.5 text-texto outline-none focus:border-violeta-claro";
 const etiqueta = "flex min-w-0 flex-col gap-1.5 text-sm font-semibold";
@@ -211,32 +214,63 @@ function OtraForm({ pid, uid, tipo, docTipos, cuota, onDone }: { pid: string; ui
   );
 }
 
+// 0141: mensaje a alguien del equipo (producción, dirección, maestros). Llega solo a esa persona.
+function MensajeForm({ pid, equipo, marcado, onDone }: { pid: string; equipo: EquipoOpcion[]; marcado: string | null; onDone: () => void }) {
+  const [state, run, pending] = useActionState<ReqState, FormData>(async (p, f) => {
+    const r = await sendMessage(p, f);
+    if (r?.ok) onDone();
+    return r;
+  }, null);
+  return (
+    <form action={run} className="flex flex-col gap-4">
+      <input type="hidden" name="pid" value={pid} />
+      <label className={`${etiqueta} sm:max-w-md`}>¿A quién?
+        <select name="para" required defaultValue={equipo.some((e) => e.user_id === marcado) ? marcado ?? "" : equipo[0]?.user_id ?? ""} className={campo}>
+          {equipo.map((e) => <option key={e.user_id} value={e.user_id}>{e.nombre}{e.puesto ? ` · ${e.puesto}` : ""}</option>)}
+        </select>
+      </label>
+      <label className={etiqueta}>Tu mensaje
+        <textarea name="motivo" required maxLength={1000} rows={4} className={campo} placeholder="Ej. ¿Puedo llegar 7:30 el sábado? Salgo de la escuela tarde." />
+      </label>
+      <button disabled={pending || equipo.length === 0} className="self-start rounded-full bg-texto px-6 py-3 text-sm font-bold text-sala disabled:opacity-50">
+        {pending ? "Enviando…" : "Enviar mensaje"}
+      </button>
+      <Resultado state={state} />
+    </form>
+  );
+}
+
 // Nueva solicitud: el integrante elige qué quiere mandar y llena solo lo necesario.
-export function RequestForm({ pid, uid, ensayos, horas, tolerancia, docTipos, cuota, inicial }: {
+export function RequestForm({ pid, uid, ensayos, horas, tolerancia, docTipos, cuota, inicial, equipo = [] }: {
   pid: string; uid: string; ensayos: EnsayoOpcion[]; horas: number; tolerancia: number; docTipos: { id: string; nombre: string }[];
-  cuota: number | null; inicial: { tipo: RequestTipo | null; falta: string | null };
+  cuota: number | null; inicial: { tipo: TipoForm | null; falta: string | null; para?: string | null }; equipo?: EquipoOpcion[];
 }) {
-  const [tipo, setTipo] = useState<RequestTipo | null>(inicial.tipo);
+  const [tipo, setTipo] = useState<TipoForm | null>(inicial.tipo);
   const [vuelta, setVuelta] = useState(0); // al enviar, el formulario queda limpio
   const [hecho, setHecho] = useState<string | null>(null);
-  const listo = () => { setVuelta((v) => v + 1); setHecho("Solicitud enviada. Aparece abajo en “Mis solicitudes”; te avisamos cuando la revisen."); };
-  const tipos = Object.keys(TIPO_SOLICITUD) as RequestTipo[];
+  const listo = () => { setVuelta((v) => v + 1); setHecho(tipo === "mensaje" ? "Mensaje enviado. Aparece abajo en “Mis solicitudes”; te avisamos cuando te respondan." : "Solicitud enviada. Aparece abajo en “Mis solicitudes”; te avisamos cuando la revisen."); };
+  const tipos: { id: TipoForm; label: string; icono: IconoNombre; ayuda: string }[] = [
+    ...(Object.keys(TIPO_SOLICITUD) as RequestTipo[]).map((t) => ({ id: t as TipoForm, ...TIPO_SOLICITUD[t] })),
+    ...(equipo.length ? [{ id: "mensaje" as TipoForm, label: "Escribir a alguien del equipo", icono: "personas" as IconoNombre, ayuda: "Le llega solo a esa persona. Si necesita respuesta, te avisamos cuando conteste." }] : []),
+  ];
+  const botonClase = "flex min-h-24 flex-col items-start gap-1 rounded-xl border p-3 text-left text-sm transition-colors";
   return (
     <div className="flex flex-col gap-4">
-      <div className="grid grid-cols-2 gap-2 lg:grid-cols-5" role="group" aria-label="¿Qué quieres mandar?">
+      <div className={`grid grid-cols-2 gap-2 ${tipos.length > 5 ? "lg:grid-cols-3" : "lg:grid-cols-5"}`} role="group" aria-label="¿Qué quieres mandar?">
         {tipos.map((t) => (
-          <button key={t} type="button" onClick={() => { setTipo(t); setHecho(null); }} aria-pressed={tipo === t}
-            className={`flex min-h-24 flex-col items-start gap-1 rounded-xl border p-3 text-left text-sm transition-colors ${tipo === t ? "border-violeta-claro bg-ciruela/20" : "border-white/10 bg-sala hover:border-white/30"}`}>
-            <Icono nombre={TIPO_SOLICITUD[t].icono} className="h-6 w-6" />
-            <b className="leading-tight">{TIPO_SOLICITUD[t].label}</b>
+          <button key={t.id} type="button" onClick={() => { setTipo(t.id); setHecho(null); }} aria-pressed={tipo === t.id}
+            className={`${botonClase} ${tipo === t.id ? "border-violeta-claro bg-ciruela/20" : "border-white/10 bg-sala hover:border-white/30"}`}>
+            <Icono nombre={t.icono} className="h-6 w-6" />
+            <b className="leading-tight">{t.label}</b>
           </button>
         ))}
       </div>
       {hecho && <p role="status" className="rounded-lg bg-[#14532d]/60 px-4 py-3 text-sm font-semibold text-[#bbf7d0]"><Icono nombre="check" /> {hecho}</p>}
-      {tipo && <p className="text-sm text-texto-2">{TIPO_SOLICITUD[tipo].ayuda}</p>}
+      {tipo && <p className="text-sm text-texto-2">{tipos.find((t) => t.id === tipo)?.ayuda}</p>}
+      {tipo === "mensaje" && <MensajeForm key={`m${vuelta}`} pid={pid} equipo={equipo} marcado={inicial.para ?? null} onDone={listo} />}
       {tipo === "falta" && <FaltaForm key={`f${vuelta}`} pid={pid} ensayos={ensayos} horas={horas} marcado={inicial.falta} onDone={listo} />}
       {tipo === "llegada" && <LlegadaForm key={`l${vuelta}`} pid={pid} ensayos={ensayos} tolerancia={tolerancia} marcado={inicial.falta} onDone={listo} />}
-      {tipo && tipo !== "falta" && tipo !== "llegada" && <OtraForm key={`${tipo}${vuelta}`} pid={pid} uid={uid} tipo={tipo} docTipos={docTipos} cuota={cuota} onDone={listo} />}
+      {tipo && tipo !== "falta" && tipo !== "llegada" && tipo !== "mensaje" && <OtraForm key={`${tipo}${vuelta}`} pid={pid} uid={uid} tipo={tipo} docTipos={docTipos} cuota={cuota} onDone={listo} />}
     </div>
   );
 }

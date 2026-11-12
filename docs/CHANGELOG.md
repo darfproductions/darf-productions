@@ -5,6 +5,52 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-11-12 — 0142: pasar boletos a otra persona
+
+Diego preguntó si se pueden transferir boletos entre cuentas; eligió la opción desde Mi cuenta.
+
+- **Pasar boletos** (`/cuenta/boletos/[orden]/pasar`): el comprador elige qué boletos de una orden pagada le pasa a un
+  correo, con mensaje opcional. Solo boletos sin usar y antes de que empiece la función (`ticket_transfer_create`).
+  Si ese correo ya tiene cuenta, le llega aviso y solo esa cuenta puede aceptar; si no, el comprador le manda la liga
+  (WhatsApp o copiar) y la acepta al crear su cuenta.
+- **Aceptar** (`/cuenta/traspaso/[token]`, `ticket_transfer_accept`): los boletos se mueven a una **orden nueva** a
+  nombre de quien recibe (`orders.traspaso_de` apunta a la original), con **QR nuevos**: los PDF y pases de Wallet
+  viejos dejan de valer. La orden nueva copia método, fecha de pago, vendedor y cajero para que el corte y las comisiones
+  no cambien; los totales se reparten solos (`recompute_order_total`). Quien mandó recibe aviso y puede cancelar
+  mientras esté pendiente (`ticket_transfer_cancel`). Todo queda en la bitácora de ventas.
+- **Mi cuenta**: "Pasar boletos a otra persona" en cada orden que aplica; debajo, el estado de cada traspaso
+  ("esperando que los acepte", "ya los tiene", "Ver liga", "Cancelar traspaso"); la orden recibida dice "Te los pasó
+  Ana" en lugar del monto. `mis_traspasos()` no revela correos ajenos a quien recibe.
+- Reglas puras en `traspaso-rules.ts`; prueba `0142_traspaso_boletos_test.sql`; `dev/apply_0142_dev.sql`.
+
+## 2026-11-05 — 0141: fase 5, el panel como centro de operaciones (portal en 6 bloques, ficha de persona, preguntas por obra)
+
+Bloque C de la estrategia del panel. Decisiones de Diego: lista sugerida de preguntas frecuentes (solo llena
+respuestas); en "Mi obra" el equipo sale con nombre y puesto, sin teléfonos, y un botón para escribirles por el portal;
+una falta o llegada tarde le llega al encargado del ensayo, lo demás a Producción.
+
+- **Portal del integrante en 6 bloques** (`/cuenta/produccion/[id]`): Hoy (el ensayo o llamado que sigue, con lugar,
+  hora, qué llevar y **Voy / Voy tarde / No puedo ir**), Mis documentos (expediente, documentos, pagos, evaluaciones),
+  Materiales, Avisos, Pedir o avisar (solicitudes + mensaje al equipo) y Mi obra (funciones, calendario, lugares, equipo,
+  reparto, cumpleaños, preguntas frecuentes). Reglas puras en `portal-rules.ts`.
+- **"Voy"** (`rehearsal_confirmations`, `rehearsal_confirm`): el citado confirma antes de que empiece; Ensayos del panel
+  dice "N confirmaron que van" y Asistencia, quiénes.
+- **Mensaje a alguien del equipo** (`member_requests.para`, `request_mensaje`): tipo "otro" con destinatario. El aviso le
+  llega solo a esa persona; lo ve y responde en Solicitudes si gestiona la obra. A compañeros del elenco no se les escribe.
+- **A quién le llega cada solicitud** (`notify_request`, ahora diferido para ver los ensayos ligados): falta o llegada
+  tarde → encargados del ensayo (si no hay, quien gestiona ensayos); "otra solicitud" → Producción (dirección de la obra y
+  productor; si no hay, los tres grupos de antes). Documento y pago no cambian.
+- **Preguntas frecuentes por obra** (`production_faq`, página Preguntas en la pestaña Ensayos): 8 sugeridas
+  (`faq-rules.ts`) donde solo se llena la respuesta; las vacías no se muestran; más preguntas propias. El elenco las ve
+  en Mi obra y DARFY las usa cuando la persona ya entró (lleva el nombre de la obra y liga al portal). Showcase no la
+  tiene.
+- **Ficha completa de una persona** (`persona_ficha`, `/panel/talento/[uid]` con pestañas Obras · Documentos · Pagos ·
+  Asistencia · Incidencias): todo en sus obras; cada parte sale solo si quien mira tiene ese permiso en esa obra (o Casa
+  DARF · Personas). "Reglamento firmado · Recibido el 3 de octubre" o "Pendiente".
+- **Mi obra** (`obra_portal`): reparto activo, equipo (puestos con cuenta y miembros de dirección/producción), hitos,
+  lugares, funciones próximas y preguntas; nunca teléfonos ni correos.
+- Prueba `0141_centro_operaciones_test.sql` (6 bloques) y `dev/apply_0141_dev.sql` (solo agrega: no toca datos).
+
 ## 2026-11-05 — 0140: la fila del día, clara y práctica (turnos al cerrar, Grupo como opción múltiple, mover a mano, horarios)
 
 Diego vio en Teen Beach Movie gente sin número, "Por grupo" que dejaba al mismo grupo arriba y abajo, y nada para

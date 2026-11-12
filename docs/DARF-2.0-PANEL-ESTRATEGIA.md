@@ -183,7 +183,7 @@ derecha en pantallas grandes.
 | **2** | Bloque B.1 y B.4 (Configuración en 3 pantallas + Modo audición guiado) | Grande | Antes del día de audición de TBM. |
 | **3** | Bloque A (esqueleto nuevo: Hoy, menú de 6, pestañas de obra) + Bloque E (Página pública compacta) | Grande | Es el cambio que más se nota; va después de audiciones para no mover el piso mientras las usas. |
 | **4** | Bloque D (tipos de producción) | Mediano | Aprovecha el esqueleto nuevo. |
-| **5** | Bloque C (portal del integrante + Personas con buscador + FAQ) | Grande | Lo que convierte el panel en centro de operaciones. |
+| **5** | Bloque C (portal del integrante + Personas con buscador + FAQ) | Grande | Lo que convierte el panel en centro de operaciones. **Hecha (0141, 5-nov).** |
 
 Cada fase se entrega completa, con capturas antes de subir.
 

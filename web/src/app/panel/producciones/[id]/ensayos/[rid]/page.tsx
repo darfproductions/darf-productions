@@ -22,13 +22,15 @@ export default async function Asistencia({ params }: PageProps<"/panel/produccio
   if (!can(access, id, "ensayos.gestionar")) redirect(`/panel/producciones/${id}`);
   if (!/^[0-9a-f-]{36}$/.test(rid)) notFound();
   const supabase = await createClient();
-  const [{ data: r }, { data: rows }, { data: cast }, { data: team }] = await Promise.all([
+  const [{ data: r }, { data: rows }, { data: cast }, { data: team }, { data: conf }] = await Promise.all([
     supabase.from("rehearsals").select("*").eq("id", rid).eq("production_id", id).maybeSingle(),
     supabase.rpc("rehearsal_roster", { rid }),
     supabase.rpc("cast_roster", { pid: id }),
     supabase.rpc("equipo_ensayos", { pid: id }),
+    supabase.from("rehearsal_confirmations").select("user_id").eq("rehearsal_id", rid),
   ]);
   if (!r) notFound();
+  const confirmaron = new Set(((conf ?? []) as { user_id: string }[]).map((c) => c.user_id));
   const e = r as Rehearsal;
   const elenco: Persona[] = ((cast ?? []) as { user_id: string; nombre: string }[]).map((x) => ({ user_id: x.user_id, nombre: x.nombre }));
   const equipo: Persona[] = ((team ?? []) as { user_id: string; nombre: string; roles: string[] }[]).map((x) => ({ user_id: x.user_id, nombre: x.nombre, detalle: x.roles.join(", ") }));
@@ -39,6 +41,7 @@ export default async function Asistencia({ params }: PageProps<"/panel/produccio
         <Link href={`/panel/producciones/${id}/ensayos`} className="text-sm font-bold text-violeta-claro"><Icono nombre="flecha-izq" /> Ensayos</Link>
         <p className="mt-2 text-xl font-bold">{e.titulo}{e.estado === "cancelado" && <span className="ml-2 text-sm text-[#fecdd3]">Cancelado</span>}</p>
         <p className="text-sm text-texto-2">{fechaEnsayo(e.inicia, e.termina)}{e.lugar ? ` · ${e.lugar}` : ""} · {citados(e)}</p>
+        {confirmaron.size > 0 && <p className="text-sm text-exito"><Icono nombre="check" /> {confirmaron.size === 1 ? "1 persona confirmó" : `${confirmaron.size} personas confirmaron`} que van: {((rows ?? []) as FilaLista[]).filter((x) => confirmaron.has(x.user_id)).map((x) => x.nombre).join(", ")}</p>}
         {e.notas && <p className="mt-1 whitespace-pre-line text-sm text-texto-2">{e.notas}</p>}
       </div>
       <ListaAsistencia pid={id} rid={rid} ensayo={e} filas={(rows ?? []) as FilaLista[]} puede lider />

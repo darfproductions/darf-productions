@@ -20,7 +20,8 @@ import { OrderTickets } from "@/components/tickets/OrderTickets";
 import { createClient } from "@/lib/supabase/server";
 import { formatMoney, whatsappPayUrl } from "@/lib/tickets";
 import { logout } from "../entrar/actions";
-import { cancelMyOrder } from "./actions";
+import { cancelMyOrder, cancelarTraspaso } from "./actions";
+import { puedePasar, textoEnviado, textoRecibido, type Traspaso } from "@/lib/traspaso-rules";
 import Link from "next/link";
 import { listNotifications, unreadCount } from "@/lib/notifications";
 import { AvatarUpload } from "./AvatarUpload";
@@ -99,6 +100,11 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
     .eq("buyer_user_id", session.userId)
     .order("created_at", { ascending: false });
   const orders = (data ?? []) as unknown as OrderRow[];
+  // 0142: boletos que pasé o que me pasaron.
+  const { data: trRows } = await supabase.rpc("mis_traspasos");
+  const traspasos = (trRows ?? []) as Traspaso[];
+  const enviadosDe = (oid: string) => traspasos.filter((t) => t.direccion === "enviado" && t.order_id === oid);
+  const recibidoEn = (oid: string) => traspasos.find((t) => t.direccion === "recibido" && t.new_order_id === oid) ?? null;
   // 0127: logística de las obras con funciones por venir (puertas, fin y dirección).
   const obrasProximas = [...new Set(orders.filter((o) => !funcionPasada(o.performances?.starts_at ?? null)).map((o) => o.performances?.production_id).filter((x): x is string => !!x))];
   const logisticas = new Map(await Promise.all(obrasProximas.map(async (pid) => [pid, await getLogistica(pid)] as const)));
@@ -205,9 +211,27 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
                     <span className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-bold ${STATUS[o.status].cls}`}>{estadoOrden(o, "comprador")}</span>
                   </div>
                   <div className="flex flex-col gap-4 p-5">
-                  <p className="text-sm text-texto-3">
-                    Orden {o.order_code} · {seats.length} {seats.length === 1 ? "boleto" : "boletos"}{o.status === "pendiente" && seats.length ? ` (${seats.join(", ")})` : ""} · {formatMoney(Number(o.total))}{o.discount_codigo ? ` · código ${o.discount_codigo}` : ""}
-                  </p>
+                  {recibidoEn(o.id) ? (
+                    <p className="text-sm text-texto-3"><Icono nombre="boleto" /> {textoRecibido(recibidoEn(o.id)!)} · Orden {o.order_code} · {seats.length} {seats.length === 1 ? "boleto" : "boletos"}</p>
+                  ) : (
+                    <p className="text-sm text-texto-3">
+                      Orden {o.order_code} · {seats.length} {seats.length === 1 ? "boleto" : "boletos"}{o.status === "pendiente" && seats.length ? ` (${seats.join(", ")})` : ""} · {formatMoney(Number(o.total))}{o.discount_codigo ? ` · código ${o.discount_codigo}` : ""}
+                    </p>
+                  )}
+                  {enviadosDe(o.id).filter((t) => t.estado !== "cancelada").map((t) => (
+                    <div key={t.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg bg-sala px-3 py-2 text-sm">
+                      <span className="text-texto-2"><Icono nombre="intercambio" /> {textoEnviado(t)}{t.etiquetas?.length ? ` (${t.etiquetas.join(", ")})` : ""}</span>
+                      {t.estado === "pendiente" && (
+                        <>
+                          <Link href={`/cuenta/traspaso/${t.token}`} className="text-xs font-bold text-violeta-claro">Ver liga</Link>
+                          <ActionForm inline action={cancelarTraspaso} hidden={{ id: t.id }} confirm="¿Cancelar este traspaso? Los boletos se quedan contigo." submit="Cancelar traspaso" submitClass="text-xs font-bold text-texto-3 underline underline-offset-4 hover:text-texto disabled:opacity-60" />
+                        </>
+                      )}
+                    </div>
+                  ))}
+                  {o.status === "aprobado" && seats.length === 0 && enviadosDe(o.id).some((t) => t.estado === "aceptada") && (
+                    <p className="text-sm text-texto-2">Pasaste todos los boletos de esta orden.</p>
+                  )}
                   {o.vencida_at && <p className="text-sm text-texto-3">No se confirmó el pago a tiempo y los asientos se liberaron. Puedes volver a comprar si sigue habiendo lugares.</p>}
                   {o.status === "rechazado" && !o.vencida_at && !o.cancelada_por_comprador_at && (
                     <p className="text-sm text-texto-2">{o.motivo ? <>Motivo: {o.motivo}. </> : null}Si tienes dudas, <Link href="/contacto" className="font-bold text-lila">escríbenos</Link>.</p>
@@ -236,6 +260,9 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
                       pdfServidor={funcionPasada(o.performances?.starts_at ?? null) ? null : `/cuenta/boletos/${encodeURIComponent(o.order_code)}/pdf`}
                       wallet={wallet}
                     />
+                  )}
+                  {puedePasar(o, o.performances?.starts_at ?? null, !!o.performances?.cancelada_at, ahora) && (
+                    <Link href={`/cuenta/boletos/${encodeURIComponent(o.order_code)}/pasar`} className="self-start text-sm font-bold text-violeta-claro"><Icono nombre="intercambio" /> Pasar boletos a otra persona</Link>
                   )}
                   {o.status === "aprobado" && boletos.length > 0 && o.performances?.starts_at && !o.performances.cancelada_at && !funcionPasada(o.performances.starts_at) && (
                     <div className="flex flex-col gap-3 border-t border-white/10 pt-4">

@@ -111,3 +111,30 @@ export async function markRead(f: FormData): Promise<void> {
   revalidatePath(`/cuenta/produccion/${String(f.get("pid"))}`);
   revalidatePath("/cuenta");
 }
+
+// 0141: "Voy" a un ensayo (o quitarlo). La base revisa que esté citado y que el ensayo no haya empezado.
+export async function confirmarVoy(_p: ReqState, f: FormData): Promise<ReqState> {
+  const session = await getSession();
+  if (!session) return { ok: false, message: "Tu sesión terminó. Vuelve a entrar." };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("rehearsal_confirm", { rid: String(f.get("rid")), p_voy: String(f.get("voy")) !== "0" });
+  if (error) return { ok: false, message: errorClaro(error) };
+  revalidatePath(`/cuenta/produccion/${String(f.get("pid"))}`);
+  return { ok: true, message: "Listo." };
+}
+
+// 0141: mensaje a alguien del equipo de la obra. Le llega solo a esa persona (y a quien gestiona la obra en Solicitudes).
+export async function sendMessage(_p: ReqState, f: FormData): Promise<ReqState> {
+  const session = await getSession();
+  if (!session) return { ok: false, message: "Tu sesión expiró. Vuelve a entrar." };
+  const pid = String(f.get("pid"));
+  const para = String(f.get("para") ?? "");
+  const motivo = String(f.get("motivo") ?? "").trim().slice(0, 1000);
+  if (!/^[0-9a-f-]{36}$/.test(para)) return { ok: false, message: "Elige a quién le escribes." };
+  if (!motivo) return { ok: false, message: "Escribe tu mensaje." };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("request_mensaje", { pid, p_para: para, p_motivo: motivo });
+  if (error) return { ok: false, message: errorClaro(error) };
+  revalidatePath(`/cuenta/produccion/${pid}`);
+  return { ok: true, message: "Mensaje enviado. Te avisamos cuando te respondan." };
+}

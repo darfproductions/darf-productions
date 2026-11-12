@@ -11,6 +11,8 @@ export type MemberRequest = {
   monto_aprobado: number | null; respuesta: string | null; revisado_at: string | null; created_at: string;
   /** 0126: hora a la que llegará (llegada tarde). */
   llegada_hora?: string | null;
+  /** 0141: mensaje dirigido a alguien del equipo (tipo "otro" con destinatario). */
+  para?: string | null;
   ensayos: { id: string; titulo: string; inicia: string }[];
 };
 
@@ -60,7 +62,8 @@ export function montoValido(s: string): number | null {
 }
 
 /** Resumen corto de una solicitud para listas. */
-export function resumenSolicitud(r: Pick<MemberRequest, "tipo" | "doc_nombre" | "concepto" | "periodo" | "ensayos" | "llegada_hora">, mesNombre: (p: string) => string): string {
+export function resumenSolicitud(r: Pick<MemberRequest, "tipo" | "doc_nombre" | "concepto" | "periodo" | "ensayos" | "llegada_hora" | "para">, mesNombre: (p: string) => string): string {
+  if (r.para) return "Mensaje al equipo";
   if (r.tipo === "falta") return r.ensayos.length === 1 ? `Falta a ${r.ensayos[0].titulo}` : `Falta a ${r.ensayos.length} ensayos`;
   if (r.tipo === "llegada") return `Llegada tarde a ${r.ensayos[0]?.titulo ?? "un ensayo"}${r.llegada_hora ? ` · ${horaMx(r.llegada_hora)}` : ""}`;
   if (r.tipo === "documento") return r.doc_nombre ?? "Documento";
