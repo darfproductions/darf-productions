@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { PASSWORD_AYUDA, emailOk, fechaNacimientoOk, passwordOk } from "@/lib/account-rules";
 import { errorAuthComun, tokenCaptcha } from "@/lib/captcha";
 import { origenSitio } from "@/lib/site-origin";
@@ -100,4 +101,41 @@ export async function cancelMyOrder(_p: { ok: boolean; message: string } | null,
   if (error) return { ok: false, message: mensajeError(error) };
   revalidatePath("/cuenta");
   return { ok: true, message: "Listo: cancelaste tu apartado y los lugares quedaron libres." };
+}
+
+// ──────── Pasar boletos a otra persona (0142) ────────
+export type TraspasoState = { ok: boolean; message: string; token?: string } | null;
+
+/** El comprador pasa boletos de su orden a un correo. La base valida (orden pagada, función por venir, boletos sin usar). */
+export async function crearTraspaso(_p: TraspasoState, f: FormData): Promise<TraspasoState> {
+  const order = String(f.get("order") ?? "");
+  const tickets = f.getAll("ticket").map(String).filter((x) => /^[0-9a-f-]{36}$/.test(x));
+  const email = String(f.get("email") ?? "").trim();
+  const mensaje = String(f.get("mensaje") ?? "").trim().slice(0, 300) || null;
+  if (!tickets.length) return { ok: false, message: "Elige al menos un boleto." };
+  if (!email) return { ok: false, message: "Escribe el correo de la persona." };
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("ticket_transfer_create", { p_order: order, p_tickets: tickets, p_email: email, p_mensaje: mensaje });
+  if (error) return { ok: false, message: mensajeError(error) };
+  const r = data as { token: string; con_cuenta: boolean; boletos: number };
+  revalidatePath("/cuenta");
+  return { ok: true, token: r.token, message: r.con_cuenta ? "Listo. Ya le avisamos en su cuenta; también puedes mandarle la liga." : "Listo. Esa persona todavía no tiene cuenta en DARF: mándale la liga y la acepta al entrar." };
+}
+
+export async function cancelarTraspaso(_p: TraspasoState, f: FormData): Promise<TraspasoState> {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("ticket_transfer_cancel", { p_id: String(f.get("id") ?? "") });
+  if (error) return { ok: false, message: mensajeError(error) };
+  revalidatePath("/cuenta");
+  return { ok: true, message: "Traspaso cancelado: los boletos siguen contigo." };
+}
+
+/** Quien recibe acepta con la liga: los boletos pasan a una orden a su nombre. */
+export async function aceptarTraspaso(_p: TraspasoState, f: FormData): Promise<TraspasoState> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("ticket_transfer_accept", { p_token: String(f.get("token") ?? "") });
+  if (error) return { ok: false, message: mensajeError(error) };
+  revalidatePath("/cuenta");
+  const { data: o } = await supabase.from("orders").select("order_code").eq("id", data as string).maybeSingle();
+  redirect(`/cuenta?orden=${encodeURIComponent((o?.order_code as string) ?? "")}#o-${(o?.order_code as string) ?? ""}`);
 }

@@ -5,6 +5,24 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-11-12 — 0142: pasar boletos a otra persona
+
+Diego preguntó si se pueden transferir boletos entre cuentas; eligió la opción desde Mi cuenta.
+
+- **Pasar boletos** (`/cuenta/boletos/[orden]/pasar`): el comprador elige qué boletos de una orden pagada le pasa a un
+  correo, con mensaje opcional. Solo boletos sin usar y antes de que empiece la función (`ticket_transfer_create`).
+  Si ese correo ya tiene cuenta, le llega aviso y solo esa cuenta puede aceptar; si no, el comprador le manda la liga
+  (WhatsApp o copiar) y la acepta al crear su cuenta.
+- **Aceptar** (`/cuenta/traspaso/[token]`, `ticket_transfer_accept`): los boletos se mueven a una **orden nueva** a
+  nombre de quien recibe (`orders.traspaso_de` apunta a la original), con **QR nuevos**: los PDF y pases de Wallet
+  viejos dejan de valer. La orden nueva copia método, fecha de pago, vendedor y cajero para que el corte y las comisiones
+  no cambien; los totales se reparten solos (`recompute_order_total`). Quien mandó recibe aviso y puede cancelar
+  mientras esté pendiente (`ticket_transfer_cancel`). Todo queda en la bitácora de ventas.
+- **Mi cuenta**: "Pasar boletos a otra persona" en cada orden que aplica; debajo, el estado de cada traspaso
+  ("esperando que los acepte", "ya los tiene", "Ver liga", "Cancelar traspaso"); la orden recibida dice "Te los pasó
+  Ana" en lugar del monto. `mis_traspasos()` no revela correos ajenos a quien recibe.
+- Reglas puras en `traspaso-rules.ts`; prueba `0142_traspaso_boletos_test.sql`; `dev/apply_0142_dev.sql`.
+
 ## 2026-11-05 — 0141: fase 5, el panel como centro de operaciones (portal en 6 bloques, ficha de persona, preguntas por obra)
 
 Bloque C de la estrategia del panel. Decisiones de Diego: lista sugerida de preguntas frecuentes (solo llena
