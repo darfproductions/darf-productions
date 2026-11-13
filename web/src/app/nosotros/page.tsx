@@ -20,7 +20,15 @@ const CIFRAS: { k: keyof Cifras; texto: string }[] = [
 // Sin celdas vacías: la rejilla se acomoda a cuántas cifras hay.
 const COLUMNAS: Record<number, string> = { 1: "grid-cols-1", 2: "grid-cols-2", 3: "grid-cols-1 sm:grid-cols-3", 4: "grid-cols-2 lg:grid-cols-4" };
 
-type Miembro = { id: string; nombre: string; cargo: string; slug: string | null; retrato_path: string | null; semblanza: string | null };
+type Miembro = { id: string; nombre: string; cargo: string; slug: string | null; retrato_path: string | null; semblanza: string | null; directivo?: boolean; descripcion?: string | null };
+
+/** 0145: las cabezas de la empresa aparte y primero; si nadie está marcado, una sola lista como antes. */
+function grupos(equipo: Miembro[]): [string, Miembro[], boolean][] {
+  const cabezas = equipo.filter((m) => m.directivo);
+  if (!cabezas.length) return [["", equipo, false]];
+  const resto = equipo.filter((m) => !m.directivo);
+  return resto.length ? [["Dirección", cabezas, true], ["Equipo", resto, false]] : [["Dirección", cabezas, true]];
+}
 
 // Conoce al equipo (0063): directivos de DARF. Foto y perfil solo si la persona hizo público su perfil.
 export default async function Nosotros() {
@@ -49,9 +57,11 @@ export default async function Nosotros() {
       <div className="mx-auto max-w-[1440px] px-5 md:px-16">
         {equipo.length === 0 ? (
           <p className="rounded-2xl bg-telon p-6 text-texto-2">Muy pronto conocerás a nuestro equipo.</p>
-        ) : (
-          <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {equipo.map((m) => {
+        ) : grupos(equipo).map(([titulo, lista, cabezas]) => (
+          <section key={titulo || "equipo"} aria-label={titulo || "Equipo"} className={cabezas ? "pb-16" : ""}>
+          {titulo && <h2 className="mb-6 flex items-center gap-3 text-[11px] font-bold uppercase tracking-[0.32em] text-oro before:h-px before:w-8 before:bg-current">{titulo}</h2>}
+          <ul className={`grid gap-6 sm:grid-cols-2 ${cabezas ? "lg:grid-cols-4" : "lg:grid-cols-3 xl:grid-cols-4"}`}>
+            {lista.map((m) => {
               const tarjeta = (
                 <>
                   <div className="overflow-hidden rounded-2xl bg-telon-2">
@@ -64,6 +74,7 @@ export default async function Nosotros() {
                   <div className="flex flex-col gap-1 pt-4">
                     <p className="text-xl font-bold">{m.nombre}</p>
                     <p className="text-sm font-bold uppercase tracking-[0.14em] text-violeta-claro">{m.cargo}</p>
+                    {m.descripcion && <p className="mt-1 text-sm text-texto">{m.descripcion}</p>}
                     {m.semblanza && <p className="mt-1 line-clamp-3 text-sm text-texto-2">{m.semblanza}</p>}
                     {m.slug && <span className="mt-1 text-sm font-bold text-texto-2 group-hover:text-white">Ver perfil <Icono nombre="flecha-der" /></span>}
                   </div>
@@ -76,7 +87,8 @@ export default async function Nosotros() {
               );
             })}
           </ul>
-        )}
+          </section>
+        ))}
       </div>
     </main>
   );

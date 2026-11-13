@@ -5,6 +5,19 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-11-13 — 0145: cabezas de la empresa y descripción del cargo
+
+Diego: en DARF hay 4 cabezas de la empresa y luego todos los demás; y sería bueno describir cada cargo.
+
+- **Cabezas de la empresa** (`casa_cargos.directivo`): casilla por persona en Ajustes → Casa DARF. Salen aparte y
+  primero: en Ajustes en dos grupos («Cabezas de la empresa» y «Equipo») y en Conoce al equipo en dos secciones
+  («Dirección», en filas de 4, y «Equipo»). Las flechas acomodan dentro de cada grupo (`casa_mover`). Sin nadie
+  marcado, Conoce al equipo se ve como antes, en una sola lista. No hay tope: se puede marcar a más o menos de 4.
+- **Descripción del cargo** (`casa_cargos.descripcion`, hasta 240 letras): qué hace la persona en DARF. Sale en Conoce
+  al equipo debajo del cargo, antes de la semblanza de su perfil profesional.
+- Se guardan juntos cargo, descripción y si es cabeza (`casa_perfil_guardar`).
+- Prueba `0145_casa_direccion_descripcion_test.sql`; `dev/apply_0145_dev.sql`.
+
 ## 2026-11-13 — 0144: Casa DARF con cargo específico y orden manual
 
 Diego quiere que los puestos de Casa DARF (Dirección artística, Administración y finanzas…) sigan siendo el área en la
