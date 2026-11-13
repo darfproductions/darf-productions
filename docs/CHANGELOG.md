@@ -5,6 +5,21 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-11-13 — 0144: Casa DARF con cargo específico y orden manual
+
+Diego quiere que los puestos de Casa DARF (Dirección artística, Administración y finanzas…) sigan siendo el área en la
+que trabaja cada quien, pero que cada persona tenga su título propio y que el orden de la lista se acomode a mano.
+
+- **Cargo específico** (`casa_cargos.cargo`, `casa_cargo_guardar`): por persona, por ejemplo puesto «Dirección
+  artística» con cargo «Director de contenidos» y otra persona del mismo puesto con «Director de producciones». Vacío =
+  sale el nombre del puesto, como antes. Sale en el gafete (y su pase de Wallet se actualiza), en Conoce al equipo y en
+  el directorio de Personas.
+- **Orden manual** (`casa_cargos.orden`, `casa_mover`): flechas para subir y bajar, y «Hasta arriba» / «Hasta abajo», en
+  Ajustes → Casa DARF. Conoce al equipo usa el mismo orden. Sin orden puesto, va por el orden de los puestos y el nombre.
+- El puesto sigue decidiendo los permisos; el cargo y el orden solo cambian cómo se presenta.
+- Arreglo de paso: el pase de Wallet no se actualizaba al entrar o salir de Casa DARF (`wallet_trg_cuenta`).
+- Prueba `0144_casa_cargos_orden_test.sql`; `dev/apply_0144_dev.sql`.
+
 ## 2026-11-12 — 0143: ícono de la obra
 
 Diego pidió que las obras con una figura propia (en Mamma Mia!, la silueta de Sophie que salía en todos los pósters)
