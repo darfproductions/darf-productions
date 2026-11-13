@@ -5,12 +5,13 @@ import { listRoles, type Permission, type Role } from "@/lib/panel-data";
 import { requireDirector } from "@/lib/permissions";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
-import { borrarRolCasa, crearRolCasa, guardarMiembro, guardarPermisosCasa, nosotrosMiembro, quitarMiembro } from "./actions";
+import { borrarRolCasa, crearRolCasa, guardarCargo, guardarMiembro, guardarPermisosCasa, moverMiembro, nosotrosMiembro, quitarMiembro } from "./actions";
+import { Icono } from "@/components/Icono";
 import { BuscarCuenta } from "@/components/panel/BuscarCuenta";
 
 export const metadata: Metadata = { title: "Casa DARF" };
 
-type Miembro = { user_id: string; nombre: string; email: string; roles: string[]; desde: string };
+type Miembro = { user_id: string; nombre: string; email: string; roles: string[]; desde: string; cargo: string | null; orden: number };
 
 function Permisos({ permissions, checked }: { permissions: Permission[]; checked: Set<string> }) {
   return (
@@ -107,10 +108,11 @@ export default async function CasaDarf({ searchParams }: PageProps<"/panel/ajust
         </Card>
       </section>
 
-      <section className="flex flex-col gap-3">
+      <section id="personas" className="flex scroll-mt-20 flex-col gap-3">
         <h2 className="titular text-xl">2 · Personas · {miembros.length}</h2>
         <p className="text-sm text-texto-2">
-          Quienes estén aquí salen en <Link href="/nosotros" className="font-bold text-violeta-claro">Conoce al equipo</Link> con su puesto, en el orden de los puestos (puedes ocultar a alguien).
+          Quienes estén aquí salen en <Link href="/nosotros" className="font-bold text-violeta-claro">Conoce al equipo</Link> en este mismo orden, con su cargo (puedes ocultar a alguien).
+          El puesto es el área y lo que puede hacer; el cargo es su título específico (por ejemplo, puesto «Dirección artística» y cargo «Director de contenidos»). Acomoda el orden con las flechas.
           Su foto y semblanza salen de su perfil profesional si es público. También entran al <Link href="/panel/personas/equipo/portal" className="font-bold text-violeta-claro">Portal del equipo</Link>.
         </p>
         {roles.length > 0 ? (
@@ -131,14 +133,36 @@ export default async function CasaDarf({ searchParams }: PageProps<"/panel/ajust
             </form>
           </Card>
         ) : <Card className="text-sm text-texto-3">Primero crea un puesto; luego aquí se lo asignas a la persona.</Card>}
-        {miembros.map((m) => (
-          <Card key={m.user_id}>
-            <details>
+        {miembros.map((m, i) => (
+          <Card key={m.user_id} className="flex gap-3">
+            {/* 0144: orden manual (jerarquía). */}
+            <div className="flex shrink-0 flex-col items-center gap-1 pt-0.5">
+              <span className="num text-xs font-bold text-texto-3">{i + 1}</span>
+              <form action={moverMiembro}><input type="hidden" name="uid" value={m.user_id} /><input type="hidden" name="dir" value="arriba" />
+                <button disabled={i === 0} aria-label={`Subir a ${m.nombre}`} className="rounded-full border border-white/20 p-1.5 hover:border-white/60 disabled:opacity-30"><Icono nombre="flecha-arriba" /></button></form>
+              <form action={moverMiembro}><input type="hidden" name="uid" value={m.user_id} /><input type="hidden" name="dir" value="abajo" />
+                <button disabled={i === miembros.length - 1} aria-label={`Bajar a ${m.nombre}`} className="rounded-full border border-white/20 p-1.5 hover:border-white/60 disabled:opacity-30"><Icono nombre="flecha-abajo" /></button></form>
+            </div>
+            <details className="min-w-0 flex-1">
               <summary className="cursor-pointer">
                 <span className="font-bold">{m.nombre}</span>
+                {m.cargo && <span className="ml-2 text-sm font-semibold">{m.cargo}</span>}
                 <span className="ml-2 text-sm text-texto-3">{m.roles.map((r) => nombreRol.get(r) ?? r).join(", ")} · desde {m.desde.slice(0, 4)}</span>
                 <span className="ml-2 text-xs text-texto-3">{enNosotros.has(m.user_id) ? "· sale en Nosotros" : "· oculto en Nosotros"}</span>
               </summary>
+              <form action={guardarCargo} className="mt-4 flex flex-wrap items-end gap-2">
+                <input type="hidden" name="uid" value={m.user_id} />
+                <label className="flex min-w-0 flex-1 basis-64 flex-col gap-1.5 text-sm font-semibold">Cargo específico
+                  <input className={input} name="cargo" maxLength={60} defaultValue={m.cargo ?? ""} placeholder={`Si lo dejas vacío: ${m.roles.map((r) => nombreRol.get(r) ?? r)[0] ?? "su puesto"}`} />
+                </label>
+                <button className={buttonGhost}>Guardar cargo</button>
+              </form>
+              <p className="mt-1 text-xs text-texto-3">Sale en su gafete y en Conoce al equipo en lugar del nombre del puesto.</p>
+              <form action={moverMiembro} className="mt-3 flex flex-wrap gap-2">
+                <input type="hidden" name="uid" value={m.user_id} />
+                <button name="dir" value="primero" disabled={i === 0} className={`${buttonGhost} text-xs`}>Hasta arriba</button>
+                <button name="dir" value="ultimo" disabled={i === miembros.length - 1} className={`${buttonGhost} text-xs`}>Hasta abajo</button>
+              </form>
               <form action={nosotrosMiembro} className="mt-3">
                 <input type="hidden" name="uid" value={m.user_id} />
                 <input type="hidden" name="mostrar" value={enNosotros.has(m.user_id) ? "0" : "1"} />

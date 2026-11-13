@@ -37,8 +37,9 @@ export default async function Directorio({ searchParams }: PageProps<"/panel/per
   // La lista de cuentas trae hasta 100; las vacías se agregan aunque no estén entre esas.
   for (const v of vaciasLista) if (!cuentasLista.some((c) => c.id === v.id) && (!q || `${v.email} ${v.nombre ?? ""}`.toLowerCase().includes(q.toLowerCase()))) cuentasLista.push({ id: v.id, email: v.email, nombre: v.nombre, rol: "fan" });
   const nombrePuesto = new Map(((puestosRes.data ?? []) as { id: string; nombre: string }[]).map((r) => [r.id, r.nombre]));
-  const casa = Object.fromEntries(((casaRes.data ?? []) as { user_id: string; roles: string[] }[])
-    .map((m) => [m.user_id, m.roles.map((r) => nombrePuesto.get(r) ?? r)]));
+  // 0144: si tiene cargo específico, sale ese; si no, sus puestos.
+  const casa = Object.fromEntries(((casaRes.data ?? []) as { user_id: string; roles: string[]; cargo: string | null }[])
+    .map((m) => [m.user_id, m.cargo ? [m.cargo] : m.roles.map((r) => nombrePuesto.get(r) ?? r)]));
   const filas = unirDirectorio((fichas ?? []) as FichaPersona[], cuentasLista, filtro, casa, vacias);
   const filtros = FILTROS.filter((f) => f.id !== "vacias" || access.isDirector);
   const fichasLista = (fichas ?? []) as FichaPersona[];
