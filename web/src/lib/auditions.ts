@@ -34,7 +34,7 @@ export type Audition = {
 };
 export type AuditionRole = { id: string; nombre: string; descripcion: string | null; orden: number };
 export type AuditionField = { id: string; etiqueta: string; tipo: "texto" | "parrafo" | "enlace" | "opcion" | "si_no"; opciones: string[] | null; obligatorio: boolean; orden: number };
-export type AuditionSlot = { id: string; inicia: string; sala: string | null; cupo: number; ocupados: number };
+export type AuditionSlot = { id: string; inicia: string; termina?: string | null; sala: string | null; cupo: number; ocupados: number };
 
 const COLS =
   "id, production_id, titulo, descripcion, requisitos, sede, estado, inscripcion_cierra, edad_min, edad_max, pedir_tutor, pedir_foto, elegir_horario, visibilidad, numeracion, numeros_asignados_at, modalidad, solo_invitados, permanente, perfil_preguntas, productions(nombre)";

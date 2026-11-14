@@ -9,6 +9,8 @@ import { env } from "@/lib/env";
 import { amInvited, formatSlot, getAudition, getAuditionFichas, getAuditionObra, getMyApplication } from "@/lib/auditions";
 import { resumenPersonaje, CATEGORIAS } from "@/lib/produccion-nueva-rules";
 import { MODALIDAD } from "@/lib/audition-rules";
+import { TextoFormato } from "@/components/TextoFormato";
+import { diasAudicion } from "@/lib/turno-rules";
 import { textoCallback } from "@/lib/audicion-vivo-rules";
 import { faltantesSolicitud } from "@/lib/audition-rules";
 import { assetUrl, themeStyle } from "@/lib/productions";
@@ -63,7 +65,7 @@ export default async function AuditionPage({ params }: PageProps<"/audiciones/[i
             <img src={theme.logo} alt={obra?.nombre ?? ""} className="max-h-36 w-auto max-w-[80%] object-contain drop-shadow-[0_6px_24px_var(--obra-sombra)] md:max-h-48" />
             <p className="text-xs font-bold uppercase tracking-[0.3em] text-obra-acento">Audiciones · {etiquetaConvocatoria(a)}</p>
             <h1 className="titular text-3xl md:text-5xl">{a.titulo}</h1>
-            {a.descripcion && <p className="max-w-2xl whitespace-pre-line text-base opacity-90 md:text-lg">{a.descripcion}</p>}
+            {a.descripcion && <TextoFormato texto={a.descripcion} className="max-w-2xl text-base opacity-90 md:text-lg" />}
           </div>
         </header>
       ) : (
@@ -74,7 +76,7 @@ export default async function AuditionPage({ params }: PageProps<"/audiciones/[i
             </div>
           )}
           <PageHeading eyebrow={`${obra ? obra.nombre : a.permanente ? "Registro permanente" : "Convocatoria general"} · Audiciones · ${etiquetaConvocatoria(a)}`} title={a.titulo}>
-            {a.descripcion}
+            {a.descripcion && <TextoFormato as="span" texto={a.descripcion} />}
           </PageHeading>
         </>
       )}
@@ -156,9 +158,11 @@ export default async function AuditionPage({ params }: PageProps<"/audiciones/[i
               <div><dt className="text-texto-3">Forma</dt><dd className="font-semibold">{MODALIDAD[a.modalidad]}{a.solo_invitados ? " · por invitación" : ""}</dd></div>
               {a.sede && !enLinea && <div><dt className="text-texto-3">Sede</dt><dd className="font-semibold">{a.sede}</dd></div>}
               {edades && <div><dt className="text-texto-3">Edad</dt><dd className="font-semibold">{edades}</dd></div>}
+              {/* Las fechas salen de los Horarios de la convocatoria (Configuración → Básico → Horarios). */}
+              {!enLinea && diasAudicion(slots).length > 0 && <div><dt className="text-texto-3">{diasAudicion(slots).length === 1 ? "Fecha de audición" : "Fechas de audición"}</dt>{diasAudicion(slots).map((d) => <dd key={d} className="font-semibold">{d}</dd>)}</div>}
               {a.inscripcion_cierra && <div><dt className="text-texto-3">Inscripción hasta</dt><dd className="font-semibold">{formatSlot(a.inscripcion_cierra)}</dd></div>}
             </dl>
-            {a.requisitos && <p className="mt-4 whitespace-pre-line text-sm text-texto-2">{a.requisitos}</p>}
+            {a.requisitos && <TextoFormato texto={a.requisitos} className="mt-4 text-sm text-texto-2" />}
           </div>
           {roles.length > 0 && (
             <div className="rounded-2xl bg-telon p-6 [.con-obra_&]:bg-obra-superficie">

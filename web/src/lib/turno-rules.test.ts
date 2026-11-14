@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mensajeTurno, telefonoWa, textoHorario, turnoWhatsAppUrl } from "./turno-rules";
+import { diasAudicion, mensajeTurno, telefonoWa, textoHorario, turnoWhatsAppUrl } from "./turno-rules";
 
 describe("turnos por WhatsApp (0140)", () => {
   it("teléfono para wa.me", () => {
@@ -22,5 +22,20 @@ describe("turnos por WhatsApp (0140)", () => {
   it("liga de WhatsApp o nada si el teléfono no sirve", () => {
     expect(turnoWhatsAppUrl("4421234567", { nombre: "Ana", titulo: "X", numero: 1 })?.startsWith("https://wa.me/524421234567?text=Hola%20Ana")).toBe(true);
     expect(turnoWhatsAppUrl("", { nombre: "Ana", titulo: "X", numero: 1 })).toBeNull();
+  });
+});
+
+describe("días de audición desde los horarios", () => {
+  it("un día con varios bloques: del primer inicio al último fin", () => {
+    expect(diasAudicion([
+      { inicia: "2027-02-13T15:00:00Z", termina: "2027-02-13T15:20:00Z" },
+      { inicia: "2027-02-13T14:00:00Z", termina: "2027-02-13T14:20:00Z" },
+      { inicia: "2027-02-13T19:40:00Z", termina: "2027-02-13T20:00:00Z" },
+    ])).toEqual(["Sábado 13 de febrero, 8:00 a.m. a 2:00 p.m."]);
+  });
+  it("dos días, y bloques sin hora de fin", () => {
+    expect(diasAudicion([{ inicia: "2027-02-13T14:00:00Z" }, { inicia: "2027-02-14T16:00:00Z" }, { inicia: "2027-02-14T18:00:00Z" }]))
+      .toEqual(["Sábado 13 de febrero, 8:00 a.m.", "Domingo 14 de febrero, 10:00 a.m. a 12:00 p.m."]);
+    expect(diasAudicion([])).toEqual([]);
   });
 });

@@ -5,6 +5,16 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-11-14 — Negritas, subrayado y cursivas en la convocatoria; fechas de audición en Detalles
+
+- **Formato en la descripción y los requisitos de una convocatoria**: botones B (negritas), S (subrayado) e I
+  (cursivas) en el panel; se selecciona una palabra y se toca el botón. Se guarda con marcas sencillas
+  (`**así**`, `__así__`, `*así*`) y la página pública las muestra con formato (`TextoFormato`,
+  `TextareaFormato`, reglas en `texto-formato.ts`). Nunca se interpreta HTML. Una marca sin cerrar se queda como texto.
+- **Fechas de audición en Detalles**: la página pública toma los días de los Horarios de la convocatoria
+  («Sábado 13 de febrero, 8:00 a.m. a 2:00 p.m.», uno por día) con `diasAudicion` en `turno-rules.ts`.
+- Sin cambios en la base.
+
 ## 2026-11-14 — Convocatoria abierta con la fecha límite ya pasada
 
 La convocatoria de Encanto decía arriba «Inscripción abierta» y abajo «La inscripción a esta convocatoria está

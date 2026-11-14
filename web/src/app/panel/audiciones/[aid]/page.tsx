@@ -10,6 +10,7 @@ import { CopyLink } from "@/components/panel/CopyLink";
 import { Card, input } from "@/components/panel/ui";
 import { MODALIDAD, cierreVencido, lugares, type Criterio } from "@/lib/audition-rules";
 import { formatSlot } from "@/lib/auditions";
+import { TextareaFormato } from "@/components/panel/TextareaFormato";
 import { isoToLocalMx } from "@/lib/dates";
 import { requireAudition } from "@/lib/panel-auditions";
 import { casa } from "@/lib/panel-nav";
@@ -133,8 +134,8 @@ export default async function AuditionConfig({ params, searchParams }: PageProps
         <ActionForm action={saveAudition} hidden={h} submit="Guardar datos">
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="flex flex-col gap-1.5 text-sm font-semibold sm:col-span-2">Título<input className={input} name="titulo" required defaultValue={a.titulo} /></label>
-            <label className="flex flex-col gap-1.5 text-sm font-semibold sm:col-span-2">Descripción<textarea className={`${input} min-h-24`} name="descripcion" defaultValue={a.descripcion ?? ""} /></label>
-            <label className="flex flex-col gap-1.5 text-sm font-semibold sm:col-span-2">Requisitos (qué preparar, qué llevar)<textarea className={`${input} min-h-24`} name="requisitos" defaultValue={a.requisitos ?? ""} /></label>
+            <label className="flex flex-col gap-1.5 text-sm font-semibold sm:col-span-2">Descripción<TextareaFormato className={`${input} min-h-40`} name="descripcion" defaultValue={a.descripcion ?? ""} /></label>
+            <label className="flex flex-col gap-1.5 text-sm font-semibold sm:col-span-2">Requisitos (qué preparar, qué llevar)<TextareaFormato className={`${input} min-h-24`} name="requisitos" defaultValue={a.requisitos ?? ""} /></label>
             <label className="flex flex-col gap-1.5 text-sm font-semibold">Sede<input className={input} name="sede" defaultValue={a.sede ?? ""} /></label>
             <label id="inscripcion-hasta" className="flex scroll-mt-24 flex-col gap-1.5 text-sm font-semibold">Inscripción hasta (CDMX)<input className={input} type="datetime-local" name="cierra" defaultValue={isoToLocalMx(a.inscripcion_cierra)} /></label>
             <label className="flex flex-col gap-1.5 text-sm font-semibold">Edad mínima<input className={input} type="number" min={3} max={99} name="edad_min" defaultValue={a.edad_min ?? ""} /></label>
