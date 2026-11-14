@@ -9,6 +9,7 @@ import { criteriosFromText } from "@/lib/audition-rules";
 import { EN_BLANCO, PLANTILLAS, REGISTRO_PERMANENTE, type Plantilla } from "@/lib/audition-templates";
 import { getSession } from "@/lib/auth";
 import { localMxToIso } from "@/lib/dates";
+import { formatSlot } from "@/lib/auditions";
 import { sugerirGrupos, type OrdenFila } from "@/lib/audicion-vivo-rules";
 import { mensajeError } from "@/lib/errores";
 import { createClient } from "@/lib/supabase/server";
@@ -303,6 +304,14 @@ export async function setAuditionEstado(_p: AudState, f: FormData): Promise<AudS
   const aid = str(f, "aid");
   const estado = str(f, "estado");
   const supabase = await createClient();
+  // Abrir con la fecha límite ya pasada no sirve: nadie podría inscribirse (y la página diría "cerrada").
+  if (estado === "abierta") {
+    const { data: cfg } = await supabase.from("auditions").select("inscripcion_cierra").eq("id", aid).maybeSingle();
+    const cierra = (cfg?.inscripcion_cierra as string | null | undefined) ?? null;
+    if (cierra && new Date(cierra).getTime() <= Date.now()) {
+      return { ok: false, message: `La fecha límite de inscripción (${formatSlot(cierra)}) ya pasó. Cámbiala en «Inscripción hasta» (o déjala vacía), guarda y vuelve a abrir.` };
+    }
+  }
   const { error, count } = await supabase.from("auditions").update({ estado }, { count: "exact" }).eq("id", aid);
   if (error) return { ok: false, message: mensajeError(error) };
   if (!count) return { ok: false, message: "No tienes permiso para cambiar el estado de esta convocatoria." };

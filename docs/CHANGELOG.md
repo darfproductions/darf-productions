@@ -5,6 +5,17 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-11-14 — Convocatoria abierta con la fecha límite ya pasada
+
+La convocatoria de Encanto decía arriba «Inscripción abierta» y abajo «La inscripción a esta convocatoria está
+cerrada». Causa: estaba abierta en el panel, pero su «Inscripción hasta» ya había pasado. El letrero solo veía el
+estado; el formulario también veía la fecha.
+
+- Una sola regla (`inscripcionAbierta`, `cierreVencido`, `etiquetaConvocatoria` en `audition-rules.ts`): con la fecha
+  límite pasada, la página de la convocatoria, la lista de Audiciones y DARFY dicen «Inscripción cerrada».
+- Panel: aviso arriba de la convocatoria cuando está abierta con la fecha límite pasada, con liga al campo
+  «Inscripción hasta». Y «Abrir inscripción» ya no deja abrir si la fecha límite pasó: dice qué cambiar.
+
 ## 2026-11-13 — 0145: cabezas de la empresa y descripción del cargo
 
 Diego: en DARF hay 4 cabezas de la empresa y luego todos los demás; y sería bueno describir cada cargo.

@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import QRCode from "qrcode";
 import { PageHeading } from "@/components/PageHeading";
 import { getSession } from "@/lib/auth";
-import { ESTADO_CONVOCATORIA, ESTADO_SOLICITUD, whatsappAudicionUrl } from "@/lib/audition-rules";
+import { ESTADO_SOLICITUD, etiquetaConvocatoria, inscripcionAbierta, whatsappAudicionUrl } from "@/lib/audition-rules";
 import { env } from "@/lib/env";
 import { amInvited, formatSlot, getAudition, getAuditionFichas, getAuditionObra, getMyApplication } from "@/lib/auditions";
 import { resumenPersonaje, CATEGORIAS } from "@/lib/produccion-nueva-rules";
@@ -42,7 +42,7 @@ export default async function AuditionPage({ params }: PageProps<"/audiciones/[i
   const theme = obra ? themeFromKitParcial(obra, assetUrl) : null;
   const [mine, invitado] = session ? await Promise.all([getMyApplication(a.id, session.userId), a.solo_invitados ? amInvited(a.id) : true]) : [null, false];
   const enLinea = a.modalidad === "en_linea";
-  const abierta = a.estado === "abierta" && (!a.inscripcion_cierra || new Date(a.inscripcion_cierra) > new Date());
+  const abierta = inscripcionAbierta(a);
   const qr = mine && a.estado !== "cancelada" && !mine.checked_in_at && !["cancelado", "no_cumple"].includes(mine.estado) ? await QRCode.toDataURL(mine.qr_token, { margin: 1, width: 240 }) : null;
   // 0133: si el equipo le pidió completar su inscripción, puede editarla aunque ya haya cerrado.
   const pedido = !!mine?.completar_pedido_at && !mine.checked_in_at && ["abierta", "cerrada"].includes(a.estado) && !["cancelado", "no_cumple"].includes(mine.estado);
@@ -61,7 +61,7 @@ export default async function AuditionPage({ params }: PageProps<"/audiciones/[i
               <Link href={`/producciones/${a.production_id}`} className="self-start text-sm font-bold uppercase tracking-[0.2em] text-obra-acento"><Icono nombre="flecha-izq" /> {obra.nombre}</Link>
             )}
             <img src={theme.logo} alt={obra?.nombre ?? ""} className="max-h-36 w-auto max-w-[80%] object-contain drop-shadow-[0_6px_24px_var(--obra-sombra)] md:max-h-48" />
-            <p className="text-xs font-bold uppercase tracking-[0.3em] text-obra-acento">Audiciones · {ESTADO_CONVOCATORIA[a.estado] ?? a.estado}</p>
+            <p className="text-xs font-bold uppercase tracking-[0.3em] text-obra-acento">Audiciones · {etiquetaConvocatoria(a)}</p>
             <h1 className="titular text-3xl md:text-5xl">{a.titulo}</h1>
             {a.descripcion && <p className="max-w-2xl whitespace-pre-line text-base opacity-90 md:text-lg">{a.descripcion}</p>}
           </div>
@@ -73,7 +73,7 @@ export default async function AuditionPage({ params }: PageProps<"/audiciones/[i
               <Link href={`/producciones/${a.production_id}`} className="text-sm font-bold uppercase tracking-[0.2em] text-obra-acento"><Icono nombre="flecha-izq" /> {obra.nombre}</Link>
             </div>
           )}
-          <PageHeading eyebrow={`${obra ? obra.nombre : a.permanente ? "Registro permanente" : "Convocatoria general"} · Audiciones · ${ESTADO_CONVOCATORIA[a.estado] ?? a.estado}`} title={a.titulo}>
+          <PageHeading eyebrow={`${obra ? obra.nombre : a.permanente ? "Registro permanente" : "Convocatoria general"} · Audiciones · ${etiquetaConvocatoria(a)}`} title={a.titulo}>
             {a.descripcion}
           </PageHeading>
         </>
