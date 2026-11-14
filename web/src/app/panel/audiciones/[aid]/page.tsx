@@ -8,8 +8,9 @@ import { redirect } from "next/navigation";
 import { ActionForm } from "@/components/panel/ActionForm";
 import { CopyLink } from "@/components/panel/CopyLink";
 import { Card, input } from "@/components/panel/ui";
-import { MODALIDAD, lugares, type Criterio } from "@/lib/audition-rules";
+import { MODALIDAD, cierreVencido, lugares, type Criterio } from "@/lib/audition-rules";
 import { formatSlot } from "@/lib/auditions";
+import { TextareaFormato } from "@/components/panel/TextareaFormato";
 import { isoToLocalMx } from "@/lib/dates";
 import { requireAudition } from "@/lib/panel-auditions";
 import { casa } from "@/lib/panel-nav";
@@ -105,6 +106,12 @@ export default async function AuditionConfig({ params, searchParams }: PageProps
             </div>
           </div>
         )}
+        {cierreVencido(a) && (
+          <p role="alert" className="rounded-xl border border-aviso/50 bg-aviso/10 px-4 py-3 text-sm">
+            <b>Nadie se puede inscribir:</b> la fecha límite de inscripción ({formatSlot(a.inscripcion_cierra!)}) ya pasó, así que la página pública dice «Inscripción cerrada».
+            Cámbiala abajo en <a href="#inscripcion-hasta" className="font-bold underline">Inscripción hasta</a> (o déjala vacía) y guarda.
+          </p>
+        )}
         <div className="flex flex-wrap gap-2">
           {ESTADOS.filter((e) => e.estado !== a.estado && !(a.estado === "cancelada" && e.estado === "finalizada")).map((e) => (
             <ActionForm key={e.estado} inline action={setAuditionEstado} hidden={{ ...h, estado: e.estado }} confirm={e.confirm} submit={e.label} submitClass={e.estado === "abierta" ? "boton-compra rounded-full px-5 py-2 text-sm font-bold" : "rounded-full border border-white/25 px-4 py-2 text-sm font-bold"} />
@@ -127,10 +134,10 @@ export default async function AuditionConfig({ params, searchParams }: PageProps
         <ActionForm action={saveAudition} hidden={h} submit="Guardar datos">
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="flex flex-col gap-1.5 text-sm font-semibold sm:col-span-2">Título<input className={input} name="titulo" required defaultValue={a.titulo} /></label>
-            <label className="flex flex-col gap-1.5 text-sm font-semibold sm:col-span-2">Descripción<textarea className={`${input} min-h-24`} name="descripcion" defaultValue={a.descripcion ?? ""} /></label>
-            <label className="flex flex-col gap-1.5 text-sm font-semibold sm:col-span-2">Requisitos (qué preparar, qué llevar)<textarea className={`${input} min-h-24`} name="requisitos" defaultValue={a.requisitos ?? ""} /></label>
+            <label className="flex flex-col gap-1.5 text-sm font-semibold sm:col-span-2">Descripción<TextareaFormato className={`${input} min-h-40`} name="descripcion" defaultValue={a.descripcion ?? ""} /></label>
+            <label className="flex flex-col gap-1.5 text-sm font-semibold sm:col-span-2">Requisitos (qué preparar, qué llevar)<TextareaFormato className={`${input} min-h-24`} name="requisitos" defaultValue={a.requisitos ?? ""} /></label>
             <label className="flex flex-col gap-1.5 text-sm font-semibold">Sede<input className={input} name="sede" defaultValue={a.sede ?? ""} /></label>
-            <label className="flex flex-col gap-1.5 text-sm font-semibold">Inscripción hasta (CDMX)<input className={input} type="datetime-local" name="cierra" defaultValue={isoToLocalMx(a.inscripcion_cierra)} /></label>
+            <label id="inscripcion-hasta" className="flex scroll-mt-24 flex-col gap-1.5 text-sm font-semibold">Inscripción hasta (CDMX)<input className={input} type="datetime-local" name="cierra" defaultValue={isoToLocalMx(a.inscripcion_cierra)} /></label>
             <label className="flex flex-col gap-1.5 text-sm font-semibold">Edad mínima<input className={input} type="number" min={3} max={99} name="edad_min" defaultValue={a.edad_min ?? ""} /></label>
             <label className="flex flex-col gap-1.5 text-sm font-semibold">Edad máxima<input className={input} type="number" min={3} max={99} name="edad_max" defaultValue={a.edad_max ?? ""} /></label>
           </div>

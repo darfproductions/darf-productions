@@ -92,14 +92,17 @@ export async function borrarRolCasa(f: FormData): Promise<void> {
   back("Puesto eliminado.", true);
 }
 
-/** 0144: cargo específico de la persona (vacío = el nombre de su puesto). Sale en su gafete y en Conoce al equipo. */
+/** 0144 + 0145: cargo específico (vacío = el nombre de su puesto), descripción y si es cabeza de la empresa. */
 export async function guardarCargo(f: FormData): Promise<void> {
   const supabase = await createClient();
-  const { error } = await supabase.rpc("casa_cargo_guardar", { uid: s(f, "uid"), p_cargo: s(f, "cargo") });
+  const { error } = await supabase.rpc("casa_perfil_guardar", {
+    uid: s(f, "uid"), p_cargo: s(f, "cargo"), p_descripcion: s(f, "descripcion"), p_directivo: f.get("directivo") === "on",
+  });
   if (error) back(error.message);
   revalidatePath("/panel/ajustes/casa");
   revalidatePath("/nosotros");
-  back(s(f, "cargo") ? "Cargo guardado. Su gafete se actualiza solo." : "Cargo quitado: sale el nombre de su puesto.", true);
+  revalidatePath("/");
+  back("Guardado. Su gafete y Conoce al equipo se actualizan solos.", true);
 }
 
 /** 0144: acomodar a mano el orden de Casa DARF (jerarquía). */

@@ -4,6 +4,7 @@ import { getPermanentRegistry, listPublicAuditions } from "@/lib/auditions";
 import { responder, type DarfyContexto, type FaqItem, type ObraInfo, type Respuesta } from "@/lib/darfy-rules";
 import { formatPerformanceDate, formatPrice, getHomeData, getProduction } from "@/lib/productions";
 import { faqsParaDarfy, type FaqObra } from "@/lib/faq-rules";
+import { inscripcionAbierta } from "@/lib/audition-rules";
 import { createClient } from "@/lib/supabase/server";
 
 // DARFY lee información pública (las mismas reglas RLS que ve un visitante) y, si la persona ya entró, las preguntas
@@ -44,7 +45,7 @@ async function contexto(): Promise<DarfyContexto> {
     faq: [...[...deObras].flatMap(([pid, g]) => faqsParaDarfy(g.faqs, pid, g.nombre)), ...((faqRes.data ?? []) as FaqItem[])],
     obras,
     audiciones: auds
-      .filter((a) => a.estado === "abierta")
+      .filter((a) => inscripcionAbierta(a))
       .map((a) => ({ id: a.id, titulo: a.titulo, obra: a.productions?.nombre ?? null, cierra: a.inscripcion_cierra ? fechaCorta(a.inscripcion_cierra) : null })),
     registro: registro ? { id: registro.id } : null,
   };

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHeading } from "@/components/PageHeading";
-import { ESTADO_CONVOCATORIA } from "@/lib/audition-rules";
+import { etiquetaConvocatoria, inscripcionAbierta } from "@/lib/audition-rules";
 import { formatSlot, getPermanentRegistry, listPublicAuditions } from "@/lib/auditions";
 import { Icono } from "@/components/Icono";
 
@@ -35,10 +35,10 @@ export default async function AudicionesPage() {
               {convocatorias.map((a) => (
                 <li key={a.id}>
                   <Link href={`/audiciones/${a.id}`} className="block rounded-2xl bg-telon p-6 transition-transform hover:-translate-y-0.5">
-                    <p className="text-xs font-bold uppercase tracking-[0.2em] text-texto-3">{a.productions?.nombre ?? "Convocatoria general"} · {ESTADO_CONVOCATORIA[a.estado]}</p>
+                    <p className="text-xs font-bold uppercase tracking-[0.2em] text-texto-3">{a.productions?.nombre ?? "Convocatoria general"} · {etiquetaConvocatoria(a)}</p>
                     <p className="mt-1 text-xl font-bold">{a.titulo}</p>
                     {a.inscripcion_cierra && <p className="mt-1 text-sm text-texto-2">Inscripción hasta el {formatSlot(a.inscripcion_cierra).toLowerCase()}</p>}
-                    <span className="mt-3 inline-block text-sm font-bold text-violeta-claro">{a.estado === "abierta" ? "Ver e inscribirme" : "Ver detalles"} <Icono nombre="flecha-der" /></span>
+                    <span className="mt-3 inline-block text-sm font-bold text-violeta-claro">{inscripcionAbierta(a) ? "Ver e inscribirme" : "Ver detalles"} <Icono nombre="flecha-der" /></span>
                   </Link>
                 </li>
               ))}

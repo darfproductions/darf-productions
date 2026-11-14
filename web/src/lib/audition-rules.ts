@@ -168,3 +168,18 @@ export function mensajeAprobada(nombre: string, convocatoria: string, liga: stri
   const n = nombre.trim().split(/\s+/)[0] || nombre;
   return `¡Hola ${n}! Tu solicitud para ${convocatoria} fue aprobada: ya estás en la lista para audicionar. Tu QR para el día de la audición está en tu cuenta: ${liga}`;
 }
+
+/** ¿Se puede inscribir alguien hoy? Abierta y sin que haya pasado la fecha límite (si tiene). */
+export function inscripcionAbierta(a: { estado: string; inscripcion_cierra?: string | null }, ahora: Date = new Date()): boolean {
+  return a.estado === "abierta" && (!a.inscripcion_cierra || new Date(a.inscripcion_cierra).getTime() > ahora.getTime());
+}
+
+/** Abierta en el panel pero con la fecha límite ya pasada: nadie se puede inscribir. */
+export function cierreVencido(a: { estado: string; inscripcion_cierra?: string | null }, ahora: Date = new Date()): boolean {
+  return a.estado === "abierta" && !!a.inscripcion_cierra && new Date(a.inscripcion_cierra).getTime() <= ahora.getTime();
+}
+
+/** Lo que ve el público: si la fecha límite ya pasó, "Inscripción cerrada" aunque siga abierta en el panel. */
+export function etiquetaConvocatoria(a: { estado: string; inscripcion_cierra?: string | null }, ahora: Date = new Date()): string {
+  return cierreVencido(a, ahora) ? ESTADO_CONVOCATORIA.cerrada : ESTADO_CONVOCATORIA[a.estado] ?? a.estado;
+}

@@ -5,6 +5,40 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-11-14 — Negritas, subrayado y cursivas en la convocatoria; fechas de audición en Detalles
+
+- **Formato en la descripción y los requisitos de una convocatoria**: botones B (negritas), S (subrayado) e I
+  (cursivas) en el panel; se selecciona una palabra y se toca el botón. Se guarda con marcas sencillas
+  (`**así**`, `__así__`, `*así*`) y la página pública las muestra con formato (`TextoFormato`,
+  `TextareaFormato`, reglas en `texto-formato.ts`). Nunca se interpreta HTML. Una marca sin cerrar se queda como texto.
+- **Fechas de audición en Detalles**: la página pública toma los días de los Horarios de la convocatoria
+  («Sábado 13 de febrero, 8:00 a.m. a 2:00 p.m.», uno por día) con `diasAudicion` en `turno-rules.ts`.
+- Sin cambios en la base.
+
+## 2026-11-14 — Convocatoria abierta con la fecha límite ya pasada
+
+La convocatoria de Encanto decía arriba «Inscripción abierta» y abajo «La inscripción a esta convocatoria está
+cerrada». Causa: estaba abierta en el panel, pero su «Inscripción hasta» ya había pasado. El letrero solo veía el
+estado; el formulario también veía la fecha.
+
+- Una sola regla (`inscripcionAbierta`, `cierreVencido`, `etiquetaConvocatoria` en `audition-rules.ts`): con la fecha
+  límite pasada, la página de la convocatoria, la lista de Audiciones y DARFY dicen «Inscripción cerrada».
+- Panel: aviso arriba de la convocatoria cuando está abierta con la fecha límite pasada, con liga al campo
+  «Inscripción hasta». Y «Abrir inscripción» ya no deja abrir si la fecha límite pasó: dice qué cambiar.
+
+## 2026-11-13 — 0145: cabezas de la empresa y descripción del cargo
+
+Diego: en DARF hay 4 cabezas de la empresa y luego todos los demás; y sería bueno describir cada cargo.
+
+- **Cabezas de la empresa** (`casa_cargos.directivo`): casilla por persona en Ajustes → Casa DARF. Salen aparte y
+  primero: en Ajustes en dos grupos («Cabezas de la empresa» y «Equipo») y en Conoce al equipo en dos secciones
+  («Dirección», en filas de 4, y «Equipo»). Las flechas acomodan dentro de cada grupo (`casa_mover`). Sin nadie
+  marcado, Conoce al equipo se ve como antes, en una sola lista. No hay tope: se puede marcar a más o menos de 4.
+- **Descripción del cargo** (`casa_cargos.descripcion`, hasta 240 letras): qué hace la persona en DARF. Sale en Conoce
+  al equipo debajo del cargo, antes de la semblanza de su perfil profesional.
+- Se guardan juntos cargo, descripción y si es cabeza (`casa_perfil_guardar`).
+- Prueba `0145_casa_direccion_descripcion_test.sql`; `dev/apply_0145_dev.sql`.
+
 ## 2026-11-13 — 0144: Casa DARF con cargo específico y orden manual
 
 Diego quiere que los puestos de Casa DARF (Dirección artística, Administración y finanzas…) sigan siendo el área en la

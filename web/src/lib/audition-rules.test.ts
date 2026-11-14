@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ageAt, criteriosFromText, dayStatus, daySummary, lugares, minutos, score, videoSource, whatsappAudicionUrl } from "./audition-rules";
+import { ageAt, criteriosFromText, dayStatus, daySummary, lugares, minutos, score, videoSource, whatsappAudicionUrl, cierreVencido, etiquetaConvocatoria, inscripcionAbierta } from "./audition-rules";
 import { EN_BLANCO, PLANTILLAS, REGISTRO_PERMANENTE } from "./audition-templates";
 
 describe("audiciones", () => {
@@ -101,5 +101,22 @@ describe("solicitudes: faltantes y mensajes (0133/0134)", () => {
     expect(mensajeRegreso("Ana López", "Teen Beach", "Te falta la foto.", "https://x/a")).toBe(
       "Hola Ana, te escribimos de DARF Productions sobre tu inscripción a Teen Beach. Te regresamos tu solicitud: Te falta la foto.\n\nPor favor complétala aquí: https://x/a\n¡Gracias!");
     expect(mensajeAprobada("Ana López", "Teen Beach", "https://x/cuenta")).toContain("¡Hola Ana! Tu solicitud para Teen Beach fue aprobada");
+  });
+});
+
+describe("inscripción y fecha límite", () => {
+  const ahora = new Date("2026-11-14T18:00:00Z");
+  it("abierta sin fecha o con fecha futura acepta inscripciones", () => {
+    expect(inscripcionAbierta({ estado: "abierta" }, ahora)).toBe(true);
+    expect(inscripcionAbierta({ estado: "abierta", inscripcion_cierra: "2027-02-01T06:00:00Z" }, ahora)).toBe(true);
+    expect(inscripcionAbierta({ estado: "borrador" }, ahora)).toBe(false);
+  });
+  it("abierta con la fecha límite pasada: cerrada para el público y aviso en el panel", () => {
+    const a = { estado: "abierta", inscripcion_cierra: "2026-11-01T06:00:00Z" };
+    expect(inscripcionAbierta(a, ahora)).toBe(false);
+    expect(cierreVencido(a, ahora)).toBe(true);
+    expect(etiquetaConvocatoria(a, ahora)).toBe("Inscripción cerrada");
+    expect(etiquetaConvocatoria({ estado: "abierta" }, ahora)).toBe("Inscripción abierta");
+    expect(cierreVencido({ estado: "cerrada", inscripcion_cierra: "2026-11-01T06:00:00Z" }, ahora)).toBe(false);
   });
 });

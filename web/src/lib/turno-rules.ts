@@ -40,3 +40,19 @@ export function turnoWhatsAppUrl(tel: string | null | undefined, t: DatosTurno):
   const n = telefonoWa(tel);
   return n ? `https://wa.me/${n}?text=${encodeURIComponent(mensajeTurno(t))}` : null;
 }
+
+/** Días de audición a partir de los horarios: uno por día (hora de México), del primer inicio al último fin.
+ *  "Sábado 13 de febrero, 8:00 a.m. a 2:00 p.m." */
+export function diasAudicion(slots: { inicia: string; termina?: string | null }[]): string[] {
+  const dia = (iso: string) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Mexico_City" }).format(new Date(iso));
+  const porDia = new Map<string, { ini: string; fin: string | null }>();
+  for (const s of [...slots].sort((a, b) => a.inicia.localeCompare(b.inicia))) {
+    const d = dia(s.inicia);
+    const fin = s.termina ?? null;
+    const x = porDia.get(d);
+    if (!x) porDia.set(d, { ini: s.inicia, fin });
+    else if (fin && (!x.fin || fin > x.fin)) x.fin = fin;
+    else if (!fin && (!x.fin || s.inicia > x.fin)) x.fin = s.inicia > x.ini ? s.inicia : x.fin;
+  }
+  return [...porDia.values()].map((x) => textoHorario(x.ini, x.fin && x.fin > x.ini ? x.fin : null) ?? "");
+}
