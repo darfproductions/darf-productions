@@ -42,7 +42,10 @@ export default async function AuditionPage({ params }: PageProps<"/audiciones/[i
   const ficha = new Map(fichas.map((f) => [f.id, f]));
   // 0135: con logo y colores ya se usa la marca de la obra; la imagen de fondo es opcional.
   const theme = obra ? themeFromKitParcial(obra, assetUrl) : null;
-  const [mine, invitado] = session ? await Promise.all([getMyApplication(a.id, session.userId), a.solo_invitados ? amInvited(a.id) : true]) : [null, false];
+  const [mine, invitacion] = session ? await Promise.all([getMyApplication(a.id, session.userId), amInvited(a.id)]) : [null, false];
+  // Puede inscribirse: en «solo invitados», solo con invitación; en las demás, cualquiera. 0147: con invitación directa
+  // además se salta la edad.
+  const invitado = a.solo_invitados ? invitacion : !!session;
   const enLinea = a.modalidad === "en_linea";
   const abierta = inscripcionAbierta(a);
   const qr = mine && a.estado !== "cancelada" && !mine.checked_in_at && !["cancelado", "no_cumple"].includes(mine.estado) ? await QRCode.toDataURL(mine.qr_token, { margin: 1, width: 240 }) : null;
@@ -140,7 +143,8 @@ export default async function AuditionPage({ params }: PageProps<"/audiciones/[i
           {(abierta || pedido) && session && (invitado || mine) && !mine?.checked_in_at && (
             <>
               <h2 className="titular text-2xl">{mine && mine.estado !== "cancelado" ? "Editar mi inscripción" : "Inscripción"}</h2>
-              <ApplyForm aid={a.id} userId={session.userId} roles={roles} fields={fields} slots={a.elegir_horario && !enLinea ? slots : []} fechaAudicion={slots[0]?.inicia ?? null}
+              {invitacion && (a.edad_min || a.edad_max) && <p className="rounded-xl border border-oro/40 bg-oro/10 px-4 py-3 text-sm">Tienes una invitación directa: puedes inscribirte aunque no cumplas la edad de esta convocatoria. Si eres menor de edad, pide a tu madre, padre o tutor que llene sus datos.</p>}
+              <ApplyForm invitado={invitacion} aid={a.id} userId={session.userId} roles={roles} fields={fields} slots={a.elegir_horario && !enLinea ? slots : []} fechaAudicion={slots[0]?.inicia ?? null}
                 opciones={{ pedirFoto: a.pedir_foto, pedirTutor: a.pedir_tutor, perfil: a.perfil_preguntas ?? [] }} defaults={{ nombre: session.profile?.nombre ?? "", telefono: session.profile?.telefono ?? "" }} previa={mine} />
               {!mine && whatsappAudicionUrl(env.whatsapp, a.productions?.nombre || a.titulo) && (
                 <p className="text-sm text-texto-2">¿Dudas antes de inscribirte?{" "}
