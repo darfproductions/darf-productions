@@ -2,14 +2,14 @@
 
 import { compressImage } from "@/lib/image-compress";
 import { useActionState, useState } from "react";
-import { ageAt, lugares } from "@/lib/audition-rules";
+import { ageAt, faltantesSolicitud, lugares } from "@/lib/audition-rules";
 import type { AuditionField, AuditionRole, AuditionSlot, MyApplication } from "@/lib/auditions";
 import { checkImage } from "@/lib/image-rules";
 import { createClient } from "@/lib/supabase/client";
 import { applyToAudition, type ApplyState } from "./actions";
 import { mensajeError } from "@/lib/errores";
 import { mayus } from "@/lib/dates";
-import { GENEROS, HABILIDADES, NIVELES, TESITURAS } from "@/lib/produccion-nueva-rules";
+import { GENEROS, HABILIDADES, NINGUNA_HABILIDAD, NIVELES, TESITURAS } from "@/lib/produccion-nueva-rules";
 
 const field = "rounded-lg bg-sala px-3 py-3 font-normal text-texto";
 const fmt = (iso: string) =>
@@ -39,6 +39,22 @@ export function ApplyForm(props: {
   const edad = nac ? ageAt(nac, fechaAudicion) : null;
   const pide = (q: string) => props.opciones.perfil?.includes(q) ?? false;
   const menor = edad !== null && edad < 18 && props.opciones.pedirTutor;
+  const [falta, setFalta] = useState<string[]>([]);
+
+  // 0146: antes de enviar, revisa lo que el navegador no puede marcar solo (foto, personaje, perfil) y dice qué falta.
+  function revisar(e: React.FormEvent<HTMLFormElement>) {
+    const fd = new FormData(e.currentTarget);
+    const respuestas: Record<string, string> = {};
+    for (const [k, v] of fd.entries()) if (k.startsWith("campo_")) respuestas[k.slice(6)] = String(v);
+    const faltan = faltantesSolicitud(props.fields, respuestas, props.opciones.pedirFoto, foto, {
+      hayPersonajes: props.roles.length > 0, personajes: fd.getAll("roles").map(String), perfilPedido: props.opciones.perfil ?? [],
+      perfil: { tesitura: String(fd.get("perfil_tesitura") ?? ""), genero: String(fd.get("perfil_genero") ?? ""), canto: String(fd.get("perfil_canto") ?? ""), baile: String(fd.get("perfil_baile") ?? "") },
+      habilidades: [...fd.getAll("perfil_habilidad").map(String), ...String(fd.get("perfil_otra") ?? "").split(",").map((x) => x.trim()).filter(Boolean)],
+      tutorFaltaCorreo: menor && !String(fd.get("tutor_email") ?? "").trim(),
+    });
+    setFalta(faltan);
+    if (faltan.length) e.preventDefault();
+  }
 
   async function subirFoto(file: File) {
     setFotoMsg("");
@@ -64,7 +80,7 @@ export function ApplyForm(props: {
   }
 
   return (
-    <form action={action} className="grid gap-4 rounded-2xl bg-telon p-6 sm:grid-cols-2 [.con-obra_&]:bg-obra-superficie">
+    <form action={action} onSubmit={revisar} className="grid gap-4 rounded-2xl bg-telon p-6 sm:grid-cols-2 [.con-obra_&]:bg-obra-superficie">
       <input type="hidden" name="aid" value={props.aid} />
       <input type="hidden" name="foto_path" value={foto} />
       <label className="flex flex-col gap-1.5 text-sm font-semibold">Nombre completo *
@@ -77,7 +93,7 @@ export function ApplyForm(props: {
         <input className={field} name="fecha_nacimiento" type="date" required value={nac} onChange={(e) => setNac(e.target.value)} />
         {edad !== null && <span className="text-xs font-normal text-texto-3">Tendrás {edad} años el día de la audición.</span>}
       </label>
-      {props.opciones.pedirFoto && <div className="flex flex-col gap-1.5 text-sm font-semibold">Foto (rostro, vertical)
+      {props.opciones.pedirFoto && <div className="flex flex-col gap-1.5 text-sm font-semibold">Foto (rostro, vertical) *
         <label className="cursor-pointer self-start rounded-full border border-white/25 px-4 py-2.5 text-sm font-bold hover:border-white/50">
           {subiendo ? "Subiendo…" : foto ? "Cambiar foto" : "Subir foto"}
           <input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" disabled={subiendo} onChange={(e) => { const f = e.target.files?.[0]; if (f) void subirFoto(f); }} />
@@ -87,7 +103,7 @@ export function ApplyForm(props: {
 
       {props.roles.length > 0 && (
         <fieldset className="flex flex-col gap-2 sm:col-span-2">
-          <legend className="mb-1 text-sm font-semibold">¿Para qué personajes audicionas?</legend>
+          <legend className="mb-1 text-sm font-semibold">¿Para qué personajes audicionas? * <span className="font-normal text-texto-3">(elige al menos uno)</span></legend>
           <div className="flex flex-wrap gap-2">
             {props.roles.map((r) => (
               <label key={r.id} className="flex items-center gap-2 rounded-full border border-white/20 px-3 py-2 text-sm has-[:checked]:border-white">
@@ -102,53 +118,53 @@ export function ApplyForm(props: {
         <fieldset className="grid gap-3 rounded-xl border border-white/15 p-4 sm:col-span-2 sm:grid-cols-2">
           <legend className="px-1 text-sm font-bold">Tu perfil artístico</legend>
           <input type="hidden" name="perfil" value="1" />
-          <p className="text-xs text-texto-3 sm:col-span-2">Todo es opcional: ayuda al equipo a ver para qué personajes encajas. {pide("tesitura") ? "Si no sabes algo (por ejemplo tu tesitura), déjalo en blanco o elige «No sé»." : "Si no sabes algo, déjalo en blanco."}</p>
+          <p className="text-xs text-texto-3 sm:col-span-2">Ayuda al equipo a ver para qué personajes encajas. Responde todo: si no sabes tu tesitura, elige «No sé»; si no tienes habilidades especiales, marca «Ninguna».</p>
           {pide("tesitura") && (
-          <label className="flex flex-col gap-1.5 text-sm font-semibold">Tesitura
-            <select className={field} name="perfil_tesitura" defaultValue={p?.perfil_tesitura ?? ""}>
-              <option value="">Sin especificar</option>
+          <label className="flex flex-col gap-1.5 text-sm font-semibold">Tesitura *
+            <select className={field} name="perfil_tesitura" required defaultValue={p?.perfil_tesitura ?? ""}>
+              <option value="">Elige…</option>
               {TESITURAS.map((t) => <option key={t.valor} value={t.valor}>{t.label}</option>)}
               <option value="no_se">No sé</option>
             </select>
           </label>
           )}
           {pide("genero") && (
-          <label className="flex flex-col gap-1.5 text-sm font-semibold">Interpreto personajes
-            <select className={field} name="perfil_genero" defaultValue={p?.perfil_genero ?? ""}>
-              <option value="">Sin especificar</option>
+          <label className="flex flex-col gap-1.5 text-sm font-semibold">Interpreto personajes *
+            <select className={field} name="perfil_genero" required defaultValue={p?.perfil_genero ?? ""}>
+              <option value="">Elige…</option>
               {GENEROS.filter((g) => g.valor !== "cualquiera").map((g) => <option key={g.valor} value={g.valor}>{g.valor === "mujer" ? "Femeninos" : "Masculinos"}</option>)}
               <option value="otro">Ambos / otro</option>
             </select>
           </label>
           )}
           {pide("canto") && (
-          <label className="flex flex-col gap-1.5 text-sm font-semibold">Canto
-            <select className={field} name="perfil_canto" defaultValue={p?.perfil_canto ?? ""}>
-              <option value="">Sin especificar</option>
+          <label className="flex flex-col gap-1.5 text-sm font-semibold">Canto *
+            <select className={field} name="perfil_canto" required defaultValue={p?.perfil_canto ?? ""}>
+              <option value="">Elige…</option>
               {NIVELES.map((n) => <option key={n.valor} value={n.valor}>{n.valor === "no" ? "No canto" : n.valor === "basico" ? "Básico" : "Con experiencia / formación"}</option>)}
             </select>
           </label>
           )}
           {pide("baile") && (
-          <label className="flex flex-col gap-1.5 text-sm font-semibold">Baile
-            <select className={field} name="perfil_baile" defaultValue={p?.perfil_baile ?? ""}>
-              <option value="">Sin especificar</option>
+          <label className="flex flex-col gap-1.5 text-sm font-semibold">Baile *
+            <select className={field} name="perfil_baile" required defaultValue={p?.perfil_baile ?? ""}>
+              <option value="">Elige…</option>
               {NIVELES.map((n) => <option key={n.valor} value={n.valor}>{n.valor === "no" ? "No bailo" : n.valor === "basico" ? "Básico" : "Con experiencia / formación"}</option>)}
             </select>
           </label>
           )}
           {pide("habilidades") && (
           <fieldset className="flex flex-col gap-2 sm:col-span-2">
-            <legend className="mb-1 text-sm font-semibold">Habilidades especiales</legend>
+            <legend className="mb-1 text-sm font-semibold">Habilidades especiales * <span className="font-normal text-texto-3">(marca al menos una, o «Ninguna»)</span></legend>
             <div className="flex flex-wrap gap-2">
-              {HABILIDADES.map((h) => (
+              {[...HABILIDADES, NINGUNA_HABILIDAD].map((h) => (
                 <label key={h} className="flex items-center gap-2 rounded-full border border-white/20 px-3 py-1.5 text-xs has-[:checked]:border-white">
                   <input type="checkbox" name="perfil_habilidad" value={h} defaultChecked={p?.perfil_habilidades?.includes(h)} /> {h}
                 </label>
               ))}
             </div>
             <input className={`${field} text-sm`} name="perfil_otra" placeholder="Otra (separa con comas)"
-              defaultValue={(p?.perfil_habilidades ?? []).filter((h) => !HABILIDADES.includes(h)).join(", ")} />
+              defaultValue={(p?.perfil_habilidades ?? []).filter((h) => !HABILIDADES.includes(h) && h !== NINGUNA_HABILIDAD).join(", ")} />
           </fieldset>
           )}
         </fieldset>
@@ -174,21 +190,22 @@ export function ApplyForm(props: {
       {props.fields.map((f) => {
         const name = `campo_${f.id}`;
         const def = p?.respuestas?.[f.id] ?? "";
-        const label = `${f.etiqueta}${f.obligatorio ? " *" : ""}`;
+        // 0146: todas las preguntas son obligatorias.
+        const label = `${f.etiqueta} *`;
         if (f.tipo === "parrafo")
-          return <label key={f.id} className="flex flex-col gap-1.5 text-sm font-semibold sm:col-span-2">{label}<textarea className={`${field} min-h-28`} name={name} required={f.obligatorio} defaultValue={def} /></label>;
+          return <label key={f.id} className="flex flex-col gap-1.5 text-sm font-semibold sm:col-span-2">{label}<textarea className={`${field} min-h-28`} name={name} required defaultValue={def} /></label>;
         if (f.tipo === "opcion" || f.tipo === "si_no") {
           const ops = f.tipo === "si_no" ? ["Sí", "No"] : f.opciones ?? [];
           return (
             <label key={f.id} className="flex flex-col gap-1.5 text-sm font-semibold">{label}
-              <select className={field} name={name} required={f.obligatorio} defaultValue={def}>
+              <select className={field} name={name} required defaultValue={def}>
                 <option value="">Elige…</option>
                 {ops.map((o) => <option key={o} value={o}>{o}</option>)}
               </select>
             </label>
           );
         }
-        return <label key={f.id} className="flex flex-col gap-1.5 text-sm font-semibold">{label}<input className={field} name={name} type={f.tipo === "enlace" ? "url" : "text"} required={f.obligatorio} defaultValue={def} placeholder={f.tipo === "enlace" ? "https://" : ""} /></label>;
+        return <label key={f.id} className="flex flex-col gap-1.5 text-sm font-semibold">{label}<input className={field} name={name} type={f.tipo === "enlace" ? "url" : "text"} required defaultValue={def} placeholder={f.tipo === "enlace" ? "https://" : ""} /></label>;
       })}
 
       {menor && (
@@ -196,7 +213,7 @@ export function ApplyForm(props: {
           <legend className="px-1 text-sm font-bold text-aviso">Eres menor de edad: datos de tu madre, padre o tutor</legend>
           <label className="flex flex-col gap-1.5 text-sm font-semibold">Nombre *<input className={field} name="tutor_nombre" required defaultValue={p?.tutor_nombre ?? ""} /></label>
           <label className="flex flex-col gap-1.5 text-sm font-semibold">Teléfono *<input className={field} name="tutor_telefono" type="tel" required defaultValue={p?.tutor_telefono ?? ""} /></label>
-          <label className="flex flex-col gap-1.5 text-sm font-semibold">Correo<input className={field} name="tutor_email" type="email" defaultValue={p?.tutor_email ?? ""} /></label>
+          <label className="flex flex-col gap-1.5 text-sm font-semibold">Correo *<input className={field} name="tutor_email" type="email" required defaultValue={p?.tutor_email ?? ""} /></label>
           <label className="flex items-start gap-2 text-sm sm:col-span-3"><input type="checkbox" name="consentimiento_tutor" required className="mt-1" /> Como madre, padre o tutor, autorizo esta inscripción y que se usen sus datos solo para esta audición.</label>
         </fieldset>
       )}
@@ -206,6 +223,7 @@ export function ApplyForm(props: {
         <label className="flex items-start gap-2"><input type="checkbox" name="consentimiento_imagen" defaultChecked={p?.consentimiento_imagen} className="mt-1" /> Autorizo que se tomen fotos o video durante la audición para uso interno de la producción.</label>
       </div>
 
+      {falta.length > 0 && <p role="alert" className="rounded-lg border border-[#ff8fa3]/50 bg-[#ff8fa3]/10 px-4 py-3 text-sm text-[#ffd5dd] sm:col-span-2">Tu solicitud está incompleta. Falta: <b>{falta.join(", ")}</b>.</p>}
       {state && <p role={state.ok ? "status" : "alert"} className={`sm:col-span-2 ${state.ok ? "text-exito" : "text-[#ff8fa3]"}`}>{state.message}</p>}
       <button disabled={pending || subiendo} className="boton-compra rounded-full px-6 py-4 text-sm font-bold uppercase tracking-[0.1em] disabled:opacity-60 sm:col-span-2">
         {pending ? "Enviando…" : p && p.estado !== "cancelado" ? "Guardar cambios" : "Inscribirme"}

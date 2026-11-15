@@ -58,7 +58,8 @@ begin
   if fg <> vieja then raise exception 'FALLO T2a'; end if;
   if (select count(*) from audition_fields where audition_id = aid) <> 2 then raise exception 'FALLO T2b'; end if;
   select * into r from audition_respuestas_sistema(aid) x where x.id = caro;
-  if r.grupo <> '3b' or r.companeros is not null then raise exception 'FALLO T2c: %', r; end if;
+  -- 0140: al volverse pregunta de Grupo, las respuestas quedan con la forma canónica («3b» → «3B»).
+  if r.grupo <> '3B' or r.companeros is not null then raise exception 'FALLO T2c: %', r; end if;
   perform pg_temp.reset();
   update audition_applications set respuestas = respuestas || jsonb_build_object(fc::text, 'con Caro Díaz') where id = ana;
 

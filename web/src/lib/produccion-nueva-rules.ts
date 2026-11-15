@@ -50,6 +50,8 @@ export const TESITURAS = [
 ] as const;
 export const NIVELES = [{ valor: "no", label: "No" }, { valor: "basico", label: "Básico" }, { valor: "fuerte", label: "Fuerte" }] as const;
 export const GENEROS = [{ valor: "mujer", label: "Mujer" }, { valor: "hombre", label: "Hombre" }, { valor: "cualquiera", label: "Cualquiera" }] as const;
+/** 0146: «Ninguna» para quien no tiene habilidades especiales (la pregunta es obligatoria). */
+export const NINGUNA_HABILIDAD = "Ninguna";
 export const HABILIDADES = ["Danza aérea", "Acrobacia", "Gimnasia", "Patines", "Tap", "Ballet", "Hip hop", "Toca un instrumento", "Combate escénico", "Acento", "Malabares"];
 
 export const etiqueta = <T extends { valor: string; label: string }>(lista: readonly T[], v: string | null | undefined) => lista.find((x) => x.valor === v)?.label ?? null;

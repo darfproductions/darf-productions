@@ -113,8 +113,14 @@ const palabras = (s: string) => plano(s).split(/[^a-z0-9ñ]+/).filter((w) => w.l
 
 /** A quién menciona cada quien: coincide si el texto trae el nombre completo, o el nombre de pila y alguna otra
  *  palabra del nombre (apellido), o un nombre de pila que solo una persona tiene. */
+/** 0146: «¿Con quién pasas?» es obligatoria; quien pasa solo escribe «Solo», «Sola», «Nadie», «No»… */
+export function pasaSolo(con: string | null | undefined): boolean {
+  const t = plano(String(con ?? "")).replace(/[^a-zñ ]/g, " ").replace(/\s+/g, " ").trim();
+  return !t || /^(solo|sola|yo solo|yo sola|nadie|ninguno|ninguna|no|na|n a|individual|sin compan[a-z]*)( .*)?$/.test(t);
+}
+
 export function mencionados(personas: PersonaCon[], p: PersonaCon): string[] {
-  if (!p.con) return [];
+  if (!p.con || pasaSolo(p.con)) return [];
   const texto = plano(p.con);
   const tokens = new Set(palabras(p.con));
   const pila = new Map<string, number>();

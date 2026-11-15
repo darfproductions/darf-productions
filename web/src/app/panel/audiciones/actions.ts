@@ -64,7 +64,7 @@ export async function createAudition(_p: AudState, f: FormData): Promise<AudStat
   };
   if (t.preguntas.length) {
     const { error: e2 } = await supabase.from("audition_fields").insert(t.preguntas.map((q, i) => ({
-      audition_id: data.id, etiqueta: String(q.etiqueta), tipo: q.tipo, opciones: q.tipo === "opcion" ? q.opciones ?? null : null, obligatorio: !!q.obligatorio, orden: i + 1,
+      audition_id: data.id, etiqueta: String(q.etiqueta), tipo: q.tipo, opciones: q.tipo === "opcion" ? q.opciones ?? null : null, obligatorio: q.obligatorio !== false, orden: i + 1,
     })));
     if (e2) return deshacer(mensajeError(e2));
   }
@@ -89,7 +89,7 @@ export async function createPermanentRegistry(): Promise<AudState> {
     .single();
   if (error) return { ok: false, message: error.code === "23505" ? "El Registro permanente ya existe." : "Solo el Director puede crearlo." };
   const { error: e2 } = await supabase.from("audition_fields").insert(t.preguntas.map((q, i) => ({
-    audition_id: data.id, etiqueta: q.etiqueta, tipo: q.tipo, opciones: q.tipo === "opcion" ? q.opciones ?? null : null, obligatorio: !!q.obligatorio, orden: i + 1,
+    audition_id: data.id, etiqueta: q.etiqueta, tipo: q.tipo, opciones: q.tipo === "opcion" ? q.opciones ?? null : null, obligatorio: q.obligatorio !== false, orden: i + 1,
   })));
   if (e2) {
     await supabase.from("auditions").delete().eq("id", data.id);
@@ -357,7 +357,7 @@ export async function addField(_p: AudState, f: FormData): Promise<AudState> {
     etiqueta: str(f, "etiqueta"),
     tipo,
     opciones: tipo === "opcion" ? opciones : null,
-    obligatorio: f.get("obligatorio") === "on",
+    obligatorio: true,
     orden: (count ?? 0) + 1,
   });
   if (error) return { ok: false, message: error.message };

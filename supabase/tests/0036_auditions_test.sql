@@ -1,6 +1,10 @@
 -- Ejecutar SOLO en una transacción que termina abortada (no persiste nada).
 -- Precede: 0031–0036 aplicadas.
 
+-- 0146: estas pruebas inscriben sin perfil artístico ni foto; dentro de la prueba, las convocatorias nuevas no los piden.
+alter table auditions alter column perfil_preguntas set default '{}';
+alter table auditions alter column pedir_foto set default false;
+
 insert into auth.users (id, instance_id, aud, role, email)
 values
   ('00000000-0000-0000-0000-0000000000a1', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 't_admin@test.local'),
@@ -94,7 +98,8 @@ end $$;
 -- T3: menor de edad necesita tutor y autorización; edad mínima
 do $$ declare r json; p jsonb; begin
   p := jsonb_build_object('nombre', 'Carla', 'telefono', '56', 'fecha_nacimiento', (hoy_mx() - interval '14 years')::date::text,
-       'slot_id', (select slot2 from ctx), 'respuestas', jsonb_build_object((select campo from ctx)::text, 'x'), 'consentimiento_datos', true);
+       'slot_id', (select slot2 from ctx), 'respuestas', jsonb_build_object((select campo from ctx)::text, 'x'), 'consentimiento_datos', true,
+       'roles', jsonb_build_array((select rol1 from ctx)));
   perform pg_temp.as_user('00000000-0000-0000-0000-0000000000c3');
   begin
     perform audition_apply((select aud from ctx), p);
@@ -108,7 +113,7 @@ do $$ declare r json; p jsonb; begin
   exception when raise_exception then
     if sqlerrm not like '%mayores de 10%' then raise exception 'FALLO T3b: %', sqlerrm; end if;
   end;
-  r := audition_apply((select aud from ctx), p || jsonb_build_object('tutor_nombre', 'Mamá', 'tutor_telefono', '57', 'consentimiento_tutor', true));
+  r := audition_apply((select aud from ctx), p || jsonb_build_object('tutor_nombre', 'Mamá', 'tutor_telefono', '57', 'tutor_email', 'mama@test.local', 'consentimiento_tutor', true));
   if (r->>'es_menor')::boolean is not true then raise exception 'FALLO T3c: %', r; end if;
   update ctx set app3 = (r->>'application_id')::uuid;
   reset role;
@@ -208,7 +213,7 @@ do $$ declare n int; begin
   if (select estado from audition_applications where id = (select app3 from ctx)) <> 'cancelado' then raise exception 'FALLO T8'; end if;
   perform audition_apply((select aud from ctx), jsonb_build_object('nombre', 'Carla', 'telefono', '56', 'fecha_nacimiento', (hoy_mx() - interval '14 years')::date::text,
     'slot_id', (select slot2 from ctx), 'respuestas', jsonb_build_object((select campo from ctx)::text, 'x'), 'consentimiento_datos', true,
-    'tutor_nombre', 'Mamá', 'tutor_telefono', '57', 'consentimiento_tutor', true));
+    'tutor_nombre', 'Mamá', 'tutor_telefono', '57', 'tutor_email', 'mama@test.local', 'consentimiento_tutor', true, 'roles', jsonb_build_array((select rol1 from ctx))));
   if (select estado from audition_applications where id = (select app3 from ctx)) <> 'inscrito' then raise exception 'FALLO T8b'; end if;
   perform pg_temp.as_user('00000000-0000-0000-0000-0000000000c1');
   begin

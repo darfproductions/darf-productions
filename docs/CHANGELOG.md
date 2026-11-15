@@ -5,6 +5,29 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-11-15 — 0146: una solicitud de audición no se puede mandar incompleta
+
+Diego: todas las preguntas tienen que ser obligatorias —no se puede saltar ninguna—, la foto también si la convocatoria
+la pide, y no se debe poder subir una solicitud incompleta.
+
+- **Todas las preguntas, sin excepción** (`audition_fields_obligatoria` fuerza `obligatorio = true`; las existentes
+  pasan a obligatorias). En el panel ya no hay casilla «Obligatoria». «¿Con quién pasas?» también: el texto ahora pide
+  escribir «Solo» si la persona pasa sola (`pasaSolo` lo reconoce y no la junta con nadie ni lo muestra en la fila).
+- **Foto**: si la convocatoria la pide, no se guarda sin foto (al editar, cuenta la que ya había subido).
+- **Personaje**: si la convocatoria tiene personajes, hay que elegir al menos uno.
+- **Perfil artístico**: tesitura, qué personajes interpreta, canto, baile y habilidades especiales (los que pida la
+  convocatoria) son obligatorios, cada uno con su «No sé» / «No canto» / «No bailo» / «Ninguna». Se guarda junto con
+  la inscripción.
+- **Tutor** (menores, si se pide): nombre, teléfono y correo.
+- La base lo revisa todo (`audition_apply`), así que no depende del navegador. El formulario además avisa antes de
+  enviar: «Tu solicitud está incompleta. Falta: …». «Qué le falta» (`_audition_faltantes` y `faltantesSolicitud`)
+  cuenta lo mismo, para pedir completar las solicitudes viejas.
+- Pruebas: `0146_solicitud_completa_test.sql`; se ajustaron las pruebas viejas que inscribían sin foto, personaje,
+  perfil o correo del tutor (0036–0040, 0064, 0133) y dos expectativas que habían quedado viejas desde 0140 (0133 y
+  0136). Siguen desactualizadas desde 0140, sin relación con este cambio: 0037 (número al inscribirse) y 0131 (cuántos
+  reordena).
+- `dev/apply_0146_dev.sql` (cambia datos: vuelve obligatorias todas las preguntas existentes).
+
 ## 2026-11-14 — Negritas, subrayado y cursivas en la convocatoria; fechas de audición en Detalles
 
 - **Formato en la descripción y los requisitos de una convocatoria**: botones B (negritas), S (subrayado) e I

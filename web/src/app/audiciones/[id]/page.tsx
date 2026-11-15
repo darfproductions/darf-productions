@@ -48,7 +48,11 @@ export default async function AuditionPage({ params }: PageProps<"/audiciones/[i
   const qr = mine && a.estado !== "cancelada" && !mine.checked_in_at && !["cancelado", "no_cumple"].includes(mine.estado) ? await QRCode.toDataURL(mine.qr_token, { margin: 1, width: 240 }) : null;
   // 0133: si el equipo le pidió completar su inscripción, puede editarla aunque ya haya cerrado.
   const pedido = !!mine?.completar_pedido_at && !mine.checked_in_at && ["abierta", "cerrada"].includes(a.estado) && !["cancelado", "no_cumple"].includes(mine.estado);
-  const faltan = mine ? faltantesSolicitud(fields, mine.respuestas, a.pedir_foto, mine.foto_path) : [];
+  const faltan = mine ? faltantesSolicitud(fields, mine.respuestas, a.pedir_foto, mine.foto_path, {
+    hayPersonajes: roles.length > 0, personajes: mine.roles, perfilPedido: a.perfil_preguntas ?? [],
+    perfil: { tesitura: mine.perfil_tesitura, genero: mine.perfil_genero, canto: mine.perfil_canto, baile: mine.perfil_baile },
+    habilidades: mine.perfil_habilidades ?? [], tutorFaltaCorreo: a.pedir_tutor && !!mine.tutor_nombre && !mine.tutor_email,
+  }) : [];
   const edades = a.edad_min || a.edad_max ? `${a.edad_min ? `de ${a.edad_min}` : ""}${a.edad_max ? ` hasta ${a.edad_max}` : ""} años` : null;
 
   return (
