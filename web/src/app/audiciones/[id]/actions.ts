@@ -28,6 +28,12 @@ export async function applyToAudition(_p: ApplyState, f: FormData): Promise<Appl
     consentimiento_datos: f.get("consentimiento_datos") === "on",
     consentimiento_tutor: f.get("consentimiento_tutor") === "on",
     consentimiento_imagen: f.get("consentimiento_imagen") === "on",
+    // 0146: el perfil artístico va con la inscripción y la base revisa que esté completo.
+    perfil: f.get("perfil") === "1" ? {
+      tesitura: String(f.get("perfil_tesitura") ?? ""), genero: String(f.get("perfil_genero") ?? ""),
+      canto: String(f.get("perfil_canto") ?? ""), baile: String(f.get("perfil_baile") ?? ""),
+      habilidades: [...f.getAll("perfil_habilidad").map(String), ...String(f.get("perfil_otra") ?? "").split(",").map((x) => x.trim()).filter(Boolean)],
+    } : {},
   };
   const supabase = await createClient();
   const { error } = await supabase.rpc("audition_apply", { aid, p: payload });

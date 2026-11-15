@@ -1,4 +1,4 @@
-import { companeros, enLaFila, esperando, quienSigue, textoCallback } from "@/lib/audicion-vivo-rules";
+import { companeros, enLaFila, esperando, pasaSolo, quienSigue, textoCallback } from "@/lib/audicion-vivo-rules";
 import type { PanelAudition } from "@/lib/panel-auditions";
 import { createClient } from "@/lib/supabase/server";
 import { formatSlot } from "@/lib/auditions";
@@ -42,7 +42,7 @@ export async function cargarFila(aid: string, a: Pick<PanelAudition, "fase" | "e
   const esperan = esperando(todos, enEscena, a.fase);
   const cb = a.fase === "callback" ? textoCallback(a.callback_cuando, a.callback_fecha, a.callback_lugar) : null;
   const paraGrupos = todos.filter((r) => !r.entered_at && !["cancelado", "no_cumple"].includes(r.estado))
-    .map((r) => ({ id: r.id, numero: r.numero, nombre: r.nombre, llego: !!r.checked_in_at, grupo: r.grupo ?? null, con: preguntaCon ? (conQuien.get(r.id) ?? null) : undefined }));
+    .map((r) => ({ id: r.id, numero: r.numero, nombre: r.nombre, llego: !!r.checked_in_at, grupo: r.grupo ?? null, con: preguntaCon ? (pasaSolo(conQuien.get(r.id)) ? null : conQuien.get(r.id) ?? null) : undefined }));
   // Los grupos (respuesta a «Grupo») con cuántos son y qué horarios tienen, para "Horario por grupo".
   const porGrupo = new Map<string, { nombre: string; personas: number; horarios: Set<string> }>();
   for (const r of todos) {

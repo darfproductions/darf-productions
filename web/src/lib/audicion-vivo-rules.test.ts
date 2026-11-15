@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { companeros, enLaFila, esperando, gruposCierre, mencionados, nombreTurno, quienSigue, sugerirGrupos, textoCallback, validarCallback, type FilaVivo, type PersonaCierre } from "./audicion-vivo-rules";
+import { companeros, enLaFila, esperando, gruposCierre, mencionados, nombreTurno, quienSigue, sugerirGrupos, textoCallback, validarCallback, type FilaVivo, type PersonaCierre, pasaSolo } from "./audicion-vivo-rules";
 
 const f = (id: string, numero: number, extra: Partial<FilaVivo> = {}): FilaVivo =>
   ({ id, numero, estado: "convocado", checked_in_at: "2026-11-08T16:00:00Z", entered_at: null, finished_at: null, ...extra });
@@ -95,5 +95,16 @@ describe("¿con quién pasas? → grupos sugeridos (0136)", () => {
     const g = sugerirGrupos(P);
     expect(g.map((x) => x.ids)).toEqual([["ana", "beto", "caro"], ["eli", "sofi1"]]);
     expect(g[0].porque[0]).toContain("Ana dijo");
+  });
+});
+
+describe("pasa solo (0146)", () => {
+  it("reconoce las formas de decir que pasa solo", () => {
+    for (const t of ["Solo", "sola", "Yo solo", "Nadie", "no", "N/A", "Solo yo", "Individual", "", null]) expect(pasaSolo(t)).toBe(true);
+    for (const t of ["Con Sofía", "Mateo y Sofía", "Sofía Herrera", "Nora"]) expect(pasaSolo(t)).toBe(false);
+  });
+  it("«Solo» no junta a nadie", () => {
+    const ps = [{ id: "a", nombre: "Ana López", con: "Solo" }, { id: "b", nombre: "Solo Pérez", con: null }];
+    expect(mencionados(ps, ps[0])).toEqual([]);
   });
 });

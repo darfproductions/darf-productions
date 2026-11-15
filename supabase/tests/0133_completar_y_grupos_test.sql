@@ -26,7 +26,8 @@ declare aid uuid; f1 uuid; ana uuid; beto uuid; caro uuid; dani uuid; n int; j j
         adm text := '00000000-0000-0000-0000-000000133a01'; u_ana text := '00000000-0000-0000-0000-000000133a02';
         u_beto text := '00000000-0000-0000-0000-000000133a03';
 begin
-  insert into auditions (production_id, titulo, estado, pedir_foto, numeracion) values ('t133_obra', 'Audición 133', 'abierta', true, 'llegada') returning id into aid;
+  -- 0146: sin perfil artístico, para que esta prueba siga mirando solo foto y preguntas.
+  insert into auditions (production_id, titulo, estado, pedir_foto, numeracion, perfil_preguntas) values ('t133_obra', 'Audición 133', 'abierta', true, 'llegada', '{}') returning id into aid;
   insert into audition_members (audition_id, user_id, role_id) values (aid, '00000000-0000-0000-0000-000000133a04', 'juez');
   -- Ana y Beto se inscribieron sin foto; luego se agregó una pregunta obligatoria.
   insert into audition_applications (audition_id, user_id, nombre, fecha_nacimiento, telefono, consentimiento_datos_at)
@@ -75,11 +76,12 @@ begin
   begin perform audition_agrupar(aid, array[ana]); ok := false; exception when others then ok := true; end;
   if not ok then raise exception 'FALLO T4a: grupo de uno'; end if;
 
-  -- T5: Siguiente → entra Ana y con ella Caro (cada una conserva su número).
+  -- T5: Siguiente → entra Ana y con ella Caro (comparten número desde 0140).
   if (audition_siguiente(aid)->>'app')::uuid <> ana then raise exception 'FALLO T5a'; end if;
   perform pg_temp.reset();
   if (select entered_at is null from audition_applications where id = caro) then raise exception 'FALLO T5b: Caro no entró con su grupo'; end if;
-  if (select numero from audition_applications where id = caro) <> 3 then raise exception 'FALLO T5c: número'; end if;
+  -- 0140: quienes pasan juntos comparten número de turno.
+  if (select numero from audition_applications where id = caro) is distinct from (select numero from audition_applications where id = ana) then raise exception 'FALLO T5c: número'; end if;
 
   -- T6: el juez ve a las dos en el grupo, cada una con su evaluación.
   perform pg_temp.as_user('00000000-0000-0000-0000-000000133a04');

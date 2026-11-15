@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ageAt, criteriosFromText, dayStatus, daySummary, lugares, minutos, score, videoSource, whatsappAudicionUrl, cierreVencido, etiquetaConvocatoria, inscripcionAbierta } from "./audition-rules";
+import { ageAt, criteriosFromText, dayStatus, daySummary, lugares, minutos, score, videoSource, whatsappAudicionUrl, cierreVencido, faltantesSolicitud, etiquetaConvocatoria, inscripcionAbierta } from "./audition-rules";
 import { EN_BLANCO, PLANTILLAS, REGISTRO_PERMANENTE } from "./audition-templates";
 
 describe("audiciones", () => {
@@ -89,12 +89,12 @@ describe("WhatsApp de dudas de audición", () => {
 });
 
 describe("solicitudes: faltantes y mensajes (0133/0134)", () => {
-  it("qué le falta: foto (si se pide) y preguntas obligatorias vacías", async () => {
+  it("qué le falta: foto (si se pide) y cualquier pregunta vacía (desde 0146 todas son obligatorias)", async () => {
     const { faltantesSolicitud } = await import("./audition-rules");
     const fields = [{ id: "a", etiqueta: "Experiencia", obligatorio: true }, { id: "b", etiqueta: "Redes", obligatorio: false }];
-    expect(faltantesSolicitud(fields, { a: " " }, true, null)).toEqual(["Foto", "Experiencia"]);
-    expect(faltantesSolicitud(fields, { a: "Coro" }, true, "x.jpg")).toEqual([]);
-    expect(faltantesSolicitud(fields, {}, false, null)).toEqual(["Experiencia"]);
+    expect(faltantesSolicitud(fields, { a: " " }, true, null)).toEqual(["Foto", "Experiencia", "Redes"]);
+    expect(faltantesSolicitud(fields, { a: "Coro", b: "@ana" }, true, "x.jpg")).toEqual([]);
+    expect(faltantesSolicitud(fields, { b: "@ana" }, false, null)).toEqual(["Experiencia"]);
   });
   it("mensajes de WhatsApp con el primer nombre, la nota y la liga", async () => {
     const { mensajeAprobada, mensajeRegreso } = await import("./audition-rules");
@@ -118,5 +118,16 @@ describe("inscripción y fecha límite", () => {
     expect(etiquetaConvocatoria(a, ahora)).toBe("Inscripción cerrada");
     expect(etiquetaConvocatoria({ estado: "abierta" }, ahora)).toBe("Inscripción abierta");
     expect(cierreVencido({ estado: "cerrada", inscripcion_cierra: "2026-11-01T06:00:00Z" }, ahora)).toBe(false);
+  });
+});
+
+describe("solicitud completa (0146): ninguna pregunta se salta", () => {
+  const fields = [{ id: "c", etiqueta: "Canción", obligatorio: true }, { id: "x", etiqueta: "¿Pasas con alguien?", obligatorio: false }];
+  it("cuenta foto, personaje, perfil (con habilidades), correo del tutor y todas las preguntas", () => {
+    expect(faltantesSolicitud(fields, {}, true, null, { hayPersonajes: true, personajes: [], perfilPedido: ["tesitura", "canto", "habilidades"], perfil: { tesitura: "", canto: "basico" }, habilidades: [], tutorFaltaCorreo: true }))
+      .toEqual(["Foto", "Personaje", "Tesitura", "Habilidades especiales", "Correo del tutor", "Canción", "¿Pasas con alguien?"]);
+  });
+  it("completa no le falta nada («Solo» y «Ninguna» cuentan como respuesta)", () => {
+    expect(faltantesSolicitud(fields, { c: "Surface Pressure", x: "Solo" }, true, "f.jpg", { hayPersonajes: true, personajes: ["r1"], perfilPedido: ["tesitura", "habilidades"], perfil: { tesitura: "no_se" }, habilidades: ["Ninguna"] })).toEqual([]);
   });
 });

@@ -1,6 +1,9 @@
 -- Ejecutar SOLO en una transacción que termina abortada (no persiste nada).
 -- Precede: 0001–0134 aplicadas.
 
+-- 0146: estas pruebas inscriben sin perfil artístico; dentro de la prueba, las convocatorias nuevas no lo piden.
+alter table auditions alter column perfil_preguntas set default '{}';
+
 insert into auth.users (id, instance_id, aud, role, email) values
   ('00000000-0000-0000-0000-000000134a01', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 't134_admin@test.local'),
   ('00000000-0000-0000-0000-000000134a02', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 't134_ana@test.local'),

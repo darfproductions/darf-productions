@@ -254,7 +254,7 @@ export default async function AuditionConfig({ params, searchParams }: PageProps
         <ul className="flex flex-col gap-2">
           {(fields.data ?? []).map((f) => (
             <li key={f.id} className="flex items-center justify-between gap-3 rounded-lg bg-sala px-3 py-2 text-sm">
-              <span><b>{f.etiqueta}</b> · {TIPOS[f.tipo]}{f.obligatorio ? " · obligatoria" : ""}{f.opciones ? ` (${(f.opciones as string[]).join(", ")})` : ""}
+              <span><b>{f.etiqueta}</b> · {TIPOS[f.tipo]}{f.opciones ? ` (${(f.opciones as string[]).join(", ")})` : ""}
                 {f.sistema && <span className="ml-2 rounded-full bg-lila/20 px-2 py-0.5 text-[11px] font-bold text-lila">{f.sistema === "grupo" ? "Pregunta de Grupo" : "¿Con quién pasas?"}</span>}
                 {f.sistema === "grupo" && (
                   <ActionForm inline action={opcionesGrupo} hidden={{ ...h, field: f.id }} submit="Guardar opciones" submitClass={ghost}>
@@ -279,7 +279,7 @@ export default async function AuditionConfig({ params, searchParams }: PageProps
             <select className={input} name="tipo" defaultValue="texto">{Object.entries(TIPOS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
             <input className={`${input} sm:col-span-2`} name="opciones" placeholder="Si es de opciones: Soprano, Contralto, Tenor, Barítono" />
           </div>
-          <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="obligatorio" /> Obligatoria</label>
+          <p className="text-xs text-texto-3">Todas las preguntas son obligatorias: sin respuesta no se puede mandar la solicitud.</p>
         </ActionForm>
       </AjustesSeccion>
       <AjustesSeccion id="horarios" titulo="Horarios" abierto>
