@@ -26,6 +26,8 @@ export function ApplyForm(props: {
   slots: AuditionSlot[];
   fechaAudicion: string | null;
   opciones: { pedirFoto: boolean; pedirTutor: boolean; perfil?: string[] };
+  /** 0147: invitación directa (se salta la edad); si es menor, siempre se piden los datos del tutor. */
+  invitado?: boolean;
   defaults: { nombre: string; telefono: string };
   previa: MyApplication | null;
 }) {
@@ -38,7 +40,7 @@ export function ApplyForm(props: {
   const fechaAudicion = props.fechaAudicion ? new Date(props.fechaAudicion) : new Date();
   const edad = nac ? ageAt(nac, fechaAudicion) : null;
   const pide = (q: string) => props.opciones.perfil?.includes(q) ?? false;
-  const menor = edad !== null && edad < 18 && props.opciones.pedirTutor;
+  const menor = edad !== null && edad < 18 && (props.opciones.pedirTutor || !!props.invitado);
   const [falta, setFalta] = useState<string[]>([]);
 
   // 0146: antes de enviar, revisa lo que el navegador no puede marcar solo (foto, personaje, perfil) y dice qué falta.
@@ -190,22 +192,21 @@ export function ApplyForm(props: {
       {props.fields.map((f) => {
         const name = `campo_${f.id}`;
         const def = p?.respuestas?.[f.id] ?? "";
-        // 0146: todas las preguntas son obligatorias.
-        const label = `${f.etiqueta} *`;
+        const label = `${f.etiqueta}${f.obligatorio ? " *" : ""}`;
         if (f.tipo === "parrafo")
-          return <label key={f.id} className="flex flex-col gap-1.5 text-sm font-semibold sm:col-span-2">{label}<textarea className={`${field} min-h-28`} name={name} required defaultValue={def} /></label>;
+          return <label key={f.id} className="flex flex-col gap-1.5 text-sm font-semibold sm:col-span-2">{label}<textarea className={`${field} min-h-28`} name={name} required={f.obligatorio} defaultValue={def} /></label>;
         if (f.tipo === "opcion" || f.tipo === "si_no") {
           const ops = f.tipo === "si_no" ? ["Sí", "No"] : f.opciones ?? [];
           return (
             <label key={f.id} className="flex flex-col gap-1.5 text-sm font-semibold">{label}
-              <select className={field} name={name} required defaultValue={def}>
+              <select className={field} name={name} required={f.obligatorio} defaultValue={def}>
                 <option value="">Elige…</option>
                 {ops.map((o) => <option key={o} value={o}>{o}</option>)}
               </select>
             </label>
           );
         }
-        return <label key={f.id} className="flex flex-col gap-1.5 text-sm font-semibold">{label}<input className={field} name={name} type={f.tipo === "enlace" ? "url" : "text"} required defaultValue={def} placeholder={f.tipo === "enlace" ? "https://" : ""} /></label>;
+        return <label key={f.id} className="flex flex-col gap-1.5 text-sm font-semibold">{label}<input className={field} name={name} type={f.tipo === "enlace" ? "url" : "text"} required={f.obligatorio} defaultValue={def} placeholder={f.tipo === "enlace" ? "https://" : ""} /></label>;
       })}
 
       {menor && (

@@ -18,7 +18,7 @@ import { createClient } from "@/lib/supabase/server";
 import { editarPersonaje, importarPersonajes, moverPersonaje } from "../votacion-actions";
 import { origen } from "@/lib/gafete";
 import QRCode from "qrcode";
-import { addAuditionMember, addField, addInvites, addRole, addSlot, removeAuditionMember, removeInvite, removeItem, saveAsTemplate, saveAudition, saveCriterios, saveEntrevistaPreguntas, saveOptions, setAuditionEstado, deleteAudition } from "../actions";
+import { addAuditionMember, addField, addInvites, addRole, addSlot, removeAuditionMember, removeInvite, removeItem, setObligatoria, saveAsTemplate, saveAudition, saveCriterios, saveEntrevistaPreguntas, saveOptions, setAuditionEstado, deleteAudition } from "../actions";
 import { Icono } from "@/components/Icono";
 import { BuscarCuenta } from "@/components/panel/BuscarCuenta";
 import { IrASeccion } from "./IrASeccion";
@@ -254,7 +254,7 @@ export default async function AuditionConfig({ params, searchParams }: PageProps
         <ul className="flex flex-col gap-2">
           {(fields.data ?? []).map((f) => (
             <li key={f.id} className="flex items-center justify-between gap-3 rounded-lg bg-sala px-3 py-2 text-sm">
-              <span><b>{f.etiqueta}</b> · {TIPOS[f.tipo]}{f.opciones ? ` (${(f.opciones as string[]).join(", ")})` : ""}
+              <span><b>{f.etiqueta}</b> · {TIPOS[f.tipo]}{f.obligatorio ? <b className="text-aviso"> · obligatoria</b> : <span className="text-texto-3"> · opcional</span>}{f.opciones ? ` (${(f.opciones as string[]).join(", ")})` : ""}
                 {f.sistema && <span className="ml-2 rounded-full bg-lila/20 px-2 py-0.5 text-[11px] font-bold text-lila">{f.sistema === "grupo" ? "Pregunta de Grupo" : "¿Con quién pasas?"}</span>}
                 {f.sistema === "grupo" && (
                   <ActionForm inline action={opcionesGrupo} hidden={{ ...h, field: f.id }} submit="Guardar opciones" submitClass={ghost}>
@@ -268,6 +268,7 @@ export default async function AuditionConfig({ params, searchParams }: PageProps
                     <ActionForm inline action={preguntaSistema} hidden={{ ...h, sistema: "companeros", field: f.id }} submit="Usar como «¿con quién pasas?»" submitClass={ghost} />
                   </>
                 )}
+                <ActionForm inline action={setObligatoria} hidden={{ ...h, id: f.id, obligatorio: f.obligatorio ? "0" : "1" }} submit={f.obligatorio ? "Hacer opcional" : "Hacer obligatoria"} submitClass={ghost} />
                 <ActionForm inline action={removeItem} hidden={{ ...h, tabla: "audition_fields", id: f.id }} confirm="¿Quitar esta pregunta?" submit="Quitar" submitClass={ghost} />
               </span>
             </li>
@@ -279,7 +280,7 @@ export default async function AuditionConfig({ params, searchParams }: PageProps
             <select className={input} name="tipo" defaultValue="texto">{Object.entries(TIPOS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
             <input className={`${input} sm:col-span-2`} name="opciones" placeholder="Si es de opciones: Soprano, Contralto, Tenor, Barítono" />
           </div>
-          <p className="text-xs text-texto-3">Todas las preguntas son obligatorias: sin respuesta no se puede mandar la solicitud.</p>
+          <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="obligatorio" /> Obligatoria (sin respuesta no se puede mandar la solicitud)</label>
         </ActionForm>
       </AjustesSeccion>
       <AjustesSeccion id="horarios" titulo="Horarios" abierto>
@@ -301,13 +302,16 @@ export default async function AuditionConfig({ params, searchParams }: PageProps
           </div>
         </ActionForm>
       </AjustesSeccion>
-      {sec === "inscripcion" && (a.solo_invitados || a.visibilidad === "enlace") && (
-        <AjustesSeccion id="invitados" titulo="Invitados y liga" abierto>
+      {sec === "inscripcion" && (
+        <AjustesSeccion id="invitados" titulo="Invitaciones directas" abierto>
           <h2 className="titular text-xl">Invitados ({(invites.data ?? []).length})</h2>
           <p className="flex flex-wrap items-center gap-2 text-sm text-texto-2">
             {a.solo_invitados
               ? "Solo estos correos pueden inscribirse. Cada persona entra con su cuenta DARF (con ese mismo correo) y ve la invitación en Mi cuenta."
-              : "Convocatoria cerrada: no sale en la lista pública. Se inscribe quien tenga la liga y quien invites por correo (le llega un aviso y la ve en Mi cuenta)."}
+              : a.visibilidad === "enlace"
+                ? "Convocatoria cerrada: no sale en la lista pública. Se inscribe quien tenga la liga y quien invites por correo (le llega un aviso y la ve en Mi cuenta)."
+                : "Invita por correo a alguien en particular: le llega un aviso y la ve en Mi cuenta."}
+            {(a.edad_min || a.edad_max) ? " Quien invites puede inscribirse aunque no cumpla la edad de la convocatoria; si es menor, llena los datos y la autorización de su madre, padre o tutor." : ""}
             {""}Liga de inscripción: <CopyLink path={`/audiciones/${aid}`} />
           </p>
           <ul className="flex flex-col gap-1.5">

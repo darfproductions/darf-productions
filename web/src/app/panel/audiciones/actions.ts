@@ -64,7 +64,7 @@ export async function createAudition(_p: AudState, f: FormData): Promise<AudStat
   };
   if (t.preguntas.length) {
     const { error: e2 } = await supabase.from("audition_fields").insert(t.preguntas.map((q, i) => ({
-      audition_id: data.id, etiqueta: String(q.etiqueta), tipo: q.tipo, opciones: q.tipo === "opcion" ? q.opciones ?? null : null, obligatorio: q.obligatorio !== false, orden: i + 1,
+      audition_id: data.id, etiqueta: String(q.etiqueta), tipo: q.tipo, opciones: q.tipo === "opcion" ? q.opciones ?? null : null, obligatorio: !!q.obligatorio, orden: i + 1,
     })));
     if (e2) return deshacer(mensajeError(e2));
   }
@@ -89,7 +89,7 @@ export async function createPermanentRegistry(): Promise<AudState> {
     .single();
   if (error) return { ok: false, message: error.code === "23505" ? "El Registro permanente ya existe." : "Solo el Director puede crearlo." };
   const { error: e2 } = await supabase.from("audition_fields").insert(t.preguntas.map((q, i) => ({
-    audition_id: data.id, etiqueta: q.etiqueta, tipo: q.tipo, opciones: q.tipo === "opcion" ? q.opciones ?? null : null, obligatorio: q.obligatorio !== false, orden: i + 1,
+    audition_id: data.id, etiqueta: q.etiqueta, tipo: q.tipo, opciones: q.tipo === "opcion" ? q.opciones ?? null : null, obligatorio: !!q.obligatorio, orden: i + 1,
   })));
   if (e2) {
     await supabase.from("auditions").delete().eq("id", data.id);
@@ -357,7 +357,7 @@ export async function addField(_p: AudState, f: FormData): Promise<AudState> {
     etiqueta: str(f, "etiqueta"),
     tipo,
     opciones: tipo === "opcion" ? opciones : null,
-    obligatorio: true,
+    obligatorio: f.get("obligatorio") === "on",
     orden: (count ?? 0) + 1,
   });
   if (error) return { ok: false, message: error.message };
@@ -365,6 +365,17 @@ export async function addField(_p: AudState, f: FormData): Promise<AudState> {
 }
 
 /** Quitar un personaje, horario, pregunta o video (tabla limitada a esas cuatro). */
+/** 0147: marcar una pregunta como obligatoria u opcional. */
+export async function setObligatoria(_p: AudState, f: FormData): Promise<AudState> {
+  const aid = str(f, "aid");
+  const obligatorio = str(f, "obligatorio") === "1";
+  const supabase = await createClient();
+  const { error, count } = await supabase.from("audition_fields").update({ obligatorio }, { count: "exact" }).eq("id", str(f, "id")).eq("audition_id", aid);
+  if (error) return { ok: false, message: error.message };
+  if (!count) return { ok: false, message: "No tienes permiso para cambiar esta pregunta." };
+  return done(aid, obligatorio ? "Ahora es obligatoria: sin respuesta no se puede mandar la solicitud." : "Ahora es opcional.");
+}
+
 export async function removeItem(_p: AudState, f: FormData): Promise<AudState> {
   const aid = str(f, "aid");
   const tabla = str(f, "tabla");

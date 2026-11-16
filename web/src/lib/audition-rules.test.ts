@@ -89,12 +89,12 @@ describe("WhatsApp de dudas de audición", () => {
 });
 
 describe("solicitudes: faltantes y mensajes (0133/0134)", () => {
-  it("qué le falta: foto (si se pide) y cualquier pregunta vacía (desde 0146 todas son obligatorias)", async () => {
+  it("qué le falta: foto (si se pide) y preguntas obligatorias vacías (0147: cada pregunta se marca)", async () => {
     const { faltantesSolicitud } = await import("./audition-rules");
     const fields = [{ id: "a", etiqueta: "Experiencia", obligatorio: true }, { id: "b", etiqueta: "Redes", obligatorio: false }];
-    expect(faltantesSolicitud(fields, { a: " " }, true, null)).toEqual(["Foto", "Experiencia", "Redes"]);
-    expect(faltantesSolicitud(fields, { a: "Coro", b: "@ana" }, true, "x.jpg")).toEqual([]);
-    expect(faltantesSolicitud(fields, { b: "@ana" }, false, null)).toEqual(["Experiencia"]);
+    expect(faltantesSolicitud(fields, { a: " " }, true, null)).toEqual(["Foto", "Experiencia"]);
+    expect(faltantesSolicitud(fields, { a: "Coro" }, true, "x.jpg")).toEqual([]);
+    expect(faltantesSolicitud(fields, {}, false, null)).toEqual(["Experiencia"]);
   });
   it("mensajes de WhatsApp con el primer nombre, la nota y la liga", async () => {
     const { mensajeAprobada, mensajeRegreso } = await import("./audition-rules");
@@ -121,11 +121,11 @@ describe("inscripción y fecha límite", () => {
   });
 });
 
-describe("solicitud completa (0146): ninguna pregunta se salta", () => {
+describe("solicitud completa (0146/0147)", () => {
   const fields = [{ id: "c", etiqueta: "Canción", obligatorio: true }, { id: "x", etiqueta: "¿Pasas con alguien?", obligatorio: false }];
-  it("cuenta foto, personaje, perfil (con habilidades), correo del tutor y todas las preguntas", () => {
+  it("cuenta foto, personaje, perfil (con habilidades), correo del tutor y las preguntas obligatorias", () => {
     expect(faltantesSolicitud(fields, {}, true, null, { hayPersonajes: true, personajes: [], perfilPedido: ["tesitura", "canto", "habilidades"], perfil: { tesitura: "", canto: "basico" }, habilidades: [], tutorFaltaCorreo: true }))
-      .toEqual(["Foto", "Personaje", "Tesitura", "Habilidades especiales", "Correo del tutor", "Canción", "¿Pasas con alguien?"]);
+      .toEqual(["Foto", "Personaje", "Tesitura", "Habilidades especiales", "Correo del tutor", "Canción"]);
   });
   it("completa no le falta nada («Solo» y «Ninguna» cuentan como respuesta)", () => {
     expect(faltantesSolicitud(fields, { c: "Surface Pressure", x: "Solo" }, true, "f.jpg", { hayPersonajes: true, personajes: ["r1"], perfilPedido: ["tesitura", "habilidades"], perfil: { tesitura: "no_se" }, habilidades: ["Ninguna"] })).toEqual([]);

@@ -5,6 +5,23 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-11-15 — 0147: la invitación directa se salta la edad; preguntas obligatorias a elección
+
+Diego: (1) si la obra es para mayores de 18 pero quiere que audicione una niña de 17 muy buena, la invita desde el panel
+y ella debe poder inscribirse (con los datos de su tutor). (2) Mejor que no todas las preguntas sean obligatorias:
+que el equipo defina cuáles.
+
+- **Invitación directa = pase especial** (`audition_apply`): quien fue invitado con el correo de su cuenta se salta la
+  edad mínima y máxima. Si es menor, siempre da nombre, teléfono y correo del tutor y su autorización, aunque la
+  convocatoria no los pida. La página le avisa que tiene invitación directa.
+- **«Invitaciones directas»** ahora sale en todas las convocatorias (Configuración → Inscripción), no solo en las de
+  «solo invitados» o «solo con enlace».
+- **Obligatorias a elección**: se quita lo de 0146 que forzaba todas. Cada pregunta tiene «Hacer obligatoria» /
+  «Hacer opcional» y al agregarla se puede marcar «Obligatoria»; nacen opcionales. «¿Con quién pasas?» nace opcional y
+  Grupo obligatoria. Las preguntas que 0146 volvió obligatorias se quedan así hasta cambiarlas. Lo demás de 0146 sigue
+  (foto si se pide, personaje, perfil artístico y correo del tutor).
+- Prueba `0147_invitacion_y_obligatorias_test.sql` (se ajustó la de 0146); `dev/apply_0147_dev.sql` (no cambia datos).
+
 ## 2026-11-15 — 0146: una solicitud de audición no se puede mandar incompleta
 
 Diego: todas las preguntas tienen que ser obligatorias —no se puede saltar ninguna—, la foto también si la convocatoria

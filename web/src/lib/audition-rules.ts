@@ -153,9 +153,9 @@ export const PERFIL_OBLIGATORIO: { clave: "tesitura" | "genero" | "canto" | "bai
   { clave: "tesitura", label: "Tesitura" }, { clave: "genero", label: "Personajes que interpreta" }, { clave: "canto", label: "Canto" }, { clave: "baile", label: "Baile" },
 ];
 
-/** 0133 + 0146: qué le falta a una inscripción: foto (si se pide), personaje (si hay), perfil artístico que se pide,
- *  correo del tutor (si es menor y se pide) y cualquier pregunta sin respuesta (todas son obligatorias). La misma regla
- *  que la base (_audition_faltantes). */
+/** 0133 + 0146 + 0147: qué le falta a una inscripción: foto (si se pide), personaje (si hay), perfil artístico que se
+ *  pide, correo del tutor (si es menor) y las preguntas obligatorias sin respuesta. La misma regla que la base
+ *  (_audition_faltantes). */
 export function faltantesSolicitud(fields: { id: string; etiqueta: string; obligatorio: boolean }[], respuestas: Record<string, string> | null | undefined,
   pedirFoto: boolean, foto: string | null | undefined,
   extra: { hayPersonajes?: boolean; personajes?: string[] | null; perfilPedido?: string[] | null; perfil?: Partial<Record<string, string | null>>;
@@ -166,7 +166,7 @@ export function faltantesSolicitud(fields: { id: string; etiqueta: string; oblig
     ...PERFIL_OBLIGATORIO.filter((x) => extra.perfilPedido?.includes(x.clave) && !String(extra.perfil?.[x.clave] ?? "").trim()).map((x) => x.label),
     ...(extra.perfilPedido?.includes("habilidades") && !(extra.habilidades?.length) ? ["Habilidades especiales"] : []),
     ...(extra.tutorFaltaCorreo ? ["Correo del tutor"] : []),
-    ...fields.filter((f) => !String(respuestas?.[f.id] ?? "").trim()).map((f) => f.etiqueta),
+    ...fields.filter((f) => f.obligatorio && !String(respuestas?.[f.id] ?? "").trim()).map((f) => f.etiqueta),
   ];
 }
 

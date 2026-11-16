@@ -1,5 +1,5 @@
 -- Ejecutar SOLO en una transacción que termina abortada (no persiste nada).
--- Precede: 0001–0146 aplicadas.
+-- Precede: 0001–0147 aplicadas.
 
 insert into auth.users (id, instance_id, aud, role, email) values
   ('00000000-0000-0000-0000-000000146a01', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 't146_ana@test.local');
@@ -29,11 +29,9 @@ declare ana text := '00000000-0000-0000-0000-000000146a01'; aid uuid; fq uuid; f
 begin
   insert into auditions (titulo, estado, pedir_foto, pedir_tutor, perfil_preguntas, elegir_horario)
   values ('Audición 146', 'abierta', true, true, '{tesitura,canto,habilidades}', false) returning id into aid;
-  -- Toda pregunta es obligatoria, aunque se mande como opcional; también «¿Con quién pasas?».
-  insert into audition_fields (audition_id, etiqueta, tipo, orden, obligatorio) values (aid, '¿Qué canción traes?', 'texto', 1, false) returning id into fq;
-  if not (select obligatorio from audition_fields where id = fq) then raise exception 'FALLO T0a'; end if;
-  insert into audition_fields (audition_id, etiqueta, tipo, orden, sistema) values (aid, '¿Pasas con alguien?', 'texto', 2, 'companeros') returning id into fc;
-  if not (select obligatorio from audition_fields where id = fc) then raise exception 'FALLO T0b'; end if;
+  -- Dos preguntas obligatorias (desde 0147 cada pregunta se marca obligatoria u opcional en el panel).
+  insert into audition_fields (audition_id, etiqueta, tipo, orden, obligatorio) values (aid, '¿Qué canción traes?', 'texto', 1, true) returning id into fq;
+  insert into audition_fields (audition_id, etiqueta, tipo, orden, sistema, obligatorio) values (aid, '¿Pasas con alguien?', 'texto', 2, 'companeros', true) returning id into fc;
   insert into audition_roles (audition_id, nombre, orden) values (aid, 'Mirabel', 1) returning id into r1;
 
   base := jsonb_build_object('nombre', 'Ana López', 'telefono', '4421112233', 'fecha_nacimiento', '2000-05-01', 'consentimiento_datos', true,
