@@ -1,0 +1,1258 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AACKS Group CRM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f4f5f7;--surface:#fff;--surface-2:#f1f3f6;--border:#e2e5ea;--border-strong:#cdd3db;
+  --text:#17202a;--muted:#5d6874;--faint:#8a94a0;
+  --primary:#1d3557;--primary-hover:#142847;--primary-ink:#fff;--primary-soft:#e5ebf4;
+  --accent:#d0571f;--accent-soft:#fbe9df;
+  --ok:#17784c;--ok-soft:#e0f2e9;--warn:#9a5d06;--warn-soft:#fbf0d8;
+  --danger:#bd3328;--danger-soft:#fbe3e0;--info:#2a5fb0;--info-soft:#e2ecfa;
+  --c-in:#2a5fb0;--c-out:#d0571f;
+  --side:#13233a;--side-text:#b9c5d3;--side-hover:#1c3150;--side-active:#24406a;
+  --shadow:0 1px 2px rgba(16,24,40,.05),0 1px 3px rgba(16,24,40,.07);
+  --shadow-lg:0 12px 32px rgba(16,24,40,.18);
+  --radius:10px;color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0e131a;--surface:#161d26;--surface-2:#1c2530;--border:#28323e;--border-strong:#36414f;
+  --text:#e5eaf0;--muted:#9aa5b2;--faint:#76818e;
+  --primary:#6fa3df;--primary-hover:#8ab6e8;--primary-ink:#0e131a;--primary-soft:#1d2d42;
+  --accent:#f08a50;--accent-soft:#3a2518;
+  --ok:#4cc38a;--ok-soft:#14301f;--warn:#e3a740;--warn-soft:#352812;
+  --danger:#f0776b;--danger-soft:#3a1a17;--info:#6fa3df;--info-soft:#172a42;
+  --c-in:#6fa3df;--c-out:#f08a50;
+  --side:#0b1018;--side-text:#a9b5c3;--side-hover:#16202d;--side-active:#1d2d42;
+  --shadow:0 1px 2px rgba(0,0,0,.4);--shadow-lg:0 12px 32px rgba(0,0,0,.5);color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0e131a;--surface:#161d26;--surface-2:#1c2530;--border:#28323e;--border-strong:#36414f;
+  --text:#e5eaf0;--muted:#9aa5b2;--faint:#76818e;
+  --primary:#6fa3df;--primary-hover:#8ab6e8;--primary-ink:#0e131a;--primary-soft:#1d2d42;
+  --accent:#f08a50;--accent-soft:#3a2518;
+  --ok:#4cc38a;--ok-soft:#14301f;--warn:#e3a740;--warn-soft:#352812;
+  --danger:#f0776b;--danger-soft:#3a1a17;--info:#6fa3df;--info-soft:#172a42;
+  --c-in:#6fa3df;--c-out:#f08a50;
+  --side:#0b1018;--side-text:#a9b5c3;--side-hover:#16202d;--side-active:#1d2d42;
+  --shadow:0 1px 2px rgba(0,0,0,.4);--shadow-lg:0 12px 32px rgba(0,0,0,.5);color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font:14px/1.45 Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--primary);text-decoration:none}
+a:hover{text-decoration:underline}
+h1,h2,h3,h4{margin:0;line-height:1.25}
+button,input,select,textarea{font:inherit;color:inherit}
+.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.muted{color:var(--muted)}.faint{color:var(--faint)}
+.sp{flex:1}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+
+/* Layout */
+.app{display:grid;grid-template-columns:236px minmax(0,1fr);min-height:100vh}
+.sidebar{background:var(--side);color:var(--side-text);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;padding:16px 12px;overflow-y:auto}
+.brand{display:flex;align-items:center;gap:10px;padding:4px 8px 18px}
+.brand-mark{width:36px;height:36px;border-radius:9px;background:linear-gradient(135deg,#d0571f,#f0a050);display:grid;place-items:center;color:#fff;font-weight:700;font-size:13px;letter-spacing:.5px}
+.brand b{display:block;color:#fff;font-size:15px}
+.brand small{font-size:11px;color:var(--side-text);opacity:.8}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav a{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;color:var(--side-text);font-weight:500}
+.nav a:hover{background:var(--side-hover);text-decoration:none;color:#fff}
+.nav a.active{background:var(--side-active);color:#fff}
+.nav svg{width:18px;height:18px;flex:none;opacity:.9}
+.nav .count{margin-left:auto;background:#d0571f;color:#fff;font-size:11px;font-weight:600;border-radius:99px;padding:1px 7px}
+.nav-sep{font-size:11px;text-transform:uppercase;letter-spacing:.08em;opacity:.55;padding:14px 10px 6px}
+.side-foot{margin-top:auto;padding:12px 8px 0;border-top:1px solid rgba(255,255,255,.08);font-size:12px}
+.side-foot label{display:block;margin-bottom:4px;opacity:.75}
+.side-foot select{width:100%;background:var(--side-hover);color:#fff;border:1px solid rgba(255,255,255,.12);border-radius:7px;padding:7px 8px}
+.demo-note{margin-top:10px;opacity:.65;line-height:1.4}
+.main{min-width:0;display:flex;flex-direction:column}
+.topbar{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;padding:12px 24px}
+.topbar h1{font-size:18px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.menu-btn{display:none}
+.search{position:relative;margin-left:auto;width:min(340px,40vw)}
+.search input{width:100%;padding:8px 12px 8px 34px;border:1px solid var(--border);border-radius:8px;background:var(--surface)}
+.search svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:var(--faint)}
+.search-res{position:absolute;top:calc(100% + 6px);left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow-lg);overflow:hidden;z-index:40}
+.search-res a{display:flex;gap:10px;padding:9px 12px;color:var(--text);border-bottom:1px solid var(--border)}
+.search-res a:last-child{border-bottom:0}
+.search-res a:hover,.search-res a:focus{background:var(--surface-2);text-decoration:none}
+.search-res .k{font-size:11px;color:var(--muted);min-width:64px}
+.content{padding:22px 24px 48px;max-width:1440px;width:100%}
+.scrim{display:none}
+
+/* Components */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}
+.card-h{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--border)}
+.card-h h3{font-size:14px;font-weight:650}
+.card-b{padding:16px}
+.grid{display:grid;gap:16px;grid-template-columns:minmax(0,1fr)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:16px}
+.kpi{padding:14px 16px}
+.kpi .l{font-size:12px;color:var(--muted);font-weight:500}
+.kpi .v{font-size:22px;font-weight:700;margin-top:4px;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.kpi .s{font-size:12px;color:var(--muted);margin-top:2px}
+.kpi .s.bad{color:var(--danger)}
+.dash{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:16px;align-items:start}
+.nowrap{white-space:nowrap}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 13px;border-radius:8px;border:1px solid var(--border-strong);background:var(--surface);cursor:pointer;font-weight:550;white-space:nowrap;line-height:1.2}
+.btn:hover{background:var(--surface-2)}
+.btn-primary{background:var(--primary);border-color:var(--primary);color:var(--primary-ink)}
+.btn-primary:hover{background:var(--primary-hover)}
+.btn-accent{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn-danger{color:var(--danger)}
+.btn-sm{padding:5px 9px;font-size:12.5px}
+.btn svg{width:16px;height:16px}
+.icon-btn{border:0;background:transparent;cursor:pointer;width:30px;height:30px;border-radius:7px;display:inline-grid;place-items:center;color:var(--muted);font-size:18px;line-height:1}
+.icon-btn:hover{background:var(--surface-2);color:var(--text)}
+:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:2px 9px;border-radius:99px;background:var(--surface-2);color:var(--muted);white-space:nowrap}
+.badge::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.8}
+.b-ok{background:var(--ok-soft);color:var(--ok)}.b-warn{background:var(--warn-soft);color:var(--warn)}
+.b-danger{background:var(--danger-soft);color:var(--danger)}.b-info{background:var(--info-soft);color:var(--info)}
+.b-accent{background:var(--accent-soft);color:var(--accent)}.b-primary{background:var(--primary-soft);color:var(--primary)}
+.avatar{width:26px;height:26px;border-radius:50%;display:inline-grid;place-items:center;font-size:10.5px;font-weight:700;color:#fff;flex:none}
+.table-wrap{overflow-x:auto}
+table.tbl{width:100%;border-collapse:collapse}
+.tbl th{text-align:left;font-size:11.5px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;padding:10px 14px;border-bottom:1px solid var(--border);background:var(--surface-2);white-space:nowrap}
+.tbl th.num{text-align:right}
+.tbl td{padding:11px 14px;border-bottom:1px solid var(--border);vertical-align:middle}
+.tbl tr:last-child td{border-bottom:0}
+.tbl tr.click{cursor:pointer}
+.tbl tr.click:hover td{background:var(--surface-2)}
+.tbl tfoot td{font-weight:650;background:var(--surface-2)}
+.cell-main{font-weight:600}
+.cell-sub{font-size:12px;color:var(--muted)}
+.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+.toolbar input[type=search],.toolbar select{padding:8px 11px;border:1px solid var(--border);border-radius:8px;background:var(--surface)}
+.toolbar input[type=search]{min-width:220px;flex:1;max-width:340px}
+.seg{display:inline-flex;background:var(--surface-2);border:1px solid var(--border);border-radius:9px;padding:3px;gap:2px;flex-wrap:wrap}
+.seg button{border:0;background:transparent;padding:6px 12px;border-radius:7px;cursor:pointer;font-weight:550;color:var(--muted)}
+.seg button.on{background:var(--surface);color:var(--text);box-shadow:var(--shadow)}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:16px;overflow-x:auto}
+.tabs button{border:0;background:transparent;padding:10px 12px;cursor:pointer;font-weight:550;color:var(--muted);border-bottom:2px solid transparent;white-space:nowrap}
+.tabs button.on{color:var(--text);border-bottom-color:var(--accent)}
+.tabs .c{font-size:11px;background:var(--surface-2);border-radius:99px;padding:1px 6px;margin-left:4px}
+.empty{padding:36px 16px;text-align:center;color:var(--muted)}
+.list{display:flex;flex-direction:column}
+.li{display:flex;gap:12px;align-items:flex-start;padding:11px 16px;border-bottom:1px solid var(--border)}
+.li:last-child{border-bottom:0}
+.li .t{font-weight:550}
+.li .m{font-size:12px;color:var(--muted)}
+.chk{width:18px;height:18px;margin-top:2px;accent-color:var(--ok);cursor:pointer;flex:none}
+.done .t{text-decoration:line-through;color:var(--faint)}
+.overdue{color:var(--danger);font-weight:600}
+.legend{display:flex;gap:16px;font-size:12px;color:var(--muted)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.chart svg{width:100%;height:auto;display:block}
+.chart text{fill:var(--muted);font-size:11px}
+.chart .grid-l{stroke:var(--border)}
+
+/* Detail */
+.detail-h{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;padding:18px}
+.detail-h h2{font-size:20px;font-weight:700}
+.meta{display:flex;flex-wrap:wrap;gap:6px 16px;color:var(--muted);font-size:13px;margin-top:6px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));border-top:1px solid var(--border)}
+.stats>div{padding:12px 18px;border-right:1px solid var(--border)}
+.stats>div:last-child{border-right:0}
+.stats .l{font-size:12px;color:var(--muted)}
+.stats .v{font-weight:700;font-size:16px;font-variant-numeric:tabular-nums}
+.info-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px 20px}
+.info-grid .l{font-size:12px;color:var(--muted)}
+.info-grid .v{font-weight:550;overflow-wrap:anywhere}
+.timeline{display:flex;flex-direction:column}
+.tl{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
+.tl:last-child{border-bottom:0}
+.tl-ico{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;flex:none;font-size:14px}
+.tl .h{font-size:12px;color:var(--muted)}
+.tl .x{white-space:pre-wrap;margin-top:2px}
+.quick{display:grid;grid-template-columns:160px minmax(0,1fr) auto;gap:8px;margin-bottom:12px}
+.quick select,.quick textarea{padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);resize:vertical}
+.stepper{display:flex;gap:4px;overflow-x:auto;padding:2px}
+.step{flex:1;min-width:96px;border:0;cursor:pointer;background:var(--surface-2);color:var(--muted);padding:8px 10px;font-size:12px;font-weight:600;border-radius:7px;text-align:center;white-space:nowrap}
+.step.past{background:var(--primary-soft);color:var(--primary)}
+.step.cur{background:var(--primary);color:var(--primary-ink)}
+.totals{margin-left:auto;width:min(320px,100%)}
+.totals div{display:flex;justify-content:space-between;padding:5px 0;font-variant-numeric:tabular-nums}
+.totals .big{font-size:17px;font-weight:700;border-top:1px solid var(--border);margin-top:4px;padding-top:9px}
+.progress{height:6px;background:var(--surface-2);border-radius:99px;overflow:hidden}
+.progress span{display:block;height:100%;background:var(--ok);border-radius:99px}
+
+/* Kanban */
+.kanban{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(250px,1fr);gap:12px;overflow-x:auto;padding-bottom:8px;align-items:start}
+.col{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);display:flex;flex-direction:column;min-height:200px}
+.col-h{padding:12px 12px 8px;border-top:3px solid var(--primary);border-radius:var(--radius) var(--radius) 0 0}
+.col-h b{font-size:13px}
+.col-h .s{font-size:12px;color:var(--muted)}
+.col-b{padding:6px 8px 10px;display:flex;flex-direction:column;gap:8px;flex:1}
+.col.over{outline:2px dashed var(--primary);outline-offset:-2px}
+.deal{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:10px 11px;cursor:grab;box-shadow:var(--shadow)}
+.deal:active{cursor:grabbing}
+.deal .t{font-weight:600;font-size:13px}
+.deal .c{font-size:12px;color:var(--muted);margin-top:2px}
+.deal .f{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:12px}
+.deal .val{font-weight:700;font-variant-numeric:tabular-nums}
+
+/* Modal */
+.modal-bg{position:fixed;inset:0;background:rgba(10,16,26,.5);display:grid;place-items:center;z-index:100;padding:16px;animation:fade .12s}
+.modal{background:var(--surface);border-radius:14px;box-shadow:var(--shadow-lg);width:min(560px,100%);max-height:calc(100vh - 32px);display:flex;flex-direction:column}
+.modal.wide{width:min(980px,100%)}
+.modal form{display:flex;flex-direction:column;min-height:0;flex:1}
+.modal-h{display:flex;align-items:center;padding:16px 18px;border-bottom:1px solid var(--border)}
+.modal-h h2{font-size:16px;flex:1}
+.modal-b{padding:16px 18px;overflow-y:auto}
+.modal-f{display:flex;gap:8px;padding:12px 18px;border-top:1px solid var(--border);flex-wrap:wrap}
+.fgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 14px}
+.fgrid.c3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.fld{display:flex;flex-direction:column;gap:5px;min-width:0}
+.fld.full{grid-column:1/-1}
+.fld>span{font-size:12px;font-weight:600;color:var(--muted)}
+.fld input,.fld select,.fld textarea,.lines input,.lines select{width:100%;padding:8px 10px;border:1px solid var(--border-strong);border-radius:8px;background:var(--surface)}
+.fld textarea{min-height:72px;resize:vertical}
+.fsec{grid-column:1/-1;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--faint);margin-top:6px;border-top:1px solid var(--border);padding-top:12px}
+.lines{width:100%;border-collapse:collapse;margin-top:6px;min-width:640px}
+.lines th{font-size:11.5px;color:var(--muted);text-align:left;padding:6px 4px;font-weight:600}
+.lines td{padding:4px;vertical-align:top}
+.lines td:first-child{display:flex;flex-direction:column;gap:4px}
+.lines .num{padding-top:12px}
+.chips{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+.chips button{border:1px solid var(--border-strong);background:var(--surface-2);border-radius:99px;padding:3px 10px;font-size:12px;cursor:pointer}
+.hint{font-size:12px;color:var(--muted)}
+.warnbox{background:var(--warn-soft);color:var(--warn);border-radius:8px;padding:8px 10px;font-size:13px;margin-bottom:10px}
+
+/* Menu + toasts */
+.menu{position:absolute;right:0;top:calc(100% + 6px);background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow-lg);min-width:220px;padding:6px;z-index:50}
+.menu button{display:block;width:100%;text-align:left;border:0;background:transparent;padding:8px 10px;border-radius:7px;cursor:pointer}
+.menu button:hover{background:var(--surface-2)}
+.rel{position:relative}
+#toasts{position:fixed;right:16px;bottom:16px;display:flex;flex-direction:column;gap:8px;z-index:200}
+.toast{background:var(--text);color:var(--bg);padding:10px 14px;border-radius:9px;box-shadow:var(--shadow-lg);font-weight:500;animation:up .2s;max-width:340px}
+@keyframes fade{from{opacity:0}}
+@keyframes up{from{opacity:0;transform:translateY(8px)}}
+.print-only{display:none}
+
+@media (max-width:1100px){.dash{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:860px){
+  .app{grid-template-columns:1fr}
+  .sidebar{position:fixed;left:0;top:0;bottom:0;width:256px;z-index:90;transform:translateX(-100%);transition:transform .2s}
+  body.nav-open .sidebar{transform:none}
+  body.nav-open .scrim{display:block;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:80}
+  .menu-btn{display:inline-grid}
+  .topbar{padding:10px 16px;flex-wrap:wrap}
+  .search{order:5;width:100%;margin-left:0}
+  .topbar .new-wrap{margin-left:auto}
+  .content{padding:16px 16px 40px}
+  .fgrid,.fgrid.c3{grid-template-columns:1fr}
+  .quick{grid-template-columns:1fr}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .kpi{padding:12px}
+  .kpi .v{font-size:17px}
+  .toolbar input[type=search]{min-width:0;max-width:none;width:100%}
+}
+@media print{
+  body{background:#fff;color:#000}
+  .sidebar,.topbar,.no-print,#toasts,.scrim{display:none!important}
+  .app{display:block}.content{padding:0;max-width:none}
+  .card{box-shadow:none;border-color:#ccc}
+  .print-only{display:block}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar" id="sidebar" aria-label="Navegación">
+    <div class="brand"><div class="brand-mark">AG</div><div><b>AACKS Group</b><small>CRM · Equipo para fundición</small></div></div>
+    <nav class="nav" id="nav"></nav>
+    <div class="side-foot">
+      <label for="userSel">Trabajando como</label>
+      <select id="userSel" data-ui-user></select>
+      <div class="demo-note">Versión demo · los datos se guardan en este navegador.</div>
+    </div>
+  </aside>
+  <div class="scrim" data-act="closeNav"></div>
+  <main class="main">
+    <header class="topbar">
+      <button class="icon-btn menu-btn" data-act="openNav" aria-label="Abrir menú"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+      <h1 id="pageTitle">Panel</h1>
+      <div class="search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input id="gsearch" type="search" placeholder="Buscar cliente, pedido, OC, producto…" autocomplete="off" aria-label="Búsqueda global">
+        <div id="gres"></div>
+      </div>
+      <div class="rel new-wrap">
+        <button class="btn btn-primary" data-act="toggleNew"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg>Nuevo</button>
+        <div id="newMenu"></div>
+      </div>
+    </header>
+    <div class="content" id="view"></div>
+  </main>
+</div>
+<div id="modalRoot"></div>
+<div id="toasts" aria-live="polite"></div>
+
+<script>
+'use strict';
+/* ============ Utilidades ============ */
+const STORE = 'aacks-crm-demo-v1';
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid = p => p + Date.now().toString(36).slice(-4) + Math.random().toString(36).slice(2, 6);
+const num = v => { const n = parseFloat(v); return isFinite(n) ? n : 0; };
+const r2 = n => Math.round(n * 100) / 100;
+const sum = (arr, f) => arr.reduce((s, x) => s + (f ? f(x) : x), 0);
+function iso(d){ const z = new Date(d.getTime() - d.getTimezoneOffset() * 60000); return z.toISOString().slice(0, 10); }
+const today = () => iso(new Date());
+function addDays(n, base){ const d = base ? parseD(base) : new Date(); d.setDate(d.getDate() + n); return iso(d); }
+function parseD(s){ const [y, m, d] = s.slice(0, 10).split('-').map(Number); return new Date(y, m - 1, d); }
+function daysBetween(a, b){ return Math.round((parseD(b) - parseD(a)) / 864e5); }
+function fdate(s, withYear = true){ if (!s) return '—'; return parseD(s).toLocaleDateString('es-MX', withYear ? {day:'numeric', month:'short', year:'numeric'} : {day:'numeric', month:'short'}); }
+function fdt(s){ if (!s) return '—'; const d = new Date(s); return d.toLocaleDateString('es-MX', {day:'numeric', month:'short'}) + ' · ' + d.toLocaleTimeString('es-MX', {hour:'2-digit', minute:'2-digit'}); }
+function money(n){ try { return new Intl.NumberFormat('es-MX', {style:'currency', currency: DB.settings.moneda || 'MXN', maximumFractionDigits: 0}).format(n || 0); } catch(e){ return '$' + Math.round(n || 0).toLocaleString('es-MX'); } }
+function money2(n){ try { return new Intl.NumberFormat('es-MX', {style:'currency', currency: DB.settings.moneda || 'MXN', minimumFractionDigits: 2}).format(n || 0); } catch(e){ return '$' + (n || 0).toFixed(2); } }
+function compact(n){ const a = Math.abs(n); if (a >= 1e6) return '$' + (n / 1e6).toFixed(a >= 1e7 ? 0 : 1) + ' M'; if (a >= 1e3) return '$' + Math.round(n / 1e3) + ' k'; return '$' + Math.round(n); }
+function toast(msg){ const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg; $('#toasts').appendChild(t); setTimeout(() => t.remove(), 2800); }
+
+/* ============ Catálogos fijos ============ */
+const ETAPAS = ['Prospección','Visita técnica','Cotización enviada','Negociación','Ganada','Perdida'];
+const PROB = {'Prospección':10,'Visita técnica':25,'Cotización enviada':50,'Negociación':75,'Ganada':100,'Perdida':0};
+const EST_VENTA = ['Recibida','En fabricación','En tránsito','Entregada','Instalada','Facturada','Cerrada','Cancelada'];
+const EST_COMPRA = ['Borrador','Enviada','Confirmada','Embarcada','En aduana','Recibida','Cancelada'];
+const TIPOS_UPD = ['Nota','Llamada','Visita','Correo','Reunión','Cotización','Servicio','Cobranza'];
+const UPD_ICO = {Nota:'✎',Llamada:'☎',Visita:'⌂',Correo:'✉',Reunión:'◷',Cotización:'$',Servicio:'⚙',Cobranza:'¢'};
+const CAT_IN = ['Cobro a cliente','Comisiones','Anticipo','Otros ingresos'];
+const CAT_OUT = ['Pago a proveedor','Nómina','Renta','Servicios','Viáticos','Fletes','Aduanas','Impuestos','Papelería','Otros gastos'];
+const METODOS = ['Transferencia','Cheque','Efectivo','Tarjeta','Depósito'];
+const TIPOS_TAREA = ['Llamada','Correo','Visita','Reunión','Servicio','Cobranza','Otro'];
+const AV_COLORS = ['#2a5fb0','#d0571f','#17784c','#7b4bb7','#b0306a','#0f7c8c','#8a6a12'];
+
+/* ============ Datos demo ============ */
+function seed(){
+  const d = n => addDays(n);
+  const dt = (n, h = 10, m = 0) => { const x = parseD(addDays(n)); x.setHours(h, m); return x.toISOString(); };
+  const team = [
+    {id:'u1', nombre:'Andrea Castillo', rol:'Dirección general'},
+    {id:'u2', nombre:'Jorge Medina', rol:'Ventas · Zona Norte'},
+    {id:'u3', nombre:'Paola Herrera', rol:'Ventas · Bajío'},
+    {id:'u4', nombre:'Luis Ortega', rol:'Servicio técnico'},
+    {id:'u5', nombre:'Mariana Ruiz', rol:'Administración y finanzas'},
+  ];
+  const P = (id, sku, nombre, marca, categoria, precio, costo, unidad, semanas) => ({id, sku, nombre, marca, categoria, precio, costo, unidad, semanas});
+  const productos = [
+    P('p1','TOS-MIX-30','Mezclador continuo no-bake 30 t/h','Tinker Omega Sinto','Mezcladores de arena',2950000,2120000,'pza',16),
+    P('p2','HIR-SMX-500','Mezclador de arena tipo batch 500 kg','Hirado','Mezcladores de arena',1680000,1190000,'pza',14),
+    P('p3','TOS-REC-10','Sistema de recuperación de arena 10 t/h','Tinker Omega Sinto','Recuperación de arena',3450000,2480000,'pza',20),
+    P('p4','TOS-MH-LN','Línea de manejo de moldes','Tinker Omega Sinto','Manejo de moldes',6800000,4950000,'pza',24),
+    P('p5','HIR-CB-25','Sopladora de corazones 25 L','Hirado','Sopladoras de corazones',1950000,1400000,'pza',18),
+    P('p6','HIR-SB-300','Snap breaker hidráulico','Hirado','Rompedores y cortadoras',685000,480000,'pza',10),
+    P('p7','HIR-MC-200','Cortadora de metal hidráulica','Hirado','Rompedores y cortadoras',540000,372000,'pza',10),
+    P('p8','HIR-HP-75','Bomba hidráulica 7.5 kW','Hirado','Hidráulica',148000,96000,'pza',6),
+    P('p9','HIR-SPL-400','Splitter (separador de colada)','Hirado','Rompedores y cortadoras',415000,290000,'pza',12),
+    P('p10','TOS-RP-KIT','Kit de refacciones para mezclador','Tinker Omega Sinto','Refacciones',86500,52000,'kit',4),
+    P('p11','TOS-RP-PAL','Juego de paletas y cuchillas de mezclado','Tinker Omega Sinto','Refacciones',32800,19500,'juego',3),
+    P('p12','SRV-INST','Instalación y puesta en marcha','AACKS Group','Servicios',125000,48000,'servicio',1),
+    P('p13','SRV-MP','Mantenimiento preventivo (visita)','AACKS Group','Servicios',46000,17000,'visita',0),
+    P('p14','SRV-CAP','Capacitación a operadores (2 días)','AACKS Group','Servicios',28000,9000,'servicio',0),
+  ];
+  const C = (id, tipo, nombre, rfc, sector, ciudad, estatus, responsable, credito, contactos, extra = {}) =>
+    ({id, tipo, nombre, rfc, sector, ciudad, estatus, responsable, credito, limite: extra.limite || 0, direccion: extra.direccion || '', web: extra.web || '', notas: extra.notas || '', contactos, creado: extra.creado || d(-400)});
+  const K = (nombre, cargo, email, tel) => ({id: uid('k'), nombre, cargo, email, tel});
+  const cuentas = [
+    C('c1','cliente','Fundiciones Altamira del Norte','FAN0912153A1','Hierro gris y nodular','Monterrey, N.L.','Activo','u2',30,[K('Ing. Roberto Garza','Gerente de planta','rgarza@altamiranorte.demo','(81) 5555 0141'),K('Lic. Sofía Treviño','Compras','compras@altamiranorte.demo','(81) 5555 0142')],{limite:4000000,direccion:'Parque Industrial Escobedo, N.L.',notas:'Cliente estratégico. Planta con 3 líneas de moldeo no-bake.'}),
+    C('c2','cliente','Metalúrgica Santa Clara','MSC1503027K9','Fundición de aluminio','San Luis Potosí, S.L.P.','Activo','u3',30,[K('Ing. Daniela Ortiz','Jefa de mantenimiento','dortiz@santaclara.demo','(444) 555 0177')],{limite:800000}),
+    C('c3','cliente','Hierro Gris del Bajío','HGB0807116T2','Autopartes','León, Gto.','Activo','u3',45,[K('Ing. Mauricio Pérez','Director de operaciones','mperez@hgbajio.demo','(477) 555 0190'),K('C.P. Laura Méndez','Cuentas por pagar','cxp@hgbajio.demo','(477) 555 0191')],{limite:2500000}),
+    C('c4','cliente','Autopartes Fundidas Querétaro','AFQ1704182B5','Autopartes','Querétaro, Qro.','Activo','u3',30,[K('Ing. Fernando Ríos','Gerente de ingeniería','frios@afq.demo','(442) 555 0123')],{limite:1500000}),
+    C('c5','cliente','Moldeos Industriales de Saltillo','MIS1102229H3','Hierro nodular','Saltillo, Coah.','Activo','u2',30,[K('Ing. Alejandro Villarreal','Superintendente','avillarreal@moldeos.demo','(844) 555 0166')],{limite:1000000}),
+    C('c6','cliente','Fundición Aceros Tlaxcala','FAT0604115M8','Acero al carbón','Apizaco, Tlax.','Activo','u1',30,[K('Ing. Gabriela Sánchez','Gerente general','gsanchez@acerostlax.demo','(241) 555 0108')],{limite:1200000}),
+    C('c7','cliente','Piezas Coladas de Puebla','PCP0911309D4','Bombas y válvulas','Puebla, Pue.','Activo','u1',60,[K('Ing. Ricardo Flores','Director de planta','rflores@piezascoladas.demo','(222) 555 0155')],{limite:5000000}),
+    C('c8','cliente','Metales Técnicos de Celaya','MTC1309054R7','Bronce y latón','Celaya, Gto.','Inactivo','u3',15,[K('Sr. Héctor Lara','Dueño','hlara@mtcelaya.demo','(461) 555 0133')]),
+    C('c9','cliente','Fundición Dúctil Aguascalientes','FDA1808241P6','Hierro dúctil','Aguascalientes, Ags.','Activo','u3',30,[K('Ing. Verónica Esparza','Compras técnicas','vesparza@fdags.demo','(449) 555 0112')],{limite:900000,creado:d(-60)}),
+    C('c10','cliente','Grupo Fundidor del Pacífico','GFP1901157S3','Fundición de aluminio','Guadalajara, Jal.','Prospecto','u1',30,[K('Ing. Tomás Aguilar','Director técnico','taguilar@gfpacifico.demo','(33) 5555 0188')],{creado:d(-20)}),
+    C('c11','cliente','Colados Especiales de Chihuahua','CEC1406203N1','Minería','Chihuahua, Chih.','Prospecto','u2',30,[K('Ing. Patricia Domínguez','Gerente de proyectos','pdominguez@coladoschih.demo','(614) 555 0170')],{creado:d(-35)}),
+    C('v1','proveedor','Tinker Omega Sinto','—','Fabricante de equipo','Estados Unidos','Activo','u5',30,[K('Export Sales','Ventas internacionales','export@tos.demo','+1 555 0100')],{notas:'Representada. Pagos en anticipo 30% / saldo contra embarque.'}),
+    C('v2','proveedor','Hirado Kinzoku Kogyo','—','Fabricante de equipo','Japón','Activo','u5',30,[K('Overseas Dept.','Ventas internacionales','overseas@hirado.demo','+81 555 0100')],{notas:'Representada. Tiempo de fabricación 10–18 semanas.'}),
+    C('v3','proveedor','Logística Aduanal del Centro','LAC1203151Q2','Agente aduanal y fletes','Ciudad de México','Activo','u5',15,[K('Lic. Óscar Navarro','Ejecutivo de cuenta','onavarro@lacentro.demo','(55) 5555 0199')]),
+  ];
+  const bancos = [
+    {id:'b1', nombre:'Cuenta principal · BBVA', saldoInicial:1850000},
+    {id:'b2', nombre:'Cuenta inversión · Banorte', saldoInicial:900000},
+    {id:'b3', nombre:'Caja chica', saldoInicial:25000},
+  ];
+  const prod = id => productos.find(p => p.id === id);
+  const ordenes = [], movimientos = [];
+  const O = (id, folio, tipo, cuentaId, oc, fOff, eOff, estatus, lineas, responsable, pagos, notas = '', extra = {}) => {
+    const iva = extra.iva ?? 16;
+    const cu = cuentas.find(c => c.id === cuentaId);
+    const o = {id, folio, tipo, cuentaId, ocCliente: oc, fecha: d(fOff), entrega: d(eOff), vence: d(eOff + (cu.credito || 30)), estatus, iva, responsable, notas, ordenVentaId: extra.ov || '', creado: dt(fOff, 9),
+      lineas: lineas.map(([pid, cant, dto = 0]) => { const p = prod(pid); return {productoId: pid, desc: p.nombre, cant, precio: tipo === 'venta' ? p.precio : p.costo, dto}; })};
+    ordenes.push(o);
+    const total = sum(o.lineas, l => l.cant * l.precio * (1 - l.dto / 100)) * (1 + iva / 100);
+    pagos.forEach(([off, pct, banco = 'b1', metodo = 'Transferencia'], i) => movimientos.push({
+      id: uid('m'), fecha: d(off), tipo: tipo === 'venta' ? 'ingreso' : 'egreso', monto: r2(total * pct), bancoId: banco,
+      categoria: tipo === 'venta' ? (i === 0 && pct < 1 ? 'Anticipo' : 'Cobro a cliente') : 'Pago a proveedor',
+      cuentaId, ordenId: id, concepto: (tipo === 'venta' ? (i === 0 && pct < 1 ? 'Anticipo ' : 'Pago ') : 'Pago ') + folio, metodo, referencia: ''}));
+  };
+  O('o1','PED-2026-030','venta','c1','OC-AN-4410',-165,-120,'Cerrada',[['p10',2],['p11',4]],'u2',[[-150,1]]);
+  O('o2','PED-2026-031','venta','c1','OC-AN-4517',-62,32,'En tránsito',[['p1',1],['p12',1]],'u2',[[-58,.5]],'Embarque salió de puerto. Cimentación a cargo del cliente.');
+  O('o3','PED-2026-032','venta','c2','SC-2026-118',-48,-22,'Entregada',[['p10',3],['p8',2]],'u3',[[-20,1]]);
+  O('o4','PED-2026-033','venta','c3','HGB-PO-7781',-38,74,'En fabricación',[['p5',1],['p14',1]],'u3',[[-34,.4]],'Anticipo 40%, saldo contra entrega.');
+  O('o5','PED-2026-034','venta','c4','AFQ-0932',-82,-48,'Facturada',[['p6',2]],'u3',[[-78,.5]],'Saldo vencido, seguimiento de cobranza.');
+  O('o6','PED-2026-035','venta','c5','MIS-2231',-110,-95,'Cerrada',[['p13',4]],'u4',[[-90,1]]);
+  O('o7','PED-2026-036','venta','c6','FAT-OC-0451',-3,67,'Recibida',[['p7',1],['p8',1],['p12',1]],'u1',[],'Pendiente anticipo para colocar pedido en fábrica.');
+  O('o8','PED-2026-037','venta','c7','PCP-26-0098',-150,-18,'Instalada',[['p3',1],['p12',1],['p14',1]],'u1',[[-140,.5],[-12,.2]]);
+  O('o9','PED-2026-038','venta','c8','MTC-115',-135,-120,'Cerrada',[['p11',3]],'u3',[[-118,1,'b1','Cheque']]);
+  O('o10','PED-2026-039','venta','c9','FDA-OC-022',-1,85,'Recibida',[['p9',1],['p12',1]],'u3',[]);
+  O('o11','PED-2026-029','venta','c5','MIS-2140',-178,-150,'Cerrada',[['p6',1],['p12',1]],'u2',[[-170,.5],[-140,.5]]);
+  O('o12','OCP-2026-013','compra','v1','TOS-INV-88231',-52,-40,'Recibida',[['p10',5]],'u5',[[-45,1]],'',{iva:0});
+  O('o13','OCP-2026-014','compra','v1','TOS-SO-77120',-57,15,'Embarcada',[['p1',1]],'u5',[[-55,.3]],'Saldo 70% contra BL.',{iva:0,ov:'o2'});
+  O('o14','OCP-2026-015','compra','v2','HK-26-0412',-33,60,'Confirmada',[['p5',1]],'u5',[[-30,.3]],'',{iva:0,ov:'o4'});
+  O('o15','OCP-2026-016','compra','v3','LAC-1187',-10,10,'Enviada',[],'u5',[],'Honorarios y despacho aduanal del mezclador continuo.');
+  ordenes.find(o => o.id === 'o15').lineas = [{productoId:'', desc:'Despacho aduanal y maniobras', cant:1, precio:68500, dto:0},{productoId:'', desc:'Flete Manzanillo – Monterrey (cama baja)', cant:1, precio:92000, dto:0}];
+  O('o16','OCP-2026-012','compra','v1','TOS-SO-76015',-148,-30,'Recibida',[['p3',1]],'u5',[[-145,.3],[-60,.7]],'',{iva:0,ov:'o8'});
+
+  // Movimientos recurrentes (últimos 6 meses)
+  const now = new Date();
+  const md = (mAgo, day) => { const x = new Date(now.getFullYear(), now.getMonth() - mAgo, 1); const last = new Date(x.getFullYear(), x.getMonth() + 1, 0).getDate(); x.setDate(Math.min(day, last)); return x <= now ? iso(x) : null; };
+  const viat = [24500, 31200, 19800, 28400, 35100, 22300], comis = [145000, 98000, 210000, 120000, 175000, 160000];
+  const add = (fecha, tipo, monto, categoria, concepto, extra = {}) => { if (fecha) movimientos.push({id: uid('m'), fecha, tipo, monto, bancoId: extra.banco || 'b1', categoria, cuentaId: extra.cuenta || '', ordenId: '', concepto, metodo: extra.metodo || 'Transferencia', referencia: ''}); };
+  for (let m = 5; m >= 0; m--){
+    add(md(m, 3), 'egreso', 38000, 'Renta', 'Renta oficina Atizapán');
+    add(md(m, 10), 'egreso', 7800, 'Servicios', 'Luz, internet y telefonía');
+    add(md(m, 12), 'egreso', 1450, 'Papelería', 'Papelería y mensajería', {banco: 'b3', metodo: 'Efectivo'});
+    add(md(m, 15), 'egreso', 92500, 'Nómina', 'Nómina 1ra quincena');
+    add(md(m, 17), 'egreso', 64000, 'Impuestos', 'Pago provisional ISR / IVA');
+    add(md(m, 18), 'egreso', viat[m], 'Viáticos', 'Viáticos visitas a clientes');
+    add(md(m, 20), 'ingreso', comis[m], 'Comisiones', 'Comisión por representación', {cuenta: m % 2 ? 'v1' : 'v2'});
+    add(md(m, 28), 'egreso', 92500, 'Nómina', 'Nómina 2da quincena');
+  }
+  movimientos.sort((a, b) => b.fecha.localeCompare(a.fecha));
+
+  const equipos = [
+    {id:'e1', cuentaId:'c1', descripcion:'Mezclador continuo no-bake 20 t/h', marca:'Tinker Omega Sinto', serie:'TOS-18-2231', instalado:d(-2400), proxMant:d(6), estado:'Operando', notas:''},
+    {id:'e2', cuentaId:'c1', descripcion:'Snap breaker hidráulico', marca:'Hirado', serie:'HI-SB-1907', instalado:d(-1900), proxMant:d(40), estado:'Operando', notas:''},
+    {id:'e3', cuentaId:'c3', descripcion:'Mezclador de arena tipo batch 500 kg', marca:'Hirado', serie:'HI-MX-2104', instalado:d(-1600), proxMant:d(-3), estado:'Operando', notas:'Revisar desgaste de paletas.'},
+    {id:'e4', cuentaId:'c5', descripcion:'Sistema de recuperación de arena 6 t/h', marca:'Tinker Omega Sinto', serie:'TOS-RC-2011', instalado:d(-1300), proxMant:d(12), estado:'En mantenimiento', notas:''},
+    {id:'e5', cuentaId:'c7', descripcion:'Sistema de recuperación de arena 10 t/h', marca:'Tinker Omega Sinto', serie:'TOS-RC-2602', instalado:d(-15), proxMant:d(165), estado:'Operando', notas:'Instalado en este año. Garantía 12 meses.'},
+    {id:'e6', cuentaId:'c2', descripcion:'Bomba hidráulica 7.5 kW (2 pzas)', marca:'Hirado', serie:'HI-HP-2201 / 2202', instalado:d(-20), proxMant:d(25), estado:'Operando', notas:''},
+    {id:'e7', cuentaId:'c4', descripcion:'Cortadora de metal hidráulica', marca:'Hirado', serie:'HI-MC-2005', instalado:d(-900), proxMant:d(55), estado:'Operando', notas:''},
+    {id:'e8', cuentaId:'c8', descripcion:'Mezclador de arena tipo batch 300 kg', marca:'Hirado', serie:'HI-MX-1702', instalado:d(-3000), proxMant:d(19), estado:'Fuera de servicio', notas:'Cliente evalúa reemplazo.'},
+  ];
+  const OP = (id, titulo, cuentaId, valor, etapa, responsable, cierre) => ({id, titulo, cuentaId, valor, etapa, prob: PROB[etapa], responsable, cierre: d(cierre), creado: dt(cierre - 60)});
+  const oportunidades = [
+    OP('op1','Línea de moldeo + mezclador no-bake','c10',9750000,'Visita técnica','u1',75),
+    OP('op2','Sistema de recuperación de arena','c11',3450000,'Prospección','u2',110),
+    OP('op3','Segundo mezclador continuo 30 t/h','c1',2950000,'Cotización enviada','u2',30),
+    OP('op4','Snap breaker + cortadora de metal','c3',1225000,'Negociación','u3',12),
+    OP('op5','Contrato anual de mantenimiento','c5',552000,'Negociación','u4',8),
+    OP('op6','Refacciones consumo anual 2027','c2',410000,'Cotización enviada','u3',20),
+    OP('op7','Sopladora de corazones 25 L','c6',1950000,'Visita técnica','u1',60),
+    OP('op8','Splitter + instalación','c9',540000,'Ganada','u3',-2),
+    OP('op9','Reemplazo de mezclador batch','c8',1680000,'Perdida','u3',-25),
+    OP('op10','Bombas hidráulicas (3 pzas)','c9',444000,'Prospección','u3',45),
+  ];
+  const T = (id, titulo, tipo, cuentaId, responsable, fecha, prioridad, hecho = false) => ({id, titulo, tipo, cuentaId, responsable, fecha: d(fecha), prioridad, hecho});
+  const tareas = [
+    T('t1','Confirmar con compras la fecha de recepción del mezclador','Llamada','c1','u2',0,'Alta'),
+    T('t2','Enviar cotización revisada: snap breaker + cortadora','Correo','c3','u3',1,'Alta'),
+    T('t3','Visita técnica: levantamiento de planta','Visita','c10','u1',3,'Media'),
+    T('t4','Mantenimiento preventivo mezclador batch (vencido)','Servicio','c3','u4',-3,'Alta'),
+    T('t5','Seguimiento a saldo vencido PED-2026-034','Cobranza','c4','u5',-2,'Alta'),
+    T('t6','Confirmar BL y fecha de arribo con Tinker Omega Sinto','Correo','v1','u5',2,'Media'),
+    T('t7','Preparar capacitación a operadores','Servicio','c7','u4',9,'Baja'),
+    T('t8','Enviar documentos de importación al agente aduanal','Correo','v3','u5',4,'Media'),
+    T('t9','Solicitar anticipo de PED-2026-036','Cobranza','c6','u1',1,'Alta'),
+    T('t10','Revisión mensual de pipeline con dirección','Reunión','','u1',6,'Media'),
+    T('t11','Enviar factura de anticipo','Correo','c3','u5',-34,'Media',true),
+    T('t12','Visita de cierre en Saltillo','Visita','c5','u2',-12,'Media',true),
+  ];
+  const U = (cuentaId, tipo, off, h, autor, texto) => ({id: uid('n'), cuentaId, tipo, fecha: dt(off, h, 15), autor, texto});
+  const updates = [
+    U('c1','Visita',-2,11,'u2','Visita a planta con Ing. Garza. Confirmaron que la cimentación para el mezclador continuo estará lista la próxima semana. Piden que el técnico llegue un día antes del arribo.'),
+    U('c1','Correo',-9,16,'u5','Se envió aviso de embarque y copia del BL del mezclador continuo (PED-2026-031).'),
+    U('c1','Llamada',-25,12,'u2','Interés en un segundo mezclador para la línea 3. Se agendó levantamiento.'),
+    U('c3','Cotización',-6,13,'u3','Se envió cotización COT-118 por snap breaker y cortadora de metal. Descuento especial de 5% por volumen.'),
+    U('c3','Reunión',-14,10,'u3','Revisión de avance de fabricación de la sopladora de corazones con dirección de operaciones.'),
+    U('c4','Cobranza',-3,17,'u5','El cliente indica que el saldo de PED-2026-034 se programa en su próxima corrida de pagos (viernes).'),
+    U('c5','Visita',-12,9,'u2','Visita de cierre. Interesados en contrato anual de mantenimiento para el sistema de recuperación.'),
+    U('c7','Servicio',-15,15,'u4','Instalación concluida del sistema de recuperación de arena 10 t/h. Pruebas OK. Pendiente capacitación.'),
+    U('c10','Llamada',-5,12,'u1','Primer contacto: proyecto de nueva nave en El Salto. Interés en línea completa de moldeo no-bake.'),
+    U('c2','Correo',-8,11,'u3','Cliente confirma recepción de refacciones y bombas. Solicita propuesta de consumo anual 2027.'),
+    U('c6','Reunión',-4,13,'u1','Reunión de arranque de proyecto. Se recibió OC FAT-OC-0451, pendiente anticipo del 50%.'),
+    U('v1','Correo',-7,8,'u5','Tinker confirma salida de embarque. ETA Manzanillo en 3 semanas aprox.'),
+  ];
+  const actividad = [
+    {id: uid('a'), fecha: dt(-1, 17), autor: 'u3', texto: 'Registró el pedido PED-2026-039 de Fundición Dúctil Aguascalientes'},
+    {id: uid('a'), fecha: dt(-2, 11), autor: 'u2', texto: 'Agregó una visita en Fundiciones Altamira del Norte'},
+    {id: uid('a'), fecha: dt(-3, 9), autor: 'u1', texto: 'Registró el pedido PED-2026-036 de Fundición Aceros Tlaxcala'},
+    {id: uid('a'), fecha: dt(-3, 17), autor: 'u5', texto: 'Agregó una nota de cobranza en Autopartes Fundidas Querétaro'},
+    {id: uid('a'), fecha: dt(-12, 13), autor: 'u5', texto: 'Registró pago de Piezas Coladas de Puebla (PED-2026-037)'},
+  ];
+  return {version: 1, settings: {empresa: 'AACKS Group', direccion: 'Atizapán de Zaragoza, Estado de México', telefono: '(55) 8840 8743', email: 'info@aacksgroup.com.mx', moneda: 'MXN', iva: 16, usuario: 'u1'},
+    team, cuentas, productos, bancos, ordenes, movimientos, equipos, oportunidades, tareas, updates, actividad};
+}
+
+/* ============ Estado ============ */
+let DB;
+function load(){
+  try { const s = localStorage.getItem(STORE); if (s){ const x = JSON.parse(s); if (x && x.version === 1){ DB = x; return; } } } catch(e){}
+  DB = seed(); save();
+}
+function save(){ try { localStorage.setItem(STORE, JSON.stringify(DB)); } catch(e){} }
+const UI = {clTipo:'cliente', clQ:'', clEst:'Todos', ordTipo:'venta', ordQ:'', ordEst:'Todas', finTab:'mov', finTipo:'todos', finMes:'', finBanco:'todos', tareaTab:'pendientes', tareaResp:'todos', opResp:'todos', catQ:'', catCat:'Todas', ctab:'updates'};
+
+const byId = (arr, id) => arr.find(x => x.id === id);
+const cuenta = id => byId(DB.cuentas, id);
+const cname = id => (cuenta(id) || {}).nombre || '—';
+const user = id => byId(DB.team, id) || {nombre: '—', id: ''};
+const me = () => user(DB.settings.usuario);
+const initials = n => n.split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase();
+function avatar(uidv, withName){ const u = user(uidv); const i = Math.max(0, DB.team.indexOf(u)); return `<span class="row" style="gap:7px;flex-wrap:nowrap"><span class="avatar" title="${esc(u.nombre)}" style="background:${AV_COLORS[i % AV_COLORS.length]}">${esc(initials(u.nombre))}</span>${withName ? `<span>${esc(u.nombre)}</span>` : ''}</span>`; }
+function log(texto){ DB.actividad.unshift({id: uid('a'), fecha: new Date().toISOString(), autor: DB.settings.usuario, texto}); DB.actividad = DB.actividad.slice(0, 200); }
+
+/* ============ Cálculos ============ */
+const lineImp = l => num(l.cant) * num(l.precio) * (1 - num(l.dto) / 100);
+function totals(o){
+  const sub = sum(o.lineas, lineImp), iva = sub * num(o.iva) / 100, total = r2(sub + iva);
+  const pagado = r2(sum(DB.movimientos.filter(m => m.ordenId === o.id), m => m.monto));
+  return {sub, iva, total, pagado, saldo: Math.max(0, r2(total - pagado))};
+}
+const isClosed = o => o.tipo === 'venta' ? ['Cerrada','Cancelada'].includes(o.estatus) : ['Recibida','Cancelada'].includes(o.estatus);
+function payState(o){
+  if (o.estatus === 'Cancelada') return ['Cancelada', 'b-danger'];
+  const t = totals(o);
+  if (t.total > 0 && t.saldo <= 0.5) return ['Pagada', 'b-ok'];
+  if (o.vence && o.vence < today() && t.saldo > 0.5) return ['Vencida', 'b-danger'];
+  if (t.pagado > 0) return ['Parcial', 'b-warn'];
+  return ['Sin pago', ''];
+}
+function saldoBanco(id){ const b = byId(DB.bancos, id); return r2((b ? num(b.saldoInicial) : 0) + sum(DB.movimientos.filter(m => m.bancoId === id), m => m.tipo === 'ingreso' ? m.monto : -m.monto)); }
+function pendientes(tipo){ return DB.ordenes.filter(o => o.tipo === tipo && o.estatus !== 'Cancelada').map(o => ({o, t: totals(o)})).filter(x => x.t.saldo > 0.5).map(x => ({...x, dias: x.o.vence ? daysBetween(x.o.vence, today()) : 0})); }
+function cuentaStats(id){
+  const os = DB.ordenes.filter(o => o.cuentaId === id && o.estatus !== 'Cancelada');
+  const ts = os.map(totals);
+  const ups = DB.updates.filter(u => u.cuentaId === id).map(u => u.fecha).sort();
+  return {total: sum(ts, t => t.total), pagado: sum(ts, t => t.pagado), saldo: sum(ts, t => t.saldo), activas: os.filter(o => !isClosed(o)).length, n: os.length, ultimo: ups[ups.length - 1] || ''};
+}
+function nextFolio(tipo){
+  const pre = (tipo === 'venta' ? 'PED-' : 'OCP-') + new Date().getFullYear() + '-';
+  const n = Math.max(0, ...DB.ordenes.filter(o => o.folio.startsWith(pre)).map(o => parseInt(o.folio.slice(pre.length)) || 0)) + 1;
+  return pre + String(n).padStart(3, '0');
+}
+
+/* ============ Badges ============ */
+const BADGE = {
+  'Activo':'b-ok','Prospecto':'b-info','Inactivo':'',
+  'Recibida':'b-info','En fabricación':'b-warn','En tránsito':'b-warn','Entregada':'b-primary','Instalada':'b-ok','Facturada':'b-accent','Cerrada':'','Cancelada':'b-danger',
+  'Borrador':'','Enviada':'b-info','Confirmada':'b-primary','Embarcada':'b-warn','En aduana':'b-warn',
+  'Operando':'b-ok','En mantenimiento':'b-warn','Fuera de servicio':'b-danger',
+  'Alta':'b-danger','Media':'b-warn','Baja':'',
+  'Ganada':'b-ok','Perdida':'b-danger','Prospección':'','Visita técnica':'b-info','Cotización enviada':'b-primary','Negociación':'b-warn',
+  'ingreso':'b-ok','egreso':'b-danger'
+};
+const badge = (s, cls) => `<span class="badge ${cls ?? BADGE[s] ?? ''}">${esc(s)}</span>`;
+function ordStatusBadge(o){ if (o.tipo === 'compra' && o.estatus === 'Recibida') return badge('Recibida', 'b-ok'); return badge(o.estatus); }
+
+/* ============ Formularios ============ */
+const fld = (label, inner, cls = '') => `<label class="fld ${cls}"><span>${label}</span>${inner}</label>`;
+const inp = (name, val = '', attrs = '') => `<input name="${name}" value="${esc(val)}" ${attrs}>`;
+const txa = (name, val = '', attrs = '') => `<textarea name="${name}" ${attrs}>${esc(val)}</textarea>`;
+function sel(name, opts, val, attrs = ''){ return `<select name="${name}" ${attrs}>${opts.map(o => { const [v, l] = Array.isArray(o) ? o : [o, o]; return `<option value="${esc(v)}" ${String(v) === String(val ?? '') ? 'selected' : ''}>${esc(l)}</option>`; }).join('')}</select>`; }
+const teamOpts = () => DB.team.map(u => [u.id, u.nombre]);
+const cuentaOpts = (tipo, blank) => (blank ? [['', blank]] : []).concat(DB.cuentas.filter(c => !tipo || c.tipo === tipo).sort((a, b) => a.nombre.localeCompare(b.nombre)).map(c => [c.id, c.nombre + (tipo ? '' : (c.tipo === 'proveedor' ? ' (proveedor)' : ''))]));
+const bancoOpts = () => DB.bancos.map(b => [b.id, b.nombre]);
+
+let modalSubmit = null;
+function openModal({title, body, submit = 'Guardar', onSubmit, wide = false, footer = '', onOpen}){
+  $('#modalRoot').innerHTML = `<div class="modal-bg" data-act="bgClose"><div class="modal ${wide ? 'wide' : ''}" role="dialog" aria-modal="true" aria-labelledby="mTitle"><form id="mform" novalidate>
+    <div class="modal-h"><h2 id="mTitle">${esc(title)}</h2><button type="button" class="icon-btn" data-act="closeModal" aria-label="Cerrar">×</button></div>
+    <div class="modal-b">${body}</div>
+    <div class="modal-f">${footer}<span class="sp"></span><button type="button" class="btn" data-act="closeModal">Cancelar</button>${onSubmit ? `<button class="btn btn-primary" type="submit">${submit}</button>` : ''}</div>
+  </form></div></div>`;
+  const f = $('#mform');
+  modalSubmit = onSubmit;
+  f.addEventListener('submit', e => {
+    e.preventDefault();
+    if (!f.checkValidity()){ f.reportValidity(); return; }
+    const data = Object.fromEntries(new FormData(f));
+    if (modalSubmit && modalSubmit(data, f) !== false){ closeModal(); save(); render(); }
+  });
+  onOpen && onOpen(f);
+  setTimeout(() => { const el = f.querySelector('.modal-b input:not([type=hidden]),.modal-b select,.modal-b textarea'); el && el.focus(); }, 30);
+}
+function closeModal(){ $('#modalRoot').innerHTML = ''; modalSubmit = null; }
+
+/* ---- Cliente / proveedor ---- */
+function formCuenta(id, tipoDefault = 'cliente'){
+  const c = id ? cuenta(id) : {tipo: tipoDefault, estatus: tipoDefault === 'cliente' ? 'Prospecto' : 'Activo', responsable: DB.settings.usuario, credito: 30, contactos: []};
+  const k = c.contactos[0] || {};
+  openModal({title: id ? 'Editar ' + c.nombre : (c.tipo === 'cliente' ? 'Nuevo cliente' : 'Nuevo proveedor'), body: `<div class="fgrid">
+    ${fld('Nombre / razón social', inp('nombre', c.nombre, 'required'), 'full')}
+    ${fld('Tipo', sel('tipo', [['cliente','Cliente'],['proveedor','Proveedor']], c.tipo))}
+    ${fld('Estatus', sel('estatus', ['Prospecto','Activo','Inactivo'], c.estatus))}
+    ${fld('RFC / ID fiscal', inp('rfc', c.rfc))}
+    ${fld('Giro / sector', inp('sector', c.sector, 'placeholder="Ej. Hierro nodular"'))}
+    ${fld('Ciudad, estado', inp('ciudad', c.ciudad))}
+    ${fld('Responsable', sel('responsable', teamOpts(), c.responsable))}
+    ${fld('Dirección', inp('direccion', c.direccion), 'full')}
+    ${fld('Días de crédito', inp('credito', c.credito, 'type="number" min="0"'))}
+    ${fld('Límite de crédito', inp('limite', c.limite || '', 'type="number" min="0" step="any"'))}
+    <div class="fsec">Contacto principal</div>
+    ${fld('Nombre', inp('k_nombre', k.nombre))}
+    ${fld('Puesto', inp('k_cargo', k.cargo))}
+    ${fld('Correo', inp('k_email', k.email, 'type="email"'))}
+    ${fld('Teléfono', inp('k_tel', k.tel))}
+    ${fld('Notas internas', txa('notas', c.notas), 'full')}
+  </div>`, onSubmit: d => {
+    const obj = id ? c : {id: uid('c'), creado: today(), contactos: []};
+    Object.assign(obj, {nombre: d.nombre.trim(), tipo: d.tipo, estatus: d.estatus, rfc: d.rfc, sector: d.sector, ciudad: d.ciudad, responsable: d.responsable, direccion: d.direccion, credito: num(d.credito), limite: num(d.limite), notas: d.notas});
+    if (d.k_nombre || d.k_email || d.k_tel){
+      const kk = {nombre: d.k_nombre, cargo: d.k_cargo, email: d.k_email, tel: d.k_tel};
+      if (obj.contactos[0]) Object.assign(obj.contactos[0], kk); else obj.contactos.push({id: uid('k'), ...kk});
+    }
+    if (!id){ DB.cuentas.push(obj); log(`Dio de alta a ${obj.nombre}`); toast('Registro creado'); location.hash = '#cliente/' + obj.id; }
+    else { log(`Actualizó datos de ${obj.nombre}`); toast('Cambios guardados'); }
+  }});
+}
+function formContacto(cid, kid){
+  const c = cuenta(cid); const k = kid ? c.contactos.find(x => x.id === kid) : {};
+  openModal({title: kid ? 'Editar contacto' : 'Nuevo contacto · ' + c.nombre, body: `<div class="fgrid">
+    ${fld('Nombre', inp('nombre', k.nombre, 'required'))}${fld('Puesto', inp('cargo', k.cargo))}
+    ${fld('Correo', inp('email', k.email, 'type="email"'))}${fld('Teléfono', inp('tel', k.tel))}</div>`,
+    onSubmit: d => { if (kid) Object.assign(k, d); else c.contactos.push({id: uid('k'), ...d}); log(`${kid ? 'Editó' : 'Agregó'} el contacto ${d.nombre} en ${c.nombre}`); toast('Contacto guardado'); }});
+}
+
+/* ---- Actualización ---- */
+function formUpdate(cid){
+  openModal({title: 'Nueva actualización', body: `<div class="fgrid">
+    ${fld('Cliente / proveedor', sel('cuentaId', cuentaOpts(null), cid, 'required'), 'full')}
+    ${fld('Tipo', sel('tipo', TIPOS_UPD, 'Nota'))}
+    ${fld('Fecha y hora', inp('fecha', new Date(Date.now() - new Date().getTimezoneOffset() * 6e4).toISOString().slice(0, 16), 'type="datetime-local" required'))}
+    ${fld('Detalle', txa('texto', '', 'required rows="5" placeholder="¿Qué pasó? Acuerdos, próximos pasos…"'), 'full')}
+    <label class="fld full" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" name="tarea" style="width:auto"> <span style="font-weight:500;color:var(--text)">Crear tarea de seguimiento</span></label>
+    ${fld('Fecha de seguimiento', inp('seg', addDays(3), 'type="date"'))}
+  </div>`, onSubmit: d => addUpdate(d.cuentaId, d.tipo, d.texto, new Date(d.fecha).toISOString(), d.tarea ? d.seg : null)});
+}
+function addUpdate(cid, tipo, texto, fecha, seguimiento){
+  DB.updates.push({id: uid('n'), cuentaId: cid, tipo, fecha: fecha || new Date().toISOString(), autor: DB.settings.usuario, texto: texto.trim()});
+  log(`Agregó ${tipo.toLowerCase()} en ${cname(cid)}`);
+  if (seguimiento){ DB.tareas.push({id: uid('t'), titulo: 'Seguimiento: ' + texto.trim().slice(0, 70), tipo: 'Llamada', cuentaId: cid, responsable: DB.settings.usuario, fecha: seguimiento, prioridad: 'Media', hecho: false}); }
+  toast('Actualización registrada');
+}
+
+/* ---- Órdenes ---- */
+function lineRow(l, tipo){
+  return `<tr class="line">
+    <td><select data-k="prod" aria-label="Producto"><option value="">— Concepto libre —</option>${DB.productos.map(p => `<option value="${p.id}" ${p.id === l.productoId ? 'selected' : ''}>${esc(p.sku)} · ${esc(p.nombre)}</option>`).join('')}</select>
+        <input data-k="desc" value="${esc(l.desc || '')}" placeholder="Descripción" aria-label="Descripción" required></td>
+    <td style="width:80px"><input data-k="cant" type="number" min="0" step="any" value="${l.cant ?? 1}" aria-label="Cantidad"></td>
+    <td style="width:140px"><input data-k="precio" type="number" min="0" step="any" value="${l.precio ?? 0}" aria-label="Precio unitario"></td>
+    <td style="width:76px"><input data-k="dto" type="number" min="0" max="100" step="any" value="${l.dto ?? 0}" aria-label="Descuento %"></td>
+    <td class="num" data-k="imp" style="width:130px"></td>
+    <td style="width:36px"><button type="button" class="icon-btn" data-act="delLine" aria-label="Quitar partida">×</button></td></tr>`;
+}
+function readLines(f){ return $$('.line', f).map(r => ({productoId: $('[data-k=prod]', r).value, desc: $('[data-k=desc]', r).value, cant: num($('[data-k=cant]', r).value), precio: num($('[data-k=precio]', r).value), dto: num($('[data-k=dto]', r).value)})); }
+function recalcLines(f){
+  const ls = readLines(f); $$('.line', f).forEach((r, i) => $('[data-k=imp]', r).textContent = money2(lineImp(ls[i])));
+  const sub = sum(ls, lineImp), iva = sub * num(f.iva.value) / 100;
+  $('#lTot', f).innerHTML = `<div><span class="muted">Subtotal</span><span>${money2(sub)}</span></div><div><span class="muted">IVA ${num(f.iva.value)}%</span><span>${money2(iva)}</span></div><div class="big"><span>Total</span><span>${money2(sub + iva)}</span></div>`;
+}
+function formOrden(id, preset = {}){
+  const tipo = id ? byId(DB.ordenes, id).tipo : (preset.tipo || 'venta');
+  const o = id ? byId(DB.ordenes, id) : {tipo, folio: nextFolio(tipo), cuentaId: preset.cuentaId || '', ocCliente: '', fecha: today(), entrega: '', vence: '', estatus: tipo === 'venta' ? 'Recibida' : 'Borrador', iva: tipo === 'venta' ? DB.settings.iva : 0, responsable: DB.settings.usuario, notas: preset.notas || '', ordenVentaId: preset.ordenVentaId || '', lineas: preset.lineas || [{cant: 1, precio: 0, dto: 0}]};
+  const ventas = DB.ordenes.filter(x => x.tipo === 'venta' && x.estatus !== 'Cancelada').map(x => [x.id, `${x.folio} · ${cname(x.cuentaId)}`]);
+  openModal({wide: true, title: id ? 'Editar ' + o.folio : (tipo === 'venta' ? 'Nueva orden de cliente (pedido)' : 'Nueva orden de compra a proveedor'), body: `<div class="fgrid c3">
+    ${fld(tipo === 'venta' ? 'Cliente' : 'Proveedor', sel('cuentaId', cuentaOpts(tipo === 'venta' ? 'cliente' : 'proveedor', '— Selecciona —'), o.cuentaId, 'required'))}
+    ${fld('Folio interno', inp('folio', o.folio, 'required'))}
+    ${fld(tipo === 'venta' ? 'No. OC del cliente' : 'Referencia proveedor', inp('ocCliente', o.ocCliente, 'placeholder="Ej. OC-4521"'))}
+    ${fld('Fecha', inp('fecha', o.fecha, 'type="date" required'))}
+    ${fld('Entrega estimada', inp('entrega', o.entrega, 'type="date"'))}
+    ${fld('Vencimiento de pago', inp('vence', o.vence, 'type="date"'))}
+    ${fld('Estatus', sel('estatus', tipo === 'venta' ? EST_VENTA : EST_COMPRA, o.estatus))}
+    ${fld('Responsable', sel('responsable', teamOpts(), o.responsable))}
+    ${fld('IVA %', inp('iva', o.iva, 'type="number" min="0" step="any"'))}
+    ${tipo === 'compra' ? fld('Pedido de cliente relacionado', sel('ordenVentaId', [['', '— Ninguno —']].concat(ventas), o.ordenVentaId), 'full') : ''}
+  </div>
+  <div class="fsec" style="margin-top:14px">Partidas</div>
+  <div class="table-wrap"><table class="lines"><thead><tr><th>Producto / descripción</th><th>Cant.</th><th>${tipo === 'venta' ? 'Precio unit.' : 'Costo unit.'}</th><th>Desc. %</th><th class="num">Importe</th><th></th></tr></thead>
+  <tbody id="lines">${o.lineas.map(l => lineRow(l, tipo)).join('')}</tbody></table></div>
+  <div class="row" style="margin-top:8px;align-items:flex-start"><button type="button" class="btn btn-sm" data-act="addLine" data-tipo="${tipo}">+ Agregar partida</button><div class="totals" id="lTot"></div></div>
+  <div class="fgrid" style="margin-top:12px">${fld('Notas / condiciones', txa('notas', o.notas, 'placeholder="Condiciones de pago, Incoterm, lugar de entrega…"'), 'full')}</div>
+  <p class="hint">Si dejas vacío el vencimiento, se calcula con los días de crédito del ${tipo === 'venta' ? 'cliente' : 'proveedor'}.</p>`,
+  onOpen: f => {
+    recalcLines(f);
+    f.addEventListener('input', () => recalcLines(f));
+    f.addEventListener('change', e => {
+      if (e.target.matches('[data-k=prod]')){ const p = byId(DB.productos, e.target.value); const r = e.target.closest('.line'); if (p){ $('[data-k=desc]', r).value = p.nombre; $('[data-k=precio]', r).value = tipo === 'venta' ? p.precio : p.costo; } recalcLines(f); }
+    });
+  },
+  onSubmit: (d, f) => {
+    const lineas = readLines(f).filter(l => l.desc.trim() || l.productoId);
+    if (!lineas.length){ toast('Agrega al menos una partida'); return false; }
+    if (DB.ordenes.some(x => x.folio === d.folio.trim() && x.id !== id)){ toast('Ese folio ya existe'); return false; }
+    const cu = cuenta(d.cuentaId);
+    const obj = id ? o : {id: uid('o'), tipo, creado: new Date().toISOString()};
+    const prevEst = obj.estatus;
+    Object.assign(obj, {cuentaId: d.cuentaId, folio: d.folio.trim(), ocCliente: d.ocCliente, fecha: d.fecha, entrega: d.entrega, vence: d.vence || addDays(cu ? num(cu.credito) : 30, d.fecha), estatus: d.estatus, responsable: d.responsable, iva: num(d.iva), notas: d.notas, ordenVentaId: d.ordenVentaId || '', lineas});
+    if (!id){ DB.ordenes.push(obj); log(`Registró ${tipo === 'venta' ? 'el pedido' : 'la orden de compra'} ${obj.folio} de ${cname(obj.cuentaId)}`); toast('Orden creada'); location.hash = '#orden/' + obj.id; }
+    else { log(`Editó ${obj.folio}${prevEst !== obj.estatus ? ' · estatus: ' + obj.estatus : ''}`); toast('Orden actualizada'); }
+  }});
+}
+function formPago(oid){
+  const o = byId(DB.ordenes, oid), t = totals(o), venta = o.tipo === 'venta';
+  openModal({title: (venta ? 'Registrar cobro · ' : 'Registrar pago · ') + o.folio, body: `
+    <div class="row" style="justify-content:space-between;margin-bottom:12px"><span class="muted">Total ${money2(t.total)} · Pagado ${money2(t.pagado)}</span><b>Saldo ${money2(t.saldo)}</b></div>
+    <div class="fgrid">
+    ${fld('Monto', inp('monto', t.saldo || '', 'type="number" min="0.01" step="any" required id="pMonto"'))}
+    ${fld('Fecha', inp('fecha', today(), 'type="date" required'))}
+    <div class="fld full"><div class="chips">${[['Anticipo 30%', .3], ['Anticipo 50%', .5], ['Saldo total', 0]].map(([l, p]) => `<button type="button" data-act="setMonto" data-v="${p ? r2(t.total * p) : t.saldo}">${l}</button>`).join('')}</div></div>
+    ${fld(venta ? 'Depositado en' : 'Pagado desde', sel('bancoId', bancoOpts(), 'b1'))}
+    ${fld('Método', sel('metodo', METODOS, 'Transferencia'))}
+    ${fld('Tipo', sel('categoria', venta ? ['Cobro a cliente', 'Anticipo'] : ['Pago a proveedor', 'Fletes', 'Aduanas'], venta && t.pagado === 0 ? 'Anticipo' : (venta ? 'Cobro a cliente' : 'Pago a proveedor')))}
+    ${fld('Referencia / factura', inp('referencia', '', 'placeholder="Ej. Factura A-1203, SPEI 88213"'))}
+    </div>`, submit: venta ? 'Registrar cobro' : 'Registrar pago',
+    onSubmit: d => {
+      const m = num(d.monto); if (m <= 0) return false;
+      if (m > t.saldo + 1 && !confirm('El monto es mayor al saldo pendiente. ¿Registrar de todos modos?')) return false;
+      DB.movimientos.unshift({id: uid('m'), fecha: d.fecha, tipo: venta ? 'ingreso' : 'egreso', monto: r2(m), bancoId: d.bancoId, categoria: d.categoria, cuentaId: o.cuentaId, ordenId: o.id, concepto: `${d.categoria} ${o.folio}`, metodo: d.metodo, referencia: d.referencia});
+      log(`Registró ${venta ? 'cobro' : 'pago'} de ${money(m)} en ${o.folio} (${cname(o.cuentaId)})`);
+      toast(venta ? 'Cobro registrado' : 'Pago registrado');
+    }});
+}
+function formMov(tipoDef = 'ingreso', mid){
+  const m = mid ? byId(DB.movimientos, mid) : {tipo: tipoDef, fecha: today(), bancoId: 'b1', categoria: tipoDef === 'ingreso' ? 'Otros ingresos' : 'Otros gastos', metodo: 'Transferencia', cuentaId: '', ordenId: ''};
+  const cats = t => (t === 'ingreso' ? CAT_IN : CAT_OUT);
+  const ords = [['', '— Ninguna —']].concat(DB.ordenes.map(o => [o.id, `${o.folio} · ${cname(o.cuentaId)}`]));
+  openModal({title: mid ? 'Editar movimiento' : (tipoDef === 'ingreso' ? 'Nuevo ingreso' : 'Nuevo gasto'), body: `<div class="fgrid">
+    ${fld('Tipo', sel('tipo', [['ingreso','Ingreso'],['egreso','Egreso / gasto']], m.tipo, 'id="mvTipo"'))}
+    ${fld('Monto', inp('monto', m.monto || '', 'type="number" min="0.01" step="any" required'))}
+    ${fld('Fecha', inp('fecha', m.fecha, 'type="date" required'))}
+    ${fld('Cuenta bancaria', sel('bancoId', bancoOpts(), m.bancoId))}
+    ${fld('Categoría', sel('categoria', cats(m.tipo), m.categoria, 'id="mvCat"'))}
+    ${fld('Método', sel('metodo', METODOS, m.metodo))}
+    ${fld('Concepto', inp('concepto', m.concepto, 'required placeholder="Ej. Flete Manzanillo – Monterrey"'), 'full')}
+    ${fld('Cliente / proveedor (opcional)', sel('cuentaId', cuentaOpts(null, '— Ninguno —'), m.cuentaId))}
+    ${fld('Orden relacionada (opcional)', sel('ordenId', ords, m.ordenId))}
+    ${fld('Referencia', inp('referencia', m.referencia), 'full')}
+  </div>`, onOpen: f => { $('#mvTipo', f).addEventListener('change', e => { $('#mvCat', f).innerHTML = cats(e.target.value).map(c => `<option>${esc(c)}</option>`).join(''); }); },
+  onSubmit: d => {
+    const obj = mid ? m : {id: uid('m')};
+    Object.assign(obj, {...d, monto: r2(num(d.monto))});
+    if (!mid){ DB.movimientos.unshift(obj); log(`Registró ${d.tipo === 'ingreso' ? 'ingreso' : 'gasto'} de ${money(obj.monto)}: ${d.concepto}`); }
+    toast('Movimiento guardado');
+  }});
+}
+function formBanco(bid){
+  const b = bid ? byId(DB.bancos, bid) : {};
+  openModal({title: bid ? 'Editar cuenta' : 'Nueva cuenta bancaria / caja', body: `<div class="fgrid">${fld('Nombre', inp('nombre', b.nombre, 'required placeholder="Ej. Cuenta USD · Santander"'), 'full')}${fld('Saldo inicial', inp('saldoInicial', b.saldoInicial ?? 0, 'type="number" step="any"'))}</div>`,
+    onSubmit: d => { if (bid) Object.assign(b, {nombre: d.nombre, saldoInicial: num(d.saldoInicial)}); else DB.bancos.push({id: uid('b'), nombre: d.nombre, saldoInicial: num(d.saldoInicial)}); toast('Cuenta guardada'); }});
+}
+function formProducto(pid){
+  const p = pid ? byId(DB.productos, pid) : {unidad: 'pza', semanas: 0};
+  const cats = [...new Set(DB.productos.map(x => x.categoria))];
+  openModal({title: pid ? 'Editar producto' : 'Nuevo producto o servicio', body: `<div class="fgrid">
+    ${fld('Nombre', inp('nombre', p.nombre, 'required'), 'full')}
+    ${fld('SKU / clave', inp('sku', p.sku, 'required'))}${fld('Marca', inp('marca', p.marca, 'list="dlMarca"'))}
+    ${fld('Categoría', inp('categoria', p.categoria, 'list="dlCat"'))}${fld('Unidad', inp('unidad', p.unidad))}
+    ${fld('Precio de venta', inp('precio', p.precio, 'type="number" min="0" step="any" required'))}${fld('Costo', inp('costo', p.costo, 'type="number" min="0" step="any"'))}
+    ${fld('Tiempo de entrega (semanas)', inp('semanas', p.semanas, 'type="number" min="0"'))}
+    <datalist id="dlCat">${cats.map(c => `<option value="${esc(c)}">`).join('')}</datalist>
+    <datalist id="dlMarca">${[...new Set(DB.productos.map(x => x.marca))].map(c => `<option value="${esc(c)}">`).join('')}</datalist>
+  </div>`, onSubmit: d => {
+    const obj = pid ? p : {id: uid('p')};
+    Object.assign(obj, {...d, precio: num(d.precio), costo: num(d.costo), semanas: num(d.semanas)});
+    if (!pid) DB.productos.push(obj);
+    log(`${pid ? 'Editó' : 'Agregó'} el producto ${d.sku}`); toast('Producto guardado');
+  }});
+}
+function formOport(id, preset = {}){
+  const o = id ? byId(DB.oportunidades, id) : {etapa: preset.etapa || 'Prospección', responsable: DB.settings.usuario, cierre: addDays(30), cuentaId: preset.cuentaId || ''};
+  openModal({title: id ? 'Editar oportunidad' : 'Nueva oportunidad', body: `<div class="fgrid">
+    ${fld('Proyecto / oportunidad', inp('titulo', o.titulo, 'required placeholder="Ej. Mezclador continuo para línea 2"'), 'full')}
+    ${fld('Cliente', sel('cuentaId', cuentaOpts('cliente', '— Selecciona —'), o.cuentaId, 'required'))}
+    ${fld('Valor estimado', inp('valor', o.valor, 'type="number" min="0" step="any" required'))}
+    ${fld('Etapa', sel('etapa', ETAPAS, o.etapa))}
+    ${fld('Probabilidad %', inp('prob', o.prob ?? PROB[o.etapa], 'type="number" min="0" max="100"'))}
+    ${fld('Cierre estimado', inp('cierre', o.cierre, 'type="date"'))}
+    ${fld('Responsable', sel('responsable', teamOpts(), o.responsable))}
+  </div>`, footer: id ? `<button type="button" class="btn btn-danger" data-act="delOport" data-id="${id}">Eliminar</button><button type="button" class="btn" data-act="oportToOrder" data-id="${id}">Convertir en pedido</button>` : '',
+  onSubmit: d => {
+    const obj = id ? o : {id: uid('op'), creado: new Date().toISOString()};
+    const prev = obj.etapa;
+    Object.assign(obj, {...d, valor: num(d.valor), prob: num(d.prob)});
+    if (!id) DB.oportunidades.push(obj);
+    log(`${id ? 'Actualizó' : 'Creó'} la oportunidad "${obj.titulo}"${prev && prev !== obj.etapa ? ' → ' + obj.etapa : ''}`);
+    toast('Oportunidad guardada');
+  }});
+}
+function formTarea(id, preset = {}){
+  const t = id ? byId(DB.tareas, id) : {tipo: 'Llamada', fecha: today(), prioridad: 'Media', responsable: DB.settings.usuario, cuentaId: preset.cuentaId || ''};
+  openModal({title: id ? 'Editar tarea' : 'Nueva tarea', body: `<div class="fgrid">
+    ${fld('Tarea', inp('titulo', t.titulo, 'required'), 'full')}
+    ${fld('Tipo', sel('tipo', TIPOS_TAREA, t.tipo))}${fld('Fecha', inp('fecha', t.fecha, 'type="date" required'))}
+    ${fld('Cliente / proveedor', sel('cuentaId', cuentaOpts(null, '— Ninguno —'), t.cuentaId))}${fld('Responsable', sel('responsable', teamOpts(), t.responsable))}
+    ${fld('Prioridad', sel('prioridad', ['Alta','Media','Baja'], t.prioridad))}
+  </div>`, footer: id ? `<button type="button" class="btn btn-danger" data-act="delTarea" data-id="${id}">Eliminar</button>` : '',
+  onSubmit: d => { if (id) Object.assign(t, d); else { DB.tareas.push({id: uid('t'), hecho: false, ...d}); log(`Creó la tarea "${d.titulo}"`); } toast('Tarea guardada'); }});
+}
+function formEquipo(cid, eid){
+  const e = eid ? byId(DB.equipos, eid) : {cuentaId: cid, estado: 'Operando', instalado: today(), proxMant: addDays(180)};
+  openModal({title: eid ? 'Editar equipo' : 'Registrar equipo instalado', body: `<div class="fgrid">
+    ${fld('Cliente', sel('cuentaId', cuentaOpts('cliente'), e.cuentaId), 'full')}
+    ${fld('Equipo', inp('descripcion', e.descripcion, 'required list="dlEq"'), 'full')}
+    <datalist id="dlEq">${DB.productos.filter(p => p.categoria !== 'Servicios' && p.categoria !== 'Refacciones').map(p => `<option value="${esc(p.nombre)}">`).join('')}</datalist>
+    ${fld('Marca', inp('marca', e.marca))}${fld('No. de serie', inp('serie', e.serie))}
+    ${fld('Fecha de instalación', inp('instalado', e.instalado, 'type="date"'))}${fld('Próximo mantenimiento', inp('proxMant', e.proxMant, 'type="date"'))}
+    ${fld('Estado', sel('estado', ['Operando','En mantenimiento','Fuera de servicio'], e.estado))}
+    ${fld('Notas', txa('notas', e.notas), 'full')}
+  </div>`, footer: eid ? `<button type="button" class="btn btn-danger" data-act="delEquipo" data-id="${eid}">Eliminar</button>` : '',
+  onSubmit: d => { if (eid) Object.assign(e, d); else { DB.equipos.push({id: uid('e'), ...d}); log(`Registró equipo ${d.descripcion} en ${cname(d.cuentaId)}`); } toast('Equipo guardado'); }});
+}
+
+/* ============ Vistas ============ */
+const NAV = [
+  ['panel','Panel','<path d="M3 13h8V3H3zM13 21h8V11h-8zM3 21h8v-6H3zM13 3v6h8V3z"/>'],
+  ['clientes','Clientes','<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/>'],
+  ['oportunidades','Oportunidades','<path d="M3 3h18l-7 9v6l-4 3v-9z"/>'],
+  ['ordenes','Órdenes','<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/>'],
+  ['finanzas','Finanzas','<rect x="2" y="6" width="20" height="13" rx="2"/><path d="M2 10h20M6 15h4"/>'],
+  ['catalogo','Catálogo','<path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="m3 8 9 5 9-5M12 13v8"/>'],
+  ['tareas','Tareas','<path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/>'],
+  ['ajustes','Ajustes','<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>'],
+];
+function renderNav(active){
+  const vencidas = DB.tareas.filter(t => !t.hecho && t.fecha <= today()).length;
+  $('#nav').innerHTML = NAV.map(([k, l, ico], i) => (i === 4 ? '<div class="nav-sep">Administración</div>' : '') + `<a href="#${k}" class="${k === active ? 'active' : ''}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${ico}</svg>${l}${k === 'tareas' && vencidas ? `<span class="count">${vencidas}</span>` : ''}</a>`).join('');
+  $('#userSel').innerHTML = DB.team.map(u => `<option value="${u.id}" ${u.id === DB.settings.usuario ? 'selected' : ''}>${esc(u.nombre)}</option>`).join('');
+}
+const seg = (key, opts) => `<div class="seg" role="group">${opts.map(([v, l]) => `<button type="button" class="${UI[key] === v ? 'on' : ''}" data-act="ui" data-k="${key}" data-v="${esc(v)}">${l}</button>`).join('')}</div>`;
+const empty = msg => `<div class="empty">${msg}</div>`;
+
+/* ---- Panel ---- */
+function chartFlujo(){
+  const now = new Date(), ms = [];
+  for (let i = 5; i >= 0; i--){ const x = new Date(now.getFullYear(), now.getMonth() - i, 1); const key = iso(x).slice(0, 7); ms.push({key, label: x.toLocaleDateString('es-MX', {month: 'short'}).replace('.', ''), in: sum(DB.movimientos.filter(m => m.tipo === 'ingreso' && m.fecha.startsWith(key)), m => m.monto), out: sum(DB.movimientos.filter(m => m.tipo === 'egreso' && m.fecha.startsWith(key)), m => m.monto)}); }
+  const raw = Math.max(1, ...ms.flatMap(m => [m.in, m.out]));
+  const p = Math.pow(10, Math.floor(Math.log10(raw))); const max = Math.ceil(raw / p / (raw / p > 5 ? 2 : 1)) * p * (raw / p > 5 ? 2 : 1);
+  const W = 640, H = 230, L = 52, B = 26, T = 8, pw = W - L - 8, ph = H - B - T, gw = pw / ms.length, bw = Math.min(26, gw * .3);
+  let g = '';
+  for (let i = 0; i <= 4; i++){ const y = T + ph - ph * i / 4; g += `<line class="grid-l" x1="${L}" x2="${W - 8}" y1="${y}" y2="${y}"/><text x="${L - 8}" y="${y + 4}" text-anchor="end">${compact(max * i / 4)}</text>`; }
+  ms.forEach((m, i) => {
+    const cx = L + gw * i + gw / 2, hi = ph * m.in / max, ho = ph * m.out / max;
+    g += `<rect x="${cx - bw - 2}" y="${T + ph - hi}" width="${bw}" height="${hi}" rx="3" fill="var(--c-in)"><title>Ingresos ${m.label}: ${money(m.in)}</title></rect>`;
+    g += `<rect x="${cx + 2}" y="${T + ph - ho}" width="${bw}" height="${ho}" rx="3" fill="var(--c-out)"><title>Egresos ${m.label}: ${money(m.out)}</title></rect>`;
+    g += `<text x="${cx}" y="${H - 7}" text-anchor="middle" style="text-transform:capitalize${i === 5 ? ';font-weight:600;fill:var(--text)' : ''}">${m.label}</text>`;
+  });
+  const net = sum(ms, m => m.in - m.out);
+  return {svg: `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Ingresos y egresos de los últimos 6 meses">${g}</svg>`, net};
+}
+function vPanel(){
+  const saldo = sum(DB.bancos, b => saldoBanco(b.id));
+  const cxc = pendientes('venta'), cxp = pendientes('compra');
+  const venc = cxc.filter(x => x.dias > 0);
+  const ym = today().slice(0, 7);
+  const ventasMes = DB.ordenes.filter(o => o.tipo === 'venta' && o.estatus !== 'Cancelada' && o.fecha.startsWith(ym));
+  const pipe = DB.oportunidades.filter(o => !['Ganada','Perdida'].includes(o.etapa));
+  const ch = chartFlujo();
+  const activas = DB.ordenes.filter(o => o.tipo === 'venta' && !isClosed(o)).sort((a, b) => (a.entrega || '').localeCompare(b.entrega || ''));
+  const tareas = DB.tareas.filter(t => !t.hecho && t.fecha <= addDays(7)).sort((a, b) => a.fecha.localeCompare(b.fecha)).slice(0, 7);
+  const mants = DB.equipos.filter(e => e.proxMant && e.proxMant <= addDays(30)).sort((a, b) => a.proxMant.localeCompare(b.proxMant));
+  return {title: 'Panel', html: `
+  <div class="row" style="margin-bottom:14px"><div><h2 style="font-size:20px">Hola, ${esc(me().nombre.split(' ')[0])}</h2><div class="muted">${new Date().toLocaleDateString('es-MX', {weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'})}</div></div></div>
+  <div class="kpis">
+    <a class="card kpi" href="#finanzas" style="color:inherit;text-decoration:none"><div class="l">Saldo en bancos y caja</div><div class="v">${money(saldo)}</div><div class="s">${DB.bancos.length} cuentas</div></a>
+    <a class="card kpi" href="#finanzas" data-act="ui" data-k="finTab" data-v="cxc" style="color:inherit;text-decoration:none"><div class="l">Por cobrar</div><div class="v">${money(sum(cxc, x => x.t.saldo))}</div><div class="s ${venc.length ? 'bad' : ''}">${venc.length ? money(sum(venc, x => x.t.saldo)) + ' vencido' : 'Todo al corriente'}</div></a>
+    <a class="card kpi" href="#finanzas" data-act="ui" data-k="finTab" data-v="cxp" style="color:inherit;text-decoration:none"><div class="l">Por pagar a proveedores</div><div class="v">${money(sum(cxp, x => x.t.saldo))}</div><div class="s">${cxp.length} órdenes con saldo</div></a>
+    <a class="card kpi" href="#ordenes" style="color:inherit;text-decoration:none"><div class="l">Pedidos del mes</div><div class="v">${money(sum(ventasMes, o => totals(o).total))}</div><div class="s">${ventasMes.length} pedidos recibidos</div></a>
+    <a class="card kpi" href="#oportunidades" style="color:inherit;text-decoration:none"><div class="l">Pipeline abierto</div><div class="v">${money(sum(pipe, o => o.valor))}</div><div class="s">Ponderado ${money(sum(pipe, o => o.valor * o.prob / 100))}</div></a>
+  </div>
+  <div class="dash">
+    <div class="grid">
+      <div class="card"><div class="card-h"><h3>Flujo de efectivo · últimos 6 meses</h3><span class="sp"></span><div class="legend"><span><i style="background:var(--c-in)"></i>Ingresos</span><span><i style="background:var(--c-out)"></i>Egresos</span></div></div>
+        <div class="card-b chart">${ch.svg}<div class="hint" style="margin-top:6px">Flujo neto del periodo: <b style="color:${ch.net >= 0 ? 'var(--ok)' : 'var(--danger)'}">${money(ch.net)}</b></div></div></div>
+      <div class="card"><div class="card-h"><h3>Pedidos en curso</h3><span class="sp"></span><a href="#ordenes" class="btn btn-sm">Ver todos</a></div>
+        <div class="table-wrap"><table class="tbl"><thead><tr><th>Pedido</th><th>Cliente</th><th>Estatus</th><th>Entrega</th><th class="num">Total</th><th class="num">Saldo</th></tr></thead><tbody>
+        ${activas.slice(0, 7).map(o => { const t = totals(o); return `<tr class="click" data-act="go" data-href="#orden/${o.id}"><td class="cell-main nowrap">${esc(o.folio)}</td><td>${esc(cname(o.cuentaId))}</td><td>${ordStatusBadge(o)}</td><td>${fdate(o.entrega, false)}</td><td class="num">${money(t.total)}</td><td class="num">${t.saldo ? money(t.saldo) : '—'}</td></tr>`; }).join('') || `<tr><td colspan="6">${empty('No hay pedidos en curso')}</td></tr>`}
+        </tbody></table></div></div>
+    </div>
+    <div class="grid" style="align-content:start">
+      <div class="card"><div class="card-h"><h3>Agenda · próximos 7 días</h3><span class="sp"></span><a href="#tareas" class="btn btn-sm">Tareas</a></div>
+        <div class="list">${tareas.map(taskItem).join('') || empty('Sin pendientes 🎉')}</div></div>
+      <div class="card"><div class="card-h"><h3>Mantenimientos próximos</h3></div>
+        <div class="list">${mants.map(e => { const dd = daysBetween(today(), e.proxMant); return `<div class="li"><div style="flex:1;min-width:0"><div class="t">${esc(e.descripcion)}</div><div class="m"><a href="#cliente/${e.cuentaId}">${esc(cname(e.cuentaId))}</a> · Serie ${esc(e.serie || '—')}</div></div><div class="m ${dd < 0 ? 'overdue' : ''}" style="white-space:nowrap">${dd < 0 ? 'Vencido ' + (-dd) + ' d' : dd === 0 ? 'Hoy' : 'en ' + dd + ' d'}</div></div>`; }).join('') || empty('Sin mantenimientos en 30 días')}</div></div>
+      <div class="card"><div class="card-h"><h3>Actividad reciente del equipo</h3></div>
+        <div class="list">${DB.actividad.slice(0, 7).map(a => `<div class="li">${avatar(a.autor)}<div style="min-width:0"><div>${esc(a.texto)}</div><div class="m">${esc(user(a.autor).nombre)} · ${fdt(a.fecha)}</div></div></div>`).join('')}</div></div>
+    </div>
+  </div>`};
+}
+function taskItem(t){
+  const od = !t.hecho && t.fecha < today();
+  return `<div class="li ${t.hecho ? 'done' : ''}"><input type="checkbox" class="chk" ${t.hecho ? 'checked' : ''} data-act="toggleTask" data-id="${t.id}" aria-label="Completar"><div style="flex:1;min-width:0"><div class="t">${esc(t.titulo)}</div>
+    <div class="m">${esc(t.tipo)}${t.cuentaId ? ` · <a href="#cliente/${t.cuentaId}">${esc(cname(t.cuentaId))}</a>` : ''} · ${esc(user(t.responsable).nombre)} · <span class="${od ? 'overdue' : ''}">${t.fecha === today() ? 'Hoy' : fdate(t.fecha, false)}${od ? ' (vencida)' : ''}</span></div></div>
+    ${t.prioridad === 'Alta' && !t.hecho ? badge('Alta') : ''}<button class="icon-btn" data-act="editTarea" data-id="${t.id}" aria-label="Editar">✎</button></div>`;
+}
+
+/* ---- Clientes ---- */
+function vClientes(){
+  const tipo = UI.clTipo, q = UI.clQ.trim().toLowerCase();
+  let list = DB.cuentas.filter(c => c.tipo === tipo);
+  if (q) list = list.filter(c => [c.nombre, c.ciudad, c.sector, c.rfc, ...(c.contactos || []).map(k => k.nombre + ' ' + k.email)].join(' ').toLowerCase().includes(q));
+  if (UI.clEst !== 'Todos') list = list.filter(c => c.estatus === UI.clEst);
+  list.sort((a, b) => a.nombre.localeCompare(b.nombre));
+  const rows = list.map(c => { const st = cuentaStats(c.id), k = c.contactos?.[0]; return `<tr class="click" data-act="go" data-href="#cliente/${c.id}">
+    <td><div class="cell-main">${esc(c.nombre)}</div><div class="cell-sub">${esc(c.sector || '')}</div></td><td>${esc(c.ciudad || '')}</td>
+    <td>${k ? `<div>${esc(k.nombre)}</div><div class="cell-sub">${esc(k.tel || k.email || '')}</div>` : '—'}</td><td>${badge(c.estatus)}</td>
+    <td class="num">${st.activas || '—'}</td><td class="num">${st.total ? money(st.total) : '—'}</td><td class="num">${st.saldo ? money(st.saldo) : '—'}</td>
+    <td>${st.ultimo ? fdate(st.ultimo.slice(0, 10), false) : '—'}</td><td>${avatar(c.responsable)}</td></tr>`; }).join('');
+  return {title: tipo === 'cliente' ? 'Clientes' : 'Proveedores', html: `
+  <div class="toolbar">${seg('clTipo', [['cliente', 'Clientes'], ['proveedor', 'Proveedores']])}
+    <input type="search" id="clQ" data-ui="clQ" value="${esc(UI.clQ)}" placeholder="Buscar por nombre, ciudad, contacto, RFC…" aria-label="Buscar">
+    <select data-ui="clEst" aria-label="Estatus">${['Todos','Activo','Prospecto','Inactivo'].map(s => `<option ${UI.clEst === s ? 'selected' : ''}>${s}</option>`).join('')}</select>
+    <span class="sp"></span><button class="btn btn-primary" data-act="newCuenta" data-tipo="${tipo}">+ ${tipo === 'cliente' ? 'Nuevo cliente' : 'Nuevo proveedor'}</button></div>
+  <div class="card table-wrap"><table class="tbl"><thead><tr><th>Nombre</th><th>Ciudad</th><th>Contacto</th><th>Estatus</th><th class="num">Órdenes activas</th><th class="num">${tipo === 'cliente' ? 'Comprado' : 'Comprado a él'}</th><th class="num">${tipo === 'cliente' ? 'Por cobrar' : 'Por pagar'}</th><th>Último contacto</th><th>Resp.</th></tr></thead>
+  <tbody>${rows || `<tr><td colspan="9">${empty('Sin resultados')}</td></tr>`}</tbody></table></div>
+  <p class="hint">${list.length} registro(s)</p>`};
+}
+function vCliente(id){
+  const c = cuenta(id); if (!c) return {title: 'No encontrado', html: empty('Este registro no existe. <a href="#clientes">Volver</a>')};
+  const st = cuentaStats(id), esCli = c.tipo === 'cliente';
+  const ords = DB.ordenes.filter(o => o.cuentaId === id).sort((a, b) => b.fecha.localeCompare(a.fecha));
+  const movs = DB.movimientos.filter(m => m.cuentaId === id).sort((a, b) => b.fecha.localeCompare(a.fecha));
+  const ups = DB.updates.filter(u => u.cuentaId === id).sort((a, b) => b.fecha.localeCompare(a.fecha));
+  const eqs = DB.equipos.filter(e => e.cuentaId === id);
+  const ops = DB.oportunidades.filter(o => o.cuentaId === id);
+  const tks = DB.tareas.filter(t => t.cuentaId === id).sort((a, b) => a.hecho - b.hecho || a.fecha.localeCompare(b.fecha));
+  const tabs = [['updates', 'Actualizaciones', ups.length], ['ordenes', 'Órdenes', ords.length], ['pagos', esCli ? 'Cobros' : 'Pagos', movs.length], ...(esCli ? [['equipos', 'Equipos instalados', eqs.length], ['ops', 'Oportunidades', ops.length]] : []), ['tareas', 'Tareas', tks.filter(t => !t.hecho).length], ['contactos', 'Contactos', c.contactos.length], ['datos', 'Datos', null]];
+  if (!tabs.some(t => t[0] === UI.ctab)) UI.ctab = 'updates';
+  let body = '';
+  switch (UI.ctab){
+    case 'updates': body = `<div class="card card-b"><form class="quick" id="quickUpd" data-cid="${id}"><select name="tipo" aria-label="Tipo">${TIPOS_UPD.map(t => `<option>${t}</option>`).join('')}</select><textarea name="texto" rows="2" placeholder="Escribe una actualización: llamada, visita, acuerdo, cotización enviada…" aria-label="Actualización" required></textarea><button class="btn btn-primary">Agregar</button></form>
+      <div class="timeline">${ups.map(u => `<div class="tl"><div class="tl-ico" style="background:var(--primary-soft);color:var(--primary)">${UPD_ICO[u.tipo] || '•'}</div><div style="flex:1;min-width:0"><div class="h"><b style="color:var(--text)">${esc(u.tipo)}</b> · ${esc(user(u.autor).nombre)} · ${fdt(u.fecha)}</div><div class="x">${esc(u.texto)}</div></div><button class="icon-btn" data-act="delUpd" data-id="${u.id}" aria-label="Eliminar">×</button></div>`).join('') || empty('Aún no hay actualizaciones')}</div></div>`; break;
+    case 'ordenes': body = `<div class="row" style="margin-bottom:10px"><span class="sp"></span><button class="btn btn-primary" data-act="newOrden" data-tipo="${esCli ? 'venta' : 'compra'}" data-cid="${id}">+ ${esCli ? 'Nuevo pedido' : 'Nueva orden de compra'}</button></div>${ordTable(ords)}`; break;
+    case 'pagos': body = `<div class="card table-wrap"><table class="tbl"><thead><tr><th>Fecha</th><th>Concepto</th><th>Orden</th><th>Cuenta</th><th>Método</th><th class="num">Monto</th></tr></thead><tbody>
+      ${movs.map(m => `<tr><td>${fdate(m.fecha)}</td><td>${esc(m.concepto)}${m.referencia ? `<div class="cell-sub">${esc(m.referencia)}</div>` : ''}</td><td>${m.ordenId ? `<a href="#orden/${m.ordenId}">${esc((byId(DB.ordenes, m.ordenId) || {}).folio || '')}</a>` : '—'}</td><td>${esc((byId(DB.bancos, m.bancoId) || {}).nombre || '')}</td><td>${esc(m.metodo)}</td><td class="num" style="color:${m.tipo === 'ingreso' ? 'var(--ok)' : 'var(--danger)'}">${m.tipo === 'ingreso' ? '+' : '−'}${money2(m.monto)}</td></tr>`).join('') || `<tr><td colspan="6">${empty('Sin movimientos')}</td></tr>`}</tbody></table></div>`; break;
+    case 'equipos': body = `<div class="row" style="margin-bottom:10px"><span class="sp"></span><button class="btn btn-primary" data-act="newEquipo" data-cid="${id}">+ Registrar equipo</button></div><div class="card table-wrap"><table class="tbl"><thead><tr><th>Equipo</th><th>Serie</th><th>Instalado</th><th>Próx. mantenimiento</th><th>Estado</th><th></th></tr></thead><tbody>
+      ${eqs.map(e => { const dd = e.proxMant ? daysBetween(today(), e.proxMant) : null; return `<tr><td><div class="cell-main">${esc(e.descripcion)}</div><div class="cell-sub">${esc(e.marca || '')}${e.notas ? ' · ' + esc(e.notas) : ''}</div></td><td>${esc(e.serie || '—')}</td><td>${fdate(e.instalado)}</td><td class="${dd !== null && dd < 0 ? 'overdue' : ''}">${fdate(e.proxMant)}${dd !== null && dd < 0 ? ' (vencido)' : ''}</td><td>${badge(e.estado)}</td>
+        <td class="num"><button class="btn btn-sm" data-act="programarMant" data-id="${e.id}">Programar servicio</button> <button class="icon-btn" data-act="editEquipo" data-id="${e.id}" aria-label="Editar">✎</button></td></tr>`; }).join('') || `<tr><td colspan="6">${empty('Sin equipos registrados')}</td></tr>`}</tbody></table></div>`; break;
+    case 'ops': body = `<div class="row" style="margin-bottom:10px"><span class="sp"></span><button class="btn btn-primary" data-act="newOport" data-cid="${id}">+ Nueva oportunidad</button></div><div class="card table-wrap"><table class="tbl"><thead><tr><th>Oportunidad</th><th>Etapa</th><th class="num">Valor</th><th class="num">Prob.</th><th>Cierre</th><th>Resp.</th></tr></thead><tbody>
+      ${ops.map(o => `<tr class="click" data-act="editOport" data-id="${o.id}"><td class="cell-main">${esc(o.titulo)}</td><td>${badge(o.etapa)}</td><td class="num">${money(o.valor)}</td><td class="num">${o.prob}%</td><td>${fdate(o.cierre)}</td><td>${avatar(o.responsable)}</td></tr>`).join('') || `<tr><td colspan="6">${empty('Sin oportunidades')}</td></tr>`}</tbody></table></div>`; break;
+    case 'tareas': body = `<div class="row" style="margin-bottom:10px"><span class="sp"></span><button class="btn btn-primary" data-act="newTarea" data-cid="${id}">+ Nueva tarea</button></div><div class="card list">${tks.map(taskItem).join('') || empty('Sin tareas')}</div>`; break;
+    case 'contactos': body = `<div class="row" style="margin-bottom:10px"><span class="sp"></span><button class="btn btn-primary" data-act="newContacto" data-cid="${id}">+ Agregar contacto</button></div><div class="card table-wrap"><table class="tbl"><thead><tr><th>Nombre</th><th>Puesto</th><th>Correo</th><th>Teléfono</th><th></th></tr></thead><tbody>
+      ${c.contactos.map((k, i) => `<tr><td class="cell-main">${esc(k.nombre)} ${i === 0 ? badge('Principal', 'b-primary') : ''}</td><td>${esc(k.cargo || '')}</td><td>${k.email ? `<a href="mailto:${esc(k.email)}">${esc(k.email)}</a>` : '—'}</td><td>${k.tel ? `<a href="tel:${esc(k.tel.replace(/[^+\d]/g, ''))}">${esc(k.tel)}</a>` : '—'}</td><td class="num"><button class="icon-btn" data-act="editContacto" data-cid="${id}" data-id="${k.id}" aria-label="Editar">✎</button><button class="icon-btn" data-act="delContacto" data-cid="${id}" data-id="${k.id}" aria-label="Eliminar">×</button></td></tr>`).join('') || `<tr><td colspan="5">${empty('Sin contactos')}</td></tr>`}</tbody></table></div>`; break;
+    case 'datos': body = `<div class="card card-b"><div class="info-grid">
+      ${[['Razón social', c.nombre], ['RFC / ID fiscal', c.rfc], ['Giro', c.sector], ['Ciudad', c.ciudad], ['Dirección', c.direccion], ['Días de crédito', c.credito + ' días'], ['Límite de crédito', c.limite ? money(c.limite) : '—'], ['Responsable', user(c.responsable).nombre], ['Alta', fdate(c.creado)]].map(([l, v]) => `<div><div class="l">${l}</div><div class="v">${esc(v || '—')}</div></div>`).join('')}
+      </div>${c.notas ? `<div style="margin-top:16px"><div class="l muted" style="font-size:12px">Notas internas</div><div style="white-space:pre-wrap">${esc(c.notas)}</div></div>` : ''}
+      <div class="row" style="margin-top:18px"><button class="btn" data-act="editCuenta" data-id="${id}">Editar datos</button><button class="btn btn-danger" data-act="delCuenta" data-id="${id}">Eliminar registro</button></div></div>`; break;
+  }
+  const overLimit = esCli && c.limite && st.saldo > c.limite;
+  return {title: esCli ? 'Cliente' : 'Proveedor', html: `
+  <div class="row" style="margin-bottom:10px"><a href="#clientes" data-act="ui" data-k="clTipo" data-v="${c.tipo}" class="muted">← ${esCli ? 'Clientes' : 'Proveedores'}</a></div>
+  <div class="card" style="margin-bottom:16px">
+    <div class="detail-h"><div style="flex:1;min-width:220px"><div class="row"><h2>${esc(c.nombre)}</h2>${badge(c.estatus)}</div>
+      <div class="meta"><span>${esc(c.sector || '')}</span><span>${esc(c.ciudad || '')}</span>${c.contactos[0] ? `<span>${esc(c.contactos[0].nombre)}${c.contactos[0].tel ? ' · ' + esc(c.contactos[0].tel) : ''}</span>` : ''}<span class="row" style="gap:6px">${avatar(c.responsable, true)}</span></div></div>
+      <div class="row"><button class="btn" data-act="editCuenta" data-id="${id}">Editar</button><button class="btn" data-act="newTarea" data-cid="${id}">+ Tarea</button><button class="btn btn-primary" data-act="newOrden" data-tipo="${esCli ? 'venta' : 'compra'}" data-cid="${id}">+ ${esCli ? 'Pedido' : 'Orden de compra'}</button></div></div>
+    <div class="stats">
+      <div><div class="l">${esCli ? 'Total comprado' : 'Total ordenado'}</div><div class="v">${money(st.total)}</div></div>
+      <div><div class="l">${esCli ? 'Cobrado' : 'Pagado'}</div><div class="v">${money(st.pagado)}</div></div>
+      <div><div class="l">${esCli ? 'Por cobrar' : 'Por pagar'}</div><div class="v" style="${overLimit ? 'color:var(--danger)' : ''}">${money(st.saldo)}</div>${overLimit ? '<div class="cell-sub overdue">Excede límite de crédito</div>' : ''}</div>
+      <div><div class="l">Órdenes activas</div><div class="v">${st.activas}</div></div>
+      <div><div class="l">Último contacto</div><div class="v">${st.ultimo ? fdate(st.ultimo.slice(0, 10)) : '—'}</div></div>
+    </div>
+  </div>
+  <div class="tabs" role="tablist">${tabs.map(([k, l, n]) => `<button class="${UI.ctab === k ? 'on' : ''}" data-act="ui" data-k="ctab" data-v="${k}">${l}${n !== null ? `<span class="c">${n}</span>` : ''}</button>`).join('')}</div>
+  ${body}`};
+}
+
+/* ---- Órdenes ---- */
+function ordTable(list, showCli = false){
+  const rows = list.map(o => { const t = totals(o), ps = payState(o); return `<tr class="click" data-act="go" data-href="#orden/${o.id}">
+    <td><div class="cell-main nowrap">${esc(o.folio)}</div>${o.ocCliente ? `<div class="cell-sub">${o.tipo === 'venta' ? 'OC ' : 'Ref. '}${esc(o.ocCliente)}</div>` : ''}</td>
+    ${showCli ? `<td>${esc(cname(o.cuentaId))}</td>` : ''}<td>${fdate(o.fecha)}</td><td>${fdate(o.entrega)}</td><td>${ordStatusBadge(o)}</td>
+    <td class="num">${money(t.total)}</td><td class="num">${money(t.pagado)}</td><td class="num">${t.saldo ? money(t.saldo) : '—'}</td><td>${badge(ps[0], ps[1])}</td></tr>`; }).join('');
+  const ts = list.filter(o => o.estatus !== 'Cancelada').map(totals);
+  return `<div class="card table-wrap"><table class="tbl"><thead><tr><th>Folio</th>${showCli ? '<th>Cliente / proveedor</th>' : ''}<th>Fecha</th><th>Entrega</th><th>Estatus</th><th class="num">Total</th><th class="num">Pagado</th><th class="num">Saldo</th><th>Pago</th></tr></thead>
+    <tbody>${rows || `<tr><td colspan="9">${empty('Sin órdenes')}</td></tr>`}</tbody>
+    ${list.length ? `<tfoot><tr><td colspan="${showCli ? 5 : 4}">${list.length} orden(es) · sin canceladas</td><td class="num">${money(sum(ts, t => t.total))}</td><td class="num">${money(sum(ts, t => t.pagado))}</td><td class="num">${money(sum(ts, t => t.saldo))}</td><td></td></tr></tfoot>` : ''}</table></div>`;
+}
+function vOrdenes(){
+  const tipo = UI.ordTipo, q = UI.ordQ.trim().toLowerCase();
+  let list = DB.ordenes.filter(o => o.tipo === tipo);
+  if (q) list = list.filter(o => [o.folio, o.ocCliente, cname(o.cuentaId), o.notas, ...o.lineas.map(l => l.desc)].join(' ').toLowerCase().includes(q));
+  if (UI.ordEst === 'Abiertas') list = list.filter(o => !isClosed(o)); else if (UI.ordEst === 'Con saldo') list = list.filter(o => o.estatus !== 'Cancelada' && totals(o).saldo > 0); else if (UI.ordEst !== 'Todas') list = list.filter(o => o.estatus === UI.ordEst);
+  list.sort((a, b) => b.fecha.localeCompare(a.fecha) || b.folio.localeCompare(a.folio));
+  const ests = ['Todas', 'Abiertas', 'Con saldo', ...(tipo === 'venta' ? EST_VENTA : EST_COMPRA)];
+  return {title: 'Órdenes', html: `
+  <div class="toolbar">${seg('ordTipo', [['venta', 'Órdenes de clientes'], ['compra', 'Compras a proveedores']])}
+    <input type="search" id="ordQ" data-ui="ordQ" value="${esc(UI.ordQ)}" placeholder="Folio, OC, cliente, producto…" aria-label="Buscar órdenes">
+    <select data-ui="ordEst" aria-label="Filtrar estatus">${ests.map(s => `<option ${UI.ordEst === s ? 'selected' : ''}>${s}</option>`).join('')}</select>
+    <span class="sp"></span><button class="btn btn-primary" data-act="newOrden" data-tipo="${tipo}">+ ${tipo === 'venta' ? 'Nuevo pedido de cliente' : 'Nueva orden de compra'}</button></div>
+  ${ordTable(list, true)}`};
+}
+function vOrden(id){
+  const o = byId(DB.ordenes, id); if (!o) return {title: 'No encontrada', html: empty('Esta orden no existe. <a href="#ordenes">Volver</a>')};
+  const t = totals(o), venta = o.tipo === 'venta', c = cuenta(o.cuentaId) || {contactos: []}, ps = payState(o);
+  const ests = venta ? EST_VENTA : EST_COMPRA, idx = ests.indexOf(o.estatus);
+  const pagos = DB.movimientos.filter(m => m.ordenId === id).sort((a, b) => a.fecha.localeCompare(b.fecha));
+  const rel = venta ? DB.ordenes.filter(x => x.ordenVentaId === id) : (o.ordenVentaId ? [byId(DB.ordenes, o.ordenVentaId)].filter(Boolean) : []);
+  const costo = venta ? sum(o.lineas, l => { const p = byId(DB.productos, l.productoId); return p ? num(p.costo) * num(l.cant) : 0; }) : 0;
+  const pct = t.total ? Math.min(100, t.pagado / t.total * 100) : 0;
+  return {title: venta ? 'Pedido de cliente' : 'Orden de compra', html: `
+  <div class="row no-print" style="margin-bottom:10px"><a href="#ordenes" data-act="ui" data-k="ordTipo" data-v="${o.tipo}" class="muted">← Órdenes</a></div>
+  <div class="print-only" style="margin-bottom:16px"><h2>${esc(DB.settings.empresa)}</h2><div>${esc(DB.settings.direccion)} · ${esc(DB.settings.telefono)} · ${esc(DB.settings.email)}</div></div>
+  <div class="card" style="margin-bottom:16px">
+    <div class="detail-h"><div style="flex:1;min-width:220px"><div class="row"><h2>${esc(o.folio)}</h2>${ordStatusBadge(o)}${badge(ps[0], ps[1])}</div>
+      <div class="meta"><span>${venta ? 'Cliente' : 'Proveedor'}: <a href="#cliente/${o.cuentaId}">${esc(c.nombre || '—')}</a></span>${o.ocCliente ? `<span>${venta ? 'OC del cliente' : 'Ref.'}: <b>${esc(o.ocCliente)}</b></span>` : ''}<span>${avatar(o.responsable, true)}</span></div></div>
+      <div class="row no-print"><button class="btn" data-act="editOrden" data-id="${id}">Editar</button><button class="btn" data-act="print">Imprimir / PDF</button>${venta ? `<button class="btn" data-act="ordenToCompra" data-id="${id}">Generar OC a proveedor</button>` : ''}<button class="btn btn-primary" data-act="pago" data-id="${id}">${venta ? 'Registrar cobro' : 'Registrar pago'}</button></div></div>
+    <div class="card-b no-print" style="border-top:1px solid var(--border)"><div class="hint" style="margin-bottom:6px">Avance del pedido · clic para cambiar estatus</div>
+      <div class="stepper">${ests.map((s, i) => `<button class="step ${i < idx && o.estatus !== 'Cancelada' ? 'past' : ''} ${i === idx ? 'cur' : ''}" data-act="setEstatus" data-id="${id}" data-v="${esc(s)}">${esc(s)}</button>`).join('')}</div></div>
+  </div>
+  <div class="dash">
+    <div class="grid">
+      <div class="card"><div class="card-h"><h3>Partidas</h3></div><div class="table-wrap"><table class="tbl"><thead><tr><th>#</th><th>Descripción</th><th class="num">Cant.</th><th class="num">${venta ? 'Precio' : 'Costo'}</th><th class="num">Desc.</th><th class="num">Importe</th></tr></thead><tbody>
+        ${o.lineas.map((l, i) => { const p = byId(DB.productos, l.productoId); return `<tr><td>${i + 1}</td><td><div class="cell-main">${esc(l.desc)}</div>${p ? `<div class="cell-sub">${esc(p.sku)} · ${esc(p.marca)}</div>` : ''}</td><td class="num">${l.cant}</td><td class="num">${money2(l.precio)}</td><td class="num">${l.dto ? l.dto + '%' : '—'}</td><td class="num">${money2(lineImp(l))}</td></tr>`; }).join('')}
+      </tbody></table></div>
+      <div class="card-b"><div class="totals"><div><span class="muted">Subtotal</span><span>${money2(t.sub)}</span></div><div><span class="muted">IVA ${o.iva}%</span><span>${money2(t.iva)}</span></div><div class="big"><span>Total</span><span>${money2(t.total)}</span></div>
+        ${venta && costo ? `<div class="no-print"><span class="muted">Margen bruto estimado</span><span>${money(t.sub - costo)} (${Math.round((t.sub - costo) / t.sub * 100)}%)</span></div>` : ''}</div></div></div>
+      ${o.notas ? `<div class="card card-b"><div class="muted" style="font-size:12px;margin-bottom:4px">Notas / condiciones</div><div style="white-space:pre-wrap">${esc(o.notas)}</div></div>` : ''}
+    </div>
+    <div class="grid" style="align-content:start">
+      <div class="card card-b"><div class="info-grid" style="grid-template-columns:1fr 1fr">
+        ${[['Fecha', fdate(o.fecha)], ['Entrega estimada', fdate(o.entrega)], ['Vence pago', fdate(o.vence)], ['Crédito', (c.credito ?? '—') + ' días'], ['Contacto', c.contactos[0]?.nombre || '—'], ['Teléfono', c.contactos[0]?.tel || '—']].map(([l, v]) => `<div><div class="l">${l}</div><div class="v">${esc(v)}</div></div>`).join('')}
+      </div></div>
+      <div class="card"><div class="card-h"><h3>${venta ? 'Cobros' : 'Pagos'}</h3><span class="sp"></span><b>${money(t.saldo)}</b><span class="muted">pendiente</span></div>
+        <div class="card-b" style="padding-bottom:6px"><div class="progress"><span style="width:${pct}%"></span></div><div class="hint" style="margin-top:6px">${Math.round(pct)}% pagado · ${money(t.pagado)} de ${money(t.total)}</div></div>
+        <div class="list">${pagos.map(m => `<div class="li"><div style="flex:1"><div class="t">${money2(m.monto)}</div><div class="m">${fdate(m.fecha)} · ${esc(m.categoria)} · ${esc(m.metodo)}${m.referencia ? ' · ' + esc(m.referencia) : ''}</div></div><button class="icon-btn no-print" data-act="delMov" data-id="${m.id}" aria-label="Eliminar pago">×</button></div>`).join('') || empty('Sin pagos registrados')}</div></div>
+      ${rel.length ? `<div class="card"><div class="card-h"><h3>${venta ? 'Compras a proveedor ligadas' : 'Pedido de cliente ligado'}</h3></div><div class="list">${rel.map(r => `<a class="li" href="#orden/${r.id}" style="color:inherit"><div style="flex:1"><div class="t">${esc(r.folio)}</div><div class="m">${esc(cname(r.cuentaId))}</div></div>${ordStatusBadge(r)}</a>`).join('')}</div></div>` : ''}
+      <div class="row no-print"><button class="btn btn-sm" data-act="dupOrden" data-id="${id}">Duplicar</button><button class="btn btn-sm btn-danger" data-act="delOrden" data-id="${id}">Eliminar orden</button></div>
+    </div>
+  </div>`};
+}
+
+/* ---- Oportunidades ---- */
+function vOport(){
+  let list = DB.oportunidades; if (UI.opResp !== 'todos') list = list.filter(o => o.responsable === UI.opResp);
+  const open = list.filter(o => !['Ganada','Perdida'].includes(o.etapa));
+  return {title: 'Oportunidades', html: `
+  <div class="toolbar"><select data-ui="opResp" aria-label="Responsable"><option value="todos">Todo el equipo</option>${DB.team.map(u => `<option value="${u.id}" ${UI.opResp === u.id ? 'selected' : ''}>${esc(u.nombre)}</option>`).join('')}</select>
+    <span class="muted">Abierto <b style="color:var(--text)">${money(sum(open, o => o.valor))}</b> · Ponderado <b style="color:var(--text)">${money(sum(open, o => o.valor * o.prob / 100))}</b></span>
+    <span class="sp"></span><button class="btn btn-primary" data-act="newOport">+ Nueva oportunidad</button></div>
+  <p class="hint" style="margin-top:-6px">Arrastra las tarjetas entre columnas para cambiar de etapa. Clic para editar o convertir en pedido.</p>
+  <div class="kanban">${ETAPAS.map(e => { const it = list.filter(o => o.etapa === e).sort((a, b) => (a.cierre || '').localeCompare(b.cierre || '')); const color = e === 'Ganada' ? 'var(--ok)' : e === 'Perdida' ? 'var(--faint)' : 'var(--primary)'; return `<div class="col" data-etapa="${esc(e)}">
+    <div class="col-h" style="border-top-color:${color}"><div class="row"><b>${esc(e)}</b><span class="sp"></span><span class="badge" style="padding:1px 7px">${it.length}</span></div><div class="s">${money(sum(it, o => o.valor))}</div></div>
+    <div class="col-b">${it.map(o => `<div class="deal" draggable="true" data-id="${o.id}" data-act="editOport" tabindex="0"><div class="t">${esc(o.titulo)}</div><div class="c">${esc(cname(o.cuentaId))}</div>
+      <div class="f"><span class="val">${money(o.valor)}</span><span class="muted">${o.prob}%</span><span class="sp"></span><span class="muted ${o.cierre < today() && !['Ganada','Perdida'].includes(o.etapa) ? 'overdue' : ''}">${fdate(o.cierre, false)}</span>${avatar(o.responsable)}</div></div>`).join('')}</div></div>`; }).join('')}</div>`,
+  after: () => {
+    $$('.deal').forEach(d => d.addEventListener('dragstart', e => { e.dataTransfer.setData('text/plain', d.dataset.id); e.dataTransfer.effectAllowed = 'move'; }));
+    $$('.col').forEach(col => {
+      col.addEventListener('dragover', e => { e.preventDefault(); col.classList.add('over'); });
+      col.addEventListener('dragleave', () => col.classList.remove('over'));
+      col.addEventListener('drop', e => { e.preventDefault(); col.classList.remove('over'); const o = byId(DB.oportunidades, e.dataTransfer.getData('text/plain')); const et = col.dataset.etapa; if (o && o.etapa !== et){ o.etapa = et; o.prob = PROB[et]; log(`Movió "${o.titulo}" a ${et}`); save(); render(); toast(et === 'Ganada' ? '¡Oportunidad ganada! Conviértela en pedido.' : 'Etapa: ' + et); } });
+    });
+  }};
+}
+
+/* ---- Finanzas ---- */
+function vFinanzas(){
+  const tab = UI.finTab;
+  const cards = DB.bancos.map(b => `<div class="card kpi"><div class="row"><div class="l" style="flex:1">${esc(b.nombre)}</div><button class="icon-btn" data-act="editBanco" data-id="${b.id}" aria-label="Editar cuenta">✎</button></div><div class="v">${money(saldoBanco(b.id))}</div></div>`).join('');
+  let body = '';
+  if (tab === 'mov'){
+    let list = DB.movimientos.slice();
+    if (UI.finTipo !== 'todos') list = list.filter(m => m.tipo === UI.finTipo);
+    if (UI.finMes) list = list.filter(m => m.fecha.startsWith(UI.finMes));
+    if (UI.finBanco !== 'todos') list = list.filter(m => m.bancoId === UI.finBanco);
+    list.sort((a, b) => b.fecha.localeCompare(a.fecha));
+    const meses = [...new Set(DB.movimientos.map(m => m.fecha.slice(0, 7)))].sort().reverse();
+    const ti = sum(list.filter(m => m.tipo === 'ingreso'), m => m.monto), te = sum(list.filter(m => m.tipo === 'egreso'), m => m.monto);
+    const porCat = {}; list.filter(m => m.tipo === 'egreso').forEach(m => porCat[m.categoria] = (porCat[m.categoria] || 0) + m.monto);
+    const cats = Object.entries(porCat).sort((a, b) => b[1] - a[1]); const cmax = cats[0]?.[1] || 1;
+    body = `<div class="toolbar">
+      <select data-ui="finTipo" aria-label="Tipo"><option value="todos">Ingresos y egresos</option><option value="ingreso" ${UI.finTipo === 'ingreso' ? 'selected' : ''}>Solo ingresos</option><option value="egreso" ${UI.finTipo === 'egreso' ? 'selected' : ''}>Solo egresos</option></select>
+      <select data-ui="finMes" aria-label="Mes"><option value="">Todos los meses</option>${meses.map(m => `<option value="${m}" ${UI.finMes === m ? 'selected' : ''}>${parseD(m + '-01').toLocaleDateString('es-MX', {month: 'long', year: 'numeric'})}</option>`).join('')}</select>
+      <select data-ui="finBanco" aria-label="Cuenta"><option value="todos">Todas las cuentas</option>${DB.bancos.map(b => `<option value="${b.id}" ${UI.finBanco === b.id ? 'selected' : ''}>${esc(b.nombre)}</option>`).join('')}</select>
+      <span class="sp"></span><button class="btn" data-act="csv">Exportar CSV</button></div>
+      <div class="grid"><div class="card table-wrap"><table class="tbl"><thead><tr><th>Fecha</th><th>Concepto</th><th>Categoría</th><th>Cliente / proveedor</th><th>Cuenta</th><th class="num">Ingreso</th><th class="num">Egreso</th><th></th></tr></thead><tbody>
+        ${list.map(m => `<tr><td style="white-space:nowrap">${fdate(m.fecha)}</td><td>${m.ordenId ? `<a href="#orden/${m.ordenId}">${esc(m.concepto)}</a>` : esc(m.concepto)}<div class="cell-sub">${esc(m.metodo)}${m.referencia ? ' · ' + esc(m.referencia) : ''}</div></td><td>${esc(m.categoria)}</td><td>${m.cuentaId ? `<a href="#cliente/${m.cuentaId}">${esc(cname(m.cuentaId))}</a>` : '—'}</td><td class="cell-sub">${esc((byId(DB.bancos, m.bancoId) || {}).nombre || '')}</td>
+          <td class="num" style="color:var(--ok)">${m.tipo === 'ingreso' ? money2(m.monto) : ''}</td><td class="num" style="color:var(--danger)">${m.tipo === 'egreso' ? money2(m.monto) : ''}</td><td class="num"><button class="icon-btn" data-act="editMov" data-id="${m.id}" aria-label="Editar">✎</button><button class="icon-btn" data-act="delMov" data-id="${m.id}" aria-label="Eliminar">×</button></td></tr>`).join('') || `<tr><td colspan="8">${empty('Sin movimientos con estos filtros')}</td></tr>`}</tbody>
+        <tfoot><tr><td colspan="5">${list.length} movimientos · Neto <span style="color:${ti - te >= 0 ? 'var(--ok)' : 'var(--danger)'}">${money2(ti - te)}</span></td><td class="num">${money2(ti)}</td><td class="num">${money2(te)}</td><td></td></tr></tfoot></table></div>
+      <div class="card" style="max-width:640px"><div class="card-h"><h3>Gasto por categoría (según filtros)</h3></div><div class="card-b">${cats.map(([k, v]) => `<div style="margin-bottom:10px"><div class="row" style="font-size:13px"><span>${esc(k)}</span><span class="sp"></span><b class="num">${money(v)}</b></div><div class="progress" style="margin-top:4px"><span style="width:${v / cmax * 100}%;background:var(--c-out)"></span></div></div>`).join('') || empty('Sin egresos')}</div></div></div>`;
+  } else {
+    const venta = tab === 'cxc', list = pendientes(venta ? 'venta' : 'compra').sort((a, b) => b.dias - a.dias);
+    const age = [['Al corriente', x => x.dias <= 0], ['1–30 días', x => x.dias > 0 && x.dias <= 30], ['31–60 días', x => x.dias > 30 && x.dias <= 60], ['Más de 60', x => x.dias > 60]];
+    body = `<div class="kpis">${age.map(([l, f], i) => `<div class="card kpi"><div class="l">${l}</div><div class="v" style="${i > 0 && sum(list.filter(f), x => x.t.saldo) ? 'color:var(--danger)' : ''}">${money(sum(list.filter(f), x => x.t.saldo))}</div><div class="s">${list.filter(f).length} órdenes</div></div>`).join('')}</div>
+    <div class="card table-wrap"><table class="tbl"><thead><tr><th>Orden</th><th>${venta ? 'Cliente' : 'Proveedor'}</th><th>Estatus</th><th>Vence</th><th class="num">Días vencido</th><th class="num">Total</th><th class="num">Pagado</th><th class="num">Saldo</th><th></th></tr></thead><tbody>
+      ${list.map(({o, t, dias}) => `<tr><td><a href="#orden/${o.id}" class="cell-main">${esc(o.folio)}</a></td><td><a href="#cliente/${o.cuentaId}">${esc(cname(o.cuentaId))}</a></td><td>${ordStatusBadge(o)}</td><td>${fdate(o.vence)}</td><td class="num ${dias > 0 ? 'overdue' : ''}">${dias > 0 ? dias : '—'}</td><td class="num">${money(t.total)}</td><td class="num">${money(t.pagado)}</td><td class="num"><b>${money(t.saldo)}</b></td><td class="num"><button class="btn btn-sm" data-act="pago" data-id="${o.id}">${venta ? 'Cobrar' : 'Pagar'}</button></td></tr>`).join('') || `<tr><td colspan="9">${empty('Nada pendiente')}</td></tr>`}</tbody>
+      ${list.length ? `<tfoot><tr><td colspan="7">Total pendiente</td><td class="num">${money(sum(list, x => x.t.saldo))}</td><td></td></tr></tfoot>` : ''}</table></div>`;
+  }
+  return {title: 'Finanzas', html: `
+  <div class="toolbar"><h2 style="font-size:16px">Cuentas</h2><span class="sp"></span><button class="btn btn-sm" data-act="newBanco">+ Cuenta</button><button class="btn" data-act="newMov" data-tipo="egreso">− Registrar gasto</button><button class="btn btn-primary" data-act="newMov" data-tipo="ingreso">+ Registrar ingreso</button></div>
+  <div class="kpis">${cards}<div class="card kpi" style="background:var(--primary-soft)"><div class="l">Total disponible</div><div class="v">${money(sum(DB.bancos, b => saldoBanco(b.id)))}</div></div></div>
+  <div class="tabs">${[['mov', 'Movimientos'], ['cxc', 'Cuentas por cobrar'], ['cxp', 'Cuentas por pagar']].map(([k, l]) => `<button class="${tab === k ? 'on' : ''}" data-act="ui" data-k="finTab" data-v="${k}">${l}</button>`).join('')}</div>
+  ${body}`};
+}
+
+/* ---- Catálogo ---- */
+function vCatalogo(){
+  const q = UI.catQ.trim().toLowerCase(); const cats = ['Todas', ...new Set(DB.productos.map(p => p.categoria))];
+  let list = DB.productos.filter(p => (!q || [p.sku, p.nombre, p.marca, p.categoria].join(' ').toLowerCase().includes(q)) && (UI.catCat === 'Todas' || p.categoria === UI.catCat));
+  const vendido = id => sum(DB.ordenes.filter(o => o.tipo === 'venta' && o.estatus !== 'Cancelada'), o => sum(o.lineas.filter(l => l.productoId === id), l => num(l.cant)));
+  return {title: 'Catálogo', html: `
+  <div class="toolbar"><input type="search" id="catQ" data-ui="catQ" value="${esc(UI.catQ)}" placeholder="Buscar producto, SKU, marca…" aria-label="Buscar en catálogo">
+    <select data-ui="catCat" aria-label="Categoría">${cats.map(c => `<option ${UI.catCat === c ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select>
+    <span class="sp"></span><button class="btn btn-primary" data-act="newProducto">+ Nuevo producto</button></div>
+  <div class="card table-wrap"><table class="tbl"><thead><tr><th>SKU</th><th>Producto / servicio</th><th>Marca</th><th>Categoría</th><th class="num">Precio</th><th class="num">Costo</th><th class="num">Margen</th><th class="num">Entrega</th><th class="num">Vendidos</th></tr></thead><tbody>
+  ${list.map(p => `<tr class="click" data-act="editProducto" data-id="${p.id}"><td class="cell-sub" style="white-space:nowrap">${esc(p.sku)}</td><td class="cell-main">${esc(p.nombre)}</td><td>${esc(p.marca)}</td><td>${esc(p.categoria)}</td><td class="num">${money(p.precio)}</td><td class="num">${money(p.costo)}</td><td class="num">${p.precio ? Math.round((p.precio - p.costo) / p.precio * 100) + '%' : '—'}</td><td class="num">${p.semanas ? p.semanas + ' sem' : 'Inmediata'}</td><td class="num">${vendido(p.id) || '—'}</td></tr>`).join('') || `<tr><td colspan="9">${empty('Sin productos')}</td></tr>`}
+  </tbody></table></div>`};
+}
+
+/* ---- Tareas ---- */
+function vTareas(){
+  let list = DB.tareas.slice(); if (UI.tareaResp !== 'todos') list = list.filter(t => t.responsable === UI.tareaResp);
+  const counts = {pendientes: list.filter(t => !t.hecho).length, vencidas: list.filter(t => !t.hecho && t.fecha < today()).length, hoy: list.filter(t => !t.hecho && t.fecha === today()).length, hechas: list.filter(t => t.hecho).length};
+  const f = {pendientes: t => !t.hecho, vencidas: t => !t.hecho && t.fecha < today(), hoy: t => !t.hecho && t.fecha === today(), hechas: t => t.hecho}[UI.tareaTab];
+  list = list.filter(f).sort((a, b) => UI.tareaTab === 'hechas' ? b.fecha.localeCompare(a.fecha) : a.fecha.localeCompare(b.fecha));
+  return {title: 'Tareas', html: `
+  <div class="toolbar"><select data-ui="tareaResp" aria-label="Responsable"><option value="todos">Todo el equipo</option>${DB.team.map(u => `<option value="${u.id}" ${UI.tareaResp === u.id ? 'selected' : ''}>${esc(u.nombre)}</option>`).join('')}</select><span class="sp"></span><button class="btn btn-primary" data-act="newTarea">+ Nueva tarea</button></div>
+  <div class="tabs">${[['pendientes', 'Pendientes'], ['hoy', 'Hoy'], ['vencidas', 'Vencidas'], ['hechas', 'Completadas']].map(([k, l]) => `<button class="${UI.tareaTab === k ? 'on' : ''}" data-act="ui" data-k="tareaTab" data-v="${k}">${l}<span class="c">${counts[k]}</span></button>`).join('')}</div>
+  <div class="card list">${list.map(taskItem).join('') || empty('Nada por aquí')}</div>`};
+}
+
+/* ---- Ajustes ---- */
+function vAjustes(){
+  const s = DB.settings;
+  return {title: 'Ajustes', html: `<div class="grid" style="max-width:860px">
+  <div class="card"><div class="card-h"><h3>Datos de la empresa</h3></div><form class="card-b" id="setForm"><div class="fgrid">
+    ${fld('Nombre comercial', inp('empresa', s.empresa, 'required'))}${fld('Teléfono', inp('telefono', s.telefono))}
+    ${fld('Dirección', inp('direccion', s.direccion), 'full')}${fld('Correo', inp('email', s.email, 'type="email"'))}
+    ${fld('Moneda', sel('moneda', [['MXN', 'Peso mexicano (MXN)'], ['USD', 'Dólar (USD)']], s.moneda))}${fld('IVA por defecto %', inp('iva', s.iva, 'type="number" min="0" step="any"'))}
+  </div><div style="margin-top:14px"><button class="btn btn-primary">Guardar ajustes</button></div></form></div>
+  <div class="card"><div class="card-h"><h3>Equipo (staff)</h3><span class="sp"></span><button class="btn btn-sm" data-act="newUser">+ Agregar persona</button></div>
+    <div class="list">${DB.team.map(u => `<div class="li" style="align-items:center">${avatar(u.id)}<div style="flex:1"><div class="t">${esc(u.nombre)}</div><div class="m">${esc(u.rol || '')}</div></div>${u.id === s.usuario ? badge('Sesión actual', 'b-primary') : `<button class="btn btn-sm" data-act="setUser" data-id="${u.id}">Usar esta cuenta</button>`}</div>`).join('')}</div></div>
+  <div class="card"><div class="card-h"><h3>Respaldo de datos</h3></div><div class="card-b">
+    <p class="muted" style="margin-top:0">En esta demo la información se guarda en el navegador de este equipo. Descarga un respaldo para moverla a otra computadora.</p>
+    <div class="row"><button class="btn" data-act="exportJSON">Descargar respaldo (.json)</button><label class="btn">Importar respaldo<input type="file" accept="application/json,.json" id="importFile" hidden></label><span class="sp"></span><button class="btn btn-danger" data-act="reset">Restablecer datos demo</button></div>
+  </div></div></div>`,
+  after: () => {
+    $('#setForm').addEventListener('submit', e => { e.preventDefault(); const d = Object.fromEntries(new FormData(e.target)); Object.assign(DB.settings, d, {iva: num(d.iva)}); save(); render(); toast('Ajustes guardados'); });
+    $('#importFile').addEventListener('change', e => { const file = e.target.files[0]; if (!file) return; const rd = new FileReader(); rd.onload = () => { try { const x = JSON.parse(rd.result); if (!x || x.version !== 1 || !Array.isArray(x.cuentas)) throw 0; DB = x; save(); render(); toast('Respaldo importado'); } catch(err){ toast('Archivo no válido'); } }; rd.readAsText(file); });
+  }};
+}
+
+/* ============ Router ============ */
+const VIEWS = {panel: vPanel, clientes: vClientes, cliente: vCliente, oportunidades: vOport, ordenes: vOrdenes, orden: vOrden, finanzas: vFinanzas, catalogo: vCatalogo, tareas: vTareas, ajustes: vAjustes};
+const NAV_OF = {cliente: 'clientes', orden: 'ordenes'};
+function render(){
+  const [view, id] = (location.hash.slice(1) || 'panel').split('/');
+  const V = VIEWS[view] || vPanel;
+  const ae = document.activeElement, focusId = ae && ae.id && $('#view').contains(ae) ? ae.id : null, caret = focusId && ae.selectionStart;
+  const r = V(id);
+  $('#view').innerHTML = r.html;
+  $('#pageTitle').textContent = r.title;
+  document.title = r.title + ' · AACKS Group CRM';
+  renderNav(NAV_OF[view] || (VIEWS[view] ? view : 'panel'));
+  r.after && r.after();
+  if (focusId){ const el = document.getElementById(focusId); if (el){ el.focus(); try { el.setSelectionRange(caret, caret); } catch(e){} } }
+}
+window.addEventListener('hashchange', () => { render(); window.scrollTo(0, 0); document.body.classList.remove('nav-open'); $('#newMenu').innerHTML = ''; });
+
+/* ============ Acciones ============ */
+function download(name, content, type){ const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([content], {type})); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500); }
+const A = {
+  go: ds => { location.hash = ds.href; },
+  ui: ds => { UI[ds.k] = ds.v; if (ds.k === 'clTipo' && location.hash.startsWith('#cliente/')) return; if (ds.k === 'ordTipo') UI.ordEst = 'Todas'; render(); },
+  openNav: () => document.body.classList.add('nav-open'),
+  closeNav: () => document.body.classList.remove('nav-open'),
+  closeModal: () => closeModal(),
+  bgClose: (ds, el, e) => { if (e.target === el) closeModal(); },
+  toggleNew: () => { const m = $('#newMenu'); m.innerHTML = m.innerHTML ? '' : `<div class="menu">${[['newCuenta', 'Cliente', 'cliente'], ['newOrden', 'Pedido de cliente (OC recibida)', 'venta'], ['newOrden', 'Orden de compra a proveedor', 'compra'], ['newUpdate', 'Actualización de cliente', ''], ['newMov', 'Ingreso', 'ingreso'], ['newMov', 'Gasto', 'egreso'], ['newOport', 'Oportunidad', ''], ['newTarea', 'Tarea', ''], ['newCuenta', 'Proveedor', 'proveedor']].map(([a, l, t]) => `<button data-act="${a}" data-tipo="${t}">${l}</button>`).join('')}</div>`; },
+  newCuenta: ds => formCuenta(null, ds.tipo || 'cliente'),
+  editCuenta: ds => formCuenta(ds.id),
+  delCuenta: ds => { const c = cuenta(ds.id); if (DB.ordenes.some(o => o.cuentaId === ds.id)){ alert('No se puede eliminar: tiene órdenes registradas. Cámbialo a "Inactivo".'); return; } if (confirm(`¿Eliminar ${c.nombre}?`)){ DB.cuentas = DB.cuentas.filter(x => x.id !== ds.id); DB.updates = DB.updates.filter(u => u.cuentaId !== ds.id); log(`Eliminó a ${c.nombre}`); save(); location.hash = '#clientes'; } },
+  newContacto: ds => formContacto(ds.cid),
+  editContacto: ds => formContacto(ds.cid, ds.id),
+  delContacto: ds => { const c = cuenta(ds.cid); if (confirm('¿Eliminar contacto?')){ c.contactos = c.contactos.filter(k => k.id !== ds.id); save(); render(); } },
+  newUpdate: ds => formUpdate(ds.cid || ''),
+  delUpd: ds => { if (confirm('¿Eliminar esta actualización?')){ DB.updates = DB.updates.filter(u => u.id !== ds.id); save(); render(); } },
+  newOrden: ds => formOrden(null, {tipo: ds.tipo || 'venta', cuentaId: ds.cid}),
+  editOrden: ds => formOrden(ds.id),
+  addLine: (ds) => { const tb = $('#lines'); tb.insertAdjacentHTML('beforeend', lineRow({cant: 1, precio: 0, dto: 0}, ds.tipo)); recalcLines($('#mform')); },
+  delLine: (ds, el) => { const f = $('#mform'); if ($$('.line', f).length > 1){ el.closest('.line').remove(); recalcLines(f); } },
+  setEstatus: ds => { const o = byId(DB.ordenes, ds.id); if (o.estatus === ds.v) return; o.estatus = ds.v; log(`Cambió ${o.folio} a "${ds.v}"`); save(); render(); toast('Estatus: ' + ds.v); },
+  pago: ds => formPago(ds.id),
+  setMonto: ds => { $('#pMonto').value = ds.v; },
+  dupOrden: ds => { const o = byId(DB.ordenes, ds.id); formOrden(null, {tipo: o.tipo, cuentaId: o.cuentaId, lineas: JSON.parse(JSON.stringify(o.lineas)), notas: o.notas}); },
+  ordenToCompra: ds => { const o = byId(DB.ordenes, ds.id); const lineas = o.lineas.filter(l => { const p = byId(DB.productos, l.productoId); return p && p.marca !== 'AACKS Group'; }).map(l => ({...l, precio: byId(DB.productos, l.productoId).costo, dto: 0})); const marca = lineas[0] && byId(DB.productos, lineas[0].productoId).marca; const prov = DB.cuentas.find(c => c.tipo === 'proveedor' && marca && c.nombre.toLowerCase().includes(marca.split(' ')[0].toLowerCase())); formOrden(null, {tipo: 'compra', cuentaId: prov ? prov.id : '', ordenVentaId: o.id, lineas: lineas.length ? lineas : [{cant: 1, precio: 0, dto: 0}], notas: `Para pedido ${o.folio} de ${cname(o.cuentaId)}`}); },
+  delOrden: ds => { const o = byId(DB.ordenes, ds.id); if (confirm(`¿Eliminar ${o.folio} y sus pagos registrados?`)){ DB.ordenes = DB.ordenes.filter(x => x.id !== ds.id); DB.movimientos = DB.movimientos.filter(m => m.ordenId !== ds.id); log(`Eliminó la orden ${o.folio}`); save(); location.hash = '#ordenes'; toast('Orden eliminada'); } },
+  print: () => window.print(),
+  newMov: ds => formMov(ds.tipo || 'ingreso'),
+  editMov: ds => formMov(null, ds.id),
+  delMov: ds => { if (confirm('¿Eliminar este movimiento?')){ DB.movimientos = DB.movimientos.filter(m => m.id !== ds.id); log('Eliminó un movimiento financiero'); save(); render(); } },
+  newBanco: () => formBanco(),
+  editBanco: ds => formBanco(ds.id),
+  csv: () => { const rows = [['Fecha','Tipo','Concepto','Categoría','Cliente/Proveedor','Orden','Cuenta','Método','Referencia','Monto']].concat(DB.movimientos.slice().sort((a, b) => a.fecha.localeCompare(b.fecha)).map(m => [m.fecha, m.tipo, m.concepto, m.categoria, m.cuentaId ? cname(m.cuentaId) : '', (byId(DB.ordenes, m.ordenId) || {}).folio || '', (byId(DB.bancos, m.bancoId) || {}).nombre || '', m.metodo, m.referencia || '', (m.tipo === 'egreso' ? -m.monto : m.monto).toFixed(2)])); download('movimientos-aacks.csv', '﻿' + rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n'), 'text/csv'); },
+  newProducto: () => formProducto(),
+  editProducto: ds => formProducto(ds.id),
+  newOport: ds => formOport(null, {cuentaId: ds.cid}),
+  editOport: ds => formOport(ds.id),
+  delOport: ds => { if (confirm('¿Eliminar oportunidad?')){ DB.oportunidades = DB.oportunidades.filter(o => o.id !== ds.id); closeModal(); save(); render(); } },
+  oportToOrder: ds => { const o = byId(DB.oportunidades, ds.id); o.etapa = 'Ganada'; o.prob = 100; log(`Ganó la oportunidad "${o.titulo}"`); save(); closeModal(); formOrden(null, {tipo: 'venta', cuentaId: o.cuentaId, notas: 'Oportunidad: ' + o.titulo, lineas: [{desc: o.titulo, cant: 1, precio: o.valor, dto: 0}]}); },
+  newTarea: ds => formTarea(null, {cuentaId: ds.cid}),
+  editTarea: ds => formTarea(ds.id),
+  delTarea: ds => { DB.tareas = DB.tareas.filter(t => t.id !== ds.id); closeModal(); save(); render(); },
+  toggleTask: ds => { const t = byId(DB.tareas, ds.id); t.hecho = !t.hecho; if (t.hecho) log(`Completó: ${t.titulo}`); save(); render(); if (t.hecho) toast('Tarea completada'); },
+  newEquipo: ds => formEquipo(ds.cid),
+  editEquipo: ds => formEquipo(null, ds.id),
+  delEquipo: ds => { if (confirm('¿Eliminar equipo?')){ DB.equipos = DB.equipos.filter(e => e.id !== ds.id); closeModal(); save(); render(); } },
+  programarMant: ds => { const e = byId(DB.equipos, ds.id); formTarea(null, {cuentaId: e.cuentaId}); const f = $('#mform'); f.titulo.value = `Mantenimiento preventivo: ${e.descripcion} (serie ${e.serie || 's/n'})`; f.tipo.value = 'Servicio'; f.fecha.value = e.proxMant && e.proxMant > today() ? e.proxMant : today(); f.responsable.value = (DB.team.find(u => /servicio/i.test(u.rol)) || me()).id; },
+  newUser: () => openModal({title: 'Agregar persona al equipo', body: `<div class="fgrid">${fld('Nombre completo', inp('nombre', '', 'required'))}${fld('Puesto / área', inp('rol', ''))}</div>`, onSubmit: d => { DB.team.push({id: uid('u'), nombre: d.nombre, rol: d.rol}); toast('Persona agregada'); }}),
+  setUser: ds => { DB.settings.usuario = ds.id; save(); render(); toast('Ahora trabajas como ' + me().nombre); },
+  exportJSON: () => download(`respaldo-crm-aacks-${today()}.json`, JSON.stringify(DB, null, 2), 'application/json'),
+  reset: () => { if (confirm('Se borrarán todos los cambios y se cargarán los datos de ejemplo. ¿Continuar?')){ DB = seed(); save(); location.hash = '#panel'; render(); toast('Datos demo restablecidos'); } },
+};
+document.addEventListener('click', e => {
+  const a = e.target.closest('[data-act]');
+  if (!e.target.closest('.new-wrap') && $('#newMenu').innerHTML) $('#newMenu').innerHTML = '';
+  if (!e.target.closest('.search')) $('#gres').innerHTML = '';
+  if (!a) return;
+  if (a.type === 'checkbox'){ A[a.dataset.act]?.(a.dataset, a, e); return; }
+  if (a.tagName === 'A' && a.getAttribute('href') && a.dataset.act === 'ui'){ UI[a.dataset.k] = a.dataset.v; if (location.hash === a.getAttribute('href')) render(); return; }
+  if (e.target.closest('a[href]') && e.target.closest('a[href]') !== a && a.contains(e.target.closest('a[href]'))) return;
+  if (A[a.dataset.act]){ if (a.dataset.act !== 'bgClose') e.preventDefault(); if (a.closest('.menu')) $('#newMenu').innerHTML = ''; A[a.dataset.act](a.dataset, a, e); }
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape'){ if ($('#modalRoot').innerHTML) closeModal(); $('#newMenu').innerHTML = ''; $('#gres').innerHTML = ''; document.body.classList.remove('nav-open'); }
+  if (e.key === 'Enter' && e.target.matches('.deal')) A.editOport(e.target.dataset);
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k'){ e.preventDefault(); $('#gsearch').focus(); }
+});
+document.addEventListener('input', e => { const k = e.target.dataset.ui; if (k){ UI[k] = e.target.value; render(); } });
+document.addEventListener('change', e => {
+  const k = e.target.dataset.ui; if (k && e.target.tagName === 'SELECT'){ UI[k] = e.target.value; render(); }
+  if (e.target.id === 'userSel'){ DB.settings.usuario = e.target.value; save(); render(); toast('Ahora trabajas como ' + me().nombre); }
+});
+document.addEventListener('submit', e => {
+  if (e.target.id === 'quickUpd'){ e.preventDefault(); const d = Object.fromEntries(new FormData(e.target)); if (!d.texto.trim()) return; addUpdate(e.target.dataset.cid, d.tipo, d.texto); save(); render(); }
+});
+
+/* Búsqueda global */
+$('#gsearch').addEventListener('input', e => {
+  const q = e.target.value.trim().toLowerCase(); const box = $('#gres');
+  if (q.length < 2){ box.innerHTML = ''; return; }
+  const res = [];
+  DB.cuentas.forEach(c => { if ([c.nombre, c.ciudad, c.rfc, ...c.contactos.map(k => k.nombre)].join(' ').toLowerCase().includes(q)) res.push([c.tipo === 'cliente' ? 'Cliente' : 'Proveedor', c.nombre, c.ciudad, '#cliente/' + c.id]); });
+  DB.ordenes.forEach(o => { if ([o.folio, o.ocCliente].join(' ').toLowerCase().includes(q)) res.push([o.tipo === 'venta' ? 'Pedido' : 'Compra', o.folio + (o.ocCliente ? ' · ' + o.ocCliente : ''), cname(o.cuentaId), '#orden/' + o.id]); });
+  DB.productos.forEach(p => { if ([p.sku, p.nombre, p.marca].join(' ').toLowerCase().includes(q)) res.push(['Producto', p.nombre, p.sku, '#catalogo']); });
+  box.innerHTML = `<div class="search-res">${res.slice(0, 8).map(([k, t, s, h]) => `<a href="${h}" data-gs><span class="k">${k}</span><span style="min-width:0"><b>${esc(t)}</b><br><span class="muted" style="font-size:12px">${esc(s || '')}</span></span></a>`).join('') || '<div class="empty" style="padding:14px">Sin resultados</div>'}</div>`;
+});
+$('#gres').addEventListener('click', e => { if (e.target.closest('a')){ $('#gsearch').value = ''; setTimeout(() => $('#gres').innerHTML = '', 0); } });
+
+load();
+render();
+</script>
+</body>
+</html>
