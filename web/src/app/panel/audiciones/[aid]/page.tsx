@@ -89,7 +89,7 @@ export default async function AuditionConfig({ params, searchParams }: PageProps
       <Card className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="titular text-xl">Publicación</h2>
-          {a.estado !== "borrador" && <Link href={`/audiciones/${aid}`} target="_blank" className="text-sm font-bold text-violeta-claro">Ver página pública <Icono nombre="externo" /></Link>}
+          <Link href={`/audiciones/${aid}`} target="_blank" className="text-sm font-bold text-violeta-claro">{a.estado === "borrador" ? "Vista previa" : "Ver página pública"} <Icono nombre="externo" /></Link>
         </div>
         {a.visibilidad === "enlace" && (
           <p className="flex flex-wrap items-center gap-2 text-sm text-texto-2">Solo con enlace: no aparece en la lista pública. Comparte el enlace con quienes deben inscribirse. <CopyLink path={`/audiciones/${aid}`} /></p>
@@ -190,7 +190,7 @@ export default async function AuditionConfig({ params, searchParams }: PageProps
               <label className={check}><input type="checkbox" name="pedir_foto" defaultChecked={a.pedir_foto} className="mt-1" /> Foto del aspirante</label>
               <fieldset className="flex flex-col gap-1.5 rounded-lg bg-sala p-3">
                 <legend className="px-1 text-sm font-semibold">Perfil artístico: qué se les pregunta</legend>
-                <p className="text-xs text-texto-3">Todas son opcionales para quien se inscribe. Desmarca las que no quieras preguntar en esta audición; el juez ve las respuestas junto a la ficha de cada personaje.</p>
+                <p className="text-xs text-texto-3">Las que marques son obligatorias para quien se inscribe. Desmarca las que no quieras preguntar en esta audición; el juez ve las respuestas junto a la ficha de cada personaje.</p>
                 {PREGUNTAS_PERFIL.map((q) => (
                   <label key={q.valor} className={check}><input type="checkbox" name="perfil_pregunta" value={q.valor} defaultChecked={(a.perfil_preguntas ?? []).includes(q.valor)} className="mt-1" />
                     <span>{q.label}{"ayuda" in q && <span className="block text-xs text-texto-3">{q.ayuda}</span>}</span></label>

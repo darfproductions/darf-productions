@@ -30,6 +30,8 @@ export function ApplyForm(props: {
   invitado?: boolean;
   defaults: { nombre: string; telefono: string };
   previa: MyApplication | null;
+  /** Vista previa del equipo (convocatoria en borrador): se puede llenar para probar, pero no se envía ni se sube nada. */
+  vistaPrevia?: boolean;
 }) {
   const p = props.previa;
   const [state, action, pending] = useActionState<ApplyState, FormData>(applyToAudition, null);
@@ -42,6 +44,7 @@ export function ApplyForm(props: {
   const pide = (q: string) => props.opciones.perfil?.includes(q) ?? false;
   const menor = edad !== null && edad < 18 && (props.opciones.pedirTutor || !!props.invitado);
   const [falta, setFalta] = useState<string[]>([]);
+  const [avisoPrevia, setAvisoPrevia] = useState("");
 
   // 0146: antes de enviar, revisa lo que el navegador no puede marcar solo (foto, personaje, perfil) y dice qué falta.
   function revisar(e: React.FormEvent<HTMLFormElement>) {
@@ -56,10 +59,18 @@ export function ApplyForm(props: {
     });
     setFalta(faltan);
     if (faltan.length) e.preventDefault();
+    if (props.vistaPrevia) {
+      e.preventDefault();
+      if (e.currentTarget.checkValidity()) setAvisoPrevia(faltan.length ? "" : "Vista previa: la solicitud está completa. Aquí no se envía nada.");
+    }
   }
 
   async function subirFoto(file: File) {
     setFotoMsg("");
+    if (props.vistaPrevia) {
+      setFoto("vista-previa");
+      return setFotoMsg("Vista previa: la foto no se sube.");
+    }
     setSubiendo(true);
     try {
       const bmp = await createImageBitmap(file);
@@ -225,9 +236,10 @@ export function ApplyForm(props: {
       </div>
 
       {falta.length > 0 && <p role="alert" className="rounded-lg border border-[#ff8fa3]/50 bg-[#ff8fa3]/10 px-4 py-3 text-sm text-[#ffd5dd] sm:col-span-2">Tu solicitud está incompleta. Falta: <b>{falta.join(", ")}</b>.</p>}
+      {avisoPrevia && <p role="status" className="text-exito sm:col-span-2">{avisoPrevia}</p>}
       {state && <p role={state.ok ? "status" : "alert"} className={`sm:col-span-2 ${state.ok ? "text-exito" : "text-[#ff8fa3]"}`}>{state.message}</p>}
       <button disabled={pending || subiendo} className="boton-compra rounded-full px-6 py-4 text-sm font-bold uppercase tracking-[0.1em] disabled:opacity-60 sm:col-span-2">
-        {pending ? "Enviando…" : p && p.estado !== "cancelado" ? "Guardar cambios" : "Inscribirme"}
+        {props.vistaPrevia ? "Inscribirme (vista previa)" : pending ? "Enviando…" : p && p.estado !== "cancelado" ? "Guardar cambios" : "Inscribirme"}
       </button>
     </form>
   );
