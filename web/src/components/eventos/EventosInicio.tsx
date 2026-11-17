@@ -34,7 +34,7 @@ export function EventosInicio({ eventos }: { eventos: EventoCartelera[] }) {
       {!destacado ? (
         <div className="tarjeta flex flex-col items-start gap-3 p-6 text-texto-2 md:flex-row md:items-center md:justify-between">
           <p>Pronto anunciaremos fotos con el elenco, tours por backstage y transmisiones exclusivas.</p>
-          <Link href="/fan-zone" className="fb fb-fz fb-sm shrink-0">Únete al Club Fan para enterarte primero</Link>
+          <Link href="/fan-zone" className="fb fb-fz fb-sm w-full shrink-0 whitespace-normal py-3 text-center leading-snug md:w-auto md:whitespace-nowrap">Únete al Club Fan para enterarte primero</Link>
         </div>
       ) : (
         <div className="grid gap-5 lg:grid-cols-[1.15fr_0.85fr]">
