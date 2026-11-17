@@ -63,12 +63,12 @@ export default async function Home({ searchParams }: PageProps<"/">) {
             </div>
             {equipo.length > 0 && (
               <Link href="/nosotros" className="flex items-center gap-4 pt-2">
-                <span className="flex -space-x-3">
+                <span className="flex shrink-0 -space-x-3">
                   {equipo.map((m) =>
                     m.retrato_path ? (
-                      <img key={m.id} src={perfilUrl(m.retrato_path)} alt="" title={m.nombre} className="h-11 w-11 rounded-full object-cover ring-2 ring-sala" />
+                      <img key={m.id} src={perfilUrl(m.retrato_path)} alt="" title={m.nombre} className="h-11 w-11 shrink-0 rounded-full object-cover ring-2 ring-sala" />
                     ) : (
-                      <span key={m.id} title={m.nombre} className="ava h-11 w-11 text-[13px] ring-2 ring-sala">{iniciales(m.nombre)}</span>
+                      <span key={m.id} title={m.nombre} className="ava h-11 w-11 shrink-0 text-[13px] ring-2 ring-sala">{iniciales(m.nombre)}</span>
                     ),
                   )}
                 </span>
@@ -86,12 +86,11 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                   ) : (
                     <h2 className="titular absolute inset-x-6 bottom-6 text-4xl">{current.nombre}</h2>
                   )}
-                  <EstadoObra
-                    estado={current.estadoPublico}
-                    texto={enCartelera ? "Ahora en cartelera" : proxima ? "Próximamente" : "Lo último que presentamos"}
-                    className="absolute left-4 top-4"
-                  />
-                  {current.temporada && <span className="chip chip-oro absolute right-4 top-4 bg-sala/60 backdrop-blur">Temporada {current.temporada}</span>}
+                  {/* En celular las dos etiquetas no caben en una línea: se acomodan una debajo de la otra en vez de encimarse. */}
+                  <div className="absolute inset-x-4 top-4 flex flex-wrap items-start justify-between gap-2">
+                    <EstadoObra estado={current.estadoPublico} texto={enCartelera ? "Ahora en cartelera" : proxima ? "Próximamente" : "Lo último que presentamos"} />
+                    {current.temporada && <span className="chip chip-oro bg-sala/60 backdrop-blur">Temporada {current.temporada}</span>}
+                  </div>
                 </div>
                 <div className="flex flex-col gap-5 p-6 md:p-7">
                   <ul className="flex flex-wrap gap-2">
@@ -107,7 +106,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                   )}
                   <div className="flex flex-wrap gap-3">
                     {enCartelera && <Link href={`/producciones/${current.id}#funciones`} className="fb fb-luz flex-1">{textosVenta(current.modo_venta).cta}</Link>}
-                    <Link href={`/producciones/${current.id}`} className={`fb fb-oro ${enCartelera ? "" : "flex-1"}`}>
+                    <Link href={`/producciones/${current.id}`} className="fb fb-oro flex-1">
                       {enCartelera || proxima ? "Conocer la obra" : "Revivir la obra"}
                     </Link>
                   </div>
