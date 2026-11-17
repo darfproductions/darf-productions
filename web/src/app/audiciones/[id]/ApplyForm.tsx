@@ -190,7 +190,7 @@ export function ApplyForm(props: {
             {props.slots.map((s) => {
               const libres = lugares(s.cupo, s.ocupados) + (p?.slot_id === s.id && p.estado !== "cancelado" ? 1 : 0);
               return (
-                <label key={s.id} className={`flex items-center gap-3 rounded-lg bg-sala px-3 py-3 text-sm ${libres ? "cursor-pointer" : "opacity-50"}`}>
+                <label key={s.id} className={`opcion-campo flex items-center gap-3 rounded-lg bg-sala px-3 py-3 text-sm ${libres ? "cursor-pointer" : "opacity-50"}`}>
                   <input type="radio" name="slot_id" value={s.id} required disabled={!libres} defaultChecked={p?.slot_id === s.id} />
                   <span><span className="font-bold">{fmt(s.inicia)}</span>{s.sala ? ` · ${s.sala}` : ""}<span className="block text-texto-3">{libres ? `${libres} lugares` : "Lleno"}</span></span>
                 </label>

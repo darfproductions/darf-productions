@@ -145,7 +145,7 @@ export default async function AuditionPage({ params }: PageProps<"/audiciones/[i
             <div id="completar" role="status" className="rounded-2xl border border-aviso/50 bg-aviso/10 p-5">
               <p className="text-lg font-bold">Completa tu inscripción</p>
               <p className="text-sm">El equipo revisó tu solicitud y te la regresó para que la corrijas.</p>
-              {mine?.completar_nota && <p className="mt-2 rounded-xl bg-sala/60 px-3 py-2 text-sm"><span className="text-xs font-bold uppercase tracking-[0.15em] text-aviso">Nota del equipo</span><br />{mine.completar_nota}</p>}
+              {mine?.completar_nota && <p className="opcion-campo mt-2 rounded-xl bg-sala/60 px-3 py-2 text-sm"><span className="text-xs font-bold uppercase tracking-[0.15em] text-aviso">Nota del equipo</span><br />{mine.completar_nota}</p>}
               {faltan.length > 0 && !mine?.completar_nota && <p className="mt-2 text-sm">Falta: <b>{faltan.join(", ")}</b>.</p>}
               <p className="mt-2 text-sm">Corrígelo abajo y dale guardar; el equipo la vuelve a revisar.</p>
             </div>

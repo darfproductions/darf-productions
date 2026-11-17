@@ -517,6 +517,13 @@ body {
 .con-obra option { background-color: var(--obra-superficie); color: var(--obra-texto); }
 .con-obra :is(input[type="checkbox"], input[type="radio"]) { accent-color: var(--obra-acento); }
 .con-obra input[type="date"] { color-scheme: light dark; }
+/* Las cajas que van junto a los campos (horarios a elegir, nota del equipo) también con los colores de la obra. */
+.con-obra .opcion-campo {
+  background-color: color-mix(in srgb, var(--obra-fondo) 55%, var(--obra-superficie));
+  color: var(--obra-texto);
+  border: 1px solid color-mix(in srgb, var(--obra-texto) 22%, transparent);
+}
+.con-obra .opcion-campo .text-texto-3 { color: color-mix(in srgb, var(--obra-texto) 65%, transparent); }
 /* El botón principal también con la marca de la obra (acento de fondo, texto con el fondo: contraste ≥ 3:1 por regla del kit). */
 .con-obra .boton-compra {
   background: var(--obra-acento);
