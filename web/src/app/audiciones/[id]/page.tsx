@@ -27,7 +27,7 @@ export async function generateMetadata({ params }: PageProps<"/audiciones/[id]">
   const a = data.audition;
   const description = `Convocatoria de DARF Productions: ${a.titulo}. Requisitos, personajes, horarios e inscripción.`;
   // Las convocatorias "solo con enlace" no se indexan.
-  return { title: a.titulo, description, openGraph: { title: a.titulo, description }, robots: a.visibilidad === "enlace" ? { index: false } : undefined };
+  return { title: a.titulo, description, openGraph: { title: a.titulo, description }, robots: a.visibilidad === "enlace" || a.estado === "borrador" ? { index: false } : undefined };
 }
 
 // Convocatoria pública: requisitos, personajes, horarios e inscripción (con cuenta).
@@ -47,6 +47,8 @@ export default async function AuditionPage({ params }: PageProps<"/audiciones/[i
   // además se salta la edad.
   const invitado = a.solo_invitados ? invitacion : !!session;
   const enLinea = a.modalidad === "en_linea";
+  // Un borrador solo lo puede abrir el equipo (RLS): es la vista previa antes de publicar.
+  const vistaPrevia = a.estado === "borrador" && !!session;
   const abierta = inscripcionAbierta(a);
   const qr = mine && a.estado !== "cancelada" && !mine.checked_in_at && !["cancelado", "no_cumple"].includes(mine.estado) ? await QRCode.toDataURL(mine.qr_token, { margin: 1, width: 240 }) : null;
   // 0133: si el equipo le pidió completar su inscripción, puede editarla aunque ya haya cerrado.
@@ -86,6 +88,14 @@ export default async function AuditionPage({ params }: PageProps<"/audiciones/[i
             {a.descripcion && <TextoFormato as="span" texto={a.descripcion} />}
           </PageHeading>
         </>
+      )}
+      {vistaPrevia && (
+        <div className="mx-auto max-w-[1440px] px-5 pb-6 md:px-16">
+          <p role="status" className="rounded-2xl border border-aviso/50 bg-aviso/10 px-5 py-4 text-sm">
+            <b>Vista previa.</b> Esta convocatoria sigue en borrador: solo la ve el equipo. Así se verá cuando la publiques; puedes llenar el formulario para probarlo, pero no se envía nada.{" "}
+            <Link href={`/panel/audiciones/${a.id}`} className="font-bold underline">Volver al panel</Link>
+          </p>
+        </div>
       )}
       <div className="mx-auto grid max-w-[1440px] gap-8 px-5 md:px-16 lg:grid-cols-12">
         <section className="flex flex-col gap-6 lg:col-span-7">
@@ -140,6 +150,13 @@ export default async function AuditionPage({ params }: PageProps<"/audiciones/[i
               <p className="mt-2 text-sm">Corrígelo abajo y dale guardar; el equipo la vuelve a revisar.</p>
             </div>
           )}
+          {vistaPrevia && session && (
+            <>
+              <h2 className="titular text-2xl">Inscripción</h2>
+              <ApplyForm vistaPrevia aid={a.id} userId={session.userId} roles={roles} fields={fields} slots={a.elegir_horario && !enLinea ? slots : []} fechaAudicion={slots[0]?.inicia ?? null}
+                opciones={{ pedirFoto: a.pedir_foto, pedirTutor: a.pedir_tutor, perfil: a.perfil_preguntas ?? [] }} defaults={{ nombre: "", telefono: "" }} previa={null} />
+            </>
+          )}
           {(abierta || pedido) && session && (invitado || mine) && !mine?.checked_in_at && (
             <>
               <h2 className="titular text-2xl">{mine && mine.estado !== "cancelado" ? "Editar mi inscripción" : "Inscripción"}</h2>
@@ -156,7 +173,7 @@ export default async function AuditionPage({ params }: PageProps<"/audiciones/[i
           {a.estado === "cancelada" && (
             <p role="status" className="rounded-2xl border border-[#ff8fa3]/40 bg-[#ff8fa3]/10 p-6">Esta convocatoria se canceló. Gracias por tu interés; te avisaremos de nuevas audiciones aquí.</p>
           )}
-          {!abierta && !mine && a.estado !== "cancelada" && <p className="rounded-2xl bg-telon p-6 [.con-obra_&]:bg-obra-superficie text-texto-2">La inscripción a esta convocatoria está cerrada.</p>}
+          {!abierta && !mine && !vistaPrevia && a.estado !== "cancelada" && <p className="rounded-2xl bg-telon p-6 [.con-obra_&]:bg-obra-superficie text-texto-2">La inscripción a esta convocatoria está cerrada.</p>}
         </section>
 
         <aside className="flex flex-col gap-4 lg:col-span-5">
