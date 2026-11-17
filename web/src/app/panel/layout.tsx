@@ -58,7 +58,7 @@ export default async function PanelLayout({ children }: LayoutProps<"/panel">) {
       <div className="flex min-w-0 flex-col gap-6">
         {/* Buscador fijo arriba (0138): se queda a la vista al bajar; en la impresión no sale. */}
         <div className="sticky top-0 z-30 -mx-1 bg-sala/90 px-1 pb-2 pt-2 backdrop-blur print:hidden"><BuscadorPanel atajos={atajos} /></div>
-        <PanelSubTabs menu={menu} />
+        <div className="contents print:hidden"><PanelSubTabs menu={menu} /></div>
         {children}
       </div>
     </div>

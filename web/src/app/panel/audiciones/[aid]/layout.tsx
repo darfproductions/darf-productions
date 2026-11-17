@@ -32,13 +32,13 @@ export default async function AuditionLayout({ children, params }: LayoutProps<"
   const back = a.production_id ? `/panel/producciones/${a.production_id}/audiciones` : "/panel/audiciones";
   return (
     <div className="flex flex-col gap-4">
-      <div>
+      <div className="print:hidden">
         <Link href={back} className="text-sm font-bold text-violeta-claro"><Icono nombre="flecha-izq" /> {a.productions?.nombre ? `Audiciones de ${a.productions.nombre}` : "Audiciones"}</Link>
         <p className="mt-2 text-xs font-bold uppercase tracking-[0.2em] text-texto-3">{a.productions?.nombre ?? (a.permanente ? "Registro permanente" : "Convocatoria general")}{a.plantilla && !a.permanente ? ` · ${a.plantilla}` : ""}{a.modalidad !== "presencial" ? ` · ${MODALIDAD[a.modalidad]}` : ""}{a.solo_invitados ? " · por invitación" : ""}</p>
         <p className="text-xl font-bold">{a.titulo} <span className="ml-2 text-sm font-normal text-texto-3">{ESTADO_CONVOCATORIA[a.estado]}</span></p>
       </div>
-      {votacion && <OcultarEn ruta={`${root}/en-vivo`}><Etapas aid={aid} fase={a.fase} conCallback={a.con_callback} gestiona={g} evalua={may("audiciones.evaluar")} /></OcultarEn>}
-      <TabsBar label="Audición" links={links.map((l) => ({ href: `${root}${l.href}`, label: l.label }))} />
+      {votacion && <div className="contents print:hidden"><OcultarEn ruta={`${root}/en-vivo`}><Etapas aid={aid} fase={a.fase} conCallback={a.con_callback} gestiona={g} evalua={may("audiciones.evaluar")} /></OcultarEn></div>}
+      <div className="contents print:hidden"><TabsBar label="Audición" links={links.map((l) => ({ href: `${root}${l.href}`, label: l.label }))} /></div>
       {children}
     </div>
   );

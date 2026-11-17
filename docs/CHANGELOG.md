@@ -5,6 +5,17 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-11-17 — Lista de audición para imprimir y Excel completo
+
+Diego: exportar la lista de quién audiciona, para qué personaje, de qué grupo es y con quién pasa, para tenerla impresa.
+- `/panel/audiciones/[aid]/lista` (audiciones.gestionar): tabla por turno, por grupo, por personaje o por nombre; todas
+  o solo aprobadas; columnas Turno, Nombre, Edad, Audiciona para, Grupo, Pasa con, Horario, Llegó (casilla) y Notas.
+  Sale en horizontal al imprimir; el menú del panel, las pestañas y DARFY no se imprimen.
+- "Pasa con" (`lista-audicion-rules.pasaCon`): primero el grupo de turno armado por el equipo, luego lo que escribió la
+  persona en «¿con quién pasas?», si no, «Solo». Quienes comparten turno llevan el número solo en la primera fila.
+- El Excel de inscritos suma Audiciona para, Grupo y Pasa con, y ya no repite esas dos preguntas al final.
+- Sin cambios en la base de datos.
+
 ## 2026-11-15 — 0147: la invitación directa se salta la edad; preguntas obligatorias a elección
 
 Diego: (1) si la obra es para mayores de 18 pero quiere que audicione una niña de 17 muy buena, la invita desde el panel

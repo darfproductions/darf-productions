@@ -83,7 +83,7 @@ export function DarfyChat({
       <button
         type="button"
         onClick={() => setAbierto(true)}
-        className={`glass fixed ${enObra ? "bottom-[112px] md:bottom-12" : "bottom-12"} right-4 z-40 flex min-h-[54px] items-center gap-2.5 rounded-full p-2 text-[13px] md:pr-5 font-bold text-texto shadow-[0_24px_60px_-12px_rgb(0_0_0/0.8)] transition-transform hover:-translate-y-0.5 md:right-8`}
+        className={`glass fixed print:hidden ${enObra ? "bottom-[112px] md:bottom-12" : "bottom-12"} right-4 z-40 flex min-h-[54px] items-center gap-2.5 rounded-full p-2 text-[13px] md:pr-5 font-bold text-texto shadow-[0_24px_60px_-12px_rgb(0_0_0/0.8)] transition-transform hover:-translate-y-0.5 md:right-8`}
         aria-label="Abrir el asistente DARFY"
       >
         <span aria-hidden="true" className="grid h-[38px] w-[38px] place-items-center rounded-full bg-[linear-gradient(135deg,#340feb,#830886,#d20122)] text-base leading-none text-white"><Icono nombre="destello" /></span><span className="hidden md:inline">Pregúntale a DARFY</span>
@@ -94,7 +94,7 @@ export function DarfyChat({
   return (
     <section
       aria-label="DARFY, asistente de DARF Productions"
-      className="fixed inset-x-2 bottom-10 z-40 flex max-h-[min(640px,calc(100dvh-5rem))] flex-col overflow-hidden rounded-[22px] border border-linea-2 bg-telon shadow-[0_30px_80px_rgb(0_0_0/0.6)] md:inset-x-auto md:right-8 md:w-[400px]"
+      className="fixed inset-x-2 bottom-10 z-40 print:hidden flex max-h-[min(640px,calc(100dvh-5rem))] flex-col overflow-hidden rounded-[22px] border border-linea-2 bg-telon shadow-[0_30px_80px_rgb(0_0_0/0.6)] md:inset-x-auto md:right-8 md:w-[400px]"
     >
       <header className="luz-darf flex items-center gap-3 px-4 py-3">
         <span aria-hidden="true" className="grid h-9 w-9 place-items-center rounded-full bg-white/15 text-lg"><Icono nombre="destello" /></span>
