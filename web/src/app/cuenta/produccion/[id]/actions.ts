@@ -11,9 +11,13 @@ import { mensajeError } from "@/lib/errores";
 
 export type ReqState = { ok: boolean; message: string } | null;
 
-// Los mensajes de las funciones (P0001) ya vienen en español claro; lo demás es genérico.
-const errorClaro = (e: { code?: string; message: string }) =>
-  e.code === "P0001" ? e.message : "No se pudo enviar. Intenta de nuevo en un momento.";
+// Los mensajes de las funciones (P0001) ya vienen en español claro; lo demás es genérico, pero queda en el registro
+// del servidor (Vercel) y el mensaje lleva el código, para poder saber qué pasó si alguien lo reporta.
+const errorClaro = (e: { code?: string; message: string }) => {
+  if (e.code === "P0001") return e.message;
+  console.error("portal: solicitud rechazada por la base", e.code, e.message);
+  return `No se pudo enviar. Intenta de nuevo en un momento.${e.code ? ` (código ${e.code})` : ""}`;
+};
 
 export async function requestAbsence(_p: ReqState, f: FormData): Promise<ReqState> {
   const session = await getSession();

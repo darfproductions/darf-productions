@@ -38,7 +38,7 @@ export default async function ListaImprimir({ params, searchParams }: PageProps<
         <div className="flex flex-wrap items-center justify-between gap-2">
           <Link href={`/panel/audiciones/${aid}/solicitudes`} className="text-sm font-bold text-violeta-claro"><Icono nombre="flecha-izq" /> Solicitudes</Link>
           <div className="flex flex-wrap items-center gap-3">
-            <a href={`/panel/audiciones/${aid}/exportar`} className="text-sm font-bold text-violeta-claro">Descargar en Excel <Icono nombre="flecha-abajo" /></a>
+            <a href={`/panel/audiciones/${aid}/exportar?orden=${orden}${soloAprobadas ? "&solo=aprobadas" : ""}`} className="text-sm font-bold text-violeta-claro">Descargar en Excel ({ORDENES[orden].toLowerCase()}) <Icono nombre="flecha-abajo" /></a>
             <PrintButton />
           </div>
         </div>
