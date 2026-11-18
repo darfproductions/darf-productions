@@ -1162,7 +1162,11 @@ function render(){
 window.addEventListener('hashchange', () => { render(); window.scrollTo(0, 0); document.body.classList.remove('nav-open'); $('#newMenu').innerHTML = ''; });
 
 /* ============ Acciones ============ */
-function download(name, content, type){ const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([content], {type})); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500); }
+let DL = null;
+if (window.claude && typeof window.claude.use === 'function') window.claude.use('downloads').then(d => { DL = d; }).catch(() => {});
+async function download(name, content, type){
+  if (DL){ try { await DL.save({filename: name, data: new Blob([content], {type})}); toast('Archivo descargado'); } catch(e){ if (e && e.code !== 'declined') toast('No se pudo descargar aquí'); } return; }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([content], {type})); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500); }
 const A = {
   go: ds => { location.hash = ds.href; },
   ui: ds => { UI[ds.k] = ds.v; if (ds.k === 'clTipo' && location.hash.startsWith('#cliente/')) return; if (ds.k === 'ordTipo') UI.ordEst = 'Todas'; render(); },
