@@ -12,7 +12,8 @@ const todos = [ana, caro, luis, beto];
 
 describe("lista de audición", () => {
   it("con quién pasa: los nombres de su turno (como están en la página), nunca lo que escribieron; si nadie, Individual", () => {
-    expect(pasaCon(ana, todos)).toBe("Caro");
+    // La convocatoria tiene grupos: cada nombre con su grupo entre paréntesis.
+    expect(pasaCon(ana, todos)).toBe("Caro (Grupo A)");
     // Escribió "con mi hermano Beto", pero en la página pasa solo.
     expect(pasaCon(luis, todos)).toBe("Individual");
     expect(pasaCon(beto, todos)).toBe("Individual");

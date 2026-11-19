@@ -34,11 +34,12 @@ const porNombre = (a: ListaApp, b: ListaApp) => a.nombre.localeCompare(b.nombre,
 
 /** Con quién pasa (Diego 2026-11-19): solo lo que está armado en la página, nunca lo que escribieron en el formulario.
  *  Los nombres (como están en el sistema) de quienes comparten su turno: su grupo de turno o, si no, su mismo número.
- *  Si nadie más, «Individual». */
+ *  Si nadie más, «Individual». Si la convocatoria tiene grupos, cada nombre lleva su grupo: "Lucía Fernández (A)". */
 export function pasaCon(app: ListaApp, todos: ListaApp[]): string {
+  const hayGrupos = todos.some((x) => x.grupo?.trim());
   const otros = todos.filter((x) => x.id !== app.id && (
     (app.grupoTurno && x.grupoTurno === app.grupoTurno) || (app.numero != null && x.numero === app.numero)
-  )).sort(porTurno).map((x) => x.nombre);
+  )).sort(porTurno).map((x) => (hayGrupos && x.grupo?.trim() ? `${x.nombre} (${x.grupo.trim()})` : x.nombre));
   return otros.length ? otros.join(", ") : "Individual";
 }
 
