@@ -1,3 +1,4 @@
+import { ordenarObras } from "@/lib/orden-obras";
 import { cache } from "react";
 import { redirect } from "next/navigation";
 import type { KitColumns } from "@/lib/themes";
@@ -34,11 +35,12 @@ const COLUMNS =
 
 export async function listPanelProductions(ids?: string[]): Promise<PanelProduction[]> {
   const supabase = await createClient();
-  let q = supabase.from("productions").select(COLUMNS).order("created_at", { ascending: false });
+  let q = supabase.from("productions").select(COLUMNS).order("created_at");
   if (ids) q = q.in("id", ids.length ? ids : ["-"]);
   const { data, error } = await q;
   if (error) throw new Error(`No se pudieron cargar las obras: ${error.message}`);
-  return (data ?? []) as PanelProduction[];
+  // De la más vieja a la más nueva (por año de temporada y luego por creación).
+  return ordenarObras((data ?? []) as PanelProduction[]);
 }
 
 export const getPanelProduction = cache(async function getPanelProduction(id: string): Promise<PanelProduction | null> {
