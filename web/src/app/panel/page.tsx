@@ -5,7 +5,7 @@ import { NotificationList } from "@/components/panel/NotificationList";
 import { describeAudit, type AuditRow } from "@/lib/audit";
 import { listNotifications } from "@/lib/notifications";
 import { listPanelProductions } from "@/lib/panel-data";
-import { can, casa, myProductionIds } from "@/lib/panel-nav";
+import { can, casa, esCasa, myProductionIds } from "@/lib/panel-nav";
 import { cuando, cumplesProximos, esHoy, pendienteHref, pendienteTexto, porObra, totalPendientes } from "@/lib/panel-home-rules";
 import { getPendientes } from "@/lib/panel-pendientes";
 import { requirePanel } from "@/lib/permissions";
@@ -216,7 +216,7 @@ export default async function PanelHome() {
         <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {obras.map((p) => {
             const t = getTheme(p);
-            const rol = access.isDirector ? "Director" : casa(access, "casa.producciones") ? "Casa DARF" : `${(access.byProduction[p.id] ?? []).length} ${(access.byProduction[p.id] ?? []).length === 1 ? "permiso" : "permisos"}`;
+            const rol = access.isDirector ? "Director" : esCasa(access) ? "Casa DARF" : `${(access.byProduction[p.id] ?? []).length} ${(access.byProduction[p.id] ?? []).length === 1 ? "permiso" : "permisos"}`;
             return (
               <li key={p.id}>
                 <Link href={`/panel/producciones/${p.id}`} className="flex items-center gap-3 overflow-hidden rounded-[18px] border border-linea bg-telon pr-3 transition-transform hover:-translate-y-0.5">

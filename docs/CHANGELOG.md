@@ -5,6 +5,17 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-11-19 — 0148: todo Casa DARF entra a todas las obras; borrar una obra, solo el Director
+
+Diego: quienes son Casa DARF deben tener acceso a todas las obras. Antes eso dependía de casa.producciones, que además
+dejaba crear y BORRAR obras (así se borró Grease).
+- `casa_obras()` (= `es_casa(auth.uid())`): cualquier rol de Casa DARF da todos los permisos de obra en todas las
+  producciones (`has_perm`, `my_panel_access`, `maneja_funciones`). casa.producciones queda para crear, duplicar y destacar.
+- `panel_borrar_produccion` ahora solo deja al Director; la función de 0135 se renombró a `_borrar_produccion` (sin
+  acceso directo). En el panel, el bloque "Borrar esta obra" solo lo ve el Director.
+- Ojo para Honorarios: como Casa DARF ya tiene todos los permisos de obra, lo sensible de Honorarios (cuentas
+  bancarias, pagos al equipo) debe colgar de un permiso propio, no de uno de obra.
+
 ## 2026-11-17 — Lista de audición para imprimir y Excel completo
 
 Diego: exportar la lista de quién audiciona, para qué personaje, de qué grupo es y con quién pasa, para tenerla impresa.
