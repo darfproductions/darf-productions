@@ -23,7 +23,7 @@ configura desde el panel de Honorarios (lo hace Pato), no dentro de cada obra.
   obras que participan. Las pruebas A–D siguen dando lo mismo; pruebas nuevas para un taller con otra mensualidad y
   renta propia, renta compartida entre tres, compartida entre algunas y lo que se queda en la empresa.
 - Panel: Honorarios, Obras y reglas (lo general y la lista de obras), una página por obra, Compartidos y Bolsas.
-- Pagar al equipo con comprobante: en un mes cerrado, "Marcar pagado" sube la foto de la transferencia comprimida al
+- Pagar al equipo: en un mes cerrado, "Marcar pagado" (la foto de la transferencia es opcional; se puede subir después) la comprime al
   máximo en el navegador (lado mayor 1000 px, calidad 0.4: una captura de 3.7 MB queda en ~20 KB) al bucket privado
   `honorarios` (AAAA-MM/<persona>/…); `hon_marcar_pagado`. La persona ve "Pagado", su comprobante y confirma
   "Ya me llegó" (`hon_ya_me_llego`). El comprobante lo ven solo las cabezas y la persona.

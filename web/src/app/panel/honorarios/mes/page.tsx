@@ -144,7 +144,7 @@ export default async function HonorariosMes({ searchParams }: PageProps<"/panel/
                             {p.pagadoAt && <span className="rounded-full bg-[#14532d] px-2 py-0.5 font-bold text-[#bbf7d0]">Pagado el {new Date(p.pagadoAt).toLocaleDateString("es-MX", { timeZone: "America/Mexico_City", day: "numeric", month: "short" })}</span>}
                             {p.url && <a href={p.url} target="_blank" rel="noreferrer" className="font-bold text-violeta-claro underline">Ver comprobante</a>}
                             {p.recibidoAt && <span className="text-exito">Le llegó (confirmado)</span>}
-                            <Comprobante mes={mes} persona={p.persona} cambiar={!!p.pagadoAt} />
+                            <Comprobante mes={mes} persona={p.persona} pagado={!!p.pagadoAt} conFoto={!!p.url} />
                           </span>
                         )}
                       </td>

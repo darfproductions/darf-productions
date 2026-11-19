@@ -178,16 +178,19 @@ create policy honorarios_upload on storage.objects for insert to authenticated w
 drop policy if exists honorarios_remove on storage.objects;
 create policy honorarios_remove on storage.objects for delete to authenticated using (bucket_id = 'honorarios' and hon_cabeza());
 
--- Marcar pagado (o cambiar el comprobante) a una persona de un mes cerrado.
+-- Marcar pagado a una persona de un mes cerrado. El comprobante es opcional (Diego): p_path null marca pagado sin foto
+-- (o deja la que ya tenía); con p_path, sube o cambia la foto (y lo marca pagado si aún no lo estaba).
 create or replace function hon_marcar_pagado(p_periodo date, p_person uuid, p_path text) returns void
 language plpgsql security definer set search_path = public as $$
 begin
   if not hon_cabeza() then raise exception 'Solo las cabezas de DARF.'; end if;
   p_periodo := date_trunc('month', p_periodo)::date;
-  if coalesce(p_path, '') = '' or p_path not like to_char(p_periodo, 'YYYY-MM') || '/' || p_person || '/%' then
-    raise exception 'Sube la foto del comprobante.';
+  p_path := nullif(btrim(coalesce(p_path, '')), '');
+  if p_path is not null and p_path not like to_char(p_periodo, 'YYYY-MM') || '/' || p_person || '/%' then
+    raise exception 'Comprobante no válido.';
   end if;
-  update hon_mes_personas set pagado_at = now(), pagado_por = auth.uid(), comprobante_path = p_path
+  update hon_mes_personas set pagado_at = coalesce(pagado_at, now()), pagado_por = coalesce(pagado_por, auth.uid()),
+         comprobante_path = coalesce(p_path, comprobante_path)
    where periodo = p_periodo and person_id = p_person;
   if not found then raise exception 'Esa persona no tiene pago en ese mes (¿ya se cerró el mes?).'; end if;
 end $$;

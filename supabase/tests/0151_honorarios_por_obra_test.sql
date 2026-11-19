@@ -18,6 +18,9 @@ do $$ begin
   begin perform hon_marcar_pagado('2026-10-01','00000000-0000-0000-0000-0000001510f1','2026-10/00000000-0000-0000-0000-0000001510f1/a.webp'); raise exception 'FALLO: profe marcó'; exception when others then if sqlerrm like 'FALLO%' then raise; end if; end;
   perform pg_temp.yo('00000000-0000-0000-0000-0000001510c1');
   begin perform hon_marcar_pagado('2026-10-01','00000000-0000-0000-0000-0000001510f1','otra/ruta.webp'); raise exception 'FALLO: ruta mala'; exception when others then if sqlerrm like 'FALLO%' then raise; end if; end;
+  -- Sin foto también se marca pagado (el comprobante es opcional); la foto se puede subir después.
+  perform hon_marcar_pagado('2026-10-01','00000000-0000-0000-0000-0000001510f1', null);
+  if (select pagado_at is null or comprobante_path is not null from hon_mes_personas where periodo = '2026-10-01') then raise exception 'FALLO: pagado sin foto'; end if;
   perform hon_marcar_pagado('2026-10-01','00000000-0000-0000-0000-0000001510f1','2026-10/00000000-0000-0000-0000-0000001510f1/a.webp');
   if not hon_puede_ver_comprobante('2026-10/00000000-0000-0000-0000-0000001510f1/a.webp') then raise exception 'FALLO: cabeza no ve'; end if;
   perform pg_temp.yo('00000000-0000-0000-0000-0000001510e2');
