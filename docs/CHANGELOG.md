@@ -5,6 +5,25 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-11-19 — 0151: Honorarios por obra (todo configurable desde Panel, Honorarios)
+
+Diego: el sistema no puede servir solo para Grease, Madrigal y Showman; una obra nueva puede tener otra mensualidad y
+otras reglas, y hay que poder marcar entre qué obras se comparte la bolsa compartida y la renta del salón. Todo se
+configura desde el panel de Honorarios (lo hace Pato), no dentro de cada obra.
+- `hon_obra_reglas` (por obra, con vigencia): reserva %, tope de emergencia %, % creativo, % compartido (el resto se
+  queda en la empresa), gastos propios, si entra al fondo común y el reparto de su cierre.
+- `hon_compartidas` + `hon_compartida_obras` (con vigencia): bolsas compartidas y qué obras aportan a cada una. Las
+  asignaciones usan `compartida:<id>`.
+- `hon_gastos` + `hon_gasto_versiones` (con vigencia): gastos compartidos (renta del salón, gastos varios…) con monto
+  y entre qué obras se dividen en partes iguales.
+- hon_config queda solo con lo global: recargo, redondeo, umbral y % del fondo común, Casa DARF y meta de la reserva.
+- Se pasó lo que había: reglas de la configuración vigente a cada obra (Showman con su 40/45/0/15), "Compartida" entre
+  las obras con mensualidad y la renta y gastos varios como gastos compartidos entre ellas.
+- Motor: `calcularMes` con reglas por obra, gastos compartidos y varias compartidas; el fondo común solo entre las
+  obras que participan. Las pruebas A–D siguen dando lo mismo; pruebas nuevas para un taller con otra mensualidad y
+  renta propia, renta compartida entre tres, compartida entre algunas y lo que se queda en la empresa.
+- Panel: Honorarios, Obras y reglas (lo general y la lista de obras), una página por obra, Compartidos y Bolsas.
+
 ## 2026-11-19 — 0150: Honorarios, parte 2 (el mes)
 
 - `hon_pagos_mes(periodo)`: las mensualidades que cuentan (sin inscripciones, sin anuladas, de obras con mensualidad):

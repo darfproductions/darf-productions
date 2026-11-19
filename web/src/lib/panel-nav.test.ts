@@ -324,6 +324,6 @@ describe("Honorarios (0149)", () => {
     const casaSinCabeza: PanelAccessData = { isDirector: false, byProduction: {}, casa: ["casa.sitio"] };
     const cabeza: PanelAccessData = { ...casaSinCabeza, cabeza: true };
     expect(panelMenu(casaSinCabeza).some((s) => s.id === "honorarios")).toBe(false);
-    expect(panelMenu(cabeza).find((s) => s.id === "honorarios")?.subs.map((x) => x.href)).toEqual(["/panel/honorarios/mes", "/panel/honorarios", "/panel/honorarios/bolsas"]);
+    expect(panelMenu(cabeza).find((s) => s.id === "honorarios")?.subs.map((x) => x.href)).toEqual(["/panel/honorarios/mes", "/panel/honorarios", "/panel/honorarios/compartidos", "/panel/honorarios/bolsas"]);
   });
 });

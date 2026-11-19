@@ -76,11 +76,14 @@ export default async function HonorariosMes({ searchParams }: PageProps<"/panel/
                   <dt>Cobrado (mensualidades)</dt><dd className="text-right font-bold">{pesos(o.cobrado)}</dd>
                   <dt className="text-texto-3">− Reserva</dt><dd className="text-right text-texto-3">{pesos(o.reserva)}</dd>
                   <dt className="text-texto-3">− Emergencia usada (tope {pesos(o.emergenciaMax)})</dt><dd className="text-right text-texto-3">{pesos(o.emergenciaUso)}</dd>
-                  <dt className="text-texto-3">− Renta</dt><dd className="text-right text-texto-3">{pesos(o.renta)}</dd>
-                  <dt className="text-texto-3">− Gastos varios</dt><dd className="text-right text-texto-3">{pesos(o.gastos)}</dd>
+                  {(o.descuentos ?? []).flatMap((x) => [
+                    <dt key={`t${x.nombre}`} className="text-texto-3">− {x.nombre}</dt>,
+                    <dd key={`d${x.nombre}`} className="text-right text-texto-3">{pesos(x.monto)}</dd>,
+                  ])}
                   <dt className="border-t border-white/10 pt-1 font-bold">Neto</dt><dd className={`border-t border-white/10 pt-1 text-right font-bold ${o.sinReparto ? "text-[#ff8fa3]" : ""}`}>{pesos(o.neto)}</dd>
-                  <dt>Bolsa creativa{r.fondoAplicado ? " (con fondo común)" : ""}</dt><dd className="text-right">{pesos(o.creativaFinal)}</dd>
-                  <dt>A la compartida</dt><dd className="text-right">{pesos(o.aporteCompartida)}</dd>
+                  <dt>Bolsa creativa ({o.reglas?.creativoPct ?? "—"} %){r.fondoAplicado && o.reglas?.enFondo ? ", con fondo común" : ""}</dt><dd className="text-right">{pesos(o.creativaFinal)}</dd>
+                  <dt>A la compartida ({o.reglas?.compartidaPct ?? "—"} %)</dt><dd className="text-right">{pesos(o.aporteCompartida)}</dd>
+                  {(o.empresa ?? 0) > 0 && <><dt>Se queda en la empresa</dt><dd className="text-right">{pesos(o.empresa)}</dd></>}
                 </dl>
                 {!cerrado && (
                   <details>
@@ -99,7 +102,7 @@ export default async function HonorariosMes({ searchParams }: PageProps<"/panel/
           </div>
 
           <Card className="flex flex-col gap-1">
-            <p className="text-sm">Bolsa compartida (de todas las obras): <b>{pesos(r.compartida)}</b></p>
+            {(r.compartidas ?? []).map((c) => <p key={c.id} className="text-sm">Bolsa {d.nombres.compartidas?.find((x) => x.id === c.id)?.nombre ?? "compartida"}: <b>{pesos(c.monto)}</b></p>)}
             <p className="text-sm">Recargos cobrados: <b>{pesos(d.recargos)}</b> · Sobrante del redondeo: <b>{pesos(r.sobranteRedondeo)}</b> · <b>A la reserva este mes: {pesos(r.reservaMes)}</b></p>
           </Card>
 
@@ -132,7 +135,7 @@ export default async function HonorariosMes({ searchParams }: PageProps<"/panel/
                   {personas.map((p) => (
                     <tr key={p.persona} className="border-t border-white/10 align-top">
                       <td className="py-2 font-semibold">{p.nombre}</td>
-                      <td className="py-2 text-texto-2">{p.partes.map((x, i) => <span key={i} className="block">{lineaParte(x, obrasRef)}</span>)}</td>
+                      <td className="py-2 text-texto-2">{p.partes.map((x, i) => <span key={i} className="block">{lineaParte(x, d.nombres)}</span>)}</td>
                       <td className="py-2 text-right text-base font-black">{pesosRed(p.pago)}<span className="block text-[11px] font-normal text-texto-3">de {pesos(p.bruto)}</span></td>
                     </tr>
                   ))}
