@@ -192,13 +192,16 @@ export async function saveEntrevista(_p: AudState, f: FormData): Promise<AudStat
   const preguntas = f.getAll("pregunta").map(String);
   const respuestas = f.getAll("respuesta").map(String);
   const supabase = await createClient();
-  const { error } = await supabase.rpc("audition_entrevista_guardar", {
-    app, p_respuestas: preguntas.map((pregunta, i) => ({ pregunta, respuesta: respuestas[i] ?? "" })), p_extra: str(f, "extra"),
-  });
-  if (error) return { ok: false, message: mensajeError(error) };
+  // Si pasan en grupo, la misma entrevista se guarda a cada integrante (una sola respuesta para todos).
+  const apps = [...new Set([app, ...f.getAll("grupo").map(String).filter((x) => /^[0-9a-f-]{36}$/.test(x))])];
+  const p_respuestas = preguntas.map((pregunta, i) => ({ pregunta, respuesta: respuestas[i] ?? "" }));
+  for (const a of apps) {
+    const { error } = await supabase.rpc("audition_entrevista_guardar", { app: a, p_respuestas, p_extra: str(f, "extra") });
+    if (error) return { ok: false, message: mensajeError(error) };
+  }
   revalidatePath(`/panel/audiciones/${aid}/entrevista`);
   revalidatePath(`/panel/audiciones/${aid}/en-vivo`);
-  return { ok: true, message: "Respuestas subidas: ya les aparecen a los jueces." };
+  return { ok: true, message: apps.length > 1 ? `Respuestas subidas para los ${apps.length} del grupo: ya les aparecen a los jueces.` : "Respuestas subidas: ya les aparecen a los jueces." };
 }
 
 // ──────── Invitaciones (convocatoria particular) ────────
