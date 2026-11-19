@@ -360,7 +360,7 @@ export function panelMenu(a: PanelAccessData): NavSection[] {
     { id: "hoy", label: "Hoy", href: "/panel", subs: [], match: ["/panel/notificaciones"] },
   ];
   // Quien solo está en el equipo de una convocatoria general no tiene obras: solo ve Audiciones.
-  const obras: Section[] = a.isDirector || casa(a, "casa.producciones") || myProductionIds(a).length ? [{ href: "/panel/producciones", label: "Producciones" }] : [];
+  const obras: Section[] = esCasa(a) || myProductionIds(a).length ? [{ href: "/panel/producciones", label: "Producciones" }] : [];
   if (hasAuditionAccess(a)) obras.push({ href: "/panel/audiciones", label: "Audiciones" });
   if (obras.length) out.push({ id: "obras", label: "Mis obras", href: obras[0].href, subs: obras, match: ["/panel/producciones", "/panel/audiciones"] });
   // Personas y Ajustes: cada subpestaña con su permiso de Casa DARF (0102).

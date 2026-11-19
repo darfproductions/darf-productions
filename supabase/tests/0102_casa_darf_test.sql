@@ -61,7 +61,8 @@ do $$ begin
   if not evento_editor(null) then raise exception 'FALLO T1: eventos DARF'; end if;
   if not pg_temp.falla('select director_overview()') then raise exception 'FALLO T1: vio reportes'; end if;
   if not pg_temp.falla($q$insert into productions (id, nombre) values ('t102-x', 'X')$q$) then raise exception 'FALLO T1: creó obra'; end if;
-  if has_perm('showman', 'obra.ver') then raise exception 'FALLO T1: entra a las obras'; end if;
+  -- 0148: todo Casa DARF entra a todas las obras (crear obras sigue siendo de casa.producciones).
+  if not has_perm('showman', 'obra.ver') then raise exception 'FALLO T1: no entra a las obras (0148)'; end if;
   perform pg_temp.as_root();
   if (select count(*) from site_banner_items where texto = 'Hola') <> 1 then raise exception 'FALLO T1: franja'; end if;
 end $$;
