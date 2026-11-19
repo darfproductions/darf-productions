@@ -401,7 +401,10 @@ export function panelMenu(a: PanelAccessData): NavSection[] {
   }
   // Honorarios (0149): solo las cabezas de DARF.
   if (a.isDirector || a.cabeza) {
-    const hon: Section[] = [{ href: "/panel/honorarios", label: "Configuración" }, { href: "/panel/honorarios/bolsas", label: "Bolsas y porcentajes" }];
+    const hon: Section[] = [
+      { href: "/panel/honorarios/mes", label: "El mes" }, { href: "/panel/honorarios", label: "Obras y reglas" },
+      { href: "/panel/honorarios/compartidos", label: "Compartidos" }, { href: "/panel/honorarios/bolsas", label: "Bolsas y porcentajes" },
+    ];
     out.push({ id: "honorarios", label: "Honorarios", href: hon[0].href, subs: hon, match: ["/panel/honorarios"] });
   }
   const ajustes: Section[] = [

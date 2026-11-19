@@ -1,7 +1,7 @@
 // Compresión de fotos antes de subirlas (plan, bloque 1). Puro, con pruebas en
 // image-compress-rules.test.ts. El navegador hace el trabajo en lib/image-compress.ts.
 
-export type CompressKind = "logo" | "icono" | "ambiente" | "retrato" | "galeria" | "patrocinador" | "avatar" | "perfil" | "fanzone" | "documento" | "poster";
+export type CompressKind = "logo" | "icono" | "ambiente" | "retrato" | "galeria" | "patrocinador" | "avatar" | "perfil" | "fanzone" | "documento" | "poster" | "comprobante";
 
 /** Lado mayor máximo por uso (px) y calidad. */
 export const COMPRESS: Record<CompressKind, { maxDim: number; quality: number }> = {
@@ -16,6 +16,8 @@ export const COMPRESS: Record<CompressKind, { maxDim: number; quality: number }>
   fanzone: { maxDim: 2400, quality: 0.85 },
   documento: { maxDim: 2000, quality: 0.85 },
   poster: { maxDim: 2560, quality: 0.88 },
+  // Honorarios (0151): la foto de la transferencia solo tiene que existir y leerse; lo más ligera posible.
+  comprobante: { maxDim: 1000, quality: 0.4 },
 };
 
 /** Ya es ligera: no vale la pena tocarla. */
@@ -31,6 +33,8 @@ export function destino(w: number, h: number, maxDim: number): { w: number; h: n
 
 /** ¿Hay que procesarla? No si ya es ligera y cabe en el tamaño máximo. */
 export function hayQueComprimir(kind: CompressKind, i: { size: number; width: number; height: number }): boolean {
+  // El comprobante siempre se comprime al máximo, aunque ya sea ligero.
+  if (kind === "comprobante") return true;
   return i.size > LIGERA || Math.max(i.width, i.height) > COMPRESS[kind].maxDim;
 }
 

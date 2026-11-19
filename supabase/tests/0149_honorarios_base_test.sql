@@ -51,8 +51,15 @@ begin
   perform pg_temp.as_user('00000000-0000-0000-0000-000000149c01');
   perform hon_asignacion_guardar('creativa:t149_g', pf, 'Dirección', 29, '2026-01-01');
   perform hon_asignacion_guardar('creativa:t149_g', pf, 'Dirección', 30, '2026-06-01');
-  perform hon_asignacion_guardar('compartida', pf, null, 9, '2026-01-01');
-  perform hon_asignacion_guardar('compartida', pf, null, null, '2026-03-01');
+  -- 0151: las compartidas tienen id (compartida:<id>); antes de 0151 era 'compartida'.
+  if to_regclass('hon_compartidas') is not null then
+    execute 'insert into hon_compartidas (id, nombre) values (''00000000-0000-0000-0000-000000149c99'', ''C149'')';
+    perform hon_asignacion_guardar('compartida:00000000-0000-0000-0000-000000149c99', pf, null, 9, '2026-01-01');
+    perform hon_asignacion_guardar('compartida:00000000-0000-0000-0000-000000149c99', pf, null, null, '2026-03-01');
+  else
+    perform hon_asignacion_guardar('compartida', pf, null, 9, '2026-01-01');
+    perform hon_asignacion_guardar('compartida', pf, null, null, '2026-03-01');
+  end if;
   perform pg_temp.reset();
   if (select string_agg(pct::text || ':' || desde || ':' || coalesce(hasta::text, '-'), ' ' order by bolsa, desde) from hon_asignaciones where person_id = pf)
      <> '9.0000:2026-01-01:2026-03-01 29.0000:2026-01-01:2026-06-01 30.0000:2026-06-01:-' then

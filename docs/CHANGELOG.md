@@ -5,6 +5,42 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-11-19 — 0151: Honorarios por obra (todo configurable desde Panel, Honorarios)
+
+Diego: el sistema no puede servir solo para Grease, Madrigal y Showman; una obra nueva puede tener otra mensualidad y
+otras reglas, y hay que poder marcar entre qué obras se comparte la bolsa compartida y la renta del salón. Todo se
+configura desde el panel de Honorarios (lo hace Pato), no dentro de cada obra.
+- `hon_obra_reglas` (por obra, con vigencia): reserva %, tope de emergencia %, % creativo, % compartido (el resto se
+  queda en la empresa), gastos propios, si entra al fondo común y el reparto de su cierre.
+- `hon_compartidas` + `hon_compartida_obras` (con vigencia): bolsas compartidas y qué obras aportan a cada una. Las
+  asignaciones usan `compartida:<id>`.
+- `hon_gastos` + `hon_gasto_versiones` (con vigencia): gastos compartidos (renta del salón, gastos varios…) con monto
+  y entre qué obras se dividen en partes iguales.
+- hon_config queda solo con lo global: recargo, redondeo, umbral y % del fondo común, Casa DARF y meta de la reserva.
+- Se pasó lo que había: reglas de la configuración vigente a cada obra (Showman con su 40/45/0/15), "Compartida" entre
+  las obras con mensualidad y la renta y gastos varios como gastos compartidos entre ellas.
+- Motor: `calcularMes` con reglas por obra, gastos compartidos y varias compartidas; el fondo común solo entre las
+  obras que participan. Las pruebas A–D siguen dando lo mismo; pruebas nuevas para un taller con otra mensualidad y
+  renta propia, renta compartida entre tres, compartida entre algunas y lo que se queda en la empresa.
+- Panel: Honorarios, Obras y reglas (lo general y la lista de obras), una página por obra, Compartidos y Bolsas.
+- Pagar al equipo: en un mes cerrado, "Marcar pagado" (la foto de la transferencia es opcional; se puede subir después) la comprime al
+  máximo en el navegador (lado mayor 1000 px, calidad 0.4: una captura de 3.7 MB queda en ~20 KB) al bucket privado
+  `honorarios` (AAAA-MM/<persona>/…); `hon_marcar_pagado`. La persona ve "Pagado", su comprobante y confirma
+  "Ya me llegó" (`hon_ya_me_llego`). El comprobante lo ven solo las cabezas y la persona.
+
+## 2026-11-19 — 0150: Honorarios, parte 2 (el mes)
+
+- `hon_pagos_mes(periodo)`: las mensualidades que cuentan (sin inscripciones, sin anuladas, de obras con mensualidad):
+  del día siguiente al 2.º sábado del mes anterior al 2.º sábado del mes; si el mes anterior está cerrado, también los
+  tardíos que se registraron después. Un mes cerrado devuelve los pagos que selló.
+- `hon_mes_obra` (emergencia usada por obra y mes), `hon_fondo_aprobaciones` + `hon_fondo_aprobar` / `hon_fondo_aprobado`
+  (cada cabeza aprueba desde su cuenta; se aplica si aprueban todas y hay alerta de alumnos).
+- `hon_cerrar_mes`: solo cabezas, desde el 2.º sábado y en orden; sella los pagos (`hon_mes`), guarda `hon_meses`
+  (resultado completo con los pagos que contó) y `hon_mes_personas` (pago, bruto, desglose, fondo). Un pago sellado ya
+  no cambia de fecha. `hon_es_mi_persona` para que cada quien vea lo suyo (corrige la regla de 0149).
+- Panel: Honorarios, El mes (cobrado, descuentos, neto, bolsas, fondo común, pagos por persona, pagos incluidos,
+  cerrar). El cierre se recalcula en el servidor. Mi cuenta: "Mis honorarios" con el desglose por bolsa.
+
 ## 2026-11-19 — 0149: Honorarios, parte 1 (configuración, bolsas, fecha de pago y recargo)
 
 Diego y Patricio mandaron la especificación del módulo de honorarios (documento del 18 nov 2026). Decisiones de Diego:

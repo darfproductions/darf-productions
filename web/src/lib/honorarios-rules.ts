@@ -1,29 +1,35 @@
-/** Honorarios (especificación de Diego y Patricio, 2026-11-18). Cálculo puro: la página le pasa los pagos registrados,
- *  la configuración vigente y las asignaciones; aquí no hay montos ni porcentajes fijos.
+/** Honorarios (especificación de Diego y Patricio, 2026-11-18; por obra desde 0151). Cálculo puro: la página le pasa
+ *  los pagos registrados, las reglas de cada obra, los gastos y bolsas compartidas, y las asignaciones. Aquí no hay
+ *  montos, porcentajes ni obras fijos.
  *
- *  Mensual (obras con mensualidad): por obra, cobrado − reserva − emergencia usada − renta − gastos = neto;
- *  neto × 60 % a la bolsa creativa de la obra y × 40 % a la bolsa compartida (una sola para todas). Con el fondo creativo
- *  común aprobado, 30 % de las bolsas creativas se junta y se reparte en partes iguales entre ellas. Cada persona cobra
- *  su % de cada bolsa; el pago se redondea hacia abajo a 10 pesos y lo que sobra va a la reserva.
- *  Cierre de temporada: ganancia = boletos + patrocinios − costos − préstamos de la reserva; se reparte entre empresa,
- *  creativos (bolsa de la obra), compartida y Casa DARF (60 % cabezas / 40 % el resto, en partes iguales). */
-
-export type HonConfig = {
-  reservaPct: number;      // 10
-  emergenciaPct: number;   // 5 (tope)
-  renta: number;           // 8000 al mes, entre las obras con mensualidad
-  gastos: number;          // 1500 al mes, entre las obras con mensualidad
-  creativoPct: number;     // 60 (el resto, a la compartida)
-  redondeo: number;        // 10
-  umbralAlumnos: number;   // 10
-  fondoPct: number;        // 30
-};
+ *  Mensual, por obra: cobrado − reserva − emergencia usada − su parte de cada gasto compartido (renta del salón,
+ *  gastos varios… divididos en partes iguales entre las obras que los comparten) − sus gastos propios = neto.
+ *  Del neto: su % creativo a la bolsa creativa de la obra, su % compartido a la bolsa compartida a la que pertenece,
+ *  y lo que quede, a la empresa. Fondo creativo común (si se aprueba): entre las obras que participan, su % de cada
+ *  bolsa creativa se junta y se reparte en partes iguales. Cada persona cobra su % de cada bolsa; el pago se redondea
+ *  hacia abajo y lo que sobra va a la reserva.
+ *  Cierre de temporada: ganancia = boletos + patrocinios − costos − préstamos de la reserva; se reparte con el reparto
+ *  de la obra entre empresa, creativos (su bolsa), compartida (la suya) y Casa DARF (cabezas / resto, partes iguales). */
 
 export type Asignacion = { bolsa: string; persona: string; nombre: string; puesto?: string | null; pct: number };
 
-/** Clave de la bolsa creativa de una obra. La compartida es "compartida". */
+/** Clave de la bolsa creativa de una obra y de una bolsa compartida. ("compartida" sola: la de antes de 0151.) */
 export const bolsaCreativa = (obraId: string) => `creativa:${obraId}`;
+export const bolsaCompartida = (id: string) => `compartida:${id}`;
 export const COMPARTIDA = "compartida";
+
+/** Reglas globales (de toda la empresa). */
+export type HonGlobal = { redondeo: number; umbralAlumnos: number; fondoPct: number };
+/** Reglas mensuales de una obra. */
+export type ObraReglas = {
+  reservaPct: number; emergenciaPct: number; creativoPct: number; compartidaPct: number;
+  /** Id de la bolsa compartida a la que aporta (o null). */
+  compartida: string | null;
+  gastosPropios: number;
+  enFondo: boolean;
+};
+export type GastoComun = { id: string; nombre: string; monto: number; obras: string[] };
+export type NombreRef = { obras: { id: string; nombre: string }[]; compartidas?: { id: string; nombre: string }[] };
 
 const r2 = (n: number) => Math.round(n * 100) / 100;
 const abajo = (n: number, paso: number) => Math.floor(n / paso + 1e-9) * paso;
@@ -60,66 +66,94 @@ export function mesDeReparto(fecha: string): string {
 
 // ──────── Cálculo mensual ────────
 
-export type ObraMesEntrada = { id: string; nombre: string; cobrado: number; alumnos: number; emergenciaUso: number };
-export type ObraMesResultado = ObraMesEntrada & {
-  reserva: number; emergenciaMax: number; renta: number; gastos: number; neto: number; sinReparto: boolean;
-  creativa: number; creativaFinal: number; aporteCompartida: number;
+export type ObraMesEntrada = { id: string; nombre: string; cobrado: number; alumnos: number; emergenciaUso: number; reglas: ObraReglas };
+export type ObraMesResultado = Omit<ObraMesEntrada, "reglas"> & {
+  reglas: ObraReglas;
+  reserva: number; emergenciaMax: number;
+  /** Su parte de cada gasto compartido y sus gastos propios. */
+  descuentos: { nombre: string; monto: number }[];
+  neto: number; sinReparto: boolean;
+  creativa: number; creativaFinal: number; aporteCompartida: number; empresa: number;
 };
-export type Parte = { bolsa: string; pct: number; base: number; monto: number };
+/** nombreBolsa: se guarda al cerrar el mes, para que cada integrante lea "Creativa Grease" sin ver la configuración. */
+export type Parte = { bolsa: string; pct: number; base: number; monto: number; nombreBolsa?: string };
 export type PagoPersona = { persona: string; nombre: string; partes: Parte[]; bruto: number; pago: number };
 
 export type MesResultado = {
   obras: ObraMesResultado[];
-  compartida: number;
-  /** La diferencia de alumnos pagados entre obras llega al umbral: se puede pedir el fondo común. */
+  /** Monto de cada bolsa compartida (por id). */
+  compartidas: { id: string; monto: number }[];
+  /** Entre las obras del fondo común, la diferencia de alumnos llega al umbral: se puede pedir el fondo. */
   alertaFondo: boolean;
   fondoAplicado: boolean;
   fondo: number;
   personas: PagoPersona[];
   totalPagado: number;
   sobranteRedondeo: number;
-  /** Reserva del mes: 10 % de cada obra + recargos cobrados + sobrante del redondeo. */
+  /** Reserva del mes: la reserva de cada obra + recargos cobrados + sobrante del redondeo. */
   reservaMes: number;
   errores: string[];
 };
 
 export function calcularMes(p: {
-  config: HonConfig; obras: ObraMesEntrada[]; asignaciones: Asignacion[]; fondoComun: boolean; recargos?: number;
+  global: HonGlobal; obras: ObraMesEntrada[]; gastos: GastoComun[]; asignaciones: Asignacion[]; fondoComun: boolean; recargos?: number;
+  nombres?: NombreRef;
 }): MesResultado {
-  const { config: c, asignaciones } = p;
+  const { global: g, asignaciones } = p;
   const errores: string[] = [];
-  const bolsas = [...p.obras.map((o) => bolsaCreativa(o.id)), COMPARTIDA];
-  for (const b of bolsasIncompletas(asignaciones, bolsas)) errores.push(`Los porcentajes de la bolsa ${nombreBolsa(b.bolsa, p.obras)} suman ${b.suma} %, no 100 %.`);
+  const ref: NombreRef = p.nombres ?? { obras: p.obras };
+  const ids = new Set(p.obras.map((o) => o.id));
 
-  const n = p.obras.length || 1;
+  for (const o of p.obras) {
+    const r = o.reglas;
+    if (r.creativoPct + r.compartidaPct > 100.005) errores.push(`${o.nombre}: lo creativo y lo compartido suman más de 100 %.`);
+    if (r.compartidaPct > 0 && !r.compartida) errores.push(`${o.nombre}: tiene % compartido pero no pertenece a ninguna bolsa compartida.`);
+  }
+  const compIds = [...new Set(p.obras.map((o) => (o.reglas.compartidaPct > 0 ? o.reglas.compartida : null)).filter((x): x is string => !!x))];
+  const bolsas = [...p.obras.filter((o) => o.reglas.creativoPct > 0).map((o) => bolsaCreativa(o.id)), ...compIds.map(bolsaCompartida)];
+  for (const b of bolsasIncompletas(asignaciones, bolsas)) errores.push(`Los porcentajes de la bolsa ${nombreBolsa(b.bolsa, ref)} suman ${b.suma} %, no 100 %.`);
+
+  // Cada gasto compartido se divide en partes iguales entre las obras que lo comparten y están en este mes.
+  const parteDe = (o: string) => p.gastos
+    .map((x) => ({ x, entre: x.obras.filter((id) => ids.has(id)) }))
+    .filter(({ entre }) => entre.includes(o))
+    .map(({ x, entre }) => ({ nombre: x.nombre, monto: r2(x.monto / entre.length) }));
+
   const obras: ObraMesResultado[] = p.obras.map((o) => {
-    const reserva = r2(o.cobrado * c.reservaPct / 100);
-    const emergenciaMax = r2(o.cobrado * c.emergenciaPct / 100);
+    const r = o.reglas;
+    const reserva = r2(o.cobrado * r.reservaPct / 100);
+    const emergenciaMax = r2(o.cobrado * r.emergenciaPct / 100);
     const uso = Math.min(Math.max(o.emergenciaUso, 0), emergenciaMax);
-    const renta = r2(c.renta / n), gastos = r2(c.gastos / n);
-    const netoCalc = r2(o.cobrado - reserva - uso - renta - gastos);
+    const descuentos = [...parteDe(o.id), ...(r.gastosPropios > 0 ? [{ nombre: "Gastos propios", monto: r2(r.gastosPropios) }] : [])];
+    const netoCalc = r2(o.cobrado - reserva - uso - descuentos.reduce((s, x) => s + x.monto, 0));
     const sinReparto = netoCalc <= 0;
     const neto = sinReparto ? 0 : netoCalc;
-    const creativa = r2(neto * c.creativoPct / 100);
-    return { ...o, emergenciaUso: uso, reserva, emergenciaMax, renta, gastos, neto: netoCalc, sinReparto, creativa, creativaFinal: creativa, aporteCompartida: r2(neto - creativa) };
+    const creativa = r2(neto * r.creativoPct / 100);
+    const aporte = r.compartida ? r2(neto * r.compartidaPct / 100) : 0;
+    return { ...o, emergenciaUso: uso, reserva, emergenciaMax, descuentos, neto: netoCalc, sinReparto, creativa, creativaFinal: creativa, aporteCompartida: aporte, empresa: r2(neto - creativa - aporte) };
   });
   for (const o of obras) if (o.sinReparto) errores.push(`${o.nombre}: el neto salió en ${o.neto.toLocaleString("es-MX")}; este mes no reparte (el faltante se resuelve aparte, nunca con la reserva).`);
 
-  const alumnos = p.obras.map((o) => o.alumnos);
-  const alertaFondo = alumnos.length > 1 && Math.max(...alumnos) - Math.min(...alumnos) >= c.umbralAlumnos;
+  const delFondo = obras.filter((o) => o.reglas.enFondo);
+  const alumnos = delFondo.map((o) => o.alumnos);
+  const alertaFondo = alumnos.length > 1 && Math.max(...alumnos) - Math.min(...alumnos) >= g.umbralAlumnos;
   let fondo = 0;
-  if (p.fondoComun && obras.length > 1) {
-    fondo = r2(obras.reduce((s, o) => s + o.creativa, 0) * c.fondoPct / 100);
-    for (const o of obras) o.creativaFinal = r2(o.creativa * (100 - c.fondoPct) / 100 + fondo / obras.length);
+  const fondoAplicado = p.fondoComun && delFondo.length > 1;
+  if (fondoAplicado) {
+    fondo = r2(delFondo.reduce((s, o) => s + o.creativa, 0) * g.fondoPct / 100);
+    for (const o of delFondo) o.creativaFinal = r2(o.creativa * (100 - g.fondoPct) / 100 + fondo / delFondo.length);
   }
-  const compartida = r2(obras.reduce((s, o) => s + o.aporteCompartida, 0));
-  const montoBolsa = new Map<string, number>([...obras.map((o) => [bolsaCreativa(o.id), o.creativaFinal] as const), [COMPARTIDA, compartida]]);
+  const compartidas = compIds.map((id) => ({ id, monto: r2(obras.filter((o) => o.reglas.compartida === id).reduce((s, o) => s + o.aporteCompartida, 0)) }));
+  const montoBolsa = new Map<string, number>([
+    ...obras.map((o) => [bolsaCreativa(o.id), o.creativaFinal] as const),
+    ...compartidas.map((c) => [bolsaCompartida(c.id), c.monto] as const),
+  ]);
 
-  const personas = repartir(asignaciones, montoBolsa, c.redondeo);
+  const personas = repartir(asignaciones, montoBolsa, g.redondeo);
   const totalPagado = personas.reduce((s, x) => s + x.pago, 0);
   const sobranteRedondeo = r2(personas.reduce((s, x) => s + x.bruto, 0) - totalPagado);
   const reservaMes = r2(obras.reduce((s, o) => s + o.reserva, 0) + (p.recargos ?? 0) + sobranteRedondeo);
-  return { obras, compartida, alertaFondo, fondoAplicado: p.fondoComun && obras.length > 1, fondo, personas, totalPagado, sobranteRedondeo, reservaMes, errores };
+  return { obras, compartidas, alertaFondo, fondoAplicado, fondo, personas, totalPagado, sobranteRedondeo, reservaMes, errores };
 }
 
 /** Reparte el monto de cada bolsa con los % de cada persona y redondea su total hacia abajo. */
@@ -137,13 +171,24 @@ function repartir(asignaciones: Asignacion[], montoBolsa: Map<string, number>, p
   return [...porPersona.values()].map((x) => ({ ...x, pago: abajo(x.bruto, paso) })).sort((a, b) => b.pago - a.pago || a.nombre.localeCompare(b.nombre, "es"));
 }
 
-export function nombreBolsa(bolsa: string, obras: { id: string; nombre: string }[]): string {
+export function nombreBolsa(bolsa: string, ref: NombreRef | { id: string; nombre: string }[]): string {
+  const r: NombreRef = Array.isArray(ref) ? { obras: ref } : ref;
   if (bolsa === COMPARTIDA) return "Compartida";
   if (bolsa === CASA_CABEZAS) return "Casa DARF · cabezas";
   if (bolsa === CASA_OTROS) return "Casa DARF · integrantes";
   if (bolsa === EMPRESA) return "Empresa";
+  if (bolsa.startsWith("compartida:")) {
+    const id = bolsa.slice("compartida:".length);
+    return r.compartidas?.find((c) => c.id === id)?.nombre ?? "Compartida";
+  }
   const id = bolsa.replace(/^creativa:/, "");
-  return `Creativa ${obras.find((o) => o.id === id)?.nombre ?? id}`;
+  return `Creativa ${r.obras.find((o) => o.id === id)?.nombre ?? id}`;
+}
+
+const pesos2 = (n: number) => `$${Number(n).toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+/** Una línea del desglose: "Creativa Grease 29 % de $10,110.00 = $2,931.90". */
+export function lineaParte(p: Parte, ref: NombreRef | { id: string; nombre: string }[]): string {
+  return `${p.nombreBolsa ?? nombreBolsa(p.bolsa, ref)} ${p.pct} % de ${pesos2(p.base)} = ${pesos2(p.monto)}`;
 }
 
 // ──────── Cierre de temporada ────────
@@ -160,18 +205,23 @@ export type CierreResultado = {
   personas: PagoPersona[]; totalPagado: number; sobranteRedondeo: number; errores: string[];
 };
 
-/** Cierre de una obra. `creativa` es la bolsa de su equipo (en Showman, el equipo de la obra con el 45 %);
- *  `cabezas` y `otros` son las personas de Casa DARF en ese momento (el reparto sale del número de integrantes). */
+/** Cierre de una obra. La bolsa creativa es la de su equipo (en Showman, el equipo con el 45 %); `compartida` es la
+ *  bolsa compartida de la obra (o null); `cabezas` y `otros`, quienes están en Casa DARF en ese momento. */
 export function calcularCierre(p: {
   obra: { id: string; nombre: string }; entrada: CierreEntrada; reparto: CierreReparto; asignaciones: Asignacion[];
+  compartida?: string | null;
   cabezas: { persona: string; nombre: string }[]; otros: { persona: string; nombre: string }[]; redondeo: number;
+  nombres?: NombreRef;
 }): CierreResultado {
   const { entrada: e, reparto: rp } = p;
   const errores: string[] = [];
+  const ref: NombreRef = p.nombres ?? { obras: [p.obra] };
   const suma = r2(rp.empresaPct + rp.creativosPct + rp.compartidaPct + rp.casaPct);
   if (Math.abs(suma - 100) > 0.005) errores.push(`El reparto del cierre suma ${suma} %, no 100 %.`);
-  const bolsas = [bolsaCreativa(p.obra.id), ...(rp.compartidaPct > 0 ? [COMPARTIDA] : [])];
-  for (const b of bolsasIncompletas(p.asignaciones, bolsas)) errores.push(`Los porcentajes de la bolsa ${nombreBolsa(b.bolsa, [p.obra])} suman ${b.suma} %, no 100 %.`);
+  const comp = p.compartida ? bolsaCompartida(p.compartida) : null;
+  if (rp.compartidaPct > 0 && !comp) errores.push(`${p.obra.nombre}: el cierre tiene % compartido pero la obra no pertenece a ninguna bolsa compartida.`);
+  const bolsas = [bolsaCreativa(p.obra.id), ...(rp.compartidaPct > 0 && comp ? [comp] : [])];
+  for (const b of bolsasIncompletas(p.asignaciones, bolsas)) errores.push(`Los porcentajes de la bolsa ${nombreBolsa(b.bolsa, ref)} suman ${b.suma} %, no 100 %.`);
 
   const ganancia = r2(e.boletos + e.patrocinios - e.costos - e.prestamos);
   const sinReparto = ganancia <= 0;
@@ -187,7 +237,7 @@ export function calcularCierre(p: {
     ...p.otros.map((x) => ({ bolsa: CASA_OTROS, persona: x.persona, nombre: x.nombre, pct: 100 / p.otros.length })),
   ];
   const montoBolsa = new Map<string, number>([
-    [bolsaCreativa(p.obra.id), partes.creativos], [COMPARTIDA, partes.compartida],
+    [bolsaCreativa(p.obra.id), partes.creativos], ...(comp ? [[comp, partes.compartida] as const] : []),
     [CASA_CABEZAS, partes.casaCabezas], [CASA_OTROS, partes.casaOtros],
   ]);
   const personas = sinReparto ? [] : repartir(asig, montoBolsa, p.redondeo);
