@@ -44,10 +44,10 @@ describe("pestañas de la obra", () => {
 });
 
 describe("menú del panel (esqueleto nuevo, 0138)", () => {
-  it("taquilla: Hoy, Mis obras, Ventas y Sitio (eventos); un juez: Hoy y Mis obras; el Director, las seis", () => {
+  it("taquilla: Hoy, Mis obras, Ventas y Sitio (eventos); un juez: Hoy y Mis obras; el Director, las siete (0149: Honorarios)", () => {
     expect(globalSections(taquillaMM).map((s) => s.label)).toEqual(["Hoy", "Mis obras", "Ventas", "Sitio"]);
     expect(globalSections(juezMM).map((s) => s.label)).toEqual(["Hoy", "Mis obras"]);
-    expect(globalSections(director).map((s) => s.label)).toEqual(["Hoy", "Mis obras", "Personas", "Ventas", "Sitio", "Ajustes"]);
+    expect(globalSections(director).map((s) => s.label)).toEqual(["Hoy", "Mis obras", "Personas", "Ventas", "Sitio", "Honorarios", "Ajustes"]);
   });
   it("subpestañas según permisos", () => {
     const t = panelMenu(taquillaMM);
@@ -316,5 +316,14 @@ describe("Casa DARF (0102)", () => {
   it("solo el Director ve Ajustes → Casa DARF", () => {
     expect(subs({ isDirector: true, byProduction: {} }, "ajustes")[0]).toBe("/panel/ajustes/casa");
     expect(subs({ ...base, casa: ["casa.roles"] }, "ajustes")).toEqual(["/panel/roles"]);
+  });
+});
+
+describe("Honorarios (0149)", () => {
+  it("solo lo ven las cabezas de DARF (y el Director)", () => {
+    const casaSinCabeza: PanelAccessData = { isDirector: false, byProduction: {}, casa: ["casa.sitio"] };
+    const cabeza: PanelAccessData = { ...casaSinCabeza, cabeza: true };
+    expect(panelMenu(casaSinCabeza).some((s) => s.id === "honorarios")).toBe(false);
+    expect(panelMenu(cabeza).find((s) => s.id === "honorarios")?.subs.map((x) => x.href)).toEqual(["/panel/honorarios", "/panel/honorarios/bolsas"]);
   });
 });
