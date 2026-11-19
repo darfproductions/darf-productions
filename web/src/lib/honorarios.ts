@@ -19,7 +19,14 @@ export type HonObra = {
   production_id: string; nombre: string; mensual: boolean; activa: boolean; orden: number;
   /** Mensualidad de la obra (production_fees) y si se paga el 1.er sábado con corte el 2.º. */
   mensualidad: number | null; inscripcion: number | null; venceSabado: boolean;
+  /** Meses en que se cobra la mensualidad ("AAAA-MM-01"; production_fees) y si la obra cobra. Fuera de ese rango la
+   *  obra no entra al reparto del mes (ni carga renta ni gastos). */
+  cobroDesde: string | null; cobroHasta: string | null; cobra: boolean;
 };
+
+/** ¿La obra reparte ese mes? Solo si cobra mensualidad en ese mes ("AAAA-MM-01"). */
+export const cobraEnMes = (o: Pick<HonObra, "cobroDesde" | "cobroHasta" | "cobra">, periodo: string) =>
+  o.cobra && !!o.cobroDesde && periodo >= o.cobroDesde.slice(0, 7) + "-01" && (!o.cobroHasta || periodo <= o.cobroHasta.slice(0, 7) + "-01");
 export type HonAsignacion = { id: string; bolsa: string; person_id: string; nombre: string; puesto: string | null; pct: number; desde: string; hasta: string | null };
 export type Compartida = { id: string; nombre: string; versiones: { vigente_desde: string; obras: string[] }[] };
 export type Gasto = { id: string; nombre: string; versiones: { vigente_desde: string; monto: number; obras: string[] }[] };
@@ -52,7 +59,7 @@ export async function getHonorarios() {
     supabase.from("hon_config").select("*").order("vigente_desde", { ascending: false }),
     supabase.from("hon_obras").select("production_id, mensual, activa, orden, productions(nombre)").order("orden"),
     supabase.from("hon_asignaciones").select("id, bolsa, person_id, puesto, pct, desde, hasta, people(nombre)").order("desde"),
-    supabase.from("production_fees").select("production_id, monto, inscripcion, vence_sabado"),
+    supabase.from("production_fees").select("production_id, monto, inscripcion, vence_sabado, desde, hasta, cobrar"),
     supabase.rpc("hon_casa_integrantes"),
     supabase.from("hon_obra_reglas").select("*").order("vigente_desde"),
     supabase.from("hon_compartidas").select("id, nombre").order("created_at"),
@@ -60,12 +67,14 @@ export async function getHonorarios() {
     supabase.from("hon_gastos").select("id, nombre").order("created_at"),
     supabase.from("hon_gasto_versiones").select("gasto_id, vigente_desde, monto, obras"),
   ]);
-  const fee = new Map(((fees.data ?? []) as { production_id: string; monto: number; inscripcion: number; vence_sabado: boolean }[]).map((f) => [f.production_id, f]));
+  const fee = new Map(((fees.data ?? []) as { production_id: string; monto: number; inscripcion: number; vence_sabado: boolean; desde: string; hasta: string; cobrar: boolean }[]).map((f) => [f.production_id, f]));
   const obrasOut: HonObra[] = ((obras.data ?? []) as unknown as (Omit<HonObra, "nombre" | "mensualidad" | "inscripcion" | "venceSabado"> & { productions: { nombre: string } | null })[]).map((o) => ({
     production_id: o.production_id, mensual: o.mensual, activa: o.activa, orden: o.orden, nombre: o.productions?.nombre ?? o.production_id,
     mensualidad: fee.get(o.production_id) ? Number(fee.get(o.production_id)!.monto) : null,
     inscripcion: fee.get(o.production_id) ? Number(fee.get(o.production_id)!.inscripcion) : null,
     venceSabado: !!fee.get(o.production_id)?.vence_sabado,
+    cobroDesde: fee.get(o.production_id)?.desde ?? null, cobroHasta: fee.get(o.production_id)?.hasta ?? null,
+    cobra: fee.get(o.production_id)?.cobrar ?? false,
   }));
   const asignaciones: HonAsignacion[] = ((asig.data ?? []) as unknown as (Omit<HonAsignacion, "nombre"> & { people: { nombre: string } | null })[])
     .map((a) => ({ ...a, pct: Number(a.pct), nombre: a.people?.nombre ?? "—" }));
@@ -136,7 +145,11 @@ export async function getMes(mes: string) {
     supabase.rpc("hon_fondo_aprobado", { p_periodo: periodo }),
   ]);
   const pagos = ((pagosRes.data ?? []) as PagoMes[]).map((p) => ({ ...p, monto: Number(p.monto), recargo: Number(p.recargo) }));
-  const obras = base.obras.filter((o) => o.mensual && (o.activa || pagos.some((p) => p.production_id === o.production_id)));
+  // Entran las obras con mensualidad que ese mes cobran (rango de cobro de sus cuotas); si alguna tiene pagos que cuentan
+  // aunque esté fuera de su rango, también entra (para no dejar dinero sin repartir).
+  const conPagos = (o: HonObra) => pagos.some((p) => p.production_id === o.production_id);
+  const obras = base.obras.filter((o) => o.mensual && ((o.activa && cobraEnMes(o, periodo)) || conPagos(o)));
+  const fueraDeRango = base.obras.filter((o) => o.mensual && o.activa && !obras.includes(o)).map((o) => o.nombre);
   const cfgFila = configEn(base.versiones, corte);
   const usoDe = new Map(((emerg.data ?? []) as { production_id: string; emergencia_uso: number; nota: string | null }[]).map((e) => [e.production_id, e]));
   const sinReglas = obras.filter((o) => !reglasEn(base.reglas, base.compartidas, o.production_id, corte)).map((o) => o.nombre);
@@ -169,7 +182,7 @@ export async function getMes(mes: string) {
   const urlDe = new Map(firmadas.map((x) => [x.path, x.signedUrl]));
   return {
     mes, periodo, corte, primerSabado: sabadoDelMes(anio, m, 1), diaPago: diaDePago(anio, m),
-    config: cfgFila, obras, pagos, emergencia: usoDe, resultado, recargos, nombres,
+    config: cfgFila, obras, pagos, emergencia: usoDe, resultado, recargos, nombres, fueraDeRango,
     fondo: { aprobado: fondoAprobado, cabezas: listaCabezas, aprobaciones },
     cerrado: (cerrado.data as MesCerrado | null) ?? null,
     personasCerrado: filasCerradas.map((p) => ({ ...p, comprobanteUrl: p.comprobante_path ? urlDe.get(p.comprobante_path) ?? null : null })),

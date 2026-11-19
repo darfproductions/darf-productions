@@ -7,7 +7,7 @@ describe("orden de obras", () => {
     expect(anioObra({ temporada: "2025-2026" })).toBe(2025);
     expect(anioObra({ temporada: null, created_at: "2026-03-01T00:00:00Z" })).toBe(2026);
   });
-  it("ordena como lo pidió Diego", () => {
+  it("la más nueva arriba, como lo pidió Diego", () => {
     const obras = [
       { n: "Showman", temporada: "2027", created_at: "2026-01-01T00:00:00Z" },
       { n: "High School Musical", temporada: "2025", created_at: "2026-01-02T00:00:00Z" },
@@ -16,6 +16,6 @@ describe("orden de obras", () => {
       { n: "La Familia Madrigal", temporada: "2027", created_at: "2026-06-01T00:00:00Z" },
       { n: "Greased Lightning", temporada: "2027", created_at: "2026-07-01T00:00:00Z" },
     ];
-    expect(ordenarObras(obras).map((o) => o.n)).toEqual(["High School Musical", "Mamma Mia!", "Showman", "Teen Beach Movie", "La Familia Madrigal", "Greased Lightning"]);
+    expect(ordenarObras(obras).map((o) => o.n)).toEqual(["Greased Lightning", "La Familia Madrigal", "Teen Beach Movie", "Showman", "Mamma Mia!", "High School Musical"]);
   });
 });

@@ -1,6 +1,7 @@
-/** Orden de las obras (Diego 2026-11-19): de la más vieja a la más nueva. Primero el año de su temporada
- *  ("Temporada 2027" → 2027; si no dice, el año en que se creó) y, dentro del mismo año, en el orden en que se crearon.
- *  Así: High School Musical (2025), Mamma Mia! (2026), Showman, Teen Beach Movie, La Familia Madrigal, Greased Lightning. */
+/** Orden de las obras (Diego 2026-11-20): la más nueva arriba y la más vieja abajo. Primero el año de su temporada
+ *  ("Temporada 2027" → 2027; si no dice, el año en que se creó) y, dentro del mismo año, la creada más recientemente
+ *  primero. Así: Greased Lightning, La Familia Madrigal, Teen Beach Movie, Showman (2027), Mamma Mia! (2026),
+ *  High School Musical (2025). */
 export type ObraOrdenable = { temporada?: string | null; created_at?: string | null };
 
 export function anioObra(o: ObraOrdenable): number {
@@ -10,7 +11,7 @@ export function anioObra(o: ObraOrdenable): number {
 }
 
 export function compararObras(a: ObraOrdenable, b: ObraOrdenable): number {
-  return anioObra(a) - anioObra(b) || (a.created_at ?? "").localeCompare(b.created_at ?? "");
+  return anioObra(b) - anioObra(a) || (b.created_at ?? "").localeCompare(a.created_at ?? "");
 }
 
 export function ordenarObras<T extends ObraOrdenable>(obras: T[]): T[] {

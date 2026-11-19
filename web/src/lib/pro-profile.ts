@@ -25,7 +25,7 @@ export async function getProBySlug(slug: string) {
     supabase.rpc("pro_darf_credits", { pid: pro.person_id }),
   ]);
   const lista = (obras.data ?? []) as { production_id: string; obra: string; tipo: string; papel: string | null }[];
-  // Con DARF Productions: de la obra más vieja a la más nueva, como en el panel.
+  // Con DARF Productions: la obra más nueva arriba, como en el panel.
   const ids = [...new Set(lista.map((o) => o.production_id))];
   const { data: datos } = ids.length ? await supabase.from("productions").select("id, temporada, created_at").in("id", ids) : { data: [] };
   const de = new Map(((datos ?? []) as { id: string; temporada: string | null; created_at: string }[]).map((p) => [p.id, p]));

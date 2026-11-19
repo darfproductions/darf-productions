@@ -59,6 +59,9 @@ export default async function HonorariosMes({ searchParams }: PageProps<"/panel/
       </div>
 
       {!d.config && <Card className="text-texto-2">Falta la configuración (Honorarios, Configuración).</Card>}
+      {d.fueraDeRango.length > 0 && (
+        <p className="rounded-xl bg-white/5 px-4 py-3 text-sm text-texto-2">Este mes no reparten (todavía no cobran mensualidad o ya terminaron): <b>{d.fueraDeRango.join(", ")}</b>. Los meses de cobro de cada obra se cambian en su página de Honorarios.</p>
+      )}
       {d.obras.length === 0 && <Card className="text-texto-2">No hay obras con mensualidad en honorarios.</Card>}
 
       {r && (

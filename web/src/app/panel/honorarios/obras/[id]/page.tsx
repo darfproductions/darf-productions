@@ -10,12 +10,13 @@ import { bolsaCreativa } from "@/lib/honorarios-rules";
 import { requireCabeza } from "@/lib/permissions";
 import { createClient } from "@/lib/supabase/server";
 import { BolsaCard, ListaPersonas } from "../../BolsaCard";
-import { guardarObra, guardarReglas, usarSabados } from "../../actions";
+import { guardarCuota, guardarObra, guardarReglas, usarSabados } from "../../actions";
 
 export const metadata: Metadata = { title: "Honorarios de la obra" };
 
 const pesos = (n: number | null) => (n == null ? "—" : `$${Number(n).toLocaleString("es-MX")}`);
 const fecha = (d: string) => d.split("-").reverse().join("/");
+const mesTxt = (d: string) => new Date(`${d.slice(0, 7)}-15T12:00:00Z`).toLocaleDateString("es-MX", { month: "long", year: "numeric", timeZone: "UTC" });
 const chico = "rounded-full border border-white/30 px-3 py-1 text-xs font-bold";
 
 // Honorarios de una obra (0151): tipo, reglas con vigencia (qué se hace con su dinero), su bolsa creativa y con qué
@@ -44,6 +45,30 @@ export default async function HonorariosObra({ params }: PageProps<"/panel/honor
         {o.mensual ? `Con mensualidad (${pesos(o.mensualidad)}; la inscripción no entra al reparto): reparte cada mes y al cierre de temporada.` : "Solo reparte al cierre de temporada."}
       </PanelTitle>
       <ListaPersonas nombres={((gente ?? []) as { nombre: string }[]).map((g) => g.nombre)} />
+
+      {o.mensual && (
+        <Card className="flex flex-col gap-3">
+          <h2 className="titular text-xl">Mensualidad</h2>
+          <p className="text-sm text-texto-2">
+            {o.cobra && o.cobroDesde
+              ? `Se cobra ${pesos(o.mensualidad)} al mes de ${mesTxt(o.cobroDesde)} a ${o.cobroHasta ? mesTxt(o.cobroHasta) : "sin fin"}. Solo esos meses reparte honorarios (antes no carga renta ni gastos).`
+              : "Esta obra todavía no cobra mensualidad: no entra al reparto de ningún mes."}
+          </p>
+          <details>
+            <summary className="cursor-pointer text-sm font-bold text-violeta-claro">Cambiar mensualidad o meses de cobro</summary>
+            <ActionForm action={guardarCuota} hidden={{ production_id: id }} submit="Guardar">
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <label className="flex flex-col gap-1 text-sm font-semibold">Mensualidad ($)<input className={input} type="number" min={0} step="1" name="monto" required defaultValue={o.mensualidad ?? ""} /></label>
+                <label className="flex flex-col gap-1 text-sm font-semibold">Inscripción ($)<input className={input} type="number" min={0} step="1" name="inscripcion" defaultValue={o.inscripcion ?? 0} /></label>
+                <label className="flex flex-col gap-1 text-sm font-semibold">Primer mes que se cobra<input className={input} type="month" name="desde" required defaultValue={o.cobroDesde?.slice(0, 7) ?? ""} /></label>
+                <label className="flex flex-col gap-1 text-sm font-semibold">Último mes<input className={input} type="month" name="hasta" required defaultValue={o.cobroHasta?.slice(0, 7) ?? ""} /></label>
+              </div>
+              <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="cobrar" defaultChecked={o.cobra || !o.cobroDesde} /> Esta obra cobra mensualidad</label>
+              <p className="text-xs text-texto-3">Es la misma configuración de Expedientes, Cuotas: lo que cambies aquí cambia también los adeudos y recordatorios de la obra.</p>
+            </ActionForm>
+          </details>
+        </Card>
+      )}
 
       {o.mensual && !o.venceSabado && (
         <div className="flex flex-wrap items-center gap-2 rounded-xl border border-aviso/40 bg-aviso/10 px-4 py-3 text-sm">
