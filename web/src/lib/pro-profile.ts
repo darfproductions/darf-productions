@@ -1,3 +1,4 @@
+import { ordenarObras } from "@/lib/orden-obras";
 import { createClient } from "@/lib/supabase/server";
 import type { ProProfile } from "@/lib/pro-rules";
 
@@ -23,10 +24,16 @@ export async function getProBySlug(slug: string) {
     supabase.from("pro_photos").select("id, path, orden").eq("person_id", pro.person_id).order("orden"),
     supabase.rpc("pro_darf_credits", { pid: pro.person_id }),
   ]);
+  const lista = (obras.data ?? []) as { production_id: string; obra: string; tipo: string; papel: string | null }[];
+  // Con DARF Productions: de la obra más vieja a la más nueva, como en el panel.
+  const ids = [...new Set(lista.map((o) => o.production_id))];
+  const { data: datos } = ids.length ? await supabase.from("productions").select("id, temporada, created_at").in("id", ids) : { data: [] };
+  const de = new Map(((datos ?? []) as { id: string; temporada: string | null; created_at: string }[]).map((p) => [p.id, p]));
+  const orden = ordenarObras(lista.map((o, i) => ({ ...o, i, temporada: de.get(o.production_id)?.temporada ?? null, created_at: de.get(o.production_id)?.created_at ?? null })));
   return {
     pro,
     nombre: pro.people?.nombre ?? "",
     fotos: (fotos.data ?? []) as ProPhoto[],
-    obras: (obras.data ?? []) as { production_id: string; obra: string; tipo: string; papel: string | null }[],
+    obras: orden.map(({ production_id, obra, tipo, papel }) => ({ production_id, obra, tipo, papel })),
   };
 }
