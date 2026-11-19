@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { COMPARTIDA, bolsaCreativa, type HonConfig } from "@/lib/honorarios-rules";
+import { COMPARTIDA, bolsaCreativa, calcularMes, diaDePago, sabadoDelMes, type HonConfig, type MesResultado, type ObraMesEntrada, type Parte } from "@/lib/honorarios-rules";
 
 /** Honorarios (0149): lectura para las cabezas. La base (RLS) solo deja ver esto a las cabezas de DARF. */
 
@@ -66,3 +66,60 @@ export function bolsasDe(obras: HonObra[]): { clave: string; nombre: string; ayu
 
 /** Asignaciones vigentes en una fecha. */
 export const vigentesEn = (a: HonAsignacion[], fecha: string) => a.filter((x) => x.desde <= fecha && (!x.hasta || x.hasta > fecha));
+
+// ──────── El mes (0150) ────────
+
+export type PagoMes = { tabla: "cuenta" | "ficha"; id: string; production_id: string; alumno: string; nombre: string; periodo: string; fecha_pago: string; monto: number; recargo: number; perdonado: boolean };
+export type MesCerrado = { periodo: string; fondo_aplicado: boolean; total_pagado: number; reserva_mes: number; resultado: MesResultado & { personasIds?: Record<string, string> }; cerrado_por: string | null; cerrado_at: string };
+
+/** "AAAA-MM" → primer día ("AAAA-MM-01"). */
+export const primerDia = (mes: string) => `${mes}-01`;
+
+/** Todo lo de un mes: si ya se cerró, lo guardado; si no, el cálculo con los pagos registrados hasta hoy. */
+export async function getMes(mes: string) {
+  const supabase = await createClient();
+  const periodo = primerDia(mes);
+  const [anio, m] = mes.split("-").map(Number);
+  const corte = sabadoDelMes(anio, m, 2);
+  const [base, pagosRes, emerg, aprob, cabezas, cerrado, personasRes, fondoOk] = await Promise.all([
+    getHonorarios(),
+    supabase.rpc("hon_pagos_mes", { p_periodo: periodo }),
+    supabase.from("hon_mes_obra").select("production_id, emergencia_uso, nota").eq("periodo", periodo),
+    supabase.from("hon_fondo_aprobaciones").select("user_id, aprobado_at").eq("periodo", periodo),
+    supabase.rpc("hon_cabezas"),
+    supabase.from("hon_meses").select("*").eq("periodo", periodo).maybeSingle(),
+    supabase.from("hon_mes_personas").select("person_id, nombre, pago, bruto, partes").eq("periodo", periodo),
+    supabase.rpc("hon_fondo_aprobado", { p_periodo: periodo }),
+  ]);
+  const pagos = ((pagosRes.data ?? []) as PagoMes[]).map((p) => ({ ...p, monto: Number(p.monto), recargo: Number(p.recargo) }));
+  const obras = base.obras.filter((o) => o.mensual && (o.activa || pagos.some((p) => p.production_id === o.production_id)));
+  const cfgFila = configEn(base.versiones, corte);
+  const usoDe = new Map(((emerg.data ?? []) as { production_id: string; emergencia_uso: number; nota: string | null }[]).map((e) => [e.production_id, e]));
+  const entradas: ObraMesEntrada[] = obras.map((o) => {
+    const suyos = pagos.filter((p) => p.production_id === o.production_id);
+    return {
+      id: o.production_id, nombre: o.nombre, cobrado: suyos.reduce((s, p) => s + p.monto, 0),
+      alumnos: new Set(suyos.map((p) => `${p.tabla}:${p.alumno}`)).size, emergenciaUso: Number(usoDe.get(o.production_id)?.emergencia_uso ?? 0),
+    };
+  });
+  const asig = vigentesEn(base.asignaciones, corte).filter((a) => a.bolsa === COMPARTIDA || obras.some((o) => a.bolsa === bolsaCreativa(o.production_id)));
+  const recargos = pagos.filter((p) => !p.perdonado).reduce((s, p) => s + p.recargo, 0);
+  const listaCabezas = (cabezas.data ?? []) as { user_id: string; nombre: string }[];
+  const aprobaciones = (aprob.data ?? []) as { user_id: string; aprobado_at: string }[];
+  const sinFondo = cfgFila ? calcularMes({
+    config: configNum(cfgFila), obras: entradas, fondoComun: false, recargos,
+    asignaciones: asig.map((a) => ({ bolsa: a.bolsa, persona: a.person_id, nombre: a.nombre, puesto: a.puesto, pct: a.pct })),
+  }) : null;
+  const fondoAprobado = fondoOk.data === true;
+  const resultado = cfgFila && sinFondo?.alertaFondo && fondoAprobado ? calcularMes({
+    config: configNum(cfgFila), obras: entradas, fondoComun: true, recargos,
+    asignaciones: asig.map((a) => ({ bolsa: a.bolsa, persona: a.person_id, nombre: a.nombre, puesto: a.puesto, pct: a.pct })),
+  }) : sinFondo;
+  return {
+    mes, periodo, corte, primerSabado: sabadoDelMes(anio, m, 1), diaPago: diaDePago(anio, m),
+    config: cfgFila, obras, pagos, emergencia: usoDe, resultado, recargos,
+    fondo: { aprobado: fondoAprobado, cabezas: listaCabezas, aprobaciones },
+    cerrado: (cerrado.data as MesCerrado | null) ?? null,
+    personasCerrado: ((personasRes.data ?? []) as { person_id: string; nombre: string; pago: number; bruto: number; partes: Parte[] }[]),
+  };
+}

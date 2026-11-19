@@ -5,6 +5,19 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-11-19 — 0150: Honorarios, parte 2 (el mes)
+
+- `hon_pagos_mes(periodo)`: las mensualidades que cuentan (sin inscripciones, sin anuladas, de obras con mensualidad):
+  del día siguiente al 2.º sábado del mes anterior al 2.º sábado del mes; si el mes anterior está cerrado, también los
+  tardíos que se registraron después. Un mes cerrado devuelve los pagos que selló.
+- `hon_mes_obra` (emergencia usada por obra y mes), `hon_fondo_aprobaciones` + `hon_fondo_aprobar` / `hon_fondo_aprobado`
+  (cada cabeza aprueba desde su cuenta; se aplica si aprueban todas y hay alerta de alumnos).
+- `hon_cerrar_mes`: solo cabezas, desde el 2.º sábado y en orden; sella los pagos (`hon_mes`), guarda `hon_meses`
+  (resultado completo con los pagos que contó) y `hon_mes_personas` (pago, bruto, desglose, fondo). Un pago sellado ya
+  no cambia de fecha. `hon_es_mi_persona` para que cada quien vea lo suyo (corrige la regla de 0149).
+- Panel: Honorarios, El mes (cobrado, descuentos, neto, bolsas, fondo común, pagos por persona, pagos incluidos,
+  cerrar). El cierre se recalcula en el servidor. Mi cuenta: "Mis honorarios" con el desglose por bolsa.
+
 ## 2026-11-19 — 0149: Honorarios, parte 1 (configuración, bolsas, fecha de pago y recargo)
 
 Diego y Patricio mandaron la especificación del módulo de honorarios (documento del 18 nov 2026). Decisiones de Diego:

@@ -65,7 +65,8 @@ export type ObraMesResultado = ObraMesEntrada & {
   reserva: number; emergenciaMax: number; renta: number; gastos: number; neto: number; sinReparto: boolean;
   creativa: number; creativaFinal: number; aporteCompartida: number;
 };
-export type Parte = { bolsa: string; pct: number; base: number; monto: number };
+/** nombreBolsa: se guarda al cerrar el mes, para que cada integrante lea "Creativa Grease" sin ver la configuración. */
+export type Parte = { bolsa: string; pct: number; base: number; monto: number; nombreBolsa?: string };
 export type PagoPersona = { persona: string; nombre: string; partes: Parte[]; bruto: number; pago: number };
 
 export type MesResultado = {
@@ -144,6 +145,12 @@ export function nombreBolsa(bolsa: string, obras: { id: string; nombre: string }
   if (bolsa === EMPRESA) return "Empresa";
   const id = bolsa.replace(/^creativa:/, "");
   return `Creativa ${obras.find((o) => o.id === id)?.nombre ?? id}`;
+}
+
+const pesos2 = (n: number) => `$${Number(n).toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+/** Una línea del desglose: "Creativa Grease 29 % de $10,110.00 = $2,931.90". */
+export function lineaParte(p: Parte, obras: { id: string; nombre: string }[]): string {
+  return `${p.nombreBolsa ?? nombreBolsa(p.bolsa, obras)} ${p.pct} % de ${pesos2(p.base)} = ${pesos2(p.monto)}`;
 }
 
 // ──────── Cierre de temporada ────────

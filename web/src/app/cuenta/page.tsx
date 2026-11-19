@@ -87,6 +87,8 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
 
   const supabase = await createClient();
   const sitio = await origenSitio();
+  // Honorarios (0150): si ya tengo algún mes pagado, la tarjeta a "Mis honorarios".
+  const { count: mesesHon } = await supabase.from("hon_mes_personas").select("periodo", { count: "exact", head: true });
   // Lo que no depende de las órdenes se pide desde ya, junto con ellas (la página tarda lo de la consulta más lenta).
   const resto = Promise.all([
     listMyApplications(session.userId), listMyInvites(), listMyOffers(), supabase.rpc("my_productions"), supabase.rpc("my_unread_announcements"),
@@ -562,6 +564,12 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
               <span className="text-xs text-texto-2">Lo que apartaste, tus pagos y las funciones a las que fuiste.</span>
             </a>
           </div>
+          {(mesesHon ?? 0) > 0 && (
+            <a href="/cuenta/honorarios" className="flex flex-col gap-1 rounded-2xl bg-telon p-6 hover:bg-telon-2">
+              <span className="text-lg font-bold">Mis honorarios <Icono nombre="flecha-der" /></span>
+              <span className="text-sm text-texto-2">Lo que DARF te paga cada mes y de qué bolsa sale cada peso.</span>
+            </a>
+          )}
           <a href="/cuenta/perfil-profesional" className="flex flex-col gap-1 rounded-2xl bg-telon p-6 hover:bg-telon-2">
             <span className="text-lg font-bold">Perfil profesional <Icono nombre="flecha-der" /></span>
             <span className="text-sm text-texto-2">Retrato, semblanza, trayectoria, habilidades y reel. Puedes hacerlo público.</span>

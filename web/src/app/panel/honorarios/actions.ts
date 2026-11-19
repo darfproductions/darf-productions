@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { mensajeError } from "@/lib/errores";
+import { getMes } from "@/lib/honorarios";
+import { nombreBolsa } from "@/lib/honorarios-rules";
 import { createClient } from "@/lib/supabase/server";
 
 // Honorarios (0149). La base revisa que sea una de las cabezas de DARF (RLS y hon_asignacion_guardar).
@@ -91,4 +93,64 @@ export async function guardarAsignacion(_p: HonState, f: FormData): Promise<HonS
   });
   if (error) return { ok: false, message: mensajeError(error) };
   return listo(quitar ? "Quitado de la bolsa desde esa fecha." : "Porcentaje guardado.");
+}
+
+// ──────── El mes (0150) ────────
+
+const mesOk = (v: string) => /^\d{4}-(0[1-9]|1[0-2])$/.test(v);
+const listoMes = (message: string): HonState => {
+  revalidatePath("/panel/honorarios", "layout");
+  revalidatePath("/cuenta/honorarios");
+  return { ok: true, message };
+};
+
+/** Lo que se usó del % de emergencia en una obra ese mes (0 si no se usó; el cálculo nunca pasa del tope). */
+export async function guardarEmergencia(_p: HonState, f: FormData): Promise<HonState> {
+  const mes = str(f, "mes");
+  const monto = num(f, "monto");
+  if (!mesOk(mes)) return { ok: false, message: "Mes no válido." };
+  if (!Number.isFinite(monto) || monto < 0) return { ok: false, message: "Escribe cuánto se usó (0 si no se usó)." };
+  const supabase = await createClient();
+  const { error } = await supabase.from("hon_mes_obra").upsert(
+    { periodo: `${mes}-01`, production_id: str(f, "production_id"), emergencia_uso: monto, nota: str(f, "nota") || null, updated_at: new Date().toISOString() },
+    { onConflict: "periodo,production_id" },
+  );
+  if (error) return { ok: false, message: mensajeError(error) };
+  return listoMes("Emergencia guardada.");
+}
+
+/** Mi aprobación (o la retiro) del fondo creativo común de ese mes. */
+export async function aprobarFondo(_p: HonState, f: FormData): Promise<HonState> {
+  const mes = str(f, "mes");
+  if (!mesOk(mes)) return { ok: false, message: "Mes no válido." };
+  const aprobar = str(f, "aprobar") !== "0";
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("hon_fondo_aprobar", { p_periodo: `${mes}-01`, p_aprobar: aprobar });
+  if (error) return { ok: false, message: mensajeError(error) };
+  return listoMes(aprobar ? "Aprobaste el fondo común de este mes." : "Retiraste tu aprobación.");
+}
+
+/** Cerrar el mes: se recalcula aquí con lo registrado (no con lo que mandó la pantalla) y se guarda. */
+export async function cerrarMes(_p: HonState, f: FormData): Promise<HonState> {
+  const mes = str(f, "mes");
+  if (!mesOk(mes)) return { ok: false, message: "Mes no válido." };
+  const d = await getMes(mes);
+  if (d.cerrado) return { ok: false, message: "Ese mes ya se cerró." };
+  if (!d.resultado) return { ok: false, message: "Falta la configuración de honorarios." };
+  const bloquean = d.resultado.errores.filter((e) => e.includes("suman"));
+  if (bloquean.length) return { ok: false, message: "Hay bolsas que no suman 100 %: corrígelas antes de cerrar." };
+  const resultado = {
+    ...d.resultado, errores: [], avisos: d.resultado.errores,
+    // Para rastrear cada peso: los pagos que contó este mes.
+    pagos: d.pagos.map((p) => ({ tabla: p.tabla, id: p.id, obra: p.production_id, nombre: p.nombre, fecha: p.fecha_pago, monto: p.monto, recargo: p.perdonado ? 0 : p.recargo })),
+  };
+  const obrasRef = d.obras.map((o) => ({ id: o.production_id, nombre: o.nombre }));
+  const personas = d.resultado.personas.map((p) => ({
+    person_id: p.persona, nombre: p.nombre, pago: p.pago, bruto: p.bruto,
+    partes: p.partes.map((x) => ({ ...x, nombreBolsa: nombreBolsa(x.bolsa, obrasRef) })),
+  }));
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("hon_cerrar_mes", { p_periodo: `${mes}-01`, p_resultado: resultado, p_personas: personas });
+  if (error) return { ok: false, message: mensajeError(error) };
+  return listoMes(`Mes cerrado: ${personas.length} pagos por $${d.resultado.totalPagado.toLocaleString("es-MX")}. A cada quien ya le aparece su desglose.`);
 }
