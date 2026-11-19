@@ -52,6 +52,7 @@ create table if not exists hon_cierre_personas (
   cierre_id uuid not null references hon_cierres(id) on delete restrict,
   person_id uuid not null references people(id) on delete restrict,
   nombre text not null,
+  titulo text,                                        -- "Obra · Temporada" (para que la persona lo vea sin ver el cierre)
   pago numeric(12,2) not null,
   bruto numeric(12,2) not null,
   partes jsonb not null,
@@ -116,8 +117,9 @@ begin
   update hon_cierres set estado = 'cerrado', ganancia = p_ganancia, total_pagado = p_total, resultado = p_resultado,
          cerrado_por = auth.uid(), cerrado_at = now() where id = p_cierre;
   for x in select * from jsonb_array_elements(coalesce(p_personas, '[]')) loop
-    insert into hon_cierre_personas (cierre_id, person_id, nombre, pago, bruto, partes)
-    values (p_cierre, (x->>'person_id')::uuid, x->>'nombre', (x->>'pago')::numeric, (x->>'bruto')::numeric, coalesce(x->'partes', '[]'));
+    insert into hon_cierre_personas (cierre_id, person_id, nombre, titulo, pago, bruto, partes)
+    values (p_cierre, (x->>'person_id')::uuid, x->>'nombre', (select p.nombre from productions p where p.id = c.production_id) || ' · ' || c.nombre,
+            (x->>'pago')::numeric, (x->>'bruto')::numeric, coalesce(x->'partes', '[]'));
   end loop;
   if c.prestamos > 0 then
     insert into hon_reserva_movs (tipo, production_id, monto, concepto, cierre_id)
