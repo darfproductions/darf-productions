@@ -14,6 +14,8 @@ export type PanelAccessData = {
   byEvento?: Record<string, PapelEvento>;
   /** Permisos globales de Casa DARF (0102): casa.producciones, casa.sitio… El Director los tiene todos. */
   casa?: string[];
+  /** Una de las cabezas de DARF (0149): ve y configura Honorarios. */
+  cabeza?: boolean;
 };
 
 /** ¿Tengo este permiso de Casa DARF? (0102; el Director siempre). */
@@ -326,7 +328,7 @@ export function tabActiva(grupos: GrupoTabs[], sub: string): { grupo: GrupoObra 
 export type Section = { href: string; label: string };
 
 export type NavSection = {
-  id: "hoy" | "obras" | "personas" | "ventas" | "sitio" | "ajustes";
+  id: "hoy" | "obras" | "personas" | "ventas" | "sitio" | "honorarios" | "ajustes";
   label: string;
   /** A dónde lleva la sección (su primera subpestaña). */
   href: string;
@@ -396,6 +398,11 @@ export function panelMenu(a: PanelAccessData): NavSection[] {
   if (sitio.length) {
     out.push({ id: "sitio", label: "Sitio", href: sitio[0].href, subs: sitio,
       match: ["/panel/ajustes/sitio", "/panel/ajustes/club", "/panel/ajustes/difusion", "/panel/ajustes/darfy", "/panel/contacto", "/panel/eventos", "/panel/showcases"] });
+  }
+  // Honorarios (0149): solo las cabezas de DARF.
+  if (a.isDirector || a.cabeza) {
+    const hon: Section[] = [{ href: "/panel/honorarios", label: "Configuración" }, { href: "/panel/honorarios/bolsas", label: "Bolsas y porcentajes" }];
+    out.push({ id: "honorarios", label: "Honorarios", href: hon[0].href, subs: hon, match: ["/panel/honorarios"] });
   }
   const ajustes: Section[] = [
     ...(a.isDirector ? [{ href: "/panel/ajustes/casa", label: "Casa DARF" }] : []),

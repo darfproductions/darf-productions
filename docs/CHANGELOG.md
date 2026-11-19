@@ -5,6 +5,27 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-11-19 — 0149: Honorarios, parte 1 (configuración, bolsas, fecha de pago y recargo)
+
+Diego y Patricio mandaron la especificación del módulo de honorarios (documento del 18 nov 2026). Decisiones de Diego:
+Encanto = La Familia Madrigal; cada mes de reparto junta lo que entró del día siguiente al 2.º sábado del mes anterior
+hasta el 2.º sábado del mes; la fecha que cuenta es la que pone quien cobra (el alumno no sube comprobante); el pago
+pasa al 1.er sábado con corte el 2.º; solo las 4 cabezas ven y configuran; el fondo común lo aprueba cada cabeza desde
+su cuenta (parte 2); al cierre también se redondea a 10 pesos; los préstamos de la reserva los registra Patricio.
+- Motor de cálculo puro (`web/src/lib/honorarios-rules.ts`): mes por obra, fondo común, redondeo, reserva del mes y
+  cierre de temporada. Las pruebas A, B, C y D del documento dan exactamente lo mismo.
+- Base (0149): `hon_config` (versiones con vigencia), `hon_obras` (con mensualidad o solo temporada; reparto de cierre
+  propio para Showman), `hon_asignaciones` (persona + bolsa + % + desde/hasta; `hon_asignacion_guardar` guarda el
+  historial). `hon_cabeza()` (casa_cargos.directivo o el Director); permiso `casa.recargos` para perdonar recargos.
+- Pagos: `fecha_pago` (la real; nunca futura) y `recargo` en member_payments y member_payments_ficha. En las obras con
+  mensualidad del módulo, una mensualidad pagada después del 2.º sábado de su mes lleva el recargo de la configuración
+  (`hon_pago_fecha`). `hon_recargo_perdonar`. Al pasar pagos de una ficha a su cuenta se conservan fecha y recargo.
+- Panel: Honorarios, Configuración y Bolsas y porcentajes (solo cabezas). En el expediente y en Cuotas, "Fecha en que
+  pagó", el recargo y "Perdonar recargo".
+- La mensualidad sale de production_fees; "Se paga el primer sábado, corte el segundo" ya existía (`vence_sabado`).
+- Pendiente (parte 2 y 3): cálculo y cierre del mes, vistas de Patricio y de cada integrante, aprobación del fondo
+  común, cierre de temporada, reserva y préstamos, pagos con comprobante y recibo.
+
 ## 2026-11-19 — 0148: todo Casa DARF entra a todas las obras; borrar una obra, solo el Director
 
 Diego: quienes son Casa DARF deben tener acceso a todas las obras. Antes eso dependía de casa.producciones, que además

@@ -7,7 +7,7 @@ import { ActionForm } from "@/components/panel/ActionForm";
 import { Card, input } from "@/components/panel/ui";
 import { Icono } from "@/components/Icono";
 import { getPagosFicha } from "@/lib/adeudos";
-import { mayus } from "@/lib/dates";
+import { isoMx, mayus } from "@/lib/dates";
 import { mesNombre, pesos, recaudacion, type Enrollment, type Fee, type FeeTerms, type Payment } from "@/lib/member-rules";
 import { columnas, fila, valorCasilla, type Celda } from "@/lib/pago-tabla";
 import { METODOS } from "@/lib/pago-rules";
@@ -124,6 +124,10 @@ export default async function Cuotas({ params }: PageProps<"/panel/producciones/
               <select name="metodo" defaultValue="efectivo" className={`${input} w-auto py-1.5`}>
                 {Object.entries(METODOS).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
               </select>
+            </label>
+            {/* 0149: la fecha real en que pagaron (decide el recargo y a qué mes de honorarios cuenta). */}
+            <label className="flex flex-wrap items-center gap-2 text-sm font-semibold">Fecha en que pagaron
+              <input type="date" name="fecha_pago" defaultValue={isoMx()} max={isoMx()} required className={`${input} w-auto py-1.5`} />
             </label>
           </ActionForm>
           <p className="text-xs text-texto-3"><Icono nombre="check" /> pagado · casilla = pendiente (“debe” si ya venció) · — no le toca (aún no entraba o ya era baja).</p>

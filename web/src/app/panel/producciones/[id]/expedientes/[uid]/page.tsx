@@ -19,7 +19,7 @@ import { porcentaje } from "@/lib/rehearsal-rules";
 import { RequestCard } from "@/components/requests/RequestCard";
 import { listRequests } from "@/lib/requests";
 import { createClient } from "@/lib/supabase/server";
-import { addIncident, addMeasure, addPayment, annulPayment, markReviewed, reactivateMember, removePayment, setDelivered, setIngreso, setScholarship, voidIncident, withdrawMember } from "../actions";
+import { addIncident, addMeasure, addPayment, annulPayment, markReviewed, perdonarRecargo, reactivateMember, removePayment, setDelivered, setIngreso, setScholarship, voidIncident, withdrawMember } from "../actions";
 import { isoMx } from "@/lib/dates";
 import { mayus } from "@/lib/dates";
 import { Icono } from "@/components/Icono";
@@ -66,6 +66,10 @@ export default async function MemberPage({ params }: PageProps<"/panel/produccio
   const tel = verCuotas && d.pagos.length ? d.person?.telefono || (await getRecibo(d.pagos[0].id))?.telefono || null : null;
   const sitio = verCuotas && d.pagos.length ? await origen() : "";
   const nombreObra = verCuotas && d.pagos.length ? (await supabase.from("productions").select("nombre").eq("id", id).maybeSingle()).data?.nombre ?? id : id;
+  // 0149: recargos por pago tardío (los perdonan las cabezas y quien tenga casa.recargos).
+  const conRecargo = d.pagos.some((p) => Number(p.recargo ?? 0) > 0);
+  const perdona = conRecargo ? !!(await supabase.rpc("hon_perdona_recargos")).data : false;
+  const hoyMx = isoMx();
 
   return (
     <div className="flex flex-col gap-4">
@@ -242,7 +246,7 @@ export default async function MemberPage({ params }: PageProps<"/panel/produccio
                 ))}
               </ul>
               <ActionForm action={addPayment} hidden={h} submit="Registrar pago">
-                <div className="grid gap-2 sm:grid-cols-5">
+                <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-6">
                   <select className={input} name="concepto" defaultValue={insc.estado === "pendiente" ? "inscripcion" : "mensualidad"} aria-label="Concepto">
                     <option value="mensualidad">Mensualidad</option>
                     {insc.estado !== "no_aplica" && insc.estado !== "exento" && <option value="inscripcion">Inscripción</option>}
@@ -253,8 +257,11 @@ export default async function MemberPage({ params }: PageProps<"/panel/produccio
                   <input className={input} type="number" min={1} step="1" name="monto" required defaultValue={(insc.estado === "pendiente" ? insc.debe : ms[0]?.debe) || ""} placeholder="Monto" aria-label="Monto" />
                   <select className={input} name="metodo" defaultValue="efectivo" aria-label="Método">{Object.entries(METODOS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
                   <input className={input} name="nota" placeholder="Nota (opcional)" />
+                  <label className="flex flex-col gap-1 text-xs font-semibold text-texto-3">Fecha en que pagó
+                    <input className={input} type="date" name="fecha_pago" defaultValue={hoyMx} max={hoyMx} required />
+                  </label>
                 </div>
-                <p className="text-xs text-texto-3">Para la inscripción, el mes solo sirve de referencia.</p>
+                <p className="text-xs text-texto-3">Para la inscripción, el mes solo sirve de referencia. La fecha en que pagó decide si lleva recargo (después del 2.º sábado del mes que paga) y a qué mes de honorarios cuenta.</p>
               </ActionForm>
               {d.pagos.length > 0 && (
                 <ul className="flex flex-col gap-1.5 text-sm" aria-label="Pagos registrados">
@@ -267,7 +274,14 @@ export default async function MemberPage({ params }: PageProps<"/panel/produccio
                           <span className="font-mono text-xs text-texto-3">{p.folio}</span>{""}
                           {p.anulado_at && <span className="rounded-full bg-[#5a1a22] px-2 py-0.5 text-[10px] font-bold text-[#fecdd3]">ANULADO</span>}
                           <span className="block"><b className={p.anulado_at ? "line-through" : ""}>{conceptoPago(p)}</b> · {pesos(p.monto)} · {METODOS[p.metodo]}{p.nota ? ` · ${p.nota}` : ""}</span>
-                          <span className="block text-xs text-texto-3">Registrado {new Date(p.registrado_at).toLocaleString("es-MX", { timeZone: "America/Mexico_City", dateStyle: "medium", timeStyle: "short" })}{p.motivo_anulacion ? ` · Anulado: ${p.motivo_anulacion}` : ""}</span>
+                          <span className="block text-xs text-texto-3">{p.fecha_pago ? `Pagó el ${fmt(p.fecha_pago)} · ` : ""}Registrado {new Date(p.registrado_at).toLocaleString("es-MX", { timeZone: "America/Mexico_City", dateStyle: "medium", timeStyle: "short" })}{p.motivo_anulacion ? ` · Anulado: ${p.motivo_anulacion}` : ""}</span>
+                          {Number(p.recargo ?? 0) > 0 && !p.anulado_at && (
+                            <span className="mt-1 flex flex-wrap items-center gap-2 text-xs">
+                              <span className={`rounded-full px-2 py-0.5 font-bold ${p.recargo_perdonado_at ? "bg-white/10 text-texto-3 line-through" : "bg-[#5a4313] text-[#fde68a]"}`}>Recargo {pesos(Number(p.recargo))}</span>
+                              {p.recargo_perdonado_at && <span className="text-texto-3">Perdonado</span>}
+                              {perdona && <ActionForm inline action={perdonarRecargo} hidden={{ ...h, tabla: "cuenta", id: p.id, perdonar: p.recargo_perdonado_at ? "0" : "1" }} submit={p.recargo_perdonado_at ? "Volver a cobrar" : "Perdonar recargo"} submitClass={ghost} />}
+                            </span>
+                          )}
                         </span>
                         <span className="flex flex-wrap items-center gap-2">
                           <a href={recibo} className={ghost}>Recibo PDF</a>

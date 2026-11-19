@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { mensajeError } from "@/lib/errores";
 import { leerCasilla } from "@/lib/pago-tabla";
 import { refrescarPublico } from "@/lib/supabase/publico";
+import { isoMx } from "@/lib/dates";
 
 // Expedientes y mensualidades desde el panel (0041). La base revisa expedientes.ver y
 // mensualidades.gestionar en la obra.
@@ -114,18 +115,40 @@ export async function setScholarship(_p: ExpState, f: FormData): Promise<ExpStat
   return ok(pid, uid, "Guardado.");
 }
 
+/** Honorarios (0149): la fecha en que la persona pagó (por defecto hoy; nunca futura). Decide el recargo y a qué
+ *  mes de reparto cuenta. */
+function fechaPago(f: FormData): string | null {
+  const v = str(f, "fecha_pago");
+  if (!v) return isoMx();
+  return /^\d{4}-\d{2}-\d{2}$/.test(v) && v <= isoMx() ? v : null;
+}
+
 export async function addPayment(_p: ExpState, f: FormData): Promise<ExpState> {
   const pid = str(f, "pid");
   const uid = str(f, "uid");
   const monto = Number(str(f, "monto"));
   if (!(monto > 0)) return { ok: false, message: "Escribe el monto." };
+  const fecha = fechaPago(f);
+  if (!fecha) return { ok: false, message: "La fecha de pago no puede ser futura." };
   const supabase = await createClient();
-  const { error } = await supabase.from("member_payments").insert({
+  const { data, error } = await supabase.from("member_payments").insert({
     production_id: pid, user_id: uid, periodo: str(f, "periodo"), monto, metodo: str(f, "metodo") || "efectivo", nota: str(f, "nota") || null,
-    concepto: str(f, "concepto") === "inscripcion" ? "inscripcion" : "mensualidad",
-  });
+    concepto: str(f, "concepto") === "inscripcion" ? "inscripcion" : "mensualidad", fecha_pago: fecha,
+  }).select("recargo").maybeSingle();
   if (error) return { ok: false, message: error.message };
-  return ok(pid, uid, "Pago registrado.");
+  const recargo = Number((data as { recargo?: number } | null)?.recargo ?? 0);
+  return ok(pid, uid, recargo > 0 ? `Pago registrado. Se pagó después del corte (2.º sábado): lleva recargo de $${recargo.toLocaleString("es-MX")}, cóbralo aparte.` : "Pago registrado.");
+}
+
+/** Perdonar (o volver a cobrar) el recargo de un pago tardío. Las cabezas y quien tenga casa.recargos; la base lo revisa. */
+export async function perdonarRecargo(_p: ExpState, f: FormData): Promise<ExpState> {
+  const pid = str(f, "pid");
+  const uid = str(f, "uid") || null;
+  const perdonar = str(f, "perdonar") !== "0";
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("hon_recargo_perdonar", { p_tabla: str(f, "tabla") === "ficha" ? "ficha" : "cuenta", p_id: str(f, "id"), p_perdonar: perdonar });
+  if (error) return { ok: false, message: mensajeError(error) };
+  return ok(pid, uid, perdonar ? "Recargo perdonado." : "El recargo se vuelve a cobrar.");
 }
 
 export async function removePayment(_p: ExpState, f: FormData): Promise<ExpState> {
@@ -253,18 +276,20 @@ export async function savePagosTabla(_p: ExpState, f: FormData): Promise<ExpStat
   const pid = str(f, "pid");
   const metodo = ["efectivo", "transferencia", "tarjeta", "otro"].includes(str(f, "metodo")) ? str(f, "metodo") : "efectivo";
   const marcados = f.getAll("pago").map(String).map(leerCasilla).filter((x): x is NonNullable<typeof x> => !!x);
+  const fecha = fechaPago(f);
+  if (!fecha) return { ok: false, message: "La fecha de pago no puede ser futura." };
   if (!marcados.length) return { ok: false, message: "Marca al menos un pago." };
   if (marcados.length > 300) return { ok: false, message: "Son demasiados pagos de una vez (máximo 300)." };
   const supabase = await createClient();
   const cuentas = marcados.filter((m) => m.quien === "u");
   if (cuentas.length) {
     const { error } = await supabase.from("member_payments").insert(cuentas.map((m) => ({
-      production_id: pid, user_id: m.id, periodo: m.periodo, monto: m.monto, metodo, concepto: m.concepto, nota: "Registrado en Cuotas",
+      production_id: pid, user_id: m.id, periodo: m.periodo, monto: m.monto, metodo, concepto: m.concepto, nota: "Registrado en Cuotas", fecha_pago: fecha,
     })));
     if (error) return { ok: false, message: mensajeError(error) };
   }
   for (const m of marcados.filter((x) => x.quien === "f")) {
-    const { error } = await supabase.rpc("pago_ficha_registrar", { pid, p_person: m.id, p_concepto: m.concepto, p_periodo: m.periodo, p_monto: m.monto, p_metodo: metodo });
+    const { error } = await supabase.rpc("pago_ficha_registrar", { pid, p_person: m.id, p_concepto: m.concepto, p_periodo: m.periodo, p_monto: m.monto, p_metodo: metodo, p_fecha: fecha });
     if (error) return { ok: false, message: mensajeError(error) };
   }
   return ok(pid, null, `${marcados.length === 1 ? "1 pago registrado" : `${marcados.length} pagos registrados`}. ${cuentas.length ? "Les llegó su recibo." : ""}`.trim());

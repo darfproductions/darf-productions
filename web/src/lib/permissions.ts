@@ -28,8 +28,9 @@ export function olvidarAcceso(userId: string) { memoria.olvidar(userId); }
 
 async function consultarAcceso(): Promise<Acceso> {
   const supabase = await createClient();
-  const [{ data, error }, aud, ev, cs] = await Promise.all([
+  const [{ data, error }, aud, ev, cs, cab] = await Promise.all([
     supabase.rpc("my_panel_access"), supabase.rpc("my_audition_access"), supabase.rpc("my_evento_access"), supabase.rpc("mis_permisos_casa"),
+    supabase.rpc("hon_cabeza"),
   ]);
   if (error) throw new Error(`No se pudieron cargar tus permisos: ${error.message}`);
   const byProduction: Record<string, string[]> = {};
@@ -45,7 +46,15 @@ async function consultarAcceso(): Promise<Acceso> {
   const byEvento: Record<string, PapelEvento> = {};
   for (const r of (ev.data ?? []) as { encuentro_id: string; papel: PapelEvento }[]) byEvento[r.encuentro_id] = r.papel;
   // Casa DARF (0102). Si la base aún no la tiene, no hay permisos globales.
-  return { byProduction, byAudition, byEvento, casa: (cs.data ?? []) as string[] };
+  // Cabeza de DARF (0149): Honorarios. Si la base aún no la tiene, nadie.
+  return { byProduction, byAudition, byEvento, casa: (cs.data ?? []) as string[], cabeza: cab.data === true };
+}
+
+/** Honorarios (0149): solo las 4 cabezas de DARF (y el Director). */
+export async function requireCabeza(next: string): Promise<PanelAccess> {
+  const access = await requirePanel(next);
+  if (!access.isDirector && !access.cabeza) redirect("/panel");
+  return access;
 }
 
 /** Para páginas del panel: exige sesión y algún permiso; si no, manda a Mi cuenta. */
