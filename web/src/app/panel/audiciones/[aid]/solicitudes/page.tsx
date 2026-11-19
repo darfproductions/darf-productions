@@ -99,7 +99,10 @@ export default async function Applications({ params, searchParams }: PageProps<"
 
   return (
     <>
-      <a href={`/panel/audiciones/${aid}/exportar`} className="self-end text-sm font-bold text-violeta-claro">Descargar inscritos (Excel) <Icono nombre="flecha-abajo" /></a>
+      <div className="flex flex-wrap items-center gap-4 self-end">
+        <Link href={`/panel/audiciones/${aid}/lista`} className="text-sm font-bold text-violeta-claro">Lista para imprimir <Icono nombre="flecha-der" /></Link>
+        <a href={`/panel/audiciones/${aid}/exportar`} className="text-sm font-bold text-violeta-claro">Descargar inscritos (Excel) <Icono nombre="flecha-abajo" /></a>
+      </div>
       <Card>
         <details>
           <summary className="cursor-pointer font-bold">+ Video general del día (por grupo o sesión completa)</summary>
