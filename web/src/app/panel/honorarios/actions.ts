@@ -125,6 +125,26 @@ export async function guardarGasto(_p: HonState, f: FormData): Promise<HonState>
   return listo(`Gasto guardado; desde el ${fechaTxt(desde)} se divide entre ${obras.length} ${obras.length === 1 ? "obra" : "obras"}.`);
 }
 
+/** Mensualidad de la obra y meses en que se cobra (production_fees, la misma de Expedientes, Cuotas). Honorarios solo
+ *  reparte una obra los meses en que cobra. */
+export async function guardarCuota(_p: HonState, f: FormData): Promise<HonState> {
+  const pid = str(f, "production_id");
+  const monto = num(f, "monto");
+  const inscripcion = str(f, "inscripcion") === "" ? 0 : num(f, "inscripcion");
+  const desde = str(f, "desde"), hasta = str(f, "hasta");
+  if (!Number.isFinite(monto) || monto < 0 || !Number.isFinite(inscripcion) || inscripcion < 0) return { ok: false, message: "Revisa los montos." };
+  if (!/^\d{4}-\d{2}$/.test(desde) || !/^\d{4}-\d{2}$/.test(hasta)) return { ok: false, message: "Elige el primer y el último mes." };
+  if (hasta < desde) return { ok: false, message: "El último mes no puede ser antes del primero." };
+  const supabase = await createClient();
+  const { error } = await supabase.from("production_fees").upsert(
+    { production_id: pid, monto, inscripcion, desde: `${desde}-01`, hasta: `${hasta}-01`, cobrar: f.get("cobrar") === "on" },
+    { onConflict: "production_id" },
+  );
+  if (error) return { ok: false, message: mensajeError(error) };
+  revalidatePath(`/panel/producciones/${pid}/expedientes`, "layout");
+  return listo(`Mensualidad guardada: se cobra de ${desde.split("-").reverse().join("/")} a ${hasta.split("-").reverse().join("/")}.`);
+}
+
 /** Encender en la obra el pago el 1.er sábado con corte el 2.º (production_fees.vence_sabado). */
 export async function usarSabados(_p: HonState, f: FormData): Promise<HonState> {
   const supabase = await createClient();

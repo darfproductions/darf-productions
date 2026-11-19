@@ -11,6 +11,7 @@ import type { PersonaCierre } from "@/lib/audicion-vivo-rules";
 import { juezActual } from "../../actions";
 import { EnEscenaJuez } from "../evaluacion/EnEscenaJuez";
 import { EnEscenaHost } from "../entrevista/EnEscenaHost";
+import { EntrevistaForm } from "../entrevista/EntrevistaForm";
 import { Terminar } from "../entrevista/Terminar";
 import { Desk } from "../registro/Desk";
 import { AlFinal, FilaEnVivo } from "../registro/Fila";
@@ -21,8 +22,8 @@ import { PantallaCompleta } from "./PantallaCompleta";
 
 export const metadata: Metadata = { title: "Modo audición" };
 
-type Como = "juez" | "host" | "recepcion";
-const COMO: Record<Como, string> = { juez: "Como juez", host: "Como host", recepcion: "Como recepción" };
+type Como = "hostjuez" | "juez" | "host" | "recepcion";
+const COMO: Record<Como, string> = { hostjuez: "Host y juez", juez: "Como juez", host: "Como host", recepcion: "Como recepción" };
 
 // 0137: una sola pantalla para el día. Arriba, la barra de fases (Inscripción → Día → Callback → Votación → Cast) con
 // lo que falta y "Siguiente"; abajo, lo que te toca según tu rol: recepción (entrada y fila), host (quién está en
@@ -33,7 +34,10 @@ export default async function ModoAudicion({ params, searchParams }: PageProps<"
   const sp = await searchParams;
   const { a, may } = await requireAudition(aid, ["audiciones.evaluar", "audiciones.entrevista", "audiciones.registro", "audiciones.gestionar"], "/en-vivo");
   const gestiona = may("audiciones.gestionar");
+  const esHost = may("audiciones.entrevista") || gestiona;
   const roles: Como[] = [
+    // Quien es host y juez: una sola pantalla con la entrevista y la calificación.
+    ...(may("audiciones.evaluar") && esHost ? ["hostjuez" as const] : []),
     ...(may("audiciones.evaluar") ? ["juez" as const] : []),
     ...(may("audiciones.entrevista") || gestiona ? ["host" as const] : []),
     ...(may("audiciones.registro") || gestiona ? ["recepcion" as const] : []),
@@ -72,7 +76,7 @@ export default async function ModoAudicion({ params, searchParams }: PageProps<"
 
   return (
     <div className="flex flex-col gap-4">
-      <AutoRefresh seconds={como === "juez" ? 30 : 20} />
+      <AutoRefresh seconds={como === "juez" || como === "hostjuez" ? 30 : 20} />
       <GuiaFases aid={aid} estado={a.estado} fase={a.fase} votacion={conVotacion} conCallback={a.con_callback} gestiona={gestiona} falta={falta} />
       <div className="flex flex-wrap items-center justify-between gap-2">
         <nav aria-label="Ver como" className="flex flex-wrap gap-2">
@@ -81,7 +85,7 @@ export default async function ModoAudicion({ params, searchParams }: PageProps<"
               className={`rounded-full border px-3 py-1.5 text-xs font-bold ${r === como ? "border-texto bg-texto text-sala" : "border-white/20"}`}>{COMO[r]}</Link>
           ))}
         </nav>
-        {como === "juez" && <PantallaCompleta />}
+        {(como === "juez" || como === "hostjuez") && <PantallaCompleta />}
       </div>
 
       {paso === "inscripcion" && (
@@ -123,6 +127,23 @@ export default async function ModoAudicion({ params, searchParams }: PageProps<"
         </>
       )}
 
+      {enDia && !enLinea && como === "hostjuez" && fila && (
+        <>
+          <EnEscenaHost aid={aid} quedarse actual={fila.actual ? { app: fila.actual.id, numero: fila.actual.numero, nombre: fila.actual.nombre } : null} esta={fila.sigue ? { app: fila.sigue.id, nombre: fila.sigue.nombre } : undefined} />
+          <div className="grid gap-4 xl:grid-cols-2">
+            <div className="flex flex-col gap-4">
+              {fila.actual
+                ? <EntrevistaForm key={fila.actual.id} aid={aid} app={fila.actual.id} compacta />
+                : <Card className="text-sm text-texto-3">Cuando pongas a alguien en escena, aquí aparece su entrevista.</Card>}
+            </div>
+            <div className="flex flex-col gap-2">
+              <EnEscenaJuez aid={aid} ronda={ronda} criterios={(a.criterios ?? []) as Criterio[]} roles={personajes} conVotacion={conVotacion}
+                abiertas={(ronda === 1 && ["audicion", "seleccion_callback"].includes(a.fase)) || (ronda === 2 && a.fase === "callback")} inicial={await juezActual(aid, ronda)} />
+              <p className="text-xs text-texto-3">La entrevista que subas aparece en la pantalla de cada juez. Lo que calificas se guarda solo.</p>
+            </div>
+          </div>
+        </>
+      )}
       {enDia && !enLinea && como === "host" && fila && <PanelHost aid={aid} fase={a.fase} permanente={a.permanente} actual={fila.actual} sigue={fila.sigue} esperan={fila.esperan} />}
 
       {enDia && !enLinea && como === "recepcion" && fila && (

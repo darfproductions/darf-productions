@@ -39,7 +39,7 @@ export async function listPanelProductions(ids?: string[]): Promise<PanelProduct
   if (ids) q = q.in("id", ids.length ? ids : ["-"]);
   const { data, error } = await q;
   if (error) throw new Error(`No se pudieron cargar las obras: ${error.message}`);
-  // De la más vieja a la más nueva (por año de temporada y luego por creación).
+  // La más nueva arriba (por año de temporada y luego por creación).
   return ordenarObras((data ?? []) as PanelProduction[]);
 }
 

@@ -7,8 +7,10 @@ import { pasarSiguiente, ponerEnEscena } from "../../actions";
 const btn = "rounded-full border border-white/25 px-4 py-2 text-sm font-bold hover:border-white/60 disabled:opacity-60";
 
 // 0115: el host decide quién está en escena; los jueces lo ven en su pantalla en unos segundos.
-export function EnEscenaHost({ aid, actual, esta }: {
+export function EnEscenaHost({ aid, actual, esta, quedarse = false }: {
   aid: string; actual: { app: string; numero: number | null; nombre: string } | null; esta?: { app: string; nombre: string };
+  /** Modo audición, "Host y juez": al pasar al siguiente se queda en la misma pantalla (no abre la entrevista aparte). */
+  quedarse?: boolean;
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
@@ -17,7 +19,7 @@ export function EnEscenaHost({ aid, actual, esta }: {
     setMsg(null);
     const r = await fn();
     if (!r.ok || r.message) setMsg(r.message ?? "No se pudo.");
-    if (r.ok && abrir && r.app) router.push(`/panel/audiciones/${aid}/entrevista/${r.app}`);
+    if (r.ok && abrir && r.app && !quedarse) router.push(`/panel/audiciones/${aid}/entrevista/${r.app}`);
     else router.refresh();
   });
   return (

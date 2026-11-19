@@ -14,6 +14,7 @@ export const metadata: Metadata = { title: "Honorarios" };
 
 const pesos = (n: number | null) => (n == null ? "—" : `$${Number(n).toLocaleString("es-MX")}`);
 const fecha = (d: string) => d.split("-").reverse().join("/");
+const mesTxt = (d: string) => new Date(`${d.slice(0, 7)}-15T12:00:00Z`).toLocaleDateString("es-MX", { month: "short", year: "numeric", timeZone: "UTC" });
 
 // Lo de toda la empresa (sección 2 del documento que no depende de cada obra).
 const PARAMS: { k: string; label: string; unidad: "%" | "$" | ""; ayuda: string }[] = [
@@ -61,7 +62,7 @@ export default async function HonorariosInicio() {
               <li key={o.production_id}>
                 <Link href={`/panel/honorarios/obras/${o.production_id}`} className={`flex h-full flex-col gap-1 rounded-xl border border-white/10 p-4 hover:border-white/30 ${o.activa ? "" : "opacity-60"}`}>
                   <span className="flex items-center justify-between gap-2"><b>{o.nombre}</b><Icono nombre="flecha-der" /></span>
-                  <span className="text-xs text-texto-3">{o.mensual ? `Con mensualidad ${pesos(o.mensualidad)} y cierre` : "Solo al cierre de temporada"}{o.activa ? "" : " · cerrada"}</span>
+                  <span className="text-xs text-texto-3">{o.mensual ? (o.cobra && o.cobroDesde ? `Mensualidad ${pesos(o.mensualidad)} de ${mesTxt(o.cobroDesde)} a ${o.cobroHasta ? mesTxt(o.cobroHasta) : "sin fin"} · y cierre` : "Con mensualidad (todavía no cobra) · y cierre") : "Solo al cierre de temporada"}{o.activa ? "" : " · cerrada"}</span>
                   {r ? (
                     <span className="text-sm text-texto-2">
                       {o.mensual ? `Reserva ${r.reservaPct} % · emergencia ${r.emergenciaPct} % · creativo ${r.creativoPct} % · compartido ${r.compartidaPct} %${r.enFondo ? " · fondo común" : ""}` : ""}
