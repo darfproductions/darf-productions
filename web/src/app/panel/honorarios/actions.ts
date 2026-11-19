@@ -219,3 +219,13 @@ export async function cerrarMes(_p: HonState, f: FormData): Promise<HonState> {
   if (error) return { ok: false, message: mensajeError(error) };
   return listoMes(`Mes cerrado: ${personas.length} pagos por $${d.resultado.totalPagado.toLocaleString("es-MX")}. A cada quien ya le aparece su desglose.`);
 }
+
+/** Marcar pagado a una persona de un mes cerrado con la foto de la transferencia (ya subida y comprimida). */
+export async function marcarPagado(_p: HonState, f: FormData): Promise<HonState> {
+  const mes = str(f, "mes");
+  if (!mesOk(mes)) return { ok: false, message: "Mes no válido." };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("hon_marcar_pagado", { p_periodo: `${mes}-01`, p_person: str(f, "persona"), p_path: str(f, "path") });
+  if (error) return { ok: false, message: mensajeError(error) };
+  return listoMes("Pagado.");
+}

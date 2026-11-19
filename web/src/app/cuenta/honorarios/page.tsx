@@ -6,6 +6,8 @@ import { requireSession } from "@/lib/auth";
 import { mayus } from "@/lib/dates";
 import { diaDePago, lineaParte, type Parte } from "@/lib/honorarios-rules";
 import { createClient } from "@/lib/supabase/server";
+import { ActionForm } from "@/components/panel/ActionForm";
+import { yaMeLlego } from "./actions";
 
 export const metadata: Metadata = { title: "Mis honorarios" };
 
@@ -17,8 +19,12 @@ const nombreMes = (periodo: string) => mayus(new Date(`${periodo.slice(0, 7)}-15
 export default async function MisHonorarios() {
   await requireSession("/cuenta/honorarios");
   const supabase = await createClient();
-  const { data } = await supabase.from("hon_mes_personas").select("periodo, pago, bruto, partes, fondo_aplicado").order("periodo", { ascending: false });
-  const meses = ((data ?? []) as { periodo: string; pago: number; bruto: number; partes: Parte[]; fondo_aplicado: boolean }[]);
+  const { data } = await supabase.from("hon_mes_personas").select("periodo, pago, bruto, partes, fondo_aplicado, pagado_at, comprobante_path, recibido_at").order("periodo", { ascending: false });
+  const meses = ((data ?? []) as { periodo: string; pago: number; bruto: number; partes: Parte[]; fondo_aplicado: boolean; pagado_at: string | null; comprobante_path: string | null; recibido_at: string | null }[]);
+  // El comprobante de la transferencia (0151), con liga temporal.
+  const paths = meses.map((m) => m.comprobante_path).filter((x): x is string => !!x);
+  const firmadas = paths.length ? (await supabase.storage.from("honorarios").createSignedUrls(paths, 600)).data ?? [] : [];
+  const urlDe = new Map(firmadas.filter((x) => x.signedUrl).map((x) => [x.path, x.signedUrl as string]));
   const anio = new Date().getFullYear();
   const delAnio = meses.filter((m) => m.periodo.startsWith(String(anio))).reduce((s, m) => s + Number(m.pago), 0);
 
@@ -44,6 +50,15 @@ export default async function MisHonorarios() {
                   <div className="flex flex-wrap items-baseline justify-between gap-2">
                     <h2 className="titular text-xl">{nombreMes(m.periodo)}</h2>
                     <p className="text-2xl font-black">{pesosRed(m.pago)}</p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 text-sm">
+                    {m.pagado_at
+                      ? <span className="rounded-full bg-[#14532d] px-3 py-1 text-xs font-bold text-[#bbf7d0]">Pagado el {new Date(m.pagado_at).toLocaleDateString("es-MX", { timeZone: "America/Mexico_City", day: "numeric", month: "long" })}</span>
+                      : <span className="rounded-full bg-aviso/20 px-3 py-1 text-xs font-bold text-aviso">Pendiente de pago</span>}
+                    {m.comprobante_path && urlDe.get(m.comprobante_path) && <a href={urlDe.get(m.comprobante_path)} target="_blank" rel="noreferrer" className="font-bold text-violeta-claro underline">Ver comprobante</a>}
+                    {m.pagado_at && (m.recibido_at
+                      ? <span className="text-exito">Confirmaste que te llegó</span>
+                      : <ActionForm inline action={yaMeLlego} hidden={{ periodo: m.periodo }} submit="Ya me llegó" submitClass="rounded-full bg-texto px-3 py-1 text-xs font-bold text-sala" />)}
                   </div>
                   <ul className="flex flex-col gap-1 text-sm text-texto-2">
                     {m.partes.map((p, i) => <li key={i}>{lineaParte(p, [])}</li>)}

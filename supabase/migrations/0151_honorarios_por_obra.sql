@@ -152,4 +152,57 @@ begin
   end if;
 end $$;
 
+-- ════════ Pagar al equipo con comprobante (Diego 2026-11-19) ════════
+-- Pato marca a cada persona como pagada subiendo la foto de la transferencia (se comprime mucho en el navegador: solo
+-- tiene que existir). La persona ve su comprobante y confirma "Ya me llegó".
+alter table hon_mes_personas
+  add column if not exists pagado_at timestamptz,
+  add column if not exists pagado_por uuid references auth.users(id) on delete set null,
+  add column if not exists comprobante_path text,
+  add column if not exists recibido_at timestamptz;
+
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('honorarios', 'honorarios', false, 2097152, array['image/jpeg', 'image/png', 'image/webp'])
+on conflict (id) do update set public = false, file_size_limit = 2097152, allowed_mime_types = excluded.allowed_mime_types;
+
+-- Ruta: AAAA-MM/<persona>/<archivo>. Lo lee la cabeza o la persona dueña.
+create or replace function hon_puede_ver_comprobante(path text) returns boolean
+language sql stable security definer set search_path = public as $$
+  select hon_cabeza() or (split_part(path, '/', 2) ~ '^[0-9a-f-]{36}$' and hon_es_mi_persona(split_part(path, '/', 2)::uuid))
+$$;
+grant execute on function hon_puede_ver_comprobante(text) to authenticated;
+drop policy if exists honorarios_read on storage.objects;
+create policy honorarios_read on storage.objects for select to authenticated using (bucket_id = 'honorarios' and hon_puede_ver_comprobante(name));
+drop policy if exists honorarios_upload on storage.objects;
+create policy honorarios_upload on storage.objects for insert to authenticated with check (bucket_id = 'honorarios' and hon_cabeza());
+drop policy if exists honorarios_remove on storage.objects;
+create policy honorarios_remove on storage.objects for delete to authenticated using (bucket_id = 'honorarios' and hon_cabeza());
+
+-- Marcar pagado (o cambiar el comprobante) a una persona de un mes cerrado.
+create or replace function hon_marcar_pagado(p_periodo date, p_person uuid, p_path text) returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  if not hon_cabeza() then raise exception 'Solo las cabezas de DARF.'; end if;
+  p_periodo := date_trunc('month', p_periodo)::date;
+  if coalesce(p_path, '') = '' or p_path not like to_char(p_periodo, 'YYYY-MM') || '/' || p_person || '/%' then
+    raise exception 'Sube la foto del comprobante.';
+  end if;
+  update hon_mes_personas set pagado_at = now(), pagado_por = auth.uid(), comprobante_path = p_path
+   where periodo = p_periodo and person_id = p_person;
+  if not found then raise exception 'Esa persona no tiene pago en ese mes (¿ya se cerró el mes?).'; end if;
+end $$;
+revoke all on function hon_marcar_pagado(date, uuid, text) from public, anon;
+grant execute on function hon_marcar_pagado(date, uuid, text) to authenticated;
+
+-- La persona confirma que le llegó el dinero.
+create or replace function hon_ya_me_llego(p_periodo date) returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  update hon_mes_personas set recibido_at = now()
+   where periodo = date_trunc('month', p_periodo)::date and hon_es_mi_persona(person_id) and pagado_at is not null and recibido_at is null;
+  if not found then raise exception 'No hay un pago marcado para confirmar.'; end if;
+end $$;
+revoke all on function hon_ya_me_llego(date) from public, anon;
+grant execute on function hon_ya_me_llego(date) to authenticated;
+
 commit;

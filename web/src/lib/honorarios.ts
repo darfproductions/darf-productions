@@ -113,6 +113,8 @@ export const vigentesEn = (a: HonAsignacion[], fecha: string) => a.filter((x) =>
 export type PagoMes = { tabla: "cuenta" | "ficha"; id: string; production_id: string; alumno: string; nombre: string; periodo: string; fecha_pago: string; monto: number; recargo: number; perdonado: boolean };
 export type MesCerrado = { periodo: string; fondo_aplicado: boolean; total_pagado: number; reserva_mes: number; resultado: MesResultado; cerrado_por: string | null; cerrado_at: string };
 
+export type PersonaCerrada = { person_id: string; nombre: string; pago: number; bruto: number; partes: Parte[]; pagado_at: string | null; comprobante_path: string | null; recibido_at: string | null };
+
 /** "AAAA-MM" → primer día ("AAAA-MM-01"). */
 export const primerDia = (mes: string) => `${mes}-01`;
 
@@ -130,7 +132,7 @@ export async function getMes(mes: string) {
     supabase.from("hon_fondo_aprobaciones").select("user_id, aprobado_at").eq("periodo", periodo),
     supabase.rpc("hon_cabezas"),
     supabase.from("hon_meses").select("*").eq("periodo", periodo).maybeSingle(),
-    supabase.from("hon_mes_personas").select("person_id, nombre, pago, bruto, partes").eq("periodo", periodo),
+    supabase.from("hon_mes_personas").select("person_id, nombre, pago, bruto, partes, pagado_at, comprobante_path, recibido_at").eq("periodo", periodo),
     supabase.rpc("hon_fondo_aprobado", { p_periodo: periodo }),
   ]);
   const pagos = ((pagosRes.data ?? []) as PagoMes[]).map((p) => ({ ...p, monto: Number(p.monto), recargo: Number(p.recargo) }));
@@ -160,11 +162,16 @@ export async function getMes(mes: string) {
   const fondoAprobado = fondoOk.data === true;
   const resultado = cfgFila && sinFondo?.alertaFondo && fondoAprobado ? calcular(true) : sinFondo;
   if (resultado && sinReglas.length) resultado.errores.unshift(`Sin reglas configuradas para este mes: ${sinReglas.join(", ")} (Honorarios, Obras).`);
+  // Comprobantes de pago (0151): ligas temporales a la carpeta privada.
+  const filasCerradas = (personasRes.data ?? []) as PersonaCerrada[];
+  const paths = filasCerradas.map((p) => p.comprobante_path).filter((x): x is string => !!x);
+  const firmadas = paths.length ? (await supabase.storage.from("honorarios").createSignedUrls(paths, 600)).data ?? [] : [];
+  const urlDe = new Map(firmadas.map((x) => [x.path, x.signedUrl]));
   return {
     mes, periodo, corte, primerSabado: sabadoDelMes(anio, m, 1), diaPago: diaDePago(anio, m),
     config: cfgFila, obras, pagos, emergencia: usoDe, resultado, recargos, nombres,
     fondo: { aprobado: fondoAprobado, cabezas: listaCabezas, aprobaciones },
     cerrado: (cerrado.data as MesCerrado | null) ?? null,
-    personasCerrado: ((personasRes.data ?? []) as { person_id: string; nombre: string; pago: number; bruto: number; partes: Parte[] }[]),
+    personasCerrado: filasCerradas.map((p) => ({ ...p, comprobanteUrl: p.comprobante_path ? urlDe.get(p.comprobante_path) ?? null : null })),
   };
 }

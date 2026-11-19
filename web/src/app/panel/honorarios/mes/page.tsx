@@ -8,6 +8,7 @@ import { getMes, type PagoMes } from "@/lib/honorarios";
 import { lineaParte, type MesResultado } from "@/lib/honorarios-rules";
 import { requireCabeza } from "@/lib/permissions";
 import { aprobarFondo, cerrarMes, guardarEmergencia } from "../actions";
+import { Comprobante } from "./Comprobante";
 
 export const metadata: Metadata = { title: "Honorarios del mes" };
 
@@ -35,8 +36,9 @@ export default async function HonorariosMes({ searchParams }: PageProps<"/panel/
   const r: (MesResultado & { pagos?: { nombre: string; obra: string; fecha: string; monto: number; recargo: number }[] }) | null = cerrado ? cerrado.resultado : d.resultado;
   const obrasRef = d.obras.map((o) => ({ id: o.production_id, nombre: o.nombre }));
   const personas = cerrado
-    ? d.personasCerrado.map((p) => ({ persona: p.person_id, nombre: p.nombre, pago: Number(p.pago), bruto: Number(p.bruto), partes: p.partes }))
-    : r?.personas ?? [];
+    ? d.personasCerrado.map((p) => ({ persona: p.person_id, nombre: p.nombre, pago: Number(p.pago), bruto: Number(p.bruto), partes: p.partes, pagadoAt: p.pagado_at, url: p.comprobanteUrl, recibidoAt: p.recibido_at }))
+    : (r?.personas ?? []).map((p) => ({ ...p, pagadoAt: null as string | null, url: null as string | null, recibidoAt: null as string | null }));
+  const pagados = personas.filter((p) => p.pagadoAt).length;
   const yaCorte = hoy >= d.corte;
   const yoCabeza = d.fondo.cabezas.some((c) => c.user_id === access.session.userId);
   const yoAprobe = d.fondo.aprobaciones.some((a) => a.user_id === access.session.userId);
@@ -126,7 +128,7 @@ export default async function HonorariosMes({ searchParams }: PageProps<"/panel/
           <Card className="flex flex-col gap-3">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <h2 className="titular text-xl">Pagos por persona</h2>
-              <p className="text-sm">Total a pagar: <b>{pesosRed(r.totalPagado)}</b></p>
+              <p className="text-sm">Total a pagar: <b>{pesosRed(r.totalPagado)}</b>{cerrado ? ` · pagados ${pagados} de ${personas.filter((p) => p.pago > 0).length}` : ""}</p>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[560px] text-sm">
@@ -136,7 +138,16 @@ export default async function HonorariosMes({ searchParams }: PageProps<"/panel/
                     <tr key={p.persona} className="border-t border-white/10 align-top">
                       <td className="py-2 font-semibold">{p.nombre}</td>
                       <td className="py-2 text-texto-2">{p.partes.map((x, i) => <span key={i} className="block">{lineaParte(x, d.nombres)}</span>)}</td>
-                      <td className="py-2 text-right text-base font-black">{pesosRed(p.pago)}<span className="block text-[11px] font-normal text-texto-3">de {pesos(p.bruto)}</span></td>
+                      <td className="py-2 text-right text-base font-black">{pesosRed(p.pago)}<span className="block text-[11px] font-normal text-texto-3">de {pesos(p.bruto)}</span>
+                        {cerrado && p.pago > 0 && (
+                          <span className="mt-2 flex flex-col items-end gap-1 text-xs font-normal">
+                            {p.pagadoAt && <span className="rounded-full bg-[#14532d] px-2 py-0.5 font-bold text-[#bbf7d0]">Pagado el {new Date(p.pagadoAt).toLocaleDateString("es-MX", { timeZone: "America/Mexico_City", day: "numeric", month: "short" })}</span>}
+                            {p.url && <a href={p.url} target="_blank" rel="noreferrer" className="font-bold text-violeta-claro underline">Ver comprobante</a>}
+                            {p.recibidoAt && <span className="text-exito">Le llegó (confirmado)</span>}
+                            <Comprobante mes={mes} persona={p.persona} cambiar={!!p.pagadoAt} />
+                          </span>
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { destino, formatoSalida, hayQueComprimir, peso, recorteAlfa, renombrar } from "./image-compress-rules";
+import { COMPRESS, destino, formatoSalida, hayQueComprimir, peso, recorteAlfa, renombrar } from "./image-compress-rules";
 
 describe("compresión de fotos", () => {
   it("reduce al lado mayor sin deformar ni agrandar", () => {
@@ -29,5 +29,13 @@ describe("recorte de márgenes transparentes en logos", () => {
     expect(recorteAlfa({ x0: 100, y0: 200, x1: 899, y1: 599 }, 1000, 1000)).toEqual({ x: 84, y: 184, w: 832, h: 432 });
     expect(recorteAlfa({ x0: 2, y0: 2, x1: 997, y1: 997 }, 1000, 1000)).toBeNull();
     expect(recorteAlfa(null, 10, 10)).toBeNull();
+  });
+});
+
+describe("comprobante de pago (0151)", () => {
+  it("siempre se comprime al máximo, aunque ya sea ligero", () => {
+    expect(hayQueComprimir("comprobante", { size: 20_000, width: 400, height: 600 })).toBe(true);
+    expect(COMPRESS.comprobante.maxDim).toBeLessThanOrEqual(1000);
+    expect(COMPRESS.comprobante.quality).toBeLessThanOrEqual(0.5);
   });
 });
