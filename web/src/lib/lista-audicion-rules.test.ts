@@ -11,10 +11,14 @@ const beto = app({ id: "b", nombre: "Beto", numero: 3, conRespuesta: "Solo" });
 const todos = [ana, caro, luis, beto];
 
 describe("lista de audición", () => {
-  it("con quién pasa: grupo de turno, luego la respuesta, luego Solo", () => {
+  it("con quién pasa: los nombres de su turno (como están en la página), nunca lo que escribieron; si nadie, Individual", () => {
     expect(pasaCon(ana, todos)).toBe("Caro");
-    expect(pasaCon(luis, todos)).toBe("con mi hermano Beto");
-    expect(pasaCon(beto, todos)).toBe("Solo");
+    // Escribió "con mi hermano Beto", pero en la página pasa solo.
+    expect(pasaCon(luis, todos)).toBe("Individual");
+    expect(pasaCon(beto, todos)).toBe("Individual");
+    // Mismo número de turno sin grupo armado: también cuenta.
+    const x = app({ id: "x", nombre: "Xime", numero: 9 }), y = app({ id: "y", nombre: "Yael", numero: 9 });
+    expect(pasaCon(x, [x, y])).toBe("Yael");
   });
   it("por turno ordena por número y luego por nombre", () => {
     expect(armarLista(todos, "turno")[0].filas.map((f) => f.nombre)).toEqual(["Luis", "Ana", "Caro", "Beto"]);

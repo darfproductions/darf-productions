@@ -1,5 +1,3 @@
-import { pasaSolo } from "@/lib/audicion-vivo-rules";
-
 /** Lista para imprimir o exportar de una convocatoria: quién audiciona, de qué, de qué grupo es y con quién pasa. */
 
 export type ListaApp = {
@@ -12,7 +10,7 @@ export type ListaApp = {
   personajes: string[];
   /** Respuesta a la pregunta «Grupo» (de qué grupo es). */
   grupo: string | null;
-  /** Respuesta a «¿Con quién pasas?» (lo que escribió la persona). */
+  /** Respuesta a «¿Con quién pasas?» (lo que escribió la persona). Ya no sale en la lista (Diego 2026-11-19). */
   conRespuesta: string | null;
   /** Grupo de turno armado por el equipo (pasan juntos y comparten número). */
   grupoTurno: string | null;
@@ -34,14 +32,14 @@ const porTurno = (a: ListaApp, b: ListaApp) =>
   (a.numero ?? Infinity) - (b.numero ?? Infinity) || a.nombre.localeCompare(b.nombre, "es");
 const porNombre = (a: ListaApp, b: ListaApp) => a.nombre.localeCompare(b.nombre, "es");
 
-/** Con quién pasa: primero el grupo de turno armado por el equipo; si no hay, lo que escribió la persona; si no, «Solo». */
+/** Con quién pasa (Diego 2026-11-19): solo lo que está armado en la página, nunca lo que escribieron en el formulario.
+ *  Los nombres (como están en el sistema) de quienes comparten su turno: su grupo de turno o, si no, su mismo número.
+ *  Si nadie más, «Individual». */
 export function pasaCon(app: ListaApp, todos: ListaApp[]): string {
-  if (app.grupoTurno) {
-    const otros = todos.filter((x) => x.grupoTurno === app.grupoTurno && x.id !== app.id).sort(porTurno).map((x) => x.nombre);
-    if (otros.length) return otros.join(", ");
-  }
-  if (app.conRespuesta && !pasaSolo(app.conRespuesta)) return app.conRespuesta.trim();
-  return "Solo";
+  const otros = todos.filter((x) => x.id !== app.id && (
+    (app.grupoTurno && x.grupoTurno === app.grupoTurno) || (app.numero != null && x.numero === app.numero)
+  )).sort(porTurno).map((x) => x.nombre);
+  return otros.length ? otros.join(", ") : "Individual";
 }
 
 /** Arma la lista en secciones según el orden. «Por personaje» repite a quien audiciona para varios. */
