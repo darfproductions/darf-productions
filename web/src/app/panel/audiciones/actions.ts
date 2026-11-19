@@ -197,7 +197,8 @@ export async function saveEntrevista(_p: AudState, f: FormData): Promise<AudStat
   });
   if (error) return { ok: false, message: mensajeError(error) };
   revalidatePath(`/panel/audiciones/${aid}/entrevista`);
-  return { ok: true, message: "Entrevista guardada en su expediente." };
+  revalidatePath(`/panel/audiciones/${aid}/en-vivo`);
+  return { ok: true, message: "Respuestas subidas: ya les aparecen a los jueces." };
 }
 
 // ──────── Invitaciones (convocatoria particular) ────────

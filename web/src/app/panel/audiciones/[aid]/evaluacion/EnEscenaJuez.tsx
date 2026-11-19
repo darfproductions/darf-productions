@@ -94,7 +94,7 @@ export function EnEscenaJuez({ aid, ronda, criterios, roles, conVotacion, abiert
         </section>
         <section aria-label="Entrevista" className="flex flex-col gap-2">
           <h3 className="text-sm font-bold uppercase tracking-widest text-texto-3">Entrevista del host</h3>
-          {p.entrevista.length === 0 && !p.extra ? <p className="text-sm text-texto-3">El host aún no guarda la entrevista. Aparece aquí en cuanto la guarde.</p> : (
+          {p.entrevista.length === 0 && !p.extra ? <p className="text-sm text-texto-3">El host aún no sube la entrevista. Aparece aquí sola en cuanto la suba.</p> : (
             <dl className="flex flex-col gap-2 text-sm">
               {p.entrevista.map((r, i) => <div key={i} className="rounded-lg bg-sala px-3 py-2"><dt className="text-xs text-texto-3">{r.pregunta}</dt><dd className="whitespace-pre-line">{r.respuesta}</dd></div>)}
               {p.extra && <div className="rounded-lg bg-sala px-3 py-2"><dt className="text-xs text-texto-3">Adicional</dt><dd className="whitespace-pre-line">{p.extra}</dd></div>}
