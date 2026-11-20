@@ -5,6 +5,14 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-11-20 — 0156: Mi calendario DARF
+
+Diego: que cada quien vea sus ensayos, llamados y funciones en su calendario (Google, Apple, Outlook), sin ver lo de
+los demás. Cada cuenta tiene una liga privada (`calendario_ligas`, `mi_calendario_liga`) para suscribirse; el archivo
+(`/calendario/mi/<liga>`, `calendario_eventos`) trae solo lo de esa persona: ensayos y llamados a los que está citada,
+funciones de sus obras (elenco o equipo), funciones con boleto suyo, eventos del Club Fan y su turno de audición. La
+liga se puede cambiar desde Mi cuenta (la anterior deja de servir). Se pide que se revise cada hora; Google tarda más.
+
 ## 2026-11-20 — 0155: Secciones que sí aplican a una obra
 
 Diego: el tipo de producción manda algunas secciones a «Más · No aplica a este tipo» (por ejemplo Vendedores en una

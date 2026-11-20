@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { archivoIcs, escaparIcs, ligaGoogle, ligaOutlook } from "./calendario";
+import { archivoIcs, calendarioIcs, escaparIcs, ligaGoogle, ligaOutlook, ligasSuscripcion } from "./calendario";
 
 const e = { uid: "orden-1", titulo: "Showman, función", inicia: "2026-11-22T02:00:00Z", lugar: "Teatro; Querétaro", url: "https://darfproductions.com/cuenta" };
 
@@ -30,5 +30,31 @@ describe("agregar al calendario", () => {
     expect(u.searchParams.get("location")).toBe("Teatro; Querétaro");
     expect(u.searchParams.get("rru")).toBe("addevent");
     expect(new URL(ligaOutlook(e, "trabajo")).host).toBe("outlook.office.com");
+  });
+});
+
+describe("0156: Mi calendario DARF", () => {
+  const ahora = new Date("2026-11-20T12:00:00Z");
+  const evs = [
+    { uid: "ensayo-1", titulo: "Ensayo: Coreografía · Grease", inicia: "2026-11-22T17:00:00Z", termina: "2026-11-22T20:00:00Z", lugar: "Salón DARF" },
+    { uid: "funcion-2", titulo: "Función: Grease", inicia: "2026-12-05T02:00:00Z" },
+  ];
+  it("un calendario con nombre, todos los eventos y que se revise cada hora", () => {
+    const ics = calendarioIcs(evs, "DARF · Mi calendario", 2.5, ahora);
+    expect(ics.match(/BEGIN:VEVENT/g)).toHaveLength(2);
+    expect(ics).toContain("X-WR-CALNAME:DARF · Mi calendario");
+    expect(ics).toContain("REFRESH-INTERVAL;VALUE=DURATION:PT1H");
+    expect(ics).toContain("UID:ensayo-1@darfproductions.com");
+    expect(ics.startsWith("BEGIN:VCALENDAR")).toBe(true);
+    expect(ics.trim().endsWith("END:VCALENDAR")).toBe(true);
+  });
+  it("sin eventos sigue siendo un calendario válido", () => {
+    expect(calendarioIcs([], "Vacío", 2.5, ahora)).toContain("END:VCALENDAR");
+  });
+  it("ligas para suscribirse", () => {
+    const l = ligasSuscripcion("https://www.darfproductions.com/calendario/mi/abc", "DARF");
+    expect(l.apple).toBe("webcal://www.darfproductions.com/calendario/mi/abc");
+    expect(l.google).toContain(encodeURIComponent("webcal://www.darfproductions.com/calendario/mi/abc"));
+    expect(l.outlook).toContain(encodeURIComponent("https://www.darfproductions.com/calendario/mi/abc"));
   });
 });

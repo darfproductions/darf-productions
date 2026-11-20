@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { archivoIcs, type EventoCal } from "@/lib/calendario";
+import { archivoIcs, calendarioIcs, type EventoCal } from "@/lib/calendario";
 import { origenSitio } from "@/lib/site-origin";
 import { createClient } from "@/lib/supabase/server";
 import { getLogistica } from "@/lib/logistica";
@@ -11,6 +11,17 @@ export async function GET(_req: Request, ctx: RouteContext<"/calendario/[tipo]/[
   const { tipo, id } = await ctx.params;
   const supabase = await createClient();
   const sitio = await origenSitio();
+  // 0156: "Mi calendario DARF": la liga privada de cada persona (la abren Google, Apple u Outlook sin sesión).
+  if (tipo === "mi") {
+    const token = id.replace(/\.ics$/, "");
+    const { data } = await supabase.rpc("calendario_eventos", { p_token: token });
+    const d = data as { nombre: string; eventos: { uid: string; titulo: string; inicia: string; termina: string | null; lugar: string | null; detalle: string | null; ruta: string }[] } | null;
+    if (!d) return new NextResponse("Esta liga de calendario ya no sirve. Saca la nueva en Mi cuenta.", { status: 404 });
+    const eventos: EventoCal[] = d.eventos.map((e) => ({ uid: e.uid, titulo: e.titulo, inicia: e.inicia, termina: e.termina, lugar: e.lugar, detalle: e.detalle, url: `${sitio}${e.ruta}` }));
+    return new NextResponse(calendarioIcs(eventos, "DARF · Mi calendario"), {
+      headers: { "Content-Type": "text/calendar; charset=utf-8", "Cache-Control": "private, max-age=300", "X-Robots-Tag": "noindex" },
+    });
+  }
   let ev: EventoCal | null = null;
   if (tipo === "boleto") {
     const { data } = await supabase.from("orders")
