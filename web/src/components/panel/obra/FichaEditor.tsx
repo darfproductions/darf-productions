@@ -3,7 +3,7 @@ import { ActionForm } from "@/components/panel/ActionForm";
 import { Card, input } from "@/components/panel/ui";
 import { createClient } from "@/lib/supabase/server";
 import { mesAInput, textoMeses } from "@/lib/produccion-nueva-rules";
-import { TIPOS_OBRA, conBoleteria, tipoDe } from "@/lib/tipo-obra-rules";
+import { NOMBRE_PAGINA, TIPOS_OBRA, TIPO_LABEL, conBoleteria, paginasDelTipo, tipoDe } from "@/lib/tipo-obra-rules";
 import { agregarHito, agregarLugar, borrarHito, borrarLugar, guardarFicha } from "@/app/panel/producciones/obra-actions";
 
 const ghost = "rounded-full border border-white/25 px-3 py-1.5 text-xs font-bold hover:border-white/50 disabled:opacity-60";
@@ -19,6 +19,8 @@ export type FichaObra = {
   idioma: string | null; venue: string | null; tentativa_desde: string | null; tentativa_hasta: string | null;
   /** 0139 */
   tipo?: string | null; con_boleteria?: boolean | null;
+  /** 0155 */
+  secciones_extra?: string[] | null;
 };
 export type Hito = { id: string; nombre: string; mes: string; dia: string | null; notas: string | null };
 export type Lugar = { id: string; tipo: string; nombre: string; direccion: string | null; mapa_url: string | null; notas: string | null };
@@ -60,6 +62,20 @@ export function FichaForm({ pid, f, submit = "Guardar ficha" }: { pid: string; f
           <input type="checkbox" name="con_boleteria" value="1" defaultChecked={conBoleteria(f)} /> Vende boletos por DARF
           <span className="text-xs font-normal text-texto-3">(apagado: se esconde Boletos y nadie pide «Listo para vender»)</span>
         </label>
+        {/* 0155: lo que el tipo manda a "No aplica" y esta obra sí usa. */}
+        {paginasDelTipo(tipoDe(f)).length > 0 && (
+          <div className="flex flex-col gap-1.5 border-t border-white/10 pt-2">
+            <p className="text-sm font-semibold">Secciones que sí usa esta obra <span className="text-xs font-normal text-texto-3">(normalmente no aplican a {TIPO_LABEL[tipoDe(f)]}; encendidas vuelven a su lugar)</span></p>
+            <div className="flex flex-wrap gap-2">
+              {paginasDelTipo(tipoDe(f)).map((id) => (
+                <label key={id} className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-xs font-semibold has-[:checked]:border-texto has-[:checked]:bg-telon-2">
+                  <input type="checkbox" name="extra" value={id} defaultChecked={(f.secciones_extra ?? []).includes(id)} /> {NOMBRE_PAGINA[id] ?? id}
+                </label>
+              ))}
+            </div>
+            <p className="text-xs text-texto-3">Si cambias el tipo, guarda y aquí salen las secciones del tipo nuevo.</p>
+          </div>
+        )}
       </fieldset>
       <fieldset className="flex flex-col gap-2 rounded-lg bg-sala p-3">
         <legend className="px-1 text-sm font-bold">Fechas tentativas de presentación</legend>

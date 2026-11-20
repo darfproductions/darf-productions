@@ -10,7 +10,7 @@ export const TIPOS_OBRA: { id: TipoObra; label: string; que: string }[] = [
 ];
 export const TIPO_LABEL: Record<TipoObra, string> = Object.fromEntries(TIPOS_OBRA.map((t) => [t.id, t.label])) as Record<TipoObra, string>;
 
-export type ObraTipo = { tipo?: string | null; con_boleteria?: boolean | null };
+export type ObraTipo = { tipo?: string | null; con_boleteria?: boolean | null; secciones_extra?: string[] | null };
 
 /** Tipo válido (lo que venga raro de la base se toma como profesional). */
 export function tipoDe(o: ObraTipo | null | undefined): TipoObra {
@@ -39,9 +39,28 @@ const NO_APLICA: Record<TipoObra, string[]> = {
   escuela: ["cuotas", "adeudos", "fanzone", "fotos", "vendedores", "preventa", "beneficios"],
 };
 
-/** Ids de página que no aplican a la obra (por su tipo y si vende boletos). */
+/** Nombre de cada página que puede no aplicar (para encenderla en la ficha). */
+export const NOMBRE_PAGINA: Record<string, string> = {
+  cuotas: "Cuotas y recaudación", adeudos: "Adeudos", evaluaciones: "Evaluaciones", ensayos: "Ensayos", comunicados: "Comunicados",
+  materiales: "Materiales", preguntas: "Preguntas frecuentes", expedientes: "Expedientes", solicitudes: "Solicitudes",
+  audiciones: "Audiciones", fanzone: "Fan Zone", fotos: "Fotos", vendedores: "Vendedores", preventa: "Preventa privada", beneficios: "Beneficios",
+};
+
+/** 0155: páginas que el tipo manda a "No aplica" y que se pueden encender para una obra. */
+export function paginasDelTipo(tipo: TipoObra): string[] {
+  return NO_APLICA[tipo];
+}
+
+/** 0155: las secciones encendidas, limpias (solo las que el tipo apaga, sin repetir). */
+export function limpiarExtras(tipo: TipoObra, extras: Iterable<string>): string[] {
+  const validas = new Set(NO_APLICA[tipo]);
+  return [...new Set([...extras].filter((x) => validas.has(x)))];
+}
+
+/** Ids de página que no aplican a la obra (por su tipo y si vende boletos). 0155: menos las que se encendieron. */
 export function paginasNoAplican(o: ObraTipo | null | undefined): Set<string> {
-  const out = new Set(NO_APLICA[tipoDe(o)]);
+  const extra = new Set(o?.secciones_extra ?? []);
+  const out = new Set(NO_APLICA[tipoDe(o)].filter((x) => !extra.has(x)));
   if (!conBoleteria(o)) for (const p of PAGINAS_BOLETERIA) out.add(p);
   return out;
 }

@@ -9,7 +9,7 @@ import { ConcludedGuard } from "@/components/panel/ConcludedGuard";
 import { CONCLUIDA_TABS, can, productionGroups, productionTabs } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
 import { Icono } from "@/components/Icono";
-import { etiquetaTipo } from "@/lib/tipo-obra-rules";
+import { TIPO_LABEL, etiquetaTipo, tipoDe } from "@/lib/tipo-obra-rules";
 
 // Espacio de trabajo de una obra: encabezado y pestañas agrupadas (0085) según mis permisos en ELLA.
 export default async function ProductionWorkspace({ children, params }: LayoutProps<"/panel/producciones/[id]">) {
@@ -38,7 +38,7 @@ export default async function ProductionWorkspace({ children, params }: LayoutPr
           </p>
         )}
         {concluida && <ConcludedGuard base={`/panel/producciones/${id}`} permitidas={[...CONCLUIDA_TABS.map((t) => (t === "resumen" ? "" : t)), "guia"]} />}
-        <ObraTabs base={`/panel/producciones/${id}`} grupos={grupos} conteo={conteo} />
+        <ObraTabs base={`/panel/producciones/${id}`} grupos={grupos} conteo={conteo} pid={id} tipo={TIPO_LABEL[tipoDe(p)]} />
       </header>
       {children}
     </>

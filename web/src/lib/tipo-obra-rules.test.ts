@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { boleteriaPorDefecto, conBoleteria, etiquetaTipo, paginasNoAplican, tipoDe } from "./tipo-obra-rules";
+import { NOMBRE_PAGINA, boleteriaPorDefecto, conBoleteria, etiquetaTipo, limpiarExtras, paginasDelTipo, paginasNoAplican, tipoDe } from "./tipo-obra-rules";
 
 describe("tipo de producción (0139)", () => {
   it("lo raro o vacío es profesional, con boletería", () => {
@@ -29,5 +29,23 @@ describe("tipo de producción (0139)", () => {
   it("etiqueta del encabezado", () => {
     expect(etiquetaTipo({ tipo: "escuela", con_boleteria: false })).toBe("Escuela · sin boletería");
     expect(etiquetaTipo({ tipo: "profesional" })).toBe("Profesional");
+  });
+});
+
+describe("0155: secciones que sí aplican", () => {
+  it("una sección encendida deja de estar en No aplica", () => {
+    expect(paginasNoAplican({ tipo: "escuela" }).has("vendedores")).toBe(true);
+    expect(paginasNoAplican({ tipo: "escuela", secciones_extra: ["vendedores"] }).has("vendedores")).toBe(false);
+    expect(paginasNoAplican({ tipo: "escuela", secciones_extra: ["vendedores"] }).has("cuotas")).toBe(true);
+  });
+  it("sin boletería, encenderla no la regresa", () => {
+    expect(paginasNoAplican({ tipo: "escuela", con_boleteria: false, secciones_extra: ["vendedores"] }).has("vendedores")).toBe(true);
+  });
+  it("limpia: solo las del tipo y sin repetir", () => {
+    expect(limpiarExtras("escuela", ["vendedores", "vendedores", "ensayos", "x"])).toEqual(["vendedores"]);
+    expect(limpiarExtras("profesional", ["cuotas", "vendedores"])).toEqual(["cuotas"]);
+  });
+  it("cada página que puede no aplicar tiene nombre", () => {
+    for (const t of ["profesional", "showcase", "taller", "escuela"] as const) for (const p of paginasDelTipo(t)) expect(NOMBRE_PAGINA[p]).toBeTruthy();
   });
 });

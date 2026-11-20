@@ -28,10 +28,12 @@ export type PanelProduction = KitColumns & PosterColumns & {
   /** 0139: tipo de producción y si vende boletos por DARF. */
   tipo?: string | null;
   con_boleteria?: boolean | null;
+  /** 0155: secciones que sí aplican aunque el tipo diga que no. */
+  secciones_extra?: string[] | null;
 };
 
 const COLUMNS =
-  `id, nombre, estado, venue, temporada, on_sale, concluded, destacada, created_at, frase, color_fondo, color_superficie, color_texto, color_acento, logo_path, ambiente_path, icono_path, funciones_publicadas, asistente_paso, tentativa_desde, tentativa_hasta, tipo, con_boleteria, ${POSTER_COLUMNS}` as const;
+  `id, nombre, estado, venue, temporada, on_sale, concluded, destacada, created_at, frase, color_fondo, color_superficie, color_texto, color_acento, logo_path, ambiente_path, icono_path, funciones_publicadas, asistente_paso, tentativa_desde, tentativa_hasta, tipo, con_boleteria, secciones_extra, ${POSTER_COLUMNS}` as const;
 
 export async function listPanelProductions(ids?: string[]): Promise<PanelProduction[]> {
   const supabase = await createClient();
