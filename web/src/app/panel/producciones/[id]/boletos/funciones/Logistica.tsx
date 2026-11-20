@@ -87,6 +87,17 @@ export function LlamadosObra({ pid, llamados }: { pid: string; llamados: Llamado
           ))}
         </ul>
       )}
+      {/* Llamados que no dependen de la hora de una función: montaje, ensayo general… Se agregan como ensayos: se
+          elige a quién y el horario, y salen en Mi cuenta y en Mi calendario. */}
+      <div className="flex flex-col gap-2 rounded-xl border border-linea p-4">
+        <p className="text-sm font-bold">Otros llamados</p>
+        <p className="text-xs text-texto-3">Montaje, ensayo general, prueba de sonido… con su fecha, horario y a quién citas (elenco y equipo). Salen en Ensayos, en Mi cuenta y en el calendario de cada quien.</p>
+        <div className="flex flex-wrap gap-2">
+          {["Montaje", "Ensayo general", "Ensayo técnico", "Prueba de sonido", "Desmontaje", "Otro"].map((t) => (
+            <a key={t} href={`/panel/producciones/${pid}/ensayos?nuevo=${encodeURIComponent(t === "Otro" ? "Llamado" : t)}#agregar`} className={ghost}>+ {t}</a>
+          ))}
+        </div>
+      </div>
       <details className="rounded-xl border border-linea" open={llamados.length === 0}>
         <summary className="cursor-pointer list-none px-4 py-3 text-sm font-bold text-violeta-claro">+ Nuevo llamado</summary>
         <div className="border-t border-linea p-4">

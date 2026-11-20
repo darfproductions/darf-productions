@@ -21,6 +21,9 @@ export type Rehearsal = {
   sin_asistencia?: boolean;
 };
 
+/** Títulos sugeridos al crear o editar un ensayo o un llamado especial. */
+export const TITULOS_ENSAYO = ["Ensayo", "Ensayo general", "Ensayo técnico", "Montaje", "Desmontaje", "Prueba de sonido", "Prueba de vestuario", "Llamado"];
+
 const personas = (n: number) => (n === 1 ? "1 persona" : `${n} personas`);
 
 /** "Todo el elenco" / "Ensamble y Crew" / "3 personas", más el equipo de producción si se citó (0099). */

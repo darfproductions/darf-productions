@@ -122,6 +122,43 @@ export async function setEquipoEnsayo(_p: RehState, f: FormData): Promise<RehSta
   return { ok: true, message: "Guardado." };
 }
 
+/** Editar un ensayo: título, fecha y horario, lugar, notas y a quién del elenco se cita. Con "toda_serie", el título,
+ *  lugar, notas y citados se copian a los siguientes de la serie (cada uno conserva su fecha). Si es el llamado de una
+ *  función y se le cambia la hora, ya no se mueve solo con la función (0127). */
+export async function updateRehearsal(_p: RehState, f: FormData): Promise<RehState> {
+  const pid = str(f, "pid");
+  const rid = str(f, "rid");
+  const fecha = str(f, "fecha");
+  const inicia = localMxToIso(`${fecha}T${str(f, "hora")}`);
+  if (!inicia) return { ok: false, message: "Elige fecha y hora." };
+  const fin = str(f, "fin");
+  const termina = fin ? localMxToIso(`${fecha}T${fin}`) : null;
+  if (termina && termina <= inicia) return { ok: false, message: "La hora de fin debe ser después del inicio." };
+  const convocatoria = ["todos", "grupos", "personas", "ninguno"].includes(str(f, "convocatoria")) ? str(f, "convocatoria") : "todos";
+  const grupos = f.getAll("grupos").map(String);
+  const personas = f.getAll("personas").map(String);
+  if (convocatoria === "grupos" && !grupos.length) return { ok: false, message: "Marca al menos un grupo." };
+  if (convocatoria === "personas" && !personas.length) return { ok: false, message: "Marca al menos a una persona." };
+  const comunes = {
+    titulo: str(f, "titulo") || "Ensayo", lugar: str(f, "lugar") || null, notas: str(f, "notas") || null,
+    convocatoria, grupos: convocatoria === "grupos" ? grupos : [], personas: convocatoria === "personas" ? personas : [],
+  };
+  const supabase = await createClient();
+  const { error, count } = await supabase.from("rehearsals").update({ ...comunes, inicia, termina }, { count: "exact" }).eq("id", rid).eq("production_id", pid);
+  if (error) return { ok: false, message: /equipo/.test(error.message) ? "Si no citas al elenco, marca a alguien del equipo (abajo, en Equipo citado)." : mensajeError(error) };
+  if (!count) return { ok: false, message: "No se guardó: revisa tus permisos." };
+  let extra = 0;
+  const serie = str(f, "serie");
+  if (f.get("toda_serie") === "on" && serie) {
+    const r = await supabase.from("rehearsals").update(comunes, { count: "exact" }).eq("production_id", pid).eq("serie_id", serie).gt("inicia", inicia).neq("id", rid);
+    if (r.error) return { ok: false, message: mensajeError(r.error) };
+    extra = r.count ?? 0;
+  }
+  refrescar(pid, rid);
+  revalidatePath(`/cuenta/produccion/${pid}`);
+  return { ok: true, message: extra ? `Guardado, también en ${extra} ${extra === 1 ? "ensayo siguiente" : "ensayos siguientes"} de la serie.` : "Guardado. Los citados ya lo ven con los cambios." };
+}
+
 /** 0157: "No se toma asistencia" (o volver a tomarla) en este ensayo y, si se pide, en los siguientes de la serie. */
 export async function setSinAsistencia(_p: RehState, f: FormData): Promise<RehState> {
   const pid = str(f, "pid");

@@ -5,6 +5,14 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-11-20 — Editar ensayos y otros llamados (montaje, ensayo general…)
+
+Diego: poder corregir un ensayo si algo cambia y tener llamados que no dependen de la hora de una función. En la página
+de cada ensayo, «Editar ensayo» (título, fecha y horario, lugar, notas y a quién del elenco se cita; con opción de
+copiar título, lugar, notas y citados a los siguientes de la serie). En Funciones, Llamados, «Otros llamados» abre el
+formulario de Ensayos con el título puesto (Montaje, Ensayo general, Prueba de sonido…), para elegir horario y a quién
+se cita. En el calendario los ensayos y llamados salen con su título tal cual (0158).
+
 ## 2026-11-20 — 0158: Audiciones en el calendario del equipo
 
 Diego: a los jueces (y al resto del equipo de una audición) no les salían las audiciones en Mi calendario. Cada

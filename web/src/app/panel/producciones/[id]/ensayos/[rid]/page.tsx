@@ -10,7 +10,11 @@ import { can } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
 import { citados, fechaEnsayo, type Rehearsal } from "@/lib/rehearsal-rules";
 import { createClient } from "@/lib/supabase/server";
-import { setEquipoEnsayo, setSinAsistencia } from "../actions";
+import { setEquipoEnsayo, setSinAsistencia, updateRehearsal } from "../actions";
+import { input } from "@/components/panel/ui";
+import { TIPO_CREDITO } from "@/lib/casting-rules";
+import { isoToLocalMx } from "@/lib/dates";
+import { TITULOS_ENSAYO } from "@/lib/rehearsal-rules";
 
 export const metadata: Metadata = { title: "Asistencia" };
 
@@ -44,6 +48,37 @@ export default async function Asistencia({ params }: PageProps<"/panel/produccio
         {confirmaron.size > 0 && <p className="text-sm text-exito"><Icono nombre="check" /> {confirmaron.size === 1 ? "1 persona confirmó" : `${confirmaron.size} personas confirmaron`} que van: {((rows ?? []) as FilaLista[]).filter((x) => confirmaron.has(x.user_id)).map((x) => x.nombre).join(", ")}</p>}
         {e.notas && <p className="mt-1 whitespace-pre-line text-sm text-texto-2">{e.notas}</p>}
       </div>
+      {/* Editar el ensayo (por si algo cambia). */}
+      <details className="rounded-[22px] border border-linea bg-telon">
+        <summary className="cursor-pointer px-5 py-4 font-bold">Editar ensayo</summary>
+        <div className="px-5 pb-5">
+          <ActionForm action={updateRehearsal} hidden={{ pid: id, rid, serie: e.serie_id ?? "" }} submit="Guardar cambios">
+            <div className="grid gap-2 sm:grid-cols-4">
+              <label className="flex flex-col gap-1 text-xs font-semibold sm:col-span-2">Título<input className={input} name="titulo" defaultValue={e.titulo} list="titulos-ensayo" /></label>
+              <datalist id="titulos-ensayo">{TITULOS_ENSAYO.map((t) => <option key={t} value={t} />)}</datalist>
+              <label className="flex flex-col gap-1 text-xs font-semibold sm:col-span-2">Lugar<input className={input} name="lugar" defaultValue={e.lugar ?? ""} /></label>
+              <label className="flex flex-col gap-1 text-xs font-semibold">Fecha<input className={input} type="date" name="fecha" required defaultValue={isoToLocalMx(e.inicia).slice(0, 10)} /></label>
+              <label className="flex flex-col gap-1 text-xs font-semibold">Empieza<input className={input} type="time" name="hora" required defaultValue={isoToLocalMx(e.inicia).slice(11, 16)} /></label>
+              <label className="flex flex-col gap-1 text-xs font-semibold">Termina (opcional)<input className={input} type="time" name="fin" defaultValue={e.termina ? isoToLocalMx(e.termina).slice(11, 16) : ""} /></label>
+              <textarea className={`${input} min-h-16 sm:col-span-4`} name="notas" defaultValue={e.notas ?? ""} placeholder="Notas: qué traer, escenas que se verán…" />
+            </div>
+            <fieldset className="flex flex-col gap-2 rounded-xl border border-white/10 p-3 text-sm">
+              <legend className="px-1 text-xs font-bold uppercase tracking-widest text-texto-3">A quién del elenco se cita</legend>
+              <label className="flex items-center gap-2"><input type="radio" name="convocatoria" value="todos" defaultChecked={e.convocatoria === "todos"} /> Todo el elenco</label>
+              <label className="flex flex-wrap items-center gap-2"><input type="radio" name="convocatoria" value="grupos" defaultChecked={e.convocatoria === "grupos"} /> Grupos:
+                {Object.entries(TIPO_CREDITO).map(([k, v]) => <label key={k} className="flex items-center gap-1 text-xs"><input type="checkbox" name="grupos" value={k} defaultChecked={e.grupos.includes(k)} /> {v}</label>)}
+              </label>
+              <label className="flex items-center gap-2"><input type="radio" name="convocatoria" value="personas" defaultChecked={e.convocatoria === "personas"} /> Solo estas personas:</label>
+              <div className="flex max-h-48 flex-wrap gap-2 overflow-y-auto pl-6">
+                {elenco.map((g) => <label key={g.user_id} className="flex items-center gap-1 rounded-full border border-white/15 px-2.5 py-1 text-xs has-[:checked]:border-white"><input type="checkbox" name="personas" value={g.user_id} defaultChecked={e.personas.includes(g.user_id)} /> {g.nombre}</label>)}
+              </div>
+              <label className="flex items-center gap-2"><input type="radio" name="convocatoria" value="ninguno" defaultChecked={e.convocatoria === "ninguno"} /> Nadie del elenco (solo el equipo)</label>
+              <p className="text-xs text-texto-3">El equipo de producción y los encargados se cambian abajo, en «Equipo citado y encargados».</p>
+            </fieldset>
+            {e.serie_id && <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="toda_serie" /> También el título, lugar, notas y citados en los siguientes de la serie (cada uno conserva su fecha y hora)</label>}
+          </ActionForm>
+        </div>
+      </details>
       {/* 0157: sin asistencia: no hay lista; se puede volver a tomar (o quitar, si aún no hay asistencia). */}
       {e.sin_asistencia ? (
         <div className="flex flex-col gap-3 rounded-[22px] border border-linea bg-telon p-5">
