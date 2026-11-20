@@ -1,3 +1,4 @@
+import { MesSelect } from "@/components/MesSelect";
 import { ActionForm } from "@/components/panel/ActionForm";
 import { Card, input } from "@/components/panel/ui";
 import { createClient } from "@/lib/supabase/server";
@@ -65,10 +66,10 @@ export function FichaForm({ pid, f, submit = "Guardar ficha" }: { pid: string; f
         <p className="text-xs text-texto-3">Solo mes y año. Pon un mes, o un rango (de marzo a abril). Se cambia cuando quieras.</p>
         <div className="grid gap-3 sm:grid-cols-2">
           <label className={lbl}>Desde
-            <input className={input} type="month" name="tentativa_desde" defaultValue={mesAInput(f.tentativa_desde)} />
+            <MesSelect className={input} name="tentativa_desde" defaultValue={mesAInput(f.tentativa_desde)} despues={4} />
           </label>
           <label className={lbl}>Hasta <span className="text-xs font-normal text-texto-3">(opcional)</span>
-            <input className={input} type="month" name="tentativa_hasta" defaultValue={mesAInput(f.tentativa_hasta)} />
+            <MesSelect className={input} name="tentativa_hasta" defaultValue={mesAInput(f.tentativa_hasta)} despues={4} />
           </label>
         </div>
       </fieldset>
@@ -114,7 +115,7 @@ export function HitosEditor({ pid, hitos }: { pid: string; hitos: Hito[] }) {
         <div className="grid gap-2 sm:grid-cols-[2fr_1fr_1fr]">
           <input className={input} name="nombre" list={`hitos-${pid}`} required placeholder="Qué pasa (ej. Estreno)" aria-label="Qué pasa" />
           <datalist id={`hitos-${pid}`}>{HITOS_SUGERIDOS.map((x) => <option key={x} value={x} />)}</datalist>
-          <input className={input} type="month" name="mes" aria-label="Mes" />
+          <MesSelect className={input} name="mes" aria-label="Mes" vacio="Mes" despues={4} />
           <input className={input} type="date" name="dia" aria-label="Día exacto (opcional)" title="Día exacto (opcional)" />
         </div>
         <input className={`${input} text-sm`} name="notas" maxLength={300} placeholder="Notas (opcional)" aria-label="Notas" />
