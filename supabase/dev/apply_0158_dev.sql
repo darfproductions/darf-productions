@@ -14,7 +14,8 @@ end $$;
 --   * "Horario del equipo" de cada audición (audition_jornadas): fecha, de qué hora a qué hora, lugar y nota. Es lo que
 --     ve en su calendario quien está en el equipo de esa audición (juez, host, recepción o quien las gestiona).
 --   * Si no se configura, cada día de audición sale de la primera a la última hora de los horarios de inscripción.
---   * También el callback (si es en otra fecha), para el equipo y para quien fue llamado. El turno del aspirante ahora
+--   * También el callback (si es en otra fecha), para el equipo y para quien fue llamado. Los ensayos y llamados salen con
+--     su título tal cual ("Montaje · Showman", "Ensayo general · Showman"). El turno del aspirante ahora
 --     lleva su hora de fin (0140).
 -- Precede: 0157. No borra datos.
 
@@ -63,7 +64,7 @@ begin
     'nombre', (select coalesce(nullif(btrim(nombre), ''), 'DARF') from profiles where id = uid),
     'eventos', coalesce((select json_agg(x order by x.inicia) from (
       -- Ensayos y llamados a los que está citada.
-      select 'ensayo-' || r.id as uid, 'Ensayo: ' || r.titulo || ' · ' || p.nombre as titulo, r.inicia, r.termina, r.lugar,
+      select 'ensayo-' || r.id as uid, r.titulo || ' · ' || p.nombre as titulo, r.inicia, r.termina, r.lugar,
              r.notas as detalle, '/cuenta/produccion/' || r.production_id as ruta
         from rehearsals r join productions p on p.id = r.production_id
        where r.inicia between desde and hasta and coalesce(r.estado, '') <> 'cancelado' and rehearsal_cites(r.id, uid)

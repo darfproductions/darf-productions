@@ -7,7 +7,7 @@ import { Card, input } from "@/components/panel/ui";
 import { TIPO_CREDITO } from "@/lib/casting-rules";
 import { can } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
-import { DIAS, citados, fechaEnsayo, porcentaje, type Rehearsal } from "@/lib/rehearsal-rules";
+import { DIAS, TITULOS_ENSAYO, citados, fechaEnsayo, porcentaje, type Rehearsal } from "@/lib/rehearsal-rules";
 import { createClient } from "@/lib/supabase/server";
 import { textoLimite } from "@/lib/request-rules";
 import { avisoFaltaHoras } from "@/lib/requests";
@@ -23,8 +23,11 @@ type Roster = { user_id: string; nombre: string; papeles: string[] };
 type Sum = { user_id: string; presentes: number; retardos: number; faltas: number; justificadas: number };
 
 // Calendario de ensayos, a quién se cita y resumen de asistencia por integrante.
-export default async function Ensayos({ params }: PageProps<"/panel/producciones/[id]/ensayos">) {
+export default async function Ensayos({ params, searchParams }: PageProps<"/panel/producciones/[id]/ensayos">) {
   const { id } = await params;
+  // "Llamado especial" desde Funciones (montaje, ensayo general…): abre el formulario con el título puesto.
+  const nuevo = (await searchParams).nuevo;
+  const tituloNuevo = typeof nuevo === "string" ? nuevo.slice(0, 120) : "";
   const access = await requirePanel(`/panel/producciones/${id}/ensayos`);
   if (!can(access, id, "ensayos.gestionar")) redirect(`/panel/producciones/${id}`);
   const supabase = await createClient();
@@ -86,12 +89,13 @@ export default async function Ensayos({ params }: PageProps<"/panel/producciones
         </div>
         <ul className="flex flex-col gap-2">{proximos.map((r) => <Item key={r.id} r={r} />)}</ul>
         {proximos.length === 0 && <p className="text-sm text-texto-3">No hay ensayos próximos.</p>}
-        <details>
-          <summary className="cursor-pointer text-sm font-bold">+ Agregar ensayo</summary>
+        <details id="agregar" open={!!tituloNuevo} className="scroll-mt-24">
+          <summary className="cursor-pointer text-sm font-bold">+ Agregar ensayo o llamado (montaje, ensayo general…)</summary>
           <div className="mt-3">
             <ActionForm action={createRehearsal} hidden={h} submit="Agregar ensayo">
               <div className="grid gap-2 sm:grid-cols-4">
-                <input className={`${input} sm:col-span-2`} name="titulo" placeholder="Ej. Coreografía acto 1" />
+                <input className={`${input} sm:col-span-2`} name="titulo" placeholder="Ej. Coreografía acto 1, Montaje, Ensayo general" list="titulos-ensayo" defaultValue={tituloNuevo} />
+                <datalist id="titulos-ensayo">{TITULOS_ENSAYO.map((t) => <option key={t} value={t} />)}</datalist>
                 <input className={input} name="lugar" placeholder="Lugar" />
                 <input className={input} type="date" name="fecha" required aria-label="Fecha" />
                 <label className="flex flex-col gap-1 text-xs font-semibold">Empieza<input className={input} type="time" name="hora" required /></label>
