@@ -10,7 +10,7 @@ import { can } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
 import { citados, fechaEnsayo, type Rehearsal } from "@/lib/rehearsal-rules";
 import { createClient } from "@/lib/supabase/server";
-import { setEquipoEnsayo } from "../actions";
+import { setEquipoEnsayo, setSinAsistencia } from "../actions";
 
 export const metadata: Metadata = { title: "Asistencia" };
 
@@ -44,7 +44,33 @@ export default async function Asistencia({ params }: PageProps<"/panel/produccio
         {confirmaron.size > 0 && <p className="text-sm text-exito"><Icono nombre="check" /> {confirmaron.size === 1 ? "1 persona confirmó" : `${confirmaron.size} personas confirmaron`} que van: {((rows ?? []) as FilaLista[]).filter((x) => confirmaron.has(x.user_id)).map((x) => x.nombre).join(", ")}</p>}
         {e.notas && <p className="mt-1 whitespace-pre-line text-sm text-texto-2">{e.notas}</p>}
       </div>
-      <ListaAsistencia pid={id} rid={rid} ensayo={e} filas={(rows ?? []) as FilaLista[]} puede lider />
+      {/* 0157: sin asistencia: no hay lista; se puede volver a tomar (o quitar, si aún no hay asistencia). */}
+      {e.sin_asistencia ? (
+        <div className="flex flex-col gap-3 rounded-[22px] border border-linea bg-telon p-5">
+          <p className="font-bold">En este ensayo no se toma asistencia.</p>
+          <p className="text-sm text-texto-2">Los citados lo ven en Mi cuenta y en su calendario, pero nadie pasa lista ni cuenta faltas o retardos.</p>
+          <ActionForm action={setSinAsistencia} hidden={{ pid: id, rid, valor: "0", serie: e.serie_id ?? "", desde: e.inicia }} submit="Tomar asistencia en este ensayo"
+            submitClass="self-start rounded-full bg-texto px-4 py-2 text-sm font-bold text-sala disabled:opacity-60">
+            {e.serie_id && <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="toda_serie" /> También en los siguientes de la serie</label>}
+          </ActionForm>
+        </div>
+      ) : (
+        <>
+          <ListaAsistencia pid={id} rid={rid} ensayo={e} filas={(rows ?? []) as FilaLista[]} puede lider />
+          {!e.abierto_at && !((rows ?? []) as FilaLista[]).some((x) => x.estado) && (
+            <details className="rounded-[22px] border border-linea bg-telon">
+              <summary className="cursor-pointer px-5 py-4 text-sm font-bold">¿En este ensayo no se toma asistencia?</summary>
+              <div className="px-5 pb-5">
+                <ActionForm action={setSinAsistencia} hidden={{ pid: id, rid, valor: "1", serie: e.serie_id ?? "", desde: e.inicia }} submit="No tomar asistencia"
+                  submitClass="self-start rounded-full border border-white/25 px-4 py-2 text-sm font-bold disabled:opacity-60">
+                  <p className="text-sm text-texto-2">Sigue en Mi cuenta y en los calendarios de los citados, pero nadie pasa lista ni cuenta faltas o retardos.</p>
+                  {e.serie_id && <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="toda_serie" /> También en los siguientes de la serie</label>}
+                </ActionForm>
+              </div>
+            </details>
+          )}
+        </>
+      )}
       <details className="rounded-[22px] border border-linea bg-telon">
         <summary className="cursor-pointer px-5 py-4 font-bold">Equipo citado y encargados</summary>
         <div className="px-5 pb-5">

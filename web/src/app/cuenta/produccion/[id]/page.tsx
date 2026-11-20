@@ -136,6 +136,8 @@ export default async function MyProduction({ params, searchParams }: PageProps<"
   // Qué dice el ensayo del Hoy: si ya pedí falta o llegada tarde, o los botones Voy / Voy tarde / No puedo ir.
   function accionesEnsayo(r: Rehearsal, grande: boolean) {
     if (r.estado === "cancelado" || !activa) return null;
+    // 0157: sin asistencia no hay "Voy", faltas ni llegadas tarde.
+    if (r.sin_asistencia) return <p className="text-xs text-texto-3">En este ensayo no se toma asistencia.</p>;
     const q = faltaDe(r.id);
     if (q && q.estado !== "rechazada") {
       if (q.tipo === "llegada") {
@@ -266,7 +268,7 @@ export default async function MyProduction({ params, searchParams }: PageProps<"
                   <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 py-1.5">
                     <span>{r.titulo} · <span className="text-texto-3">{fechaEnsayo(r.inicia)}</span></span>
                     {a ? <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${ASISTENCIA[a.estado]?.cls}`}>{ASISTENCIA[a.estado]?.label}{a.minutos_tarde ? ` · ${a.minutos_tarde} min` : ""}</span>
-                      : <span className="text-xs text-texto-3">{r.estado === "cancelado" ? "Cancelado" : "Sin registro"}</span>}
+                      : <span className="text-xs text-texto-3">{r.estado === "cancelado" ? "Cancelado" : r.sin_asistencia ? "Sin asistencia" : "Sin registro"}</span>}
                   </li>
                 );
               })}

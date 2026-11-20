@@ -5,6 +5,7 @@ import { localMxToIso } from "@/lib/dates";
 import { fechasRecurrentes } from "@/lib/rehearsal-rules";
 import { horaMx, type Lectura } from "@/lib/acceso-rules";
 import { createClient } from "@/lib/supabase/server";
+import { mensajeError } from "@/lib/errores";
 
 // Ensayos y asistencia (0043). La base revisa ensayos.gestionar en la obra.
 
@@ -51,7 +52,7 @@ export async function createRehearsal(_p: RehState, f: FormData): Promise<RehSta
     inicia: localMxToIso(`${dia}T${str(f, "hora")}`), termina: fin ? localMxToIso(`${dia}T${fin}`) : null,
     lugar: str(f, "lugar") || null, notas: str(f, "notas") || null, serie_id: serie,
     convocatoria, grupos: convocatoria === "grupos" ? grupos : [], personas: convocatoria === "personas" ? personas : [],
-    equipo, equipo_todos, encargados,
+    equipo, equipo_todos, encargados, sin_asistencia: f.get("sin_asistencia") === "on",
   })));
   if (error) return { ok: false, message: /termina/.test(error.message) ? "La hora de fin debe ser después del inicio." : error.message };
   revalidatePath(`/panel/producciones/${pid}/ensayos`);
@@ -119,6 +120,24 @@ export async function setEquipoEnsayo(_p: RehState, f: FormData): Promise<RehSta
   if (!count) return { ok: false, message: "No tienes permiso para cambiar este ensayo." };
   refrescar(pid, rid);
   return { ok: true, message: "Guardado." };
+}
+
+/** 0157: "No se toma asistencia" (o volver a tomarla) en este ensayo y, si se pide, en los siguientes de la serie. */
+export async function setSinAsistencia(_p: RehState, f: FormData): Promise<RehState> {
+  const pid = str(f, "pid");
+  const rid = str(f, "rid");
+  const valor = str(f, "valor") === "1";
+  const serie = str(f, "serie");
+  const supabase = await createClient();
+  let q = supabase.from("rehearsals").update({ sin_asistencia: valor }, { count: "exact" }).eq("production_id", pid);
+  q = f.get("toda_serie") === "on" && serie ? q.eq("serie_id", serie).gte("inicia", str(f, "desde")) : q.eq("id", rid);
+  const { error, count } = await q;
+  if (error) return { ok: false, message: mensajeError(error) };
+  if (!count) return { ok: false, message: "No se cambió ningún ensayo: revisa tus permisos." };
+  revalidatePath(`/panel/producciones/${pid}/ensayos`, "layout");
+  revalidatePath("/cuenta", "layout");
+  const n = count === 1 ? "El ensayo" : `${count} ensayos`;
+  return { ok: true, message: valor ? `${n} ya no ${count === 1 ? "lleva" : "llevan"} asistencia; ${count === 1 ? "sigue" : "siguen"} en los calendarios.` : `${n} vuelve${count === 1 ? "" : "n"} a tomar asistencia.` };
 }
 
 /** Cancela este ensayo y los siguientes de la misma serie (los pasados no se tocan). */
