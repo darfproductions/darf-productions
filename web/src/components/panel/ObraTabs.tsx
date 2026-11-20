@@ -4,12 +4,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { paginasDePestana, tabActiva, type GrupoTabs } from "@/lib/panel-nav";
+import { NOMBRE_PAGINA } from "@/lib/tipo-obra-rules";
+import { EncenderSeccion } from "./EncenderSeccion";
 
 // Pestañas de la obra en dos filas (0085, esqueleto nuevo 0138): arriba las siete pestañas fijas y, abajo, UNA fila
 // con las páginas de la pestaña abierta, agrupadas por sección (Preparar · Vender · Día de función; Elenco ·
 // Integrantes · Equipo). Ya no hay tercera fila. Siempre se marca dónde estás; el número dice cuántos pendientes hay
 // ahí. En celular se deslizan y la abierta queda a la vista.
-export function ObraTabs({ base, grupos, conteo }: { base: string; grupos: GrupoTabs[]; conteo: Record<string, number> }) {
+export function ObraTabs({ base, grupos, conteo, pid, tipo }: { base: string; grupos: GrupoTabs[]; conteo: Record<string, number>; pid?: string; tipo?: string }) {
   const path = usePathname();
   const caja = useRef<HTMLDivElement>(null);
   // Si la pestaña abierta queda fuera de la vista (celular, o una fila larga), se desliza hasta ella; si ya se ve, no se mueve nada.
@@ -62,6 +64,10 @@ export function ObraTabs({ base, grupos, conteo }: { base: string; grupos: Grupo
             </span>
           ))}
         </nav>
+      )}
+      {/* 0155: en lo que no aplica al tipo, se puede encender para esta obra. */}
+      {pid && tipo && tab === "sec-no-aplica" && item && NOMBRE_PAGINA[item] && (
+        <EncenderSeccion key={item} pid={pid} seccion={item} nombre={NOMBRE_PAGINA[item]} tipo={tipo} />
       )}
     </div>
   );

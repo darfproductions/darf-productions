@@ -30,7 +30,7 @@ export default async function Ficha({ params }: PageProps<"/panel/producciones/[
   const supabase = await createClient();
   const ahora = new Date().toISOString();
   const [{ data }, { hitos, lugares }, puestos, { personajes }, funciones, ensayos, audiciones, reparto] = await Promise.all([
-    supabase.from("productions").select("nombre, temporada, estado, logo_path, fecha, frase, sinopsis, duracion, clasificacion, basada_en, idioma, venue, tentativa_desde, tentativa_hasta, tipo, con_boleteria").eq("id", id).maybeSingle(),
+    supabase.from("productions").select("nombre, temporada, estado, logo_path, fecha, frase, sinopsis, duracion, clasificacion, basada_en, idioma, venue, tentativa_desde, tentativa_hasta, tipo, con_boleteria, secciones_extra").eq("id", id).maybeSingle(),
     cargarHitosLugares(id),
     cargarPuestos(id),
     cargarPersonajes(id),

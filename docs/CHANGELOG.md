@@ -5,6 +5,21 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-11-20 — 0155: Secciones que sí aplican a una obra
+
+Diego: el tipo de producción manda algunas secciones a «Más · No aplica a este tipo» (por ejemplo Vendedores en una
+Escuela), pero a veces sí aplican. `productions.secciones_extra` guarda las que se encendieron para esa obra: vuelven a
+su lugar. Se encienden con «Sí aplica a esta obra» en la misma página o en la ficha (Tipo de producción). Lo de
+boletería sigue dependiendo de «Vende boletos por DARF».
+
+## 2026-11-20 — 0154: Entregar un beneficio con el escáner de la puerta
+
+Diego: usar el mismo escáner para entregar beneficios. En Puerta se elige «Entregar un beneficio», el beneficio y
+«Iniciar entrega»; cada boleto escaneado dice qué hacer (`beneficio_escaneo`):
+- Acceso: sí o no; se registra y cuenta como su entrada.
+- Experiencia, atención u otro: se registra al escanear. Uno por compra: sirve cualquier boleto de la orden, una vez.
+- Souvenir: cuántos le tocan a la orden, cuántos ya se le dieron y cuántos faltan; «Entregar 1» o «Entregar los N».
+
 ## 2026-11-20 — 0153: Votación por cast y «Ver todos los personajes»
 
 Diego: en la votación cada juez debe poder armar su cast eligiendo a cualquiera que audicionó, no solo a quienes algún

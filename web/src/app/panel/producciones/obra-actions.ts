@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { TIPOS_OBRA, boleteriaPorDefecto, tipoDe } from "@/lib/tipo-obra-rules";
+import { PAGINAS_BOLETERIA, TIPOS_OBRA, boleteriaPorDefecto, limpiarExtras, tipoDe } from "@/lib/tipo-obra-rules";
 import { createClient } from "@/lib/supabase/server";
 import { mensajeError } from "@/lib/errores";
 import { refrescarPublico } from "@/lib/supabase/publico";
@@ -73,6 +73,8 @@ export async function guardarFicha(_p: ObraState, f: FormData): Promise<ObraStat
     if (!TIPOS_OBRA.some((t) => t.id === tipo)) return { ok: false, message: "Elige un tipo de producción." };
     valores.tipo = tipo;
     valores.con_boleteria = f.get("con_boleteria") === "1";
+    // 0155: secciones encendidas aunque el tipo diga que no aplican (las del tipo nuevo; las demás se quitan).
+    valores.secciones_extra = limpiarExtras(tipoDe({ tipo }), f.getAll("extra").map(String));
   }
   const supabase = await createClient();
   // Con la obra ya pública, los textos que ve el público se cambian en Página → Contenido (con borrador, 0119).
@@ -86,6 +88,24 @@ export async function guardarFicha(_p: ObraState, f: FormData): Promise<ObraStat
   revalidatePath(`/producciones/${pid}`);
   refrescarPublico();
   return { ok: true, message: "Ficha guardada." };
+}
+
+/** 0155: "Sí aplica a esta obra": enciende una sección que el tipo manda a "No aplica" (vuelve a su lugar). */
+export async function encenderSeccion(pid: string, seccion: string): Promise<{ ok: boolean; message: string }> {
+  const supabase = await createClient();
+  const { data: obra } = await supabase.from("productions").select("tipo, con_boleteria, secciones_extra").eq("id", pid).maybeSingle();
+  if (!obra) return { ok: false, message: "No se encontró la obra." };
+  if (obra.con_boleteria === false && PAGINAS_BOLETERIA.includes(seccion)) {
+    return { ok: false, message: "Es parte de la boletería: enciende «Vende boletos por DARF» en la ficha de la obra." };
+  }
+  const tipo = tipoDe(obra as { tipo: string | null });
+  const extras = limpiarExtras(tipo, [...((obra.secciones_extra as string[] | null) ?? []), seccion]);
+  if (!extras.includes(seccion)) return { ok: false, message: "Esa sección ya aplica a esta obra." };
+  const { error, count } = await supabase.from("productions").update({ secciones_extra: extras }, { count: "exact" }).eq("id", pid);
+  if (error) return { ok: false, message: mensajeError(error) };
+  if (!count) return { ok: false, message: "Solo quien edita la ficha de la obra puede encender secciones." };
+  refresca(pid);
+  return { ok: true, message: "Listo: la sección volvió a su lugar." };
 }
 
 // ──────── Hitos y lugares ────────
