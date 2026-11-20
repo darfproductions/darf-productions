@@ -17,6 +17,8 @@ export type Rehearsal = {
   /** 0099: equipo de producción citado, encargados que abren y pasan lista. */
   equipo?: string[]; equipo_todos?: boolean; encargados?: string[];
   abierto_at?: string | null; abierto_por?: string | null; cerrado_at?: string | null;
+  /** 0157: no se toma asistencia (solo sale en Mi cuenta y en los calendarios). */
+  sin_asistencia?: boolean;
 };
 
 const personas = (n: number) => (n === 1 ? "1 persona" : `${n} personas`);

@@ -349,6 +349,20 @@ export async function addSlot(_p: AudState, f: FormData): Promise<AudState> {
   return done(aid, "Horario agregado.");
 }
 
+/** 0158: horario del equipo (lo que ve en su calendario quien está en el equipo de la audición). */
+export async function addJornada(_p: AudState, f: FormData): Promise<AudState> {
+  const aid = str(f, "aid");
+  const fecha = str(f, "fecha");
+  const inicia = localMxToIso(`${fecha}T${str(f, "de")}`);
+  const termina = localMxToIso(`${fecha}T${str(f, "a")}`);
+  if (!inicia || !termina) return { ok: false, message: "Elige la fecha y de qué hora a qué hora." };
+  if (termina <= inicia) return { ok: false, message: "La hora de fin debe ser después de la de inicio." };
+  const supabase = await createClient();
+  const { error } = await supabase.from("audition_jornadas").insert({ audition_id: aid, inicia, termina, lugar: str(f, "lugar") || null, nota: str(f, "nota").slice(0, 200) || null });
+  if (error) return { ok: false, message: error.message };
+  return done(aid, "Agregado. Ya sale en el calendario del equipo.");
+}
+
 export async function addField(_p: AudState, f: FormData): Promise<AudState> {
   const aid = str(f, "aid");
   const tipo = str(f, "tipo") || "texto";
@@ -383,7 +397,7 @@ export async function setObligatoria(_p: AudState, f: FormData): Promise<AudStat
 export async function removeItem(_p: AudState, f: FormData): Promise<AudState> {
   const aid = str(f, "aid");
   const tabla = str(f, "tabla");
-  if (!["audition_roles", "audition_slots", "audition_fields", "audition_videos"].includes(tabla)) return { ok: false, message: "No válido." };
+  if (!["audition_roles", "audition_slots", "audition_fields", "audition_videos", "audition_jornadas"].includes(tabla)) return { ok: false, message: "No válido." };
   const supabase = await createClient();
   const { error, count } = await supabase.from(tabla).delete({ count: "exact" }).eq("id", str(f, "id")).eq("audition_id", aid);
   if (error) return { ok: false, message: error.message };

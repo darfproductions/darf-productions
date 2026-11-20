@@ -5,6 +5,21 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-11-20 — 0158: Audiciones en el calendario del equipo
+
+Diego: a los jueces (y al resto del equipo de una audición) no les salían las audiciones en Mi calendario. Cada
+audición tiene ahora «Horario del equipo» (`audition_jornadas`: fecha, de qué hora a qué hora, lugar y nota). Si no se
+configura, cada día sale de la primera a la última hora de los horarios de inscripción. También sale el callback en
+otra fecha, para el equipo y para quien fue llamado; el turno del aspirante lleva su hora de fin.
+
+## 2026-11-20 — 0157: Ensayos sin asistencia
+
+Diego: hay ensayos donde no se toma asistencia pero deben salir en los calendarios. `rehearsals.sin_asistencia`: el
+ensayo sale en Mi cuenta y en Mi calendario DARF, pero no se abre, nadie pasa lista (ni con QR ni al cerrar), no genera
+faltas ni retardos y no hay "Voy / No puedo ir". Se marca al crearlo o en su página (también para los siguientes de la
+serie); solo si todavía no tiene asistencia registrada. Scripts DEV de Showman: citar al equipo los sábados y domingos
+y a Patricio González los martes.
+
 ## 2026-11-20 — 0156: Mi calendario DARF
 
 Diego: que cada quien vea sus ensayos, llamados y funciones en su calendario (Google, Apple, Outlook), sin ver lo de

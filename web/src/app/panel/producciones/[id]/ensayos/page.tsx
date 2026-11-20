@@ -60,9 +60,12 @@ export default async function Ensayos({ params }: PageProps<"/panel/producciones
         <span className="block text-texto-2">{fechaEnsayo(r.inicia, r.termina)}{r.lugar ? ` · ${r.lugar}` : ""}</span>
         <span className="block text-xs text-texto-3">Citados: {citados(r)}{r.serie_id ? " · se repite" : ""}{r.encargados?.length ? ` · ${r.encargados.length === 1 ? "1 encargado" : `${r.encargados.length} encargados`}` : ""}{confirmados.get(r.id) ? ` · ${confirmados.get(r.id)} ${confirmados.get(r.id) === 1 ? "confirmó" : "confirmaron"} que van` : ""}</span>
         {r.abierto_at && <span className="block text-xs text-exito"><Icono nombre="check" /> Abierto{r.cerrado_at ? " · lista cerrada" : ""}</span>}
+        {r.sin_asistencia && <span className="mt-0.5 inline-block rounded-full bg-white/10 px-2 py-0.5 text-[11px] font-bold text-texto-2">No se toma asistencia</span>}
       </span>
       <span className="flex items-center gap-2">
-        <Link href={`/panel/producciones/${id}/ensayos/${r.id}`} className="rounded-full bg-texto px-3 py-1.5 text-xs font-bold text-sala">Asistencia</Link>
+        {r.sin_asistencia
+          ? <Link href={`/panel/producciones/${id}/ensayos/${r.id}`} className="rounded-full border border-white/25 px-3 py-1.5 text-xs font-bold">Ver</Link>
+          : <Link href={`/panel/producciones/${id}/ensayos/${r.id}`} className="rounded-full bg-texto px-3 py-1.5 text-xs font-bold text-sala">Asistencia</Link>}
         <ActionForm inline action={setRehearsalEstado} hidden={{ ...h, id: r.id, estado: r.estado === "cancelado" ? "programado" : "cancelado" }}
           confirm={r.estado === "cancelado" ? "¿Reactivar este ensayo?" : "¿Cancelar este ensayo? Los citados lo verán cancelado."}
           submit={r.estado === "cancelado" ? "Reactivar" : "Cancelar"} submitClass="rounded-full border border-white/25 px-3 py-1.5 text-xs font-bold" />
@@ -95,6 +98,7 @@ export default async function Ensayos({ params }: PageProps<"/panel/producciones
                 <label className="flex flex-col gap-1 text-xs font-semibold">Termina (opcional)<input className={input} type="time" name="fin" /></label>
                 <textarea className={`${input} min-h-16 sm:col-span-2`} name="notas" placeholder="Notas: qué traer, escenas que se verán…" />
               </div>
+              <label className="flex items-start gap-2 text-sm"><input type="checkbox" name="sin_asistencia" className="mt-1" /> <span><b>No se toma asistencia</b> <span className="text-xs text-texto-3">(sale en Mi cuenta y en los calendarios, pero nadie pasa lista ni cuenta faltas)</span></span></label>
               <fieldset className="flex flex-col gap-2 rounded-xl border border-white/10 p-3 text-sm">
                 <label className="flex items-center gap-2 font-semibold"><input type="checkbox" name="repetir" /> Repetir (se crean solos)</label>
                 <div className="flex flex-wrap gap-2">
