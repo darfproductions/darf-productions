@@ -5,6 +5,19 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-11-19 — 0152: Honorarios parte 3 (cierres de temporada, reserva y recibos con folio)
+
+Especificación sección 7. Al terminar una temporada se calcula la ganancia de la obra y se reparte con su reparto de
+cierre; la reserva lleva su saldo y los préstamos a las obras; cada pago tiene un recibo con folio.
+- `hon_cierres` + `hon_cierre_partidas`: boletos (automáticos desde las órdenes aprobadas, Pato puede corregirlos),
+  patrocinios, costos y préstamos a devolver. `hon_cierre_cerrar` guarda el pago de cada persona
+  (`hon_cierre_personas`, con `titulo` para que la persona lo vea sin ver el cierre), devuelve los préstamos a la
+  reserva y le suma el sobrante del redondeo.
+- `hon_reserva_movs`: préstamos, devoluciones y ajustes; el saldo suma además la reserva de cada mes cerrado.
+- Folio `H-AAAA-0001` al marcar pagado (meses y cierres); los pagos ya marcados reciben el suyo.
+- Mi cuenta: Mis honorarios muestra los cierres de temporada (con «Ya me llegó») y un recibo imprimible por pago
+  (`/cuenta/honorarios/recibo/...`), que dice que no es factura fiscal.
+
 ## 2026-11-19 — 0151: Honorarios por obra (todo configurable desde Panel, Honorarios)
 
 Diego: el sistema no puede servir solo para Grease, Madrigal y Showman; una obra nueva puede tener otra mensualidad y

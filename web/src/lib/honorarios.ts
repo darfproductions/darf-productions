@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import {
-  bolsaCompartida, bolsaCreativa, calcularMes, diaDePago, sabadoDelMes,
+  bolsaCompartida, bolsaCreativa, calcularCierre, calcularMes, diaDePago, sabadoDelMes,
   type GastoComun, type HonGlobal, type MesResultado, type NombreRef, type ObraMesEntrada, type ObraReglas, type Parte,
 } from "@/lib/honorarios-rules";
 
@@ -186,5 +186,87 @@ export async function getMes(mes: string) {
     fondo: { aprobado: fondoAprobado, cabezas: listaCabezas, aprobaciones },
     cerrado: (cerrado.data as MesCerrado | null) ?? null,
     personasCerrado: filasCerradas.map((p) => ({ ...p, comprobanteUrl: p.comprobante_path ? urlDe.get(p.comprobante_path) ?? null : null })),
+  };
+}
+
+// ──────── Cierres de temporada y reserva (0152) ────────
+
+export type CierreFila = {
+  id: string; production_id: string; nombre: string; estado: "borrador" | "cerrado"; boletos: number | null; prestamos: number;
+  ganancia: number | null; total_pagado: number | null; resultado: unknown; cerrado_at: string | null; created_at: string;
+};
+export type Partida = { id: string; tipo: "patrocinio" | "costo"; concepto: string; monto: number };
+export type PersonaCierre = PersonaCerrada & { cierre_id: string; folio: string | null };
+export type MovReserva = { id: string; fecha: string; tipo: "prestamo" | "devolucion" | "ajuste"; production_id: string | null; monto: number; concepto: string | null; cierre_id: string | null };
+
+export async function listCierres(): Promise<CierreFila[]> {
+  const supabase = await createClient();
+  const { data } = await supabase.from("hon_cierres").select("*").order("created_at", { ascending: false });
+  return (data ?? []) as CierreFila[];
+}
+
+/** La reserva: lo que entró cada mes cerrado, préstamos, devoluciones y ajustes; saldo y préstamos pendientes por obra. */
+export async function getReserva() {
+  const supabase = await createClient();
+  const [meses, movs] = await Promise.all([
+    supabase.from("hon_meses").select("periodo, reserva_mes").order("periodo"),
+    supabase.from("hon_reserva_movs").select("id, fecha, tipo, production_id, monto, concepto, cierre_id").order("fecha").order("created_at"),
+  ]);
+  const entradas = ((meses.data ?? []) as { periodo: string; reserva_mes: number }[]).map((m) => ({ periodo: m.periodo, monto: Number(m.reserva_mes) }));
+  const lista = ((movs.data ?? []) as MovReserva[]).map((m) => ({ ...m, monto: Number(m.monto) }));
+  const signo = (m: MovReserva) => (m.tipo === "prestamo" ? -m.monto : m.monto);
+  const saldo = Math.round((entradas.reduce((s, e) => s + e.monto, 0) + lista.reduce((s, m) => s + signo(m), 0)) * 100) / 100;
+  const pendientes = new Map<string, number>();
+  for (const m of lista) {
+    if (!m.production_id || (m.tipo !== "prestamo" && m.tipo !== "devolucion")) continue;
+    pendientes.set(m.production_id, (pendientes.get(m.production_id) ?? 0) + (m.tipo === "prestamo" ? m.monto : -m.monto));
+  }
+  return { entradas, movs: lista, saldo, pendientes };
+}
+
+/** Un cierre: si está en borrador, el cálculo con lo capturado y las reglas vigentes hoy; si ya se cerró, lo guardado. */
+export async function getCierre(id: string) {
+  const supabase = await createClient();
+  const [{ data: c }, { data: partidas }, base, personasRes] = await Promise.all([
+    supabase.from("hon_cierres").select("*").eq("id", id).maybeSingle(),
+    supabase.from("hon_cierre_partidas").select("id, tipo, concepto, monto").eq("cierre_id", id).order("created_at"),
+    getHonorarios(),
+    supabase.from("hon_cierre_personas").select("cierre_id, person_id, nombre, pago, bruto, partes, pagado_at, comprobante_path, recibido_at, folio").eq("cierre_id", id),
+  ]);
+  if (!c) return null;
+  const cierre = c as CierreFila;
+  const obra = base.obras.find((o) => o.production_id === cierre.production_id) ?? null;
+  const lista = ((partidas ?? []) as Partida[]).map((p) => ({ ...p, monto: Number(p.monto) }));
+  const { data: auto } = await supabase.rpc("hon_boletos_obra", { pid: cierre.production_id });
+  const boletosAuto = Number(auto ?? 0);
+  const boletos = cierre.boletos == null ? boletosAuto : Number(cierre.boletos);
+  const patrocinios = lista.filter((p) => p.tipo === "patrocinio").reduce((s, p) => s + p.monto, 0);
+  const costos = lista.filter((p) => p.tipo === "costo").reduce((s, p) => s + p.monto, 0);
+  const hoy = new Date().toISOString().slice(0, 10);
+  const reglas = reglasEn(base.reglas, base.compartidas, cierre.production_id, hoy);
+  const cfg = configEn(base.versiones, hoy);
+  const nombres = nombresDe(base);
+  const asig = vigentesEn(base.asignaciones, hoy).map((a) => ({ bolsa: a.bolsa, persona: a.person_id, nombre: a.nombre, puesto: a.puesto, pct: a.pct }));
+  const cabezas = base.casa.filter((x) => x.cabeza && x.person_id).map((x) => ({ persona: x.person_id!, nombre: x.nombre }));
+  const otros = base.casa.filter((x) => !x.cabeza && x.person_id).map((x) => ({ persona: x.person_id!, nombre: x.nombre }));
+  const sinFicha = base.casa.filter((x) => !x.person_id).map((x) => x.nombre);
+  const calculo = reglas && cfg ? calcularCierre({
+    obra: { id: cierre.production_id, nombre: obra?.nombre ?? cierre.production_id },
+    entrada: { boletos, patrocinios, costos, prestamos: Number(cierre.prestamos) },
+    reparto: {
+      empresaPct: Number(reglas.fila.cierre_empresa_pct), creativosPct: Number(reglas.fila.cierre_creativos_pct),
+      compartidaPct: Number(reglas.fila.cierre_compartida_pct), casaPct: Number(reglas.fila.cierre_casa_pct), casaCabezasPct: Number(cfg.casa_cabezas_pct),
+    },
+    asignaciones: asig, compartida: reglas.compartida, cabezas, otros, redondeo: Number(cfg.redondeo), nombres,
+  }) : null;
+  if (calculo && sinFicha.length) calculo.errores.unshift(`De Casa DARF sin ficha de persona (no cobran hasta ligarla): ${sinFicha.join(", ")}.`);
+  // Comprobantes con liga temporal.
+  const personas = (personasRes.data ?? []) as PersonaCierre[];
+  const paths = personas.map((p) => p.comprobante_path).filter((x): x is string => !!x);
+  const firmadas = paths.length ? (await supabase.storage.from("honorarios").createSignedUrls(paths, 600)).data ?? [] : [];
+  const urlDe = new Map(firmadas.filter((x) => x.signedUrl).map((x) => [x.path, x.signedUrl as string]));
+  return {
+    cierre, obra, partidas: lista, boletosAuto, boletos, patrocinios, costos, calculo, nombres,
+    personas: personas.map((p) => ({ ...p, comprobanteUrl: p.comprobante_path ? urlDe.get(p.comprobante_path) ?? null : null })),
   };
 }

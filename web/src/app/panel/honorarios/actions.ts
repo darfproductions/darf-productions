@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { mensajeError } from "@/lib/errores";
-import { getMes } from "@/lib/honorarios";
+import { getCierre, getMes } from "@/lib/honorarios";
 import { nombreBolsa } from "@/lib/honorarios-rules";
 import { createClient } from "@/lib/supabase/server";
 
@@ -248,4 +248,108 @@ export async function marcarPagado(_p: HonState, f: FormData): Promise<HonState>
   const { error } = await supabase.rpc("hon_marcar_pagado", { p_periodo: `${mes}-01`, p_person: str(f, "persona"), p_path: str(f, "path") });
   if (error) return { ok: false, message: mensajeError(error) };
   return listoMes("Pagado.");
+}
+
+// ──────── Cierres de temporada (0152) ────────
+
+const uuidOk = (v: string) => /^[0-9a-f-]{36}$/.test(v);
+const listoCierre = (id: string, message: string): HonState => {
+  revalidatePath("/panel/honorarios/cierres");
+  revalidatePath(`/panel/honorarios/cierres/${id}`);
+  revalidatePath("/panel/honorarios/reserva");
+  revalidatePath("/cuenta/honorarios");
+  return { ok: true, message };
+};
+
+/** Empezar el cierre de una temporada (o extensión) de una obra; los préstamos pendientes de la obra se proponen solos. */
+export async function crearCierre(_p: HonState, f: FormData): Promise<HonState> {
+  const pid = str(f, "production_id");
+  const nombre = str(f, "nombre");
+  if (!pid || !nombre) return { ok: false, message: "Elige la obra y ponle nombre (por ejemplo, Temporada 2027)." };
+  const prestamos = str(f, "prestamos") === "" ? 0 : num(f, "prestamos");
+  if (!Number.isFinite(prestamos) || prestamos < 0) return { ok: false, message: "Revisa el monto de préstamos." };
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("hon_cierres").insert({ production_id: pid, nombre, prestamos }).select("id").single();
+  if (error) return { ok: false, message: mensajeError(error) };
+  return listoCierre((data as { id: string }).id, "Cierre creado: captura patrocinios y costos.");
+}
+
+/** Boletos (vacío = lo que da la página) y préstamos de la reserva a devolver. */
+export async function guardarCierre(_p: HonState, f: FormData): Promise<HonState> {
+  const id = str(f, "id");
+  if (!uuidOk(id)) return { ok: false, message: "Cierre no válido." };
+  const boletos = str(f, "boletos") === "" ? null : num(f, "boletos");
+  const prestamos = str(f, "prestamos") === "" ? 0 : num(f, "prestamos");
+  if ((boletos !== null && (!Number.isFinite(boletos) || boletos < 0)) || !Number.isFinite(prestamos) || prestamos < 0) return { ok: false, message: "Revisa los montos." };
+  const supabase = await createClient();
+  const { error } = await supabase.from("hon_cierres").update({ boletos, prestamos }).eq("id", id);
+  if (error) return { ok: false, message: mensajeError(error) };
+  return listoCierre(id, "Guardado.");
+}
+
+export async function agregarPartida(_p: HonState, f: FormData): Promise<HonState> {
+  const id = str(f, "cierre_id");
+  const monto = num(f, "monto");
+  const tipo = str(f, "tipo") === "patrocinio" ? "patrocinio" : "costo";
+  if (!uuidOk(id) || !str(f, "concepto") || !Number.isFinite(monto) || monto < 0) return { ok: false, message: "Escribe el concepto y el monto." };
+  const supabase = await createClient();
+  const { error } = await supabase.from("hon_cierre_partidas").insert({ cierre_id: id, tipo, concepto: str(f, "concepto"), monto });
+  if (error) return { ok: false, message: mensajeError(error) };
+  return listoCierre(id, tipo === "patrocinio" ? "Patrocinio agregado." : "Costo agregado.");
+}
+
+export async function quitarPartida(_p: HonState, f: FormData): Promise<HonState> {
+  const id = str(f, "cierre_id");
+  const supabase = await createClient();
+  const { error } = await supabase.from("hon_cierre_partidas").delete().eq("id", str(f, "id")).eq("cierre_id", id);
+  if (error) return { ok: false, message: mensajeError(error) };
+  return listoCierre(id, "Quitado.");
+}
+
+/** Cerrar la temporada: se recalcula aquí con lo capturado (no con lo que mandó la pantalla) y se guarda. */
+export async function cerrarCierre(_p: HonState, f: FormData): Promise<HonState> {
+  const id = str(f, "id");
+  if (!uuidOk(id)) return { ok: false, message: "Cierre no válido." };
+  const d = await getCierre(id);
+  if (!d) return { ok: false, message: "No se encontró el cierre." };
+  if (d.cierre.estado === "cerrado") return { ok: false, message: "Esta temporada ya se cerró." };
+  if (!d.calculo) return { ok: false, message: "Faltan las reglas de la obra o la configuración de honorarios." };
+  if (d.calculo.errores.some((e) => e.includes("suman") || e.includes("suma ") || e.includes("no pertenece"))) return { ok: false, message: "Hay errores en el reparto: corrígelos antes de cerrar." };
+  const r = d.calculo;
+  const personas = r.personas.map((p) => ({
+    person_id: p.persona, nombre: p.nombre, pago: p.pago, bruto: p.bruto,
+    partes: p.partes.map((x) => ({ ...x, nombreBolsa: nombreBolsa(x.bolsa, d.nombres) })),
+  }));
+  const resultado = { ...r, entrada: { boletos: d.boletos, boletosPagina: d.boletosAuto, patrocinios: d.patrocinios, costos: d.costos, prestamos: Number(d.cierre.prestamos) }, partidas: d.partidas };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("hon_cierre_cerrar", { p_cierre: id, p_ganancia: r.ganancia, p_total: r.totalPagado, p_sobrante: r.sobranteRedondeo, p_resultado: resultado, p_personas: personas });
+  if (error) return { ok: false, message: mensajeError(error) };
+  return listoCierre(id, r.sinReparto ? "Temporada cerrada sin reparto (no hubo ganancia)." : `Temporada cerrada: ${personas.length} pagos por $${r.totalPagado.toLocaleString("es-MX")}.`);
+}
+
+export async function marcarPagadoCierre(_p: HonState, f: FormData): Promise<HonState> {
+  const id = str(f, "cierre");
+  if (!uuidOk(id)) return { ok: false, message: "Cierre no válido." };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("hon_cierre_marcar_pagado", { p_cierre: id, p_person: str(f, "persona"), p_path: str(f, "path") });
+  if (error) return { ok: false, message: mensajeError(error) };
+  return listoCierre(id, "Pagado.");
+}
+
+// ──────── Reserva (0152) ────────
+
+/** Préstamo de la reserva a una obra, o un ajuste (+ entra, − sale), con fecha y concepto. */
+export async function movimientoReserva(_p: HonState, f: FormData): Promise<HonState> {
+  const tipo = str(f, "tipo") === "ajuste" ? "ajuste" : "prestamo";
+  const monto = num(f, "monto");
+  const fecha = str(f, "fecha");
+  const pid = str(f, "production_id") || null;
+  if (!Number.isFinite(monto) || monto === 0 || (tipo === "prestamo" && monto < 0)) return { ok: false, message: "Escribe el monto." };
+  if (tipo === "prestamo" && !pid) return { ok: false, message: "Elige a qué obra se le presta." };
+  if (!fechaOk(fecha)) return { ok: false, message: "Elige la fecha." };
+  const supabase = await createClient();
+  const { error } = await supabase.from("hon_reserva_movs").insert({ tipo, monto, fecha, production_id: pid, concepto: str(f, "concepto") || null });
+  if (error) return { ok: false, message: mensajeError(error) };
+  revalidatePath("/panel/honorarios/reserva");
+  return { ok: true, message: tipo === "prestamo" ? "Préstamo registrado: se devuelve al cerrar la temporada de la obra." : "Ajuste registrado." };
 }
