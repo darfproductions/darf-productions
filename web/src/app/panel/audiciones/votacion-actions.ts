@@ -87,6 +87,22 @@ export async function votar(_p: VotState, f: FormData): Promise<VotState> {
   return { ok: true, message: app ? "Voto guardado." : "Te abstuviste en este personaje." };
 }
 
+/** "Subir mi cast" (0153): todos los votos del juez de una vez. Campos "v_<personaje>" = id de la persona, "abstencion"
+ *  o vacío (ese personaje no se toca). */
+export async function subirCast(_p: VotState, f: FormData): Promise<VotState> {
+  const aid = str(f, "aid");
+  const votos: { rol: string; app: string }[] = [];
+  for (const [k, v] of f.entries()) {
+    if (!k.startsWith("v_") || typeof v !== "string" || !v) continue;
+    votos.push({ rol: k.slice(2), app: v === "abstencion" ? "" : v });
+  }
+  if (!votos.length) return { ok: false, message: "Elige a alguien en al menos un personaje." };
+  const { error } = await (await createClient()).rpc("audition_vote_cast", { aid, p_votos: votos });
+  if (error) return { ok: false, message: mensajeError(error) };
+  revalidatePath(`/panel/audiciones/${aid}/votacion`);
+  return { ok: true, message: "Tu cast quedó subido. Puedes cambiarlo mientras la votación siga abierta." };
+}
+
 /** Mover a alguien en el ajuste del cast (cliente: arrastrar o "Mover a…"). destino = id de personaje, "ensamble" o "fuera". */
 export async function moverEnCast(aid: string, app: string, destino: string): Promise<{ ok: boolean; message?: string }> {
   const { error } = await (await createClient()).rpc("audition_cast_move", { aid, app, p_destino: destino });

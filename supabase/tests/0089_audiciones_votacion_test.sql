@@ -93,7 +93,7 @@ do $$ begin
   perform pg_temp.as_root();
 end $$;
 
--- T4: sin callback, "Siguiente" va directo a votación; votar antes no se puede; solo candidatos.
+-- T4: sin callback, "Siguiente" va directo a votación; votar antes no se puede; solo quien audicionó (0153).
 do $$ declare j json; begin
   perform pg_temp.as_user(pg_temp.u('f2'));
   begin perform audition_vote(pg_temp.c('aid'), pg_temp.c('r_donna'), pg_temp.c('p_ana')); raise exception 'FALLO T4: votó antes de abrir';
@@ -103,7 +103,7 @@ do $$ declare j json; begin
   perform pg_temp.as_user(pg_temp.u('f1'));
   if audition_fase(pg_temp.c('aid'), 'siguiente') <> 'votacion' then raise exception 'FALLO T4: fase'; end if;
   perform pg_temp.as_user(pg_temp.u('f2'));
-  begin perform audition_vote(pg_temp.c('aid'), pg_temp.c('r_donna'), pg_temp.c('p_lucia')); raise exception 'FALLO T4: votó por no candidato';
+  begin perform audition_vote(pg_temp.c('aid'), pg_temp.c('r_donna'), gen_random_uuid()); raise exception 'FALLO T4: votó por alguien que no audicionó';
   exception when others then if sqlerrm like 'FALLO%' then raise; end if; end;
   -- Donna: Petra y Ana como candidatas, con sus opciones.
   j := audition_voting(pg_temp.c('aid'));
