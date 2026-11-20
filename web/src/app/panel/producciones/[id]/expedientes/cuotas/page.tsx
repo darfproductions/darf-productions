@@ -1,4 +1,5 @@
 /* La tabla de pagos imita la hoja de Excel de DARF: una fila por integrante y una columna por mes. */
+import { MesSelect } from "@/components/MesSelect";
 import type { Metadata } from "next";
 import { AjustesSeccion } from "@/components/panel/AjustesSeccion";
 import Link from "next/link";
@@ -169,8 +170,8 @@ export default async function Cuotas({ params }: PageProps<"/panel/producciones/
             <div className="grid gap-2 sm:grid-cols-5">
               <label className="flex flex-col gap-1 text-xs font-semibold">Inscripción (MXN)<input className={input} type="number" min={0} step="1" name="inscripcion" defaultValue={cuota?.inscripcion ?? 0} /></label>
               <label className="flex flex-col gap-1 text-xs font-semibold">Mensualidad (MXN)<input className={input} type="number" min={0} step="1" name="monto" required defaultValue={cuota?.monto ?? ""} /></label>
-              <label className="flex flex-col gap-1 text-xs font-semibold">Primer mes<input className={input} type="month" name="desde" required defaultValue={cuota?.desde.slice(0, 7) ?? ""} /></label>
-              <label className="flex flex-col gap-1 text-xs font-semibold">Último mes<input className={input} type="month" name="hasta" required defaultValue={cuota?.hasta.slice(0, 7) ?? ""} /></label>
+              <label className="flex flex-col gap-1 text-xs font-semibold">Primer mes<MesSelect className={input} name="desde" required defaultValue={cuota?.desde} /></label>
+              <label className="flex flex-col gap-1 text-xs font-semibold">Último mes<MesSelect className={input} name="hasta" required defaultValue={cuota?.hasta} /></label>
               <label className="flex flex-col gap-1 text-xs font-semibold">Pagar antes del día<input className={input} type="number" min={1} max={28} name="dia_limite" defaultValue={cuota?.dia_limite ?? 10} /></label>
             </div>
             <label className="flex items-center gap-2 text-sm font-semibold"><input type="checkbox" name="vence_sabado" defaultChecked={!!cuota?.vence_sabado} /> Se paga el primer sábado del mes, con tolerancia hasta el segundo sábado (en lugar del día fijo)</label>

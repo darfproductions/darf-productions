@@ -1,5 +1,6 @@
 "use client";
 
+import { MesSelect } from "@/components/MesSelect";
 import { useActionState, useState } from "react";
 import { ACCEPT_EXPEDIENTE, subirAExpediente } from "@/lib/expediente-upload";
 import { fechaEnsayo } from "@/lib/rehearsal-rules";
@@ -187,7 +188,7 @@ function OtraForm({ pid, uid, tipo, docTipos, cuota, onDone }: { pid: string; ui
           <div className="grid gap-3 sm:grid-cols-3">
             {concepto === "mensualidad" && (
               <label className={etiqueta}>Mes que pagaste
-                <input type="month" name="mes" required defaultValue={mesActual} className={campo} />
+                <MesSelect name="mes" required defaultValue={mesActual} className={campo} />
               </label>
             )}
             <label className={etiqueta}>Monto

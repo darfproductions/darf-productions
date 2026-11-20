@@ -1,3 +1,4 @@
+import { MesSelect } from "@/components/MesSelect";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -60,8 +61,8 @@ export default async function HonorariosObra({ params }: PageProps<"/panel/honor
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 <label className="flex flex-col gap-1 text-sm font-semibold">Mensualidad ($)<input className={input} type="number" min={0} step="1" name="monto" required defaultValue={o.mensualidad ?? ""} /></label>
                 <label className="flex flex-col gap-1 text-sm font-semibold">Inscripción ($)<input className={input} type="number" min={0} step="1" name="inscripcion" defaultValue={o.inscripcion ?? 0} /></label>
-                <label className="flex flex-col gap-1 text-sm font-semibold">Primer mes que se cobra<input className={input} type="month" name="desde" required defaultValue={o.cobroDesde?.slice(0, 7) ?? ""} /></label>
-                <label className="flex flex-col gap-1 text-sm font-semibold">Último mes<input className={input} type="month" name="hasta" required defaultValue={o.cobroHasta?.slice(0, 7) ?? ""} /></label>
+                <label className="flex flex-col gap-1 text-sm font-semibold">Primer mes que se cobra<MesSelect className={input} name="desde" required defaultValue={o.cobroDesde} /></label>
+                <label className="flex flex-col gap-1 text-sm font-semibold">Último mes<MesSelect className={input} name="hasta" required defaultValue={o.cobroHasta} /></label>
               </div>
               <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="cobrar" defaultChecked={o.cobra || !o.cobroDesde} /> Esta obra cobra mensualidad</label>
               <p className="text-xs text-texto-3">Es la misma configuración de Expedientes, Cuotas: lo que cambies aquí cambia también los adeudos y recordatorios de la obra.</p>
