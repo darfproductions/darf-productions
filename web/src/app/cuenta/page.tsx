@@ -40,6 +40,7 @@ import { funcionPasada } from "@/lib/account-rules";
 import { limiteTexto, recordatorio, tiempoRestante } from "@/lib/expiry-rules";
 import { estadoOrden } from "@/lib/ventas-rules";
 import { AgregarCalendario } from "@/components/AgregarCalendario";
+import { MiCalendario } from "./MiCalendario";
 import { VoyAIr } from "@/components/tickets/VoyAIr";
 import { isoMx } from "@/lib/dates";
 import { Icono } from "@/components/Icono";
@@ -544,6 +545,7 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
               <SalirClub numero={numeroSocio(credencial.socio.numero)} />
             </section>
           )}
+          <MiCalendario />
           <section aria-labelledby="perfil" className="flex flex-col gap-4 rounded-2xl bg-telon p-6">
             <h2 id="perfil" className="text-lg font-bold">Perfil</h2>
             <AvatarUpload uid={session.userId} url={fotoUrl} inicial={(session.profile?.nombre || session.email).slice(0, 1).toUpperCase()} />

@@ -139,3 +139,11 @@ export async function aceptarTraspaso(_p: TraspasoState, f: FormData): Promise<T
   const { data: o } = await supabase.from("orders").select("order_code").eq("id", data as string).maybeSingle();
   redirect(`/cuenta?orden=${encodeURIComponent((o?.order_code as string) ?? "")}#o-${(o?.order_code as string) ?? ""}`);
 }
+
+/** 0156: mi liga de "Mi calendario DARF" (la crea si no hay). nueva: cambiarla; la anterior deja de servir. */
+export async function miCalendario(nueva = false): Promise<{ ok: true; url: string } | { ok: false; message: string }> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("mi_calendario_liga", { p_nueva: nueva });
+  if (error || typeof data !== "string") return { ok: false, message: error ? mensajeError(error) : "No se pudo crear tu liga." };
+  return { ok: true, url: `${await origenSitio()}/calendario/mi/${data}` };
+}

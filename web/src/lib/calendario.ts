@@ -34,13 +34,9 @@ function doblar(linea: string): string {
   return out.join("\r\n");
 }
 
-export function archivoIcs(e: EventoCal, horas = 2.5, ahora: Date = new Date()): string {
-  const lineas = [
-    "BEGIN:VCALENDAR",
-    "VERSION:2.0",
-    "PRODID:-//DARF Productions//DARF 2.0//ES",
-    "CALSCALE:GREGORIAN",
-    "METHOD:PUBLISH",
+/** Un evento (VEVENT) con aviso 2 horas antes. */
+function vevento(e: EventoCal, horas: number, ahora: Date): string[] {
+  return [
     "BEGIN:VEVENT",
     `UID:${e.uid}@darfproductions.com`,
     `DTSTAMP:${fechaUtc(ahora)}`,
@@ -56,9 +52,37 @@ export function archivoIcs(e: EventoCal, horas = 2.5, ahora: Date = new Date()):
     `DESCRIPTION:${escaparIcs(e.titulo)}`,
     "END:VALARM",
     "END:VEVENT",
-    "END:VCALENDAR",
   ];
-  return lineas.map(doblar).join("\r\n") + "\r\n";
+}
+
+const CABEZA = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//DARF Productions//DARF 2.0//ES", "CALSCALE:GREGORIAN", "METHOD:PUBLISH"];
+
+export function archivoIcs(e: EventoCal, horas = 2.5, ahora: Date = new Date()): string {
+  return [...CABEZA, ...vevento(e, horas, ahora), "END:VCALENDAR"].map(doblar).join("\r\n") + "\r\n";
+}
+
+/** 0156: "Mi calendario DARF" para suscribirse (Google, Apple, Outlook): todos los eventos de la persona, con nombre y
+ *  pidiendo que se vuelva a revisar cada hora. */
+export function calendarioIcs(eventos: EventoCal[], nombre: string, horas = 2.5, ahora: Date = new Date()): string {
+  return [
+    ...CABEZA,
+    `X-WR-CALNAME:${escaparIcs(nombre)}`,
+    "X-WR-TIMEZONE:America/Mexico_City",
+    "REFRESH-INTERVAL;VALUE=DURATION:PT1H",
+    "X-PUBLISHED-TTL:PT1H",
+    ...eventos.flatMap((e) => vevento(e, horas, ahora)),
+    "END:VCALENDAR",
+  ].map(doblar).join("\r\n") + "\r\n";
+}
+
+/** 0156: ligas para suscribirse a una liga .ics desde cada servicio. */
+export function ligasSuscripcion(urlIcs: string, nombre: string): { google: string; apple: string; outlook: string } {
+  const webcal = urlIcs.replace(/^https?:\/\//, "webcal://");
+  return {
+    google: `https://calendar.google.com/calendar/r?cid=${encodeURIComponent(webcal)}`,
+    apple: webcal,
+    outlook: `https://outlook.live.com/calendar/0/addfromweb?url=${encodeURIComponent(urlIcs)}&name=${encodeURIComponent(nombre)}`,
+  };
 }
 
 /** Liga para agregarlo en Google Calendar. */
