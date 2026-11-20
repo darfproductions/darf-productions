@@ -18,7 +18,7 @@ import { createClient } from "@/lib/supabase/server";
 import { editarPersonaje, importarPersonajes, moverPersonaje } from "../votacion-actions";
 import { origen } from "@/lib/gafete";
 import QRCode from "qrcode";
-import { addAuditionMember, addField, addInvites, addRole, addSlot, removeAuditionMember, removeInvite, removeItem, setObligatoria, saveAsTemplate, saveAudition, saveCriterios, saveEntrevistaPreguntas, saveOptions, setAuditionEstado, deleteAudition } from "../actions";
+import { addAuditionMember, addField, addJornada, addInvites, addRole, addSlot, removeAuditionMember, removeInvite, removeItem, setObligatoria, saveAsTemplate, saveAudition, saveCriterios, saveEntrevistaPreguntas, saveOptions, setAuditionEstado, deleteAudition } from "../actions";
 import { Icono } from "@/components/Icono";
 import { BuscarCuenta } from "@/components/panel/BuscarCuenta";
 import { IrASeccion } from "./IrASeccion";
@@ -56,6 +56,8 @@ export default async function AuditionConfig({ params, searchParams }: PageProps
   // ¿Puede armar el equipo propio? Obra: quien da permisos en ella. General: el Director.
   const armaEquipo = access.isDirector || (!a.production_id && casa(access, "casa.audiciones")) || (!!a.production_id && (access.byProduction[a.production_id] ?? []).includes("permisos.gestionar"));
   const supabase = await createClient();
+  const { data: jornadasData } = await supabase.from("audition_jornadas").select("id, inicia, termina, lugar, nota").eq("audition_id", aid).order("inicia");
+  const jornadas = (jornadasData ?? []) as { id: string; inicia: string; termina: string; lugar: string | null; nota: string | null }[];
   const [roles, slots, fields, team, teamRoles, invites, inscritos] = await Promise.all([
     supabase.from("audition_roles").select("id, nombre, descripcion").eq("audition_id", aid).order("orden"),
     supabase.rpc("audition_slot_availability", { aid }),
@@ -299,6 +301,29 @@ export default async function AuditionConfig({ params, searchParams }: PageProps
             <label className="flex flex-col gap-1 text-xs font-semibold">Termina (opcional)<input className={input} type="datetime-local" name="termina" aria-label="Hora de fin" /></label>
             <label className="flex flex-col gap-1 text-xs font-semibold">Cupo<input className={input} type="number" min={1} max={500} name="cupo" required placeholder="Cupo" /></label>
             <label className="flex flex-col gap-1 text-xs font-semibold">Sala (opcional)<input className={input} name="sala" placeholder="Sala" /></label>
+          </div>
+        </ActionForm>
+      </AjustesSeccion>
+      {/* 0158: lo que ve el equipo de la audición en Mi calendario. */}
+      <AjustesSeccion id="horario-equipo" titulo="Horario del equipo (calendario)">
+        <p className="text-sm text-texto-2">De qué hora a qué hora tiene que estar el equipo (jueces, host, recepción). Les sale en Mi calendario DARF. Si no pones nada, cada día de audición sale de la primera a la última hora de los horarios.</p>
+        {jornadas.length > 0 && (
+          <ul className="flex flex-col gap-2">
+            {jornadas.map((j) => (
+              <li key={j.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-sala px-3 py-2 text-sm">
+                <span><b>{formatSlot(j.inicia, j.termina)}</b>{j.lugar ? ` · ${j.lugar}` : ""}{j.nota ? <span className="block text-xs text-texto-3">{j.nota}</span> : null}</span>
+                <ActionForm inline action={removeItem} hidden={{ ...h, tabla: "audition_jornadas", id: j.id }} confirm="¿Quitar este horario del equipo?" submit="Quitar" submitClass={ghost} />
+              </li>
+            ))}
+          </ul>
+        )}
+        <ActionForm action={addJornada} hidden={h} submit="Agregar">
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+            <label className="flex flex-col gap-1 text-xs font-semibold">Fecha<input className={input} type="date" name="fecha" required /></label>
+            <label className="flex flex-col gap-1 text-xs font-semibold">De<input className={input} type="time" name="de" required /></label>
+            <label className="flex flex-col gap-1 text-xs font-semibold">A<input className={input} type="time" name="a" required /></label>
+            <label className="flex flex-col gap-1 text-xs font-semibold">Lugar (opcional)<input className={input} name="lugar" placeholder="Si no, la sede" /></label>
+            <label className="flex flex-col gap-1 text-xs font-semibold">Nota (opcional)<input className={input} name="nota" maxLength={200} placeholder="Llegar 30 min antes" /></label>
           </div>
         </ActionForm>
       </AjustesSeccion>

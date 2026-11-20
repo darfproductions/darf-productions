@@ -5,6 +5,13 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-11-20 — 0158: Audiciones en el calendario del equipo
+
+Diego: a los jueces (y al resto del equipo de una audición) no les salían las audiciones en Mi calendario. Cada
+audición tiene ahora «Horario del equipo» (`audition_jornadas`: fecha, de qué hora a qué hora, lugar y nota). Si no se
+configura, cada día sale de la primera a la última hora de los horarios de inscripción. También sale el callback en
+otra fecha, para el equipo y para quien fue llamado; el turno del aspirante lleva su hora de fin.
+
 ## 2026-11-20 — 0157: Ensayos sin asistencia
 
 Diego: hay ensayos donde no se toma asistencia pero deben salir en los calendarios. `rehearsals.sin_asistencia`: el
