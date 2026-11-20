@@ -11,7 +11,6 @@ do $$ begin
   end if;
 end $$;
 -- 0158 · Audiciones en Mi calendario para el equipo (Diego 2026-11-20).
--- 0158 · Audiciones en Mi calendario para el equipo (Diego 2026-11-20).
 --   * "Horario del equipo" de cada audición (audition_jornadas): fecha, de qué hora a qué hora, lugar y nota. Es lo que
 --     ve en su calendario quien está en el equipo de esa audición (juez, host, recepción o quien las gestiona).
 --   * Si no se configura, cada día de audición sale de la primera a la última hora de los horarios de inscripción.
