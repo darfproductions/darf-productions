@@ -5,6 +5,14 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-11-20 — 0154: Entregar un beneficio con el escáner de la puerta
+
+Diego: usar el mismo escáner para entregar beneficios. En Puerta se elige «Entregar un beneficio», el beneficio y
+«Iniciar entrega»; cada boleto escaneado dice qué hacer (`beneficio_escaneo`):
+- Acceso: sí o no; se registra y cuenta como su entrada.
+- Experiencia, atención u otro: se registra al escanear. Uno por compra: sirve cualquier boleto de la orden, una vez.
+- Souvenir: cuántos le tocan a la orden, cuántos ya se le dieron y cuántos faltan; «Entregar 1» o «Entregar los N».
+
 ## 2026-11-20 — 0153: Votación por cast y «Ver todos los personajes»
 
 Diego: en la votación cada juez debe poder armar su cast eligiendo a cualquiera que audicionó, no solo a quienes algún

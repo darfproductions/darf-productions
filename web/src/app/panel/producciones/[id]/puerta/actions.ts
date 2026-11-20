@@ -76,3 +76,29 @@ export async function entregarBeneficio(token: string, beneficio: string, entreg
   if (error) return { ok: false, message: mensajeError(error) };
   return { ok: true, beneficios: ((data as { beneficios?: BeneficioBoleto[] } | null)?.beneficios ?? []) };
 }
+
+// ════════ 0154: entregar un beneficio con el escáner ════════
+
+export type EscaneoBeneficio = {
+  resultado: "ok" | "ya" | "debe" | "completo" | "no_incluye" | "sin_cupo" | "por_pagar" | "cancelado" | "otra_funcion" | "otra_obra" | "no_encontrado" | "error";
+  modo?: "acceso" | "experiencia" | "fisico"; nombre?: string; lugar?: string; zona?: string; orden?: string; por_compra?: boolean;
+  con_boleto?: string | null; entregado_at?: string | null; entrada?: string | null; total?: number; entregados?: number;
+  entregados_ahora?: number; cupo?: number; estado?: string; message?: string;
+};
+
+/** Escanear un boleto en la entrega de un beneficio. entregar: en los físicos, cuántos se entregan ahora. */
+export async function escanearBeneficio(funcion: string, beneficio: string, token: string, entregar = 0): Promise<EscaneoBeneficio> {
+  const { data, error } = await (await createClient()).rpc("beneficio_escaneo", {
+    p_performance: funcion, p_beneficio: beneficio, p_token: token.trim(), p_entregar: Math.max(0, Math.min(500, Math.floor(entregar))),
+  });
+  if (error) return { resultado: "error", message: error.message === "No autorizado" ? "No puedes entregar beneficios en esta obra." : mensajeError(error) };
+  return data as EscaneoBeneficio;
+}
+
+/** Avance de la entrega en la función: cuántos tienen derecho y cuántos ya se entregaron. */
+export async function avanceBeneficio(funcion: string, beneficio: string): Promise<{ con_derecho: number; entregados: number } | null> {
+  const { data, error } = await (await createClient()).rpc("beneficios_reporte", { p_performance: funcion });
+  if (error) return null;
+  const fila = ((data ?? []) as { beneficio_id: string; con_derecho: number; entregados: number }[]).find((x) => x.beneficio_id === beneficio);
+  return fila ? { con_derecho: fila.con_derecho, entregados: fila.entregados } : null;
+}

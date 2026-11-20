@@ -6,7 +6,8 @@ import { QrScanner } from "@/components/panel/QrScanner";
 import { bip } from "@/lib/aviso-sonido";
 import { mayus } from "@/lib/dates";
 import { beneficiosPuerta, buscarPuerta, conteoPuerta, deshacerEntrada, entregarBeneficio, visitaPuerta, type BoletoPuerta, type CheckIn, type Conteo, type Visita } from "./actions";
-import { ESTADOS_ENTREGA, MOMENTOS_ENTREGA, TIPOS_BENEFICIO, horaAcceso, minutosAcceso, notaBeneficio, textoBeneficio, type BeneficioBoleto } from "@/lib/beneficios-rules";
+import { ESTADOS_ENTREGA, MOMENTOS_ENTREGA, TIPOS_BENEFICIO, horaAcceso, minutosAcceso, notaBeneficio, textoBeneficio, type Beneficio, type BeneficioBoleto } from "@/lib/beneficios-rules";
+import { EntregaBeneficio } from "./EntregaBeneficio";
 import { esPaseClub, etiquetaBoleto } from "./door-rules";
 import type { ResultadoLocal } from "./sin-conexion-rules";
 import { usePuertaSinConexion } from "./usePuertaSinConexion";
@@ -45,8 +46,10 @@ const comoCheckIn = (r: ResultadoLocal): Mostrado =>
       : { result: "no_en_lista" };
 const sinAcentos = (t: string) => t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
-export function DoorScanner({ pid, funciones, inicial }: { pid: string; funciones: { id: string; starts_at: string }[]; inicial: string | null }) {
+export function DoorScanner({ pid, funciones, inicial, beneficios = [] }: { pid: string; funciones: { id: string; starts_at: string }[]; inicial: string | null; beneficios?: Beneficio[] }) {
   const [funcion, setFuncion] = useState(inicial ?? funciones[0]?.id ?? "");
+  // 0154: "Entrada" (validar boletos) o "Entregar un beneficio" con el mismo escáner.
+  const [modo, setModo] = useState<"entrada" | "beneficio">("entrada");
   const [res, setRes] = useState<Mostrado | null>(null);
   const [sinRed, setSinRed] = useState(false);
   const sc = usePuertaSinConexion(funcion);
@@ -162,6 +165,15 @@ export function DoorScanner({ pid, funciones, inicial }: { pid: string; funcione
           {funciones.map((f) => <option key={f.id} value={f.id}>{fecha(f.starts_at)}</option>)}
         </select>
       </label>
+      {beneficios.length > 0 && (
+        <div role="tablist" aria-label="Qué vas a escanear" className="grid grid-cols-2 gap-1 rounded-full bg-telon p-1">
+          {([["entrada", "Entrada"], ["beneficio", "Entregar un beneficio"]] as const).map(([k, l]) => (
+            <button key={k} type="button" role="tab" aria-selected={modo === k} onClick={() => { setModo(k); setRes(null); setBenef(null); }}
+              className={`rounded-full px-3 py-2 text-sm font-bold ${modo === k ? (k === "beneficio" ? "bg-[#d7bb5f] text-[#0b0910]" : "bg-texto text-sala") : "text-texto-2"}`}>{l}</button>
+          ))}
+        </div>
+      )}
+      {modo === "beneficio" ? <EntregaBeneficio key={funcion} funcion={funcion} inicio={inicio} beneficios={beneficios} /> : (<>
       <div role="status" className={`flex flex-wrap items-center justify-between gap-2 rounded-2xl px-4 py-2.5 text-sm ${sc.enLinea ? "bg-telon" : "bg-[#7c2d12] text-white"}`}>
         <span className="flex items-center gap-2 font-bold">
           <span aria-hidden="true" className={`h-2.5 w-2.5 rounded-full ${sc.enLinea ? "bg-[#22c55e]" : "bg-[#fbbf24]"}`} />
@@ -279,6 +291,7 @@ export function DoorScanner({ pid, funciones, inicial }: { pid: string; funcione
           </ul>
         )}
       </section>
+      </>)}
     </div>
   );
 }

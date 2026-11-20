@@ -7,6 +7,7 @@ import { formatPerformanceDate } from "@/lib/productions";
 import { can } from "@/lib/panel-nav";
 import { requirePanel } from "@/lib/permissions";
 import { createClient } from "@/lib/supabase/server";
+import { listarBeneficios } from "@/lib/beneficios";
 import { DoorScanner } from "./DoorScanner";
 import { funcionDePuerta } from "./door-rules";
 
@@ -21,6 +22,8 @@ export default async function DoorPage({ params }: PageProps<"/panel/produccione
   const supabase = await createClient();
   const { data } = await supabase.from("performances").select("id, starts_at").eq("production_id", id).not("starts_at", "is", null).is("cancelada_at", null).order("starts_at");
   const funciones = (data ?? []) as { id: string; starts_at: string }[];
+  // 0154: beneficios activos, para "Entregar un beneficio" con el mismo escáner.
+  const beneficios = (await listarBeneficios(id, supabase)).filter((b) => b.activo);
   // Eventos del Club Fan (0080): en la entrada se valida la credencial del socio.
   const { data: ev } = await supabase.from("fan_encuentros").select("id, tipo, categoria, titulo, inicia, termina, performances(starts_at)").eq("production_id", id).neq("tipo", "en_linea");
   const eventos = ((ev ?? []) as unknown as { id: string; tipo: string; categoria: string | null; titulo: string | null; inicia: string | null; termina: string | null; performances: { starts_at: string | null } | null }[])
@@ -30,8 +33,8 @@ export default async function DoorPage({ params }: PageProps<"/panel/produccione
   return (
     <div className="flex flex-col gap-4">
       <Card>
-        <p className="mb-4 text-sm text-texto-2">Elige la función que está entrando y apunta la cámara al QR del boleto. Cada boleto solo entra una vez y solo en su función.</p>
-        {funciones.length ? <DoorScanner pid={id} funciones={funciones} inicial={funcionDePuerta(funciones, new Date())} /> : <p className="text-sm">Esta obra no tiene funciones con fecha.</p>}
+        <p className="mb-4 text-sm text-texto-2">Elige la función que está entrando y apunta la cámara al QR del boleto. Cada boleto solo entra una vez y solo en su función. Para entregar un beneficio (acceso anticipado, meet & greet, póster…), cambia a «Entregar un beneficio».</p>
+        {funciones.length ? <DoorScanner pid={id} funciones={funciones} inicial={funcionDePuerta(funciones, new Date())} beneficios={beneficios} /> : <p className="text-sm">Esta obra no tiene funciones con fecha.</p>}
       </Card>
       {eventos.length > 0 && (
         <Card className="flex flex-col gap-3">
