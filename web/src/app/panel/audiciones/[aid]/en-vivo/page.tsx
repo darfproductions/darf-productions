@@ -8,6 +8,7 @@ import { requireAudition } from "@/lib/panel-auditions";
 import { createClient } from "@/lib/supabase/server";
 import { rondaDeFase } from "@/lib/votacion-rules";
 import type { PersonaCierre } from "@/lib/audicion-vivo-rules";
+import type { FichaAudicion } from "@/lib/produccion-nueva-rules";
 import { juezActual } from "../../actions";
 import { EnEscenaJuez } from "../evaluacion/EnEscenaJuez";
 import { EnEscenaHost } from "../entrevista/EnEscenaHost";
@@ -47,6 +48,9 @@ export default async function ModoAudicion({ params, searchParams }: PageProps<"
   const supabase = await createClient();
   const { data: rolesData } = await supabase.from("audition_roles").select("id, nombre").eq("audition_id", aid).order("orden");
   const personajes = (rolesData ?? []) as { id: string; nombre: string }[];
+  // Todos los personajes con su ficha, para "Ver todos los personajes" en la pantalla del juez.
+  const { data: fichasData } = may("audiciones.evaluar") ? await supabase.rpc("audition_fichas", { aid }) : { data: null };
+  const todas = (fichasData ?? []) as FichaAudicion[];
   const conVotacion = personajes.length > 0 && !a.permanente;
   const ronda = conVotacion ? rondaDeFase(a.fase) : 1;
   const paso = pasoActual(a.estado, a.fase, conVotacion);
@@ -121,7 +125,7 @@ export default async function ModoAudicion({ params, searchParams }: PageProps<"
 
       {enDia && !enLinea && como === "juez" && (
         <>
-          <EnEscenaJuez aid={aid} ronda={ronda} criterios={(a.criterios ?? []) as Criterio[]} roles={personajes} conVotacion={conVotacion}
+          <EnEscenaJuez aid={aid} ronda={ronda} criterios={(a.criterios ?? []) as Criterio[]} roles={personajes} todas={todas} conVotacion={conVotacion}
             abiertas={(ronda === 1 && ["audicion", "seleccion_callback"].includes(a.fase)) || (ronda === 2 && a.fase === "callback")} inicial={await juezActual(aid, ronda)} />
           <p className="text-xs text-texto-3">Lo que marcas se guarda solo. ¿Quieres calificar a alguien que ya pasó? Está en <Link href={`/panel/audiciones/${aid}/evaluacion`} className="font-bold text-lila">Evaluación</Link>.</p>
         </>
@@ -137,7 +141,7 @@ export default async function ModoAudicion({ params, searchParams }: PageProps<"
                 : <Card className="text-sm text-texto-3">Cuando pongas a alguien en escena, aquí aparece su entrevista.</Card>}
             </div>
             <div className="flex flex-col gap-2">
-              <EnEscenaJuez aid={aid} ronda={ronda} criterios={(a.criterios ?? []) as Criterio[]} roles={personajes} conVotacion={conVotacion}
+              <EnEscenaJuez aid={aid} ronda={ronda} criterios={(a.criterios ?? []) as Criterio[]} roles={personajes} todas={todas} conVotacion={conVotacion}
                 abiertas={(ronda === 1 && ["audicion", "seleccion_callback"].includes(a.fase)) || (ronda === 2 && a.fase === "callback")} inicial={await juezActual(aid, ronda)} />
               <p className="text-xs text-texto-3">La entrevista que subas aparece en la pantalla de cada juez. Lo que calificas se guarda solo.</p>
             </div>

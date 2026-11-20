@@ -5,8 +5,8 @@ import { useEffect, useRef, useState } from "react";
 import { Card } from "@/components/panel/ui";
 import { Icono } from "@/components/Icono";
 import type { Criterio } from "@/lib/audition-rules";
-import { PersonajesPopup } from "@/components/audiciones/PersonajesPopup";
-import type { PerfilAspirante } from "@/lib/produccion-nueva-rules";
+import { PersonajesPopup, TodosPersonajes } from "@/components/audiciones/PersonajesPopup";
+import type { FichaAudicion, PerfilAspirante } from "@/lib/produccion-nueva-rules";
 import { juezActual, type JuezActual, type PersonaJuez } from "../../actions";
 import { ScoreForm } from "./ScoreForm";
 import { PickForm } from "./PickForm";
@@ -15,9 +15,11 @@ const TIPO: Record<string, string> = { reparto: "Reparto", ensamble: "Ensamble",
 
 // 0115: quien está en escena ahora. Se pregunta cada 4 s; si cambia la persona, cambia toda la tarjeta.
 // Lo que el juez está escribiendo no se pierde: el formulario solo se vuelve a armar al cambiar de persona.
-export function EnEscenaJuez({ aid, ronda, criterios, roles, conVotacion, abiertas, inicial }: {
+export function EnEscenaJuez({ aid, ronda, criterios, roles, conVotacion, abiertas, inicial, todas = [] }: {
   aid: string; ronda: number; criterios: Criterio[]; roles: { id: string; nombre: string }[];
   conVotacion: boolean; abiertas: boolean; inicial: JuezActual | null;
+  /** Todos los personajes de la convocatoria con su ficha ("Ver todos los personajes"). */
+  todas?: FichaAudicion[];
 }) {
   const [d, setD] = useState<JuezActual | null>(inicial);
   const [sel, setSel] = useState<string | null>(null);
@@ -41,7 +43,8 @@ export function EnEscenaJuez({ aid, ronda, criterios, roles, conVotacion, abiert
     return (
       <Card className="flex items-center gap-3 border border-dashed border-white/15">
         <span className="relative flex h-3 w-3"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-lila opacity-60" /><span className="relative inline-flex h-3 w-3 rounded-full bg-lila" /></span>
-        <p className="text-texto-2">Esperando al siguiente audicionante. Cuando den “Siguiente”, aparece aquí solo.</p>
+        <p className="flex-1 text-texto-2">Esperando al siguiente audicionante. Cuando den “Siguiente”, aparece aquí solo.</p>
+        <TodosPersonajes fichas={todas} perfil={null} edad={null} />
       </Card>
     );
   }
@@ -79,6 +82,7 @@ export function EnEscenaJuez({ aid, ronda, criterios, roles, conVotacion, abiert
           {p.fichas?.length
             ? <PersonajesPopup fichas={p.fichas} perfil={perfilLleno(p.perfil)} edad={p.edad} />
             : p.personajes?.length ? <p className="text-sm"><span className="text-texto-3">Quiere: </span><b>{p.personajes.join(", ")}</b></p> : null}
+          <TodosPersonajes fichas={todas} perfil={perfilLleno(p.perfil)} edad={p.edad} nombre={p.nombre} />
           {p.enlaces.map((v, i) => <a key={i} href={v.url} target="_blank" rel="noreferrer" className="text-sm text-violeta-claro underline">{v.titulo} <Icono nombre="externo" /></a>)}
         </div>
       </div>

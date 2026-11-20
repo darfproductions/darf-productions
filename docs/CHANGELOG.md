@@ -5,6 +5,17 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-11-20 — 0153: Votación por cast y «Ver todos los personajes»
+
+Diego: en la votación cada juez debe poder armar su cast eligiendo a cualquiera que audicionó, no solo a quienes algún
+juez marcó como opción; las opciones 1, 2 y 3 sirven de referencia. Y los jueces deben poder ver todos los personajes
+con su descripción para proponer a alguien para un personaje por el que no se inscribió.
+- `audition_vote` acepta a cualquiera que audicionó en la ronda de votación (`audition_votable`).
+- `audition_vote_cast`: «Subir mi cast» guarda todos los votos del juez de una vez.
+- `audition_voting` trae `mi_opcion` por candidato y `aspirantes` (todos los votables). La propuesta del cast no cambia:
+  el más votado de cada personaje.
+- Pantalla del juez: botón «Ver todos los personajes» con la ficha de cada uno comparada con quien está en escena.
+
 ## 2026-11-19 — 0152: Honorarios parte 3 (cierres de temporada, reserva y recibos con folio)
 
 Especificación sección 7. Al terminar una temporada se calcula la ganancia de la obra y se reparte con su reparto de
