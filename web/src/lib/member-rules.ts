@@ -10,6 +10,8 @@ export type PersonFile = {
   alergias: string | null; condiciones: string | null; medicamentos: string | null; tipo_sangre: string | null;
   altura_cm: number | null; pecho_cm: number | null; cintura_cm: number | null; cadera_cm: number | null;
   talla_ropa: string | null; talla_calzado: string | null;
+  /** 0159 */
+  genero?: string | null;
 } & Partial<Record<import("@/lib/medidas").MedidaKey, number | null>>;
 
 /** Estado del expediente en una obra: el integrante confirma vigencia; la producción revisa. */
@@ -37,6 +39,9 @@ export type MemberDoc = { doc_type_id: string; archivo_path: string | null; subi
 const lleno = (v: unknown) => v !== null && v !== undefined && String(v).trim() !== "";
 
 /** Edad cumplida hoy (o null si no hay fecha). */
+/** 0159: género (expediente personal). */
+export const GENEROS: Record<string, string> = { mujer: "Mujer", hombre: "Hombre", no_binario: "No binario", otro: "Otro", prefiero_no_decir: "Prefiere no decir" };
+
 export function edad(nacimiento: string | null, hoy: Date = new Date()): number | null {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(nacimiento ?? "");
   if (!m) return null;

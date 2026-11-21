@@ -12,17 +12,22 @@ import { createClient } from "@/lib/supabase/server";
 export type FileState = { ok: boolean; message: string } | null;
 
 const TEXTOS = ["fecha_nacimiento", "telefono", "emergencia_nombre", "emergencia_telefono", "emergencia_parentesco", "tutor_nombre",
-  "tutor_telefono", "tutor_email", "alergias", "condiciones", "medicamentos", "tipo_sangre", "talla_ropa", "talla_calzado"] as const;
+  "tutor_telefono", "tutor_email", "alergias", "condiciones", "medicamentos", "tipo_sangre", "talla_ropa", "talla_calzado", "genero"] as const;
 // 0112: todas las medidas de la tabla de vestuario de DARF.
 const MEDIDAS = MEDIDAS_VESTUARIO.map((m) => m.k);
 
 const refresh = (pid: string) => {
-  revalidatePath(`/cuenta/produccion/${pid}`);
-  revalidatePath(`/panel/producciones/${pid}/expedientes`, "layout");
+  if (pid) {
+    revalidatePath(`/cuenta/produccion/${pid}`);
+    revalidatePath(`/panel/producciones/${pid}/expedientes`, "layout");
+  }
+  // 0160: el aviso de expediente incompleto (Mi cuenta y panel).
+  revalidatePath("/cuenta", "layout");
+  revalidatePath("/panel", "layout");
 };
 
 export async function saveMemberFile(_p: FileState, f: FormData): Promise<FileState> {
-  const pid = String(f.get("pid"));
+  const pid = String(f.get("pid") ?? "");
   const uid = String(f.get("uid"));
   // Datos de salud = datos sensibles: la propia persona da su consentimiento expreso al guardar.
   if (f.get("confirmar") === "on" && f.get("consentimiento_salud") !== "on") {
@@ -37,8 +42,8 @@ export async function saveMemberFile(_p: FileState, f: FormData): Promise<FileSt
   const supabase = await createClient();
   const { error } = await supabase.from("person_files").upsert(row, { onConflict: "user_id" });
   if (error) return { ok: false, message: /check/.test(error.message) ? "Revisa las medidas (en centímetros)." : mensajeError(error) };
-  // Si lo guarda la propia persona desde una obra, cuenta como "datos vigentes" en esa obra.
-  if (f.get("confirmar") === "on") {
+  // Si lo guarda la propia persona desde una obra, cuenta como "datos vigentes" en esa obra (0160: desde Mi expediente, sin obra).
+  if (f.get("confirmar") === "on" && pid) {
     const { error: e2 } = await supabase.from("member_files").upsert({ production_id: pid, user_id: uid, confirmado_at: new Date().toISOString() }, { onConflict: "production_id,user_id" });
     if (e2) return { ok: false, message: `Tus datos se guardaron, pero no se pudo marcar como revisado en esta obra: ${mensajeError(e2)}` };
   }

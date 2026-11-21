@@ -10,6 +10,8 @@ import { listNotifications } from "@/lib/notifications";
 import { canSeePanel } from "@/lib/permissions";
 import { getPushInfo, PUSH_TIPOS, PUSH_TIPOS_CUENTA } from "@/lib/push";
 import { Icono } from "@/components/Icono";
+import { ExpedienteAviso } from "@/components/ExpedienteAviso";
+import { getMiExpedienteFalta } from "@/lib/expediente-aviso";
 
 export const metadata: Metadata = { title: "Mis notificaciones" };
 
@@ -21,7 +23,7 @@ export default async function MisNotificaciones({ searchParams }: PageProps<"/cu
   const session = await requireSession("/cuenta/notificaciones");
   const sp = await searchParams;
   const soloNoLeidas = sp.ver === "nuevas";
-  const [items, push, panel] = await Promise.all([listNotifications({ soloNoLeidas, limit: 100 }), getPushInfo(), canSeePanel(session)]);
+  const [items, push, panel, expFalta] = await Promise.all([listNotifications({ soloNoLeidas, limit: 100 }), getPushInfo(), canSeePanel(session), getMiExpedienteFalta()]);
   const sel = (on: boolean) => `rounded-full border px-3 py-1.5 font-semibold ${on ? "border-texto" : "border-white/20"}`;
   return (
     <main className="pb-10">
@@ -33,6 +35,7 @@ export default async function MisNotificaciones({ searchParams }: PageProps<"/cu
           <Link href="/cuenta" className="font-bold text-violeta-claro"><Icono nombre="flecha-izq" /> Mi cuenta</Link>
           {panel && <Link href="/panel/notificaciones" className="font-bold text-violeta-claro">Ver en el panel <Icono nombre="flecha-der" /></Link>}
         </div>
+        <ExpedienteAviso faltan={expFalta} />
         <div className="flex flex-wrap items-center gap-2 text-sm">
           <Link href="/cuenta/notificaciones" className={sel(!soloNoLeidas)}>Todas</Link>
           <Link href="/cuenta/notificaciones?ver=nuevas" className={sel(soloNoLeidas)}>No leídas</Link>
