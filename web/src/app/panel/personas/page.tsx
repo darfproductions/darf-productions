@@ -82,63 +82,71 @@ export default async function Directorio({ searchParams }: PageProps<"/panel/per
         ))}
       </nav>
 
-      <Card className="p-0 md:p-0">
-        <ul className="divide-y divide-white/10">
-          {filas.map((p) => (
-            <li key={p.key} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm">
-              <span className="min-w-0 wrap-anywhere">
-                <Link href={p.fichaHref} className="font-bold hover:text-violeta-claro">{p.nombre}</Link>
-                {p.userId === access.session.userId && <span className="ml-2 text-xs text-texto-3">(tú)</span>}
-                {p.email ? <span className="text-texto-3"> · {p.email}</span> : <span className="text-xs text-aviso"> · sin cuenta</span>}
-                {p.casa.map((c) => (
-                  <span key={c} className="ml-2 inline-block rounded-full bg-[linear-gradient(90deg,#ffb8ec,#c9b2ff,#9fe2ff,#b9ffe0,#ffe6a8)] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-[#1a1030]">Casa DARF · {c}</span>
-                ))}
-                <span className="block text-xs text-texto-3">{p.obras.join(", ") || "Sin créditos"}{p.creditos ? ` · ${p.creditos} créditos` : ""}</span>
-              </span>
-              <span className="flex min-w-0 flex-wrap items-center gap-2">
-                {p.userId && p.rol && access.isDirector ? (
-                  <form action={changeGlobalRole} className="flex items-center gap-2">
-                    <input type="hidden" name="id" value={p.userId} />
-                    <input type="hidden" name="q" value={q} />
-                    <select name="rol" defaultValue={p.rol} className={`${input} py-1.5 text-xs`} aria-label={`Rol general de ${p.nombre}`}>
-                      <option value="fan">Cuenta</option>
-                      <option value="admin">Admin (dueño)</option>
-                      {p.rol === "staff" && <option value="staff" disabled>Staff (antiguo)</option>}
-                    </select>
-                    <ConfirmSubmit message={`¿Cambiar el rol general de ${p.nombre}?`} className="rounded-full border border-white/25 px-3 py-1 text-xs font-bold">Guardar</ConfirmSubmit>
-                  </form>
-                ) : !p.userId && p.personId ? (
-                  <ActionForm inline action={linkAccount} hidden={{ id: p.personId }} submit="Ligar" submitClass="rounded-full border border-white/25 px-3 py-1 text-xs font-bold">
-                    <BuscarCuenta className="w-56 max-w-full" placeholder="Nombre o correo de su cuenta" />
-                  </ActionForm>
-                ) : null}
-                {/* 0105: la ficha quedó en la cuenta equivocada (alguien se registró dos veces): pasarla a la buena. */}
-                {p.userId && p.personId && (
-                  <details className="relative">
-                    <summary className="cursor-pointer text-xs font-bold text-texto-3 hover:text-texto">Cambiar cuenta</summary>
-                    <div className="mt-2 flex flex-col gap-2 rounded-xl border border-white/15 bg-telon p-3 sm:absolute sm:right-0 sm:z-20 sm:w-80">
-                      <p className="text-xs text-texto-2">Pasa esta ficha y sus créditos a otra cuenta de la misma persona. La cuenta actual queda sin ficha.</p>
-                      <ActionForm action={linkAccount} hidden={{ id: p.personId }} confirm={`¿Pasar la ficha de ${p.nombre} y sus créditos a la cuenta elegida?`} submit="Cambiar" submitClass="rounded-full border border-white/25 px-3 py-1 text-xs font-bold self-start">
-                        <BuscarCuenta placeholder="Nombre o correo de la cuenta buena" />
+      {/* Dos listas: el equipo de DARF (con créditos en alguna obra) y las demás cuentas. */}
+      {([["equipo-darf", "Equipo DARF", "Personas con créditos en alguna obra.", filas.filter((p) => p.creditos > 0)],
+         ["usuarios", "Usuarios", "Cuentas registradas sin créditos en obras.", filas.filter((p) => !p.creditos)]] as const).map(([key, titulo, ayuda, lista]) => (
+        <section key={key} aria-labelledby={key} className="flex flex-col gap-2">
+          <h2 id={key} className="titular text-xl">{titulo} <span className="text-sm font-normal text-texto-3">({lista.length})</span></h2>
+          <p className="text-sm text-texto-3">{ayuda}</p>
+          <Card className="p-0 md:p-0">
+            <ul className="divide-y divide-white/10">
+              {lista.map((p) => (
+                <li key={p.key} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm">
+                  <span className="min-w-0 wrap-anywhere">
+                    <Link href={p.fichaHref} className="font-bold hover:text-violeta-claro">{p.nombre}</Link>
+                    {p.userId === access.session.userId && <span className="ml-2 text-xs text-texto-3">(tú)</span>}
+                    {p.email ? <span className="text-texto-3"> · {p.email}</span> : <span className="text-xs text-aviso"> · sin cuenta</span>}
+                    {p.casa.map((c) => (
+                      <span key={c} className="ml-2 inline-block rounded-full bg-[linear-gradient(90deg,#ffb8ec,#c9b2ff,#9fe2ff,#b9ffe0,#ffe6a8)] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-[#1a1030]">Casa DARF · {c}</span>
+                    ))}
+                    <span className="block text-xs text-texto-3">{p.obras.join(", ") || "Sin créditos"}{p.creditos ? ` · ${p.creditos} créditos` : ""}</span>
+                  </span>
+                  <span className="flex min-w-0 flex-wrap items-center gap-2">
+                    {p.userId && p.rol && access.isDirector ? (
+                      <form action={changeGlobalRole} className="flex items-center gap-2">
+                        <input type="hidden" name="id" value={p.userId} />
+                        <input type="hidden" name="q" value={q} />
+                        <select name="rol" defaultValue={p.rol} className={`${input} py-1.5 text-xs`} aria-label={`Rol general de ${p.nombre}`}>
+                          <option value="fan">Cuenta</option>
+                          <option value="admin">Admin (dueño)</option>
+                          {p.rol === "staff" && <option value="staff" disabled>Staff (antiguo)</option>}
+                        </select>
+                        <ConfirmSubmit message={`¿Cambiar el rol general de ${p.nombre}?`} className="rounded-full border border-white/25 px-3 py-1 text-xs font-bold">Guardar</ConfirmSubmit>
+                      </form>
+                    ) : !p.userId && p.personId ? (
+                      <ActionForm inline action={linkAccount} hidden={{ id: p.personId }} submit="Ligar" submitClass="rounded-full border border-white/25 px-3 py-1 text-xs font-bold">
+                        <BuscarCuenta className="w-56 max-w-full" placeholder="Nombre o correo de su cuenta" />
                       </ActionForm>
-                    </div>
-                  </details>
-                )}
-                {p.vacia && p.userId && (
-                  <form action={borrarCuenta}>
-                    <input type="hidden" name="id" value={p.userId} />
-                    <input type="hidden" name="q" value={q} />
-                    <input type="hidden" name="filtro" value={filtro} />
-                    <ConfirmSubmit message={`¿Borrar la cuenta ${p.email ?? p.nombre}? Está vacía (sin ficha, obras ni compras). No se puede deshacer.`} className="rounded-full border border-[#ff8fa3]/50 px-3 py-1 text-xs font-bold text-[#ff8fa3]">Borrar</ConfirmSubmit>
-                  </form>
-                )}
-                <Link href={p.fichaHref} className="text-xs font-bold text-violeta-claro">Ficha <Icono nombre="flecha-der" /></Link>
-              </span>
-            </li>
-          ))}
-          {filas.length === 0 && <li className="px-4 py-3 text-texto-2">Sin resultados.</li>}
-        </ul>
-      </Card>
+                    ) : null}
+                    {/* 0105: la ficha quedó en la cuenta equivocada (alguien se registró dos veces): pasarla a la buena. */}
+                    {p.userId && p.personId && (
+                      <details className="relative">
+                        <summary className="cursor-pointer text-xs font-bold text-texto-3 hover:text-texto">Cambiar cuenta</summary>
+                        <div className="mt-2 flex flex-col gap-2 rounded-xl border border-white/15 bg-telon p-3 sm:absolute sm:right-0 sm:z-20 sm:w-80">
+                          <p className="text-xs text-texto-2">Pasa esta ficha y sus créditos a otra cuenta de la misma persona. La cuenta actual queda sin ficha.</p>
+                          <ActionForm action={linkAccount} hidden={{ id: p.personId }} confirm={`¿Pasar la ficha de ${p.nombre} y sus créditos a la cuenta elegida?`} submit="Cambiar" submitClass="rounded-full border border-white/25 px-3 py-1 text-xs font-bold self-start">
+                            <BuscarCuenta placeholder="Nombre o correo de la cuenta buena" />
+                          </ActionForm>
+                        </div>
+                      </details>
+                    )}
+                    {p.vacia && p.userId && (
+                      <form action={borrarCuenta}>
+                        <input type="hidden" name="id" value={p.userId} />
+                        <input type="hidden" name="q" value={q} />
+                        <input type="hidden" name="filtro" value={filtro} />
+                        <ConfirmSubmit message={`¿Borrar la cuenta ${p.email ?? p.nombre}? Está vacía (sin ficha, obras ni compras). No se puede deshacer.`} className="rounded-full border border-[#ff8fa3]/50 px-3 py-1 text-xs font-bold text-[#ff8fa3]">Borrar</ConfirmSubmit>
+                      </form>
+                    )}
+                    <Link href={p.fichaHref} className="text-xs font-bold text-violeta-claro">Ficha <Icono nombre="flecha-der" /></Link>
+                  </span>
+                </li>
+              ))}
+              {lista.length === 0 && <li className="px-4 py-3 text-texto-2">Sin resultados.</li>}
+            </ul>
+          </Card>
+        </section>
+      ))}
 
       {fichasLista.length > 1 && (
         <Card>

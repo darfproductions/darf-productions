@@ -5,6 +5,13 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-11-21 — 0159: Personas, edad, género y expediente
+
+Diego: en Personas, ver de quien es del equipo (con créditos en DARF) su edad, su género y entrar a su expediente
+personal; y el directorio en dos listas, Equipo DARF (con créditos) y Usuarios. El expediente personal guarda ahora el
+género (`person_files.genero`). `persona_datos(uid)` (Casa DARF con Personas o admin) trae edad, género y la obra cuyo
+expediente se abre; de quien no tiene créditos no trae nada.
+
 ## 2026-11-20 — Editar ensayos y otros llamados (montaje, ensayo general…)
 
 Diego: poder corregir un ensayo si algo cambia y tener llamados que no dependen de la hora de una función. En la página

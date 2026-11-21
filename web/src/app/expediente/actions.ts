@@ -12,7 +12,7 @@ import { createClient } from "@/lib/supabase/server";
 export type FileState = { ok: boolean; message: string } | null;
 
 const TEXTOS = ["fecha_nacimiento", "telefono", "emergencia_nombre", "emergencia_telefono", "emergencia_parentesco", "tutor_nombre",
-  "tutor_telefono", "tutor_email", "alergias", "condiciones", "medicamentos", "tipo_sangre", "talla_ropa", "talla_calzado"] as const;
+  "tutor_telefono", "tutor_email", "alergias", "condiciones", "medicamentos", "tipo_sangre", "talla_ropa", "talla_calzado", "genero"] as const;
 // 0112: todas las medidas de la tabla de vestuario de DARF.
 const MEDIDAS = MEDIDAS_VESTUARIO.map((m) => m.k);
 
