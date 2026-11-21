@@ -1,6 +1,7 @@
 -- 0161 · Honorarios: cómo quiere cobrar cada quien (Diego 2026-11-21).
---   * En Mi cuenta, Mis honorarios: cada persona elige transferencia o efectivo y pone su CLABE (titular y banco).
---     Las 4 cabezas la ven en Honorarios (El mes y los cierres), junto al pago de cada persona, para depositar.
+--   * En Mi cuenta, Mis honorarios: cada persona elige transferencia o efectivo y pone su CLABE y titular (siempre,
+--     aunque prefiera efectivo, por cualquier cosa). Las 4 cabezas la ven en Honorarios (El mes y los cierres), junto
+--     al pago de cada persona, para depositar. Mientras falte, le sale un aviso como el del expediente (0160).
 --   * Mis honorarios le sale a quien cobra: los creativos de cualquier obra y el elenco (reparto o ensamble) de obras
 --     tipo profesional; y a quien ya tenga pagos o una bolsa asignada.
 -- Precede: 0160. No borra datos.
@@ -18,11 +19,10 @@ $$;
 create table if not exists hon_datos_pago (
   person_id uuid primary key references people(id) on delete cascade,
   metodo text not null default 'transferencia' check (metodo in ('transferencia', 'efectivo')),
-  titular text check (titular is null or length(btrim(titular)) between 2 and 120),
+  titular text not null check (length(btrim(titular)) between 2 and 120),
   banco text check (banco is null or length(btrim(banco)) between 2 and 60),
-  clabe text check (clabe is null or clabe_valida(clabe)),
-  updated_at timestamptz not null default now(),
-  check (metodo = 'efectivo' or clabe is not null)
+  clabe text not null check (clabe_valida(clabe)),
+  updated_at timestamptz not null default now()
 );
 alter table hon_datos_pago enable row level security;
 revoke all on hon_datos_pago from anon;
@@ -45,6 +45,15 @@ $$;
 revoke all on function mis_honorarios_aplica() from public, anon;
 grant execute on function mis_honorarios_aplica() to authenticated;
 
+-- ¿Me falta poner cómo quiero cobrar? null = no me toca Mis honorarios.
+create or replace function mi_datos_pago_falta() returns boolean
+language sql stable security definer set search_path = public as $$
+  select case when mis_honorarios_aplica() then not exists (
+    select 1 from hon_datos_pago d join people pe on pe.id = d.person_id where pe.profile_id = auth.uid()) end
+$$;
+revoke all on function mi_datos_pago_falta() from public, anon;
+grant execute on function mi_datos_pago_falta() to authenticated;
+
 -- Guardar cómo quiero cobrar (en todas mis fichas de persona).
 create or replace function hon_mis_datos_pago_guardar(p_metodo text, p_titular text, p_banco text, p_clabe text) returns void
 language plpgsql security definer set search_path = public as $$
@@ -53,7 +62,8 @@ begin
   if auth.uid() is null then raise exception 'Inicia sesión.'; end if;
   if p_metodo not in ('transferencia', 'efectivo') then raise exception 'Elige transferencia o efectivo.'; end if;
   if v_clabe is not null and not clabe_valida(v_clabe) then raise exception 'La CLABE no es válida: revisa los 18 dígitos.'; end if;
-  if p_metodo = 'transferencia' and v_clabe is null then raise exception 'Para transferencia pon tu CLABE.'; end if;
+  if v_clabe is null then raise exception 'Pon tu CLABE (aunque prefieras efectivo, por cualquier cosa).'; end if;
+  if coalesce(length(btrim(p_titular)), 0) < 2 then raise exception 'Pon el nombre del titular de la cuenta.'; end if;
   if not exists (select 1 from people where profile_id = auth.uid()) then
     raise exception 'Tu cuenta todavía no está ligada a tu ficha del equipo. Pídele a la producción que la ligue.';
   end if;

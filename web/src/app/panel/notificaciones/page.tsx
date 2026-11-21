@@ -7,7 +7,8 @@ import { Card, PanelTitle } from "@/components/panel/ui";
 import { deleteReadNotifications, markAllNotifications } from "@/lib/notification-actions";
 import { listNotifications } from "@/lib/notifications";
 import { ExpedienteAviso } from "@/components/ExpedienteAviso";
-import { getMiExpedienteFalta } from "@/lib/expediente-aviso";
+import { getMiDatosPagoFalta, getMiExpedienteFalta } from "@/lib/expediente-aviso";
+import { DatosPagoAviso } from "@/components/DatosPagoAviso";
 import { requirePanel } from "@/lib/permissions";
 import { getPushInfo, PUSH_TIPOS } from "@/lib/push";
 
@@ -20,7 +21,7 @@ export default async function Notificaciones({ searchParams }: PageProps<"/panel
   await requirePanel("/panel/notificaciones");
   const sp = await searchParams;
   const soloNoLeidas = sp.ver === "nuevas";
-  const [items, push, faltan] = await Promise.all([listNotifications({ soloNoLeidas }), getPushInfo(), getMiExpedienteFalta()]);
+  const [items, push, faltan, pagoFalta] = await Promise.all([listNotifications({ soloNoLeidas }), getPushInfo(), getMiExpedienteFalta(), getMiDatosPagoFalta()]);
   return (
     <>
       <PanelTitle eyebrow="Hoy" title="Notificaciones">
@@ -35,6 +36,7 @@ export default async function Notificaciones({ searchParams }: PageProps<"/panel
         </span>
       </div>
       <ExpedienteAviso faltan={faltan} />
+      <DatosPagoAviso falta={pagoFalta} />
       <Card><NotificationList items={items} /></Card>
       <Card className="flex flex-col gap-3">
         <h2 id="telefono" className="titular text-xl">En mi teléfono</h2>

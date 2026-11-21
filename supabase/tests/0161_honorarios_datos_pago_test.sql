@@ -32,7 +32,12 @@ do $$ declare ok boolean; begin
   if not mis_honorarios_aplica() then raise exception 'FALLO T1b: actor profesional'; end if;
   perform pg_temp.as_user('00000000-0000-0000-0000-000000161a03');
   if mis_honorarios_aplica() then raise exception 'FALLO T1c: elenco de taller'; end if;
-  -- Guardar: transferencia sin CLABE no; CLABE mala no; buena sí; efectivo sin CLABE sí.
+  -- Aviso: le falta (todavía no pone nada); al del taller no le toca.
+  perform pg_temp.as_user('00000000-0000-0000-0000-000000161a02');
+  if mi_datos_pago_falta() is distinct from true then raise exception 'FALLO T1d: aviso'; end if;
+  perform pg_temp.as_user('00000000-0000-0000-0000-000000161a03');
+  if mi_datos_pago_falta() is not null then raise exception 'FALLO T1e: aviso a quien no le toca'; end if;
+  -- Guardar: sin CLABE no (ni en efectivo); CLABE mala no; buena sí.
   perform pg_temp.as_user('00000000-0000-0000-0000-000000161a02');
   begin perform hon_mis_datos_pago_guardar('transferencia', 'Actor', 'BBVA', null); ok := false; exception when others then ok := true; end;
   if not ok then raise exception 'FALLO T2a'; end if;
@@ -40,11 +45,14 @@ do $$ declare ok boolean; begin
   if not ok then raise exception 'FALLO T2b'; end if;
   perform hon_mis_datos_pago_guardar('transferencia', 'Actor Pérez', 'BBVA', '0121 8000 1234 5678 99');
   if (select clabe from hon_datos_pago where person_id = '00000000-0000-0000-0000-000000161b02') <> '012180001234567899' then raise exception 'FALLO T2c'; end if;
+  if mi_datos_pago_falta() then raise exception 'FALLO T2d: sigue el aviso'; end if;
   -- Cada quien ve solo lo suyo.
   perform pg_temp.as_user('00000000-0000-0000-0000-000000161a01');
   if exists (select 1 from hon_datos_pago) then raise exception 'FALLO T3a: ve datos ajenos'; end if;
-  perform hon_mis_datos_pago_guardar('efectivo', null, null, null);
-  if (select count(*) from hon_datos_pago) <> 1 then raise exception 'FALLO T3b: no ve lo suyo'; end if;
+  begin perform hon_mis_datos_pago_guardar('efectivo', 'Crea', null, null); ok := false; exception when others then ok := sqlerrm like '%aunque prefieras efectivo%'; end;
+  if not ok then raise exception 'FALLO T3b: efectivo sin CLABE'; end if;
+  perform hon_mis_datos_pago_guardar('efectivo', 'Crea López', null, '012180001234567899');
+  if (select count(*) from hon_datos_pago) <> 1 then raise exception 'FALLO T3c: no ve lo suyo'; end if;
 end $$;
 
 do $$ begin raise notice '0161 OK'; end $$;

@@ -35,7 +35,8 @@ export type DatosPagoState = { ok: boolean; message: string } | null;
 export async function guardarDatosPago(_p: DatosPagoState, f: FormData): Promise<DatosPagoState> {
   const metodo = String(f.get("metodo") ?? "") === "efectivo" ? "efectivo" : "transferencia";
   const clabe = String(f.get("clabe") ?? "").replace(/\D/g, "");
-  if (metodo === "transferencia" && clabe.length !== 18) return { ok: false, message: "La CLABE tiene 18 dígitos." };
+  if (clabe.length !== 18) return { ok: false, message: "Pon tu CLABE de 18 dígitos (aunque prefieras efectivo, por cualquier cosa)." };
+  if (String(f.get("titular") ?? "").trim().length < 2) return { ok: false, message: "Pon el nombre del titular de la cuenta." };
   const supabase = await createClient();
   const { error } = await supabase.rpc("hon_mis_datos_pago_guardar", {
     p_metodo: metodo, p_titular: String(f.get("titular") ?? "").slice(0, 120), p_banco: String(f.get("banco") ?? "").slice(0, 60), p_clabe: clabe || null,
