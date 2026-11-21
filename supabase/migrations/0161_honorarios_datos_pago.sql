@@ -24,6 +24,9 @@ create table if not exists hon_datos_pago (
   clabe text not null check (clabe_valida(clabe)),
   updated_at timestamptz not null default now()
 );
+-- Si ya existía (versión anterior de este script): CLABE y titular obligatorios.
+alter table hon_datos_pago drop constraint if exists hon_datos_pago_check;
+alter table hon_datos_pago alter column titular set not null, alter column clabe set not null;
 alter table hon_datos_pago enable row level security;
 revoke all on hon_datos_pago from anon;
 drop policy if exists hon_datos_pago_cabezas on hon_datos_pago;
