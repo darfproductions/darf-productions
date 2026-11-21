@@ -16,7 +16,7 @@ Diseño: lienzo "DARF App — Diseño visual" (modo noche, modo día y funciones
 | Obra | Con los colores de la obra; funciones, zonas y precios (si la obra los muestra), cómo llegar, compartir | `productions`, `performances`, `performance_price_categories` |
 | Boletos | QR de boletos pagados, pendientes con WhatsApp, funciones pasadas | `orders` + `tickets` de la persona (RLS) |
 | Cuenta | Apariencia (Auto, Día o Noche), Club de Fans, contacto, cerrar sesión, eliminar cuenta | sesión de Supabase |
-| Acceso | Entrar con correo y contraseña (con captcha) | Supabase Auth |
+| Acceso | Continuar con Apple (iPhone), con Google, o con correo y contraseña (con captcha) | Supabase Auth |
 
 **Modo día y noche:** cada obra trae su kit de colores (el mismo de la web) para un modo; el otro se deriva con
 `lib/tema.ts` (en día, una versión aclarada del tono de la obra; en noche, una oscurecida), siempre con contraste
@@ -49,18 +49,35 @@ npx cap open android  # abre Android Studio → elige tu teléfono → ▶
 Ícono y pantalla de arranque: las imágenes fuente están en `recursos/`. Si cambian:
 `npx capacitor-assets generate --assetPath recursos --ios --android`.
 
+## Entrar con Apple y con Google
+
+- **Google** (iPhone, Android y navegador): flujo OAuth con PKCE de Supabase (`src/lib/entrar-social.ts`). Se abre la
+  pantalla de Google en el navegador del sistema y Supabase regresa a la app con
+  `com.darfproductions.app://auth/callback?code=…` (registrado en `ios/App/App/Info.plist` y en
+  `android/app/src/main/AndroidManifest.xml`); `App.tsx` cambia el código por la sesión. Usa el mismo proveedor de
+  Google que ya usa la web.
+- **Apple** (solo iPhone, que es donde Apple lo exige): ventana nativa con Face ID mediante el complemento propio
+  `plugins/darf-apple` (Swift, sin dependencias externas). Entrega un token que Supabase acepta con
+  `signInWithIdToken`. El permiso "Sign in with Apple" está en `ios/App/App/App.entitlements`.
+
+### Lo que hay que configurar (una sola vez)
+
+1. **Supabase → Authentication → URL Configuration → Redirect URLs:** agregar
+   `com.darfproductions.app://auth/callback`. Sin esto, Google regresa a la web en vez de a la app.
+2. **Apple Developer → Identifiers → `com.darfproductions.app`:** activar *Sign in with Apple*.
+3. **Supabase → Authentication → Sign In / Providers → Apple:** activarlo y en *Client IDs* poner
+   `com.darfproductions.app`. Para el inicio nativo del iPhone no hace falta la llave secreta (solo se necesitaría
+   para ofrecer Apple en la web o en Android).
+
 ## Pendientes antes de publicar
 
-1. **Captcha dentro de la app.** La base pide Cloudflare Turnstile para entrar. La app se sirve como
-   `app.darfproductions.com` (ver `capacitor.config.ts`): hay que agregar ese dominio en Cloudflare → Turnstile →
-   el widget de DARF → *Hostnames*. En iOS la dirección es `capacitor://app.darfproductions.com`; hay que probar
-   en un iPhone que Turnstile la acepte. Si no, la alternativa es entrar con Apple o Google con su inicio de sesión
-   nativo.
-2. **Entrar con Apple y con Google.** Apple lo exige si la app ofrece Google.
-3. **Comprar dentro de la app** (mapa de asientos y orden) en lugar de abrir la web.
-4. **Boletos sin conexión:** guardar los QR en el teléfono.
-5. **Notificaciones push** (la web ya tiene `push.ts` y `apns.ts`).
-6. **Funciones del celular del diseño:** Wallet, widgets, aviso en pantalla de bloqueo el día de la función y el
+1. **Probar el captcha en un iPhone.** En iOS la dirección de la app es `capacitor://app.darfproductions.com`; hay
+   que confirmar que Turnstile la acepte (en Android es `https://app.darfproductions.com`, ya permitido en
+   Cloudflare). Google no pasa por el captcha; correo y Apple sí.
+2. **Comprar dentro de la app** (mapa de asientos y orden) en lugar de abrir la web.
+3. **Boletos sin conexión:** guardar los QR en el teléfono.
+4. **Notificaciones push** (la web ya tiene `push.ts` y `apns.ts`).
+5. **Funciones del celular del diseño:** Wallet, widgets, aviso en pantalla de bloqueo el día de la función y el
    cambio de ícono automático (Club de Fans → dorado, Casa DARF → holográfico; recursos en `public/marca/`).
-7. **Eliminar cuenta dentro de la app** (hoy abre la web; las tiendas aceptan que sea en la app).
-8. Cuentas de Apple Developer y Google Play, fichas de las tiendas y política de privacidad.
+6. **Eliminar cuenta dentro de la app** (hoy abre la web).
+7. Cuentas de Apple Developer y Google Play, fichas de las tiendas y política de privacidad.

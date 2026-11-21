@@ -17,5 +17,7 @@ export const supabase = createClient(env.supabaseUrl, env.supabasePublishableKey
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: false,
+    // PKCE: Google regresa a la app con un código (no con la sesión en la liga); ver lib/entrar-social.ts.
+    flowType: "pkce",
   },
 });

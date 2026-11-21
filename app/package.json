@@ -24,6 +24,7 @@
     "@capacitor/status-bar": "8.0.4",
     "@fontsource-variable/montserrat": "5.2.8",
     "@supabase/supabase-js": "2.117.3",
+    "darf-apple": "file:plugins/darf-apple",
     "qrcode": "1.5.4",
     "react": "19.2.8",
     "react-dom": "19.2.8",

@@ -1,0 +1,13 @@
+{
+  "name": "darf-apple",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Iniciar sesión con Apple (ventana nativa de iOS) para la app DARF. Solo iOS.",
+  "license": "UNLICENSED",
+  "capacitor": {
+    "ios": { "src": "ios" }
+  },
+  "peerDependencies": {
+    "@capacitor/core": ">=8.0.0"
+  }
+}

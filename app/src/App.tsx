@@ -4,6 +4,7 @@ import { App as AppNativa } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
 import { Barra } from "~/componentes/Barra";
 import { AparienciaProvider } from "~/lib/apariencia";
+import { completarRegreso, REGRESO } from "~/lib/entrar-social";
 import { SesionProvider } from "~/lib/sesion";
 import { Acceso } from "~/pantallas/Acceso";
 import { Boletos } from "~/pantallas/Boletos";
@@ -20,6 +21,18 @@ function Marco() {
   const navegar = useNavigate();
 
   useEffect(() => window.scrollTo(0, 0), [pathname]);
+
+  // Regreso de "Continuar con Google" (com.darfproductions.app://auth/callback?code=…): abre la sesión.
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+    const h = AppNativa.addListener("appUrlOpen", ({ url }) => {
+      if (!url.startsWith(REGRESO)) return;
+      completarRegreso(url)
+        .then((ok) => ok && navegar("/", { replace: true }))
+        .catch(() => navegar("/acceso?error=regreso", { replace: true }));
+    });
+    return () => { h.then((x) => x.remove()); };
+  }, [navegar]);
 
   // Botón "atrás" de Android: regresa dentro de la app; en Inicio, sale.
   useEffect(() => {
