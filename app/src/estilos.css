@@ -1,0 +1,164 @@
+/* DARF App — estilos base. Los colores son variables: DARF noche/día (abajo) y, en las pantallas de una obra,
+   la paleta de esa obra (lib/tema.ts → variables()). Diseño: lienzo "DARF App — Diseño visual". */
+
+@import "@fontsource-variable/montserrat";
+
+:root,
+:root[data-modo="noche"] {
+  --fondo: #0b0b0b;
+  --superficie: #141414;
+  --tarjeta: #1c1c1c;
+  --texto: #ffffff;
+  --suave: #999999;
+  --linea: #333333;
+  --linea-2: #252525;
+  --acento: #e5445a;
+  --sobre-acento: #ffffff;
+  --dorado: #d7bb5f;
+  --dorado-texto: #d7bb5f;
+  --barra: rgba(28, 28, 28, 0.9);
+  --barra-borde: #333333;
+  --pestana-activa: #333333;
+  --sombra: 0 10px 30px rgba(0, 0, 0, 0.5);
+  --brillo: radial-gradient(circle, rgba(123, 47, 190, 0.3) 0%, rgba(123, 47, 190, 0) 70%);
+  color-scheme: dark;
+}
+
+:root[data-modo="dia"] {
+  --fondo: #f4f4f4;
+  --superficie: #ffffff;
+  --tarjeta: #ffffff;
+  --texto: #0b0b0b;
+  --suave: #5f5f5f;
+  --linea: #e0e0e0;
+  --linea-2: #ebebeb;
+  --acento: #c73350;
+  --sobre-acento: #ffffff;
+  --dorado-texto: #8a7425;
+  --barra: rgba(255, 255, 255, 0.92);
+  --barra-borde: #e0e0e0;
+  --pestana-activa: #efeaf6;
+  --sombra: 0 10px 30px rgba(0, 0, 0, 0.12);
+  --brillo: radial-gradient(circle, rgba(123, 47, 190, 0.12) 0%, rgba(123, 47, 190, 0) 70%);
+  color-scheme: light;
+}
+
+:root {
+  --degradado: linear-gradient(135deg, #7b2fbe, #e5445a);
+  --arriba: env(safe-area-inset-top, 0px);
+  --abajo: env(safe-area-inset-bottom, 0px);
+  --fuente: "Montserrat Variable", "Helvetica Neue", Arial, sans-serif;
+}
+
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+html, body, #raiz { margin: 0; min-height: 100%; }
+body {
+  background: var(--fondo);
+  color: var(--texto);
+  font-family: var(--fuente);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
+img { display: block; max-width: 100%; }
+button, input { font: inherit; color: inherit; }
+a { color: inherit; text-decoration: none; }
+:focus-visible { outline: 2px solid var(--acento); outline-offset: 2px; }
+
+.oculto { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ── Pantalla ─────────────────────────────────────────────────────────── */
+.pantalla {
+  position: relative;
+  min-height: 100dvh;
+  background: var(--fondo);
+  color: var(--texto);
+  padding: calc(var(--arriba) + 14px) 20px calc(var(--abajo) + 110px);
+  overflow-x: hidden;
+}
+.pantalla.sin-barra { padding-bottom: calc(var(--abajo) + 130px); }
+.pantalla.completa { padding-top: 0; padding-left: 0; padding-right: 0; }
+.brillo { position: absolute; left: -160px; top: -140px; width: 440px; height: 440px; border-radius: 50%; background: var(--brillo); pointer-events: none; }
+.contenido { position: relative; display: flex; flex-direction: column; }
+
+.titulo-grande { margin: 0; font-size: 28px; font-weight: 900; letter-spacing: -0.025em; }
+.titulo-seccion { margin: 0; font-size: 17px; font-weight: 900; letter-spacing: -0.01em; }
+.etiqueta { font-size: 11px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; color: var(--acento); }
+.suave { color: var(--suave); }
+.texto-degradado { background: var(--degradado); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+/* ── Botones ──────────────────────────────────────────────────────────── */
+.boton {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  min-height: 52px; padding: 0 22px; border-radius: 26px; border: none; cursor: pointer;
+  font-size: 13px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase;
+}
+.boton:disabled { opacity: 0.5; cursor: default; }
+.boton.principal { background: var(--degradado); color: #ffffff; }
+.boton.acento { background: var(--boton, var(--acento)); color: var(--sobre-boton, var(--sobre-acento)); }
+.boton.contorno { background: transparent; border: 1.5px solid var(--linea); color: var(--texto); }
+.boton.tarjeta { background: var(--tarjeta); border: 1px solid var(--linea); color: var(--texto); text-transform: none; letter-spacing: 0; font-size: 15px; font-weight: 700; }
+.boton.texto { background: transparent; color: var(--suave); text-transform: none; letter-spacing: 0; font-weight: 600; font-size: 14px; min-height: 44px; }
+.circulo {
+  width: 44px; height: 44px; flex-shrink: 0; border-radius: 22px; padding: 0; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--tarjeta); border: 1px solid var(--linea); color: var(--texto);
+}
+.circulo.vidrio { background: rgba(11, 11, 11, 0.55); border: none; color: #ffffff; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+
+/* ── Tarjetas y listas ────────────────────────────────────────────────── */
+.tarjeta { background: var(--tarjeta); border: 1px solid var(--linea-2, var(--linea)); border-radius: 20px; }
+.lista { display: flex; flex-direction: column; overflow: hidden; }
+.fila {
+  min-height: 52px; padding: 10px 16px; display: flex; align-items: center; gap: 14px;
+  border-bottom: 1px solid var(--linea-2, var(--linea)); font-size: 14px; font-weight: 600;
+  background: transparent; border-left: none; border-right: none; border-top: none; text-align: left; width: 100%; cursor: pointer;
+}
+.fila:last-child { border-bottom: none; }
+.fila .crece { flex: 1; }
+.pildora { display: inline-flex; align-items: center; padding: 6px 12px; border-radius: 100px; font-size: 10px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
+
+.segmentos { display: grid; grid-auto-columns: minmax(0, 1fr); grid-auto-flow: column; gap: 4px; padding: 4px; height: 44px; border-radius: 22px; background: var(--linea-2, var(--linea)); }
+.segmentos button { border: none; border-radius: 18px; background: transparent; color: var(--suave); font-size: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.segmentos button[aria-checked="true"], .segmentos button[aria-selected="true"] { background: var(--tarjeta); color: var(--texto); box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12); }
+
+.interruptor { width: 50px; height: 30px; flex-shrink: 0; border-radius: 15px; border: none; padding: 4px; cursor: pointer; display: flex; background: var(--linea); }
+.interruptor[aria-checked="true"] { justify-content: flex-end; background: var(--degradado); }
+.interruptor span { width: 22px; height: 22px; border-radius: 11px; background: #ffffff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25); }
+
+.campo { display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 700; }
+.campo input {
+  height: 52px; border-radius: 14px; border: 1px solid var(--linea); background: var(--tarjeta);
+  padding: 0 16px; font-size: 16px; font-weight: 500;
+}
+.aviso { padding: 12px 14px; border-radius: 14px; background: var(--tarjeta); border: 1px solid var(--linea); font-size: 13px; line-height: 1.5; }
+.aviso.error { border-color: var(--acento); }
+
+/* ── Barra de pestañas flotante ───────────────────────────────────────── */
+.barra {
+  position: fixed; left: 14px; right: 14px; bottom: calc(var(--abajo) + 14px); z-index: 20;
+  height: 64px; padding: 6px; display: flex; gap: 4px; border-radius: 32px;
+  background: var(--barra); border: 1px solid var(--barra-borde); box-shadow: var(--sombra);
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  max-width: 560px; margin: 0 auto;
+}
+.barra a {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  border-radius: 26px; font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--suave);
+}
+.barra a[aria-current="page"] { color: var(--texto); background: var(--pestana-activa); }
+
+/* ── Hoja inferior (CTA de la obra) ───────────────────────────────────── */
+.pie {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+  padding: 14px 20px calc(var(--abajo) + 18px); display: flex; align-items: center; gap: 16px;
+  background: var(--pie-fondo, var(--fondo)); color: var(--pie-texto, var(--texto)); border-top: 1px solid var(--linea);
+}
+
+.cargando { padding: 40px 0; text-align: center; color: var(--suave); font-size: 14px; }
+.esqueleto { background: var(--linea-2, var(--linea)); border-radius: 20px; animation: latido 1.2s ease-in-out infinite; }
+@keyframes latido { 50% { opacity: 0.55; } }
+@media (prefers-reduced-motion: reduce) { .esqueleto { animation: none; } }

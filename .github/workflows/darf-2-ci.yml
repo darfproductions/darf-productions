@@ -44,3 +44,26 @@ jobs:
       - run: npm test
       - run: npm run lint
       - run: npm run build
+
+  app:
+    name: App móvil (tipos, pruebas y construcción)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    env:
+      # Valores públicos de Supabase DEV (los mismos de app/.env.example).
+      VITE_DARF_ENV: DEV
+      VITE_SUPABASE_URL: https://qgywscczyzuqinutuvak.supabase.co
+      VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_sNdLJ6lK6-0gAESg6hkQxQ_YSqusOUM
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - run: npm ci
+      # La app reutiliza reglas de web/src/lib: si un cambio en la web las rompe, falla aquí.
+      - run: npm test
+      - run: npm run build
