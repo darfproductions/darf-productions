@@ -26,7 +26,7 @@ export function DatosPago({ inicial }: { inicial: DatosPagoFila }) {
         ))}
       </fieldset>
       <div className="grid gap-3 sm:grid-cols-2">
-        <label className="flex flex-col gap-1.5 text-sm font-semibold sm:col-span-2">CLABE * <span className="text-xs font-normal text-texto-3">(aunque prefieras efectivo, por cualquier cosa)</span>
+        <label className="flex flex-col gap-1.5 text-sm font-semibold sm:col-span-2">CLABE * <span className="text-xs font-normal text-texto-3">(aunque prefieras efectivo, necesitamos tu información de cuenta)</span>
           <input className={`${campo} font-mono tracking-wider`} name="clabe" inputMode="numeric" autoComplete="off" value={clabe} placeholder="18 dígitos"
             onChange={(e) => { setClabe(e.target.value); const b = bancoDeClabe(e.target.value); if (b && !banco) setBanco(b); }} />
           {aviso && <span className="text-xs font-normal text-aviso">{aviso}</span>}

@@ -12,7 +12,7 @@ do $$ begin
 end $$;
 -- 0161 · Honorarios: cómo quiere cobrar cada quien (Diego 2026-11-21).
 --   * En Mi cuenta, Mis honorarios: cada persona elige transferencia o efectivo y pone su CLABE y titular (siempre,
---     aunque prefiera efectivo, por cualquier cosa). Las 4 cabezas la ven en Honorarios (El mes y los cierres), junto
+--     aunque prefiera efectivo, necesitamos su información de cuenta). Las 4 cabezas la ven en Honorarios (El mes y los cierres), junto
 --     al pago de cada persona, para depositar. Mientras falte, le sale un aviso como el del expediente (0160).
 --   * Mis honorarios le sale a quien cobra: los creativos de cualquier obra y el elenco (reparto o ensamble) de obras
 --     tipo profesional; y a quien ya tenga pagos o una bolsa asignada.
@@ -76,7 +76,7 @@ begin
   if auth.uid() is null then raise exception 'Inicia sesión.'; end if;
   if p_metodo not in ('transferencia', 'efectivo') then raise exception 'Elige transferencia o efectivo.'; end if;
   if v_clabe is not null and not clabe_valida(v_clabe) then raise exception 'La CLABE no es válida: revisa los 18 dígitos.'; end if;
-  if v_clabe is null then raise exception 'Pon tu CLABE (aunque prefieras efectivo, por cualquier cosa).'; end if;
+  if v_clabe is null then raise exception 'Pon tu CLABE: aunque prefieras efectivo, necesitamos tu información de cuenta.'; end if;
   if coalesce(length(btrim(p_titular)), 0) < 2 then raise exception 'Pon el nombre del titular de la cuenta.'; end if;
   if not exists (select 1 from people where profile_id = auth.uid()) then
     raise exception 'Tu cuenta todavía no está ligada a tu ficha del equipo. Pídele a la producción que la ligue.';
