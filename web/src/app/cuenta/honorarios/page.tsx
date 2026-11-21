@@ -8,6 +8,7 @@ import { diaDePago, lineaParte, type Parte } from "@/lib/honorarios-rules";
 import { createClient } from "@/lib/supabase/server";
 import { ActionForm } from "@/components/panel/ActionForm";
 import { yaMeLlego, yaMeLlegoCierre } from "./actions";
+import { DatosPago, type DatosPagoFila } from "./DatosPago";
 
 export const metadata: Metadata = { title: "Mis honorarios" };
 
@@ -28,6 +29,11 @@ export default async function MisHonorarios() {
   const paths = [...meses, ...cierres].map((m) => m.comprobante_path).filter((x): x is string => !!x);
   const firmadas = paths.length ? (await supabase.storage.from("honorarios").createSignedUrls(paths, 600)).data ?? [] : [];
   const urlDe = new Map(firmadas.filter((x) => x.signedUrl).map((x) => [x.path, x.signedUrl as string]));
+  // 0161: a quién le toca (creativos y elenco de obras profesionales) y cómo quiere cobrar.
+  const [{ data: aplica }, { data: dp }] = await Promise.all([
+    supabase.rpc("mis_honorarios_aplica"),
+    supabase.from("hon_datos_pago").select("metodo, titular, banco, clabe").order("updated_at", { ascending: false }).limit(1).maybeSingle(),
+  ]);
   const anio = new Date().getFullYear();
   const delAnio = meses.filter((m) => m.periodo.startsWith(String(anio))).reduce((s, m) => s + Number(m.pago), 0)
     + cierres.filter((c) => c.pagado_at?.startsWith(String(anio))).reduce((s, c) => s + Number(c.pago), 0);
@@ -35,11 +41,19 @@ export default async function MisHonorarios() {
   return (
     <main className="mx-auto flex max-w-3xl flex-col gap-6 px-5 pb-16 md:px-8">
       <PageHeading eyebrow="Mi cuenta" title="Mis honorarios">
-        Lo que DARF te paga cada mes (de las mensualidades de los talleres) y de qué bolsa sale cada peso.
+        Cómo quieres cobrar y lo que DARF te ha pagado: cuánto, cuándo y de qué (cada mes y en los cierres de temporada).
       </PageHeading>
       <Link href="/cuenta" className="text-sm font-bold text-violeta-claro"><Icono nombre="flecha-izq" /> Mi cuenta</Link>
+      {aplica ? (
+        <section aria-labelledby="como-cobro" className="flex flex-col gap-3 rounded-2xl bg-telon p-6">
+          <h2 id="como-cobro" className="titular text-xl">Cómo quiero cobrar</h2>
+          <DatosPago inicial={(dp as DatosPagoFila) ?? null} />
+        </section>
+      ) : meses.length === 0 && cierres.length === 0 ? (
+        <p className="rounded-2xl bg-telon p-6 text-texto-2">Mis honorarios es para el equipo creativo de las obras y el elenco de las obras profesionales.</p>
+      ) : null}
       {meses.length === 0 && cierres.length === 0 ? (
-        <p className="rounded-2xl bg-telon p-6 text-texto-2">Todavía no hay meses cerrados con un pago para ti.</p>
+        aplica ? <p className="rounded-2xl bg-telon p-6 text-texto-2">Todavía no hay pagos para ti. Aquí vas a ver cada pago: cuánto, cuándo y de qué.</p> : null
       ) : (
         <>
           <div className="rounded-2xl bg-telon p-6">

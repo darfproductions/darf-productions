@@ -42,7 +42,8 @@ import { estadoOrden } from "@/lib/ventas-rules";
 import { AgregarCalendario } from "@/components/AgregarCalendario";
 import { MiCalendario } from "./MiCalendario";
 import { ExpedienteAviso } from "@/components/ExpedienteAviso";
-import { getMiExpedienteFalta } from "@/lib/expediente-aviso";
+import { getMiDatosPagoFalta, getMiExpedienteFalta } from "@/lib/expediente-aviso";
+import { DatosPagoAviso } from "@/components/DatosPagoAviso";
 import { VoyAIr } from "@/components/tickets/VoyAIr";
 import { isoMx } from "@/lib/dates";
 import { Icono } from "@/components/Icono";
@@ -91,9 +92,11 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
   const supabase = await createClient();
   const sitio = await origenSitio();
   // 0160: aviso si a mi expediente le falta algo (solo equipo con créditos).
-  const expFalta = await getMiExpedienteFalta();
+  const [expFalta, pagoFalta] = await Promise.all([getMiExpedienteFalta(), getMiDatosPagoFalta()]);
   // Honorarios (0150): si ya tengo algún mes pagado, la tarjeta a "Mis honorarios".
   const { count: mesesHon } = await supabase.from("hon_mes_personas").select("periodo", { count: "exact", head: true });
+  // 0161: Mis honorarios, para creativos y elenco de obras profesionales (o quien ya tenga pagos).
+  const { data: honAplica } = await supabase.rpc("mis_honorarios_aplica");
   // Lo que no depende de las órdenes se pide desde ya, junto con ellas (la página tarda lo de la consulta más lenta).
   const resto = Promise.all([
     listMyApplications(session.userId), listMyInvites(), listMyOffers(), supabase.rpc("my_productions"), supabase.rpc("my_unread_announcements"),
@@ -329,6 +332,7 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
             </span>
           </div>
           <ExpedienteAviso faltan={expFalta} />
+          <DatosPagoAviso falta={pagoFalta} />
           {notis.length === 0 ? <p className="text-sm text-texto-2">No tienes notificaciones. Aquí te avisamos cuando se aprueben tus boletos, antes de tu función y cuando respondan tus solicitudes.</p> : (
             <ul className="flex flex-col divide-y divide-white/10 text-sm">
               {notis.map((n) => (
@@ -571,10 +575,10 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
               <span className="text-xs text-texto-2">Lo que apartaste, tus pagos y las funciones a las que fuiste.</span>
             </a>
           </div>
-          {(mesesHon ?? 0) > 0 && (
+          {((mesesHon ?? 0) > 0 || honAplica === true) && (
             <a href="/cuenta/honorarios" className="flex flex-col gap-1 rounded-2xl bg-telon p-6 hover:bg-telon-2">
               <span className="text-lg font-bold">Mis honorarios <Icono nombre="flecha-der" /></span>
-              <span className="text-sm text-texto-2">Lo que DARF te paga cada mes y de qué bolsa sale cada peso.</span>
+              <span className="text-sm text-texto-2">Tu CLABE o si prefieres efectivo, y todo lo que DARF te ha pagado.</span>
             </a>
           )}
           <a href="/cuenta/perfil-profesional" className="flex flex-col gap-1 rounded-2xl bg-telon p-6 hover:bg-telon-2">

@@ -4,10 +4,11 @@ import { ActionForm } from "@/components/panel/ActionForm";
 import { Icono } from "@/components/Icono";
 import { Card, PanelTitle, input } from "@/components/panel/ui";
 import { isoMx, mayus } from "@/lib/dates";
-import { getMes, type PagoMes } from "@/lib/honorarios";
+import { datosPagoDe, getMes, type PagoMes } from "@/lib/honorarios";
 import { lineaParte, type MesResultado } from "@/lib/honorarios-rules";
 import { requireCabeza } from "@/lib/permissions";
 import { aprobarFondo, cerrarMes, guardarEmergencia } from "../actions";
+import { DatoPagoPersona } from "../DatoPagoPersona";
 import { Comprobante } from "./Comprobante";
 
 export const metadata: Metadata = { title: "Honorarios del mes" };
@@ -38,6 +39,8 @@ export default async function HonorariosMes({ searchParams }: PageProps<"/panel/
   const personas = cerrado
     ? d.personasCerrado.map((p) => ({ persona: p.person_id, nombre: p.nombre, pago: Number(p.pago), bruto: Number(p.bruto), partes: p.partes, pagadoAt: p.pagado_at, url: p.comprobanteUrl, recibidoAt: p.recibido_at }))
     : (r?.personas ?? []).map((p) => ({ ...p, pagadoAt: null as string | null, url: null as string | null, recibidoAt: null as string | null }));
+  // 0161: cómo quiere cobrar cada persona (CLABE o efectivo).
+  const pagoDe = await datosPagoDe(personas.map((p) => p.persona));
   const pagados = personas.filter((p) => p.pagadoAt).length;
   const yaCorte = hoy >= d.corte;
   const yoCabeza = d.fondo.cabezas.some((c) => c.user_id === access.session.userId);
@@ -139,7 +142,7 @@ export default async function HonorariosMes({ searchParams }: PageProps<"/panel/
                 <tbody>
                   {personas.map((p) => (
                     <tr key={p.persona} className="border-t border-white/10 align-top">
-                      <td className="py-2 font-semibold">{p.nombre}</td>
+                      <td className="py-2 font-semibold">{p.nombre}{p.pago > 0 && <DatoPagoPersona d={pagoDe.get(p.persona)} />}</td>
                       <td className="py-2 text-texto-2">{p.partes.map((x, i) => <span key={i} className="block">{lineaParte(x, d.nombres)}</span>)}</td>
                       <td className="py-2 text-right text-base font-black">{pesosRed(p.pago)}<span className="block text-[11px] font-normal text-texto-3">de {pesos(p.bruto)}</span>
                         {cerrado && p.pago > 0 && (

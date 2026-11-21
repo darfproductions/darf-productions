@@ -5,6 +5,14 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-11-21 — 0161: Honorarios, cómo quiere cobrar cada quien
+
+Diego: en Mi cuenta, Mis honorarios, cada quien elige transferencia o efectivo y pone su CLABE y titular, siempre (aunque
+prefiera efectivo; se valida el dígito verificador y se adivina el banco). Mientras falte, le sale un aviso arriba de
+sus notificaciones (`mi_datos_pago_falta`), como el del expediente. A Pato le salen todas en Honorarios (El mes y los cierres) junto al pago de cada
+persona, con botón para copiar. Mis honorarios solo le sale a los creativos de cada obra y al elenco de obras
+profesionales (o a quien ya tenga pagos): `mis_honorarios_aplica`, `hon_datos_pago`, `hon_mis_datos_pago_guardar`.
+
 ## 2026-11-21 — 0160: Aviso de expediente incompleto
 
 Diego: a todo el equipo (quien tiene créditos en DARF) le sale un aviso en sus notificaciones, en el panel y en Mi
