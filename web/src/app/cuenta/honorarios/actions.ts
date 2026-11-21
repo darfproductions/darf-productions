@@ -28,3 +28,20 @@ export async function yaMeLlegoCierre(_p: LlegoState, f: FormData): Promise<Lleg
   revalidatePath("/cuenta/honorarios");
   return { ok: true, message: "¡Gracias! Quedó confirmado." };
 }
+
+export type DatosPagoState = { ok: boolean; message: string } | null;
+
+/** 0161: cómo quiero cobrar (transferencia con CLABE o efectivo). Lo ven las cabezas para depositar. */
+export async function guardarDatosPago(_p: DatosPagoState, f: FormData): Promise<DatosPagoState> {
+  const metodo = String(f.get("metodo") ?? "") === "efectivo" ? "efectivo" : "transferencia";
+  const clabe = String(f.get("clabe") ?? "").replace(/\D/g, "");
+  if (metodo === "transferencia" && clabe.length !== 18) return { ok: false, message: "La CLABE tiene 18 dígitos." };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("hon_mis_datos_pago_guardar", {
+    p_metodo: metodo, p_titular: String(f.get("titular") ?? "").slice(0, 120), p_banco: String(f.get("banco") ?? "").slice(0, 60), p_clabe: clabe || null,
+  });
+  if (error) return { ok: false, message: mensajeError(error) };
+  revalidatePath("/cuenta/honorarios");
+  revalidatePath("/panel/honorarios", "layout");
+  return { ok: true, message: "Guardado. Pato ya lo ve para tus pagos." };
+}

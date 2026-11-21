@@ -4,10 +4,11 @@ import { notFound } from "next/navigation";
 import { ActionForm } from "@/components/panel/ActionForm";
 import { Icono } from "@/components/Icono";
 import { Card, PanelTitle, input } from "@/components/panel/ui";
-import { getCierre } from "@/lib/honorarios";
+import { datosPagoDe, getCierre } from "@/lib/honorarios";
 import { lineaParte, type CierreResultado, type PagoPersona } from "@/lib/honorarios-rules";
 import { requireCabeza } from "@/lib/permissions";
 import { agregarPartida, cerrarCierre, guardarCierre, quitarPartida } from "../../actions";
+import { DatoPagoPersona } from "../../DatoPagoPersona";
 import { Comprobante } from "../../mes/Comprobante";
 
 export const metadata: Metadata = { title: "Cierre de temporada" };
@@ -30,6 +31,8 @@ export default async function Cierre({ params }: PageProps<"/panel/honorarios/ci
   const personas: (PagoPersona & { pagadoAt?: string | null; url?: string | null; recibidoAt?: string | null; folio?: string | null })[] = cerrado
     ? d.personas.map((p) => ({ persona: p.person_id, nombre: p.nombre, pago: Number(p.pago), bruto: Number(p.bruto), partes: p.partes, pagadoAt: p.pagado_at, url: p.comprobanteUrl, recibidoAt: p.recibido_at, folio: p.folio }))
     : r?.personas ?? [];
+  // 0161: cómo quiere cobrar cada persona (CLABE o efectivo).
+  const pagoDe = await datosPagoDe(personas.map((p) => p.persona));
   const entrada = cerrado && r?.entrada ? r.entrada : { boletos: d.boletos, patrocinios: d.patrocinios, costos: d.costos, prestamos: Number(c.prestamos) };
   const bloquea = !cerrado && (r?.errores ?? []).some((e) => e.includes("suman") || e.includes("suma ") || e.includes("no pertenece"));
 
@@ -105,7 +108,7 @@ export default async function Cierre({ params }: PageProps<"/panel/honorarios/ci
                 <tbody>
                   {personas.map((p) => (
                     <tr key={p.persona} className="border-t border-white/10 align-top">
-                      <td className="py-2 font-semibold">{p.nombre}{p.folio && <span className="block font-mono text-[11px] font-normal text-texto-3">{p.folio}</span>}</td>
+                      <td className="py-2 font-semibold">{p.nombre}{p.folio && <span className="block font-mono text-[11px] font-normal text-texto-3">{p.folio}</span>}{p.pago > 0 && <DatoPagoPersona d={pagoDe.get(p.persona)} />}</td>
                       <td className="py-2 text-texto-2">{p.partes.map((x, i) => <span key={i} className="block">{lineaParte(x, d.nombres)}</span>)}</td>
                       <td className="py-2 text-right text-base font-black">{pesosRed(p.pago)}<span className="block text-[11px] font-normal text-texto-3">de {pesos(p.bruto)}</span>
                         {cerrado && p.pago > 0 && (
