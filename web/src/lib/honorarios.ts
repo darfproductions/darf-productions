@@ -270,3 +270,14 @@ export async function getCierre(id: string) {
     personas: personas.map((p) => ({ ...p, comprobanteUrl: p.comprobante_path ? urlDe.get(p.comprobante_path) ?? null : null })),
   };
 }
+
+// ──────── 0161: cómo quiere cobrar cada persona ────────
+
+export type DatoPago = { person_id: string; metodo: "transferencia" | "efectivo"; titular: string | null; banco: string | null; clabe: string | null };
+
+/** Datos de pago de varias personas (solo las cabezas los leen). */
+export async function datosPagoDe(ids: string[]): Promise<Map<string, DatoPago>> {
+  if (!ids.length) return new Map();
+  const { data } = await (await createClient()).from("hon_datos_pago").select("person_id, metodo, titular, banco, clabe").in("person_id", ids);
+  return new Map(((data ?? []) as DatoPago[]).map((d) => [d.person_id, d]));
+}

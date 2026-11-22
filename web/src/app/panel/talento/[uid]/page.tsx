@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { Card, PanelTitle } from "@/components/panel/ui";
 import { ESTADO_SOLICITUD, score } from "@/lib/audition-rules";
 import { ESTADO_OFERTA, TIPO_CREDITO } from "@/lib/casting-rules";
-import { NIVEL_INCIDENCIA, TIPO_INCIDENCIA, mesNombre, pesos } from "@/lib/member-rules";
+import { GENEROS, NIVEL_INCIDENCIA, TIPO_INCIDENCIA, edad, mesNombre, pesos } from "@/lib/member-rules";
 import { METODOS } from "@/lib/pago-rules";
 import { casa } from "@/lib/panel-nav";
 import { estadoDoc, pestanaValida, pestanasFicha, porObra, type PersonaFicha } from "@/lib/persona-rules";
@@ -54,6 +54,10 @@ export default async function TalentPage({ params, searchParams }: PageProps<"/p
   const { data: compras } = casa(access, "casa.personas") ? await supabase.rpc("talent_purchases", { uid }) : { data: [] };
   const misCompras = (compras ?? []) as { order_code: string; obra: string; funcion: string; estado: string; total: number; boletos: number; asistio: number; created_at: string }[];
   const { data: persona } = await supabase.from("people").select("id, nombre").eq("profile_id", uid).maybeSingle();
+  // 0159: de quien es del equipo (con créditos): edad, género y su expediente personal.
+  const { data: dp } = casa(access, "casa.personas") ? await supabase.rpc("persona_datos", { uid }) : { data: null };
+  const datos = dp as { con_creditos: boolean; fecha_nacimiento?: string | null; genero?: string | null; expediente_obra?: string | null } | null;
+  const anios = datos?.con_creditos ? edad(datos.fecha_nacimiento ?? null) : null;
   const obrasActivas = (ficha?.obras ?? []).filter((o) => o.integrante && !o.baja_at);
   const docsPend = (ficha?.documentos ?? []).filter((d) => d.obligatorio && !d.entregado_at).length;
   const incVig = (ficha?.incidencias ?? []).filter((i) => !i.anulada_at).length;
@@ -64,7 +68,16 @@ export default async function TalentPage({ params, searchParams }: PageProps<"/p
       <div className="flex flex-wrap items-center gap-2">
         {persona && casa(access, "casa.personas") && <NombreFicha id={persona.id as string} nombre={persona.nombre as string} />}
         {persona && <Link href={`/panel/talento/p/${persona.id}/perfil`} className="rounded-full border border-white/25 px-4 py-2 text-sm font-bold">Perfil profesional <Icono nombre="flecha-der" /></Link>}
+        {datos?.con_creditos && datos.expediente_obra && (
+          <Link href={`/panel/producciones/${datos.expediente_obra}/expedientes/${uid}`} className="rounded-full bg-texto px-4 py-2 text-sm font-bold text-sala">Expediente personal <Icono nombre="flecha-der" /></Link>
+        )}
       </div>
+      {datos?.con_creditos && (
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <div className="rounded-xl bg-telon p-3"><p className={sub}>Edad</p><p className="text-xl font-black">{anios != null ? `${anios} años` : <span className="text-base font-semibold text-texto-3">Sin fecha</span>}</p>{datos.fecha_nacimiento && <p className="text-xs text-texto-3">{dia(datos.fecha_nacimiento)}</p>}</div>
+          <div className="rounded-xl bg-telon p-3"><p className={sub}>Género</p><p className="text-xl font-black">{datos.genero ? GENEROS[datos.genero] ?? datos.genero : <span className="text-base font-semibold text-texto-3">Sin dato</span>}</p></div>
+        </div>
+      )}
 
       {ficha && (
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">

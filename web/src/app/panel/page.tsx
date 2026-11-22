@@ -12,6 +12,9 @@ import { requirePanel } from "@/lib/permissions";
 import { getTheme } from "@/lib/productions";
 import { createClient } from "@/lib/supabase/server";
 import { Icono } from "@/components/Icono";
+import { ExpedienteAviso } from "@/components/ExpedienteAviso";
+import { getMiDatosPagoFalta, getMiExpedienteFalta } from "@/lib/expediente-aviso";
+import { DatosPagoAviso } from "@/components/DatosPagoAviso";
 
 type Home = {
   funciones: { id: string; production_id: string; starts_at: string; venue: string | null }[];
@@ -32,12 +35,14 @@ export default async function PanelHome() {
   const access = await requirePanel("/panel");
   const supabase = await createClient();
   const ids = access.isDirector ? undefined : myProductionIds(access);
-  const [obras, pendientes, { data: homeData }, { data: roles }, notifs] = await Promise.all([
+  const [obras, pendientes, { data: homeData }, { data: roles }, notifs, expFalta, pagoFalta] = await Promise.all([
     listPanelProductions(ids),
     getPendientes(),
     supabase.rpc("panel_home"),
     supabase.from("panel_roles").select("id, nombre"),
     listNotifications({ limit: 8 }),
+    getMiExpedienteFalta(),
+    getMiDatosPagoFalta(),
   ]);
   const sinLeer = notifs.filter((n) => !n.read_at).length;
   const home: Home = { funciones: [], ensayos: [], juntas: [], eventos: [], cambios: [], ...((homeData ?? {}) as Partial<Home>) };
@@ -158,6 +163,8 @@ export default async function PanelHome() {
             <Link href="/panel/notificaciones" className="text-sm font-bold text-violeta-claro">Ver todas <Icono nombre="flecha-der" /></Link>
           </span>
         </div>
+        <ExpedienteAviso faltan={expFalta} />
+        <DatosPagoAviso falta={pagoFalta} />
         <NotificationList items={notifs} />
       </Card>
 

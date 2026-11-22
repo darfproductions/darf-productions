@@ -19,9 +19,9 @@ export async function GET(request: NextRequest) {
   else if (tokenHash && type) r = await supabase.auth.verifyOtp({ type, token_hash: tokenHash });
   const ok = !!r && !r.error && !!r.data.session;
 
-  // Si falla, se conserva a dónde iba (por ejemplo, la compra). Google cancelado o rechazado
+  // Si falla, se conserva a dónde iba (por ejemplo, la compra). Google o Apple cancelado o rechazado
   // llega con ?error=…: no es un enlace vencido.
-  const motivo = url.searchParams.get("error") ? "google" : "enlace";
+  const motivo = url.searchParams.get("error") ? (url.searchParams.get("via") === "apple" ? "apple" : "google") : "enlace";
   const destinoError = `/entrar?error=${motivo}${next !== "/cuenta" ? `&next=${encodeURIComponent(next)}` : ""}`;
   const res = NextResponse.redirect(new URL(ok ? next : destinoError, url.origin));
   // Enlace de "olvidé mi contraseña": deja poner una nueva sin la actual, por 15 minutos y solo a esa

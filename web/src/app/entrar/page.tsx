@@ -23,9 +23,9 @@ export default async function EntrarPage({ searchParams }: PageProps<"/entrar">)
             El enlace ya venció o ya se usó. Entra con tu correo y contraseña; si no la recuerdas, usa “¿Olvidaste tu contraseña?” para recibir uno nuevo.
           </p>
         )}
-        {sp.error === "google" && (
+        {(sp.error === "google" || sp.error === "apple") && (
           <p role="alert" className="rounded-xl border border-[#ff8fa3]/40 bg-[#3a1220] px-4 py-3 text-sm">
-            No se completó la entrada con Google (se canceló o Google no respondió). Intenta de nuevo o entra con tu correo.
+            No se completó la entrada con {sp.error === "apple" ? "Apple" : "Google"} (se canceló o no respondió). Intenta de nuevo o entra con tu correo.
           </p>
         )}
         <AuthForms next={next} captcha={env.turnstileSiteKey} />

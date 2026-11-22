@@ -2,7 +2,7 @@
 
 import { useActionState } from "react";
 import { saveMemberFile, type FileState } from "@/app/expediente/actions";
-import type { PersonFile } from "@/lib/member-rules";
+import { GENEROS, type PersonFile } from "@/lib/member-rules";
 import { MEDIDAS_VESTUARIO } from "@/lib/medidas";
 
 const field = "rounded-lg border border-white/10 bg-sala px-3 py-2.5 font-normal text-texto";
@@ -22,6 +22,12 @@ export function ExpedienteForm({ pid, uid, f, esMenor, propio }: { pid: string; 
         <legend className="mb-2 font-bold">Datos personales</legend>
         <label className={lbl}>Fecha de nacimiento *<input className={field} type="date" name="fecha_nacimiento" defaultValue={v("fecha_nacimiento")} /></label>
         <label className={lbl}>Teléfono *<input className={field} type="tel" name="telefono" defaultValue={v("telefono")} /></label>
+        <label className={lbl}>Género
+          <select className={field} name="genero" defaultValue={v("genero") as string}>
+            <option value="">—</option>
+            {Object.entries(GENEROS).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+          </select>
+        </label>
       </fieldset>
       <fieldset className="grid gap-3 sm:grid-cols-3">
         <legend className="mb-2 font-bold">Contacto de emergencia *</legend>

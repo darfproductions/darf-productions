@@ -74,7 +74,7 @@ export default async function Nosotros() {
         ) : grupos(equipo).map(([titulo, lista, cabezas]) => (
           <section key={titulo || "equipo"} aria-label={titulo || "Equipo"} className={cabezas ? "pb-16" : ""}>
           {titulo && <h2 className="mb-6 flex items-center gap-3 text-[11px] font-bold uppercase tracking-[0.32em] text-oro before:h-px before:w-8 before:bg-current">{titulo}</h2>}
-          <ul className={`grid gap-6 sm:grid-cols-2 ${cabezas ? "lg:grid-cols-4" : "lg:grid-cols-3 xl:grid-cols-4"}`}>
+          <ul className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
             {lista.map((m) => {
               const tarjeta = (
                 <>
