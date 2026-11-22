@@ -3,12 +3,12 @@ import { Link, useNavigate } from "react-router";
 import { Icono } from "~/componentes/Icono";
 import { Turnstile } from "~/componentes/Turnstile";
 import { useApariencia } from "~/lib/apariencia";
-import { appleDisponible, cancelado, completarRegreso, entrarConApple, entrarConGoogle } from "~/lib/entrar-social";
+import { appleNativo, cancelado, completarRegreso, entrarConAppleNativo, entrarConPagina } from "~/lib/entrar-social";
 import { env } from "~/lib/env";
 import { supabase } from "~/lib/supabase";
 import { abrirWeb } from "~/lib/usar";
 
-// Entrar: con Apple (iPhone), con Google o con correo y contraseña. Es la misma cuenta de la web.
+// Entrar: con Apple, con Google o con correo y contraseña. Es la misma cuenta de la web.
 // Crear cuenta con correo y recuperar contraseña siguen en la web por ahora.
 
 function mensaje(error: string): string {
@@ -55,20 +55,22 @@ export function Acceso() {
     navegar("/", { replace: true });
   };
 
+  // iPhone: ventana nativa de Apple (pide captcha). Android y navegador: la página de Apple, como Google.
   const conApple = async () => {
+    if (!appleNativo()) return conPagina("apple");
     setEnviando("apple");
     setError(null);
     try {
-      await entrarConApple(captcha ?? undefined);
+      await entrarConAppleNativo(captcha ?? undefined);
       navegar("/", { replace: true });
     } catch (e) { terminar(e); }
   };
 
-  // Google no pide captcha (lo valida Google). La sesión llega al regresar a la app (App.tsx).
-  const conGoogle = async () => {
-    setEnviando("google");
+  // Con la página del proveedor no se pide captcha. La sesión llega al regresar a la app (App.tsx).
+  const conPagina = async (proveedor: "google" | "apple") => {
+    setEnviando(proveedor);
     setError(null);
-    try { await entrarConGoogle(); } catch (e) { terminar(e); return; }
+    try { await entrarConPagina(proveedor); } catch (e) { terminar(e); return; }
     setEnviando(null);
   };
 
@@ -86,14 +88,12 @@ export function Acceso() {
         {error && <p className="aviso error" role="alert" style={{ margin: 0 }}>{error}</p>}
 
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          {appleDisponible() && (
-            <button className="boton" onClick={conApple} disabled={!!enviando || falta}
-              style={{ background: modo === "dia" ? "#0b0b0b" : "#ffffff", color: modo === "dia" ? "#ffffff" : "#0b0b0b", textTransform: "none", letterSpacing: 0, fontSize: 16, fontWeight: 700, borderRadius: 14 }}>
-              <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M16.4 12.6c0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.1-2.8.9-3.5.9-.7 0-1.8-.9-3-.8-1.5 0-3 .9-3.8 2.3-1.6 2.8-.4 7 1.2 9.3.8 1.1 1.7 2.4 2.9 2.3 1.2 0 1.6-.7 3-.7s1.8.7 3 .7c1.3 0 2.1-1.1 2.8-2.3.9-1.3 1.3-2.6 1.3-2.6s-2.5-1-2.5-3.8zM14.1 5.8c.6-.8 1.1-1.9 1-3-.9 0-2.1.6-2.7 1.4-.6.7-1.1 1.8-1 2.9 1 .1 2.1-.5 2.7-1.3z" /></svg>
-              {enviando === "apple" ? "Entrando…" : "Continuar con Apple"}
-            </button>
-          )}
-          <button className="boton tarjeta" onClick={conGoogle} disabled={!!enviando} style={{ borderRadius: 14, fontSize: 16 }}>
+          <button className="boton" onClick={conApple} disabled={!!enviando || (appleNativo() && falta)}
+            style={{ background: modo === "dia" ? "#0b0b0b" : "#ffffff", color: modo === "dia" ? "#ffffff" : "#0b0b0b", textTransform: "none", letterSpacing: 0, fontSize: 16, fontWeight: 700, borderRadius: 14 }}>
+            <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M16.4 12.6c0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.1-2.8.9-3.5.9-.7 0-1.8-.9-3-.8-1.5 0-3 .9-3.8 2.3-1.6 2.8-.4 7 1.2 9.3.8 1.1 1.7 2.4 2.9 2.3 1.2 0 1.6-.7 3-.7s1.8.7 3 .7c1.3 0 2.1-1.1 2.8-2.3.9-1.3 1.3-2.6 1.3-2.6s-2.5-1-2.5-3.8zM14.1 5.8c.6-.8 1.1-1.9 1-3-.9 0-2.1.6-2.7 1.4-.6.7-1.1 1.8-1 2.9 1 .1 2.1-.5 2.7-1.3z" /></svg>
+            {enviando === "apple" ? "Entrando…" : "Continuar con Apple"}
+          </button>
+          <button className="boton tarjeta" onClick={() => conPagina("google")} disabled={!!enviando} style={{ borderRadius: 14, fontSize: 16 }}>
             <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.5 12.2c0-.8-.1-1.5-.2-2.2H12v4.2h5.9c-.3 1.4-1 2.5-2.2 3.3v2.7h3.6c2.1-1.9 3.2-4.7 3.2-8z" /><path fill="#34A853" d="M12 23c3 0 5.5-1 7.3-2.7l-3.6-2.7c-1 .7-2.2 1.1-3.7 1.1-2.9 0-5.3-1.9-6.2-4.5H2.1v2.8C3.9 20.6 7.7 23 12 23z" /><path fill="#FBBC05" d="M5.8 14.2c-.2-.7-.4-1.4-.4-2.2s.1-1.5.4-2.2V7H2.1C1.4 8.5 1 10.2 1 12s.4 3.5 1.1 5l3.7-2.8z" /><path fill="#EA4335" d="M12 5.4c1.6 0 3.1.6 4.2 1.7l3.2-3.2C17.5 2.1 15 1 12 1 7.7 1 3.9 3.4 2.1 7l3.7 2.8C6.7 7.3 9.1 5.4 12 5.4z" /></svg>
             {enviando === "google" ? "Abriendo Google…" : "Continuar con Google"}
           </button>

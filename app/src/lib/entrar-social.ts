@@ -4,12 +4,13 @@ import { supabase } from "~/lib/supabase";
 
 // Entrar con Google y con Apple.
 //
-// Google (iPhone, Android y navegador): el flujo OAuth con PKCE de Supabase. En el teléfono se abre la pantalla de
-// Google en el navegador del sistema y Supabase regresa a la app con el enlace REGRESO (com.darfproductions.app://…);
-// `completarRegreso` cambia el código por la sesión. Usa el mismo proveedor de Google que ya usa la web.
+// Página del proveedor (Google en todos lados; Apple en Android y en el navegador): el flujo OAuth con PKCE de
+// Supabase. En el teléfono se abre la página en el navegador del sistema y Supabase regresa a la app con el enlace
+// REGRESO (com.darfproductions.app://…); `completarRegreso` cambia el código por la sesión. Son los mismos
+// proveedores que usa la web (Apple: Services ID com.darfproductions.web).
 //
-// Apple (solo iPhone): la ventana nativa de Apple (complemento propio en plugins/darf-apple) entrega un token que
-// Supabase acepta con signInWithIdToken. Apple solo exige su botón en iOS; en Android no se ofrece.
+// Apple en iPhone: la ventana nativa (complemento propio en plugins/darf-apple) entrega un token que Supabase
+// acepta con signInWithIdToken (Client ID com.darfproductions.app).
 
 export const ESQUEMA = "com.darfproductions.app";
 export const REGRESO = `${ESQUEMA}://auth/callback`;
@@ -17,17 +18,18 @@ export const REGRESO = `${ESQUEMA}://auth/callback`;
 type RespuestaApple = { identityToken: string; nombre: string; apellido: string; correo: string };
 const DarfApple = registerPlugin<{ entrar(o: { nonce: string }): Promise<RespuestaApple> }>("DarfApple");
 
-export const appleDisponible = () => Capacitor.getPlatform() === "ios";
+/** En iPhone, Apple usa la ventana nativa (y la base pide captcha); en lo demás, la página de Apple. */
+export const appleNativo = () => Capacitor.getPlatform() === "ios";
 
-/** Abre la pantalla de Google. La sesión se completa al regresar (completarRegreso). */
-export async function entrarConGoogle(): Promise<void> {
+/** Abre la página de Google o de Apple. La sesión se completa al regresar (completarRegreso). */
+export async function entrarConPagina(provider: "google" | "apple"): Promise<void> {
   const nativo = Capacitor.isNativePlatform();
   const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: "google",
+    provider,
     options: {
       redirectTo: nativo ? REGRESO : `${window.location.origin}/acceso`,
       skipBrowserRedirect: nativo,
-      queryParams: { prompt: "select_account" },
+      queryParams: provider === "google" ? { prompt: "select_account" } : undefined,
     },
   });
   if (error) throw error;
@@ -47,8 +49,8 @@ export async function completarRegreso(url: string): Promise<boolean> {
   return true;
 }
 
-/** Ventana nativa de Apple → sesión de Supabase. `captcha`: la base pide Turnstile para entrar con token. */
-export async function entrarConApple(captcha: string | undefined): Promise<void> {
+/** Ventana nativa de Apple (iPhone) → sesión de Supabase. `captcha`: la base pide Turnstile para entrar con token. */
+export async function entrarConAppleNativo(captcha: string | undefined): Promise<void> {
   const nonce = aleatorio();
   const apple = await DarfApple.entrar({ nonce: await sha256(nonce) });
   const { error } = await supabase.auth.signInWithIdToken({ provider: "apple", token: apple.identityToken, nonce, options: { captchaToken: captcha } });

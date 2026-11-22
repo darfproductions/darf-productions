@@ -56,18 +56,21 @@ npx cap open android  # abre Android Studio → elige tu teléfono → ▶
   `com.darfproductions.app://auth/callback?code=…` (registrado en `ios/App/App/Info.plist` y en
   `android/app/src/main/AndroidManifest.xml`); `App.tsx` cambia el código por la sesión. Usa el mismo proveedor de
   Google que ya usa la web.
-- **Apple** (solo iPhone, que es donde Apple lo exige): ventana nativa con Face ID mediante el complemento propio
-  `plugins/darf-apple` (Swift, sin dependencias externas). Entrega un token que Supabase acepta con
-  `signInWithIdToken`. El permiso "Sign in with Apple" está en `ios/App/App/App.entitlements`.
+- **Apple en iPhone:** ventana nativa con Face ID mediante el complemento propio `plugins/darf-apple` (Swift, sin
+  dependencias externas). Entrega un token que Supabase acepta con `signInWithIdToken` (Client ID
+  `com.darfproductions.app`). El permiso "Sign in with Apple" está en `ios/App/App/App.entitlements`.
+- **Apple en Android y en el navegador:** la página de Apple, igual que Google (Services ID
+  `com.darfproductions.web`).
 
-### Lo que hay que configurar (una sola vez)
+### Configuración (hecha el 21 de noviembre de 2026)
 
-1. **Supabase → Authentication → URL Configuration → Redirect URLs:** agregar
-   `com.darfproductions.app://auth/callback`. Sin esto, Google regresa a la web en vez de a la app.
-2. **Apple Developer → Identifiers → `com.darfproductions.app`:** activar *Sign in with Apple*.
-3. **Supabase → Authentication → Sign In / Providers → Apple:** activarlo y en *Client IDs* poner
-   `com.darfproductions.app`. Para el inicio nativo del iPhone no hace falta la llave secreta (solo se necesitaría
-   para ofrecer Apple en la web o en Android).
+- Supabase → Redirect URLs: `com.darfproductions.app://auth/callback`.
+- Apple Developer: App ID `com.darfproductions.app` y Services ID `com.darfproductions.web` con Sign in with Apple
+  (dominio y regreso: `qgywscczyzuqinutuvak.supabase.co`, `https://qgywscczyzuqinutuvak.supabase.co/auth/v1/callback`).
+- Supabase → Providers → Apple: Client IDs `com.darfproductions.web,com.darfproductions.app` (el de la web primero)
+  y el secreto generado con la llave de Apple.
+- ⚠️ **El secreto de Apple vence cada 6 meses** (el actual, alrededor del 21 de mayo de 2027). Hay un recordatorio
+  programado para el 7 de mayo de 2027. Si vence, Apple deja de funcionar en la web y en Android (en iPhone no).
 
 ## Pendientes antes de publicar
 
