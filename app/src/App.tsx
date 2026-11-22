@@ -9,6 +9,7 @@ import { SesionProvider } from "~/lib/sesion";
 import { Acceso } from "~/pantallas/Acceso";
 import { Boletos } from "~/pantallas/Boletos";
 import { Cuenta } from "~/pantallas/Cuenta";
+import { EliminarCuenta } from "~/pantallas/EliminarCuenta";
 import { Inicio } from "~/pantallas/Inicio";
 import { Obra } from "~/pantallas/Obra";
 import { Obras } from "~/pantallas/Obras";
@@ -49,6 +50,7 @@ function Marco() {
         <Route path="/obras/:id" element={<Obra />} />
         <Route path="/boletos" element={<Boletos />} />
         <Route path="/cuenta" element={<Cuenta />} />
+        <Route path="/cuenta/eliminar" element={<EliminarCuenta />} />
         <Route path="/acceso" element={<Acceso />} />
         <Route path="*" element={<Inicio />} />
       </Routes>

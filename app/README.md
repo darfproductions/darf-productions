@@ -15,15 +15,16 @@ Diseño: lienzo "DARF App — Diseño visual" (modo noche, modo día y funciones
 | Obras | En cartelera, Próximamente y Archivo | lo mismo, agrupado con `agrupar()` de la web |
 | Obra | Con los colores de la obra; funciones, zonas y precios (si la obra los muestra), cómo llegar, compartir | `productions`, `performances`, `performance_price_categories` |
 | Boletos | QR de boletos pagados, pendientes con WhatsApp, funciones pasadas | `orders` + `tickets` de la persona (RLS) |
-| Cuenta | Apariencia (Auto, Día o Noche), Club de Fans, contacto, cerrar sesión, eliminar cuenta | sesión de Supabase |
-| Acceso | Continuar con Apple (iPhone), con Google, o con correo y contraseña (con captcha) | Supabase Auth |
+| Cuenta | Apariencia (Auto, Día o Noche), Club de Fans, contacto, aviso de privacidad, términos, cerrar sesión | sesión de Supabase |
+| Eliminar cuenta | Dentro de la app (lo piden las tiendas), con las mismas reglas que la web | RPC `account_delete` (0077) |
+| Acceso | Entrar o crear cuenta: Apple, Google, o correo y contraseña (con captcha) | Supabase Auth |
 
 **Modo día y noche:** cada obra trae su kit de colores (el mismo de la web) para un modo; el otro se deriva con
 `lib/tema.ts` (en día, una versión aclarada del tono de la obra; en noche, una oscurecida), siempre con contraste
 de al menos 4.5:1. Pruebas en `src/lib/tema.test.ts`.
 
-Todavía abre la web dentro de la app para: comprar (`/comprar/[función]`), crear cuenta, recuperar contraseña,
-Club de Fans, audiciones, historial y eliminar cuenta.
+Todavía abre la web dentro de la app para: comprar (`/comprar/[función]`), recuperar contraseña, confirmar el
+correo al crear cuenta, Club de Fans, audiciones e historial.
 
 ## Trabajar en tu computadora
 
@@ -82,5 +83,4 @@ npx cap open android  # abre Android Studio → elige tu teléfono → ▶
 4. **Notificaciones push** (la web ya tiene `push.ts` y `apns.ts`).
 5. **Funciones del celular del diseño:** Wallet, widgets, aviso en pantalla de bloqueo el día de la función y el
    cambio de ícono automático (Club de Fans → dorado, Casa DARF → holográfico; recursos en `public/marca/`).
-6. **Eliminar cuenta dentro de la app** (hoy abre la web).
-7. Cuentas de Apple Developer y Google Play, fichas de las tiendas y política de privacidad.
+6. Cuentas de Apple Developer y Google Play, fichas de las tiendas y política de privacidad.

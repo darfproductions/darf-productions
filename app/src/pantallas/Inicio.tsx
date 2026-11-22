@@ -36,6 +36,9 @@ export function Inicio() {
           </button>
         </header>
 
+        {new URLSearchParams(window.location.search).get("cuenta") === "eliminada" && (
+          <p className="aviso" role="status" style={{ marginTop: 16 }}>Tu cuenta se eliminó. Gracias por haber sido parte de DARF.</p>
+        )}
         {cargando && <div className="esqueleto" style={{ marginTop: 16, height: 280, borderRadius: 24 }} />}
         {error && <p className="aviso error" style={{ marginTop: 16 }}>No pudimos cargar la cartelera. Revisa tu conexión e intenta de nuevo.</p>}
 

@@ -61,12 +61,14 @@ export function Cuenta() {
           {sesion && <Fila icono="campana" texto="Notificaciones" onClick={() => abrirWeb("/cuenta/notificaciones")} />}
           {env.whatsapp && <Fila icono="whatsapp" texto="Contacto por WhatsApp" onClick={() => abrir(`https://wa.me/${env.whatsapp}`)} />}
           <Fila icono="correo" texto="Contacto" onClick={() => abrirWeb("/contacto")} />
+          <Fila icono="lista" texto="Aviso de privacidad" onClick={() => abrirWeb("/privacidad")} />
+          <Fila icono="lista" texto="Términos y condiciones" onClick={() => abrirWeb("/terminos")} />
         </div>
 
         {sesion && (
           <div className="tarjeta lista" style={{ marginTop: 12 }}>
             <button className="fila" style={{ justifyContent: "center" }} onClick={() => supabase.auth.signOut()}>Cerrar sesión</button>
-            <button className="fila" style={{ justifyContent: "center", color: "var(--acento)", fontWeight: 700 }} onClick={() => abrirWeb("/cuenta/eliminar")}>Eliminar mi cuenta</button>
+            <Link to="/cuenta/eliminar" className="fila" style={{ justifyContent: "center", color: "var(--acento)", fontWeight: 700 }}>Eliminar mi cuenta</Link>
           </div>
         )}
       </div>

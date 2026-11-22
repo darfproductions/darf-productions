@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router";
+import { PASSWORD_AYUDA, passwordOk } from "@/lib/account-rules";
 import { Icono } from "~/componentes/Icono";
 import { Turnstile } from "~/componentes/Turnstile";
 import { useApariencia } from "~/lib/apariencia";
@@ -8,8 +9,12 @@ import { env } from "~/lib/env";
 import { supabase } from "~/lib/supabase";
 import { abrirWeb } from "~/lib/usar";
 
-// Entrar: con Apple, con Google o con correo y contraseña. Es la misma cuenta de la web.
-// Crear cuenta con correo y recuperar contraseña siguen en la web por ahora.
+// Entrar o crear cuenta: con Apple, con Google o con correo y contraseña. Es la misma cuenta de la web y las
+// mismas reglas (contraseña: web/src/lib/account-rules.ts; registro: web/src/app/entrar/actions.ts).
+// El enlace de confirmación del correo abre la web; después se entra aquí con el correo y la contraseña.
+// Recuperar la contraseña sigue en la web.
+
+const regresoCorreo = () => `${env.siteUrl}/auth/callback?next=${encodeURIComponent("/cuenta")}`;
 
 function mensaje(error: string): string {
   const m = error.toLowerCase();
@@ -24,12 +29,16 @@ function mensaje(error: string): string {
 export function Acceso() {
   const navegar = useNavigate();
   const { modo } = useApariencia();
+  const [pestana, setPestana] = useState<"entrar" | "registro">("entrar");
+  const [nombre, setNombre] = useState("");
   const [correo, setCorreo] = useState("");
   const [contrasena, setContrasena] = useState("");
   const [captcha, setCaptcha] = useState<string | null>(null);
   const [intento, setIntento] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const [enviando, setEnviando] = useState<"correo" | "apple" | "google" | null>(null);
+  const [aviso, setAviso] = useState<string | null>(null);
+  const [sinConfirmar, setSinConfirmar] = useState(false);
+  const [enviando, setEnviando] = useState<"correo" | "apple" | "google" | "reenvio" | null>(null);
   const falta = !!env.turnstileSiteKey && !captcha;
 
   // En el navegador (pruebas en computadora) Google regresa a /acceso?code=…
@@ -50,9 +59,44 @@ export function Acceso() {
     ev.preventDefault();
     setEnviando("correo");
     setError(null);
+    setAviso(null);
     const { error } = await supabase.auth.signInWithPassword({ email: correo.trim(), password: contrasena, options: { captchaToken: captcha ?? undefined } });
+    setSinConfirmar(!!error && /confirm/i.test(error.message));
     if (error) return terminar(error);
     navegar("/", { replace: true });
+  };
+
+  const crearCuenta = async (ev: FormEvent) => {
+    ev.preventDefault();
+    setError(null);
+    setAviso(null);
+    const email = correo.trim();
+    if (!nombre.trim() || !email) return setError("Escribe tu nombre y tu correo.");
+    if (!passwordOk(contrasena, email)) return setError(`Esa contraseña no sirve. ${PASSWORD_AYUDA}`);
+    setEnviando("correo");
+    const { data, error } = await supabase.auth.signUp({
+      email, password: contrasena,
+      options: { data: { nombre: nombre.trim() }, captchaToken: captcha ?? undefined, emailRedirectTo: regresoCorreo() },
+    });
+    if (error) return terminar(error);
+    setEnviando(null);
+    setIntento((n) => n + 1);
+    if (data.session) return navegar("/", { replace: true });
+    // Mismo mensaje si el correo ya tenía cuenta (como la web): así nadie averigua qué correos están registrados.
+    setAviso(`Te enviamos un enlace a ${email} para confirmar tu cuenta. Después regresa aquí y entra con tu correo y contraseña. Si ese correo ya tenía cuenta, solo entra.`);
+    setPestana("entrar");
+    setContrasena("");
+  };
+
+  const reenviar = async () => {
+    setEnviando("reenvio");
+    setError(null);
+    const { error } = await supabase.auth.resend({ type: "signup", email: correo.trim(), options: { captchaToken: captcha ?? undefined, emailRedirectTo: regresoCorreo() } });
+    setEnviando(null);
+    setIntento((n) => n + 1);
+    if (error && /captcha|rate limit|too many/i.test(error.message)) return setError(mensaje(error.message));
+    setSinConfirmar(false);
+    setAviso(`Si ${correo.trim()} tiene una cuenta sin confirmar, te mandamos de nuevo el enlace. Revisa también tu correo no deseado.`);
   };
 
   // iPhone: ventana nativa de Apple (pide captcha). Android y navegador: la página de Apple, como Google.
@@ -86,6 +130,12 @@ export function Acceso() {
 
         <Turnstile siteKey={env.turnstileSiteKey} tema={modo === "dia" ? "light" : "dark"} reinicio={intento} alResolver={setCaptcha} />
         {error && <p className="aviso error" role="alert" style={{ margin: 0 }}>{error}</p>}
+        {sinConfirmar && (
+          <button className="boton contorno" onClick={reenviar} disabled={!!enviando || !correo.trim()}>
+            {enviando === "reenvio" ? "Enviando…" : "Reenviar correo de confirmación"}
+          </button>
+        )}
+        {aviso && <p className="aviso" role="status" style={{ margin: 0 }}>{aviso}</p>}
 
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <button className="boton" onClick={conApple} disabled={!!enviando || (appleNativo() && falta)}
@@ -103,24 +153,38 @@ export function Acceso() {
           <span style={{ flex: 1, height: 1, background: "var(--linea)" }} />o con tu correo<span style={{ flex: 1, height: 1, background: "var(--linea)" }} />
         </div>
 
-        <form onSubmit={conCorreo} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <div role="tablist" aria-label="Cuenta" className="segmentos">
+          <button role="tab" aria-selected={pestana === "entrar"} onClick={() => { setPestana("entrar"); setError(null); }}>Entrar</button>
+          <button role="tab" aria-selected={pestana === "registro"} onClick={() => { setPestana("registro"); setError(null); setSinConfirmar(false); }}>Crear cuenta</button>
+        </div>
+
+        <form onSubmit={pestana === "entrar" ? conCorreo : crearCuenta} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {pestana === "registro" && (
+            <label className="campo">Nombre
+              <input autoComplete="name" required value={nombre} onChange={(e) => setNombre(e.target.value)} />
+            </label>
+          )}
           <label className="campo">Correo
             <input type="email" autoComplete="email" inputMode="email" required value={correo} onChange={(e) => setCorreo(e.target.value)} />
           </label>
           <label className="campo">Contraseña
-            <input type="password" autoComplete="current-password" required value={contrasena} onChange={(e) => setContrasena(e.target.value)} />
+            <input type="password" autoComplete={pestana === "entrar" ? "current-password" : "new-password"} required minLength={pestana === "registro" ? 8 : undefined}
+              aria-describedby={pestana === "registro" ? "ayuda-contrasena" : undefined} value={contrasena} onChange={(e) => setContrasena(e.target.value)} />
+            {pestana === "registro" && <span id="ayuda-contrasena" className="suave" style={{ fontSize: 12, fontWeight: 500, lineHeight: 1.5 }}>{PASSWORD_AYUDA}</span>}
           </label>
           <button className="boton principal" type="submit" disabled={!!enviando || falta}>
-            <Icono nombre="correo" tamano={18} />{enviando === "correo" ? "Entrando…" : "Entrar"}
+            <Icono nombre="correo" tamano={18} />
+            {pestana === "entrar" ? (enviando === "correo" ? "Entrando…" : "Entrar") : (enviando === "correo" ? "Creando…" : "Crear cuenta")}
           </button>
         </form>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          <button className="boton texto" onClick={() => abrirWeb("/entrar")}>Crear cuenta con correo</button>
-          <button className="boton texto" onClick={() => abrirWeb("/entrar/recuperar")}>Olvidé mi contraseña</button>
+          {pestana === "entrar" && <button className="boton texto" onClick={() => abrirWeb("/entrar/recuperar")}>Olvidé mi contraseña</button>}
           <Link to="/" className="boton texto">Explorar sin cuenta</Link>
         </div>
-        <p className="suave" style={{ margin: 0, textAlign: "center", fontSize: 12, lineHeight: 1.5 }}>Al continuar aceptas el Aviso de privacidad de DARF Productions.</p>
+        <p className="suave" style={{ margin: 0, textAlign: "center", fontSize: 12, lineHeight: 1.6 }}>
+          Al continuar aceptas los <button className="liga" onClick={() => abrirWeb("/terminos")}>términos</button> y el <button className="liga" onClick={() => abrirWeb("/privacidad")}>aviso de privacidad</button> de DARF Productions.
+        </p>
       </div>
     </main>
   );
