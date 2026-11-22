@@ -1,0 +1,140 @@
+# App móvil DARF — compilación en la nube (sin Xcode ni Android Studio en tu computadora).
+#
+# · Android: en cada envío a la rama app-movil se compila un instalable (.apk) de prueba.
+#   Se descarga desde la pestaña Actions → la corrida → "Artifacts" → darf-android.
+# · iPhone: se compila en una Mac de GitHub y se sube a TestFlight cuando se publica una etiqueta app-v…
+#   (por ejemplo app-v0.1.0) o con el botón "Run workflow" (cuando este archivo esté en la rama principal).
+#   Necesita los secretos del repositorio: APPLE_TEAM_ID, ASC_KEY_ID, ASC_ISSUER_ID y ASC_KEY_P8 (app/README.md).
+#
+# El repositorio es público: los minutos de GitHub Actions (también los de Mac) no tienen costo.
+name: App móvil (compilar)
+
+on:
+  push:
+    branches: [app-movil]
+    tags: ["app-v*"]
+  workflow_dispatch:
+    inputs:
+      testflight:
+        description: "Subir la versión de iPhone a TestFlight"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+env:
+  # Valores públicos de Supabase (los mismos de app/.env.example).
+  VITE_DARF_ENV: DEV
+  VITE_SUPABASE_URL: https://qgywscczyzuqinutuvak.supabase.co
+  VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_sNdLJ6lK6-0gAESg6hkQxQ_YSqusOUM
+  VITE_SITE_URL: https://www.darfproductions.com
+  VITE_TURNSTILE_SITE_KEY: 0x4AAAAAAFVMB-3EQT2iI6hv
+
+jobs:
+  android:
+    name: Android (.apk de prueba)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      - run: npx cap sync android
+      - name: Compilar el .apk
+        working-directory: app/android
+        run: ./gradlew assembleDebug --no-daemon
+      - uses: actions/upload-artifact@v4
+        with:
+          name: darf-android
+          path: app/android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30
+
+  ios:
+    name: iPhone (TestFlight)
+    if: startsWith(github.ref, 'refs/tags/app-v') || (github.event_name == 'workflow_dispatch' && inputs.testflight)
+    runs-on: macos-15
+    defaults:
+      run:
+        working-directory: app
+    env:
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+    steps:
+      - name: Revisar los secretos de Apple
+        working-directory: .
+        run: |
+          for s in APPLE_TEAM_ID ASC_KEY_ID ASC_ISSUER_ID ASC_KEY_P8; do
+            if [ -z "${!s}" ]; then echo "::error::Falta el secreto $s (ver app/README.md → Compilar en la nube)."; exit 1; fi
+          done
+      - uses: actions/checkout@v4
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - run: npm ci
+      - run: npm run build
+      - run: npx cap sync ios
+      - name: Llave de App Store Connect
+        run: |
+          echo "$ASC_KEY_P8" > "$RUNNER_TEMP/AuthKey.p8"
+          cat > "$RUNNER_TEMP/ExportOptions.plist" <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>destination</key><string>upload</string>
+            <key>teamID</key><string>${APPLE_TEAM_ID}</string>
+            <key>signingStyle</key><string>automatic</string>
+            <key>uploadSymbols</key><true/>
+          </dict>
+          </plist>
+          EOF
+      - name: Compilar (archive)
+        working-directory: app/ios/App
+        run: |
+          xcodebuild archive \
+            -project App.xcodeproj -scheme App -configuration Release \
+            -destination "generic/platform=iOS" \
+            -archivePath "$RUNNER_TEMP/DARF.xcarchive" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$RUNNER_TEMP/AuthKey.p8" \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
+            DEVELOPMENT_TEAM="$APPLE_TEAM_ID" CODE_SIGN_STYLE=Automatic \
+            CURRENT_PROJECT_VERSION="${{ github.run_number }}"
+      - name: Subir a TestFlight
+        working-directory: app/ios/App
+        run: |
+          xcodebuild -exportArchive \
+            -archivePath "$RUNNER_TEMP/DARF.xcarchive" \
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
+            -exportPath "$RUNNER_TEMP/export" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$RUNNER_TEMP/AuthKey.p8" \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+      - name: Borrar la llave
+        if: always()
+        working-directory: .
+        run: rm -f "$RUNNER_TEMP/AuthKey.p8"

@@ -50,6 +50,22 @@ npx cap open android  # abre Android Studio → elige tu teléfono → ▶
 Ícono y pantalla de arranque: las imágenes fuente están en `recursos/`. Si cambian:
 `npx capacitor-assets generate --assetPath recursos --ios --android`.
 
+## Compilar en la nube (sin Xcode ni Android Studio)
+
+El flujo `.github/workflows/app-movil.yml` compila en las computadoras de GitHub (gratis: el repositorio es público).
+
+- **Android:** cada envío a `app-movil` genera un `.apk` de prueba. En GitHub → **Actions** → la corrida más reciente
+  de "App móvil (compilar)" → **Artifacts** → `darf-android`. Se descarga un .zip con el `.apk`; en el teléfono,
+  ábrelo y permite "instalar apps de origen desconocido".
+- **iPhone:** se compila en una Mac de GitHub y se sube a **TestFlight** al publicar una etiqueta `app-v…`
+  (por ejemplo `app-v0.1.0`). Necesita una sola vez:
+  1. App Store Connect → Apps → **+** → Nueva app: iOS, nombre DARF, Bundle ID `com.darfproductions.app`.
+  2. App Store Connect → **Users and Access → Integrations → App Store Connect API** → generar una llave con rol
+     **Admin** (para que GitHub pueda firmar). Anotar *Issuer ID* y *Key ID*; descargar el `.p8` (solo una vez).
+  3. GitHub → el repositorio → **Settings → Secrets and variables → Actions → New repository secret**:
+     `APPLE_TEAM_ID` (Membership details), `ASC_ISSUER_ID`, `ASC_KEY_ID` y `ASC_KEY_P8` (el contenido completo del
+     `.p8`, abierto con un editor de texto, incluidas las líneas BEGIN y END).
+
 ## Entrar con Apple y con Google
 
 - **Google** (iPhone, Android y navegador): flujo OAuth con PKCE de Supabase (`src/lib/entrar-social.ts`). Se abre la
