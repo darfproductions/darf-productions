@@ -5,6 +5,13 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-11-23 — 0164: Invitación directa con la inscripción cerrada
+
+Diego: cerrar la inscripción pero dejar entrar todavía a alguien invitándolo. La invitación directa del panel (con el
+correo de su cuenta) le abre la inscripción aunque ya haya cerrado por estado o por fecha, mientras la convocatoria
+esté abierta o cerrada (no en borrador ni finalizada). La página le dice que tiene una invitación y le muestra el
+formulario; en Mi cuenta, «Te invitaron a audicionar» también sale con la inscripción cerrada.
+
 ## 2026-11-23 — 0163: «Todos llegan» sin hora falsa
 
 Diego: si se usa «Todos llegan», la hora de llegada no es real. `audition_applications.llegada_asumida`: quien se dio

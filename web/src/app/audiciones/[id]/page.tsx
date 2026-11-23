@@ -50,6 +50,8 @@ export default async function AuditionPage({ params }: PageProps<"/audiciones/[i
   // Un borrador solo lo puede abrir el equipo (RLS): es la vista previa antes de publicar.
   const vistaPrevia = a.estado === "borrador" && !!session;
   const abierta = inscripcionAbierta(a);
+  // 0164: con invitación directa se puede inscribir aunque la inscripción ya haya cerrado.
+  const porInvitacion = !abierta && invitacion && ["abierta", "cerrada"].includes(a.estado);
   const qr = mine && a.estado !== "cancelada" && !mine.checked_in_at && !["cancelado", "no_cumple"].includes(mine.estado) ? await QRCode.toDataURL(mine.qr_token, { margin: 1, width: 240 }) : null;
   // 0133: si el equipo le pidió completar su inscripción, puede editarla aunque ya haya cerrado.
   const pedido = !!mine?.completar_pedido_at && !mine.checked_in_at && ["abierta", "cerrada"].includes(a.estado) && !["cancelado", "no_cumple"].includes(mine.estado);
@@ -157,9 +159,10 @@ export default async function AuditionPage({ params }: PageProps<"/audiciones/[i
                 opciones={{ pedirFoto: a.pedir_foto, pedirTutor: a.pedir_tutor, perfil: a.perfil_preguntas ?? [] }} defaults={{ nombre: "", telefono: "" }} previa={null} />
             </>
           )}
-          {(abierta || pedido) && session && (invitado || mine) && !mine?.checked_in_at && (
+          {(abierta || pedido || porInvitacion) && session && (invitado || mine || porInvitacion) && !mine?.checked_in_at && (
             <>
               <h2 className="titular text-2xl">{mine && mine.estado !== "cancelado" ? "Editar mi inscripción" : "Inscripción"}</h2>
+              {porInvitacion && <p className="rounded-xl border border-oro/40 bg-oro/10 px-4 py-3 text-sm">La inscripción ya cerró, pero tienes una invitación directa: todavía puedes inscribirte.</p>}
               {invitacion && (a.edad_min || a.edad_max) && <p className="rounded-xl border border-oro/40 bg-oro/10 px-4 py-3 text-sm">Tienes una invitación directa: puedes inscribirte aunque no cumplas la edad de esta convocatoria. Si eres menor de edad, pide a tu madre, padre o tutor que llene sus datos.</p>}
               <ApplyForm invitado={invitacion} aid={a.id} userId={session.userId} roles={roles} fields={fields} slots={a.elegir_horario && !enLinea ? slots : []} fechaAudicion={slots[0]?.inicia ?? null}
                 opciones={{ pedirFoto: a.pedir_foto, pedirTutor: a.pedir_tutor, perfil: a.perfil_preguntas ?? [] }} defaults={{ nombre: session.profile?.nombre ?? "", telefono: session.profile?.telefono ?? "" }} previa={mine} />
@@ -173,7 +176,7 @@ export default async function AuditionPage({ params }: PageProps<"/audiciones/[i
           {a.estado === "cancelada" && (
             <p role="status" className="rounded-2xl border border-[#ff8fa3]/40 bg-[#ff8fa3]/10 p-6">Esta convocatoria se canceló. Gracias por tu interés; te avisaremos de nuevas audiciones aquí.</p>
           )}
-          {!abierta && !mine && !vistaPrevia && a.estado !== "cancelada" && <p className="rounded-2xl bg-telon p-6 [.con-obra_&]:bg-obra-superficie text-texto-2">La inscripción a esta convocatoria está cerrada.</p>}
+          {!abierta && !mine && !porInvitacion && !vistaPrevia && a.estado !== "cancelada" && <p className="rounded-2xl bg-telon p-6 [.con-obra_&]:bg-obra-superficie text-texto-2">La inscripción a esta convocatoria está cerrada.</p>}
         </section>
 
         <aside className="flex flex-col gap-4 lg:col-span-5">
