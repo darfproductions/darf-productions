@@ -11,6 +11,9 @@ import { Boletos } from "~/pantallas/Boletos";
 import { Cuenta } from "~/pantallas/Cuenta";
 import { EliminarCuenta } from "~/pantallas/EliminarCuenta";
 import { Notificaciones } from "~/pantallas/Notificaciones";
+import { Credencial } from "~/pantallas/Credencial";
+import { EditarPerfil, MisEventos, MisVentas, Transacciones } from "~/pantallas/CuentaSecciones";
+import { MisHonorarios, PerfilProfesional } from "~/pantallas/CuentaPro";
 import { Inicio } from "~/pantallas/Inicio";
 import { Obra } from "~/pantallas/Obra";
 import { Obras } from "~/pantallas/Obras";
@@ -53,6 +56,13 @@ function Marco() {
         <Route path="/cuenta" element={<Cuenta />} />
         <Route path="/cuenta/eliminar" element={<EliminarCuenta />} />
         <Route path="/notificaciones" element={<Notificaciones />} />
+        <Route path="/cuenta/credencial" element={<Credencial />} />
+        <Route path="/cuenta/perfil" element={<EditarPerfil />} />
+        <Route path="/cuenta/transacciones" element={<Transacciones />} />
+        <Route path="/cuenta/eventos" element={<MisEventos />} />
+        <Route path="/cuenta/ventas" element={<MisVentas />} />
+        <Route path="/cuenta/honorarios" element={<MisHonorarios />} />
+        <Route path="/cuenta/perfil-profesional" element={<PerfilProfesional />} />
         <Route path="/acceso" element={<Acceso />} />
         <Route path="*" element={<Inicio />} />
       </Routes>
