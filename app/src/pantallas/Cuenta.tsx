@@ -74,7 +74,7 @@ export function Cuenta() {
         )}
 
         {sesion && (
-          <button onClick={() => abrirWeb("/club-fan")} style={{ marginTop: 12, padding: "14px 16px", borderRadius: 20, border: "none", background: "#d7bb5f", color: "#0b0b0b", display: "flex", alignItems: "center", gap: 12, textAlign: "left", cursor: "pointer" }}>
+          <button onClick={() => navegar("/fan-zone")} style={{ marginTop: 12, padding: "14px 16px", borderRadius: 20, border: "none", background: "#d7bb5f", color: "#0b0b0b", display: "flex", alignItems: "center", gap: 12, textAlign: "left", cursor: "pointer" }}>
             <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 2 }}>
               <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase" }}>Club Fan DARF</span>
               <span style={{ fontSize: 14, fontWeight: 700, lineHeight: 1.4 }}>
@@ -88,7 +88,7 @@ export function Cuenta() {
         {c && ((c.lealtad ?? 0) > 0 || (c.fan_visitas ?? 0) > 0) && (
           <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 12 }}>
             <Lealtad n={c.lealtad ?? 0} programa="equipo" />
-            <Lealtad n={c.fan_visitas ?? 0} programa="fan" socio={!!datos?.socio} unirse={() => abrirWeb("/club-fan")} />
+            <Lealtad n={c.fan_visitas ?? 0} programa="fan" socio={!!datos?.socio} unirse={() => navegar("/fan-zone")} />
           </div>
         )}
 

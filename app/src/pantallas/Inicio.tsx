@@ -13,7 +13,7 @@ import { abrirWeb, useCarga } from "~/lib/usar";
 const ACCESOS: { texto: string; icono: NombreIcono; fondo: string; ir: { app: string } | { web: string } }[] = [
   { texto: "Mis boletos", icono: "boletos", fondo: "var(--degradado)", ir: { app: "/boletos" } },
   { texto: "Audiciones", icono: "microfono", fondo: "#7b2fbe", ir: { app: "/audiciones" } },
-  { texto: "Zona Fans", icono: "estrella", fondo: "#a8892f", ir: { web: "/fan-zone" } },
+  { texto: "Zona Fans", icono: "estrella", fondo: "#a8892f", ir: { app: "/fan-zone" } },
 ];
 
 export function Inicio() {

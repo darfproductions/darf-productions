@@ -17,6 +17,7 @@ import { MisHonorarios, PerfilProfesional } from "~/pantallas/CuentaPro";
 import { Artista, Contacto, Nosotros } from "~/pantallas/Paginas";
 import { Audicion, Audiciones } from "~/pantallas/Audiciones";
 import { Comprar } from "~/pantallas/Comprar";
+import { Eventos, FanZone } from "~/pantallas/FanZone";
 import { Inicio } from "~/pantallas/Inicio";
 import { Obra } from "~/pantallas/Obra";
 import { Obras } from "~/pantallas/Obras";
@@ -67,6 +68,8 @@ function Marco() {
         <Route path="/cuenta/honorarios" element={<MisHonorarios />} />
         <Route path="/cuenta/perfil-profesional" element={<PerfilProfesional />} />
         <Route path="/comprar/:funcion" element={<Comprar />} />
+        <Route path="/fan-zone" element={<FanZone />} />
+        <Route path="/eventos" element={<Eventos />} />
         <Route path="/audiciones" element={<Audiciones />} />
         <Route path="/audiciones/:id" element={<Audicion />} />
         <Route path="/contacto" element={<Contacto />} />

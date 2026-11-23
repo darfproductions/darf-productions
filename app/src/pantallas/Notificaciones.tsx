@@ -18,6 +18,11 @@ export function rutaEnApp(href: string | null): string | null {
   if (obra) return `/obras/${obra[1]}`;
   if (href.startsWith("/cuenta/boletos") || href === "/cuenta#boletos") return "/boletos";
   if (href === "/cuenta" || href.startsWith("/cuenta?")) return "/cuenta";
+  const fan = /^\/(fan-zone|club-fan)(?:\/([^/?#]+))?/.exec(href);
+  if (fan) return fan[2] ? `/fan-zone?obra=${fan[2]}` : "/fan-zone";
+  if (href.startsWith("/eventos")) return "/eventos";
+  const comprar = /^\/comprar\/([0-9a-f-]{36})/.exec(href);
+  if (comprar) return `/comprar/${comprar[1]}`;
   const audicion = /^\/audiciones(\/[0-9a-f-]{36})?/.exec(href);
   if (audicion) return `/audiciones${audicion[1] ?? ""}`;
   const artista = /^\/artistas\/([^/?#]+)/.exec(href);
