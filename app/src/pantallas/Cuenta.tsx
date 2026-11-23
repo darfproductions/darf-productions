@@ -97,6 +97,7 @@ export function Cuenta() {
             <Fila icono="boletos" texto="Mis boletos" onClick={() => navegar("/boletos")} />
             <Fila icono="lista" texto="Transacciones" onClick={() => navegar("/cuenta/transacciones")} />
             <Fila icono="estrella" texto="Mis eventos" onClick={() => navegar("/cuenta/eventos")} />
+            <Fila icono="microfono" texto="Mis audiciones" onClick={() => navegar("/audiciones")} />
             {ventas.length > 0 && <Fila icono="flecha" texto="Mis ventas" nota={`${ventas.reduce((n, v) => n + v.boletos, 0)} boletos`} onClick={() => navegar("/cuenta/ventas")} />}
             {datos?.honorarios && <Fila icono="wallet" texto="Mis honorarios" onClick={() => navegar("/cuenta/honorarios")} />}
             <Fila icono="cuenta" texto="Perfil profesional" onClick={() => navegar("/cuenta/perfil-profesional")} />
