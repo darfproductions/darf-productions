@@ -14,14 +14,17 @@ export type Turno = { id: string; numero: number | null; nombre: string } | null
  *  cuántos esperan, los grupos de turno y las respuestas de "¿con quién pasas?". */
 export async function cargarFila(aid: string, a: Pick<PanelAudition, "fase" | "en_escena" | "callback_cuando" | "callback_fecha" | "callback_lugar">) {
   const supabase = await createClient();
-  const [{ data, error }, { data: gruposData }, { data: sistemaData }, { data: camposSistema }, { data: slotsData }, { data: faltaronData }] = await Promise.all([
+  const [{ data, error }, { data: gruposData }, { data: sistemaData }, { data: camposSistema }, { data: slotsData }, { data: faltaronData }, { data: asumidasData }] = await Promise.all([
     supabase.rpc("audition_day_list", { aid }),
     supabase.rpc("audition_grupos", { aid }),
     supabase.rpc("audition_respuestas_sistema", { aid }),
     supabase.from("audition_fields").select("sistema").eq("audition_id", aid).not("sistema", "is", null),
     supabase.from("audition_slots").select("id, inicia, termina, sala").eq("audition_id", aid).order("inicia"),
     supabase.rpc("audition_faltaron", { aid }),
+    supabase.rpc("audition_llegadas_asumidas", { aid }),
   ]);
+  // 0163: a quién se dio por llegado (sin hora real de llegada).
+  const asumidas = new Set(((asumidasData ?? []) as string[]));
   // 0162: quienes se marcaron como "Faltó" (modo "Todos llegan").
   const faltaron = new Set(((faltaronData ?? []) as string[]));
   // 0140: los horarios de la convocatoria (con hora de fin) para asignarlos por persona o por grupo desde la fila.
@@ -59,5 +62,5 @@ export async function cargarFila(aid: string, a: Pick<PanelAudition, "fase" | "e
   }
   const gruposHorario = [...porGrupo.values()].map((g) => ({ nombre: g.nombre, personas: g.personas, horarios: [...g.horarios] }))
     .sort((x, y) => x.nombre.localeCompare(y.nombre, "es", { numeric: true }));
-  return { faltaron, todos, error, enEscena, actual, sigue, esperan, cb, preguntaCon, preguntaGrupo, conQuien, grupoResp, paraGrupos, horarios, gruposHorario };
+  return { faltaron, asumidas, todos, error, enEscena, actual, sigue, esperan, cb, preguntaCon, preguntaGrupo, conQuien, grupoResp, paraGrupos, horarios, gruposHorario };
 }

@@ -61,7 +61,7 @@ export default async function ApplicantPage({ params }: PageProps<"/panel/audici
       <Card className="lg:col-span-5">
         <h2 className="mb-2 font-bold">Día de la audición</h2>
         <dl className="grid grid-cols-3 gap-2 text-center text-sm">
-          <div><dt className="text-xs text-texto-3">Llegó</dt><dd className="text-lg font-bold">{hora(x.checked_in_at) || "—"}</dd></div>
+          <div><dt className="text-xs text-texto-3">Llegó</dt><dd className="text-lg font-bold">{x.llegada_asumida ? <span className="text-sm">Se dio por llegado</span> : hora(x.checked_in_at) || (x.falto_at ? <span className="text-sm text-[#ff8fa3]">Faltó</span> : "—")}</dd></div>
           <div><dt className="text-xs text-texto-3">Entró</dt><dd className="text-lg font-bold">{hora(x.entered_at) || "—"}</dd></div>
           <div><dt className="text-xs text-texto-3">Salió</dt><dd className="text-lg font-bold">{hora(x.finished_at) || "—"}</dd></div>
         </dl>

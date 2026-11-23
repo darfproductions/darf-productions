@@ -34,7 +34,7 @@ export default async function DayPage({ params, searchParams }: PageProps<"/pane
   const sp = await searchParams;
   const { a, may } = await requireAudition(aid, ["audiciones.registro", "audiciones.gestionar"], "/registro");
   const gestiona = may("audiciones.gestionar");
-  const { faltaron, todos, error, enEscena, actual, sigue, esperan, cb, preguntaCon, preguntaGrupo, conQuien, grupoResp, paraGrupos, horarios: slotsLista, gruposHorario } = await cargarFila(aid, a);
+  const { faltaron, asumidas, todos, error, enEscena, actual, sigue, esperan, cb, preguntaCon, preguntaGrupo, conQuien, grupoResp, paraGrupos, horarios: slotsLista, gruposHorario } = await cargarFila(aid, a);
   // 0140: teléfonos para mandar el turno por WhatsApp (solo quien gestiona; la base decide qué puede leer).
   const { data: tels } = gestiona
     ? await (await createClient()).from("audition_applications").select("id, telefono, es_menor, tutor_telefono").eq("audition_id", aid)
@@ -166,7 +166,7 @@ export default async function DayPage({ params, searchParams }: PageProps<"/pane
                     {(r.slot_inicia || conHorarios || r.checked_in_at) && (
                       <span className="block text-xs text-texto-3">
                         {r.slot_inicia ? <span>{formatSlot(r.slot_inicia, slotDe.get(r.slot_id ?? "")?.termina)}</span> : conHorarios ? "Sin horario" : null}
-                        {r.checked_in_at && `${r.slot_inicia || conHorarios ? " · " : ""}llegó ${hora(r.checked_in_at)}`}
+                        {r.checked_in_at && `${r.slot_inicia || conHorarios ? " · " : ""}${asumidas.has(r.id) ? "se dio por llegado" : `llegó ${hora(r.checked_in_at)}`}`}
                         {r.entered_at && ` · entró ${hora(r.entered_at)}`}
                         {r.finished_at && ` · salió ${hora(r.finished_at)}${dur !== null ? ` (${dur} min)` : ""}`}
                       </span>
