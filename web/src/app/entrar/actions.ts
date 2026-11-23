@@ -50,14 +50,24 @@ export async function register(_prev: AuthState, form: FormData): Promise<AuthSt
 
 /** Entrar con Google (como en la 1.0). Supabase regresa a /auth/callback, que abre la sesión. */
 export async function loginGoogle(form: FormData) {
+  await loginSocial("google", form);
+}
+
+/** Entrar con Apple (2026-11-21). Mismo camino que Google: Supabase (Services ID com.darfproductions.web)
+ *  regresa a /auth/callback. El secreto de Apple en Supabase vence cada 6 meses (hay recordatorio). */
+export async function loginApple(form: FormData) {
+  await loginSocial("apple", form);
+}
+
+async function loginSocial(provider: "google" | "apple", form: FormData) {
   const origin = await origenSitio();
   const next = safeNext(String(form.get("next") ?? ""));
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: "google",
-    options: { redirectTo: `${origin}/auth/callback?next=${encodeURIComponent(next)}` },
+    provider,
+    options: { redirectTo: `${origin}/auth/callback?next=${encodeURIComponent(next)}&via=${provider}` },
   });
-  if (error || !data.url) redirect("/entrar?error=google");
+  if (error || !data.url) redirect(`/entrar?error=${provider}`);
   redirect(data.url);
 }
 
