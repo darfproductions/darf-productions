@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
-import { Link, useParams } from "react-router";
+import { Link, useNavigate, useParams } from "react-router";
 import { Share } from "@capacitor/share";
 import { Capacitor } from "@capacitor/core";
 import { Icono } from "~/componentes/Icono";
@@ -9,7 +9,7 @@ import { funcionPasada, imagen, leerObra, poster, type Funcion } from "~/lib/dat
 import { env } from "~/lib/env";
 import { dinero, fechaLarga, hora } from "~/lib/formato";
 import { paletaObra, variables } from "~/lib/tema";
-import { abrir, abrirWeb, useCarga } from "~/lib/usar";
+import { abrir, useCarga } from "~/lib/usar";
 
 // Página de una obra con SUS colores (el kit de la obra en su modo y la versión aclarada u oscurecida en el otro) y
 // el mismo contenido que la página de la web: funciones y precios, historia, ficha, canciones, elenco, equipos,
@@ -18,6 +18,7 @@ import { abrir, abrirWeb, useCarga } from "~/lib/usar";
 type Seccion = { id: string; titulo: string };
 
 export function Obra() {
+  const navegar = useNavigate();
   const { id = "" } = useParams();
   const { modo } = useApariencia();
   const { datos, error, cargando } = useCarga(() => Promise.all([leerObra(id), leerContenido(id)]), [id]);
@@ -80,7 +81,7 @@ export function Obra() {
       const texto = `Hola, quiero boletos para ${obra.nombre}${funcion?.starts_at ? ` (${fechaLarga(funcion.starts_at)})` : ""}.`;
       return abrir(`https://wa.me/${env.whatsapp}?text=${encodeURIComponent(texto)}`);
     }
-    return abrirWeb(`/comprar/${funcion?.id ?? ""}`);
+    if (funcion) navegar(`/comprar/${funcion.id}`);
   };
   const ir = (sid: string) => document.getElementById(sid)?.scrollIntoView({ behavior: "smooth", block: "start" });
 

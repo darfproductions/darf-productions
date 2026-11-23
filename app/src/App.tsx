@@ -6,7 +6,7 @@ import { Barra } from "~/componentes/Barra";
 import { AparienciaProvider } from "~/lib/apariencia";
 import { completarRegreso, REGRESO } from "~/lib/entrar-social";
 import { SesionProvider } from "~/lib/sesion";
-import { Acceso } from "~/pantallas/Acceso";
+import { Acceso, destinoTrasEntrar } from "~/pantallas/Acceso";
 import { Boletos } from "~/pantallas/Boletos";
 import { Cuenta } from "~/pantallas/Cuenta";
 import { EliminarCuenta } from "~/pantallas/EliminarCuenta";
@@ -16,6 +16,7 @@ import { EditarPerfil, MisEventos, MisVentas, Transacciones } from "~/pantallas/
 import { MisHonorarios, PerfilProfesional } from "~/pantallas/CuentaPro";
 import { Artista, Contacto, Nosotros } from "~/pantallas/Paginas";
 import { Audicion, Audiciones } from "~/pantallas/Audiciones";
+import { Comprar } from "~/pantallas/Comprar";
 import { Inicio } from "~/pantallas/Inicio";
 import { Obra } from "~/pantallas/Obra";
 import { Obras } from "~/pantallas/Obras";
@@ -35,7 +36,7 @@ function Marco() {
     const h = AppNativa.addListener("appUrlOpen", ({ url }) => {
       if (!url.startsWith(REGRESO)) return;
       completarRegreso(url)
-        .then((ok) => ok && navegar("/", { replace: true }))
+        .then((ok) => ok && navegar(destinoTrasEntrar(), { replace: true }))
         .catch(() => navegar("/acceso?error=regreso", { replace: true }));
     });
     return () => { h.then((x) => x.remove()); };
@@ -65,6 +66,7 @@ function Marco() {
         <Route path="/cuenta/ventas" element={<MisVentas />} />
         <Route path="/cuenta/honorarios" element={<MisHonorarios />} />
         <Route path="/cuenta/perfil-profesional" element={<PerfilProfesional />} />
+        <Route path="/comprar/:funcion" element={<Comprar />} />
         <Route path="/audiciones" element={<Audiciones />} />
         <Route path="/audiciones/:id" element={<Audicion />} />
         <Route path="/contacto" element={<Contacto />} />

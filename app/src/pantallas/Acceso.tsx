@@ -26,6 +26,18 @@ function mensaje(error: string): string {
   return "No pudimos entrar. Revisa tu conexión e inténtalo de nuevo.";
 }
 
+/** Pantalla a la que se regresa al entrar (p. ej. la compra que pidió cuenta); se guarda con irAEntrar(). */
+export function destinoTrasEntrar(): string {
+  try {
+    const d = sessionStorage.getItem("darf.volver");
+    sessionStorage.removeItem("darf.volver");
+    return d && d.startsWith("/") && !d.startsWith("//") ? d : "/";
+  } catch { return "/"; }
+}
+export function recordarRegreso(ruta: string) {
+  try { sessionStorage.setItem("darf.volver", ruta); } catch { /* sin almacenamiento: se regresa al inicio */ }
+}
+
 export function Acceso() {
   const navegar = useNavigate();
   const { modo } = useApariencia();
@@ -45,7 +57,7 @@ export function Acceso() {
   useEffect(() => {
     if (!window.location.search.includes("code=") && !window.location.search.includes("error")) return;
     completarRegreso(window.location.href)
-      .then((ok) => ok && navegar("/", { replace: true }))
+      .then((ok) => ok && navegar(destinoTrasEntrar(), { replace: true }))
       .catch((e: Error) => setError(mensaje(e.message)));
   }, [navegar]);
 
@@ -63,7 +75,7 @@ export function Acceso() {
     const { error } = await supabase.auth.signInWithPassword({ email: correo.trim(), password: contrasena, options: { captchaToken: captcha ?? undefined } });
     setSinConfirmar(!!error && /confirm/i.test(error.message));
     if (error) return terminar(error);
-    navegar("/", { replace: true });
+    navegar(destinoTrasEntrar(), { replace: true });
   };
 
   const crearCuenta = async (ev: FormEvent) => {
@@ -81,7 +93,7 @@ export function Acceso() {
     if (error) return terminar(error);
     setEnviando(null);
     setIntento((n) => n + 1);
-    if (data.session) return navegar("/", { replace: true });
+    if (data.session) return navegar(destinoTrasEntrar(), { replace: true });
     // Mismo mensaje si el correo ya tenía cuenta (como la web): así nadie averigua qué correos están registrados.
     setAviso(`Te enviamos un enlace a ${email} para confirmar tu cuenta. Después regresa aquí y entra con tu correo y contraseña. Si ese correo ya tenía cuenta, solo entra.`);
     setPestana("entrar");
@@ -106,7 +118,7 @@ export function Acceso() {
     setError(null);
     try {
       await entrarConAppleNativo(captcha ?? undefined);
-      navegar("/", { replace: true });
+      navegar(destinoTrasEntrar(), { replace: true });
     } catch (e) { terminar(e); }
   };
 
