@@ -5,6 +5,7 @@ import { Icono, type NombreIcono } from "~/componentes/Icono";
 import { useApariencia } from "~/lib/apariencia";
 import { leerCartelera, poster } from "~/lib/datos";
 import { saludo } from "~/lib/formato";
+import { supabase } from "~/lib/supabase";
 import { textoSobre } from "~/lib/tema";
 import { nombreDe, useSesion } from "~/lib/sesion";
 import { abrirWeb, useCarga } from "~/lib/usar";
@@ -22,6 +23,8 @@ export function Inicio() {
   const destacada = datos?.destacada?.production ?? null;
   const otras = (datos?.obras ?? []).filter((o) => o.id !== destacada?.id);
   const nombre = nombreDe(sesion);
+  const { datos: noLeidas } = useCarga(async () => (sesion ? Number((await supabase.rpc("notifications_unread_count")).data ?? 0) : 0), [sesion?.user.id]);
+  const sinLeer = noLeidas ?? 0;
 
   return (
     <main className="pantalla">
@@ -35,6 +38,12 @@ export function Inicio() {
           <button className="circulo" onClick={alternar} aria-label={modo === "dia" ? "Cambiar a modo noche" : "Cambiar a modo día"}>
             <Icono nombre={modo === "dia" ? "luna" : "sol"} tamano={20} />
           </button>
+          {sesion && (
+            <Link to="/notificaciones" className="circulo" aria-label={sinLeer ? `Notificaciones, ${sinLeer} sin leer` : "Notificaciones"} style={{ position: "relative" }}>
+              <Icono nombre="campana" tamano={20} />
+              {sinLeer > 0 && <span aria-hidden="true" style={{ position: "absolute", top: -2, right: -2, minWidth: 18, height: 18, padding: "0 5px", borderRadius: 9, background: "var(--acento)", color: "#ffffff", fontSize: 10, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", boxSizing: "border-box" }}>{sinLeer > 9 ? "9+" : sinLeer}</span>}
+            </Link>
+          )}
         </header>
 
         {new URLSearchParams(window.location.search).get("cuenta") === "eliminada" && (

@@ -1,4 +1,4 @@
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { Icono, type NombreIcono } from "~/componentes/Icono";
 import { useApariencia } from "~/lib/apariencia";
 import { env } from "~/lib/env";
@@ -15,6 +15,7 @@ const APARIENCIAS: { id: Preferencia; texto: string; icono: NombreIcono }[] = [
 
 export function Cuenta() {
   const { sesion } = useSesion();
+  const navegar = useNavigate();
   const { preferencia, elegir } = useApariencia();
   const nombre = nombreDe(sesion);
   const inicial = (nombre ?? "D").charAt(0).toUpperCase();
@@ -58,7 +59,7 @@ export function Cuenta() {
 
         <div className="tarjeta lista" style={{ marginTop: 16 }}>
           {sesion && <Fila icono="lista" texto="Historial de compras" onClick={() => abrirWeb("/cuenta/transacciones")} />}
-          {sesion && <Fila icono="campana" texto="Notificaciones" onClick={() => abrirWeb("/cuenta/notificaciones")} />}
+          {sesion && <Fila icono="campana" texto="Notificaciones" onClick={() => navegar("/notificaciones")} />}
           {env.whatsapp && <Fila icono="whatsapp" texto="Contacto por WhatsApp" onClick={() => abrir(`https://wa.me/${env.whatsapp}`)} />}
           <Fila icono="correo" texto="Contacto" onClick={() => abrirWeb("/contacto")} />
           <Fila icono="lista" texto="Aviso de privacidad" onClick={() => abrirWeb("/privacidad")} />
