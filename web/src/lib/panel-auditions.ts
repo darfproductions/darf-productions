@@ -22,6 +22,8 @@ export type PanelAudition = AuditionOptions & {
   preguntas_entrevista?: string[];
   /** 0135: qué preguntas del perfil artístico hace la convocatoria. */
   perfil_preguntas?: string[];
+  /** 0162: "Todos llegan, marca solo a quien faltó". */
+  asumir_llegada?: boolean;
   productions?: { nombre: string } | null;
 };
 

@@ -5,7 +5,7 @@ import { PasswordInput } from "@/components/PasswordInput";
 import Link from "next/link";
 import { useActionState, useState } from "react";
 import { Turnstile } from "@/components/Turnstile";
-import { login, loginGoogle, register, resendConfirmation, type AuthState } from "./actions";
+import { login, loginApple, loginGoogle, register, resendConfirmation, type AuthState } from "./actions";
 
 const field = "rounded-lg bg-sala px-3 py-3 font-normal";
 
@@ -32,6 +32,16 @@ export function AuthForms({ next, captcha }: { next: string; captcha: string }) 
         ))}
       </div>
 
+      {/* Botón oficial de Apple: fondo negro, logo y texto blancos (Human Interface Guidelines). */}
+      <form action={loginApple} className="-mb-2">
+        <input type="hidden" name="next" value={next} />
+        <button className="flex w-full items-center justify-center gap-3 rounded-full border border-linea-2 bg-black py-3.5 text-sm font-bold text-white hover:bg-black/80">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M16.4 12.6c0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.1-2.8.9-3.5.9-.7 0-1.8-.9-3-.8-1.5 0-3 .9-3.8 2.3-1.6 2.8-.4 7 1.2 9.3.8 1.1 1.7 2.4 2.9 2.3 1.2 0 1.6-.7 3-.7s1.8.7 3 .7c1.3 0 2.1-1.1 2.8-2.3.9-1.3 1.3-2.6 1.3-2.6s-2.5-1-2.5-3.8zM14.1 5.8c.6-.8 1.1-1.9 1-3-.9 0-2.1.6-2.7 1.4-.6.7-1.1 1.8-1 2.9 1 .1 2.1-.5 2.7-1.3z" />
+          </svg>
+          Continuar con Apple
+        </button>
+      </form>
       <form action={loginGoogle}>
         <input type="hidden" name="next" value={next} />
         <button className="flex w-full items-center justify-center gap-3 rounded-full border border-linea-2 bg-white py-3.5 text-sm font-bold text-[#1f1f1f] hover:bg-white/90">
