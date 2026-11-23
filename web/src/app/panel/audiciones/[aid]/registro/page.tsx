@@ -10,7 +10,7 @@ import { createClient } from "@/lib/supabase/server";
 import { avisarTurnos, numerarAhora, walkIn } from "../../actions";
 import { Desk } from "./Desk";
 import { AlFinal, FilaEnVivo } from "./Fila";
-import { MoverTurno, StepButtons } from "./StepButtons";
+import { AsumirLlegada, FaltoButton, MoverTurno, StepButtons } from "./StepButtons";
 import { companeros } from "@/lib/audicion-vivo-rules";
 import { cargarFila } from "./fila-datos";
 import { GruposTurno, Separar } from "./Grupos";
@@ -34,7 +34,7 @@ export default async function DayPage({ params, searchParams }: PageProps<"/pane
   const sp = await searchParams;
   const { a, may } = await requireAudition(aid, ["audiciones.registro", "audiciones.gestionar"], "/registro");
   const gestiona = may("audiciones.gestionar");
-  const { todos, error, enEscena, actual, sigue, esperan, cb, preguntaCon, preguntaGrupo, conQuien, grupoResp, paraGrupos, horarios: slotsLista, gruposHorario } = await cargarFila(aid, a);
+  const { faltaron, todos, error, enEscena, actual, sigue, esperan, cb, preguntaCon, preguntaGrupo, conQuien, grupoResp, paraGrupos, horarios: slotsLista, gruposHorario } = await cargarFila(aid, a);
   // 0140: teléfonos para mandar el turno por WhatsApp (solo quien gestiona; la base decide qué puede leer).
   const { data: tels } = gestiona
     ? await (await createClient()).from("audition_applications").select("id, telefono, es_menor, tutor_telefono").eq("audition_id", aid)
@@ -53,7 +53,11 @@ export default async function DayPage({ params, searchParams }: PageProps<"/pane
   // 0134: las solicitudes aún sin aprobar (en revisión) van aparte; si llegan, se registran igual (con aviso).
   const sinAprobar = filtrados.filter((r) => r.estado === "inscrito" && !r.walk_in && !r.checked_in_at);
   const rows = filtrados.filter((r) => !sinAprobar.includes(r));
-  const resumen = daySummary(rows);
+  // 0162: con "Todos llegan", quien faltó no cuenta como "Faltan" (ya se sabe que no vino).
+  const asumir = !!a.asumir_llegada;
+  const resumen = daySummary(rows.filter((r) => !faltaron.has(r.id)));
+  const nFaltaron = rows.filter((r) => faltaron.has(r.id)).length;
+  const porLlegar = rows.filter((r) => !r.checked_in_at && !faltaron.has(r.id) && !["cancelado", "no_cumple"].includes(r.estado)).length;
   const horarios = [...new Map(todos.map((r) => [r.slot_id ?? "sin", r.slot_inicia])).entries()];
   // 0140: se puede mover a mano a cualquiera que aún no pase (todo su turno, si va en grupo). "Sin horario" solo si hay horarios.
   const pendientes = todos.filter((r) => !r.entered_at && !["cancelado", "no_cumple"].includes(r.estado));
@@ -116,10 +120,12 @@ export default async function DayPage({ params, searchParams }: PageProps<"/pane
 
       <div className="flex flex-col gap-4 lg:col-span-7">
         <Card className="grid grid-cols-2 gap-3 p-4 text-center sm:grid-cols-4 md:p-4">
-          {([["llego", "Esperando"], ["en_sala", "En sala"], ["termino", "Terminaron"], ["pendiente", "Faltan"]] as const).map(([k, label]) => (
+          {([["llego", "Esperando"], ["en_sala", "En sala"], ["termino", "Terminaron"], ["pendiente", asumir ? "Por llegar" : "Faltan"]] as const).map(([k, label]) => (
             <div key={k}><p className="text-2xl font-black">{resumen[k]}</p><p className="text-xs text-texto-3">{label}</p></div>
           ))}
+          {nFaltaron > 0 && <p className="col-span-full text-xs font-bold text-[#ff8fa3]">{nFaltaron} {nFaltaron === 1 ? "faltó" : "faltaron"}</p>}
         </Card>
+        {enVivo && <Card className="p-4 md:p-4"><AsumirLlegada aid={aid} on={asumir} pendientes={porLlegar} /></Card>}
         {cb && <Card className="border border-lila/40 p-4 text-sm md:p-4"><b>Callback:</b> {cb}. Los llamados entran con su mismo QR y conservan su número.</Card>}
         {horarios.length > 1 && (
           <div className="flex flex-wrap gap-2 text-xs">
@@ -152,7 +158,9 @@ export default async function DayPage({ params, searchParams }: PageProps<"/pane
                           Pasa con {companeros(todos, r).filter((x) => x.id !== r.id).map((x) => x.nombre.split(" ")[0]).join(", ")}
                         </span>
                       )}
-                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${DAY_LABEL[st].cls}`}>{DAY_LABEL[st].label}</span>
+                      {faltaron.has(r.id)
+                        ? <span className="rounded-full bg-[#5a1a22] px-2 py-0.5 text-[10px] font-bold text-[#fecdd3]">Faltó</span>
+                        : <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${DAY_LABEL[st].cls}`}>{DAY_LABEL[st].label}</span>}
                       {r.id === enEscena && <span className="rounded-full bg-lila px-2 py-0.5 text-[10px] font-bold text-sala">En escena</span>}
                     </span>
                     {(r.slot_inicia || conHorarios || r.checked_in_at) && (
@@ -176,7 +184,10 @@ export default async function DayPage({ params, searchParams }: PageProps<"/pane
                     )}
                     {enVivo && st === "llego" && r.id !== enEscena && <AlFinal aid={aid} app={r.id} nombre={r.nombre} />}
                     {r.grupo && !r.entered_at && <Separar aid={aid} app={r.id} nombre={r.nombre} />}
-                    {st !== "no_cumple" && r.id !== enEscena && <StepButtons aid={aid} app={r.id} nombre={r.nombre} status={st} soloLlegada={enVivo} />}
+                    {/* 0162: con "Todos llegan" se marca "Faltó" (o "Sí vino"); si no, "Llegó" como siempre. */}
+                    {asumir && enVivo && r.id !== enEscena && !r.entered_at && !["cancelado", "no_cumple"].includes(r.estado) && (faltaron.has(r.id) || st === "llego")
+                      ? <FaltoButton aid={aid} app={r.id} nombre={r.nombre} falto={faltaron.has(r.id)} />
+                      : st !== "no_cumple" && r.id !== enEscena && <StepButtons aid={aid} app={r.id} nombre={r.nombre} status={st} soloLlegada={enVivo} />}
                   </span>
                 </li>
               );

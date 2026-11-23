@@ -498,6 +498,30 @@ export async function deskCheckin(aid: string, ref: string): Promise<DeskResult>
   return data as DeskResult;
 }
 
+/** 0162: encender o apagar "Todos llegan, marca solo a quien faltó" (al encender, todos quedan como llegados). */
+export async function setAsumirLlegada(aid: string, on: boolean): Promise<{ ok: boolean; message: string }> {
+  const { data, error } = await (await createClient()).rpc("audition_asumir_llegada", { aid, p_on: on });
+  if (error) return { ok: false, message: mensajeError(error) };
+  revalidatePath(base(aid), "layout");
+  return { ok: true, message: on ? `Listo: ${data ?? 0} ${data === 1 ? "persona quedó" : "personas quedaron"} como llegadas. Marca solo a quien faltó.` : "Listo: se vuelve a marcar quién llegó." };
+}
+
+/** 0162: volver a dar por llegados a quienes aún no (por ejemplo, altas nuevas); no regresa a quien faltó. */
+export async function todosLlegaron(aid: string): Promise<{ ok: boolean; message: string }> {
+  const { data, error } = await (await createClient()).rpc("audition_todos_llegaron", { aid });
+  if (error) return { ok: false, message: mensajeError(error) };
+  revalidatePath(base(aid), "layout");
+  return { ok: true, message: `${data ?? 0} ${data === 1 ? "persona más quedó" : "personas más quedaron"} como llegadas.` };
+}
+
+/** 0162: "Faltó" (sale de la fila) o "Sí vino" (vuelve). */
+export async function marcarFalto(aid: string, app: string, falto: boolean): Promise<{ ok: boolean; message?: string }> {
+  const { error } = await (await createClient()).rpc("audition_falto", { aid, app, p_falto: falto });
+  if (error) return { ok: false, message: mensajeError(error) };
+  revalidatePath(base(aid), "layout");
+  return { ok: true };
+}
+
 /** Entró a audicionar / terminó / deshacer el último paso. */
 export async function deskStep(aid: string, app: string, paso: "entro" | "termino" | "deshacer"): Promise<{ ok: boolean; message?: string }> {
   const supabase = await createClient();

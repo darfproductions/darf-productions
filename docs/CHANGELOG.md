@@ -5,6 +5,13 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-11-23 — 0162: Día de la audición, «Todos llegan»
+
+Diego: en algunas audiciones (escuelas) es más fácil dar por llegados a todos y marcar solo a quien faltó. Opción por
+audición en Día de la audición (`auditions.asumir_llegada`, apagada por omisión): al encenderla todos los de la lista
+quedan como llegados con su turno (no las solicitudes sin aprobar); «Faltó» los saca de la fila (`falto_at`) y «Sí
+vino» los regresa. Si alguien escanea su QR después, deja de contar como falta.
+
 ## 2026-11-21 — 0161: Honorarios, cómo quiere cobrar cada quien
 
 Diego: en Mi cuenta, Mis honorarios, cada quien elige transferencia o efectivo y pone su CLABE y titular, siempre (aunque

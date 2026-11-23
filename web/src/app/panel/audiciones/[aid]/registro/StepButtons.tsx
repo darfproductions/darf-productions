@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import type { DayStatus } from "@/lib/audition-rules";
-import { deskCheckin, deskStep, moverFila, swapOrder } from "../../actions";
+import { deskCheckin, deskStep, marcarFalto, moverFila, setAsumirLlegada, swapOrder, todosLlegaron } from "../../actions";
 import { Icono } from "@/components/Icono";
 
 const main = "rounded-full bg-texto px-3 py-1.5 text-xs font-bold text-sala disabled:opacity-60";
@@ -80,5 +80,43 @@ export function MoverTurno({ aid, app, nombre, lugar, total, enGrupo = false }: 
         <button type="button" disabled={pending} className={ghost} title="Mover al lugar que escribas" onClick={() => setAbierto(true)}>Mover a…</button>
       )}
     </span>
+  );
+}
+
+// 0162: "Faltó" (sale de la fila) o "Sí vino" (vuelve a la fila), en el modo "Todos llegan".
+export function FaltoButton({ aid, app, nombre, falto }: { aid: string; app: string; nombre: string; falto: boolean }) {
+  const router = useRouter();
+  const [pending, start] = useTransition();
+  const run = () => start(async () => {
+    const r = await marcarFalto(aid, app, !falto);
+    if (!r.ok && r.message) window.alert(r.message);
+    router.refresh();
+  });
+  return falto
+    ? <button type="button" disabled={pending} className={main} onClick={run}>Sí vino</button>
+    : <button type="button" disabled={pending} className="rounded-full border border-[#ff8fa3]/60 px-3 py-1.5 text-xs font-bold text-[#ff8fa3] disabled:opacity-60"
+        onClick={() => window.confirm(`¿${nombre} faltó? Sale de la fila.`) && run()}>Faltó</button>;
+}
+
+// 0162: interruptor del modo "Todos llegan, marca solo a quien faltó" (por audición).
+export function AsumirLlegada({ aid, on, pendientes }: { aid: string; on: boolean; pendientes: number }) {
+  const router = useRouter();
+  const [pending, start] = useTransition();
+  const [msg, setMsg] = useState<string | null>(null);
+  const run = (fn: () => Promise<{ ok: boolean; message: string }>) => start(async () => { const r = await fn(); setMsg(r.message); router.refresh(); });
+  return (
+    <div className="flex flex-col gap-2 text-sm">
+      <label className="flex cursor-pointer items-start gap-2">
+        <input type="checkbox" className="mt-1" checked={on} disabled={pending}
+          onChange={(e) => { const v = e.target.checked; if (!v || window.confirm("¿Dar por llegados a todos los de la lista? Después marcas solo a quien faltó.")) run(() => setAsumirLlegada(aid, v)); }} />
+        <span><b>Todos llegan: marca solo a quien faltó</b><span className="block text-xs text-texto-3">Útil en escuelas. Todos quedan en la fila con su turno; con «Faltó» sale de la fila.</span></span>
+      </label>
+      {on && pendientes > 0 && (
+        <button type="button" disabled={pending} onClick={() => run(() => todosLlegaron(aid))} className="self-start rounded-full border border-white/25 px-3 py-1.5 text-xs font-bold">
+          Dar por llegados a {pendientes} {pendientes === 1 ? "persona nueva" : "personas nuevas"}
+        </button>
+      )}
+      {msg && <p role="status" className="text-xs font-semibold">{msg}</p>}
+    </div>
   );
 }
