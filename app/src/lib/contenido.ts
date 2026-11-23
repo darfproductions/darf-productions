@@ -6,14 +6,14 @@ import { supabase } from "~/lib/supabase";
 // getGallery de productions.ts y getLogistica de logistica.ts), con las mismas tablas y reglas: solo el reparto y
 // ensamble publicados, foto de la obra o, si no hay, el retrato del perfil profesional.
 
-export type Credito = { rol: string; persona: string; foto?: string };
+export type Credito = { rol: string; persona: string; foto?: string; slug?: string };
 
 export type Contenido = {
   sinopsis: string[];
   ficha: { etiqueta: string; valor: string }[];
   actos: { nombre: string; canciones: string[] }[];
-  reparto: { personaje: string; persona: string; foto?: string }[];
-  ensamble: { persona: string; foto?: string }[];
+  reparto: { personaje: string; persona: string; foto?: string; slug?: string }[];
+  ensamble: { persona: string; foto?: string; slug?: string }[];
   equipos: { titulo: string; personas: Credito[] }[];
   videos: { titulo: string; youtube: string }[];
   galeria: string[];
@@ -49,11 +49,14 @@ export async function leerContenido(id: string): Promise<Contenido> {
   const sueltas = ((songs.data ?? []) as { act_id: string | null; titulo: string }[]).filter((s) => !s.act_id).map((s) => s.titulo);
   if (sueltas.length) actos.unshift({ nombre: "", canciones: sueltas });
 
-  const retratos = new Map(((pro.data ?? []) as { person_id: string; retrato_path: string | null }[]).map((x) => [x.person_id, x.retrato_path]));
+  const info = (pro.data ?? []) as { person_id: string; retrato_path: string | null; slug: string | null }[];
+  const retratos = new Map(info.map((x) => [x.person_id, x.retrato_path]));
+  const slugs = new Map(info.filter((x) => x.slug).map((x) => [x.person_id, x.slug as string]));
+  const slug = (r: CreditoFila) => slugs.get(r.person_id);
   const filas = ((credits.data ?? []) as unknown as CreditoFila[]).filter((r) => r.people);
   const foto = (r: CreditoFila) => (r.foto_path ? imagen(r.foto_path) ?? undefined : retratos.get(r.person_id) ? perfilUrl(retratos.get(r.person_id)!) : undefined);
   const de = (tipo: string) => filas.filter((r) => r.tipo === tipo);
-  const equipo = (tipo: string): Credito[] => de(tipo).map((r) => ({ rol: r.papel ?? "", persona: r.people!.nombre, foto: foto(r) }));
+  const equipo = (tipo: string): Credito[] => de(tipo).map((r) => ({ rol: r.papel ?? "", persona: r.people!.nombre, foto: foto(r), slug: slug(r) }));
 
   const ficha = [
     { etiqueta: "Temporada", valor: p?.temporada },
@@ -70,8 +73,8 @@ export async function leerContenido(id: string): Promise<Contenido> {
     sinopsis: (p?.sinopsis ?? "").split(/\n\s*\n/).map((t) => t.trim()).filter(Boolean),
     ficha,
     actos: actos.filter((a) => a.canciones.length > 0),
-    reparto: de("reparto").map((r) => ({ personaje: r.papel ?? "", persona: r.people!.nombre, foto: foto(r) })),
-    ensamble: de("ensamble").map((r) => ({ persona: r.people!.nombre, foto: foto(r) })),
+    reparto: de("reparto").map((r) => ({ personaje: r.papel ?? "", persona: r.people!.nombre, foto: foto(r), slug: slug(r) })),
+    ensamble: de("ensamble").map((r) => ({ persona: r.people!.nombre, foto: foto(r), slug: slug(r) })),
     equipos: [
       { titulo: "Equipo creativo", personas: equipo("creativo") },
       { titulo: "Producción", personas: equipo("produccion") },

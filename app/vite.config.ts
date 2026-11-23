@@ -9,10 +9,13 @@ import react from "@vitejs/plugin-react";
 export default defineConfig({
   plugins: [react()],
   resolve: {
-    alias: {
-      "@": fileURLToPath(new URL("../web/src", import.meta.url)),
-      "~": fileURLToPath(new URL("./src", import.meta.url)),
-    },
+    // Los componentes de la web (p. ej. SocialIcon) usan JSX: React siempre sale de node_modules de la app.
+    alias: [
+      { find: /^react(\/.*)?$/, replacement: fileURLToPath(new URL("./node_modules/react", import.meta.url)) + "$1" },
+      { find: "@", replacement: fileURLToPath(new URL("../web/src", import.meta.url)) },
+      { find: "~", replacement: fileURLToPath(new URL("./src", import.meta.url)) },
+    ],
+    dedupe: ["react", "react-dom"],
   },
   server: { fs: { allow: [".."] } },
   build: { outDir: "dist", target: "es2022", chunkSizeWarningLimit: 900 },

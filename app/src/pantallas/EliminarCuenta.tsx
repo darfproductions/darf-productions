@@ -4,7 +4,6 @@ import { mensajeError } from "@/lib/errores";
 import { Icono } from "~/componentes/Icono";
 import { useSesion } from "~/lib/sesion";
 import { supabase } from "~/lib/supabase";
-import { abrirWeb } from "~/lib/usar";
 
 // Eliminar mi cuenta dentro de la app (lo piden Apple y Google). Igual que la web (web/src/lib/cuenta-eliminar.ts):
 // la base revisa si se puede con account_delete (0077); antes se borra la foto de perfil.
@@ -52,7 +51,7 @@ export function EliminarCuenta() {
           <h2 style={{ margin: "8px 0 0", fontSize: 16, fontWeight: 800 }}>Cuándo no se puede (todavía)</h2>
           <ul style={{ margin: 0, paddingLeft: 18 }} className="suave">
             <li>Si tienes una orden pendiente de pago o boletos para una función que aún no pasa.</li>
-            <li>Si tienes expediente o un papel en una producción, o vendiste boletos con tu código: <button onClick={() => abrirWeb("/contacto")} style={{ background: "none", border: "none", padding: 0, color: "var(--acento)", fontWeight: 700, cursor: "pointer" }}>escríbenos</button> y lo hacemos contigo.</li>
+            <li>Si tienes expediente o un papel en una producción, o vendiste boletos con tu código: <button onClick={() => navegar("/contacto")} style={{ background: "none", border: "none", padding: 0, color: "var(--acento)", fontWeight: 700, cursor: "pointer" }}>escríbenos</button> y lo hacemos contigo.</li>
           </ul>
         </section>
 

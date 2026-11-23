@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import { Link, useParams } from "react-router";
 import { Share } from "@capacitor/share";
 import { Capacitor } from "@capacitor/core";
@@ -181,10 +181,12 @@ export function Obra() {
             {c.reparto.length > 0 && (
               <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12 }}>
                 {c.reparto.map((r, i) => (
-                  <li key={i} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                    <Retrato foto={r.foto} nombre={r.persona} alto={200} />
-                    <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--acento)" }}>{r.personaje}</span>
-                    <span style={{ fontSize: 14, fontWeight: 800, marginTop: -4 }}>{r.persona}</span>
+                  <li key={i}>
+                    <ConPerfil slug={r.slug} estilo={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      <Retrato foto={r.foto} nombre={r.persona} alto={200} />
+                      <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--acento)" }}>{r.personaje}</span>
+                      <span style={{ fontSize: 14, fontWeight: 800, marginTop: -4 }}>{r.persona}{r.slug ? " ›" : ""}</span>
+                    </ConPerfil>
                   </li>
                 ))}
               </ul>
@@ -194,8 +196,10 @@ export function Obra() {
                 <h3 style={{ margin: "6px 0 0", fontSize: 14, fontWeight: 800 }}>Ensamble</h3>
                 <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexWrap: "wrap", gap: 8 }}>
                   {c.ensamble.map((e, i) => (
-                    <li key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 12px 4px 4px", borderRadius: 22, background: "var(--superficie)", border: "1px solid var(--linea)", fontSize: 13, fontWeight: 600 }}>
-                      <Retrato foto={e.foto} nombre={e.persona} alto={32} redondo />{e.persona}
+                    <li key={i}>
+                      <ConPerfil slug={e.slug} estilo={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 12px 4px 4px", borderRadius: 22, background: "var(--superficie)", border: "1px solid var(--linea)", fontSize: 13, fontWeight: 600 }}>
+                        <Retrato foto={e.foto} nombre={e.persona} alto={32} redondo />{e.persona}
+                      </ConPerfil>
                     </li>
                   ))}
                 </ul>
@@ -211,12 +215,15 @@ export function Obra() {
                 <h3 style={{ margin: 0, fontSize: 14, fontWeight: 800, color: "var(--acento)" }}>{g.titulo}</h3>
                 <ul style={{ margin: 0, padding: 0, listStyle: "none" }}>
                   {g.personas.map((p, i) => (
-                    <li key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 0", borderBottom: "1px solid var(--linea)" }}>
-                      <Retrato foto={p.foto} nombre={p.persona} alto={40} redondo />
-                      <div style={{ display: "flex", flexDirection: "column" }}>
-                        <span style={{ fontSize: 14, fontWeight: 700 }}>{p.persona}</span>
-                        {p.rol && <span className="suave" style={{ fontSize: 12 }}>{p.rol}</span>}
-                      </div>
+                    <li key={i} style={{ borderBottom: "1px solid var(--linea)" }}>
+                      <ConPerfil slug={p.slug} estilo={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 0" }}>
+                        <Retrato foto={p.foto} nombre={p.persona} alto={40} redondo />
+                        <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+                          <span style={{ fontSize: 14, fontWeight: 700 }}>{p.persona}</span>
+                          {p.rol && <span className="suave" style={{ fontSize: 12 }}>{p.rol}</span>}
+                        </div>
+                        {p.slug && <Icono nombre="derecha" tamano={16} color="var(--suave)" grosor={2} />}
+                      </ConPerfil>
                     </li>
                   ))}
                 </ul>
@@ -296,6 +303,11 @@ function ChipFuncion({ f, elegida, elegir }: { f: Funcion; elegida: boolean; ele
       {f.starts_at && <span className="suave" style={{ fontSize: 12, fontWeight: 600 }}>{hora(f.starts_at)}</span>}
     </button>
   );
+}
+
+/** Si la persona hizo público su perfil profesional, su nombre abre su perfil en la app. */
+function ConPerfil({ slug, estilo, children }: { slug?: string; estilo: CSSProperties; children: ReactNode }) {
+  return slug ? <Link to={`/artista/${slug}`} style={{ ...estilo, color: "inherit" }}>{children}</Link> : <div style={estilo}>{children}</div>;
 }
 
 function Retrato({ foto, nombre, alto, redondo }: { foto?: string; nombre: string; alto: number; redondo?: boolean }) {

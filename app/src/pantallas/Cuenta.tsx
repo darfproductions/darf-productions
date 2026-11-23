@@ -115,7 +115,8 @@ export function Cuenta() {
 
         <div className="tarjeta lista" style={{ marginTop: 16 }}>
           {env.whatsapp && <Fila icono="whatsapp" texto="Contacto por WhatsApp" onClick={() => abrir(`https://wa.me/${env.whatsapp}`)} />}
-          <Fila icono="correo" texto="Contacto" onClick={() => abrirWeb("/contacto")} />
+          <Fila icono="estrella" texto="Conoce al equipo" onClick={() => navegar("/nosotros")} />
+          <Fila icono="correo" texto="Contacto" onClick={() => navegar("/contacto")} />
           <Fila icono="lista" texto="Aviso de privacidad" onClick={() => abrirWeb("/privacidad")} />
           <Fila icono="lista" texto="Términos y condiciones" onClick={() => abrirWeb("/terminos")} />
         </div>

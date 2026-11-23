@@ -18,6 +18,11 @@ export function rutaEnApp(href: string | null): string | null {
   if (obra) return `/obras/${obra[1]}`;
   if (href.startsWith("/cuenta/boletos") || href === "/cuenta#boletos") return "/boletos";
   if (href === "/cuenta" || href.startsWith("/cuenta?")) return "/cuenta";
+  const artista = /^\/artistas\/([^/?#]+)/.exec(href);
+  if (artista) return `/artista/${artista[1]}`;
+  for (const r of ["/contacto", "/nosotros", "/cuenta/credencial", "/cuenta/honorarios", "/cuenta/perfil-profesional", "/cuenta/ventas", "/cuenta/transacciones", "/cuenta/eventos"]) {
+    if (href === r || href.startsWith(`${r}?`) || href.startsWith(`${r}#`)) return r;
+  }
   return null;
 }
 

@@ -10,7 +10,8 @@ import { leerPerfil } from "~/lib/cuenta";
 import { env } from "~/lib/env";
 import { useSesion } from "~/lib/sesion";
 import { supabase } from "~/lib/supabase";
-import { abrir, abrirWeb, useCarga } from "~/lib/usar";
+import { abrir, useCarga } from "~/lib/usar";
+import { useNavigate } from "react-router";
 import { Marco } from "./CuentaSecciones";
 
 // Mis honorarios (0150/0152/0161) y Perfil profesional (0057), nativos. Igual que /cuenta/honorarios y
@@ -205,6 +206,7 @@ async function asegurar(pid: string): Promise<string | null> {
 
 export function PerfilProfesional() {
   const { sesion } = useSesion();
+  const navegar = useNavigate();
   const uid = sesion?.user.id ?? null;
   const [version, setVersion] = useState(0);
   const { datos, cargando, error } = useCarga(() => (uid ? leerPro(uid) : Promise.resolve(null)), [uid, version]);
@@ -379,7 +381,7 @@ export function PerfilProfesional() {
             )}
             {pro && (
               <p className="suave" style={{ margin: 0, fontSize: 13 }}>Ahora: {esPublico
-                ? <button className="liga" style={{ fontWeight: 800, color: "var(--texto)" }} onClick={() => abrirWeb(`/artistas/${pro.slug}`)}>público <Icono nombre="derecha" tamano={12} grosor={2} /></button>
+                ? <button className="liga" style={{ fontWeight: 800, color: "var(--texto)" }} onClick={() => navegar(`/artista/${pro.slug}`)}>público <Icono nombre="derecha" tamano={12} grosor={2} /></button>
                 : "privado"}</p>
             )}
           </Bloque>
