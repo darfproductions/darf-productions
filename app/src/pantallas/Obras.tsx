@@ -1,6 +1,8 @@
 import { Link } from "react-router";
 import { agrupar, ETIQUETA_ESTADO, type EstadoPublico } from "@/lib/home-rules";
-import { imagen, leerCartelera, type ObraPublica } from "~/lib/datos";
+import { ArteObra } from "~/componentes/ArteObra";
+import { Icono } from "~/componentes/Icono";
+import { leerCartelera, type ObraPublica } from "~/lib/datos";
 import { textoSobre } from "~/lib/tema";
 import { useCarga } from "~/lib/usar";
 
@@ -34,21 +36,21 @@ export function Obras() {
   );
 }
 
+// Como la tarjeta de la web (ObraHorizontal): arte arriba (fondo + logo en caja fija) y datos abajo.
 function TarjetaObra({ o }: { o: ObraPublica }) {
-  const fondo = o.color_fondo ?? "#0b0b0b";
-  const ambiente = imagen(o.poster_16x9_path ?? o.poster_4x3_path ?? o.ambiente_path);
-  const logo = imagen(o.logo_path);
+  const acento = o.color_acento ?? "#333333";
   return (
-    <Link to={`/obras/${o.id}`} style={{ position: "relative", height: 180, borderRadius: 24, overflow: "hidden", display: "block", background: fondo, color: "#ffffff", boxShadow: "var(--sombra-tarjeta, none)" }}>
-      {ambiente && <img src={ambiente} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />}
-      {logo && !o.poster_16x9_path && !o.poster_4x3_path && <img src={logo} alt="" style={{ position: "absolute", left: "50%", top: 18, transform: "translateX(-50%)", maxWidth: "62%", maxHeight: 92, objectFit: "contain" }} />}
-      <div aria-hidden="true" style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(11,11,11,0) 40%, rgba(11,11,11,0.92) 100%)" }} />
-      <div style={{ position: "absolute", left: 16, right: 16, bottom: 14, display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 10 }}>
-        <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
-          <span style={{ fontSize: 18, fontWeight: 900, textTransform: "uppercase" }}>{o.nombre}</span>
-          <span style={{ fontSize: 12, fontWeight: 500, color: "#d6d6d6" }}>{[o.temporada, o.venue].filter(Boolean).join(" · ")}</span>
+    <Link to={`/obras/${o.id}`} className="tarjeta" style={{ display: "flex", flexDirection: "column", overflow: "hidden", borderRadius: 24 }}>
+      <div style={{ position: "relative", aspectRatio: "16 / 10", background: o.color_fondo ?? "#0b0b0b" }}>
+        <ArteObra obra={o} uso="destacada-celular" />
+        <span className="pildora" style={{ position: "absolute", top: 12, left: 12, background: acento, color: textoSobre(acento) }}>{ETIQUETA_ESTADO[o.estadoPublico]}</span>
+      </div>
+      <div style={{ padding: "14px 16px 16px", display: "flex", alignItems: "center", gap: 12 }}>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
+          <span style={{ fontSize: 17, fontWeight: 900 }}>{o.nombre}</span>
+          <span className="suave" style={{ fontSize: 13, fontWeight: 500 }}>{[o.temporada, o.venue].filter(Boolean).join(" · ") || "Detalles por anunciar"}</span>
         </div>
-        <span className="pildora" style={{ flexShrink: 0, background: o.color_acento ?? "#333333", color: textoSobre(o.color_acento ?? "#333333") }}>{ETIQUETA_ESTADO[o.estadoPublico]}</span>
+        <Icono nombre="derecha" tamano={20} color="var(--suave)" grosor={2} />
       </div>
     </Link>
   );

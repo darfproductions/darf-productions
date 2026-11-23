@@ -54,7 +54,7 @@ function Marco() {
         <Route path="/acceso" element={<Acceso />} />
         <Route path="*" element={<Inicio />} />
       </Routes>
-      {CON_BARRA.has(pathname) && <Barra />}
+      {CON_BARRA.has(pathname) && <><div className="barra-estado" aria-hidden="true" /><Barra /></>}
     </>
   );
 }

@@ -1,8 +1,9 @@
 import { Link } from "react-router";
 import { ETIQUETA_ESTADO } from "@/lib/home-rules";
+import { ArteObra } from "~/componentes/ArteObra";
 import { Icono, type NombreIcono } from "~/componentes/Icono";
 import { useApariencia } from "~/lib/apariencia";
-import { leerCartelera, poster, imagen } from "~/lib/datos";
+import { leerCartelera, poster } from "~/lib/datos";
 import { saludo } from "~/lib/formato";
 import { textoSobre } from "~/lib/tema";
 import { nombreDe, useSesion } from "~/lib/sesion";
@@ -82,8 +83,7 @@ export function Inicio() {
               {otras.map((o) => (
                 <Link key={o.id} to={`/obras/${o.id}`} style={{ width: 150, flexShrink: 0, display: "flex", flexDirection: "column", gap: 8, scrollSnapAlign: "start" }}>
                   <div style={{ position: "relative", width: 150, height: 190, borderRadius: 18, overflow: "hidden", background: o.color_fondo ?? "var(--tarjeta)" }}>
-                    {poster(o, "tarjeta-celular") && <img src={poster(o, "tarjeta-celular")!} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />}
-                    {!o.poster_3x4_path && imagen(o.logo_path) && <img src={imagen(o.logo_path)!} alt="" style={{ position: "absolute", left: 12, right: 12, bottom: 14, maxHeight: 70, objectFit: "contain" }} />}
+                    <ArteObra obra={o} uso="tarjeta-celular" />
                   </div>
                   <span style={{ fontSize: 13, fontWeight: 800 }}>{o.nombre}</span>
                   <span className="suave" style={{ fontSize: 12, marginTop: -6 }}>{ETIQUETA_ESTADO[o.estadoPublico]}{o.temporada ? ` · ${o.temporada}` : ""}</span>
