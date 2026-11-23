@@ -5,6 +5,12 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-11-23 — 0163: «Todos llegan» sin hora falsa
+
+Diego: si se usa «Todos llegan», la hora de llegada no es real. `audition_applications.llegada_asumida`: quien se dio
+por llegado dice «Se dio por llegado» en la lista y en su ficha; si escanea su QR o se marca «Sí vino», vuelve a ser
+una llegada real con su hora.
+
 ## 2026-11-23 — 0162: Día de la audición, «Todos llegan»
 
 Diego: en algunas audiciones (escuelas) es más fácil dar por llegados a todos y marcar solo a quien faltó. Opción por
