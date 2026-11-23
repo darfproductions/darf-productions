@@ -3,7 +3,8 @@
 # · Android: en cada envío a la rama app-movil se compila un instalable (.apk) de prueba.
 #   Se descarga desde la pestaña Actions → la corrida → "Artifacts" → darf-android.
 # · iPhone: se compila en una Mac de GitHub y se sube a TestFlight cuando se publica una etiqueta app-v…
-#   (por ejemplo app-v0.1.0) o con el botón "Run workflow" (cuando este archivo esté en la rama principal).
+#   (por ejemplo app-v0.1.0, desde GitHub → Releases), cuando un envío a app-movil lleva [testflight] en su
+#   mensaje, o con el botón "Run workflow" (cuando este archivo esté en la rama principal).
 #   Necesita los secretos del repositorio: APPLE_TEAM_ID, ASC_KEY_ID, ASC_ISSUER_ID y ASC_KEY_P8 (app/README.md).
 #
 # El repositorio es público: los minutos de GitHub Actions (también los de Mac) no tienen costo.
@@ -65,7 +66,8 @@ jobs:
 
   ios:
     name: iPhone (TestFlight)
-    if: startsWith(github.ref, 'refs/tags/app-v') || (github.event_name == 'workflow_dispatch' && inputs.testflight)
+    # Etiqueta app-v…, el botón "Run workflow", o un envío a app-movil cuyo mensaje lleve [testflight].
+    if: startsWith(github.ref, 'refs/tags/app-v') || (github.event_name == 'workflow_dispatch' && inputs.testflight) || contains(github.event.head_commit.message, '[testflight]')
     runs-on: macos-15
     defaults:
       run:

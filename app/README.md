@@ -58,7 +58,8 @@ El flujo `.github/workflows/app-movil.yml` compila en las computadoras de GitHub
   de "App móvil (compilar)" → **Artifacts** → `darf-android`. Se descarga un .zip con el `.apk`; en el teléfono,
   ábrelo y permite "instalar apps de origen desconocido".
 - **iPhone:** se compila en una Mac de GitHub y se sube a **TestFlight** al publicar una etiqueta `app-v…`
-  (por ejemplo `app-v0.1.0`). Necesita una sola vez:
+  (por ejemplo `app-v0.1.0`, desde GitHub → Releases) o con un envío a `app-movil` cuyo mensaje lleve
+  `[testflight]`. Necesita una sola vez:
   1. App Store Connect → Apps → **+** → Nueva app: iOS, nombre DARF, Bundle ID `com.darfproductions.app`.
   2. App Store Connect → **Users and Access → Integrations → App Store Connect API** → generar una llave con rol
      **Admin** (para que GitHub pueda firmar). Anotar *Issuer ID* y *Key ID*; descargar el `.p8` (solo una vez).
