@@ -111,6 +111,22 @@ export async function moverEnCast(aid: string, app: string, destino: string): Pr
   return { ok: true };
 }
 
+/** 0167: un personaje nuevo en el ajuste (y, si se dice, a quién se le da). Solo Dirección general. */
+export async function agregarPersonaje(aid: string, nombre: string, app: string | null): Promise<{ ok: boolean; message?: string }> {
+  const { error } = await (await createClient()).rpc("audition_cast_personaje", { aid, p_nombre: nombre.trim(), p_app: app || null });
+  if (error) return { ok: false, message: mensajeError(error) };
+  revalidatePath(`/panel/audiciones/${aid}`, "layout");
+  return { ok: true };
+}
+
+/** 0167: quitar un personaje vacío y sin votos (agregado por error en el ajuste). */
+export async function quitarPersonaje(aid: string, rid: string): Promise<{ ok: boolean; message?: string }> {
+  const { error } = await (await createClient()).rpc("audition_cast_quitar_personaje", { aid, rid });
+  if (error) return { ok: false, message: mensajeError(error) };
+  revalidatePath(`/panel/audiciones/${aid}`, "layout");
+  return { ok: true };
+}
+
 export async function mandarCast(_p: VotState, f: FormData): Promise<VotState> {
   const aid = str(f, "aid");
   const limite = str(f, "responder_antes");

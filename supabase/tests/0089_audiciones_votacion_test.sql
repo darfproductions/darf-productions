@@ -9,6 +9,8 @@ select ('00000000-0000-0000-0000-0000000000' || s)::uuid, '00000000-0000-0000-00
 update profiles set nombre = 'Juez ' || right(id::text, 2) where id::text like '00000000-0000-0000-0000-0000000000f%';
 insert into production_members (production_id, user_id, role_id) values
   ('showman', '00000000-0000-0000-0000-0000000000f1', 'direccion'),
+  -- 0167: mover y mandar el cast lo hace Dirección general.
+  ('showman', '00000000-0000-0000-0000-0000000000f1', 'direccion_general'),
   ('showman', '00000000-0000-0000-0000-0000000000f2', 'juez'),
   ('showman', '00000000-0000-0000-0000-0000000000f3', 'juez');
 
@@ -143,8 +145,10 @@ do $$ declare j json; donna json; sophie json; sam json; begin
   select x into donna from json_array_elements(j->'roles') x where x->>'nombre' = 'Donna';
   select x into sophie from json_array_elements(j->'roles') x where x->>'nombre' = 'Sophie';
   select x into sam from json_array_elements(j->'roles') x where x->>'nombre' = 'Sam';
-  if (select string_agg(a->>'nombre', ',' order by a->>'nombre') from json_array_elements(donna->'asignados') a) <> 'Ana,Petra' then raise exception 'FALLO T6: Donna %', donna; end if;
-  if json_array_length(sophie->'asignados') <> 0 then raise exception 'FALLO T6: Sophie no quedó vacía %', sophie; end if;
+  -- 0167: el empate de Donna (Petra/Ana, 1 a 1) se desempata y se anota; Petra queda libre y gana Sophie.
+  if (select string_agg(a->>'nombre', ',') from json_array_elements(donna->'asignados') a) <> 'Ana' then raise exception 'FALLO T6: Donna %', donna; end if;
+  if donna->>'nota' not like 'Empate a 1 voto con Petra%' then raise exception 'FALLO T6: nota de Donna %', donna->>'nota'; end if;
+  if (select string_agg(a->>'nombre', ',') from json_array_elements(sophie->'asignados') a) <> 'Petra' then raise exception 'FALLO T6: Sophie %', sophie; end if;
   if (sophie->'pista'->0->>'nombre') <> 'Lucía' then raise exception 'FALLO T6: pista de Sophie %', sophie->'pista'; end if;
   if json_array_length(sam->'asignados') <> 0 then raise exception 'FALLO T6: Sam'; end if;
   if (j->'ensamble'->0->>'nombre') <> 'Beto' then raise exception 'FALLO T6: ensamble %', j->'ensamble'; end if;
@@ -182,10 +186,10 @@ do $$ declare j json; begin
   exception when others then if sqlerrm like 'FALLO%' then raise; end if; end;
   perform pg_temp.as_root();
   if (select string_agg(tipo || ':' || coalesce(papel, '-'), ',' order by tipo, papel) from casting_offers where application_id in (select id from audition_applications where audition_id = pg_temp.c('aid')))
-     <> 'ensamble:-,ensamble:-,reparto:Donna,reparto:Donna,reparto:Sophie' then
+     <> 'ensamble:-,ensamble:-,reparto:Donna,reparto:Sophie,reparto:Sophie' then
     raise exception 'FALLO T8: ofertas %', (select string_agg(tipo || ':' || coalesce(papel, '-'), ',') from casting_offers);
   end if;
-  if not exists (select 1 from notifications where user_id = pg_temp.u('a1') and titulo like 'Tienes una oferta en%' and detalle like 'Donna%') then raise exception 'FALLO T8: aviso de oferta'; end if;
+  if not exists (select 1 from notifications where user_id = pg_temp.u('a1') and titulo like 'Tienes una oferta en%' and detalle like 'Sophie%') then raise exception 'FALLO T8: aviso de oferta'; end if;
   if (select fase from auditions where id = pg_temp.c('aid')) <> 'enviado' then raise exception 'FALLO T8: fase'; end if;
 end $$;
 

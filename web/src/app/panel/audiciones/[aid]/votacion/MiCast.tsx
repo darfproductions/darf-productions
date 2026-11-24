@@ -7,6 +7,11 @@ import { useActionState, useMemo, useState } from "react";
 import { Card } from "@/components/panel/ui";
 import { Icono } from "@/components/Icono";
 import { subirCast, type VotState } from "../../votacion-actions";
+import type { Criterio } from "@/lib/audition-rules";
+import type { Evaluacion } from "@/lib/evaluaciones-rules";
+import { LoQuePusieron } from "./LoQuePusieron";
+
+export type EvalsPorPersona = Record<string, { ronda: number; jueces: Evaluacion[] }[]>;
 
 export type Candidato = { id: string; nombre: string; numero: number | null; foto_path: string | null; op1: number; op2: number; op3: number; mi_opcion: number | null; votos: number | null };
 export type RolVoto = { id: string; nombre: string; descripcion: string | null; mi_voto: string | null; candidatos: Candidato[] };
@@ -16,12 +21,20 @@ const conNum = (a: { nombre: string; numero: number | null }) => `${a.numero ? `
 
 // Votación (0153): cada juez arma su cast. Por personaje, la referencia (a quién marcaron los jueces como opción 1, 2
 // o 3, y qué opción le pusiste tú) y un desplegable con todos los que audicionaron. "Subir mi cast" guarda todo junto.
-export function MiCast({ aid, roles, aspirantes, fotos, puedeVotar }: {
+// 0166: con `evals`, en cada personaje se puede ver lo que pusieron todos los jueces de cualquier aspirante.
+export function MiCast({ aid, roles, aspirantes, fotos, puedeVotar, evals, criterios }: {
   aid: string; roles: RolVoto[]; aspirantes: Aspirante[]; fotos: Record<string, string>; puedeVotar: boolean;
+  evals: EvalsPorPersona | null; criterios: Criterio[];
 }) {
+  const [ver, setVer] = useState<Record<string, string>>({});
   const [state, run, pending] = useActionState<VotState, FormData>(subirCast, null);
   const [sel, setSel] = useState<Record<string, string>>(() => Object.fromEntries(roles.map((r) => [r.id, r.mi_voto ?? ""])));
-  const nombre = useMemo(() => new Map(aspirantes.map((a) => [a.id, a.nombre])), [aspirantes]);
+  const nombre = useMemo(() => new Map([...roles.flatMap((r) => r.candidatos), ...aspirantes].map((a) => [a.id, a.nombre])), [roles, aspirantes]);
+  const todos = useMemo(() => {
+    const m = new Map<string, Aspirante>();
+    for (const a of [...aspirantes, ...roles.flatMap((r) => r.candidatos)]) if (!m.has(a.id)) m.set(a.id, { id: a.id, nombre: a.nombre, numero: a.numero });
+    return [...m.values()].sort((x, y) => (x.numero ?? 9999) - (y.numero ?? 9999) || x.nombre.localeCompare(y.nombre, "es"));
+  }, [aspirantes, roles]);
   // Alguien en dos personajes: se avisa (al cerrar se queda en el primero que gane, en el orden de la lista).
   const repetidos = useMemo(() => {
     const por = new Map<string, string[]>();
@@ -39,6 +52,7 @@ export function MiCast({ aid, roles, aspirantes, fotos, puedeVotar }: {
         const max = Math.max(1, ...ref.map((c) => c.op1 + c.op2 + c.op3));
         const marcados = new Set(ref.filter((c) => c.op1 + c.op2 + c.op3 > 0).map((c) => c.id));
         const v = sel[r.id] ?? "";
+        const viendo = ver[r.id] ?? (v && v !== "abstencion" ? v : "");
         return (
           <Card key={r.id} className="flex flex-col gap-3">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -69,9 +83,15 @@ export function MiCast({ aid, roles, aspirantes, fotos, puedeVotar }: {
                             </>
                           )}
                           {c.votos !== null && <span className="text-sm font-bold">{c.votos} {c.votos === 1 ? "voto" : "votos"}</span>}
-                          {puedeVotar && !elegido && (
-                            <button type="button" onClick={() => setSel((s) => ({ ...s, [r.id]: c.id }))} className="self-start text-xs font-bold text-lila underline underline-offset-4">Elegir</button>
-                          )}
+                          <span className="flex flex-wrap gap-x-3 gap-y-1">
+                            {puedeVotar && !elegido && (
+                              <button type="button" onClick={() => setSel((s) => ({ ...s, [r.id]: c.id }))} className="text-xs font-bold text-lila underline underline-offset-4">Elegir</button>
+                            )}
+                            {evals && (
+                              <button type="button" onClick={() => setVer((s) => ({ ...s, [r.id]: c.id }))} aria-pressed={viendo === c.id}
+                                className={`text-xs font-bold underline underline-offset-4 ${viendo === c.id ? "text-texto" : "text-texto-2"}`}>Ver evaluaciones</button>
+                            )}
+                          </span>
                         </div>
                       </li>
                     );
@@ -79,6 +99,18 @@ export function MiCast({ aid, roles, aspirantes, fotos, puedeVotar }: {
                 </ul>
               )}
             </div>
+
+            {evals && (
+              <div className="flex flex-col gap-2 rounded-xl border border-white/10 bg-sala/40 p-3">
+                <label className="flex flex-col gap-1 text-sm font-semibold">Lo que pusieron los jueces de
+                  <select value={viendo} onChange={(e) => setVer((s) => ({ ...s, [r.id]: e.target.value }))} className="rounded-lg border border-white/10 bg-sala px-3 py-2 text-sm">
+                    <option value="">Elige a alguien</option>
+                    {todos.map((a) => <option key={a.id} value={a.id}>{conNum(a)}</option>)}
+                  </select>
+                </label>
+                {viendo && <LoQuePusieron rondas={evals[viendo] ?? []} criterios={criterios} />}
+              </div>
+            )}
 
             {puedeVotar && (
               <label className="flex flex-col gap-1 text-sm font-semibold">Tu elección para {r.nombre}

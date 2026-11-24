@@ -29,7 +29,8 @@ export function GuiaFases({ aid, estado, fase, votacion, conCallback, gestiona, 
   const actual = pasoActual(estado, fase, votacion);
   const i = pasos.findIndex((p) => p.id === actual);
   const enInscripcion = actual === "inscripcion";
-  const sig = votacion && !enInscripcion ? botonSiguiente(fase, conCallback) : null;
+  // 0167: al callback se llama desde «Terminar audiciones» o «Elegir callback» (con fecha), no con «Siguiente».
+  const sig = votacion && !enInscripcion && fase !== "seleccion_callback" ? botonSiguiente(fase, conCallback) : null;
   const ant = votacion && !enInscripcion ? anteriorFase(fase, conCallback) : null;
   const btn = "rounded-full bg-texto px-4 py-2 text-sm font-bold text-sala disabled:opacity-60";
   const ghost = "rounded-full border border-white/25 px-3 py-2 text-xs font-bold disabled:opacity-60";
@@ -56,7 +57,7 @@ export function GuiaFases({ aid, estado, fase, votacion, conCallback, gestiona, 
         )}
         {gestiona && sig && (
           <ActionForm inline action={moverFase} hidden={{ aid, dir: "siguiente" }}
-            confirm={fase === "votacion" ? "¿Cerrar la votación? Se calcula la propuesta del cast y ya no se puede votar." : "¿Pasar a la siguiente etapa?"}
+            confirm={fase === "votacion" ? "¿Cerrar la votación? Se ven los resultados, se arma la propuesta del cast y ya no se puede votar." : "¿Pasar a la siguiente etapa?"}
             submit={sig} submitClass={btn} />
         )}
         {gestiona && ant && (

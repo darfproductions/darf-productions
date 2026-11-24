@@ -69,7 +69,7 @@ type OrderRow = {
   cancelada_por_comprador_at: string | null;
   buyer_nombre: string;
   performances: { starts_at: string | null; venue: string | null; production_id: string; puertas_at?: string | null; termina_at?: string | null; cancelada_at?: string | null; cancelada_motivo?: string | null; productions: (KitColumns & PosterColumns & { nombre: string; venue: string | null; estado?: string }) | null } | null;
-  tickets: { id: string; is_active: boolean; qr_token: string; checked_in_at: string | null; seats: { seat_label: string } | null; price_categories: { nombre: string } | null }[];
+  tickets: { id: string; is_active: boolean; qr_token: string; checked_in_at: string | null; seats: { seat_label: string; price_categories?: { nombre: string } | null } | null; price_categories: { nombre: string } | null }[];
 };
 
 /** Asiento o "General · zona" (0055). */
@@ -107,7 +107,7 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
   ]);
   const { data, error } = await supabase
     .from("orders")
-    .select(`id, order_code, status, total, discount_amount, discount_codigo, buyer_telefono, buyer_nombre, created_at, expires_at, vencida_at, motivo, cancelada_por_comprador_at, performances(starts_at, venue, production_id, puertas_at, termina_at, cancelada_at, cancelada_motivo, productions(nombre, venue, estado, color_fondo, color_superficie, color_texto, color_acento, logo_path, ambiente_path, frase, ${POSTER_COLUMNS})), tickets(id, is_active, qr_token, checked_in_at, seats(seat_label), price_categories(nombre))`)
+    .select(`id, order_code, status, total, discount_amount, discount_codigo, buyer_telefono, buyer_nombre, created_at, expires_at, vencida_at, motivo, cancelada_por_comprador_at, performances(starts_at, venue, production_id, puertas_at, termina_at, cancelada_at, cancelada_motivo, productions(nombre, venue, estado, color_fondo, color_superficie, color_texto, color_acento, logo_path, ambiente_path, frase, ${POSTER_COLUMNS})), tickets(id, is_active, qr_token, checked_in_at, seats(seat_label, price_categories(nombre)), price_categories(nombre))`)
     .eq("buyer_user_id", session.userId)
     .order("created_at", { ascending: false });
   const orders = (data ?? []) as unknown as OrderRow[];
@@ -194,6 +194,7 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
                 funcion: formatPerformanceDate(o.performances?.starts_at ?? null),
                 lugar: o.performances?.venue ?? prod?.venue ?? null,
                 asiento: etiqueta(t),
+                zona: t.seats?.price_categories?.nombre ?? t.price_categories?.nombre ?? null,
                 orden: o.order_code,
                 comprador: o.buyer_nombre,
                 qr: qrs.get(t.id) ?? null,

@@ -23,7 +23,7 @@ type ProdWallet = Pick<Production, "id" | "nombre" | "venue" | "color_fondo" | "
 /** Misma forma con sesión (consulta) y sin sesión (wallet_pase_datos). */
 type FilaBoleto = {
   id: string; qr_token: string; is_active: boolean; cancelled_at: string | null; checked_in_at: string | null;
-  seats: { seat_label: string } | null; price_categories: { nombre: string } | null;
+  seats: { seat_label: string; price_categories?: { nombre: string } | null } | null; price_categories: { nombre: string } | null;
   orders: { order_code: string; status: string; buyer_nombre: string; buyer_user_id: string;
     performances: { id: string; starts_at: string | null; venue: string | null; cancelada_at: string | null; productions: ProdWallet | null } | null } | null;
 };
@@ -57,7 +57,7 @@ function armarBoleto(t: FilaBoleto, beneficios: BeneficioBoleto[] = [], hor: { h
     status: o.status, activo: t.is_active, cancelado: !!t.cancelled_at, funcionCancelada: !!f.cancelada_at, ingreso: !!t.checked_in_at,
   });
   const pase = conEstado(paseBoleto({
-    ticketId: t.id, qrToken: t.qr_token, obra, startsAt: f.starts_at, lugar, asiento,
+    ticketId: t.id, qrToken: t.qr_token, obra, startsAt: f.starts_at, lugar, asiento, zona: t.seats?.price_categories?.nombre ?? t.price_categories?.nombre ?? null,
     orden: o.order_code, comprador: o.buyer_nombre, estilo: estiloDe(tema, poster),
     ...textosBoleto(beneficios, f.starts_at),
     puertas: hor.h?.puertas ?? null, direccion: hor.l?.direccion ?? null,
@@ -79,7 +79,7 @@ export async function boletoWallet(ticketId: string): Promise<BoletoWallet | Fal
   const supabase = await createClient();
   const { data } = await supabase
     .from("tickets")
-    .select(`id, qr_token, is_active, cancelled_at, checked_in_at, seats(seat_label), price_categories(nombre), orders!inner(order_code, status, buyer_nombre, buyer_user_id, performances(id, starts_at, venue, cancelada_at, productions(id, nombre, venue, estado, color_fondo, color_superficie, color_texto, color_acento, logo_path, ambiente_path, frase, ${POSTER_COLUMNS})))`)
+    .select(`id, qr_token, is_active, cancelled_at, checked_in_at, seats(seat_label, price_categories(nombre)), price_categories(nombre), orders!inner(order_code, status, buyer_nombre, buyer_user_id, performances(id, starts_at, venue, cancelada_at, productions(id, nombre, venue, estado, color_fondo, color_superficie, color_texto, color_acento, logo_path, ambiente_path, frase, ${POSTER_COLUMNS})))`)
     .eq("id", ticketId)
     .eq("orders.buyer_user_id", session.userId)
     .maybeSingle();
