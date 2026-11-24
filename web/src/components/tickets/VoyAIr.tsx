@@ -5,6 +5,8 @@ import { useState } from "react";
 import { Icono } from "@/components/Icono";
 import { logoDarf } from "@/lib/ticket-design";
 
+export type DatosVoyAIr = Props;
+
 type Props = {
   obra: string; funcion: string; lugar: string | null; ambiente: string | null; logo: string | null;
   /** Colores del kit de la obra (cada obra se ve con los suyos). */
@@ -50,6 +52,17 @@ function renglones(ctx: CanvasRenderingContext2D, s: string, ancho: number): str
   return out;
 }
 
+/** El logo de la obra en un solo color (el mismo de "¡VOY A IR!"): se conserva su silueta y se pinta encima. */
+function tenido(img: HTMLImageElement, color: string, w: number, h: number): HTMLCanvasElement {
+  const t = document.createElement("canvas");
+  t.width = Math.max(1, Math.round(w * 2)); t.height = Math.max(1, Math.round(h * 2));
+  const x = t.getContext("2d")!;
+  x.drawImage(img, 0, 0, t.width, t.height);
+  x.globalCompositeOperation = "source-in";
+  x.fillStyle = color; x.fillRect(0, 0, t.width, t.height);
+  return t;
+}
+
 /** Rectángulo con esquinas redondas. */
 function caja(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
   ctx.beginPath();
@@ -64,7 +77,8 @@ function caja(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h:
 /** "darfproductions.com/producciones/showman" (sin https ni www). */
 const ligaCorta = (u: string) => u.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "");
 
-async function dibujar(p: Props): Promise<Blob | null> {
+/** La imagen "Voy a ir" (PNG 1080 × 1920). La usan esta página y la app. */
+export async function dibujar(p: Props): Promise<Blob | null> {
   const c = document.createElement("canvas");
   c.width = W; c.height = H;
   const ctx = c.getContext("2d");
@@ -107,7 +121,7 @@ async function dibujar(p: Props): Promise<Blob | null> {
   if (logo) {
     const h = 170, ancho = Math.min(820, (logo.width / logo.height) * h);
     const hReal = (ancho / logo.width) * logo.height;
-    ctx.drawImage(logo, (W - ancho) / 2, y, ancho, hReal);
+    ctx.drawImage(tenido(logo, p.acento, ancho, hReal), (W - ancho) / 2, y, ancho, hReal);
     y += hReal + 70;
   } else {
     ctx.fillStyle = p.texto; ctx.font = "800 80px Montserrat, Arial, sans-serif";
