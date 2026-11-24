@@ -5,6 +5,12 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-11-24 — 0165: «Separar» ya no se deshace al reordenar
+
+Diego: separaba a alguien de su grupo y al «Cambiar el orden» se volvía a juntar, porque reordenar junta primero a
+quienes se mencionaron en «¿Con quién pasas?». «Separar» ahora marca a la persona (`no_juntar`) y ya no se junta sola;
+«Pasan juntos» a mano quita la marca.
+
 ## 2026-11-24 — Formularios que no se borran, códigos de descuento y cortesías
 
 Diego: al fallar un formulario se borraba todo lo escrito (React vacía el formulario al mandar). `ActionForm` y el nuevo

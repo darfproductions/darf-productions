@@ -647,11 +647,13 @@ export async function moverFila(aid: string, app: string, a: "arriba" | "abajo" 
  *  están ya en un grupo). Devuelve cuántos grupos se armaron. */
 export async function juntarSugeridos(aid: string): Promise<{ ok: boolean; grupos: number; message?: string }> {
   const supabase = await createClient();
-  const [{ data: lista }, { data: sistema }, { data: grupos }] = await Promise.all([
+  const [{ data: lista }, { data: sistema }, { data: grupos }, { data: separados }] = await Promise.all([
     supabase.rpc("audition_day_list", { aid }), supabase.rpc("audition_respuestas_sistema", { aid }), supabase.rpc("audition_grupos", { aid }),
+    supabase.rpc("audition_no_juntar", { aid }),
   ]);
   const con = new Map(((sistema ?? []) as { id: string; companeros: string | null }[]).map((x) => [x.id, x.companeros]));
-  const enGrupo = new Set(((grupos ?? []) as { id: string }[]).map((g) => g.id));
+  // 0165: quien ya está en un grupo o se separó a mano no se junta solo.
+  const enGrupo = new Set([...((grupos ?? []) as { id: string }[]).map((g) => g.id), ...((separados ?? []) as string[])]);
   const personas = ((lista ?? []) as { id: string; nombre: string; entered_at: string | null; estado: string }[])
     .filter((r) => !r.entered_at && !["cancelado", "no_cumple"].includes(r.estado) && !enGrupo.has(r.id))
     .map((r) => ({ id: r.id, nombre: r.nombre, con: con.get(r.id) ?? null }));
