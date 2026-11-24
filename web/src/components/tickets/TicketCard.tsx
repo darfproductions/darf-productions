@@ -40,10 +40,16 @@ export function TicketCard({ b, estilo, i, total }: { b: BoletoVista; estilo: Es
         <span className="absolute -right-3 -top-3 h-6 w-6 rounded-full bg-sala" />
       </div>
       <dl className="grid grid-cols-2 gap-3 px-6 py-4 text-sm">
-        <div className="col-span-2">
+        <div className={b.zona && !b.asiento.includes(b.zona) ? "" : "col-span-2"}>
           <dt className="text-[11px] font-bold uppercase tracking-[0.2em]" style={{ color: estilo.acento }}>Asiento</dt>
           <dd className="text-3xl font-black">{b.asiento}</dd>
         </div>
+        {b.zona && !b.asiento.includes(b.zona) && (
+          <div>
+            <dt className="text-[11px] font-bold uppercase tracking-[0.2em]" style={{ color: estilo.acento }}>Zona</dt>
+            <dd className="text-xl font-black leading-tight">{b.zona}</dd>
+          </div>
+        )}
         <div>
           <dt className="text-[11px] font-bold uppercase tracking-[0.2em]" style={{ color: estilo.acento }}>Orden</dt>
           <dd className="font-bold">{b.orden}</dd>

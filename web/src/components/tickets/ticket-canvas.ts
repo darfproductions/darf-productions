@@ -92,39 +92,57 @@ function dibujar(ctx: CanvasRenderingContext2D, b: BoletoVista, e: EstiloBoleto,
   // Datos
   ctx.textAlign = "left";
   const etiqueta = (t: string, x: number, y: number) => { ctx.fillStyle = e.acento; ctx.font = `700 22px ${fuente}`; ctx.fillText(t.toUpperCase(), x, y); };
+  // Asiento y zona lado a lado (la zona no se repite si ya viene en el texto, como "General · VIP").
+  const conZona = !!b.zona && !b.asiento.includes(b.zona);
+  const ajustar = (t: string, peso: number, max: number, min: number, ancho: number) => {
+    let n = max;
+    do { ctx.font = `${peso} ${n}px ${fuente}`; n -= 2; } while (ctx.measureText(t).width > ancho && n >= min);
+    let x = t;
+    while (x.length > 1 && ctx.measureText(x).width > ancho) x = x.slice(0, -1);
+    return x === t ? t : `${x.trimEnd()}…`;
+  };
   etiqueta("Asiento", 48, 524);
-  ctx.fillStyle = e.texto; ctx.font = `900 60px ${fuente}`;
-  ctx.fillText(b.asiento.slice(0, 22), 48, 590);
-  // 0122: lo que incluye la zona, en renglones que caben (máx. 2; si no cabe, termina en "…").
-  let fin = 590;
-  if (b.incluye?.length) {
-    ctx.fillStyle = e.acento; ctx.font = `700 21px ${fuente}`;
-    const ls = lineas(ctx, `Incluye: ${b.incluye.join(" · ")}${b.acceso ? ` · ${b.acceso}` : ""}`, W - 96);
-    const dos = ls.slice(0, 2);
-    if (ls.length > 2) {
-      let u = dos[1];
-      while (u.length > 1 && ctx.measureText(`${u}…`).width > W - 96) u = u.slice(0, -1);
-      dos[1] = `${u.trimEnd()}…`;
-    }
-    dos.forEach((l, k) => ctx.fillText(l, 48, 628 + k * 28));
-    fin = 628 + (dos.length - 1) * 28;
+  ctx.fillStyle = e.texto;
+  ctx.fillText(ajustar(b.asiento, 900, 60, 34, conZona ? 300 : W - 96), 48, 590);
+  if (conZona) {
+    etiqueta("Zona", 380, 524);
+    ctx.fillStyle = e.texto;
+    ctx.fillText(ajustar(b.zona!, 900, 46, 26, W - 380 - 48), 380, 584);
   }
-  const yEt = b.incluye?.length ? fin + 46 : 650, yVal = yEt + 40;
-  etiqueta("Orden", 48, yEt);
-  etiqueta("Nombre", 380, yEt);
-  ctx.fillStyle = e.texto; ctx.font = `700 30px ${fuente}`;
-  ctx.fillText(b.orden, 48, yVal);
-  let nombre = b.comprador;
-  while (nombre.length > 1 && ctx.measureText(nombre).width > W - 380 - 48) nombre = nombre.slice(0, -1);
-  ctx.fillText(nombre === b.comprador ? nombre : `${nombre.trimEnd()}…`, 380, yVal);
+  let y = 590;
 
-  // QR (se recorre hacia abajo si arriba hay renglones de "Incluye", sin tapar el pie)
-  const qy = Math.max(722, yVal + 32), qs = Math.min(480, H - 120 - qy), qx = (W - qs) / 2;
+  // 0122: lo que incluye la zona, completo (cada beneficio en sus renglones). Para que quepa, el QR se hace más chico.
+  const items = [...(b.incluye ?? []), ...(b.acceso ? [b.acceso] : [])];
+  if (items.length) {
+    y += 44;
+    etiqueta("Incluye", 48, y);
+    ctx.fillStyle = e.texto; ctx.font = `600 20px ${fuente}`;
+    let ls = items.flatMap((x) => lineas(ctx, `· ${x}`, W - 96));
+    if (ls.length > 5) {
+      ls = ls.slice(0, 5);
+      let u = ls[4];
+      while (u.length > 1 && ctx.measureText(`${u}…`).width > W - 96) u = u.slice(0, -1);
+      ls[4] = `${u.trimEnd()}…`;
+    }
+    for (const l of ls) { y += 27; ctx.fillText(l, 48, y); }
+  }
+  y += 48;
+  etiqueta("Orden", 48, y);
+  etiqueta("Nombre", 380, y);
+  y += 38;
+  ctx.fillStyle = e.texto;
+  ctx.fillText(ajustar(b.orden, 700, 30, 22, 300), 48, y);
+  ctx.fillStyle = e.texto;
+  ctx.fillText(ajustar(b.comprador, 700, 30, 22, W - 380 - 48), 380, y);
+
+  // QR: tan grande como quepa (máx. 480), sin tapar el pie.
+  const qy = y + 28, qs = Math.max(280, Math.min(480, H - 110 - qy)), qx = (W - qs) / 2;
   ctx.fillStyle = "#ffffff";
   ctx.beginPath(); ctx.roundRect(qx, qy, qs, qs, 32); ctx.fill();
   if (qr) {
+    const m = Math.round(qs * 0.05);
     ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(qr, qx + 24, qy + 24, qs - 48, qs - 48);
+    ctx.drawImage(qr, qx + m, qy + m, qs - 2 * m, qs - 2 * m);
     ctx.imageSmoothingEnabled = true;
   }
 
