@@ -63,7 +63,7 @@ export async function boletosVista(o: OrdenBoletos): Promise<BoletoVista[]> {
   const benef = new Map(((data ?? []) as { ticket_id: string; beneficios: BeneficioBoleto[] }[]).map((r) => [r.ticket_id, r.beneficios]));
   return Promise.all(activos.map(async (b) => ({
     id: b.id, obra: o.obra?.nombre ?? "Producción", funcion: fechaFuncion(o.funcion?.starts_at ?? null), lugar: o.funcion?.venue ?? o.obra?.venue ?? null,
-    asiento: b.etiqueta, orden: o.order_code, comprador: o.buyer_nombre, usado: !!b.checked_in_at,
+    asiento: b.etiqueta, zona: b.zona, orden: o.order_code, comprador: o.buyer_nombre, usado: !!b.checked_in_at,
     qr: pasada ? null : await QRCode.toDataURL(b.qr_token, { margin: 1, width: 480 }),
     ...textosBoleto(benef.get(b.id) ?? [], o.funcion?.starts_at),
   })));
