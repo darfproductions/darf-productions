@@ -31,6 +31,9 @@
       ],
       "react/*": [
         "./node_modules/@types/react/*"
+      ],
+      "qrcode": [
+        "./node_modules/@types/qrcode"
       ]
     }
   },

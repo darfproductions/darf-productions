@@ -12,6 +12,8 @@ export default defineConfig({
     // Los componentes de la web (p. ej. SocialIcon) usan JSX: React siempre sale de node_modules de la app.
     alias: [
       { find: /^react(\/.*)?$/, replacement: fileURLToPath(new URL("./node_modules/react", import.meta.url)) + "$1" },
+      // Igual con las librerías que usan los archivos compartidos de la web (la compilación de la app no instala web/).
+      { find: /^qrcode$/, replacement: fileURLToPath(new URL("./node_modules/qrcode", import.meta.url)) },
       { find: "@", replacement: fileURLToPath(new URL("../web/src", import.meta.url)) },
       { find: "~", replacement: fileURLToPath(new URL("./src", import.meta.url)) },
     ],
