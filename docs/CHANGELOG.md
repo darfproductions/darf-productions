@@ -9,7 +9,8 @@ solo *qué*.
 
 Diego: separaba a alguien de su grupo y al «Cambiar el orden» se volvía a juntar, porque reordenar junta primero a
 quienes se mencionaron en «¿Con quién pasas?». «Separar» ahora marca a la persona (`no_juntar`) y ya no se junta sola;
-«Pasan juntos» a mano quita la marca.
+«Pasan juntos» a mano quita la marca. En «Pasan en grupo» (Solicitudes, Día de la audición y Modo audición) se ven
+los grupos armados, con «Separar» por persona o «Separar todo el grupo».
 
 ## 2026-11-24 — Formularios que no se borran, códigos de descuento y cortesías
 

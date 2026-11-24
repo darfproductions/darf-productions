@@ -21,6 +21,20 @@ export function GruposTurno({ aid, personas, abierto = false, titulo = "Pasan en
   const sugeridos = useMemo(() => sugerirGrupos(personas.filter((p) => !p.grupo).map((p) => ({ id: p.id, nombre: p.nombre, con: p.con ?? null })))
     .filter((g) => !descartados.has(g.ids.join("|"))), [personas, descartados]);
   const nombre = new Map(personas.map((p) => [p.id, p.nombre]));
+  // Los grupos ya armados (mismo turno), para verlos y separarlos desde aquí.
+  const armados = useMemo(() => {
+    const m = new Map<string, Persona[]>();
+    for (const p of personas) if (p.grupo) m.set(p.grupo, [...(m.get(p.grupo) ?? []), p]);
+    return [...m.values()].filter((g) => g.length >= 2).sort((a, b) => (a[0].numero ?? 9999) - (b[0].numero ?? 9999));
+  }, [personas]);
+  const separarTodos = (g: Persona[]) => start(async () => {
+    if (!confirm(`¿Separar a todo el grupo (${g.map((x) => x.nombre.split(" ")[0]).join(", ")})? Cada quien pasará en su propio turno.`)) return;
+    for (const x of g) {
+      const r = await separarTurno(aid, x.id);
+      if (!r.ok) { setMsg({ ok: false, texto: r.message ?? "No se pudo separar." }); break; }
+    }
+    router.refresh();
+  });
   const cambiar = (id: string) => setMarcados((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
   const juntar = (ids: string[]) => start(async () => {
     const r = await agruparTurno(aid, ids);
@@ -31,9 +45,32 @@ export function GruposTurno({ aid, personas, abierto = false, titulo = "Pasan en
   return (
     <Card>
       <details open={abierto}>
-        <summary className="cursor-pointer font-bold">{titulo}{sugeridos.length > 0 && <span className="ml-2 rounded-full bg-lila/20 px-2 py-0.5 text-xs font-bold text-lila">{sugeridos.length} {sugeridos.length === 1 ? "sugerido" : "sugeridos"}</span>}</summary>
+        <summary className="cursor-pointer font-bold">{titulo}{armados.length > 0 && <span className="ml-2 rounded-full bg-white/10 px-2 py-0.5 text-xs font-bold text-texto-2">{armados.length} {armados.length === 1 ? "grupo" : "grupos"}</span>}{sugeridos.length > 0 && <span className="ml-2 rounded-full bg-lila/20 px-2 py-0.5 text-xs font-bold text-lila">{sugeridos.length} {sugeridos.length === 1 ? "sugerido" : "sugeridos"}</span>}</summary>
         <div className="mt-3 flex flex-col gap-3">
           <p className="text-sm text-texto-2">Cada quien conserva su número y los jueces califican a cada uno por separado; con un solo <b>SIGUIENTE</b> entra todo el grupo.</p>
+          {armados.length > 0 && (
+            <div className="flex flex-col gap-2 rounded-xl border border-white/15 p-3">
+              <p className="text-sm font-bold">Grupos armados ({armados.length}) <span className="font-normal text-texto-3">pasan en el mismo turno</span></p>
+              <ul className="flex flex-col gap-2">
+                {armados.map((g) => (
+                  <li key={g[0].grupo} className="flex flex-col gap-2 rounded-lg bg-sala px-3 py-2 text-sm">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <b>Turno {g[0].numero ?? "—"} · {g.length} personas</b>
+                      <button type="button" disabled={pending} onClick={() => separarTodos(g)} className="rounded-full border border-white/25 px-3 py-1 text-xs font-bold hover:border-white/60 disabled:opacity-50">Separar todo el grupo</button>
+                    </div>
+                    <ul className="flex flex-col gap-1">
+                      {g.map((x) => (
+                        <li key={x.id} className="flex flex-wrap items-center justify-between gap-2">
+                          <span className="min-w-0">{x.nombre}{conPregunta && x.con ? <span className="block truncate text-xs text-texto-3">Pasa con: {x.con}</span> : null}</span>
+                          <Separar aid={aid} app={x.id} nombre={x.nombre} />
+                        </li>
+                      ))}
+                    </ul>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           {sugeridos.length > 0 && (
             <div className="flex flex-col gap-2 rounded-xl border border-lila/40 p-3">
               <p className="text-sm font-bold">Grupos sugeridos <span className="font-normal text-texto-3">por lo que respondieron a «¿con quién pasas?»</span></p>
