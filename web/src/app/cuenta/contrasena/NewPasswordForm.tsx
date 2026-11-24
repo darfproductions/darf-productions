@@ -1,5 +1,6 @@
 "use client";
 
+import { FormSinBorrar } from "@/components/FormSinBorrar";
 import { PASSWORD_AYUDA } from "@/lib/account-rules";
 import { PasswordInput } from "@/components/PasswordInput";
 import Link from "next/link";
@@ -12,7 +13,7 @@ export function NewPasswordForm() {
   const [state, action, pending] = useActionState<NewPassState, FormData>(setNewPassword, null);
   if (state?.ok) return <p role="status" className="text-lg">{state.message} <Link href="/cuenta" className="underline">Ir a Mi cuenta</Link></p>;
   return (
-    <form action={action} className="flex flex-col gap-4">
+    <FormSinBorrar action={action} className="flex flex-col gap-4">
       <label className="flex flex-col gap-1.5 text-sm font-semibold">Contraseña nueva
         <PasswordInput className={field} name="nueva" required minLength={8} autoComplete="new-password" />
       </label>
@@ -24,6 +25,6 @@ export function NewPasswordForm() {
       <button disabled={pending} className="boton-compra rounded-full py-4 text-sm font-bold uppercase tracking-[0.1em] disabled:opacity-60">
         {pending ? "Guardando…" : "Guardar contraseña"}
       </button>
-    </form>
+    </FormSinBorrar>
   );
 }

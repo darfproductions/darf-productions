@@ -1,5 +1,6 @@
 "use client";
 
+import { FormSinBorrar } from "@/components/FormSinBorrar";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -86,9 +87,9 @@ export function MobileMenu({ links, account, panel, sesion = false }: { links: N
             {sesion && <Link href="/cuenta#boletos" onClick={() => setAbierto(false)} className="fb fb-o">Mis boletos</Link>}
             <Link href="/producciones?estado=cartelera" onClick={() => setAbierto(false)} className="fb fb-luz">Comprar boletos</Link>
             {sesion && (
-              <form action={logout} className="flex">
+              <FormSinBorrar action={logout} className="flex">
                 <button type="submit" className="w-full py-2 text-center text-sm font-bold text-texto-3 underline">Cerrar sesión</button>
-              </form>
+              </FormSinBorrar>
             )}
             <p className="pt-2 text-center text-xs text-texto-3">@darfproductions · Jóvenes para jóvenes</p>
           </div>

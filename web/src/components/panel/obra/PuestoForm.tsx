@@ -1,5 +1,6 @@
 "use client";
 
+import { FormSinBorrar } from "@/components/FormSinBorrar";
 import { useActionState, useState } from "react";
 import { BuscarCuenta } from "@/components/panel/BuscarCuenta";
 import { InvitacionBotones } from "@/components/panel/InvitacionBotones";
@@ -21,7 +22,7 @@ export function PuestoForm({ pid, obra, roles, p, submit = "Guardar" }: { pid: s
   const [modo, setModo] = useState<Modo>(p?.conCuenta ? "cuenta" : p?.nombre || p?.correo ? "invitar" : "cuenta");
   const opcion = "flex cursor-pointer items-center gap-2 rounded-full border border-white/15 px-3 py-1.5 text-xs font-bold has-[:checked]:border-lila has-[:checked]:bg-lila/15";
   return (
-    <form action={run} onSubmit={(e) => setMarcados(new FormData(e.currentTarget).getAll("role").map(String))} className="flex flex-col gap-3">
+    <FormSinBorrar action={run} onSubmit={(e) => setMarcados(new FormData(e.currentTarget).getAll("role").map(String))} className="flex flex-col gap-3">
       <input type="hidden" name="pid" value={pid} />
       {p?.id && <input type="hidden" name="id" value={p.id} />}
       <div className="grid gap-3 sm:grid-cols-[2fr_1fr]">
@@ -68,6 +69,6 @@ export function PuestoForm({ pid, obra, roles, p, submit = "Guardar" }: { pid: s
         {state && <Notice ok={state.ok}>{state.message}</Notice>}
       </div>
       {state?.token && <InvitacionBotones token={state.token} obra={obra} roles={roles.filter((r) => marcados.includes(r.id)).map((r) => r.nombre)} />}
-    </form>
+    </FormSinBorrar>
   );
 }

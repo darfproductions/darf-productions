@@ -1,5 +1,6 @@
 "use client";
 
+import { FormSinBorrar } from "@/components/FormSinBorrar";
 import { useActionState } from "react";
 import { Notice, button } from "@/components/panel/ui";
 import { addMember, type MemberState } from "./actions";
@@ -10,7 +11,7 @@ import { BuscarCuenta } from "@/components/panel/BuscarCuenta";
 export function AddMemberForm({ pid, roles }: { pid: string; roles: RoleOption[] }) {
   const [state, action, pending] = useActionState<MemberState, FormData>(addMember, null);
   return (
-    <form action={action} className="flex flex-col gap-4">
+    <FormSinBorrar action={action} limpiarCon={state} className="flex flex-col gap-4">
       <input type="hidden" name="pid" value={pid} />
       <label className="flex max-w-md flex-col gap-1.5 text-sm font-semibold">Nombre o correo
         <BuscarCuenta placeholder="Escribe su nombre o su correo" />
@@ -20,6 +21,6 @@ export function AddMemberForm({ pid, roles }: { pid: string; roles: RoleOption[]
       <button disabled={pending} className={`${button} self-start`}>{pending ? "Agregando…" : "Agregar o invitar"}</button>
       {state && <Notice ok={state.ok}>{state.message}</Notice>}
       {state?.invitacion && <InvitacionBotones token={state.invitacion.token} obra={state.invitacion.obra} roles={state.invitacion.roles} />}
-    </form>
+    </FormSinBorrar>
   );
 }

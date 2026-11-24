@@ -1,5 +1,6 @@
 "use client";
 
+import { FormSinBorrar } from "@/components/FormSinBorrar";
 import { useActionState } from "react";
 import { Notice } from "@/components/panel/ui";
 import { setEstado, type EditState } from "./actions";
@@ -34,13 +35,13 @@ export function EstadoPanel({ pid, estado, onSale }: { pid: string; estado: stri
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap gap-2">
         {acciones.map((a) => (
-          <form key={a.estado} action={run} onSubmit={(e) => { if (!window.confirm(a.confirm)) e.preventDefault(); }}>
+          <FormSinBorrar key={a.estado} action={run} onSubmit={(e) => { if (!window.confirm(a.confirm)) e.preventDefault(); }}>
             <input type="hidden" name="pid" value={pid} />
             <input type="hidden" name="estado" value={a.estado} />
             <button disabled={pending} className={a.primary ? "boton-compra rounded-full px-6 py-2.5 text-sm font-bold disabled:opacity-60" : "rounded-full border border-white/25 px-4 py-2 text-sm font-bold hover:border-white/50 disabled:opacity-60"}>
               {a.label}
             </button>
-          </form>
+          </FormSinBorrar>
         ))}
       </div>
       {onSale && estado === "publicada" && <p className="text-sm text-texto-3">Está en venta: para archivarla, taquilla primero debe cerrar la venta.</p>}

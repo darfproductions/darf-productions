@@ -1,5 +1,6 @@
 "use client";
 
+import { FormSinBorrar } from "@/components/FormSinBorrar";
 import { WalletBotones } from "@/components/wallet/WalletBotones";
 import { useActionState, useEffect, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
@@ -64,7 +65,7 @@ export function MiCredencial({ c, compacto = false, wallet }: { c: MiCredencialV
           {ajustes && c.nivel === "equipo" && (
             <div className="flex w-[min(420px,92vw)] flex-col gap-4 rounded-[22px] border border-linea-2 bg-telon p-5 text-sm">
               <p className="text-texto-2">Cuando alguien escanee tu gafete con su celular verá tu nombre y tu papel, y además:</p>
-              <form action={guardar} className="flex flex-col gap-2.5">
+              <FormSinBorrar action={guardar} className="flex flex-col gap-2.5">
                 <label className="flex items-center gap-2"><input type="checkbox" name="telefono" defaultChecked={c.compartir_telefono} /> Mi teléfono</label>
                 <label className="flex items-center gap-2"><input type="checkbox" name="correo" defaultChecked={c.compartir_correo} /> Mi correo</label>
                 <label className="flex items-center gap-2"><input type="checkbox" name="instagram" defaultChecked={c.compartir_instagram} /> Mi Instagram (de mi perfil profesional)</label>
@@ -72,7 +73,7 @@ export function MiCredencial({ c, compacto = false, wallet }: { c: MiCredencialV
                 <p className="text-xs text-texto-3">Si eres menor de edad, tu teléfono y correo no se comparten aunque los marques.</p>
                 <button disabled={guardando} className="fb fb-luz fb-sm self-start">{guardando ? "Guardando…" : "Guardar"}</button>
                 {estado && <p role="status" className={`text-xs ${estado.ok ? "text-exito" : "text-[#ff8fa3]"}`}>{estado.message}</p>}
-              </form>
+              </FormSinBorrar>
             </div>
           )}
           <button

@@ -1,5 +1,6 @@
 "use client";
 
+import { FormSinBorrar } from "@/components/FormSinBorrar";
 import { useActionState } from "react";
 import { Notice, button } from "@/components/panel/ui";
 import type { EditState } from "./actions";
@@ -20,7 +21,7 @@ export function EditForm({
 }) {
   const [state, run, pending] = useActionState<EditState, FormData>(action, null);
   return (
-    <form action={run} className="flex flex-col gap-4">
+    <FormSinBorrar action={run} className="flex flex-col gap-4">
       <input type="hidden" name="pid" value={pid} />
       {hidden && Object.entries(hidden).map(([k, v]) => <input key={k} type="hidden" name={k} value={v} />)}
       {children}
@@ -28,6 +29,6 @@ export function EditForm({
         <button disabled={pending} className={button}>{pending ? "Guardando…" : submit}</button>
         {state && <Notice ok={state.ok}>{state.message}</Notice>}
       </div>
-    </form>
+    </FormSinBorrar>
   );
 }

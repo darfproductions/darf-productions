@@ -1,5 +1,6 @@
 "use client";
 
+import { FormSinBorrar } from "@/components/FormSinBorrar";
 import { useActionState } from "react";
 import { input } from "@/components/panel/ui";
 import { reviewRequest, type ReviewState } from "./actions";
@@ -19,7 +20,7 @@ export function ReviewForm({ pid, id, tipo, monto, conDoc }: { pid: string; id: 
   if (state?.ok) return <p role="status" className="font-bold text-exito"><Icono nombre="check" /> {state.message}</p>;
   const nota = tipo === "documento" && !conDoc ? "Es un documento fuera de la lista: al aprobar solo queda registrado." : QUE_PASA[tipo];
   return (
-    <form action={run} className="mt-1 flex flex-col gap-2 border-t border-white/10 pt-3">
+    <FormSinBorrar action={run} limpiarCon={state} className="mt-1 flex flex-col gap-2 border-t border-white/10 pt-3">
       <input type="hidden" name="pid" value={pid} />
       <input type="hidden" name="id" value={id} />
       {tipo === "pago" && (
@@ -35,6 +36,6 @@ export function ReviewForm({ pid, id, tipo, monto, conDoc }: { pid: string; id: 
         {pending && <span className="text-xs text-texto-3">Guardando…</span>}
         {state && !state.ok && <span role="alert" className="text-sm text-[#ff8fa3]">{state.message}</span>}
       </div>
-    </form>
+    </FormSinBorrar>
   );
 }

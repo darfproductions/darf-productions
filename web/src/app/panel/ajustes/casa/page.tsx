@@ -1,3 +1,4 @@
+import { FormSinBorrar } from "@/components/FormSinBorrar";
 import type { Metadata } from "next";
 import { ConfirmSubmit } from "@/components/panel/ConfirmSubmit";
 import { Card, Notice, PanelTitle, button, buttonGhost, input } from "@/components/panel/ui";
@@ -54,7 +55,7 @@ export default async function CasaDarf({ searchParams }: PageProps<"/panel/ajust
   const desc = new Map(permissions.map((p) => [p.id, p.descripcion]));
 
   const puestoForm = (
-    <form action={crearRolCasa} className="mt-4 flex flex-col gap-4">
+    <FormSinBorrar action={crearRolCasa} className="mt-4 flex flex-col gap-4">
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="flex flex-col gap-1.5 text-sm font-semibold">Nombre del puesto
           <input className={input} name="nombre" required maxLength={40} placeholder="CEO, CFO, Head of HR…" />
@@ -66,7 +67,7 @@ export default async function CasaDarf({ searchParams }: PageProps<"/panel/ajust
       <p className="text-sm font-semibold">¿Qué puede hacer?</p>
       <Permisos permissions={permissions} checked={new Set()} />
       <button className={`${button} self-start`}>Crear puesto</button>
-    </form>
+    </FormSinBorrar>
   );
 
   return (
@@ -88,15 +89,15 @@ export default async function CasaDarf({ searchParams }: PageProps<"/panel/ajust
                 <span className="font-bold">{r.nombre}</span>
                 <span className="ml-2 text-sm text-texto-3">{[...(grants.get(r.id) ?? [])].map((p) => (desc.get(p) ?? p).split(":")[0]).join(" · ") || "Sin permisos"}</span>
               </summary>
-              <form action={guardarPermisosCasa} className="mt-4 flex flex-col gap-4">
+              <FormSinBorrar action={guardarPermisosCasa} className="mt-4 flex flex-col gap-4">
                 <input type="hidden" name="id" value={r.id} />
                 <Permisos permissions={permissions} checked={grants.get(r.id) ?? new Set()} />
                 <button className={`${button} self-start`}>Guardar permisos</button>
-              </form>
-              <form action={borrarRolCasa} className="mt-3">
+              </FormSinBorrar>
+              <FormSinBorrar action={borrarRolCasa} className="mt-3">
                 <input type="hidden" name="id" value={r.id} />
                 <ConfirmSubmit message={`¿Eliminar el puesto "${r.nombre}"?`} className={buttonGhost}>Eliminar puesto</ConfirmSubmit>
-              </form>
+              </FormSinBorrar>
             </details>
           </Card>
         ))}
@@ -119,7 +120,7 @@ export default async function CasaDarf({ searchParams }: PageProps<"/panel/ajust
         {roles.length > 0 ? (
           <Card className="flex flex-col gap-4">
             <h3 className="font-bold">Agregar a Casa DARF</h3>
-            <form action={guardarMiembro} className="flex flex-col gap-4">
+            <FormSinBorrar action={guardarMiembro} className="flex flex-col gap-4">
               <div className="grid gap-3 sm:grid-cols-[1fr_200px]">
                 <label className="flex flex-col gap-1.5 text-sm font-semibold">Nombre o correo de su cuenta
                   <BuscarCuenta placeholder="Escribe su nombre" />
@@ -131,7 +132,7 @@ export default async function CasaDarf({ searchParams }: PageProps<"/panel/ajust
               <Roles roles={roles} />
               <p className="text-xs text-texto-3">La persona necesita tener cuenta. “Desde” sale en su gafete (si no lo pones, es hoy).</p>
               <button className={`${button} self-start`}>Agregar</button>
-            </form>
+            </FormSinBorrar>
           </Card>
         ) : <Card className="text-sm text-texto-3">Primero crea un puesto; luego aquí se lo asignas a la persona.</Card>}
         {([["Cabezas de la empresa", miembros.filter((x) => x.directivo)], ["Equipo", miembros.filter((x) => !x.directivo)]] as const).map(([titulo, grupo]) => grupo.length > 0 && (
@@ -142,10 +143,10 @@ export default async function CasaDarf({ searchParams }: PageProps<"/panel/ajust
             {/* 0144: orden manual (jerarquía). */}
             <div className="flex shrink-0 flex-col items-center gap-1 pt-0.5">
               <span className="num text-xs font-bold text-texto-3">{i + 1}</span>
-              <form action={moverMiembro}><input type="hidden" name="uid" value={m.user_id} /><input type="hidden" name="dir" value="arriba" />
-                <button disabled={i === 0} aria-label={`Subir a ${m.nombre}`} className="rounded-full border border-white/20 p-1.5 hover:border-white/60 disabled:opacity-30"><Icono nombre="flecha-arriba" /></button></form>
-              <form action={moverMiembro}><input type="hidden" name="uid" value={m.user_id} /><input type="hidden" name="dir" value="abajo" />
-                <button disabled={i === grupo.length - 1} aria-label={`Bajar a ${m.nombre}`} className="rounded-full border border-white/20 p-1.5 hover:border-white/60 disabled:opacity-30"><Icono nombre="flecha-abajo" /></button></form>
+              <FormSinBorrar action={moverMiembro}><input type="hidden" name="uid" value={m.user_id} /><input type="hidden" name="dir" value="arriba" />
+                <button disabled={i === 0} aria-label={`Subir a ${m.nombre}`} className="rounded-full border border-white/20 p-1.5 hover:border-white/60 disabled:opacity-30"><Icono nombre="flecha-arriba" /></button></FormSinBorrar>
+              <FormSinBorrar action={moverMiembro}><input type="hidden" name="uid" value={m.user_id} /><input type="hidden" name="dir" value="abajo" />
+                <button disabled={i === grupo.length - 1} aria-label={`Bajar a ${m.nombre}`} className="rounded-full border border-white/20 p-1.5 hover:border-white/60 disabled:opacity-30"><Icono nombre="flecha-abajo" /></button></FormSinBorrar>
             </div>
             <details className="min-w-0 flex-1">
               <summary className="cursor-pointer">
@@ -155,7 +156,7 @@ export default async function CasaDarf({ searchParams }: PageProps<"/panel/ajust
                 <span className="ml-2 text-sm text-texto-3">{m.roles.map((r) => nombreRol.get(r) ?? r).join(", ")} · desde {m.desde.slice(0, 4)}</span>
                 <span className="ml-2 text-xs text-texto-3">{enNosotros.has(m.user_id) ? "· sale en Nosotros" : "· oculto en Nosotros"}</span>
               </summary>
-              <form action={guardarCargo} className="mt-4 flex flex-col gap-3">
+              <FormSinBorrar action={guardarCargo} className="mt-4 flex flex-col gap-3">
                 <input type="hidden" name="uid" value={m.user_id} />
                 <label className="flex flex-col gap-1.5 text-sm font-semibold">Cargo específico
                   <input className={input} name="cargo" maxLength={60} defaultValue={m.cargo ?? ""} placeholder={`Si lo dejas vacío: ${m.roles.map((r) => nombreRol.get(r) ?? r)[0] ?? "su puesto"}`} />
@@ -167,18 +168,18 @@ export default async function CasaDarf({ searchParams }: PageProps<"/panel/ajust
                 </label>
                 <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="directivo" defaultChecked={m.directivo} /> Es una de las cabezas de la empresa (sale aparte y primero)</label>
                 <button className={`${buttonGhost} self-start`}>Guardar</button>
-              </form>
-              <form action={moverMiembro} className="mt-3 flex flex-wrap gap-2">
+              </FormSinBorrar>
+              <FormSinBorrar action={moverMiembro} className="mt-3 flex flex-wrap gap-2">
                 <input type="hidden" name="uid" value={m.user_id} />
                 <button name="dir" value="primero" disabled={i === 0} className={`${buttonGhost} text-xs`}>Hasta arriba</button>
                 <button name="dir" value="ultimo" disabled={i === grupo.length - 1} className={`${buttonGhost} text-xs`}>Hasta abajo</button>
-              </form>
-              <form action={nosotrosMiembro} className="mt-3">
+              </FormSinBorrar>
+              <FormSinBorrar action={nosotrosMiembro} className="mt-3">
                 <input type="hidden" name="uid" value={m.user_id} />
                 <input type="hidden" name="mostrar" value={enNosotros.has(m.user_id) ? "0" : "1"} />
                 <button className={buttonGhost}>{enNosotros.has(m.user_id) ? "Ocultar de Conoce al equipo" : "Mostrar en Conoce al equipo"}</button>
-              </form>
-              <form action={guardarMiembro} className="mt-4 flex flex-col gap-3">
+              </FormSinBorrar>
+              <FormSinBorrar action={guardarMiembro} className="mt-4 flex flex-col gap-3">
                 <input type="hidden" name="email" value={m.email} />
                 <p className="text-sm text-texto-3">{m.email}</p>
                 <Roles roles={roles} checked={m.roles} />
@@ -186,11 +187,11 @@ export default async function CasaDarf({ searchParams }: PageProps<"/panel/ajust
                   <input className={input} name="desde" type="date" defaultValue={m.desde} />
                 </label>
                 <button className={`${buttonGhost} self-start`}>Guardar</button>
-              </form>
-              <form action={quitarMiembro} className="mt-3">
+              </FormSinBorrar>
+              <FormSinBorrar action={quitarMiembro} className="mt-3">
                 <input type="hidden" name="uid" value={m.user_id} />
                 <ConfirmSubmit message={`¿Quitar a ${m.nombre} de Casa DARF?`} className={buttonGhost}>Quitar de Casa DARF</ConfirmSubmit>
-              </form>
+              </FormSinBorrar>
             </details>
           </Card>
         ))}

@@ -1,5 +1,6 @@
 "use client";
 
+import { FormSinBorrar } from "@/components/FormSinBorrar";
 import { PASSWORD_AYUDA } from "@/lib/account-rules";
 import { PasswordInput } from "@/components/PasswordInput";
 import Link from "next/link";
@@ -33,7 +34,7 @@ export function AuthForms({ next, captcha }: { next: string; captcha: string }) 
       </div>
 
       {/* Botón oficial de Apple: fondo negro, logo y texto blancos (Human Interface Guidelines). */}
-      <form action={loginApple} className="-mb-2">
+      <FormSinBorrar action={loginApple} className="-mb-2">
         <input type="hidden" name="next" value={next} />
         <button className="flex w-full items-center justify-center gap-3 rounded-full border border-linea-2 bg-black py-3.5 text-sm font-bold text-white hover:bg-black/80">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -41,8 +42,8 @@ export function AuthForms({ next, captcha }: { next: string; captcha: string }) 
           </svg>
           Continuar con Apple
         </button>
-      </form>
-      <form action={loginGoogle}>
+      </FormSinBorrar>
+      <FormSinBorrar action={loginGoogle}>
         <input type="hidden" name="next" value={next} />
         <button className="flex w-full items-center justify-center gap-3 rounded-full border border-linea-2 bg-white py-3.5 text-sm font-bold text-[#1f1f1f] hover:bg-white/90">
           <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
@@ -53,13 +54,13 @@ export function AuthForms({ next, captcha }: { next: string; captcha: string }) 
           </svg>
           Continuar con Google
         </button>
-      </form>
+      </FormSinBorrar>
       <p className="-mt-2 text-center text-xs text-texto-3">Al continuar aceptas los <a href="/terminos" target="_blank" className="underline">términos</a> y el <a href="/privacidad" target="_blank" className="underline">aviso de privacidad</a>.</p>
       <p className="flex items-center gap-3 text-xs text-texto-3 before:h-px before:flex-1 before:bg-linea-2 after:h-px after:flex-1 after:bg-linea-2">o con tu correo</p>
 
       {tab === "entrar" ? (
         <>
-        <form action={loginAction} className="flex flex-col gap-4">
+        <FormSinBorrar action={loginAction} className="flex flex-col gap-4">
           <input type="hidden" name="next" value={next} />
           <label className="flex flex-col gap-1.5 text-sm font-semibold">Correo
             <input className={field} name="email" type="email" required autoComplete="email" value={correo} onChange={(e) => setCorreo(e.target.value)} />
@@ -73,9 +74,9 @@ export function AuthForms({ next, captcha }: { next: string; captcha: string }) 
           <button disabled={loginPending} className="boton-compra rounded-full py-4 text-sm font-bold uppercase tracking-[0.1em] disabled:opacity-60">
             {loginPending ? "Entrando…" : "Entrar"}
           </button>
-        </form>
+        </FormSinBorrar>
         {loginState?.sinConfirmar && (
-          <form action={reAction} className="flex flex-col gap-3 rounded-xl bg-sala/60 p-4">
+          <FormSinBorrar action={reAction} className="flex flex-col gap-3 rounded-xl bg-sala/60 p-4">
             <input type="hidden" name="next" value={next} />
             <input type="hidden" name="email" value={correo} />
             <Turnstile siteKey={captcha} reinicio={reState} />
@@ -83,13 +84,13 @@ export function AuthForms({ next, captcha }: { next: string; captcha: string }) 
             <button disabled={rePending || !correo} className="self-start text-sm font-bold text-lila underline underline-offset-4 disabled:opacity-60">
               {rePending ? "Enviando…" : "Reenviar correo de confirmación"}
             </button>
-          </form>
+          </FormSinBorrar>
         )}
         </>
       ) : regState?.ok ? (
         <p role="status" className="text-lg">{regState.message}</p>
       ) : (
-        <form action={regAction} className="flex flex-col gap-4">
+        <FormSinBorrar action={regAction} className="flex flex-col gap-4">
           <input type="hidden" name="next" value={next} />
           <input type="text" name="sitio" tabIndex={-1} autoComplete="off" aria-hidden="true" className="hidden" />
           <label className="flex flex-col gap-1.5 text-sm font-semibold">Nombre
@@ -108,7 +109,7 @@ export function AuthForms({ next, captcha }: { next: string; captcha: string }) 
           <button disabled={regPending} className="boton-compra rounded-full py-4 text-sm font-bold uppercase tracking-[0.1em] disabled:opacity-60">
             {regPending ? "Creando…" : "Crear cuenta"}
           </button>
-        </form>
+        </FormSinBorrar>
       )}
     </div>
   );

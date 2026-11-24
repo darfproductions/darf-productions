@@ -1,3 +1,4 @@
+import { FormSinBorrar } from "@/components/FormSinBorrar";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ActionForm } from "@/components/panel/ActionForm";
@@ -103,7 +104,7 @@ export default async function Directorio({ searchParams }: PageProps<"/panel/per
                   </span>
                   <span className="flex min-w-0 flex-wrap items-center gap-2">
                     {p.userId && p.rol && access.isDirector ? (
-                      <form action={changeGlobalRole} className="flex items-center gap-2">
+                      <FormSinBorrar action={changeGlobalRole} className="flex items-center gap-2">
                         <input type="hidden" name="id" value={p.userId} />
                         <input type="hidden" name="q" value={q} />
                         <select name="rol" defaultValue={p.rol} className={`${input} py-1.5 text-xs`} aria-label={`Rol general de ${p.nombre}`}>
@@ -112,7 +113,7 @@ export default async function Directorio({ searchParams }: PageProps<"/panel/per
                           {p.rol === "staff" && <option value="staff" disabled>Staff (antiguo)</option>}
                         </select>
                         <ConfirmSubmit message={`¿Cambiar el rol general de ${p.nombre}?`} className="rounded-full border border-white/25 px-3 py-1 text-xs font-bold">Guardar</ConfirmSubmit>
-                      </form>
+                      </FormSinBorrar>
                     ) : !p.userId && p.personId ? (
                       <ActionForm inline action={linkAccount} hidden={{ id: p.personId }} submit="Ligar" submitClass="rounded-full border border-white/25 px-3 py-1 text-xs font-bold">
                         <BuscarCuenta className="w-56 max-w-full" placeholder="Nombre o correo de su cuenta" />
@@ -131,12 +132,12 @@ export default async function Directorio({ searchParams }: PageProps<"/panel/per
                       </details>
                     )}
                     {p.vacia && p.userId && (
-                      <form action={borrarCuenta}>
+                      <FormSinBorrar action={borrarCuenta}>
                         <input type="hidden" name="id" value={p.userId} />
                         <input type="hidden" name="q" value={q} />
                         <input type="hidden" name="filtro" value={filtro} />
                         <ConfirmSubmit message={`¿Borrar la cuenta ${p.email ?? p.nombre}? Está vacía (sin ficha, obras ni compras). No se puede deshacer.`} className="rounded-full border border-[#ff8fa3]/50 px-3 py-1 text-xs font-bold text-[#ff8fa3]">Borrar</ConfirmSubmit>
-                      </form>
+                      </FormSinBorrar>
                     )}
                     <Link href={p.fichaHref} className="text-xs font-bold text-violeta-claro">Ficha <Icono nombre="flecha-der" /></Link>
                   </span>

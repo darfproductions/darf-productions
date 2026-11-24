@@ -1,5 +1,6 @@
 "use client";
 
+import { FormSinBorrar } from "@/components/FormSinBorrar";
 import { useEffect, useState, useTransition } from "react";
 import { removePushSubscription, savePushPrefs, savePushSubscription, sendPushTest } from "@/lib/push-actions";
 import { Icono } from "@/components/Icono";
@@ -164,7 +165,7 @@ export function PushSettings({ publicKey, apagados, tipos, donde = "panel" }: { 
       </div>
 
       {tipos.length > 0 && (
-        <form action={guardarTipos} className="flex flex-col gap-2">
+        <FormSinBorrar action={guardarTipos} className="flex flex-col gap-2">
           <p className="font-bold">Qué me llega al teléfono</p>
           {tipos.map((t) => (
             <label key={t.id} className="flex items-start gap-2 text-sm">
@@ -173,7 +174,7 @@ export function PushSettings({ publicKey, apagados, tipos, donde = "panel" }: { 
             </label>
           ))}
           <button disabled={pending} className={`${fantasma} self-start`}>Guardar</button>
-        </form>
+        </FormSinBorrar>
       )}
     </div>
   );

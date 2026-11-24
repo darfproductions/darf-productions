@@ -1,3 +1,4 @@
+import { FormSinBorrar } from "@/components/FormSinBorrar";
 import type { Metadata } from "next";
 import { ConfirmSubmit } from "@/components/panel/ConfirmSubmit";
 import { Card, Notice, PanelTitle, button, buttonGhost, input } from "@/components/panel/ui";
@@ -70,7 +71,7 @@ export default async function RolesPage({ searchParams }: PageProps<"/panel/role
       <Card>
         <details>
           <summary className="cursor-pointer text-lg font-bold">+ Crear rol personalizado</summary>
-          <form action={createRole} className="mt-4 flex flex-col gap-4">
+          <FormSinBorrar action={createRole} className="mt-4 flex flex-col gap-4">
             <div className="grid gap-3 sm:grid-cols-2">
               <label className="flex flex-col gap-1.5 text-sm font-semibold">Nombre
                 <input className={input} name="nombre" required maxLength={40} placeholder="Vestuario" />
@@ -82,7 +83,7 @@ export default async function RolesPage({ searchParams }: PageProps<"/panel/role
             <CategoriaSelect />
             <PermissionChecks permissions={permissions} checked={new Set()} />
             <button className={`${button} self-start`}>Crear rol</button>
-          </form>
+          </FormSinBorrar>
         </details>
       </Card>
 
@@ -96,20 +97,20 @@ export default async function RolesPage({ searchParams }: PageProps<"/panel/role
                   <span className="font-bold">{r.nombre}</span>{chipCategoria(r.categoria)}
                   <span className="ml-2 text-sm text-texto-3">{(grants.get(r.id)?.size ?? 0)} {(grants.get(r.id)?.size ?? 0) === 1 ? "permiso" : "permisos"}</span>
                 </summary>
-                <form action={updateRoleCategoria} className="mt-4 flex flex-col gap-3">
+                <FormSinBorrar action={updateRoleCategoria} className="mt-4 flex flex-col gap-3">
                   <input type="hidden" name="id" value={r.id} />
                   <CategoriaSelect actual={r.categoria} />
                   <button className={`${buttonGhost} self-start`}>Guardar categoría</button>
-                </form>
-                <form action={updateRolePermissions} className="mt-4 flex flex-col gap-4">
+                </FormSinBorrar>
+                <FormSinBorrar action={updateRolePermissions} className="mt-4 flex flex-col gap-4">
                   <input type="hidden" name="id" value={r.id} />
                   <PermissionChecks permissions={permissions} checked={grants.get(r.id) ?? new Set()} />
                   <button className={`${button} self-start`}>Guardar permisos</button>
-                </form>
-                <form action={deleteRole} className="mt-3">
+                </FormSinBorrar>
+                <FormSinBorrar action={deleteRole} className="mt-3">
                   <input type="hidden" name="id" value={r.id} />
                   <ConfirmSubmit message={`¿Eliminar el rol "${r.nombre}"?`} className={buttonGhost}>Eliminar rol</ConfirmSubmit>
-                </form>
+                </FormSinBorrar>
               </details>
             </Card>
           ))}

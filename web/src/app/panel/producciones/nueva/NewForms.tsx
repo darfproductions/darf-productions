@@ -1,5 +1,6 @@
 "use client";
 
+import { FormSinBorrar } from "@/components/FormSinBorrar";
 import { useActionState, useState } from "react";
 import { Notice, button, input } from "@/components/panel/ui";
 import { productionIdFrom } from "@/lib/panel-nav";
@@ -35,7 +36,7 @@ function NameFields({ nombreDefault = "" }: { nombreDefault?: string }) {
 export function CreateForm() {
   const [state, run, pending] = useActionState<NewState, FormData>(crearProyecto, null);
   return (
-    <form action={run} className="flex flex-col gap-4">
+    <FormSinBorrar action={run} className="flex flex-col gap-4">
       <NameFields />
       <fieldset className="flex flex-col gap-2">
         <legend className="mb-1 text-sm font-semibold">Tipo de producción <span className="font-normal text-texto-3">(se puede cambiar después en Ficha de la producción)</span></legend>
@@ -51,14 +52,14 @@ export function CreateForm() {
       <p className="text-sm text-texto-2">Luego te llevamos paso a paso: identidad (logo, fondo y colores), ficha, equipo y personajes.</p>
       <button disabled={pending} className={`${button} self-start`}>{pending ? "Creando…" : "Empezar"}</button>
       {state && <Notice ok={state.ok}>{state.message}</Notice>}
-    </form>
+    </FormSinBorrar>
   );
 }
 
 export function DuplicateForm({ obras }: { obras: { id: string; nombre: string }[] }) {
   const [state, run, pending] = useActionState<NewState, FormData>(duplicateProduction, null);
   return (
-    <form action={run} className="flex flex-col gap-4">
+    <FormSinBorrar action={run} className="flex flex-col gap-4">
       <label className="flex max-w-md flex-col gap-1.5 text-sm font-semibold">Obra original
         <select className={input} name="src" required defaultValue="">
           <option value="" disabled>Elige…</option>
@@ -74,6 +75,6 @@ export function DuplicateForm({ obras }: { obras: { id: string; nombre: string }
       </fieldset>
       <button disabled={pending} className={`${button} self-start`}>{pending ? "Duplicando…" : "Duplicar en borrador"}</button>
       {state && <Notice ok={state.ok}>{state.message}</Notice>}
-    </form>
+    </FormSinBorrar>
   );
 }

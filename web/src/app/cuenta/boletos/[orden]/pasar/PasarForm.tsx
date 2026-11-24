@@ -1,5 +1,6 @@
 "use client";
 
+import { FormSinBorrar } from "@/components/FormSinBorrar";
 import { useActionState, useState } from "react";
 import { Icono } from "@/components/Icono";
 import { ligaTraspaso, whatsappTraspasoUrl } from "@/lib/traspaso-rules";
@@ -28,7 +29,7 @@ export function PasarForm({ order, boletos, obra, funcion, origen }: { order: st
   }
   const toggle = (id: string) => setMarcados((m) => { const n = new Set(m); if (n.has(id)) n.delete(id); else n.add(id); return n; });
   return (
-    <form action={run} className="flex flex-col gap-5 rounded-2xl bg-telon p-5">
+    <FormSinBorrar action={run} limpiarCon={state} className="flex flex-col gap-5 rounded-2xl bg-telon p-5">
       <input type="hidden" name="order" value={order} />
       <fieldset className="flex flex-col gap-2">
         <legend className="mb-1 text-sm font-semibold">¿Qué boletos pasas?</legend>
@@ -51,6 +52,6 @@ export function PasarForm({ order, boletos, obra, funcion, origen }: { order: st
         {pending ? "Enviando…" : marcados.size === 1 ? "Pasar 1 boleto" : `Pasar ${marcados.size} boletos`}
       </button>
       {state && !state.ok && <p role="alert" className="text-sm font-semibold text-[#ff8fa3]">{state.message}</p>}
-    </form>
+    </FormSinBorrar>
   );
 }

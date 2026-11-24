@@ -1,5 +1,6 @@
 "use client";
 
+import { FormSinBorrar } from "@/components/FormSinBorrar";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useActionState, useEffect, useRef, useState, useTransition } from "react";
@@ -180,7 +181,7 @@ function DarfyContacto({ pregunta, onCerrar }: { pregunta: string; onCerrar: () 
     return <p className="self-start rounded-2xl rounded-bl-sm bg-telon-2 px-4 py-2.5 text-sm">{state.message}</p>;
   }
   return (
-    <form action={enviar} className="flex flex-col gap-2 rounded-2xl border border-white/10 bg-sala p-3 text-sm">
+    <FormSinBorrar action={enviar} limpiarCon={state} className="flex flex-col gap-2 rounded-2xl border border-white/10 bg-sala p-3 text-sm">
       <p className="font-bold">Te contactamos</p>
       <input type="hidden" name="pregunta" value={pregunta} />
       <input type="text" name="sitio" tabIndex={-1} autoComplete="off" aria-hidden="true" className="hidden" />
@@ -193,6 +194,6 @@ function DarfyContacto({ pregunta, onCerrar }: { pregunta: string; onCerrar: () 
         <button type="button" onClick={onCerrar} className="text-xs font-semibold text-texto-3">Cancelar</button>
       </div>
       {state && !state.ok && <p className="text-xs text-[#ff8fa3]">{state.message}</p>}
-    </form>
+    </FormSinBorrar>
   );
 }

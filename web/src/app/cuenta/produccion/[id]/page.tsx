@@ -1,3 +1,4 @@
+import { FormSinBorrar } from "@/components/FormSinBorrar";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -424,8 +425,8 @@ export default async function MyProduction({ params, searchParams }: PageProps<"
                 <p className="text-xs text-texto-3">{new Date(a.created_at).toLocaleString("es-MX", { day: "numeric", month: "long", hour: "numeric", minute: "2-digit", timeZone: "America/Mexico_City" })}</p>
                 <p className="mt-1 whitespace-pre-line">{a.cuerpo}</p>
                 {leidos.has(a.id) ? <p className="mt-1 text-xs text-exito"><Icono nombre="check" /> Leído</p> : (
-                  <form action={markRead} className="mt-2"><input type="hidden" name="aid" value={a.id} /><input type="hidden" name="pid" value={id} />
-                    <button className="rounded-full bg-texto px-4 py-1.5 text-xs font-bold text-sala">Enterado</button></form>
+                  <FormSinBorrar action={markRead} className="mt-2"><input type="hidden" name="aid" value={a.id} /><input type="hidden" name="pid" value={id} />
+                    <button className="rounded-full bg-texto px-4 py-1.5 text-xs font-bold text-sala">Enterado</button></FormSinBorrar>
                 )}
               </li>
             ))}

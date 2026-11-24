@@ -1,3 +1,4 @@
+import { FormSinBorrar } from "@/components/FormSinBorrar";
 import { lineasDesdeBoletos, textosBoleto, type BeneficioBoleto } from "@/lib/beneficios-rules";
 import { textoAvance, type ComisionRow } from "@/lib/comision-rules";
 import type { Metadata } from "next";
@@ -593,9 +594,9 @@ export default async function CuentaPage({ searchParams }: PageProps<"/cuenta">)
             </div>
           </details>
           <div className="flex flex-wrap items-center gap-4">
-            <form action={logout}>
+            <FormSinBorrar action={logout}>
               <button className="rounded-full border border-white/30 px-6 py-3 text-sm font-bold">Cerrar sesión</button>
-            </form>
+            </FormSinBorrar>
             <a href="/cuenta/eliminar" className="text-sm font-semibold text-texto-3 underline hover:text-texto">Eliminar mi cuenta</a>
           </div>
         </aside>
