@@ -10,6 +10,8 @@ export type BoletoVista = {
   funcion: string;
   lugar: string | null;
   asiento: string;
+  /** Zona del lugar ("VIP", "Preferente"); null en entrada general sin zona. */
+  zona?: string | null;
   orden: string;
   comprador: string;
   /** QR como imagen (data URL); null si la función ya pasó. */

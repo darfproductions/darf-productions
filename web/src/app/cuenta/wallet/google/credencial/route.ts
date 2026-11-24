@@ -7,7 +7,7 @@ import { origenPublico, walletGoogleConfig } from "@/lib/wallet-env";
 
 // Mi credencial en Google Wallet. El objeto es uno por cuenta: si se regeneró el código, al volver a
 // tocar el botón se actualiza el QR del pase que ya estaba guardado.
-export async function GET() {
+export async function GET(req: Request) {
   const c = walletGoogleConfig();
   if (!c) return NextResponse.json({ error: "Google Wallet todavía no está disponible." }, { status: 503 });
   const cr = await credencialWallet();
@@ -22,5 +22,8 @@ export async function GET() {
     console.error(e);
     return NextResponse.json({ error: "Google Wallet no respondió. Intenta de nuevo en un momento." }, { status: 502 });
   }
-  return NextResponse.redirect(ligaGuardar(c.cuenta, origen, { genericObjects: [objeto.id] }), 303);
+  const liga = ligaGuardar(c.cuenta, origen, { genericObjects: [objeto.id] });
+  // La app pide la liga en JSON (la abre ella en el teléfono); el navegador sigue la redirección.
+  if (req.headers.get("accept")?.includes("application/json")) return NextResponse.json({ url: liga });
+  return NextResponse.redirect(liga, 303);
 }

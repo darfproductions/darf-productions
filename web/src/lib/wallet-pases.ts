@@ -42,6 +42,8 @@ export type DatosBoleto = {
   startsAt: string | null;
   lugar: string | null;
   asiento: string;
+  /** Zona del lugar ("VIP"). Al frente junto al asiento (Diego 2026-11-24), si no viene ya en el texto del asiento. */
+  zona?: string | null;
   orden: string;
   comprador: string;
   estilo: EstiloBoleto;
@@ -134,6 +136,7 @@ export function paseBoleto(b: DatosBoleto): PaseWallet {
   const texto = hex(b.estilo.texto) ?? (isLight(fondo) ? "#0b0910" : "#ffffff");
   const acento = hex(b.estilo.acento) ?? texto;
   const conFecha = !!b.startsAt;
+  const zona = b.zona?.trim() && !b.asiento.includes(b.zona.trim()) ? b.zona.trim() : null;
   return {
     tipo: "boleto",
     serial: `boleto-${b.ticketId}`,
@@ -144,10 +147,15 @@ export function paseBoleto(b: DatosBoleto): PaseWallet {
     qrTexto: b.orden,
     cabecera: [{ key: "fecha", label: conFecha ? fechaCorta(b.startsAt!) : "Fecha", value: conFecha ? hora(b.startsAt!) : "Por anunciar" }],
     primarios: [{ key: "obra", label: "Obra", value: b.obra }],
-    secundarios: [{ key: "asiento", label: "Asiento", value: b.asiento }, { key: "lugar", label: "Lugar", value: b.lugar ?? "Por anunciar" }],
-    auxiliares: [{ key: "nombre", label: "A nombre de", value: b.comprador }, { key: "orden", label: "Orden", value: b.orden }],
+    // Con zona: Asiento y Zona arriba; Lugar pasa abajo junto al nombre y la orden se va al reverso (ya sale debajo
+    // del QR). Apple solo muestra 4 campos entre secundarios y auxiliares cuando el pase lleva imagen.
+    secundarios: [{ key: "asiento", label: "Asiento", value: b.asiento },
+      zona ? { key: "zona", label: "Zona", value: zona } : { key: "lugar", label: "Lugar", value: b.lugar ?? "Por anunciar" }],
+    auxiliares: [{ key: "nombre", label: "A nombre de", value: b.comprador },
+      zona ? { key: "lugar", label: "Lugar", value: b.lugar ?? "Por anunciar" } : { key: "orden", label: "Orden", value: b.orden }],
     reverso: [
       { key: "funcion", label: "Función", value: conFecha ? fechaLarga(b.startsAt!) : "Fecha por anunciar" },
+      ...(zona ? [{ key: "orden", label: "Orden", value: b.orden }] : []),
       ...(b.incluye?.length ? [{ key: "incluye", label: "Incluye", value: b.incluye.join(" · ") }] : []),
       ...(b.acceso ? [{ key: "acceso", label: "Acceso anticipado", value: b.acceso }] : []),
       ...(b.puertas ? [{ key: "puertas", label: "Puertas", value: `Abren ${hora(b.puertas)}` }] : []),

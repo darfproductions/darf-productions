@@ -92,28 +92,57 @@ function dibujar(ctx: CanvasRenderingContext2D, b: BoletoVista, e: EstiloBoleto,
   // Datos
   ctx.textAlign = "left";
   const etiqueta = (t: string, x: number, y: number) => { ctx.fillStyle = e.acento; ctx.font = `700 22px ${fuente}`; ctx.fillText(t.toUpperCase(), x, y); };
+  // Asiento y zona lado a lado (la zona no se repite si ya viene en el texto, como "General · VIP").
+  const conZona = !!b.zona && !b.asiento.includes(b.zona);
+  const ajustar = (t: string, peso: number, max: number, min: number, ancho: number) => {
+    let n = max;
+    do { ctx.font = `${peso} ${n}px ${fuente}`; n -= 2; } while (ctx.measureText(t).width > ancho && n >= min);
+    let x = t;
+    while (x.length > 1 && ctx.measureText(x).width > ancho) x = x.slice(0, -1);
+    return x === t ? t : `${x.trimEnd()}…`;
+  };
   etiqueta("Asiento", 48, 524);
-  ctx.fillStyle = e.texto; ctx.font = `900 60px ${fuente}`;
-  ctx.fillText(b.asiento.slice(0, 22), 48, 590);
-  // 0122: lo que incluye la zona, en una línea.
-  if (b.incluye?.length) {
-    ctx.fillStyle = e.acento; ctx.font = `700 21px ${fuente}`;
-    const linea = `Incluye: ${b.incluye.join(" · ")}${b.acceso ? ` · ${b.acceso}` : ""}`;
-    ctx.fillText(linea.length > 64 ? `${linea.slice(0, 63)}…` : linea, 48, 624);
+  ctx.fillStyle = e.texto;
+  ctx.fillText(ajustar(b.asiento, 900, 60, 34, conZona ? 300 : W - 96), 48, 590);
+  if (conZona) {
+    etiqueta("Zona", 380, 524);
+    ctx.fillStyle = e.texto;
+    ctx.fillText(ajustar(b.zona!, 900, 46, 26, W - 380 - 48), 380, 584);
   }
-  etiqueta("Orden", 48, 650);
-  etiqueta("Nombre", 380, 650);
-  ctx.fillStyle = e.texto; ctx.font = `700 30px ${fuente}`;
-  ctx.fillText(b.orden, 48, 690);
-  ctx.fillText(b.comprador.length > 18 ? `${b.comprador.slice(0, 17)}…` : b.comprador, 380, 690);
+  let y = 590;
 
-  // QR
-  const qs = 480, qx = (W - qs) / 2, qy = 722;
+  // 0122: lo que incluye la zona, completo (cada beneficio en sus renglones). Para que quepa, el QR se hace más chico.
+  const items = [...(b.incluye ?? []), ...(b.acceso ? [b.acceso] : [])];
+  if (items.length) {
+    y += 44;
+    etiqueta("Incluye", 48, y);
+    ctx.fillStyle = e.texto; ctx.font = `600 20px ${fuente}`;
+    let ls = items.flatMap((x) => lineas(ctx, `· ${x}`, W - 96));
+    if (ls.length > 5) {
+      ls = ls.slice(0, 5);
+      let u = ls[4];
+      while (u.length > 1 && ctx.measureText(`${u}…`).width > W - 96) u = u.slice(0, -1);
+      ls[4] = `${u.trimEnd()}…`;
+    }
+    for (const l of ls) { y += 27; ctx.fillText(l, 48, y); }
+  }
+  y += 48;
+  etiqueta("Orden", 48, y);
+  etiqueta("Nombre", 380, y);
+  y += 38;
+  ctx.fillStyle = e.texto;
+  ctx.fillText(ajustar(b.orden, 700, 30, 22, 300), 48, y);
+  ctx.fillStyle = e.texto;
+  ctx.fillText(ajustar(b.comprador, 700, 30, 22, W - 380 - 48), 380, y);
+
+  // QR: tan grande como quepa (máx. 480), sin tapar el pie.
+  const qy = y + 28, qs = Math.max(280, Math.min(480, H - 110 - qy)), qx = (W - qs) / 2;
   ctx.fillStyle = "#ffffff";
   ctx.beginPath(); ctx.roundRect(qx, qy, qs, qs, 32); ctx.fill();
   if (qr) {
+    const m = Math.round(qs * 0.05);
     ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(qr, qx + 24, qy + 24, qs - 48, qs - 48);
+    ctx.drawImage(qr, qx + m, qy + m, qs - 2 * m, qs - 2 * m);
     ctx.imageSmoothingEnabled = true;
   }
 
@@ -159,6 +188,30 @@ export async function crearPdf(boletos: BoletoVista[], estilo: EstiloBoleto): Pr
     paginas.push({ data, w: W, h: H });
   }
   return pdfConImagenes(paginas, W / 2, H / 2);
+}
+
+/** Cada boleto como imagen (data URL PNG, 720 × 1280): la app la muestra en pantalla completa con el mismo diseño
+ *  que el PDF. Si el logo o el póster no se pueden usar, sin ellos. */
+export async function imagenesBoletos(boletos: BoletoVista[], estilo: EstiloBoleto): Promise<string[]> {
+  const fuente = getComputedStyle(document.body).fontFamily || "sans-serif";
+  const [logo, poster, darf] = await Promise.all([
+    estilo.logo ? cargar(estilo.logo, true) : null, estilo.poster ? cargar(estilo.poster, true) : null, cargar(logoDarf(estilo.fondo), false),
+  ]);
+  const out: string[] = [];
+  for (let i = 0; i < boletos.length; i++) {
+    const b = boletos[i];
+    const qr = b.qr ? await cargar(b.qr, false) : null;
+    const canvas = document.createElement("canvas");
+    canvas.width = W; canvas.height = H;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("Canvas no disponible.");
+    dibujar(ctx, b, estilo, logo, darf, qr, i, boletos.length, fuente, poster);
+    try { out.push(canvas.toDataURL("image/png")); } catch {
+      dibujar(ctx, b, estilo, null, darf, qr, i, boletos.length, fuente);
+      out.push(canvas.toDataURL("image/png"));
+    }
+  }
+  return out;
 }
 
 /** Genera y descarga el PDF. */

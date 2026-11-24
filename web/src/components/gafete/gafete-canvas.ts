@@ -19,7 +19,8 @@ function cargar(src: string, cors: boolean): Promise<HTMLImageElement | null> {
   });
 }
 
-export async function descargarPase(p: PaseVista, archivo: string): Promise<void> {
+/** El gafete o la credencial como PDF (bytes). Lo usan la web (descarga) y la app (compartir o guardar). */
+export async function paseEnPdf(p: PaseVista): Promise<Uint8Array> {
   const fan = p.tema === "fan";
   const fuente = getComputedStyle(document.body).fontFamily || "sans-serif";
   const [logo, foto, qr, ...sellosImg] = await Promise.all([
@@ -102,7 +103,11 @@ export async function descargarPase(p: PaseVista, archivo: string): Promise<void
   const jpeg = async (c: HTMLCanvasElement) => new Uint8Array(await (await new Promise<Blob>((res, rej) => c.toBlob((b) => (b ? res(b) : rej(new Error("canvas"))), "image/jpeg", 0.92))).arrayBuffer());
   let data: Uint8Array;
   try { data = await jpeg(pintar(true)); } catch { data = await jpeg(pintar(false)); } // foto sin permiso de lectura: iniciales
-  const pdf = pdfConImagenes([{ data, w: W, h: H }], 241, 383);
+  return pdfConImagenes([{ data, w: W, h: H }], 241, 383);
+}
+
+export async function descargarPase(p: PaseVista, archivo: string): Promise<void> {
+  const pdf = await paseEnPdf(p);
   const url = URL.createObjectURL(new Blob([pdf as BlobPart], { type: "application/pdf" }));
   const a = document.createElement("a");
   a.href = url; a.download = archivo; a.click();
