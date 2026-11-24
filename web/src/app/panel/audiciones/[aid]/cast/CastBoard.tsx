@@ -5,12 +5,14 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { ActionForm } from "@/components/panel/ActionForm";
 import { resumenEnvio } from "@/lib/votacion-rules";
-import { mandarCast, moverEnCast } from "../../votacion-actions";
+import { agregarPersonaje, mandarCast, moverEnCast, quitarPersonaje } from "../../votacion-actions";
 
 type Persona = { id: string; nombre: string; numero: number | null; foto_path: string | null; cuenta: boolean; votos?: number };
 export type Tablero = {
   fase: string;
-  roles: { id: string; nombre: string; asignados: Persona[]; pista: { id: string; nombre: string; votos: number }[] }[];
+  /** 0167: solo Dirección general (audiciones.cast) mueve, agrega personajes y manda. */
+  puede_mover?: boolean;
+  roles: { id: string; nombre: string; nota?: string | null; sin_votos?: boolean; asignados: Persona[]; pista: { id: string; nombre: string; votos: number }[] }[];
   ensamble: Persona[];
   fuera: Persona[];
 };
@@ -24,7 +26,27 @@ export function CastBoard({ aid, tablero, fotos, enviado, conObra }: { aid: stri
   const [pending, start] = useTransition();
   const [error, setError] = useState("");
   const [sobre, setSobre] = useState<string | null>(null);
+  const [nuevo, setNuevo] = useState("");
+  const [nuevoQuien, setNuevoQuien] = useState("");
+  // Solo se ve (no se mueve) si ya se mandó o si quien lo ve no es Dirección general.
+  const fijo = enviado || tablero.puede_mover === false;
+  const todos = [...tablero.roles.flatMap((r) => r.asignados), ...tablero.ensamble, ...tablero.fuera]
+    .sort((a, b) => (a.numero ?? 9999) - (b.numero ?? 9999) || a.nombre.localeCompare(b.nombre, "es"));
   const destinos = [...tablero.roles.map((r) => ({ id: r.id, nombre: r.nombre })), { id: "ensamble", nombre: "Ensamble" }, { id: "fuera", nombre: "No seleccionados" }];
+
+  const correr = (f: () => Promise<{ ok: boolean; message?: string }>, si?: () => void) => {
+    setError("");
+    start(async () => {
+      const r = await f();
+      if (!r.ok) setError(r.message ?? "No se pudo.");
+      else si?.();
+      router.refresh();
+    });
+  };
+  const agregar = () => {
+    if (!nuevo.trim()) { setError("Escribe el nombre del personaje."); return; }
+    correr(() => agregarPersonaje(aid, nuevo, nuevoQuien || null), () => { setNuevo(""); setNuevoQuien(""); });
+  };
 
   const mover = (app: string, destino: string) => {
     setError("");
@@ -36,8 +58,8 @@ export function CastBoard({ aid, tablero, fotos, enviado, conObra }: { aid: stri
   };
 
   const tarjeta = (p: Persona, actual: string) => (
-    <li key={p.id} draggable={!enviado} onDragStart={(e) => e.dataTransfer.setData("text/plain", p.id)}
-      className={`flex flex-col gap-1.5 rounded-lg bg-sala px-2 py-1.5 text-sm ${enviado ? "" : "cursor-grab active:cursor-grabbing"}`}>
+    <li key={p.id} draggable={!fijo} onDragStart={(e) => e.dataTransfer.setData("text/plain", p.id)}
+      className={`flex flex-col gap-1.5 rounded-lg bg-sala px-2 py-1.5 text-sm ${fijo ? "" : "cursor-grab active:cursor-grabbing"}`}>
       <span className="flex items-center gap-2">
       <span className="h-9 w-9 shrink-0 overflow-hidden rounded-full bg-telon-2">{p.foto_path && fotos[p.foto_path] && <img src={fotos[p.foto_path]} alt="" className="h-full w-full object-cover" />}</span>
       <span className="min-w-0 flex-1">
@@ -45,7 +67,7 @@ export function CastBoard({ aid, tablero, fotos, enviado, conObra }: { aid: stri
         <span className="block text-[11px] text-texto-3">{p.votos !== undefined ? `${p.votos} ${p.votos === 1 ? "voto" : "votos"}` : ""}{!p.cuenta ? `${p.votos !== undefined ? " · " : ""}sin cuenta` : ""}</span>
       </span>
       </span>
-      {!enviado && (
+      {!fijo && (
         <select aria-label={`Mover a ${p.nombre}`} value="" disabled={pending} onChange={(e) => e.target.value && mover(p.id, e.target.value)} className="w-full rounded-md border border-white/15 bg-telon px-1 py-1 text-xs">
           <option value="">Mover a…</option>
           {destinos.filter((d) => d.id !== actual).map((d) => <option key={d.id} value={d.id}>{d.nombre}</option>)}
@@ -56,7 +78,7 @@ export function CastBoard({ aid, tablero, fotos, enviado, conObra }: { aid: stri
 
   const columna = (id: string, titulo: string, personas: Persona[], extra?: React.ReactNode) => (
     <section key={id} aria-label={titulo}
-      onDragOver={(e) => { if (!enviado) { e.preventDefault(); setSobre(id); } }}
+      onDragOver={(e) => { if (!fijo) { e.preventDefault(); setSobre(id); } }}
       onDragLeave={() => setSobre((s) => (s === id ? null : s))}
       onDrop={(e) => { e.preventDefault(); setSobre(null); const app = e.dataTransfer.getData("text/plain"); if (app) mover(app, id); }}
       className={`flex min-w-0 flex-col gap-2 rounded-2xl border p-3 transition ${sobre === id ? "border-lila bg-lila/10" : "border-white/10 bg-telon"}`}>
@@ -64,7 +86,7 @@ export function CastBoard({ aid, tablero, fotos, enviado, conObra }: { aid: stri
         <span className="truncate">{titulo}</span><span className="text-xs font-bold text-texto-3">{personas.length}</span>
       </h3>
       <ul className="flex flex-col gap-1.5">{personas.map((p) => tarjeta(p, id))}</ul>
-      {personas.length === 0 && <p className="text-xs text-texto-3">Vacío{enviado ? "" : ": arrastra aquí a alguien"}</p>}
+      {personas.length === 0 && <p className="text-xs text-texto-3">Vacío{fijo ? "" : ": arrastra aquí a alguien"}</p>}
       {extra}
     </section>
   );
@@ -75,17 +97,45 @@ export function CastBoard({ aid, tablero, fotos, enviado, conObra }: { aid: stri
   return (
     <div className="flex flex-col gap-4">
       <p className="text-sm text-texto-2">
-        {enviado ? "Cast enviado. Las respuestas a las ofertas llegan a Elenco y equipos." : "Esta es la propuesta de la votación. Mueve a quien quieras arrastrando su nombre o con “Mover a…”: cada cambio se guarda solo."}
+        {enviado ? "Cast enviado. Las respuestas a las ofertas llegan a Elenco y equipos."
+          : fijo ? "Esta es la propuesta de la votación. Solo Dirección general puede mover el cast, agregar personajes y mandarlo (en la junta)."
+          : "Esta es la propuesta de la votación. Mueve a quien quieras arrastrando su nombre o con “Mover a…”: cada cambio se guarda solo."}
         {pending && <span className="ml-2 text-texto-3">Guardando…</span>}
       </p>
       {error && <p role="alert" className="text-sm text-[#ff8fa3]">{error}</p>}
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {tablero.roles.map((r) => columna(r.id, r.nombre, r.asignados,
-          r.asignados.length === 0 && r.pista.length > 0 ? <p className="text-xs text-aviso">Más votados: {r.pista.map((p) => `${p.nombre} (${p.votos})`).join(", ")}</p> : undefined))}
+        {tablero.roles.map((r) => columna(r.id, r.nombre, r.asignados, (
+          <>
+            {r.nota && !enviado && <p className="rounded-lg bg-aviso/10 px-2 py-1.5 text-xs text-aviso">{r.nota}</p>}
+            {r.asignados.length === 0 && r.pista.length > 0 && <p className="text-xs text-aviso">Más votados libres: {r.pista.map((p) => `${p.nombre} (${p.votos})`).join(", ")}</p>}
+            {!fijo && r.sin_votos && r.asignados.length === 0 && (
+              <button type="button" disabled={pending} onClick={() => confirm(`¿Quitar el personaje ${r.nombre}?`) && correr(() => quitarPersonaje(aid, r.id))}
+                className="self-start text-xs font-bold text-texto-3 underline underline-offset-4">Quitar personaje</button>
+            )}
+          </>
+        )))}
         {columna("ensamble", "Ensamble", tablero.ensamble)}
         {columna("fuera", "No seleccionados", tablero.fuera)}
       </div>
-      {!enviado && (
+      {!fijo && (
+        <div className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-telon p-4">
+          <h2 className="titular text-xl">Agregar un personaje</h2>
+          <p className="text-sm text-texto-2">¿Alguien queda perfecto para un papel que no estaba? Créalo aquí y, si quieres, dáselo de una vez. Al mandar, recibe la oferta con ese papel.</p>
+          <div className="grid gap-2 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+            <label className="flex flex-col gap-1 text-sm font-semibold">Nombre del personaje
+              <input value={nuevo} maxLength={80} onChange={(e) => setNuevo(e.target.value)} className={input} placeholder="Surfista 3" />
+            </label>
+            <label className="flex flex-col gap-1 text-sm font-semibold">Para (opcional)
+              <select value={nuevoQuien} onChange={(e) => setNuevoQuien(e.target.value)} className={input}>
+                <option value="">Nadie todavía</option>
+                {todos.map((p) => <option key={p.id} value={p.id}>{p.numero ? `Nº ${p.numero} · ` : ""}{p.nombre}</option>)}
+              </select>
+            </label>
+            <button type="button" disabled={pending} onClick={agregar} className="rounded-full bg-texto px-5 py-2.5 text-sm font-bold text-sala disabled:opacity-60">Agregar</button>
+          </div>
+        </div>
+      )}
+      {!fijo && (
         <div className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-telon p-4">
           <h2 className="titular text-xl">Guardar y mandar</h2>
           <p className="text-sm text-texto-2">El cast ya está guardado con cada cambio y lo puedes seguir moviendo. Cuando esté listo, manda las ofertas.</p>

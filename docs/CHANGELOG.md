@@ -5,6 +5,29 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-11-24 — 0167: ajuste del cast con resultados, desempate y solo Dirección general
+
+Diego quería que, al cerrar la votación, el ajuste del cast mostrara antes que nada los resultados. También que la
+propuesta resolviera empates y que el cast solo lo moviera el director de la obra en la junta. Y que ahí mismo se
+pudieran inventar personajes. Los resultados antes no tenían una pantalla propia.
+- Propuesta (`_audition_propuesta`, igual en `votacion-rules.ts`), del personaje más importante al menos:
+  - Gana el más votado.
+  - Empate: más «Opción 1» de los jueces, luego el promedio, luego el número de turno.
+  - Si el más votado ya quedó en un personaje más importante, pasa al siguiente más votado.
+  - Cada caso se anota en `auditions.propuesta_notas` y se ve en el tablero y en los resultados.
+  - Antes, un empate metía a los dos y el personaje se quedaba vacío si el ganador ya tenía papel.
+- Permiso nuevo `audiciones.cast`. Lo tienen Dirección general y los administradores, y se puede dar a otro rol.
+  - Lo piden mover, agregar o quitar personajes, regresar a la votación y mandar.
+  - Quien gestiona la audición ve todo, pero no mueve.
+- `audition_resultados(aid)`: por personaje, el ranking (votos, Opción 1, promedio), las abstenciones, qué votó cada juez,
+  quién está en el cast y la nota. Lo ven la dirección y los jueces, en «Cast» y en «Votación».
+- En el ajuste se pueden agregar personajes y asignarlos (`audition_cast_personaje`). También quitar los que quedaron
+  vacíos y sin votos.
+- «Elegir callback» ya pregunta si el callback es hoy mismo u otra fecha (fecha, hora y lugar), igual que «Terminar
+  audiciones». Usa `audition_cerrar_ronda`, que manda el QR por correo si es otra fecha. La barra de etapas ya no
+  tiene «Siguiente: Callback» suelto. «Solo guardar la selección» guarda sin avisar.
+- La prueba de 0089 se actualizó a la regla nueva (empate y segundo lugar).
+
 ## 2026-11-24 — 0166: evaluaciones de todos los jueces, votación en PDF y expediente
 
 Diego quería, antes de votar, una tabla con lo que puso cada juez de cada aspirante. En la votación quería tocar a

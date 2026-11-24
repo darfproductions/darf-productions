@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import type { Criterio } from "@/lib/audition-rules";
 import { agruparPorPersona, type Evaluaciones } from "@/lib/evaluaciones-rules";
 import { Icono } from "@/components/Icono";
+import { ResultadosVotacion, type Resultados } from "../cast/ResultadosVotacion";
 import { MiCast, type Aspirante, type EvalsPorPersona, type RolVoto } from "./MiCast";
 
 export const metadata: Metadata = { title: "Votación" };
@@ -33,6 +34,7 @@ export default async function Votacion({ params }: PageProps<"/panel/audiciones/
     const { data: ev } = await supabase.rpc("audition_evaluaciones", { aid });
     if (ev) evals = Object.fromEntries(agruparPorPersona((ev as Evaluaciones).evaluaciones));
   }
+  const resultados = cerrada ? ((await supabase.rpc("audition_resultados", { aid })).data as Resultados | null) : null;
   const liga = "inline-flex items-center gap-1 rounded-full border border-white/25 px-3 py-1.5 text-xs font-bold hover:border-white/50";
 
   return (
@@ -45,6 +47,7 @@ export default async function Votacion({ params }: PageProps<"/panel/audiciones/
         </span>
         {v.votaron && <span className="text-texto-3">Votaron {v.votaron.length}{v.jueces ? ` de ${v.jueces}` : ""} jueces{v.votaron.length ? `: ${v.votaron.join(", ")}` : ""}</span>}
       </Card>
+      {resultados && <ResultadosVotacion r={resultados} />}
       {(evals || (gestiona && cerrada)) && (
         <div className="flex flex-wrap items-center gap-2">
           {evals && <a href={`/panel/audiciones/${aid}/exportar/evaluaciones`} className={liga}>Descargar evaluaciones (Excel) <Icono nombre="flecha-abajo" /></a>}

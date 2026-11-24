@@ -6,19 +6,21 @@ import { Icono } from "@/components/Icono";
 
 const DONDE: Partial<Record<Fase, { href: string; texto: string }>> = {
   audicion: { href: "/evaluacion", texto: "Marca tus opciones en Evaluación" },
-  seleccion_callback: { href: "/resultados", texto: "Elige quién pasa a callback" },
+  seleccion_callback: { href: "/resultados", texto: "Elige quién pasa y cuándo es el callback" },
   callback: { href: "/evaluacion", texto: "Marca tus opciones del callback" },
   votacion: { href: "/votacion", texto: "Vota por cada personaje" },
-  ajuste: { href: "/cast", texto: "Ajusta y manda el cast" },
+  ajuste: { href: "/cast", texto: "Ve los resultados y ajusta el cast" },
 };
 
 // Barra de etapas de una convocatoria con personajes (0089). Quien gestiona avanza o regresa;
 // los jueces ven en qué etapa va y a dónde ir.
-export function Etapas({ aid, fase, conCallback, gestiona, evalua }: { aid: string; fase: Fase; conCallback: boolean; gestiona: boolean; evalua: boolean }) {
+// 0167: en «Elegir callback» no hay «Siguiente» suelto: se llama al callback desde esa pantalla (con fecha). En el
+// ajuste, «Regresar» (borra el cast) solo lo ve quien arma el cast (Dirección general).
+export function Etapas({ aid, fase, conCallback, gestiona, evalua, armaCast = true }: { aid: string; fase: Fase; conCallback: boolean; gestiona: boolean; evalua: boolean; armaCast?: boolean }) {
   const fases = fasesDe(conCallback);
   const i = fases.indexOf(fase);
-  const sig = botonSiguiente(fase, conCallback);
-  const ant = anteriorFase(fase, conCallback);
+  const sig = fase === "seleccion_callback" ? null : botonSiguiente(fase, conCallback);
+  const ant = fase === "ajuste" && !armaCast ? null : anteriorFase(fase, conCallback);
   const donde = DONDE[fase];
   const verDonde = donde && (gestiona || (evalua && ["/evaluacion", "/votacion"].includes(donde.href)));
   return (
@@ -35,7 +37,7 @@ export function Etapas({ aid, fase, conCallback, gestiona, evalua }: { aid: stri
         {verDonde && <Link href={`/panel/audiciones/${aid}${donde.href}`} className="text-sm font-bold text-lila">{donde.texto} <Icono nombre="flecha-der" /></Link>}
         {gestiona && sig && (
           <ActionForm inline action={moverFase} hidden={{ aid, dir: "siguiente" }}
-            confirm={fase === "votacion" ? "¿Cerrar la votación? Se calcula la propuesta del cast y ya no se puede votar." : `¿Pasar a la siguiente etapa?`}
+            confirm={fase === "votacion" ? "¿Cerrar la votación? Se ven los resultados, se arma la propuesta del cast y ya no se puede votar." : `¿Pasar a la siguiente etapa?`}
             submit={sig} submitClass="rounded-full bg-texto px-4 py-2 text-xs font-bold text-sala disabled:opacity-60" />
         )}
         {gestiona && ant && (

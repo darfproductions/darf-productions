@@ -10,7 +10,7 @@ import { can, myProductionIds } from "@/lib/panel-nav";
 import { OfferForm } from "../../../producciones/[id]/elenco/OfferForm";
 import { createClient } from "@/lib/supabase/server";
 import { setApplicationEstado } from "../../actions";
-import { marcarCallback } from "../../votacion-actions";
+import { LlamarCallback } from "./LlamarCallback";
 import { agruparPorPersona, type Evaluaciones } from "@/lib/evaluaciones-rules";
 import { LoQuePusieron } from "../votacion/LoQuePusieron";
 
@@ -69,8 +69,8 @@ export default async function Results({ params, searchParams }: PageProps<"/pane
           <h2 className="titular text-xl">Elegir quién pasa a callback</h2>
           <a href={`/panel/audiciones/${aid}/exportar/evaluaciones`} className="text-sm font-bold text-violeta-claro">Descargar evaluaciones (Excel)</a>
         </div>
-        <p className="text-sm text-texto-2">Ordenados por cuántas veces los marcaron los jueces. Palomea a quienes pasan, guarda y luego da “Siguiente: Callback” arriba. Se les avisa al empezar el callback.</p>
-        <ActionForm action={marcarCallback} hidden={{ aid }} submit="Guardar quién pasa">
+        <p className="text-sm text-texto-2">Ordenados por cuántas veces los marcaron los jueces. Palomea a quienes pasan, elige si el callback es hoy mismo o en otra fecha y dale «Llamar a callback»: ahí se les avisa.</p>
+        <LlamarCallback aid={aid}>
           <ul className="flex flex-col divide-y divide-white/10">
             {orden.map((r) => {
               const m = marcas.get(r.id);
@@ -96,7 +96,7 @@ export default async function Results({ params, searchParams }: PageProps<"/pane
               );
             })}
           </ul>
-        </ActionForm>
+        </LlamarCallback>
       </Card>
     );
   }

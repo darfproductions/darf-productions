@@ -44,23 +44,39 @@ export function botonSiguiente(fase: Fase, conCallback: boolean): string | null 
 }
 
 type Voto = { role: string; app: string | null };
+/** Para desempatar: «Opción 1» de los jueces por personaje y persona, promedio de calificaciones y número de turno. */
+export type Desempate = { op1?: Record<string, Record<string, number>>; prom?: Record<string, number>; numero?: Record<string, number> };
 
 /**
- * Propuesta de cast. `roles` en orden de importancia (el primero es el más importante).
- * Gana quien tenga más votos (>0); empates, todos. Quien ya quedó en uno más importante se salta
- * (sin pasar al segundo lugar). Ensamble: marcados para ensamble que no quedaron en un personaje.
+ * Propuesta de cast (0167, la misma regla que _audition_propuesta). `roles` en orden de importancia.
+ * Gana el más votado (>0). Empate: más «Opción 1» de los jueces, luego mejor promedio, luego número de turno, y se
+ * anota para la junta. Si el más votado ya quedó en uno más importante, pasa al siguiente más votado (y se anota).
+ * Ensamble: marcados para ensamble que no quedaron en un personaje.
  */
-export function propuesta(roles: string[], votos: Voto[], ensamble: string[] = []): { porRol: Record<string, string[]>; ensamble: string[] } {
-  const asignado = new Set<string>();
+export function propuesta(roles: string[], votos: Voto[], ensamble: string[] = [], d: Desempate = {}):
+  { porRol: Record<string, string[]>; ensamble: string[]; notas: Record<string, { saltados: string[]; empate: string[] }> } {
+  const asignado = new Map<string, string>();
   const porRol: Record<string, string[]> = {};
+  const notas: Record<string, { saltados: string[]; empate: string[] }> = {};
   for (const r of roles) {
     const cuenta = new Map<string, number>();
     for (const v of votos) if (v.role === r && v.app) cuenta.set(v.app, (cuenta.get(v.app) ?? 0) + 1);
-    const max = Math.max(0, ...cuenta.values());
-    porRol[r] = max === 0 ? [] : [...cuenta].filter(([app, n]) => n === max && !asignado.has(app)).map(([app]) => app).sort();
-    for (const a of porRol[r]) asignado.add(a);
+    const op1 = (a: string) => d.op1?.[r]?.[a] ?? 0;
+    const ranking = [...cuenta].sort(([a, x], [b, y]) => y - x || op1(b) - op1(a) || (d.prom?.[b] ?? -1) - (d.prom?.[a] ?? -1)
+      || (d.numero?.[a] ?? 1e9) - (d.numero?.[b] ?? 1e9) || a.localeCompare(b));
+    const saltados: string[] = [];
+    let gana: [string, number] | null = null;
+    const empate: string[] = [];
+    for (const [app, n] of ranking) {
+      if (asignado.has(app)) { if (!gana) saltados.push(app); continue; }
+      if (!gana) { gana = [app, n]; continue; }
+      if (n === gana[1]) empate.push(app);
+    }
+    porRol[r] = gana ? [gana[0]] : [];
+    if (gana) asignado.set(gana[0], r);
+    if (saltados.length || empate.length) notas[r] = { saltados, empate };
   }
-  return { porRol, ensamble: [...new Set(ensamble)].filter((a) => !asignado.has(a)).sort() };
+  return { porRol, ensamble: [...new Set(ensamble)].filter((a) => !asignado.has(a)).sort(), notas };
 }
 
 /** Resumen antes de "Mandar". */

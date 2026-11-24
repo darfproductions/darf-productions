@@ -3,19 +3,33 @@ import { Card } from "@/components/panel/ui";
 import { requireAudition, signPhotos } from "@/lib/panel-auditions";
 import { createClient } from "@/lib/supabase/server";
 import { CastBoard, type Tablero } from "./CastBoard";
+import { ResultadosVotacion, type Resultados } from "./ResultadosVotacion";
 
 export const metadata: Metadata = { title: "Cast" };
 
-// Ajuste del cast (0089): la propuesta de la votación, para moverla y mandar las ofertas.
+// Ajuste del cast (0089, 0167): arriba los resultados de la votación; abajo la propuesta para moverla en la junta,
+// agregar personajes y mandar las ofertas. Mover y mandar solo Dirección general; los demás lo ven.
 export default async function Cast({ params }: PageProps<"/panel/audiciones/[aid]/cast">) {
   const { aid } = await params;
   const { a } = await requireAudition(aid, ["audiciones.gestionar"], "/cast");
   if (!["ajuste", "enviado"].includes(a.fase)) {
     return <Card>El cast se arma al cerrar la votación. Ahora la convocatoria va en: <b>{a.fase}</b>.</Card>;
   }
-  const { data, error } = await (await createClient()).rpc("audition_cast_board", { aid });
+  const supabase = await createClient();
+  const [{ data, error }, { data: res }] = await Promise.all([
+    supabase.rpc("audition_cast_board", { aid }),
+    supabase.rpc("audition_resultados", { aid }),
+  ]);
   if (error) return <Card>{error.message}</Card>;
   const t = data as Tablero;
   const fotos = await signPhotos([...t.roles.flatMap((r) => r.asignados), ...t.ensamble, ...t.fuera].map((p) => p.foto_path));
-  return <CastBoard aid={aid} tablero={t} fotos={Object.fromEntries(fotos)} enviado={a.fase === "enviado"} conObra={!!a.production_id} />;
+  return (
+    <div className="flex flex-col gap-8">
+      {res && <ResultadosVotacion r={res as Resultados} />}
+      <section aria-label="Cast" className="flex flex-col gap-3">
+        <h2 className="titular text-xl">{a.fase === "enviado" ? "Cast enviado" : "Propuesta del cast"}</h2>
+        <CastBoard aid={aid} tablero={t} fotos={Object.fromEntries(fotos)} enviado={a.fase === "enviado"} conObra={!!a.production_id} />
+      </section>
+    </div>
+  );
 }

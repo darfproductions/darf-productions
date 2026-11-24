@@ -17,22 +17,30 @@ describe("fases", () => {
   });
 });
 
-describe("propuesta (ejemplo de Diego)", () => {
-  it("empate en Donna, Sophie vacía porque Petra ya quedó en Donna, Sam vacío, Ensamble precargado", () => {
-    const votos = [
-      { role: "donna", app: "petra" }, { role: "donna", app: "ana" }, { role: "donna", app: null },
-      { role: "sophie", app: "petra" }, { role: "sophie", app: "petra" }, { role: "sophie", app: "lucia" },
-      { role: "sam", app: null },
-    ];
-    const p = propuesta(["donna", "sophie", "sam"], votos, ["beto", "petra"]);
-    expect(p.porRol.donna).toEqual(["ana", "petra"]);
-    expect(p.porRol.sophie).toEqual([]);
+describe("propuesta (0167)", () => {
+  const votos = [
+    { role: "donna", app: "petra" }, { role: "donna", app: "ana" }, { role: "donna", app: null },
+    { role: "sophie", app: "petra" }, { role: "sophie", app: "petra" }, { role: "sophie", app: "lucia" },
+    { role: "sam", app: null },
+  ];
+  it("empate en Donna: lo desempata la «Opción 1» de los jueces y se anota", () => {
+    const p = propuesta(["donna", "sophie", "sam"], votos, ["beto", "petra"], { op1: { donna: { petra: 2, ana: 1 } } });
+    expect(p.porRol.donna).toEqual(["petra"]);
+    expect(p.notas.donna).toEqual({ saltados: [], empate: ["ana"] });
+    // Petra ya quedó en Donna: Sophie pasa a la siguiente más votada.
+    expect(p.porRol.sophie).toEqual(["lucia"]);
+    expect(p.notas.sophie).toEqual({ saltados: ["petra"], empate: [] });
     expect(p.porRol.sam).toEqual([]);
     expect(p.ensamble).toEqual(["beto"]);
   });
-  it("el más importante manda aunque tenga menos votos en él", () => {
-    const p = propuesta(["a", "b"], [{ role: "a", app: "x" }, { role: "b", app: "x" }, { role: "b", app: "x" }, { role: "b", app: "y" }]);
+  it("sin Opción 1 desempata el promedio y luego el número de turno", () => {
+    expect(propuesta(["donna"], votos, [], { prom: { ana: 4.5, petra: 4 } }).porRol.donna).toEqual(["ana"]);
+    expect(propuesta(["donna"], votos, [], { numero: { ana: 9, petra: 3 } }).porRol.donna).toEqual(["petra"]);
+  });
+  it("el más importante manda; si todos los votados ya quedaron, el personaje queda vacío", () => {
+    const p = propuesta(["a", "b"], [{ role: "a", app: "x" }, { role: "b", app: "x" }, { role: "b", app: "x" }]);
     expect(p.porRol).toEqual({ a: ["x"], b: [] });
+    expect(p.notas.b.saltados).toEqual(["x"]);
   });
 });
 
