@@ -5,6 +5,14 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-11-24 — Formularios que no se borran, códigos de descuento y cortesías
+
+Diego: al fallar un formulario se borraba todo lo escrito (React vacía el formulario al mandar). `ActionForm` y el nuevo
+`FormSinBorrar` (que ahora usan todos los formularios de la página: panel, Mi cuenta, audiciones, entrar, contacto…)
+mandan sin que se vacíen; solo se limpian los de alta (comentarios, materiales, solicitudes…) cuando se guardó bien. El código de descuento avisa antes de mandar si lleva algo que
+no se permite (solo letras, números, guion o guion bajo; sin espacios ni &). En las solicitudes pendientes de Boletos,
+«Aprobar como cortesía» aprueba la orden y la deja en $0 con su motivo (boletos válidos).
+
 ## 2026-11-23 — 0164: Invitación directa con la inscripción cerrada
 
 Diego: cerrar la inscripción pero dejar entrar todavía a alguien invitándolo. La invitación directa del panel (con el

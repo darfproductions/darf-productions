@@ -1,4 +1,6 @@
 "use client";
+
+import { FormSinBorrar } from "@/components/FormSinBorrar";
 /* eslint-disable @next/next/no-img-element -- fotos privadas con enlace temporal */
 
 import { useActionState, useMemo, useState } from "react";
@@ -30,7 +32,7 @@ export function MiCast({ aid, roles, aspirantes, fotos, puedeVotar }: {
   const cambios = roles.some((r) => (sel[r.id] ?? "") !== (r.mi_voto ?? ""));
 
   return (
-    <form action={run} className="flex flex-col gap-4">
+    <FormSinBorrar action={run} className="flex flex-col gap-4">
       <input type="hidden" name="aid" value={aid} />
       {roles.map((r, i) => {
         const ref = [...r.candidatos].sort((a, b) => (b.votos ?? 0) - (a.votos ?? 0) || b.op1 - a.op1 || b.op2 - a.op2 || b.op3 - a.op3 || (a.numero ?? 999) - (b.numero ?? 999));
@@ -113,6 +115,6 @@ export function MiCast({ aid, roles, aspirantes, fotos, puedeVotar }: {
           </div>
         </div>
       )}
-    </form>
+    </FormSinBorrar>
   );
 }

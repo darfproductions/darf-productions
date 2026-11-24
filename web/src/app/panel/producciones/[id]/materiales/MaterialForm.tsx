@@ -1,5 +1,6 @@
 "use client";
 
+import { FormSinBorrar } from "@/components/FormSinBorrar";
 import { compressImage } from "@/lib/image-compress";
 import { useActionState, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
@@ -32,7 +33,7 @@ export function MaterialForm({ pid, tipos, carpetas, children }: { pid: string; 
     }
   }
   return (
-    <form action={run} className="flex flex-col gap-3">
+    <FormSinBorrar action={run} limpiarCon={state} className="flex flex-col gap-3">
       <input type="hidden" name="pid" value={pid} />
       <input type="hidden" name="archivo_path" value={path} />
       <div className="grid gap-2 sm:grid-cols-3">
@@ -56,6 +57,6 @@ export function MaterialForm({ pid, tipos, carpetas, children }: { pid: string; 
         <button disabled={pending || busy} className="rounded-full bg-texto px-5 py-2.5 text-sm font-bold text-sala disabled:opacity-60">{pending ? "Guardando…" : "Agregar material"}</button>
         {state && <span className={`text-sm ${state.ok ? "text-exito" : "text-[#ff8fa3]"}`}>{state.message}</span>}
       </div>
-    </form>
+    </FormSinBorrar>
   );
 }

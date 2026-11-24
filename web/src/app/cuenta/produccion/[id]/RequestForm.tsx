@@ -1,5 +1,6 @@
 "use client";
 
+import { FormSinBorrar } from "@/components/FormSinBorrar";
 import { MesSelect } from "@/components/MesSelect";
 import { useActionState, useState } from "react";
 import { ACCEPT_EXPEDIENTE, subirAExpediente } from "@/lib/expediente-upload";
@@ -59,7 +60,7 @@ function FaltaForm({ pid, ensayos, horas, marcado, onDone }: { pid: string; ensa
   }, null);
   const disponibles = ensayos.filter((e) => e.permitido && !e.pedida);
   return (
-    <form action={run} className="flex flex-col gap-4">
+    <FormSinBorrar action={run} limpiarCon={state} className="flex flex-col gap-4">
       <input type="hidden" name="pid" value={pid} />
       <p className="text-sm text-texto-2">Las faltas se avisan <b>{textoLimite(horas)}</b>. Si la producción la aprueba, el ensayo queda como falta justificada.</p>
       {ensayos.length === 0 ? <p className="rounded-lg bg-sala px-3 py-3 text-sm text-texto-2">No tienes ensayos próximos.</p> : (
@@ -87,7 +88,7 @@ function FaltaForm({ pid, ensayos, horas, marcado, onDone }: { pid: string; ensa
         {pending ? "Enviando…" : "Enviar solicitud"}
       </button>
       <Resultado state={state} />
-    </form>
+    </FormSinBorrar>
   );
 }
 
@@ -106,7 +107,7 @@ function LlegadaForm({ pid, ensayos, tolerancia, marcado, onDone }: { pid: strin
   const elegido = opciones.find((e) => e.id === sel);
   const iso = elegido && hora ? llegadaIso(elegido.inicia, hora) : null;
   return (
-    <form action={run} className="flex flex-col gap-4">
+    <FormSinBorrar action={run} limpiarCon={state} className="flex flex-col gap-4">
       <input type="hidden" name="pid" value={pid} />
       {opciones.map((e) => <input key={e.id} type="hidden" name={`inicia_${e.id}`} value={e.inicia} />)}
       {opciones.length === 0 ? <p className="rounded-lg bg-sala px-3 py-3 text-sm text-texto-2">No tienes ensayos próximos.</p> : (
@@ -140,7 +141,7 @@ function LlegadaForm({ pid, ensayos, tolerancia, marcado, onDone }: { pid: strin
         {pending ? "Enviando…" : "Enviar solicitud"}
       </button>
       <Resultado state={state} />
-    </form>
+    </FormSinBorrar>
   );
 }
 
@@ -155,7 +156,7 @@ function OtraForm({ pid, uid, tipo, docTipos, cuota, onDone }: { pid: string; ui
   const [concepto, setConcepto] = useState<"mensualidad" | "inscripcion">("mensualidad");
   const mesActual = isoMx().slice(0, 7);
   return (
-    <form action={run} className="flex flex-col gap-4">
+    <FormSinBorrar action={run} limpiarCon={state} className="flex flex-col gap-4">
       <input type="hidden" name="pid" value={pid} />
       <input type="hidden" name="tipo" value={tipo} />
       {tipo === "documento" && (
@@ -211,7 +212,7 @@ function OtraForm({ pid, uid, tipo, docTipos, cuota, onDone }: { pid: string; ui
         {pending ? "Enviando…" : subiendo ? "Esperando el archivo…" : "Enviar solicitud"}
       </button>
       <Resultado state={state} />
-    </form>
+    </FormSinBorrar>
   );
 }
 
@@ -223,7 +224,7 @@ function MensajeForm({ pid, equipo, marcado, onDone }: { pid: string; equipo: Eq
     return r;
   }, null);
   return (
-    <form action={run} className="flex flex-col gap-4">
+    <FormSinBorrar action={run} limpiarCon={state} className="flex flex-col gap-4">
       <input type="hidden" name="pid" value={pid} />
       <label className={`${etiqueta} sm:max-w-md`}>¿A quién?
         <select name="para" required defaultValue={equipo.some((e) => e.user_id === marcado) ? marcado ?? "" : equipo[0]?.user_id ?? ""} className={campo}>
@@ -237,7 +238,7 @@ function MensajeForm({ pid, equipo, marcado, onDone }: { pid: string; equipo: Eq
         {pending ? "Enviando…" : "Enviar mensaje"}
       </button>
       <Resultado state={state} />
-    </form>
+    </FormSinBorrar>
   );
 }
 

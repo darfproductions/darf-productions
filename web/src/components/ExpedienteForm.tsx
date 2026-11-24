@@ -1,5 +1,6 @@
 "use client";
 
+import { FormSinBorrar } from "@/components/FormSinBorrar";
 import { useActionState } from "react";
 import { saveMemberFile, type FileState } from "@/app/expediente/actions";
 import { GENEROS, type PersonFile } from "@/lib/member-rules";
@@ -14,7 +15,7 @@ export function ExpedienteForm({ pid, uid, f, esMenor, propio }: { pid: string; 
   const [state, run, pending] = useActionState<FileState, FormData>(saveMemberFile, null);
   const v = (k: keyof PersonFile) => (f?.[k] ?? "") as string | number;
   return (
-    <form action={run} className="flex flex-col gap-5">
+    <FormSinBorrar action={run} className="flex flex-col gap-5">
       <input type="hidden" name="pid" value={pid} />
       <input type="hidden" name="uid" value={uid} />
       {propio && <input type="hidden" name="confirmar" value="on" />}
@@ -69,6 +70,6 @@ export function ExpedienteForm({ pid, uid, f, esMenor, propio }: { pid: string; 
         <button disabled={pending} className="rounded-full bg-texto px-6 py-3 text-sm font-bold text-sala disabled:opacity-60">{pending ? "Guardando…" : "Guardar expediente"}</button>
         {state && <span role={state.ok ? "status" : "alert"} className={`text-sm ${state.ok ? "text-exito" : "text-[#ff8fa3]"}`}>{state.message}</span>}
       </div>
-    </form>
+    </FormSinBorrar>
   );
 }

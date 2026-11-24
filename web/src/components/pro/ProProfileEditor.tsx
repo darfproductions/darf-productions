@@ -1,3 +1,4 @@
+import { FormSinBorrar } from "@/components/FormSinBorrar";
 /* eslint-disable @next/next/no-img-element -- fotos del perfil desde Storage */
 import { ActionForm } from "@/components/panel/ActionForm";
 import { input } from "@/components/panel/ui";
@@ -29,7 +30,7 @@ export function ProProfileEditor({ pid, nombre, pro, fotos, team, esMenor }: {
           </span>
           <span className="flex flex-col items-start gap-2">
             <ProPhotoUpload pid={pid} kind="retrato" label={pro?.retrato_path ? "Cambiar retrato" : "Subir retrato"} />
-            {pro?.retrato_path && <form action={async () => { "use server"; await setProRetrato(pid, null); }}><button className="text-xs text-texto-3 underline">Quitar retrato</button></form>}
+            {pro?.retrato_path && <FormSinBorrar action={async () => { "use server"; await setProRetrato(pid, null); }}><button className="text-xs text-texto-3 underline">Quitar retrato</button></FormSinBorrar>}
           </span>
         </div>
       </section>

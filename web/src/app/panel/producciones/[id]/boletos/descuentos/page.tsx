@@ -23,7 +23,12 @@ function CodeFields({ c, zonas, funciones }: { c?: Code; zonas: { id: string; no
   return (
     <>
       <div className="grid gap-3 sm:grid-cols-3">
-        <label className="flex flex-col gap-1.5 text-sm font-semibold">Código<input className={`${input} uppercase`} name="codigo" required defaultValue={c?.codigo} placeholder="FAMILIA15" /></label>
+        <label className="flex flex-col gap-1.5 text-sm font-semibold">Código
+          {/* El navegador avisa antes de mandar si lleva algo que no se permite (como & o espacios). */}
+          <input className={`${input} uppercase`} name="codigo" required defaultValue={c?.codigo} placeholder="FAMILIA15"
+            pattern={"[A-Za-z0-9_\\-]{3,30}"} title="De 3 a 30 caracteres: solo letras, números, guion (-) o guion bajo (_). Sin espacios ni &." />
+          <span className="text-xs font-normal text-texto-3">Letras, números, guion (-) o guion bajo (_). Sin espacios ni &amp;.</span>
+        </label>
         <label className="flex flex-col gap-1.5 text-sm font-semibold">% de descuento<input className={input} type="number" name="percent" min={1} max={100} required defaultValue={c?.percent} /></label>
         <label className="flex items-center gap-2 self-end pb-3 text-sm font-semibold"><input type="checkbox" name="activo" defaultChecked={c?.is_active ?? true} /> Activo</label>
         <label className="flex flex-col gap-1.5 text-sm font-semibold">Válido desde<input className={input} type="datetime-local" name="desde" defaultValue={isoToLocalMx(c?.valid_from ?? null)} /></label>

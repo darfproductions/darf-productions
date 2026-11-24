@@ -1,5 +1,6 @@
 "use client";
 
+import { FormSinBorrar } from "@/components/FormSinBorrar";
 import { useActionState } from "react";
 import { sendContact, type ContactState } from "./actions";
 
@@ -11,7 +12,7 @@ export function ContactForm() {
     return <p role="status" className="rounded-2xl bg-telon p-6 text-lg">{state.message}</p>;
   }
   return (
-    <form action={action} className="grid gap-4 rounded-2xl bg-telon p-6 sm:grid-cols-2">
+    <FormSinBorrar action={action} limpiarCon={state} className="grid gap-4 rounded-2xl bg-telon p-6 sm:grid-cols-2">
       <input type="text" name="sitio" tabIndex={-1} autoComplete="off" aria-hidden="true" className="hidden" />
       <label className="flex flex-col gap-1.5 text-sm font-semibold">Nombre *
         <input className={field} name="nombre" required autoComplete="name" />
@@ -32,6 +33,6 @@ export function ContactForm() {
       <button disabled={pending} className="boton-compra rounded-full px-6 py-4 text-sm font-bold uppercase tracking-[0.1em] disabled:opacity-60 sm:col-span-2">
         {pending ? "Enviando…" : "Enviar mensaje"}
       </button>
-    </form>
+    </FormSinBorrar>
   );
 }

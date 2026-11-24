@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { startTransition, useActionState, useEffect, useRef } from "react";
 import { Notice } from "@/components/panel/ui";
 
 type State = { ok: boolean; message: string } | null;
@@ -24,11 +24,18 @@ export function ActionForm({
   inline?: boolean;
 }) {
   const [state, run, pending] = useActionState<State, FormData>(action, null);
+  const form = useRef<HTMLFormElement>(null);
+  // Lo escrito se conserva si algo sale mal (antes el formulario se vaciaba siempre); solo se limpia al guardar bien.
+  useEffect(() => { if (state?.ok) form.current?.reset(); }, [state]);
   return (
     <form
-      action={run}
+      ref={form}
       onSubmit={(e) => {
-        if (confirm && !window.confirm(confirm)) e.preventDefault();
+        e.preventDefault();
+        if (confirm && !window.confirm(confirm)) return;
+        const submitter = (e.nativeEvent as SubmitEvent).submitter as HTMLElement | null;
+        const datos = new FormData(e.currentTarget, submitter);
+        startTransition(() => run(datos));
       }}
       className={inline ? "inline-flex max-w-full flex-wrap items-center gap-2" : "flex flex-col gap-3"}
     >

@@ -1,5 +1,6 @@
 "use client";
 
+import { FormSinBorrar } from "@/components/FormSinBorrar";
 import { useActionState, useRef } from "react";
 import { Notice, button, input } from "@/components/panel/ui";
 import { addCredit, type CreditState } from "./actions";
@@ -17,7 +18,7 @@ export function AddCreditForm({ pid, tipo, papelLabel, listId, personajes = [] }
     return r;
   }, null);
   return (
-    <form ref={form} action={run} className="flex flex-col gap-2">
+    <FormSinBorrar ref={form} action={run} className="flex flex-col gap-2">
       <input type="hidden" name="pid" value={pid} />
       <input type="hidden" name="tipo" value={tipo} />
       <div className={`grid gap-2 ${papelLabel && !conLista ? "sm:grid-cols-[1fr_1fr_auto]" : "sm:grid-cols-[1fr_auto]"}`}>
@@ -27,7 +28,7 @@ export function AddCreditForm({ pid, tipo, papelLabel, listId, personajes = [] }
       </div>
       {conLista && <ChecksPersonajes personajes={personajes} />}
       {state && <Notice ok={state.ok}>{state.message}</Notice>}
-    </form>
+    </FormSinBorrar>
   );
 }
 

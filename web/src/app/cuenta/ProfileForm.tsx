@@ -1,5 +1,6 @@
 "use client";
 
+import { FormSinBorrar } from "@/components/FormSinBorrar";
 import { PASSWORD_AYUDA } from "@/lib/account-rules";
 import { PasswordInput } from "@/components/PasswordInput";
 import { useActionState } from "react";
@@ -19,7 +20,7 @@ function Msg({ s }: { s: ProfileState }) {
 export function ProfileForm(p: { nombres: string; apellidos: string; telefono: string; fecha: string }) {
   const [state, action, pending] = useActionState<ProfileState, FormData>(saveProfile, null);
   return (
-    <form action={action} className="flex flex-col gap-4">
+    <FormSinBorrar action={action} className="flex flex-col gap-4">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
         <label className="flex flex-col gap-1.5 text-sm font-semibold">Nombre(s)
           <input className={field} name="nombres" defaultValue={p.nombres} required maxLength={80} autoComplete="given-name" />
@@ -37,28 +38,28 @@ export function ProfileForm(p: { nombres: string; apellidos: string; telefono: s
       <p className="text-xs text-texto-3">Tu fecha de nacimiento es la misma de tu expediente si estás en un elenco. Tu producción solo ve el día y el mes.</p>
       <Msg s={state} />
       <button disabled={pending} className={btn}>{pending ? "Guardando…" : "Guardar"}</button>
-    </form>
+    </FormSinBorrar>
   );
 }
 
 export function EmailForm({ email }: { email: string }) {
   const [state, action, pending] = useActionState<ProfileState, FormData>(changeEmail, null);
   return (
-    <form action={action} className="flex flex-col gap-3">
+    <FormSinBorrar action={action} className="flex flex-col gap-3">
       <p className="text-sm text-texto-2">Correo actual: <b className="text-texto">{email}</b></p>
       <label className="flex flex-col gap-1.5 text-sm font-semibold">Correo nuevo
         <input className={field} name="email" type="email" required autoComplete="email" />
       </label>
       <Msg s={state} />
       <button disabled={pending} className={ghost}>{pending ? "Enviando…" : "Cambiar correo"}</button>
-    </form>
+    </FormSinBorrar>
   );
 }
 
 export function PasswordForm({ captcha }: { captcha: string }) {
   const [state, action, pending] = useActionState<ProfileState, FormData>(changePassword, null);
   return (
-    <form action={action} className="flex flex-col gap-3">
+    <FormSinBorrar action={action} className="flex flex-col gap-3">
       <label className="flex flex-col gap-1.5 text-sm font-semibold">Contraseña actual
         <PasswordInput className={field} name="actual" required autoComplete="current-password" />
       </label>
@@ -73,6 +74,6 @@ export function PasswordForm({ captcha }: { captcha: string }) {
       <Msg s={state} />
       <button disabled={pending} className={ghost}>{pending ? "Cambiando…" : "Cambiar contraseña"}</button>
       <p className="text-xs text-texto-3">¿No recuerdas la actual o entras con Google? <a href="/entrar/recuperar" className="underline">Pide un enlace para poner una nueva</a>.</p>
-    </form>
+    </FormSinBorrar>
   );
 }

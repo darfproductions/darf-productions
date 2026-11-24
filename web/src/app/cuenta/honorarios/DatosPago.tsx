@@ -1,5 +1,6 @@
 "use client";
 
+import { FormSinBorrar } from "@/components/FormSinBorrar";
 import { useActionState, useState } from "react";
 import { bancoDeClabe, clabeValida, formatearClabe, limpiarClabe } from "@/lib/clabe-rules";
 import { guardarDatosPago, type DatosPagoState } from "./actions";
@@ -16,7 +17,7 @@ export function DatosPago({ inicial }: { inicial: DatosPagoFila }) {
   const d = limpiarClabe(clabe);
   const aviso = d.length === 0 ? null : d.length < 18 ? `${d.length} de 18 dígitos` : clabeValida(d) ? null : "Esta CLABE no es válida: revisa los dígitos.";
   return (
-    <form action={run} className="flex flex-col gap-4">
+    <FormSinBorrar action={run} className="flex flex-col gap-4">
       <fieldset className="flex flex-wrap gap-2">
         <legend className="mb-2 text-sm font-semibold">¿Cómo prefieres que te paguen?</legend>
         {(["transferencia", "efectivo"] as const).map((m) => (
@@ -42,6 +43,6 @@ export function DatosPago({ inicial }: { inicial: DatosPagoFila }) {
         {state && <span role="status" className={`text-sm font-semibold ${state.ok ? "text-exito" : "text-[#ff8fa3]"}`}>{state.message}</span>}
       </div>
       <p className="text-xs text-texto-3">Solo la ven las cabezas de DARF para hacerte los depósitos.</p>
-    </form>
+    </FormSinBorrar>
   );
 }

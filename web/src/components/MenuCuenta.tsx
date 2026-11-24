@@ -1,5 +1,6 @@
 "use client";
 
+import { FormSinBorrar } from "@/components/FormSinBorrar";
 /* eslint-disable @next/next/no-img-element -- foto de perfil firmada */
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -56,9 +57,9 @@ export function MenuCuenta({ nombre, email, fotoUrl, panel, socio }: { nombre: s
           {socio && <Link role="menuitem" href="/fan-zone" className={`${item} !text-oro-claro`}>Fan Zone</Link>}
           {panel && <Link role="menuitem" href="/panel" className={item}>Panel</Link>}
           <div className="mt-1 border-t border-linea pt-1.5">
-            <form action={logout}>
+            <FormSinBorrar action={logout}>
               <button role="menuitem" type="submit" className={`${item} w-full text-left`}>Cerrar sesión</button>
-            </form>
+            </FormSinBorrar>
           </div>
         </div>
       )}

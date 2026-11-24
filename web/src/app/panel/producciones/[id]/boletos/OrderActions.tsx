@@ -4,7 +4,7 @@ import type { SaleOrder } from "@/lib/sales";
 import { formatMoney } from "@/lib/tickets";
 import { ligaWhatsApp } from "@/lib/pago-rules";
 import { METODOS_PAGO, mensajeOrden, puedeExtender } from "@/lib/ventas-rules";
-import { approveOrder, cancelOrder, cancelTicket, cortesiaOrden, extendOrder, rejectOrder } from "./actions";
+import { aprobarCortesia, approveOrder, cancelOrder, cancelTicket, cortesiaOrden, extendOrder, rejectOrder } from "./actions";
 
 const small = "rounded-full border border-white/25 px-3 py-1.5 text-xs font-bold hover:border-white/50 disabled:opacity-60";
 const campo = `${input} py-2 text-sm`;
@@ -46,6 +46,19 @@ export function OrderActions({ pid, o, obra, funcion, limite, ligaCuenta, puerta
               <label htmlFor={`r-${o.id}`} className="flex flex-col gap-1 text-xs font-semibold text-texto-2">
                 Referencia o folio (opcional)
                 <input id={`r-${o.id}`} name="referencia" maxLength={80} className={campo} placeholder="Ej. folio de la transferencia" />
+              </label>
+            </ActionForm>
+          </div>
+        </details>
+      )}
+      {o.status === "pendiente" && (
+        <details>
+          <summary className={resumen}>Aprobar como cortesía</summary>
+          <div className={panel}>
+            <ActionForm action={aprobarCortesia} hidden={h} confirm={`¿Aprobar ${o.order_code} como cortesía? Los boletos quedan válidos y la orden en $0.`} submit="Aprobar como cortesía" submitClass={small}>
+              <label htmlFor={`ac-${o.id}`} className="flex flex-col gap-1 text-xs font-semibold text-texto-2">
+                Motivo (a quién y por qué)
+                <input id={`ac-${o.id}`} name="motivo" maxLength={300} required className={campo} placeholder="Ej. Friends & Family, prensa, patrocinador" />
               </label>
             </ActionForm>
           </div>

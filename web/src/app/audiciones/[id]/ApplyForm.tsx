@@ -1,5 +1,6 @@
 "use client";
 
+import { FormSinBorrar } from "@/components/FormSinBorrar";
 import { compressImage } from "@/lib/image-compress";
 import { useActionState, useState } from "react";
 import { ageAt, faltantesSolicitud, lugares } from "@/lib/audition-rules";
@@ -93,7 +94,7 @@ export function ApplyForm(props: {
   }
 
   return (
-    <form action={action} onSubmit={revisar} className="grid gap-4 rounded-2xl bg-telon p-6 sm:grid-cols-2 [.con-obra_&]:bg-obra-superficie">
+    <FormSinBorrar action={action} onSubmit={revisar} className="grid gap-4 rounded-2xl bg-telon p-6 sm:grid-cols-2 [.con-obra_&]:bg-obra-superficie">
       <input type="hidden" name="aid" value={props.aid} />
       <input type="hidden" name="foto_path" value={foto} />
       <label className="flex flex-col gap-1.5 text-sm font-semibold">Nombre completo *
@@ -241,6 +242,6 @@ export function ApplyForm(props: {
       <button disabled={pending || subiendo} className="boton-compra rounded-full px-6 py-4 text-sm font-bold uppercase tracking-[0.1em] disabled:opacity-60 sm:col-span-2">
         {props.vistaPrevia ? "Inscribirme (vista previa)" : pending ? "Enviando…" : p && p.estado !== "cancelado" ? "Guardar cambios" : "Inscribirme"}
       </button>
-    </form>
+    </FormSinBorrar>
   );
 }
