@@ -7,7 +7,7 @@ import { Icono } from "@/components/Icono";
 import type { Criterio } from "@/lib/audition-rules";
 import { PersonajesPopup, TodosPersonajes } from "@/components/audiciones/PersonajesPopup";
 import type { FichaAudicion, PerfilAspirante } from "@/lib/produccion-nueva-rules";
-import { juezActual, type JuezActual, type PersonaJuez } from "../../actions";
+import type { JuezActual, PersonaJuez } from "../../actions";
 import { ScoreForm } from "./ScoreForm";
 import { PickForm } from "./PickForm";
 
@@ -25,11 +25,16 @@ export function EnEscenaJuez({ aid, ronda, criterios, roles, conVotacion, abiert
   const [sel, setSel] = useState<string | null>(null);
   const actual = useRef(inicial);
   useEffect(() => {
+    // Por GET (no acción del servidor) y sin encimarse: si la anterior no ha contestado, se salta esta vuelta.
+    // Así «Guardar» y las opciones nunca esperan atrás de esta pregunta.
+    let ocupado = false;
     const t = setInterval(async () => {
-      if (document.visibilityState !== "visible") return;
+      if (document.visibilityState !== "visible" || ocupado) return;
+      ocupado = true;
       const prev = actual.current;
       const tengo = new Map([...(prev?.grupo ?? []), ...(prev ? [prev] : [])].filter((p) => p.app && p.foto).map((p) => [p.app as string, p.foto as string]));
-      const n = await juezActual(aid, ronda, [...tengo.keys()]).catch(() => undefined);
+      const n = await fetch(`/panel/audiciones/${aid}/en-escena?ronda=${ronda}&tengo=${[...tengo.keys()].join(",")}`, { cache: "no-store" })
+        .then((r) => (r.ok ? (r.json() as Promise<JuezActual | null>) : undefined)).catch(() => undefined).finally(() => { ocupado = false; });
       if (n === undefined) return;
       // Mismas personas: se conserva su foto (solo se firma al cambiar de persona).
       const conFoto = (p: PersonaJuez) => ({ ...p, foto: p.foto ?? tengo.get(p.app ?? "") ?? null });
