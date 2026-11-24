@@ -11,6 +11,8 @@ import { OfferForm } from "../../../producciones/[id]/elenco/OfferForm";
 import { createClient } from "@/lib/supabase/server";
 import { setApplicationEstado } from "../../actions";
 import { marcarCallback } from "../../votacion-actions";
+import { agruparPorPersona, type Evaluaciones } from "@/lib/evaluaciones-rules";
+import { LoQuePusieron } from "../votacion/LoQuePusieron";
 
 export const metadata: Metadata = { title: "Resultados" };
 
@@ -58,9 +60,15 @@ export default async function Results({ params, searchParams }: PageProps<"/pane
 
   if (conVotacion && a.fase === "seleccion_callback") {
     const orden = [...rows].sort((x, y) => (marcas.get(y.id)?.total ?? 0) - (marcas.get(x.id)?.total ?? 0));
+    // 0166: lo que puso cada juez de cada persona, para decidir el callback.
+    const { data: ev } = await supabase.rpc("audition_evaluaciones", { aid });
+    const evals = agruparPorPersona(((ev as Evaluaciones | null)?.evaluaciones) ?? []);
     return (
       <Card className="flex flex-col gap-4">
-        <h2 className="titular text-xl">Elegir quién pasa a callback</h2>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="titular text-xl">Elegir quién pasa a callback</h2>
+          <a href={`/panel/audiciones/${aid}/exportar/evaluaciones`} className="text-sm font-bold text-violeta-claro">Descargar evaluaciones (Excel)</a>
+        </div>
         <p className="text-sm text-texto-2">Ordenados por cuántas veces los marcaron los jueces. Palomea a quienes pasan, guarda y luego da “Siguiente: Callback” arriba. Se les avisa al empezar el callback.</p>
         <ActionForm action={marcarCallback} hidden={{ aid }} submit="Guardar quién pasa">
           <ul className="flex flex-col divide-y divide-white/10">
@@ -78,6 +86,12 @@ export default async function Results({ params, searchParams }: PageProps<"/pane
                       </span>
                     </span>
                   </label>
+                  {(evals.get(r.id) ?? []).length > 0 && (
+                    <details className="w-full text-sm">
+                      <summary className="cursor-pointer text-xs font-bold text-violeta-claro">Ver lo que pusieron los jueces</summary>
+                      <div className="mt-2"><LoQuePusieron rondas={evals.get(r.id) ?? []} criterios={criterios} /></div>
+                    </details>
+                  )}
                 </li>
               );
             })}
@@ -92,6 +106,7 @@ export default async function Results({ params, searchParams }: PageProps<"/pane
       {conVotacion && (
         <Card className="text-sm">Esta convocatoria se decide por votación: las opciones de los jueces y los votos están en <Link href={`/panel/audiciones/${aid}/votacion`} className="font-bold text-lila">Votación</Link> y el cast se arma en <Link href={`/panel/audiciones/${aid}/cast`} className="font-bold text-lila">Cast</Link>. Aquí quedan las calificaciones opcionales.</Card>
       )}
+      <a href={`/panel/audiciones/${aid}/exportar/evaluaciones`} className="self-start text-sm font-bold text-violeta-claro">Descargar evaluaciones de todos los jueces (Excel)</a>
       <div className="flex flex-wrap gap-2 text-xs">
         {[1, 2, 3].map((r) => (
           <Link key={r} href={`?ronda=${r}${rol ? `&rol=${encodeURIComponent(rol)}` : ""}`} className={`rounded-full border px-3 py-1.5 font-semibold ${r === ronda ? "border-texto" : "border-white/20"}`}>{r === 1 ? "Audición" : `Callback ${r - 1}`}</Link>

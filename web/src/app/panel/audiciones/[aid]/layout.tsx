@@ -26,6 +26,8 @@ export default async function AuditionLayout({ children, params }: LayoutProps<"
     { href: "/evaluacion", label: "Evaluación", show: may("audiciones.evaluar") },
     { href: "/votacion", label: "Votación", show: votacion && (g || may("audiciones.evaluar")) },
     { href: "/cast", label: "Cast", show: votacion && g },
+    // 0166: con la votación cerrada, todo junto para imprimir o guardar como PDF.
+    { href: "/expediente", label: "Expediente", show: votacion && g && ["ajuste", "enviado"].includes(a.fase) },
     { href: "/resultados", label: votacion ? "Calificaciones" : "Resultados", show: g },
   ].filter((l) => l.show);
   const root = `/panel/audiciones/${aid}`;

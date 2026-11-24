@@ -5,6 +5,27 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-11-24 — 0166: evaluaciones de todos los jueces, votación en PDF y expediente
+
+Diego quería, antes de votar, una tabla con lo que puso cada juez de cada aspirante. En la votación quería tocar a
+alguien y ver eso mismo, y al final descargar la votación en PDF y un expediente con todo.
+- `audition_evaluaciones(aid)` reúne calificaciones, opciones de personaje y notas de cada juez por ronda.
+  - La dirección lo ve siempre.
+  - Los jueces lo ven a partir de la votación (decisión de Diego). Antes cada juez solo ve lo suyo, para no influirse.
+- `audition_expediente(aid)` (solo la dirección) junta:
+  - datos y conteos;
+  - jueces;
+  - quién pasó a callback;
+  - entrevistas;
+  - votos por personaje con qué votó cada juez;
+  - cast y ofertas.
+  - Los votos y el cast salen ya cerrada la votación, igual que en pantalla.
+- Pantallas:
+  - Excel de evaluaciones (`exportar/evaluaciones`), en «Elegir callback», Calificaciones y Votación.
+  - «Ver evaluaciones» por persona en la votación y en «Elegir callback».
+  - `votacion/pdf` y la pestaña «Expediente».
+  - Los PDF son páginas para «Guardar como PDF» desde el navegador, sin librerías nuevas (decisión de Diego).
+
 ## 2026-11-24 — 0165: «Separar» ya no se deshace al reordenar
 
 Diego: separaba a alguien de su grupo y al «Cambiar el orden» se volvía a juntar, porque reordenar junta primero a
