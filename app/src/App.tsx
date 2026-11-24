@@ -7,7 +7,7 @@ import { AparienciaProvider } from "~/lib/apariencia";
 import { completarRegreso, REGRESO } from "~/lib/entrar-social";
 import { SesionProvider } from "~/lib/sesion";
 import { Acceso, destinoTrasEntrar } from "~/pantallas/Acceso";
-import { Boletos } from "~/pantallas/Boletos";
+import { Boletos, PasarBoletos } from "~/pantallas/Boletos";
 import { Cuenta } from "~/pantallas/Cuenta";
 import { EliminarCuenta } from "~/pantallas/EliminarCuenta";
 import { Notificaciones } from "~/pantallas/Notificaciones";
@@ -57,6 +57,7 @@ function Marco() {
         <Route path="/obras" element={<Obras />} />
         <Route path="/obras/:id" element={<Obra />} />
         <Route path="/boletos" element={<Boletos />} />
+        <Route path="/boletos/:orden/pasar" element={<PasarBoletos />} />
         <Route path="/cuenta" element={<Cuenta />} />
         <Route path="/cuenta/eliminar" element={<EliminarCuenta />} />
         <Route path="/notificaciones" element={<Notificaciones />} />

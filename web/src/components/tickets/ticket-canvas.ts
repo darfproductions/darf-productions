@@ -95,20 +95,31 @@ function dibujar(ctx: CanvasRenderingContext2D, b: BoletoVista, e: EstiloBoleto,
   etiqueta("Asiento", 48, 524);
   ctx.fillStyle = e.texto; ctx.font = `900 60px ${fuente}`;
   ctx.fillText(b.asiento.slice(0, 22), 48, 590);
-  // 0122: lo que incluye la zona, en una línea.
+  // 0122: lo que incluye la zona, en renglones que caben (máx. 2; si no cabe, termina en "…").
+  let fin = 590;
   if (b.incluye?.length) {
     ctx.fillStyle = e.acento; ctx.font = `700 21px ${fuente}`;
-    const linea = `Incluye: ${b.incluye.join(" · ")}${b.acceso ? ` · ${b.acceso}` : ""}`;
-    ctx.fillText(linea.length > 64 ? `${linea.slice(0, 63)}…` : linea, 48, 624);
+    const ls = lineas(ctx, `Incluye: ${b.incluye.join(" · ")}${b.acceso ? ` · ${b.acceso}` : ""}`, W - 96);
+    const dos = ls.slice(0, 2);
+    if (ls.length > 2) {
+      let u = dos[1];
+      while (u.length > 1 && ctx.measureText(`${u}…`).width > W - 96) u = u.slice(0, -1);
+      dos[1] = `${u.trimEnd()}…`;
+    }
+    dos.forEach((l, k) => ctx.fillText(l, 48, 628 + k * 28));
+    fin = 628 + (dos.length - 1) * 28;
   }
-  etiqueta("Orden", 48, 650);
-  etiqueta("Nombre", 380, 650);
+  const yEt = b.incluye?.length ? fin + 46 : 650, yVal = yEt + 40;
+  etiqueta("Orden", 48, yEt);
+  etiqueta("Nombre", 380, yEt);
   ctx.fillStyle = e.texto; ctx.font = `700 30px ${fuente}`;
-  ctx.fillText(b.orden, 48, 690);
-  ctx.fillText(b.comprador.length > 18 ? `${b.comprador.slice(0, 17)}…` : b.comprador, 380, 690);
+  ctx.fillText(b.orden, 48, yVal);
+  let nombre = b.comprador;
+  while (nombre.length > 1 && ctx.measureText(nombre).width > W - 380 - 48) nombre = nombre.slice(0, -1);
+  ctx.fillText(nombre === b.comprador ? nombre : `${nombre.trimEnd()}…`, 380, yVal);
 
-  // QR
-  const qs = 480, qx = (W - qs) / 2, qy = 722;
+  // QR (se recorre hacia abajo si arriba hay renglones de "Incluye", sin tapar el pie)
+  const qy = Math.max(722, yVal + 32), qs = Math.min(480, H - 120 - qy), qx = (W - qs) / 2;
   ctx.fillStyle = "#ffffff";
   ctx.beginPath(); ctx.roundRect(qx, qy, qs, qs, 32); ctx.fill();
   if (qr) {
@@ -159,6 +170,30 @@ export async function crearPdf(boletos: BoletoVista[], estilo: EstiloBoleto): Pr
     paginas.push({ data, w: W, h: H });
   }
   return pdfConImagenes(paginas, W / 2, H / 2);
+}
+
+/** Cada boleto como imagen (data URL PNG, 720 × 1280): la app la muestra en pantalla completa con el mismo diseño
+ *  que el PDF. Si el logo o el póster no se pueden usar, sin ellos. */
+export async function imagenesBoletos(boletos: BoletoVista[], estilo: EstiloBoleto): Promise<string[]> {
+  const fuente = getComputedStyle(document.body).fontFamily || "sans-serif";
+  const [logo, poster, darf] = await Promise.all([
+    estilo.logo ? cargar(estilo.logo, true) : null, estilo.poster ? cargar(estilo.poster, true) : null, cargar(logoDarf(estilo.fondo), false),
+  ]);
+  const out: string[] = [];
+  for (let i = 0; i < boletos.length; i++) {
+    const b = boletos[i];
+    const qr = b.qr ? await cargar(b.qr, false) : null;
+    const canvas = document.createElement("canvas");
+    canvas.width = W; canvas.height = H;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("Canvas no disponible.");
+    dibujar(ctx, b, estilo, logo, darf, qr, i, boletos.length, fuente, poster);
+    try { out.push(canvas.toDataURL("image/png")); } catch {
+      dibujar(ctx, b, estilo, null, darf, qr, i, boletos.length, fuente);
+      out.push(canvas.toDataURL("image/png"));
+    }
+  }
+  return out;
 }
 
 /** Genera y descarga el PDF. */
