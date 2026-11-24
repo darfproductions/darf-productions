@@ -46,6 +46,17 @@ describe("paseBoleto", () => {
     expect(p.primarios[0].value).toBe("Showman");
     expect(p.secundarios.map((c) => c.value)).toEqual(["B-12", "Teatro Metropolitano"]);
   });
+  it("con zona: Asiento y Zona arriba, Lugar junto al nombre y la orden al reverso", () => {
+    const z = paseBoleto({ ...boleto, zona: "VIP" });
+    expect(z.secundarios.map((c) => [c.label, c.value])).toEqual([["Asiento", "B-12"], ["Zona", "VIP"]]);
+    expect(z.auxiliares.map((c) => c.label)).toEqual(["A nombre de", "Lugar"]);
+    expect(z.reverso.find((c) => c.key === "orden")?.value).toBe("DARF-AB12CD");
+    expect(z.secundarios.length + z.auxiliares.length).toBe(4);
+  });
+  it("la zona no se repite si ya viene en el asiento (entrada general)", () => {
+    const g = paseBoleto({ ...boleto, asiento: "General · VIP", zona: "VIP" });
+    expect(g.secundarios.map((c) => c.label)).toEqual(["Asiento", "Lugar"]);
+  });
   it("aparece en la pantalla de bloqueo y vence 6 horas después", () => {
     expect(p.fecha).toBe(boleto.startsAt);
     expect(p.vence).toBe(venceBoleto(boleto.startsAt));
