@@ -79,6 +79,21 @@ export async function cortesiaOrden(_p: TicketState, f: FormData): Promise<Ticke
   return { ok: true, message: "Listo: la orden quedó como cortesía en $0." };
 }
 
+/** Aprobar como cortesía una solicitud pendiente: los boletos quedan válidos y la orden en $0, con motivo. */
+export async function aprobarCortesia(_p: TicketState, f: FormData): Promise<TicketState> {
+  const pid = String(f.get("pid"));
+  const order = String(f.get("order"));
+  const motivo = motivoDe(f);
+  if (!motivo) return { ok: false, message: "Escribe el motivo de la cortesía (a quién y por qué)." };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("approve_order", { target_order_id: order, p_metodo: "cortesia", p_referencia: null });
+  if (error) return { ok: false, message: mensajeError(error) };
+  const { error: e2 } = await supabase.rpc("order_cortesia", { target_order_id: order, p_motivo: motivo });
+  refresh(pid);
+  if (e2) return { ok: false, message: `La orden se aprobó, pero no quedó en $0: ${mensajeError(e2)}. Usa «Hacer cortesía» en esa orden.` };
+  return { ok: true, message: "Listo: aprobada como cortesía en $0. Los boletos ya son válidos y están en la cuenta del comprador." };
+}
+
 export async function extendOrder(_p: TicketState, f: FormData): Promise<TicketState> {
   const pid = String(f.get("pid"));
   const horas = Math.min(72, Math.max(1, Number(f.get("horas") ?? 24) || 24));
