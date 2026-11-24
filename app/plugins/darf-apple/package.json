@@ -2,7 +2,7 @@
   "name": "darf-apple",
   "version": "1.0.0",
   "private": true,
-  "description": "Iniciar sesión con Apple (ventana nativa de iOS) para la app DARF. Solo iOS.",
+  "description": "Funciones nativas de iOS para la app DARF: Iniciar sesión con Apple y Añadir a Apple Wallet.",
   "license": "UNLICENSED",
   "capacitor": {
     "ios": { "src": "ios" }

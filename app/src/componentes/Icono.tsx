@@ -24,6 +24,12 @@ const TRAZOS = {
   wallet: "M5 5h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zM3 10h18M16 14.5h2",
   palomita: "M5 12l5 5 9-10",
   salir: "M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10",
+  candado: "M6 11h12v10H6zM8 11V7a4 4 0 0 1 8 0v4M12 15v2",
+  documento: "M7 3h7l5 5v13H7zM14 3v5h5M10 13h6M10 17h6",
+  externo: "M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5",
+  play: "M8 5.5v13l10.5-6.5z",
+  abajo: "M6 9l6 6 6-6",
+  destello: "M12 3v5M12 16v5M3 12h5M16 12h5M6.3 6.3l2.8 2.8M14.9 14.9l2.8 2.8M6.3 17.7l2.8-2.8M14.9 9.1l2.8-2.8",
 } as const;
 
 export type NombreIcono = keyof typeof TRAZOS;

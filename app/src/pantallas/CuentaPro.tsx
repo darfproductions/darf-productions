@@ -338,7 +338,7 @@ export function PerfilProfesional() {
             {tray.map((t, i) => (
               <div key={i} style={{ display: "flex", flexDirection: "column", gap: 8, paddingBottom: 12, borderBottom: "1px solid var(--linea)" }}>
                 <label className="campo">Obra<input value={t.obra} onChange={(e) => setTray(tray.map((x, j) => (j === i ? { ...x, obra: e.target.value } : x)))} /></label>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 96px", gap: 8 }}>
                   <label className="campo">Papel<input value={t.papel} onChange={(e) => setTray(tray.map((x, j) => (j === i ? { ...x, papel: e.target.value } : x)))} /></label>
                   <label className="campo">Año<input inputMode="numeric" maxLength={4} value={t.anio} onChange={(e) => setTray(tray.map((x, j) => (j === i ? { ...x, anio: e.target.value } : x)))} /></label>
                 </div>

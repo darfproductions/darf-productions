@@ -8,6 +8,7 @@ import { dominio, FAN_CATEGORIAS, numeroSocio, type FanCategoria } from "@/lib/f
 import { mensajeError } from "@/lib/errores";
 import { Icono } from "~/componentes/Icono";
 import { Lealtad } from "~/componentes/Lealtad";
+import { VideoYoutube } from "~/componentes/VideoYoutube";
 import { leerCredencial } from "~/lib/cuenta";
 import { env } from "~/lib/env";
 import { leerEventos, leerEventosCartelera, leerFanZone, leerSocio, type AnuncioVista, type CredencialFan, type EventoCartelera, type FanItemVista, type FanProximo, type PreventaObra } from "~/lib/fanzone";
@@ -254,7 +255,7 @@ function Preventa({ x }: { x: PreventaObra }) {
             if (error) return setMsg(mensajeError(error));
             setOn(!on);
             setMsg(!on ? "Listo: te avisamos en tu cuenta y en tu teléfono cuando abra la preventa." : "Recordatorio desactivado.");
-          }}>{on ? "✓ Recordatorio activo" : "Activar recordatorio"}</button>}
+          }}>{on ? <><Icono nombre="palomita" tamano={14} grosor={2.4} /> Recordatorio activo</> : "Activar recordatorio"}</button>}
       {msg && <span style={{ fontSize: 12, color: SUAVE }}>{msg}</span>}
     </Caja>
   );
@@ -314,7 +315,7 @@ function AnuncioTarjeta({ a }: { a: AnuncioVista }) {
             if (error) return setMsg(error.message);
             setMsg(!apuntado ? "Listo: te avisamos en tu cuenta y en tu teléfono cuando se revele." : "Ya no te avisaremos de este anuncio.");
             setApuntado(!apuntado);
-          }}>{apuntado ? "✓ Te avisaremos" : "Avísame"}</button>
+          }}>{apuntado ? <><Icono nombre="palomita" tamano={14} grosor={2.4} /> Te avisaremos</> : "Avísame"}</button>
       )}
       {msg && <span style={{ fontSize: 12, color: SUAVE }}>{msg}</span>}
     </Caja>
@@ -322,7 +323,6 @@ function AnuncioTarjeta({ a }: { a: AnuncioVista }) {
 }
 
 function Item({ it, obra }: { it: FanItemVista; obra?: string }) {
-  const [play, setPlay] = useState(false);
   const etiqueta = <span style={{ position: "absolute", left: 10, top: 10, zIndex: 2, ...chip(true), padding: "4px 9px", fontSize: 10 }}>{ETIQUETA[it.categoria]}</span>;
   const pie = (
     <div style={{ display: "flex", flexDirection: "column", gap: 3, padding: "12px 16px 16px" }}>
@@ -333,20 +333,7 @@ function Item({ it, obra }: { it: FanItemVista; obra?: string }) {
   );
   const caja: CSSProperties = { borderRadius: 22, overflow: "hidden", background: CAJA, border: `1px solid ${LINEA}` };
   if (it.tipo === "video" && it.youtube_id) {
-    return (
-      <article style={caja}>
-        <div style={{ position: "relative", aspectRatio: "16 / 9", background: "#000000" }}>
-          {etiqueta}
-          {play
-            ? <iframe src={`https://www.youtube-nocookie.com/embed/${encodeURIComponent(it.youtube_id)}?autoplay=1&playsinline=1&rel=0`} title={it.titulo} allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; fullscreen" allowFullScreen style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: "none" }} />
-            : <button aria-label={`Reproducir ${it.titulo}`} onClick={() => setPlay(true)} style={{ position: "absolute", inset: 0, padding: 0, border: "none", background: "none", cursor: "pointer" }}>
-                <img src={`https://i.ytimg.com/vi/${it.youtube_id}/hqdefault.jpg`} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                <span aria-hidden="true" style={{ position: "absolute", left: "50%", top: "50%", transform: "translate(-50%,-50%)", width: 56, height: 56, borderRadius: 28, background: "rgba(8,7,12,0.8)", border: "1px solid rgba(255,255,255,0.3)", color: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>▶</span>
-              </button>}
-        </div>
-        {pie}
-      </article>
-    );
+    return <article style={caja}><VideoYoutube id={it.youtube_id} titulo={it.titulo} encima={etiqueta} />{pie}</article>;
   }
   if (it.tipo === "foto" && it.archivo_url) {
     return (
@@ -373,7 +360,7 @@ function Item({ it, obra }: { it: FanItemVista; obra?: string }) {
     <article style={caja}>
       <button onClick={() => href && abrir(href)} style={{ position: "relative", width: "100%", aspectRatio: "16 / 9", border: "none", display: "flex", alignItems: "center", justifyContent: "center", color: ORO, fontSize: 36,
         background: `radial-gradient(70% 60% at 50% 40%, rgba(215,187,95,0.18), transparent 70%), ${CAJA}` }}>
-        {etiqueta}<span aria-hidden="true">{it.tipo === "documento" ? "📄" : "↗"}</span>
+        {etiqueta}<span aria-hidden="true"><Icono nombre={it.tipo === "documento" ? "documento" : "externo"} tamano={40} grosor={1.5} /></span>
         <span style={{ position: "absolute", right: 12, bottom: 10, fontSize: 11, fontWeight: 800, color: ORO_CLARO }}>{it.tipo === "documento" ? "Abrir PDF" : "Ir al enlace"} ›</span>
       </button>
       {pie}
@@ -385,7 +372,7 @@ function Proximo({ p, obra }: { p: FanProximo; obra?: string }) {
   return (
     <article style={{ borderRadius: 22, overflow: "hidden", background: CAJA, border: `1px solid ${LINEA}` }} aria-label={`${p.titulo}: se desbloquea el ${fecha(p.disponible_desde)}`}>
       <div style={{ aspectRatio: "16 / 9", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, background: "linear-gradient(160deg,#1a1622,#0b0910)" }}>
-        <span aria-hidden="true" style={{ fontSize: 26 }}>🔒</span>
+        <Icono nombre="candado" tamano={30} color={ORO} />
         <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.22em", textTransform: "uppercase", color: ORO }}>Se desbloquea el {fecha(p.disponible_desde)}</span>
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 3, padding: "12px 16px 16px" }}>
@@ -418,7 +405,7 @@ function EventoTarjeta({ e, sesion, socio, mostrarObra = true, recargar }: { e: 
     if (typeof data === "string" && data.startsWith("https://")) void abrir(data);
     else setMsg({ ok: false, t: "La transmisión todavía no abre." });
   };
-  const btn = (texto: string, fn: () => void, contorno = false) => (
+  const btn = (texto: ReactNode, fn: () => void, contorno = false) => (
     <button className="boton" disabled={enviando} onClick={fn} style={contorno ? { minHeight: 40, fontSize: 11, padding: "0 16px", background: "transparent", border: `1.5px solid ${LINEA}`, color: "#ffffff" } : { ...botonOro, minHeight: 40, fontSize: 11, padding: "0 16px" }}>{enviando ? "…" : texto}</button>
   );
   return (
@@ -437,8 +424,8 @@ function EventoTarjeta({ e, sesion, socio, mostrarObra = true, recargar }: { e: 
           </span>
           <strong style={{ fontSize: 15 }}>{e.titulo}</strong>
           <span style={{ fontSize: 12, color: SUAVE }}>{f.hora}{enLinea ? " · En línea" : e.venue ? ` · ${e.venue}` : ""}{mostrarObra && e.obra ? ` · ${e.obra}` : ""}</span>
-          {e.requiere_registro && e.cupo != null && !enLinea && <span style={{ fontSize: 12, color: ORO_CLARO }}>{e.apartado ? "✓ Tienes lugar" : e.libres === 0 ? "Sin lugares" : `${e.libres} ${e.libres === 1 ? "lugar" : "lugares"}`}</span>}
-          {e.apartado && enLinea && <span style={{ fontSize: 12, color: ORO_CLARO }}>✓ Registrado</span>}
+          {e.requiere_registro && e.cupo != null && !enLinea && <span style={{ fontSize: 12, color: ORO_CLARO }}>{e.apartado ? <><Icono nombre="palomita" tamano={14} grosor={2.4} /> Tienes lugar</> : e.libres === 0 ? "Sin lugares" : `${e.libres} ${e.libres === 1 ? "lugar" : "lugares"}`}</span>}
+          {e.apartado && enLinea && <span style={{ fontSize: 12, color: ORO_CLARO, display: "inline-flex", gap: 4, alignItems: "center" }}><Icono nombre="palomita" tamano={14} grosor={2.4} /> Registrado</span>}
           {e.precio != null && <span style={{ fontSize: 12, fontWeight: 800 }}>{precioTexto(e)}{sesion && e.mi_precio != null && e.precio_socio != null && !e.apartado && <span style={{ fontWeight: 500, color: SUAVE }}> · a ti te toca ${Number(e.mi_precio).toLocaleString("es-MX")}</span>}</span>}
         </div>
       </div>
@@ -450,7 +437,7 @@ function EventoTarjeta({ e, sesion, socio, mostrarObra = true, recargar }: { e: 
           {e.orden_expira && <><br />Paga antes de <b>{limiteTexto(e.orden_expira)}</b>; si no, tu lugar se libera solo.</>}
         </p>
       )}
-      {accion === "pagado" && <span style={{ fontSize: 13, fontWeight: 800, color: "#22c55e" }}>✓ Pagado · {e.orden_codigo}</span>}
+      {accion === "pagado" && <span style={{ fontSize: 13, fontWeight: 800, color: "#22c55e", display: "inline-flex", gap: 4, alignItems: "center" }}><Icono nombre="palomita" tamano={14} grosor={2.4} /> Pagado · {e.orden_codigo}</span>}
       {!enLinea && accion !== "pagar" && (e.apartado || (!e.requiere_registro && e.acceso === "club")) && <span style={{ fontSize: 13, fontWeight: 800, color: ORO_CLARO }}>Muestra tu credencial (con QR) en la entrada.</span>}
       {!enLinea && !e.requiere_registro && e.acceso !== "club" && <span style={{ fontSize: 13, color: SUAVE }}>Entrada libre{e.cupo ? ` hasta llenar el cupo (${e.cupo})` : ""}.</span>}
       {enLinea && !e.liga && <span style={{ fontSize: 13, color: SUAVE }}>La liga para entrar aparece aquí 15 minutos antes.</span>}
@@ -460,7 +447,7 @@ function EventoTarjeta({ e, sesion, socio, mostrarObra = true, recargar }: { e: 
         {accion === "pagar" && e.orden_codigo && env.whatsapp && btn("Pagar por WhatsApp", () => abrir(whatsappEventoUrl(env.whatsapp, { titulo: e.titulo, obra: e.obra, codigo: e.orden_codigo!, monto: Number(e.orden_monto ?? 0) })))}
         {accion === "pagar" && <button className="liga" style={{ fontSize: 12, fontWeight: 700, color: SUAVE }} onClick={() => { if (window.confirm("¿Cancelar tu apartado? Se libera tu lugar.")) void apartar(false); }}>Cancelar apartado</button>}
         {accion === "liberar" && btn("Liberar mi lugar", () => apartar(false), true)}
-        {accion === "recordar" && btn(e.recordar ? "✓ Te recordaremos" : "Recordarme", () => correr(async () => supabase.rpc("evento_recordar", { eid: e.id, p_on: !e.recordar }), !e.recordar ? "Listo: te avisamos una hora antes." : "Recordatorio desactivado."), e.recordar)}
+        {accion === "recordar" && btn(e.recordar ? "Te recordaremos" : "Recordarme", () => correr(async () => supabase.rpc("evento_recordar", { eid: e.id, p_on: !e.recordar }), !e.recordar ? "Listo: te avisamos una hora antes." : "Recordatorio desactivado."), e.recordar)}
         {accion === "boleto" && e.production_id && <button className="liga" style={{ fontSize: 13, fontWeight: 800, color: ORO_CLARO }} onClick={() => navegar(`/obras/${e.production_id}`)}>Necesitas boleto para esta función ›</button>}
         {accion === "entrar_sesion" && <Link to="/acceso" onClick={() => recordarRegreso("/eventos")} className="boton" style={{ minHeight: 40, fontSize: 11, padding: "0 16px", background: "transparent", border: `1.5px solid ${LINEA}`, color: "#ffffff" }}>Entra para apartar</Link>}
         {accion === "unirse_club" && <Link to="/fan-zone" className="boton" style={{ minHeight: 40, fontSize: 11, padding: "0 16px", background: "transparent", border: `1.5px solid ${LINEA}`, color: "#ffffff" }}>Únete al Club Fan</Link>}
@@ -510,7 +497,7 @@ export function Eventos() {
             const f = partesFuncion(e.starts_at);
             return (
               <Link key={e.id} to={sesion ? "/fan-zone" : "/acceso"} onClick={() => !sesion && recordarRegreso("/eventos")} style={{ padding: 14, borderRadius: 18, border: `1px solid ${LINEA}`, display: "flex", alignItems: "center", gap: 14, color: "#ffffff" }}>
-                <span aria-hidden="true" style={{ fontSize: 20 }}>🔒</span>
+                <Icono nombre="candado" tamano={22} color={ORO} />
                 <span style={{ flex: 1, display: "flex", flexDirection: "column", gap: 2 }}>
                   <strong>{e.titulo}</strong>
                   <span style={{ fontSize: 12, color: SUAVE }}>{f.dia} {f.numero} {f.mes} · {f.hora}{e.obra ? ` · ${e.obra}` : ""} · {ACCESO_EVENTO[e.acceso].corto}</span>

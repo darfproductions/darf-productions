@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link, Navigate } from "react-router";
 import { NIVEL, paseCredencial } from "@/lib/credencial-rules";
+import { paseEnPdf } from "@/components/gafete/gafete-canvas";
 import { Gafete } from "~/componentes/Gafete";
+import { agregarAWallet, guardarPdf, walletDelTelefono } from "~/lib/archivos";
 import { Icono } from "~/componentes/Icono";
 import { fotoPerfil, leerCredencial, leerPerfil } from "~/lib/cuenta";
 import { useSesion } from "~/lib/sesion";
@@ -18,6 +20,8 @@ export function Credencial() {
   const [version, setVersion] = useState(0);
   const [ajustes, setAjustes] = useState(false);
   const [aviso, setAviso] = useState<string | null>(null);
+  const [ocupado, setOcupado] = useState<"wallet" | "pdf" | null>(null);
+  const wallet = walletDelTelefono();
   const { datos, error, cargando } = useCarga(async () => {
     if (!uid) return null;
     const [c, perfil] = await Promise.all([leerCredencial(), leerPerfil(uid)]);
@@ -59,6 +63,15 @@ export function Credencial() {
         {datos && pase && (
           <>
             <Gafete p={pase} />
+            {wallet && (
+              <button onClick={async () => {
+                setOcupado("wallet"); setAviso(null);
+                try { const m = await agregarAWallet("credencial"); if (m) setAviso(m); } catch (e) { setAviso(e instanceof Error ? e.message : String(e)); } finally { setOcupado(null); }
+              }} disabled={!!ocupado} aria-label={wallet === "apple" ? "Añadir a Apple Wallet" : "Agregar a Google Wallet"}
+                style={{ minHeight: 52, padding: "0 22px", borderRadius: 14, border: "1px solid rgba(255,255,255,0.35)", background: "#000000", color: "#ffffff", display: "flex", alignItems: "center", gap: 10, fontSize: 15, fontWeight: 700, cursor: "pointer" }}>
+                <Icono nombre="wallet" tamano={22} />{ocupado === "wallet" ? "Preparando tu pase…" : wallet === "apple" ? "Añadir a Apple Wallet" : "Agregar a Google Wallet"}
+              </button>
+            )}
             <p style={{ margin: 0, maxWidth: 340, textAlign: "center", fontSize: 14, lineHeight: 1.6, color: "#bbbbbb" }}>
               {NIVEL[datos.c.nivel].ayuda} Sube el brillo de tu pantalla para que el QR se lea fácil.
             </p>
@@ -66,6 +79,11 @@ export function Credencial() {
               {datos.c.nivel === "equipo" && (
                 <button className="boton" onClick={() => setAjustes(!ajustes)} aria-expanded={ajustes} style={{ minHeight: 44, background: "transparent", border: "1.5px solid rgba(255,255,255,0.3)", color: "#ffffff", fontSize: 12 }}>Qué compartir</button>
               )}
+              <button className="boton" disabled={!!ocupado} onClick={async () => {
+                setOcupado("pdf"); setAviso(null);
+                const nombre = datos.c.nivel === "equipo" ? `gafete-darf-${datos.c.codigo}.pdf` : datos.c.nivel === "club" ? `credencial-club-fan-${datos.c.codigo}.pdf` : `credencial-darf-${datos.c.codigo}.pdf`;
+                try { await guardarPdf(await paseEnPdf(pase), nombre); } catch { setAviso("No se pudo preparar el PDF. Intenta de nuevo."); } finally { setOcupado(null); }
+              }} style={{ minHeight: 44, background: "transparent", border: "1.5px solid rgba(255,255,255,0.3)", color: "#ffffff", fontSize: 12 }}>{ocupado === "pdf" ? "Preparando…" : "Descargar PDF"}</button>
               <button className="boton" onClick={() => abrir(datos.c.liga)} style={{ minHeight: 44, background: "transparent", border: "1.5px solid rgba(255,255,255,0.3)", color: "#ffffff", fontSize: 12 }}>Ver cómo la ven</button>
             </div>
 

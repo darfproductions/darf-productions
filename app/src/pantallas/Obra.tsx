@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from "react-router";
 import { Share } from "@capacitor/share";
 import { Capacitor } from "@capacitor/core";
 import { Icono } from "~/componentes/Icono";
+import { VideoYoutube } from "~/componentes/VideoYoutube";
 import { useApariencia } from "~/lib/apariencia";
 import { leerContenido, type Contenido } from "~/lib/contenido";
 import { funcionPasada, imagen, leerObra, poster, type Funcion } from "~/lib/datos";
@@ -19,6 +20,13 @@ type Seccion = { id: string; titulo: string };
 
 export function Obra() {
   const navegar = useNavigate();
+  // Al bajar, una franja con el color de la obra tapa la barra de estado (la navegación de secciones se pega debajo).
+  const [bajo, setBajo] = useState(false);
+  useEffect(() => {
+    const ver = () => setBajo(window.scrollY > 300);
+    window.addEventListener("scroll", ver, { passive: true });
+    return () => window.removeEventListener("scroll", ver);
+  }, []);
   const { id = "" } = useParams();
   const { modo } = useApariencia();
   const { datos, error, cargando } = useCarga(() => Promise.all([leerObra(id), leerContenido(id)]), [id]);
@@ -87,10 +95,12 @@ export function Obra() {
 
   return (
     <main className="pantalla completa sin-barra" style={paleta ? (variables(paleta) as React.CSSProperties) : undefined}>
-      <div style={{ position: "relative", height: "calc(420px + var(--arriba))", overflow: "hidden", background: obra.color_fondo ?? "#0b0b0b" }}>
+      <div aria-hidden="true" style={{ position: "fixed", top: 0, left: 0, right: 0, height: "var(--arriba)", zIndex: 16, pointerEvents: "none", transition: "opacity .2s",
+        opacity: bajo ? 1 : 0, background: "color-mix(in srgb, var(--fondo) 90%, transparent)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)" }} />
+      <div style={{ position: "relative", height: "calc(380px + var(--arriba))", overflow: "hidden", background: obra.color_fondo ?? "#0b0b0b" }}>
         {hero && <img src={hero} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top" }} />}
         <div aria-hidden="true" style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(0,0,0,0.25) 0%, transparent 30%, color-mix(in srgb, var(--fondo) 55%, transparent) 62%, var(--fondo) 100%)" }} />
-        {logo && <img src={logo} alt={obra.nombre} style={{ position: "absolute", left: "50%", bottom: 24, transform: "translateX(-50%)", maxWidth: "78%", maxHeight: 140, objectFit: "contain", filter: "drop-shadow(0 8px 24px rgb(0 0 0 / 0.45))" }} />}
+        {logo && <img src={logo} alt={obra.nombre} style={{ position: "absolute", left: "50%", bottom: 24, transform: "translateX(-50%)", maxWidth: "82%", maxHeight: 160, objectFit: "contain", filter: "drop-shadow(0 6px 18px color-mix(in srgb, var(--texto) 22%, transparent))" }} />}
         <div style={{ position: "absolute", top: "calc(var(--arriba) + 12px)", left: 16, right: 16, display: "flex", justifyContent: "space-between" }}>
           <Link to="/obras" className="circulo vidrio" aria-label="Volver"><Icono nombre="atras" /></Link>
           <button className="circulo vidrio" onClick={compartir} aria-label="Compartir"><Icono nombre="compartir" tamano={20} /></button>
@@ -112,7 +122,7 @@ export function Obra() {
       </div>
 
       {secciones.length > 1 && (
-        <nav aria-label="Secciones de la obra" style={{ position: "sticky", top: 0, zIndex: 15, marginTop: 18, padding: "calc(var(--arriba) + 8px) 0 8px", background: "color-mix(in srgb, var(--fondo) 90%, transparent)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)" }}>
+        <nav aria-label="Secciones de la obra" style={{ position: "sticky", top: "var(--arriba)", zIndex: 15, marginTop: 18, padding: "8px 0", background: "color-mix(in srgb, var(--fondo) 90%, transparent)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)" }}>
           <div style={{ display: "flex", gap: 8, overflowX: "auto", padding: "0 20px", scrollbarWidth: "none" }}>
             {secciones.map((s) => (
               <button key={s.id} onClick={() => ir(s.id)} style={{ flexShrink: 0, height: 36, padding: "0 14px", borderRadius: 18, border: "1px solid var(--linea)", background: "var(--superficie)", color: "var(--texto)", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>{s.titulo}</button>
@@ -318,20 +328,11 @@ function Retrato({ foto, nombre, alto, redondo }: { foto?: string; nombre: strin
   return <span aria-hidden="true" style={{ ...estilo, display: "flex", alignItems: "center", justifyContent: "center", fontSize: Math.max(12, alto / 3.2), fontWeight: 900, color: "var(--suave)" }}>{iniciales}</span>;
 }
 
-// Video de YouTube dentro de la app (sin abrir otra cosa): versión sin cookies y reproducción en la página.
+// Video de YouTube (ver VideoYoutube: en iPhone se abre en YouTube dentro de la app).
 function Video({ v }: { v: Contenido["videos"][number] }) {
   return (
     <figure style={{ margin: 0, display: "flex", flexDirection: "column", gap: 6 }}>
-      <div style={{ position: "relative", aspectRatio: "16 / 9", borderRadius: 16, overflow: "hidden", background: "#000000" }}>
-        <iframe
-          src={`https://www.youtube-nocookie.com/embed/${encodeURIComponent(v.youtube)}?playsinline=1&rel=0`}
-          title={v.titulo}
-          allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; fullscreen"
-          allowFullScreen
-          loading="lazy"
-          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: 0 }}
-        />
-      </div>
+      <div style={{ borderRadius: 16, overflow: "hidden" }}><VideoYoutube id={v.youtube} titulo={v.titulo} /></div>
       <figcaption style={{ fontSize: 13, fontWeight: 700 }}>{v.titulo}</figcaption>
     </figure>
   );

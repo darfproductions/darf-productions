@@ -44,7 +44,7 @@ function Beneficios({ bs }: { bs?: BeneficioCorto[] }) {
         const extra = [cuando, textoCupo(b.cupo)].filter(Boolean).join(" · ");
         return (
           <li key={`${b.nombre}-${i}`} style={{ display: "flex", gap: 6 }}>
-            <span aria-hidden="true">✦</span>
+            <span style={{ flexShrink: 0, marginTop: 1 }}><Icono nombre="destello" tamano={14} /></span>
             <span><b>{textoBeneficio(b)}</b>{notaBeneficio(b) && <span style={{ opacity: 0.75 }}> — {notaBeneficio(b)}</span>}
               {extra && <span style={{ display: "block", fontSize: 11, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", opacity: 0.7 }}>{extra}</span>}</span>
           </li>

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
 import QRCode from "qrcode";
 import { Icono } from "~/componentes/Icono";
+import { agregarAWallet, walletDelTelefono } from "~/lib/archivos";
 import { funcionPasada, imagen, leerMisOrdenes, poster, type Boleto, type Orden } from "~/lib/datos";
 import { env } from "~/lib/env";
 import { dinero, fechaLarga, hora } from "~/lib/formato";
@@ -85,6 +86,9 @@ export function Boletos() {
 
 function TarjetaBoleto({ o, b, n, total }: { o: Orden; b: Boleto; n: number; total: number }) {
   const [qr, setQr] = useState<string | null>(null);
+  const wallet = walletDelTelefono();
+  const [ocupado, setOcupado] = useState(false);
+  const [aviso, setAviso] = useState("");
   useEffect(() => { QRCode.toDataURL(b.qr_token, { margin: 1, width: 360 }).then(setQr).catch(() => setQr(null)); }, [b.qr_token]);
   const fondo = o.obra?.color_fondo ?? "#0c1830";
   const texto = o.obra?.color_texto ?? "#ffffff";
@@ -117,6 +121,17 @@ function TarjetaBoleto({ o, b, n, total }: { o: Orden; b: Boleto; n: number; tot
           <span style={{ fontSize: 13, fontWeight: 600, lineHeight: 1.45 }}>{b.checked_in_at ? "Este boleto ya entró." : "Muestra este código en la entrada."}</span>
         </div>
       </div>
+      {wallet && !b.checked_in_at && !funcionPasada(o.funcion?.starts_at ?? null) && (
+        <div style={{ padding: "0 16px 16px", display: "flex", flexDirection: "column", gap: 6 }}>
+          <button disabled={ocupado} onClick={async () => {
+            setOcupado(true); setAviso("");
+            try { setAviso(await agregarAWallet(`boleto/${b.id}`)); } catch (e) { setAviso(e instanceof Error ? e.message : String(e)); } finally { setOcupado(false); }
+          }} style={{ minHeight: 46, borderRadius: 12, border: "none", background: "#000000", color: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
+            <Icono nombre="wallet" tamano={20} />{ocupado ? "Preparando tu pase…" : wallet === "apple" ? "Añadir a Apple Wallet" : "Agregar a Google Wallet"}
+          </button>
+          {aviso && <span role="status" style={{ fontSize: 12, color: "#5f5f5f", textAlign: "center" }}>{aviso}</span>}
+        </div>
+      )}
     </article>
   );
 }

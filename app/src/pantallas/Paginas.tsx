@@ -5,6 +5,7 @@ import { CONTACT_CHANNELS, whatsappDisplay, type ContactChannel } from "@/conten
 import { TIPO_CREDITO } from "@/lib/casting-rules";
 import { LISTAS, ordenarTrayectoria, reelYoutube, type ProProfile } from "@/lib/pro-rules";
 import { Icono } from "~/componentes/Icono";
+import { VideoYoutube } from "~/componentes/VideoYoutube";
 import { env } from "~/lib/env";
 import { nombreDe, useSesion } from "~/lib/sesion";
 import { supabase } from "~/lib/supabase";
@@ -216,11 +217,7 @@ export function Artista() {
       {reel && (
         <section style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           <h2 className="titulo-seccion">Video de muestra</h2>
-          <div style={{ position: "relative", aspectRatio: "16 / 9", borderRadius: 16, overflow: "hidden", background: "#000000" }}>
-            <iframe src={`https://www.youtube-nocookie.com/embed/${encodeURIComponent(reel)}?playsinline=1&rel=0`} title={`Video de muestra de ${nombre}`}
-              allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; fullscreen" allowFullScreen
-              style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: "none" }} />
-          </div>
+          <div style={{ borderRadius: 16, overflow: "hidden" }}><VideoYoutube id={reel} titulo={`Video de muestra de ${nombre}`} /></div>
         </section>
       )}
       {obras.length > 0 && (

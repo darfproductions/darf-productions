@@ -1,6 +1,7 @@
 import Foundation
 import Capacitor
 import AuthenticationServices
+import PassKit
 
 /// "Iniciar sesión con Apple" con la ventana nativa (Face ID / Touch ID).
 /// Devuelve el identityToken de Apple; la app lo cambia por una sesión de Supabase con signInWithIdToken.
@@ -10,7 +11,8 @@ public class DarfApplePlugin: CAPPlugin, CAPBridgedPlugin, ASAuthorizationContro
     public let identifier = "DarfApplePlugin"
     public let jsName = "DarfApple"
     public let pluginMethods: [CAPPluginMethod] = [
-        CAPPluginMethod(name: "entrar", returnType: CAPPluginReturnPromise)
+        CAPPluginMethod(name: "entrar", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "agregarPase", returnType: CAPPluginReturnPromise)
     ]
 
     private var llamada: CAPPluginCall?
@@ -58,5 +60,51 @@ public class DarfApplePlugin: CAPPlugin, CAPBridgedPlugin, ASAuthorizationContro
         } else {
             call.reject(error.localizedDescription, "ERROR")
         }
+    }
+
+    /// Apple Wallet: recibe el .pkpass (base64) que firma la web y muestra la hoja nativa "Añadir a Wallet".
+    /// Devuelve { estado: "agregado" | "ya_estaba" | "cancelado" }.
+    @objc func agregarPase(_ call: CAPPluginCall) {
+        guard PKAddPassesViewController.canAddPasses() else {
+            call.reject("Este teléfono no puede agregar pases a Wallet.", "SIN_WALLET")
+            return
+        }
+        guard let texto = call.getString("datos"), let datos = Data(base64Encoded: texto, options: .ignoreUnknownCharacters) else {
+            call.reject("El pase llegó vacío.", "SIN_DATOS")
+            return
+        }
+        let pase: PKPass
+        do { pase = try PKPass(data: datos) } catch {
+            call.reject("El pase no es válido.", "PASE_INVALIDO")
+            return
+        }
+        if PKPassLibrary().containsPass(pase) {
+            call.resolve(["estado": "ya_estaba"])
+            return
+        }
+        DispatchQueue.main.async {
+            guard let hoja = PKAddPassesViewController(pass: pase) else {
+                call.reject("No se pudo abrir Wallet.", "SIN_HOJA")
+                return
+            }
+            self.paseLlamada = call
+            self.paseEsperado = pase
+            hoja.delegate = self
+            self.bridge?.viewController?.present(hoja, animated: true)
+        }
+    }
+
+    private var paseLlamada: CAPPluginCall?
+    private var paseEsperado: PKPass?
+}
+
+extension DarfApplePlugin: PKAddPassesViewControllerDelegate {
+    public func addPassesViewControllerDidFinish(_ controller: PKAddPassesViewController) {
+        controller.dismiss(animated: true)
+        guard let call = paseLlamada else { return }
+        let agregado = paseEsperado.map { PKPassLibrary().containsPass($0) } ?? false
+        paseLlamada = nil
+        paseEsperado = nil
+        call.resolve(["estado": agregado ? "agregado" : "cancelado"])
     }
 }

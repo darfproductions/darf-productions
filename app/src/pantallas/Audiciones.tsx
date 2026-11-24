@@ -202,10 +202,10 @@ function DetalleVista({ d, estilo, recargar }: { d: DetalleAudicion; estilo?: CS
   return (
     <main className="pantalla sin-barra" style={{ ...estilo, background: "var(--fondo)", color: "var(--texto)", minHeight: "100dvh" }}>
       {logo ? (
-        <header style={{ position: "relative", overflow: "hidden", margin: "calc(-1 * var(--margen, 0px)) 0 0" }}>
+        <header style={{ position: "relative", overflow: "hidden", margin: "calc(-14px - var(--arriba)) -20px 0" }}>
           {ambiente && <img src={ambiente} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", opacity: 0.5 }} />}
           <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, color-mix(in srgb, var(--fondo) 30%, transparent), var(--fondo))" }} />
-          <div className="contenido" style={{ alignItems: "center", gap: 12, textAlign: "center", paddingBottom: 8 }}>
+          <div className="contenido" style={{ alignItems: "center", gap: 12, textAlign: "center", padding: "calc(var(--arriba) + 14px) 20px 20px" }}>
             <div style={{ alignSelf: "stretch" }}><Volver a="/audiciones" /></div>
             <img src={logo} alt={obra?.nombre ?? ""} style={{ maxHeight: 130, maxWidth: "78%", objectFit: "contain" }} />
             <span className="etiqueta">Audiciones · {etiquetaConvocatoria(a)}</span>
@@ -311,7 +311,7 @@ function DetalleVista({ d, estilo, recargar }: { d: DetalleAudicion; estilo?: CS
                       {cat && <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--acento)" }}>{cat}</span>}
                       <span style={{ fontSize: 16, fontWeight: 900 }}>{r.nombre}</span>
                     </span>
-                    <span className="suave" aria-hidden="true" style={{ fontSize: 18 }}>⌄</span>
+                    <span className="suave"><Icono nombre="abajo" tamano={18} grosor={2} /></span>
                   </summary>
                   <div style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 8 }}>
                     {resumen && <span style={{ fontSize: 13, fontWeight: 700, color: "var(--acento)" }}>{resumen}</span>}
@@ -469,7 +469,7 @@ function Formulario({ d, alGuardar }: { d: DetalleAudicion; alGuardar: () => voi
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
             {roles.map((r) => {
               const on = sel.includes(r.id);
-              return <button key={r.id} type="button" aria-pressed={on} style={chip(on)} onClick={() => setSel(on ? sel.filter((x) => x !== r.id) : [...sel, r.id])}>{on && "✓ "}{r.nombre}</button>;
+              return <button key={r.id} type="button" aria-pressed={on} style={chip(on)} onClick={() => setSel(on ? sel.filter((x) => x !== r.id) : [...sel, r.id])}>{on && <Icono nombre="palomita" tamano={14} grosor={2.4} />}{r.nombre}</button>;
             })}
           </div>
         </div>

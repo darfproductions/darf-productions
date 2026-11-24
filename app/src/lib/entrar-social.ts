@@ -1,4 +1,5 @@
-import { Capacitor, registerPlugin } from "@capacitor/core";
+import { Capacitor } from "@capacitor/core";
+import { DarfApple } from "~/lib/nativo";
 import { Browser } from "@capacitor/browser";
 import { supabase } from "~/lib/supabase";
 
@@ -15,8 +16,7 @@ import { supabase } from "~/lib/supabase";
 export const ESQUEMA = "com.darfproductions.app";
 export const REGRESO = `${ESQUEMA}://auth/callback`;
 
-type RespuestaApple = { identityToken: string; nombre: string; apellido: string; correo: string };
-const DarfApple = registerPlugin<{ entrar(o: { nonce: string }): Promise<RespuestaApple> }>("DarfApple");
+
 
 /** En iPhone, Apple usa la ventana nativa (y la base pide captcha); en lo demás, la página de Apple. */
 export const appleNativo = () => Capacitor.getPlatform() === "ios";

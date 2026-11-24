@@ -85,39 +85,61 @@ export function Cuenta() {
           </button>
         )}
 
-        {c && ((c.lealtad ?? 0) > 0 || (c.fan_visitas ?? 0) > 0) && (
-          <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 12 }}>
-            <Lealtad n={c.lealtad ?? 0} programa="equipo" />
-            <Lealtad n={c.fan_visitas ?? 0} programa="fan" socio={!!datos?.socio} unirse={() => navegar("/fan-zone")} />
-          </div>
-        )}
-
         {sesion && (
-          <div className="tarjeta lista" style={{ marginTop: 16 }}>
-            <Fila icono="boletos" texto="Mis boletos" onClick={() => navegar("/boletos")} />
-            <Fila icono="lista" texto="Transacciones" onClick={() => navegar("/cuenta/transacciones")} />
-            <Fila icono="estrella" texto="Mis eventos" onClick={() => navegar("/cuenta/eventos")} />
-            <Fila icono="microfono" texto="Mis audiciones" onClick={() => navegar("/audiciones")} />
-            {ventas.length > 0 && <Fila icono="flecha" texto="Mis ventas" nota={`${ventas.reduce((n, v) => n + v.boletos, 0)} boletos`} onClick={() => navegar("/cuenta/ventas")} />}
-            {datos?.honorarios && <Fila icono="wallet" texto="Mis honorarios" onClick={() => navegar("/cuenta/honorarios")} />}
-            <Fila icono="cuenta" texto="Perfil profesional" onClick={() => navegar("/cuenta/perfil-profesional")} />
-            <Fila icono="campana" texto="Notificaciones" onClick={() => navegar("/notificaciones")} />
-          </div>
+          <>
+            <Titulo>Boletos y compras</Titulo>
+            <div className="tarjeta lista">
+              <Fila icono="boletos" texto="Mis boletos" ayuda="Tus QR para entrar" onClick={() => navegar("/boletos")} />
+              <Fila icono="lista" texto="Transacciones" ayuda="Pagos, apartados y su estado" onClick={() => navegar("/cuenta/transacciones")} />
+              <Fila icono="estrella" texto="Mis eventos" ayuda="Lugares apartados y a los que fuiste" onClick={() => navegar("/cuenta/eventos")} />
+            </div>
+
+            <Titulo>Club Fan</Titulo>
+            <div className="tarjeta lista">
+              <Fila icono="estrella" texto="Zona Fans" ayuda="Ensayos, preventas y eventos del club" onClick={() => navegar("/fan-zone")} />
+              <Fila icono="calendario" texto="Eventos" ayuda="Foto con el elenco, tours y más" onClick={() => navegar("/eventos")} />
+            </div>
+
+            <Titulo>En escena con DARF</Titulo>
+            <div className="tarjeta lista">
+              <Fila icono="microfono" texto="Mis audiciones" ayuda="Convocatorias, inscripción y tu QR" onClick={() => navegar("/audiciones")} />
+              <Fila icono="cuenta" texto="Perfil profesional" ayuda="Lo que ven directores y público" onClick={() => navegar("/cuenta/perfil-profesional")} />
+              {ventas.length > 0 && <Fila icono="flecha" texto="Mis ventas" ayuda={`${ventas.reduce((n, v) => n + v.boletos, 0)} boletos con tu código`} onClick={() => navegar("/cuenta/ventas")} />}
+              {datos?.honorarios && <Fila icono="wallet" texto="Mis honorarios" ayuda="Cómo cobras y lo que te han pagado" onClick={() => navegar("/cuenta/honorarios")} />}
+            </div>
+
+            {c && ((c.lealtad ?? 0) > 0 || (c.fan_visitas ?? 0) > 0) && (
+              <>
+                <Titulo>Tu camino en DARF</Titulo>
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  <Lealtad n={c.lealtad ?? 0} programa="equipo" />
+                  <Lealtad n={c.fan_visitas ?? 0} programa="fan" socio={!!datos?.socio} unirse={() => navegar("/fan-zone")} />
+                </div>
+              </>
+            )}
+          </>
         )}
 
-        <h2 className="suave" style={{ margin: "18px 0 0", fontSize: 12, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase" }}>Apariencia</h2>
-        <div role="radiogroup" aria-label="Apariencia" className="segmentos" style={{ marginTop: 8 }}>
+        <Titulo>Ajustes</Titulo>
+        <div role="radiogroup" aria-label="Apariencia" className="segmentos">
           {APARIENCIAS.map((a) => (
             <button key={a.id} role="radio" aria-checked={preferencia === a.id} onClick={() => elegir(a.id)}>
               <Icono nombre={a.icono} tamano={15} grosor={2} />{a.texto}
             </button>
           ))}
         </div>
+        {sesion && (
+          <div className="tarjeta lista" style={{ marginTop: 10 }}>
+            <Fila icono="cuenta" texto="Mis datos y foto" onClick={() => navegar("/cuenta/perfil")} />
+            <Fila icono="campana" texto="Notificaciones" onClick={() => navegar("/notificaciones")} />
+          </div>
+        )}
 
-        <div className="tarjeta lista" style={{ marginTop: 16 }}>
-          {env.whatsapp && <Fila icono="whatsapp" texto="Contacto por WhatsApp" onClick={() => abrir(`https://wa.me/${env.whatsapp}`)} />}
+        <Titulo>DARF Productions</Titulo>
+        <div className="tarjeta lista">
           <Fila icono="estrella" texto="Conoce al equipo" onClick={() => navegar("/nosotros")} />
           <Fila icono="correo" texto="Contacto" onClick={() => navegar("/contacto")} />
+          {env.whatsapp && <Fila icono="whatsapp" texto="WhatsApp" ayuda="+52 446 522 0560" onClick={() => abrir(`https://wa.me/${env.whatsapp}`)} />}
           <Fila icono="lista" texto="Aviso de privacidad" onClick={() => abrirWeb("/privacidad")} />
           <Fila icono="lista" texto="Términos y condiciones" onClick={() => abrirWeb("/terminos")} />
         </div>
@@ -133,12 +155,18 @@ export function Cuenta() {
   );
 }
 
-function Fila({ icono, texto, nota, onClick }: { icono: NombreIcono; texto: string; nota?: string; onClick: () => void }) {
+function Titulo({ children }: { children: string }) {
+  return <h2 className="suave" style={{ margin: "22px 0 8px", fontSize: 12, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase" }}>{children}</h2>;
+}
+
+function Fila({ icono, texto, ayuda, onClick }: { icono: NombreIcono; texto: string; ayuda?: string; onClick: () => void }) {
   return (
     <button className="fila" onClick={onClick}>
-      <Icono nombre={icono} tamano={20} color="var(--suave)" />
-      <span className="crece">{texto}</span>
-      {nota && <span className="suave" style={{ fontSize: 12, fontWeight: 600 }}>{nota}</span>}
+      <Icono nombre={icono} tamano={20} color="var(--acento)" />
+      <span className="crece" style={{ display: "flex", flexDirection: "column", gap: 1, textAlign: "left" }}>
+        <span>{texto}</span>
+        {ayuda && <span className="suave" style={{ fontSize: 12, fontWeight: 500 }}>{ayuda}</span>}
+      </span>
       <Icono nombre="derecha" tamano={18} color="var(--suave)" grosor={2} />
     </button>
   );

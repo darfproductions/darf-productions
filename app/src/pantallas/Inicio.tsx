@@ -88,7 +88,7 @@ export function Inicio() {
               <h2 className="titulo-seccion">Más obras</h2>
               <Link to="/obras" style={{ fontSize: 13, fontWeight: 700, color: "var(--acento)", padding: "12px 0" }}>Ver todas</Link>
             </div>
-            <div style={{ display: "flex", gap: 12, overflowX: "auto", margin: "0 -20px", padding: "0 20px", scrollSnapType: "x mandatory" }}>
+            <div style={{ display: "flex", gap: 12, overflowX: "auto", margin: "0 -20px", padding: "0 20px", scrollPaddingInline: 20, scrollSnapType: "x mandatory", scrollbarWidth: "none" }}>
               {otras.map((o) => (
                 <Link key={o.id} to={`/obras/${o.id}`} style={{ width: 150, flexShrink: 0, display: "flex", flexDirection: "column", gap: 8, scrollSnapAlign: "start" }}>
                   <div style={{ position: "relative", width: 150, height: 190, borderRadius: 18, overflow: "hidden", background: o.color_fondo ?? "var(--tarjeta)" }}>

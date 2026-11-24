@@ -30,6 +30,7 @@ env:
   VITE_SUPABASE_URL: https://qgywscczyzuqinutuvak.supabase.co
   VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_sNdLJ6lK6-0gAESg6hkQxQ_YSqusOUM
   VITE_SITE_URL: https://www.darfproductions.com
+  VITE_DARF_WHATSAPP: "524465220560"
   VITE_TURNSTILE_SITE_KEY: 0x4AAAAAAFVMB-3EQT2iI6hv
 
 jobs:

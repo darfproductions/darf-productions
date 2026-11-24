@@ -12,8 +12,8 @@ export const env = {
   supabasePublishableKey: requerida("VITE_SUPABASE_PUBLISHABLE_KEY", import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY),
   /** Sitio web: imágenes propias de la web ("/producciones/…"), compra en línea y ligas para compartir. */
   siteUrl: (import.meta.env.VITE_SITE_URL ?? "https://www.darfproductions.com").replace(/\/$/, ""),
-  /** WhatsApp de pagos, 52 + 10 dígitos. Vacío = sin botón. */
-  whatsapp: import.meta.env.VITE_DARF_WHATSAPP ?? "",
+  /** WhatsApp de pagos y contacto, 52 + 10 dígitos (el de DARF si la compilación no trae otro). */
+  whatsapp: import.meta.env.VITE_DARF_WHATSAPP || "524465220560",
   turnstileSiteKey: import.meta.env.VITE_TURNSTILE_SITE_KEY ?? "",
 };
 
