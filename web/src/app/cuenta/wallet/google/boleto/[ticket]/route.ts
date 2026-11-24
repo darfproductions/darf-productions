@@ -7,7 +7,7 @@ import { origenPublico, walletGoogleConfig } from "@/lib/wallet-env";
 
 // Boleto propio en Google Wallet: crea/actualiza la clase de la función y el objeto del boleto y
 // manda a la persona a la liga de "Guardar en Google Wallet".
-export async function GET(_req: Request, ctx: RouteContext<"/cuenta/wallet/google/boleto/[ticket]">) {
+export async function GET(req: Request, ctx: RouteContext<"/cuenta/wallet/google/boleto/[ticket]">) {
   const c = walletGoogleConfig();
   if (!c) return NextResponse.json({ error: "Google Wallet todavía no está disponible." }, { status: 503 });
   const b = await boletoWallet((await ctx.params).ticket);
@@ -26,5 +26,8 @@ export async function GET(_req: Request, ctx: RouteContext<"/cuenta/wallet/googl
     console.error(e);
     return NextResponse.json({ error: "Google Wallet no respondió. Intenta de nuevo en un momento." }, { status: 502 });
   }
-  return NextResponse.redirect(ligaGuardar(c.cuenta, origen, { eventTicketObjects: [objeto.id] }), 303);
+  const liga = ligaGuardar(c.cuenta, origen, { eventTicketObjects: [objeto.id] });
+  // La app pide la liga en JSON (la abre ella en el teléfono); el navegador sigue la redirección.
+  if (req.headers.get("accept")?.includes("application/json")) return NextResponse.json({ url: liga });
+  return NextResponse.redirect(liga, 303);
 }
