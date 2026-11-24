@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { ActionForm } from "@/components/panel/ActionForm";
 import { resumenEnvio } from "@/lib/votacion-rules";
+import { SECCIONES, type Categoria } from "./secciones";
 import { agregarPersonaje, mandarCast, moverEnCast, quitarPersonaje } from "../../votacion-actions";
 
 type Persona = { id: string; nombre: string; numero: number | null; foto_path: string | null; cuenta: boolean; votos?: number };
@@ -12,7 +13,9 @@ export type Tablero = {
   fase: string;
   /** 0167: solo Dirección general (audiciones.cast) mueve, agrega personajes y manda. */
   puede_mover?: boolean;
-  roles: { id: string; nombre: string; nota?: string | null; sin_votos?: boolean; asignados: Persona[]; pista: { id: string; nombre: string; votos: number }[] }[];
+  titulo?: string; obra?: string | null;
+  /** 0168: protagonista, apoyo o ensamble (grupo de ensamble). */
+  roles: { id: string; nombre: string; categoria?: Categoria; nota?: string | null; sin_votos?: boolean; asignados: Persona[]; pista: { id: string; nombre: string; votos: number }[] }[];
   ensamble: Persona[];
   fuera: Persona[];
 };
@@ -28,11 +31,17 @@ export function CastBoard({ aid, tablero, fotos, enviado, conObra }: { aid: stri
   const [sobre, setSobre] = useState<string | null>(null);
   const [nuevo, setNuevo] = useState("");
   const [nuevoQuien, setNuevoQuien] = useState("");
+  const [nuevoTipo, setNuevoTipo] = useState<Categoria>("apoyo");
   // Solo se ve (no se mueve) si ya se mandó o si quien lo ve no es Dirección general.
   const fijo = enviado || tablero.puede_mover === false;
   const todos = [...tablero.roles.flatMap((r) => r.asignados), ...tablero.ensamble, ...tablero.fuera]
     .sort((a, b) => (a.numero ?? 9999) - (b.numero ?? 9999) || a.nombre.localeCompare(b.nombre, "es"));
-  const destinos = [...tablero.roles.map((r) => ({ id: r.id, nombre: r.nombre })), { id: "ensamble", nombre: "Ensamble" }, { id: "fuera", nombre: "No seleccionados" }];
+  const destinos = [...tablero.roles.map((r) => ({ id: r.id, nombre: r.nombre })), { id: "ensamble", nombre: "Ensamble general" }, { id: "fuera", nombre: "No seleccionados" }];
+  // Dónde está hoy cada persona, para «Agregar a alguien» en cada personaje.
+  const dondeEsta = new Map<string, string>([
+    ...tablero.roles.flatMap((r) => r.asignados.map((p) => [p.id, r.nombre] as [string, string])),
+    ...tablero.ensamble.map((p) => [p.id, "Ensamble general"] as [string, string]),
+  ]);
 
   const correr = (f: () => Promise<{ ok: boolean; message?: string }>, si?: () => void) => {
     setError("");
@@ -45,7 +54,7 @@ export function CastBoard({ aid, tablero, fotos, enviado, conObra }: { aid: stri
   };
   const agregar = () => {
     if (!nuevo.trim()) { setError("Escribe el nombre del personaje."); return; }
-    correr(() => agregarPersonaje(aid, nuevo, nuevoQuien || null), () => { setNuevo(""); setNuevoQuien(""); });
+    correr(() => agregarPersonaje(aid, nuevo, nuevoQuien || null, nuevoTipo), () => { setNuevo(""); setNuevoQuien(""); });
   };
 
   const mover = (app: string, destino: string) => {
@@ -86,8 +95,17 @@ export function CastBoard({ aid, tablero, fotos, enviado, conObra }: { aid: stri
         <span className="truncate">{titulo}</span><span className="text-xs font-bold text-texto-3">{personas.length}</span>
       </h3>
       <ul className="flex flex-col gap-1.5">{personas.map((p) => tarjeta(p, id))}</ul>
-      {personas.length === 0 && <p className="text-xs text-texto-3">Vacío{fijo ? "" : ": arrastra aquí a alguien"}</p>}
+      {personas.length === 0 && <p className="text-xs text-texto-3">Vacío{fijo ? "" : ": arrastra aquí a alguien o búscalo abajo"}</p>}
       {extra}
+      {!fijo && id !== "fuera" && (
+        <select aria-label={`Agregar a alguien a ${titulo}`} value="" disabled={pending} onChange={(e) => e.target.value && mover(e.target.value, id)}
+          className="w-full rounded-md border border-dashed border-lila/50 bg-transparent px-2 py-1.5 text-xs font-semibold text-lila">
+          <option value="">+ Agregar a alguien…</option>
+          {todos.filter((p) => !personas.some((x) => x.id === p.id)).map((p) => (
+            <option key={p.id} value={p.id}>{p.numero ? `Nº ${p.numero} · ` : ""}{p.nombre}{dondeEsta.has(p.id) ? ` (ahora: ${dondeEsta.get(p.id)})` : ""}</option>
+          ))}
+        </select>
+      )}
     </section>
   );
 
@@ -103,8 +121,14 @@ export function CastBoard({ aid, tablero, fotos, enviado, conObra }: { aid: stri
         {pending && <span className="ml-2 text-texto-3">Guardando…</span>}
       </p>
       {error && <p role="alert" className="text-sm text-[#ff8fa3]">{error}</p>}
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {tablero.roles.map((r) => columna(r.id, r.nombre, r.asignados, (
+      {SECCIONES.map(([cat, titulo]) => {
+        const rs = tablero.roles.filter((r) => (r.categoria ?? "protagonista") === cat);
+        if (!rs.length) return null;
+        return (
+          <section key={cat} aria-label={titulo} className="flex flex-col gap-2">
+            <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-texto-3">{titulo} · {rs.length}</h3>
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {rs.map((r) => columna(r.id, r.nombre, r.asignados, (
           <>
             {r.nota && !enviado && <p className="rounded-lg bg-aviso/10 px-2 py-1.5 text-xs text-aviso">{r.nota}</p>}
             {r.asignados.length === 0 && r.pista.length > 0 && <p className="text-xs text-aviso">Más votados libres: {r.pista.map((p) => `${p.nombre} (${p.votos})`).join(", ")}</p>}
@@ -114,16 +138,31 @@ export function CastBoard({ aid, tablero, fotos, enviado, conObra }: { aid: stri
             )}
           </>
         )))}
-        {columna("ensamble", "Ensamble", tablero.ensamble)}
-        {columna("fuera", "No seleccionados", tablero.fuera)}
-      </div>
+            </div>
+          </section>
+        );
+      })}
+      <section aria-label="Ensamble general y no seleccionados" className="flex flex-col gap-2">
+        <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-texto-3">Ensamble general y no seleccionados</h3>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {columna("ensamble", "Ensamble general", tablero.ensamble)}
+          {columna("fuera", "No seleccionados", tablero.fuera)}
+        </div>
+      </section>
       {!fijo && (
         <div className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-telon p-4">
-          <h2 className="titular text-xl">Agregar un personaje</h2>
-          <p className="text-sm text-texto-2">¿Alguien queda perfecto para un papel que no estaba? Créalo aquí y, si quieres, dáselo de una vez. Al mandar, recibe la oferta con ese papel.</p>
-          <div className="grid gap-2 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+          <h2 className="titular text-xl">Agregar un personaje o grupo de ensamble</h2>
+          <p className="text-sm text-texto-2">¿Alguien queda perfecto para un papel que no estaba? Créalo aquí y, si quieres, dáselo de una vez. También puedes armar grupos de ensamble (por ejemplo «Surfistas» o «Bikers»): quien quede ahí recibe una oferta de Ensamble con el nombre del grupo.</p>
+          <div className="grid gap-2 sm:grid-cols-[1fr_auto_1fr_auto] sm:items-end">
             <label className="flex flex-col gap-1 text-sm font-semibold">Nombre del personaje
-              <input value={nuevo} maxLength={80} onChange={(e) => setNuevo(e.target.value)} className={input} placeholder="Surfista 3" />
+              <input value={nuevo} maxLength={80} onChange={(e) => setNuevo(e.target.value)} className={input} placeholder={nuevoTipo === "ensamble" ? "Surfistas" : "Surfista 3"} />
+            </label>
+            <label className="flex flex-col gap-1 text-sm font-semibold">Tipo
+              <select value={nuevoTipo} onChange={(e) => setNuevoTipo(e.target.value as Categoria)} className={input}>
+                <option value="protagonista">Protagonista</option>
+                <option value="apoyo">Personaje de apoyo</option>
+                <option value="ensamble">Grupo de ensamble</option>
+              </select>
             </label>
             <label className="flex flex-col gap-1 text-sm font-semibold">Para (opcional)
               <select value={nuevoQuien} onChange={(e) => setNuevoQuien(e.target.value)} className={input}>

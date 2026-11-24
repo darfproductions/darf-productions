@@ -5,6 +5,26 @@ arquitectura, decisiones de producto). No es un changelog de cada commit —
 para eso está `git log`. Este documento registra *por qué* cambió algo, no
 solo *qué*.
 
+## 2026-11-24 — 0168: grupos de ensamble y documento del cast
+
+Diego, en la junta del cast de Teen Beach Movie, pidió:
+- grupos de ensamble además del ensamble general;
+- el cast dividido por protagonistas, apoyo, grupos y ensamble general;
+- descargarlo antes de mandar;
+- desde cada personaje, buscar a alguien y ponerlo ahí.
+
+Cambios:
+- `audition_roles.categoria`: protagonista, apoyo o ensamble (grupo). Si está vacía, se usa la del personaje de la obra.
+  - Solo agrega una columna: el cast ya armado no cambia.
+- `audition_cast_personaje` recibe la categoría.
+- El tablero trae la categoría.
+- Al mandar, quien queda en un grupo de ensamble recibe una oferta de Ensamble con el nombre del grupo.
+- Pantalla:
+  - el tablero va por secciones;
+  - cada personaje tiene «+ Agregar a alguien…»;
+  - «Agregar un personaje o grupo de ensamble» con Tipo.
+- Descargas: «Documento del cast» (`cast/documento`, para guardar como PDF) y Excel (`exportar/cast`).
+
 ## 2026-11-24 — 0167: ajuste del cast con resultados, desempate y solo Dirección general
 
 Diego quería que, al cerrar la votación, el ajuste del cast mostrara antes que nada los resultados. También que la
