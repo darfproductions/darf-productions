@@ -13,7 +13,7 @@ import { PickForm } from "./PickForm";
 
 const TIPO: Record<string, string> = { reparto: "Reparto", ensamble: "Ensamble", creativo: "Equipo creativo", produccion: "Producción", crew: "Crew", tecnico: "Técnico", staff: "Staff" };
 
-// 0115: quien está en escena ahora. Se pregunta cada 4 s; si cambia la persona, cambia toda la tarjeta.
+// 0115: quien está en escena ahora. Se pregunta cada 5 s; si cambia la persona, cambia toda la tarjeta.
 // Lo que el juez está escribiendo no se pierde: el formulario solo se vuelve a armar al cambiar de persona.
 export function EnEscenaJuez({ aid, ronda, criterios, roles, conVotacion, abiertas, inicial, todas = [] }: {
   aid: string; ronda: number; criterios: Criterio[]; roles: { id: string; nombre: string }[];
@@ -40,7 +40,7 @@ export function EnEscenaJuez({ aid, ronda, criterios, roles, conVotacion, abiert
       const conFoto = (p: PersonaJuez) => ({ ...p, foto: p.foto ?? tengo.get(p.app ?? "") ?? null });
       const sig = n ? { ...conFoto(n), grupo: n.grupo?.map(conFoto) ?? null } : n;
       if (JSON.stringify(sig) !== JSON.stringify(prev)) { actual.current = sig; setD(sig); }
-    }, 4000);
+    }, 5000);
     return () => clearInterval(t);
   }, [aid, ronda]);
 

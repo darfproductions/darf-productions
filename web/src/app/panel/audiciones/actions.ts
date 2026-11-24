@@ -589,7 +589,9 @@ export async function saveScore(_p: AudState, f: FormData): Promise<AudState> {
     { onConflict: "application_id,judge_id,ronda" },
   );
   if (error) return { ok: false, message: error.message };
-  revalidatePath(`${base(aid)}/evaluacion`);
+  // Sin revalidatePath: el formulario ya muestra lo que se guardó, y volver a armar la pantalla (Modo audición, con
+  // fila, fotos y personajes) en cada «Guardar» de cada juez la saturaba y dejaba «Guardando…» pegado.
+  void aid;
   return { ok: true, message: "Guardado." };
 }
 

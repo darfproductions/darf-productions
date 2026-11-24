@@ -54,7 +54,8 @@ export async function guardarOpciones(aid: string, app: string, ronda: number, o
   const p = opciones.map((v, i) => ({ opcion: i + 1, role_id: v })).filter((x) => x.role_id);
   const { error } = await (await createClient()).rpc("audition_picks_set", { app, p_ronda: ronda, p });
   if (error) return { ok: false, message: mensajeError(error) };
-  revalidatePath(`/panel/audiciones/${aid}/evaluacion`);
+  // Sin revalidatePath (igual que saveScore): no se vuelve a armar toda la pantalla en cada cambio de opción.
+  void aid;
   return { ok: true };
 }
 

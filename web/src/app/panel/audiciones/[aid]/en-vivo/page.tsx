@@ -80,7 +80,8 @@ export default async function ModoAudicion({ params, searchParams }: PageProps<"
 
   return (
     <div className="flex flex-col gap-4">
-      <AutoRefresh seconds={como === "juez" || como === "hostjuez" ? 30 : 20} />
+      {/* El juez ya sabe quién está en escena sin recargar (EnEscenaJuez); recargar toda la pantalla seguido la satura. */}
+      <AutoRefresh seconds={como === "juez" ? 120 : como === "hostjuez" ? 45 : 20} />
       <GuiaFases aid={aid} estado={a.estado} fase={a.fase} votacion={conVotacion} conCallback={a.con_callback} gestiona={gestiona} falta={falta} />
       <div className="flex flex-wrap items-center justify-between gap-2">
         <nav aria-label="Ver como" className="flex flex-wrap gap-2">
