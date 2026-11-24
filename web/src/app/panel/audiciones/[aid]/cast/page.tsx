@@ -27,7 +27,14 @@ export default async function Cast({ params }: PageProps<"/panel/audiciones/[aid
     <div className="flex flex-col gap-8">
       {res && <ResultadosVotacion r={res as Resultados} />}
       <section aria-label="Cast" className="flex flex-col gap-3">
-        <h2 className="titular text-xl">{a.fase === "enviado" ? "Cast enviado" : "Propuesta del cast"}</h2>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="titular text-xl">{a.fase === "enviado" ? "Cast enviado" : "Propuesta del cast"}</h2>
+          {/* 0168: el cast como va, antes de mandar, por sección. Cada cambio ya se guarda solo. */}
+          <div className="flex flex-wrap items-center gap-2 text-xs font-bold">
+            <a href={`/panel/audiciones/${aid}/cast/documento`} className="rounded-full border border-white/25 px-3 py-1.5 hover:border-white/50">Documento del cast (PDF)</a>
+            <a href={`/panel/audiciones/${aid}/exportar/cast`} className="rounded-full border border-white/25 px-3 py-1.5 hover:border-white/50">Excel</a>
+          </div>
+        </div>
         <CastBoard aid={aid} tablero={t} fotos={Object.fromEntries(fotos)} enviado={a.fase === "enviado"} conObra={!!a.production_id} />
       </section>
     </div>
