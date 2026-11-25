@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { checkIn, listaPuerta, type CheckIn } from "./actions";
+import { checkIn, type CheckIn } from "./actions";
+import { listaGet } from "./datos-cliente";
 import { conteoLocal, esFallaDeRed, marcarEntrada, resultadoSubida, unirLista, validarLocal, type EntradaFila, type ListaPuerta, type ResultadoLocal } from "./sin-conexion-rules";
 
 // Puerta sin internet (2026-10-25): guarda en el celular la lista de la función, valida contra ella si la red no
@@ -19,7 +20,7 @@ export function conLimite<T>(p: Promise<T>, ms: number): Promise<T | null> {
 
 export type Resumen = { subidas: number; dobles: { nombre: string; lugar: string }[]; rechazadas: { nombre: string; lugar: string; motivo: string }[] };
 
-export function usePuertaSinConexion(funcion: string) {
+export function usePuertaSinConexion(funcion: string, pid: string) {
   const [lista, setLista] = useState<ListaPuerta | null>(null);
   const [fila, setFila] = useState<EntradaFila[]>([]);
   const [enLinea, setEnLinea] = useState(true);
@@ -28,6 +29,7 @@ export function usePuertaSinConexion(funcion: string) {
   const filaRef = useRef<EntradaFila[]>([]);
   const listaRef = useRef<ListaPuerta | null>(null);
   const subiendoRef = useRef(false);
+  const ultimaBajada = useRef(0);
 
   const ponerFila = useCallback((f: EntradaFila[]) => { filaRef.current = f; setFila(f); guardar(CLAVE_FILA, f); }, []);
   const ponerLista = useCallback((l: ListaPuerta | null) => { listaRef.current = l; setLista(l); if (l) guardar(CLAVE_LISTA(l.funcion), l); }, []);
@@ -43,11 +45,12 @@ export function usePuertaSinConexion(funcion: string) {
 
   const descargar = useCallback(async () => {
     if (!funcion || document.visibilityState === "hidden") return;
-    const nueva = await conLimite(listaPuerta(funcion), 10_000);
+    const nueva = await conLimite(listaGet(pid, funcion), 10_000);
+    ultimaBajada.current = Date.now();
     if (!nueva) { setEnLinea(false); return; }
     setEnLinea(true);
     ponerLista(unirLista(nueva, filaRef.current));
-  }, [funcion, ponerLista]);
+  }, [funcion, pid, ponerLista]);
 
   /** Sube las entradas hechas sin internet (de cualquier función). Se detiene si la red vuelve a fallar. */
   const subir = useCallback(async () => {
@@ -73,12 +76,13 @@ export function usePuertaSinConexion(funcion: string) {
     }
   }, [ponerFila]);
 
-  // Cada minuto (con la pestaña a la vista): sube lo pendiente y renueva la lista. También al volver la señal.
+  // Cada minuto (con la pestaña a la vista) sube lo pendiente; la lista completa se renueva cada 5 min (cada lectura
+  // en línea ya la marca en el celular), al abrir y al volver la señal. Antes era cada minuto en cada celular.
   useEffect(() => {
-    const ciclo = async () => { await subir(); await descargar(); };
-    void ciclo();
-    const t = setInterval(ciclo, 60_000);
-    const alVolver = () => { setEnLinea(true); void ciclo(); };
+    const ciclo = async (forzar = false) => { await subir(); if (forzar || Date.now() - ultimaBajada.current >= 5 * 60_000) await descargar(); };
+    void ciclo(true);
+    const t = setInterval(() => void ciclo(), 60_000);
+    const alVolver = () => { setEnLinea(true); void ciclo(true); };
     const alCaer = () => setEnLinea(false);
     const alMostrar = () => { if (document.visibilityState === "visible") void ciclo(); };
     window.addEventListener("online", alVolver);

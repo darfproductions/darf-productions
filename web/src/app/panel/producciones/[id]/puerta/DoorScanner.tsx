@@ -5,7 +5,8 @@ import { useCallback, useEffect, useState, useTransition } from "react";
 import { QrScanner } from "@/components/panel/QrScanner";
 import { bip } from "@/lib/aviso-sonido";
 import { mayus } from "@/lib/dates";
-import { beneficiosPuerta, buscarPuerta, conteoPuerta, deshacerEntrada, entregarBeneficio, visitaPuerta, type BoletoPuerta, type CheckIn, type Conteo, type Visita } from "./actions";
+import { conteoGet } from "./datos-cliente";
+import { beneficiosPuerta, buscarPuerta, deshacerEntrada, entregarBeneficio, visitaPuerta, type BoletoPuerta, type CheckIn, type Conteo, type Visita } from "./actions";
 import { ESTADOS_ENTREGA, MOMENTOS_ENTREGA, TIPOS_BENEFICIO, horaAcceso, minutosAcceso, notaBeneficio, textoBeneficio, type Beneficio, type BeneficioBoleto } from "@/lib/beneficios-rules";
 import { EntregaBeneficio } from "./EntregaBeneficio";
 import { esPaseClub, etiquetaBoleto } from "./door-rules";
@@ -52,7 +53,7 @@ export function DoorScanner({ pid, funciones, inicial, beneficios = [] }: { pid:
   const [modo, setModo] = useState<"entrada" | "beneficio">("entrada");
   const [res, setRes] = useState<Mostrado | null>(null);
   const [sinRed, setSinRed] = useState(false);
-  const sc = usePuertaSinConexion(funcion);
+  const sc = usePuertaSinConexion(funcion, pid);
   const [conteo, setConteo] = useState<Conteo | null>(null);
   const [q, setQ] = useState("");
   const [hallados, setHallados] = useState<BoletoPuerta[] | null>(null);
@@ -76,8 +77,8 @@ export function DoorScanner({ pid, funciones, inicial, beneficios = [] }: { pid:
   const v = res ? VISTA[res.result] : null;
 
   const actualizar = useCallback(async () => {
-    if (funcion) setConteo(await conteoPuerta(funcion).catch(() => null));
-  }, [funcion]);
+    if (funcion) setConteo(await conteoGet(pid, funcion));
+  }, [funcion, pid]);
 
   // El contador se actualiza solo cada 15 s (varias puertas a la vez) y después de cada lectura; con la pestaña oculta
   // no pregunta. Sin internet se cuenta con la lista guardada.
@@ -85,13 +86,13 @@ export function DoorScanner({ pid, funciones, inicial, beneficios = [] }: { pid:
     let vivo = true;
     const tick = async () => {
       if (document.visibilityState === "hidden") return;
-      const c = funcion ? await conteoPuerta(funcion).catch(() => null) : null;
+      const c = funcion ? await conteoGet(pid, funcion) : null;
       if (vivo) setConteo(c);
     };
     tick();
     const t = setInterval(tick, 15000);
     return () => { vivo = false; clearInterval(t); };
-  }, [funcion]);
+  }, [funcion, pid]);
   const conteoVisto = sc.enLinea && conteo ? conteo : sc.conteo ?? conteo;
 
   // Un boleto (escaneado o de la búsqueda): en línea si se puede; si no, con la lista guardada.

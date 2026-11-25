@@ -38,7 +38,7 @@ export default async function Entrevistas({ params, searchParams }: PageProps<"/
 
   return (
     <div className="flex flex-col gap-4">
-      <AutoRefresh seconds={15} />
+      <AutoRefresh seconds={30} />
       <Card className="flex flex-col gap-2">
         <h2 className="titular text-xl">Entrevista</h2>
         <p className="text-sm text-texto-2">Recibe a cada aspirante, hazle las preguntas y anótalas. Queda en su solicitud y en su ficha de talento. Quien ya llegó y aún no tiene entrevista sale primero.</p>
