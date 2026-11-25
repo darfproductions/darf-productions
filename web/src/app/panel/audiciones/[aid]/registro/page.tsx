@@ -66,7 +66,7 @@ export default async function DayPage({ params, searchParams }: PageProps<"/pane
 
   return (
     <div className="grid gap-4 lg:grid-cols-12">
-      <AutoRefresh seconds={20} />
+      <AutoRefresh seconds={30} />
       <div className="flex flex-col gap-4 lg:col-span-5">
         <Card><Desk aid={aid} /></Card>
         {enVivo && <FilaEnVivo aid={aid} actual={actual} sigue={sigue} esperan={esperan} callback={a.fase === "callback"} conGrupo={preguntaGrupo} />}
